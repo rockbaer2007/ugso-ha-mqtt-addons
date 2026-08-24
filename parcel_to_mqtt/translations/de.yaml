@@ -1,0 +1,121 @@
+configuration:
+  dhl:
+    name: DHL Paket
+    description: Aktive DHL-Paketverfolgung mit Kontoliste und optionalen manuellen Sendungsnummern.
+    fields:
+      enabled:
+        name: DHL aktivieren
+        description: Aktiviert DHL-Paketabfragen.
+      tracking_numbers:
+        name: Manuelle DHL-Sendungsnummern
+        description: Optionale manuelle DHL-Sendungsnummern, mit Komma getrennt.
+      login_url:
+        name: DHL Login-URL
+        description: Diese URL im Chrome-Browser oeffnen, bei DHL einloggen, Developer Console oeffnen, die fehlgeschlagene dhllogin:// Weiterleitung kopieren und unten bei DHL Login-Code einfuegen.
+      login_code:
+        name: DHL Login-Code
+        description: Hier die komplette dhllogin:// URL aus dem DHL-Browser-Login einfuegen. Danach wird die DHL-Kontoliste automatisch gelesen.
+  hermes:
+    name: Hermes
+    description: Aktive Hermes-Verfolgung ueber manuelle Sendungsnummern.
+    fields:
+      enabled:
+        name: Hermes aktivieren
+        description: Aktiviert Hermes-Abfragen.
+      tracking_numbers:
+        name: Hermes Sendungsnummern
+        description: Eine oder mehrere Hermes-Sendungsnummern, mit Komma getrennt.
+  gls:
+    name: GLS
+    description: GLS ist vorbereitet, aber noch nicht aktiv, bis die Gast-Session stabil angebunden ist.
+    fields:
+      enabled:
+        name: GLS aktivieren
+        description: Bereitet GLS-Konfiguration vor. Die Abfrage bleibt bis zur stabilen Session-Anbindung deaktiviert.
+      tracking_numbers:
+        name: GLS Sendungsnummern
+        description: Eine oder mehrere GLS-Sendungsnummern, mit Komma getrennt.
+      postal_code:
+        name: GLS Postleitzahl
+        description: Liefer-Postleitzahl fuer GLS-Sendungen.
+  dpd:
+    name: DPD
+    description: Vorbereitet fuer spaetere DPD-Konto- oder API-Anbindung.
+    fields:
+      enabled:
+        name: DPD aktivieren
+        description: Merkt die DPD-Konfiguration fuer eine spaetere aktive Anbindung.
+      tracking_numbers:
+        name: DPD Sendungsnummern
+        description: DPD-Sendungsnummern, mit Komma getrennt.
+      username:
+        name: DPD Benutzername
+        description: Vorbereitet fuer eine spaetere DPD-Anmeldung.
+      password:
+        name: DPD Passwort
+        description: Vorbereitet fuer eine spaetere DPD-Anmeldung.
+  ups:
+    name: UPS
+    description: Vorbereitet fuer spaetere UPS-Konto- oder API-Anbindung.
+    fields:
+      enabled:
+        name: UPS aktivieren
+        description: Merkt die UPS-Konfiguration fuer eine spaetere aktive Anbindung.
+      tracking_numbers:
+        name: UPS Sendungsnummern
+        description: UPS-Sendungsnummern, mit Komma getrennt.
+      username:
+        name: UPS Benutzername
+        description: Vorbereitet fuer eine spaetere UPS-Anmeldung.
+      password:
+        name: UPS Passwort
+        description: Vorbereitet fuer eine spaetere UPS-Anmeldung.
+  amazon:
+    name: Amazon Logistics
+    description: Vorbereitet fuer spaetere Amazon-Kontoanbindung.
+    fields:
+      enabled:
+        name: Amazon aktivieren
+        description: Merkt die Amazon-Konfiguration fuer eine spaetere aktive Anbindung.
+      email:
+        name: Amazon E-Mail
+        description: Vorbereitet fuer eine spaetere Amazon-Anmeldung.
+      password:
+        name: Amazon Passwort
+        description: Vorbereitet fuer eine spaetere Amazon-Anmeldung.
+      otp_token:
+        name: Amazon OTP-Token
+        description: Optionaler 2FA-Token fuer eine spaetere Amazon-Anmeldung.
+  deutsche_post:
+    name: Deutsche Post Briefe
+    description: Vorbereitet fuer spaetere Briefverfolgung.
+    fields:
+      enabled:
+        name: Deutsche Post aktivieren
+        description: Merkt die Briefverfolgung fuer eine spaetere aktive Anbindung.
+      tracking_numbers:
+        name: Brief-Sendungsnummern
+        description: Deutsche-Post-Sendungsnummern, mit Komma getrennt.
+  fedex:
+    name: FedEx
+    description: Vorbereitet fuer spaetere FedEx-Verfolgung.
+    fields:
+      enabled:
+        name: FedEx aktivieren
+        description: Merkt die FedEx-Konfiguration fuer eine spaetere aktive Anbindung.
+      tracking_numbers:
+        name: FedEx Sendungsnummern
+        description: FedEx-Sendungsnummern, mit Komma getrennt.
+  general:
+    name: Allgemein
+    description: Gemeinsame MQTT- und Abfrageeinstellungen.
+    fields:
+      interval:
+        name: Aktualisierungsintervall in Minuten
+        description: Abstand zwischen den Abfragen.
+      max_parcels:
+        name: Maximale Paket-Entitaeten
+        description: Anzahl der Paket-Slots, die per MQTT Discovery angelegt werden.
+      log_response_details:
+        name: Antwortdetails protokollieren
+        description: Schreibt Provider-Anfragen und Antworten maskiert ins Add-on-Log und nach /data/provider_debug.log. Die Datei behaelt maximal 100 Zeilen.

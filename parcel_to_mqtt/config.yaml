@@ -1,0 +1,92 @@
+name: Parcel to MQTT
+version: "0.1.7"
+slug: parcel_to_mqtt
+description: Publish parcel tracking data to Home Assistant via MQTT Discovery
+url: https://github.com/rockbaer2007/parcel-to-mqtt
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: services
+boot: auto
+init: false
+services:
+  - mqtt:need
+options:
+  dhl:
+    enabled: true
+    tracking_numbers: ""
+    login_url: "https://login.dhl.de/af5f9bb6-27ad-4af4-9445-008e7a5cddb8/login/authorize?redirect_uri=dhllogin://de.deutschepost.dhl/login&state=eyJycyI6dHJ1ZSwicnYiOmZhbHNlLCJmaWQiOiJhcHAtbG9naW4tbWVoci1mb290ZXIiLCJoaWQiOiJhcHAtbG9naW4tbWVoci1oZWFkZXIiLCJycCI6ZmFsc2V9&client_id=83471082-5c13-4fce-8dcb-19d2a3fca413&response_type=code&scope=openid%20offline_access&claims=%7B%22id_token%22:%7B%22email%22:null,%22post_number%22:null,%22twofa%22:null,%22service_mask%22:null,%22deactivate_account%22:null,%22last_login%22:null,%22customer_type%22:null,%22display_name%22:null,%22data_confirmation_required%22:null%7D%7D&nonce=&login_hint=&prompt=login&ui_locales=de-DE&code_challenge=MAhrhXXZP-Owy-R7ruyB7Fn-Z8ODW6qxCoHg4uXELCw&code_challenge_method=S256"
+    login_code: ""
+  hermes:
+    enabled: true
+    tracking_numbers: ""
+  gls:
+    enabled: false
+    tracking_numbers: ""
+    postal_code: ""
+  dpd:
+    enabled: false
+    tracking_numbers: ""
+    username: ""
+    password: ""
+  ups:
+    enabled: false
+    tracking_numbers: ""
+    username: ""
+    password: ""
+  amazon:
+    enabled: false
+    email: ""
+    password: ""
+    otp_token: ""
+  deutsche_post:
+    enabled: false
+    tracking_numbers: ""
+  fedex:
+    enabled: false
+    tracking_numbers: ""
+  general:
+    interval: 60
+    max_parcels: 6
+    log_response_details: false
+schema:
+  dhl:
+    enabled: bool
+    tracking_numbers: str
+    login_url: str
+    login_code: password
+  hermes:
+    enabled: bool
+    tracking_numbers: str
+  gls:
+    enabled: bool
+    tracking_numbers: str
+    postal_code: str
+  dpd:
+    enabled: bool
+    tracking_numbers: str
+    username: str
+    password: password
+  ups:
+    enabled: bool
+    tracking_numbers: str
+    username: str
+    password: password
+  amazon:
+    enabled: bool
+    email: str
+    password: password
+    otp_token: password
+  deutsche_post:
+    enabled: bool
+    tracking_numbers: str
+  fedex:
+    enabled: bool
+    tracking_numbers: str
+  general:
+    interval: int(30,1440)
+    max_parcels: int(1,20)
+    log_response_details: bool

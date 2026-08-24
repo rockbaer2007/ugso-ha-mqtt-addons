@@ -1,0 +1,40 @@
+configuration:
+  plz:
+    name: Postleitzahl
+    description: Deutsche oder österreichische Postleitzahl für die Preisabfrage.
+  amount:
+    name: Menge in Litern
+    description: Eine oder mehrere Mengen in Litern, mit Komma getrennt, zum Beispiel 1000,2000,3000.
+  interval:
+    name: Aktualisierungsintervall
+    description: Abrufintervall in Minuten. Minimum ist 30 Minuten.
+  esyActive:
+    name: EasyOil aktivieren
+    description: Preise über EasyOil abfragen.
+  deliveryTimes:
+    name: Liefertermin
+    description: Liefertermin für die EasyOil-Abfrage wie in der ioBroker-Maske.
+  payment_type:
+    name: Zahlungsart
+    description: Zahlungsart für die EasyOil-Abfrage wie in der ioBroker-Maske.
+  prod:
+    name: Sorte
+    description: Heizöl-Sorte für die EasyOil-Abfrage wie in der ioBroker-Maske.
+  unloading_points:
+    name: Entladestellen
+    description: Anzahl der Entladestellen.
+  hose:
+    name: Schlauchlänge
+    description: "Benötigte Schlauchlänge: 40m, 60m oder 80m."
+  short_vehicle:
+    name: Tankwagen
+    description: Auswahl, ob ein Tankwagen mit Anhänger möglich ist oder ohne Anhänger kommen soll.
+  hoDe:
+    name: Heizöl24 Deutschland aktivieren (Nur PLZ und Menge wird übernommen)
+    description: Preise über Heizöl24 Deutschland abfragen. Nur für Deutschland gültig; übernommen werden PLZ und Menge.
+  hoAt:
+    name: Heizöl24 Österreich aktivieren (Nur PLZ und Menge wird übernommen)
+    description: Preise über Heizöl24 Österreich abfragen. Nur für Österreich gültig; übernommen werden PLZ und Menge.
+  log_response_details:
+    name: Rohantworten protokollieren
+    description: Anbieter-Antworten im App-Protokoll ausgeben. Nur zur Fehlersuche aktivieren.

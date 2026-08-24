@@ -1,0 +1,50 @@
+name: FRITZ!Box to MQTT
+version: "0.1.31"
+slug: fritzbox_tr064_tam
+description: Publish FRITZ!Box data and live call events to Home Assistant via MQTT Discovery
+url: https://github.com/rockbaer2007/fritzbox-to-mqtt
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: services
+boot: auto
+init: false
+services:
+  - mqtt:need
+options:
+  ip: 192.168.178.1
+  port: 49000
+  user: ""
+  password: ""
+  call_lists: all,incoming,outgoing,missed,rejected,blocked
+  phonebooks: all
+  phonebook_names: 3:tellows Sperrliste 7,4:tellows Sperrliste 8-9
+  phonebook_name_excludes: ""
+  call_monitor_enabled: true
+  call_monitor_port: 1012
+  max_calls: 20
+  max_live_events: 20
+  include_dect_lines: false
+  max_dect_lines: 6
+  dns_over_tls_enabled: true
+  log_value_details: true
+schema:
+  ip: str
+  port: port
+  user: str
+  password: password
+  call_lists: str
+  phonebooks: str
+  phonebook_names: str
+  phonebook_name_excludes: str
+  call_monitor_enabled: bool
+  call_monitor_port: port
+  max_calls: int(1,100)
+  max_live_events: int(1,100)
+  include_dect_lines: bool
+  max_dect_lines: int(1,10)
+  dns_over_tls_enabled: bool
+  log_value_details: bool

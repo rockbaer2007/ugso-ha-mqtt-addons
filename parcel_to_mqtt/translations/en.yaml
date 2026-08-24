@@ -1,0 +1,121 @@
+configuration:
+  dhl:
+    name: DHL parcel
+    description: Active DHL parcel tracking with account parcels and optional manual tracking numbers.
+    fields:
+      enabled:
+        name: Enable DHL
+        description: Enables DHL parcel polling.
+      tracking_numbers:
+        name: Manual DHL tracking numbers
+        description: Optional manual DHL tracking numbers separated by commas.
+      login_url:
+        name: DHL login URL
+        description: Open this URL in Chrome, sign in to DHL, open the developer console, copy the failed dhllogin:// redirect and paste it into DHL login code below.
+      login_code:
+        name: DHL login code
+        description: Paste the complete dhllogin:// URL from the DHL browser login here. The DHL account parcel list is read automatically afterwards.
+  hermes:
+    name: Hermes
+    description: Active Hermes tracking through manual tracking numbers.
+    fields:
+      enabled:
+        name: Enable Hermes
+        description: Enables Hermes polling.
+      tracking_numbers:
+        name: Hermes tracking numbers
+        description: One or more Hermes tracking numbers separated by commas.
+  gls:
+    name: GLS
+    description: GLS is prepared, but not active yet until the guest session can be connected reliably.
+    fields:
+      enabled:
+        name: Enable GLS
+        description: Keeps GLS configuration ready. Polling stays disabled until the stable session flow is connected.
+      tracking_numbers:
+        name: GLS tracking numbers
+        description: One or more GLS tracking numbers separated by commas.
+      postal_code:
+        name: GLS postal code
+        description: Delivery postal code for GLS parcels.
+  dpd:
+    name: DPD
+    description: Prepared for a later DPD account or API connector.
+    fields:
+      enabled:
+        name: Enable DPD
+        description: Keeps DPD configuration for a later active connector.
+      tracking_numbers:
+        name: DPD tracking numbers
+        description: DPD tracking numbers separated by commas.
+      username:
+        name: DPD username
+        description: Prepared for a later DPD login.
+      password:
+        name: DPD password
+        description: Prepared for a later DPD login.
+  ups:
+    name: UPS
+    description: Prepared for a later UPS account or API connector.
+    fields:
+      enabled:
+        name: Enable UPS
+        description: Keeps UPS configuration for a later active connector.
+      tracking_numbers:
+        name: UPS tracking numbers
+        description: UPS tracking numbers separated by commas.
+      username:
+        name: UPS username
+        description: Prepared for a later UPS login.
+      password:
+        name: UPS password
+        description: Prepared for a later UPS login.
+  amazon:
+    name: Amazon Logistics
+    description: Prepared for a later Amazon account connector.
+    fields:
+      enabled:
+        name: Enable Amazon
+        description: Keeps Amazon configuration for a later active connector.
+      email:
+        name: Amazon email
+        description: Prepared for a later Amazon login.
+      password:
+        name: Amazon password
+        description: Prepared for a later Amazon login.
+      otp_token:
+        name: Amazon OTP token
+        description: Optional 2FA token for a later Amazon login.
+  deutsche_post:
+    name: Deutsche Post letters
+    description: Prepared for later letter tracking.
+    fields:
+      enabled:
+        name: Enable Deutsche Post
+        description: Keeps letter tracking configuration for a later active connector.
+      tracking_numbers:
+        name: Letter tracking numbers
+        description: Deutsche Post tracking numbers separated by commas.
+  fedex:
+    name: FedEx
+    description: Prepared for later FedEx tracking.
+    fields:
+      enabled:
+        name: Enable FedEx
+        description: Keeps FedEx configuration for a later active connector.
+      tracking_numbers:
+        name: FedEx tracking numbers
+        description: FedEx tracking numbers separated by commas.
+  general:
+    name: General
+    description: Shared MQTT and polling settings.
+    fields:
+      interval:
+        name: Update interval in minutes
+        description: Time between provider polls.
+      max_parcels:
+        name: Maximum parcel entities
+        description: Number of parcel slots created through MQTT Discovery.
+      log_response_details:
+        name: Log response details
+        description: Writes masked provider requests and responses to the app log and /data/provider_debug.log. The file keeps at most 100 lines.

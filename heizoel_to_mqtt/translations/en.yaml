@@ -1,0 +1,40 @@
+configuration:
+  plz:
+    name: Postal code
+    description: German or Austrian postal code used for price lookups.
+  amount:
+    name: Amount in liters
+    description: One or more liter amounts separated by commas, for example 1000,2000,3000.
+  interval:
+    name: Update interval
+    description: Polling interval in minutes. The minimum is 30 minutes.
+  esyActive:
+    name: Enable EasyOil
+    description: Fetch prices from EasyOil.
+  deliveryTimes:
+    name: Delivery time
+    description: Delivery time used for the EasyOil request, matching the ioBroker mask.
+  payment_type:
+    name: Payment method
+    description: Payment method used for the EasyOil request, matching the ioBroker mask.
+  prod:
+    name: Product type
+    description: Heating-oil product type used for the EasyOil request, matching the ioBroker mask.
+  unloading_points:
+    name: Unloading points
+    description: Number of unloading points.
+  hose:
+    name: Hose length
+    description: "Required hose length: 40m, 60m or 80m."
+  short_vehicle:
+    name: Tank truck
+    description: Select whether a tank truck with trailer is possible or a truck without trailer is required.
+  hoDe:
+    name: Enable Heizöl24 Germany (only postal code and amount are used)
+    description: Fetch prices from Heizöl24 Germany. Valid for Germany only; postal code and amount are used.
+  hoAt:
+    name: Enable Heizöl24 Austria (only postal code and amount are used)
+    description: Fetch prices from Heizöl24 Austria. Valid for Austria only; postal code and amount are used.
+  log_response_details:
+    name: Log raw responses
+    description: Write provider responses to the app log. Enable only for troubleshooting.
