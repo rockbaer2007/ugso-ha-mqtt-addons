@@ -73,6 +73,33 @@ GLS, DPD, UPS, Amazon Logistics, Deutsche Post letters and FedEx are already pre
 `general.log_response_details` writes masked provider requests and responses to the add-on log and `/data/provider_debug.log`. The file keeps at most 100 JSON lines.
 Notifications should be created as Home Assistant automations using the generated entities.
 
+## Dashboard example
+
+![Parcel flex-table-card example](docs/images/parcel-flex-table-card.png)
+
+```yaml
+type: custom:flex-table-card
+title: Pakete
+entities:
+  include: sensor.parcel_to_mqtt_parcel_dhl_json
+columns:
+  - name: Richtung
+    data: sendungen
+    modify: x.sendungsinfo.sendungsrichtung
+  - name: Name
+    data: sendungen
+    modify: x.sendungsinfo.sendungsname
+  - name: Status
+    data: sendungen
+    modify: x.sendungsdetails.sendungsverlauf.status
+  - name: Fortschritt
+    data: sendungen
+    modify: x.sendungsdetails.sendungsverlauf.fortschritt
+  - name: Nummer
+    data: sendungen
+    modify: x.sendungsdetails.sendungsnummern.sendungsnummer
+```
+
 ## Provider roadmap
 
 - DHL: active through `dhllogin://` browser login code plus optional manual tracking numbers.
