@@ -122,10 +122,13 @@ class DhlClient:
     def poll(self) -> list[Parcel]:
         tracking_numbers = list(self.options.dhl_tracking_numbers)
         account_numbers = self.fetch_account_tracking_numbers()
+        if account_numbers:
+            LOG.info("DHL account provided %s active parcel number(s)", len(account_numbers))
         for tracking_number in account_numbers:
             if tracking_number and tracking_number not in tracking_numbers:
                 tracking_numbers.append(tracking_number)
         if not tracking_numbers:
+            LOG.info("DHL has no manual or account parcel numbers to poll")
             return []
         try:
             response = self.session.get(
@@ -167,12 +170,18 @@ class DhlClient:
     def fetch_account_tracking_numbers(self) -> list[str]:
         session_data = self.ensure_account_session()
         if not session_data:
+            LOG.info("DHL account session is not available; only manual tracking numbers can be used")
             return []
         try:
-            self.session.cookies.set("dhli", session_data["id_token"], domain=".dhl.de")
+            id_token = str(session_data.get("id_token") or "")
+            access_token = str(session_data.get("access_token") or "")
+            if id_token:
+                self.session.cookies.set("dhli", id_token, domain=".dhl.de")
+            headers = {"Authorization": f"Bearer {access_token}"} if access_token else None
             response = self.session.get(
                 "https://www.dhl.de/int-verfolgen/data/search",
                 params={"noRedirect": "true", "language": "de", "cid": "app"},
+                headers=headers,
                 timeout=30,
             )
             response.raise_for_status()
@@ -184,21 +193,25 @@ class DhlClient:
                 request_data={
                     "method": "GET",
                     "url": response.url,
-                    "account_session": bool(session_data.get("id_token")),
+                    "account_session": bool(id_token or access_token),
                 },
                 response=response,
                 response_data=data,
             )
             shipments = data.get("sendungen", []) if isinstance(data, dict) else []
             if not isinstance(shipments, list):
+                LOG.warning("DHL account parcel list returned an unexpected response")
                 return []
-            return [
-                str(item.get("id") or "").strip()
+            numbers = [
+                dhl_tracking_id(item)
                 for item in shipments
                 if isinstance(item, dict)
-                and str(item.get("id") or "").strip()
+                and dhl_tracking_id(item)
                 and value_at(item, ["sendungsinfo", "sendungsliste"]) != "ARCHIVIERT"
             ]
+            if not numbers:
+                LOG.info("DHL account parcel list was read, but no active parcel numbers were found")
+            return numbers
         except Exception as exc:
             LOG.warning("Could not fetch DHL account parcel list: %s", exc)
             return []
@@ -208,9 +221,11 @@ class DhlClient:
         if session_data and session_data.get("refresh_token"):
             refreshed = self.refresh_session(session_data["refresh_token"])
             if refreshed:
+                LOG.info("DHL account session refreshed successfully")
                 return refreshed
         if self.options.dhl_login_code:
             return self.login_with_code(self.options.dhl_login_code)
+        LOG.info("DHL login code is empty and no reusable DHL session is stored")
         return None
 
     def login_with_code(self, login_code: str) -> dict[str, Any] | None:
@@ -258,7 +273,11 @@ class DhlClient:
                 response_data=session_data,
             )
             self.save_session(session_data)
-            LOG.info("DHL account login successful. The stored refresh token will be reused on the next starts.")
+            LOG.info(
+                "DHL account login successful. Access token: %s, refresh token: %s. The stored refresh token will be reused on the next starts.",
+                "yes" if session_data.get("access_token") else "no",
+                "yes" if session_data.get("refresh_token") else "no",
+            )
             return session_data
         except Exception as exc:
             LOG.warning("DHL account login failed: %s", exc)
@@ -337,7 +356,7 @@ class DhlClient:
         status_group = normalize_status_group(f"{status_text} {last_event}")
         return Parcel(
             index=0,
-            tracking_number=str(item.get("id") or ""),
+            tracking_number=dhl_tracking_id(item),
             carrier="DHL",
             status=status_text or human_status(status_group),
             status_group=status_group,
@@ -770,10 +789,28 @@ def parse_dhl_numbers(value: Any) -> list[str]:
 
 def dhl_code_from_url(value: str) -> str:
     text = str(value or "").strip()
-    if not text.startswith("dhllogin://"):
+    if not text:
         return ""
-    query = parse_qs(urlparse(text).query)
-    return first_text(*(query.get("code") or []))
+    if "code=" in text:
+        query = parse_qs(urlparse(text).query)
+        return first_text(*(query.get("code") or []))
+    if "://" not in text and "&" not in text and "?" not in text:
+        return text
+    return ""
+
+
+def dhl_tracking_id(item: dict[str, Any]) -> str:
+    return first_text(
+        item.get("id"),
+        item.get("sendungsnummer"),
+        item.get("piececode"),
+        item.get("pieceCode"),
+        item.get("shipmentNo"),
+        item.get("shipmentNumber"),
+        value_at(item, ["sendungsinfo", "sendungsnummer"]),
+        value_at(item, ["sendungsinfo", "piececode"]),
+        value_at(item, ["sendungsdetails", "sendungsnummer"]),
+    )
 
 
 def option_group(raw: dict[str, Any], name: str) -> dict[str, Any]:
