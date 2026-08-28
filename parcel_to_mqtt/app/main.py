@@ -78,6 +78,7 @@ class Parcel:
     carrier: str
     status: str
     status_group: str
+    direction: str
     last_event: str
     last_event_time: str
     destination: str
@@ -373,6 +374,7 @@ class DhlClient:
             carrier="DHL",
             status=status_text or human_status(status_group),
             status_group=status_group,
+            direction=parcel_direction(item),
             last_event=last_event,
             last_event_time=last_event_time,
             destination=str(value_at(item, ["sendungsinfo", "zielland"]) or ""),
@@ -435,6 +437,7 @@ class HermesClient:
             carrier="Hermes",
             status=last_event or human_status(status_group),
             status_group=status_group,
+            direction=parcel_direction(item),
             last_event=last_event,
             last_event_time=first_text(latest.get("timestamp"), latest.get("date"), item.get("eta")),
             destination=first_text(
@@ -517,6 +520,7 @@ class MqttPublisher:
         self._publish(f"{self.options.base_topic}/last_update", datetime.now(timezone.utc).isoformat())
         summary = parcel_summary(parcels)
         self._publish_json(f"{self.options.base_topic}/all", [parcel_to_dict(parcel) for parcel in parcels])
+        self._publish_json(f"{self.options.base_topic}/list", [parcel_to_list_item(parcel) for parcel in parcels])
         for key, value in summary.items():
             self._publish(f"{self.options.base_topic}/{key}", str(value))
         for index in range(1, self.options.max_parcels + 1):
@@ -549,6 +553,14 @@ class MqttPublisher:
             "state_topic": f"{self.options.base_topic}/total",
             "json_attributes_topic": f"{self.options.base_topic}/all",
             "icon": "mdi:package-variant-closed",
+            "device": self._device(),
+        })
+        self._publish_config("sensor", "list", {
+            "name": "Parcel Liste JSON",
+            "unique_id": "parcel_to_mqtt_list",
+            "state_topic": f"{self.options.base_topic}/total",
+            "json_attributes_topic": f"{self.options.base_topic}/list",
+            "icon": "mdi:format-list-bulleted",
             "device": self._device(),
         })
         counters = {
@@ -771,12 +783,22 @@ def parcel_to_dict(parcel: Parcel) -> dict[str, Any]:
     return {
         "index": parcel.index,
         "tracking_number": parcel.tracking_number,
+        "number": parcel.tracking_number,
         "carrier": parcel.carrier,
         "status": parcel.status,
         "status_group": parcel.status_group,
+        "direction": parcel.direction,
         "last_event": parcel.last_event,
         "last_event_time": parcel.last_event_time,
         "destination": parcel.destination,
+    }
+
+
+def parcel_to_list_item(parcel: Parcel) -> dict[str, Any]:
+    return {
+        "number": parcel.tracking_number,
+        "status": parcel.status,
+        "direction": parcel.direction,
     }
 
 
@@ -784,9 +806,11 @@ def empty_parcel_attributes(index: int) -> dict[str, Any]:
     return {
         "index": index,
         "tracking_number": "",
+        "number": "",
         "carrier": "",
         "status": "",
         "status_group": "",
+        "direction": "unbekannt",
         "last_event": "",
         "last_event_time": "",
         "destination": "",
@@ -824,6 +848,79 @@ def dhl_code_from_url(value: str) -> str:
 
 def dhl_tracking_id(item: dict[str, Any]) -> str:
     return first_text(*dhl_tracking_ids(item))
+
+
+def parcel_direction(item: dict[str, Any]) -> str:
+    explicit = " ".join(filter(None, [
+        first_text(
+            item.get("direction"),
+            item.get("richtung"),
+            item.get("sendungsrichtung"),
+            item.get("shipmentDirection"),
+            value_at(item, ["sendungsinfo", "richtung"]),
+            value_at(item, ["sendungsinfo", "sendungsrichtung"]),
+            value_at(item, ["sendungsinfo", "sendungsliste"]),
+            value_at(item, ["shipment", "direction"]),
+        ),
+        direction_text_candidates(item),
+    ]))
+    direction = direction_from_text(explicit)
+    if direction != "unbekannt":
+        return direction
+    status_text = first_text(
+        item.get("status"),
+        item.get("state"),
+        value_at(item, ["sendungsinfo", "status"]),
+        value_at(item, ["sendungsdetails", "sendungsverlauf", "status"]),
+        value_at(item, ["sendungsdetails", "sendungsverlauf", "kurzStatus"]),
+    )
+    return direction_from_text(status_text)
+
+
+def direction_from_text(value: str) -> str:
+    text = str(value or "").lower()
+    outbound_markers = (
+        "von mir",
+        "ausgehend",
+        "ausgang",
+        "outbound",
+        "sent",
+        "retoure",
+        "return",
+        "rücksendung",
+        "ruecksendung",
+    )
+    inbound_markers = (
+        "zu mir",
+        "eingehend",
+        "eingang",
+        "inbound",
+        "received",
+        "empfangen",
+    )
+    if any(marker in text for marker in outbound_markers):
+        return "von mir"
+    if any(marker in text for marker in inbound_markers):
+        return "zu mir"
+    return "unbekannt"
+
+
+def direction_text_candidates(value: Any) -> str:
+    candidates = []
+    collect_direction_text_candidates(value, candidates)
+    return " ".join(candidates)
+
+
+def collect_direction_text_candidates(value: Any, candidates: list[str]) -> None:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            key_text = str(key).lower()
+            if any(marker in key_text for marker in ("direction", "richtung", "sendungsliste")):
+                candidates.append(str(item or ""))
+            collect_direction_text_candidates(item, candidates)
+    elif isinstance(value, list):
+        for item in value:
+            collect_direction_text_candidates(item, candidates)
 
 
 def dhl_tracking_ids(item: dict[str, Any]) -> list[str]:
