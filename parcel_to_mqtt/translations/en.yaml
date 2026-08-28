@@ -119,3 +119,28 @@ configuration:
       log_response_details:
         name: Log response details
         description: Writes masked provider requests and responses to the app log and /data/provider_debug.log. The file keeps at most 100 lines.
+  mqtt:
+    name: MQTT
+    description: MQTT connection for Home Assistant Discovery.
+    fields:
+      host:
+        name: MQTT host
+        description: Hostname of the MQTT broker.
+      port:
+        name: MQTT port
+        description: Port of the MQTT broker.
+      username:
+        name: MQTT username
+        description: Username for the MQTT broker.
+      password:
+        name: MQTT password
+        description: Password for the MQTT broker.
+      discovery_prefix:
+        name: Discovery prefix
+        description: MQTT Discovery prefix used by Home Assistant.
+      base_topic:
+        name: Base topic
+        description: Base topic for parcel data.
+      retain:
+        name: Enable retain
+        description: Publish MQTT messages with the retain flag.

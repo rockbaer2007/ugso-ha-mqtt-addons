@@ -825,13 +825,13 @@ def load_options() -> Options:
         interval=max(30, int(option_value(raw, "general", "interval", "interval", 60))),
         max_parcels=max(1, min(20, int(option_value(raw, "general", "max_parcels", "max_parcels", MAX_DEFAULT_PARCELS)))),
         log_response_details=option_bool(raw, "general", "log_response_details", "log_response_details", False),
-        mqtt_host=str(raw.get("mqtt_host") or mqtt.get("host") or "core-mosquitto"),
-        mqtt_port=int(raw.get("mqtt_port") or mqtt.get("port") or 1883),
-        mqtt_username=str(raw.get("mqtt_username") or mqtt.get("username") or ""),
-        mqtt_password=str(raw.get("mqtt_password") or mqtt.get("password") or ""),
-        discovery_prefix=str(raw.get("discovery_prefix", DEFAULT_DISCOVERY_PREFIX)).strip("/"),
-        base_topic=str(raw.get("base_topic", DEFAULT_BASE_TOPIC)).strip("/"),
-        retain=bool(raw.get("retain", True)),
+        mqtt_host=str(option_value(raw, "mqtt", "host", "mqtt_host", mqtt.get("host") or "core-mosquitto")),
+        mqtt_port=int(option_value(raw, "mqtt", "port", "mqtt_port", mqtt.get("port") or 1883)),
+        mqtt_username=str(option_value(raw, "mqtt", "username", "mqtt_username", mqtt.get("username") or "")),
+        mqtt_password=str(option_value(raw, "mqtt", "password", "mqtt_password", mqtt.get("password") or "")),
+        discovery_prefix=str(option_value(raw, "mqtt", "discovery_prefix", "discovery_prefix", DEFAULT_DISCOVERY_PREFIX)).strip("/"),
+        base_topic=str(option_value(raw, "mqtt", "base_topic", "base_topic", DEFAULT_BASE_TOPIC)).strip("/"),
+        retain=bool(option_value(raw, "mqtt", "retain", "retain", True)),
     )
 
 

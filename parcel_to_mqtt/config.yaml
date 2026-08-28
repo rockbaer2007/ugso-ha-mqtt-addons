@@ -1,5 +1,5 @@
 name: Parcel to MQTT
-version: "0.1.8"
+version: "0.1.9"
 slug: parcel_to_mqtt
 description: Publish parcel tracking data to Home Assistant via MQTT Discovery
 url: https://github.com/rockbaer2007/parcel-to-mqtt
@@ -52,6 +52,14 @@ options:
     interval: 60
     max_parcels: 6
     log_response_details: false
+  mqtt:
+    host: "core-mosquitto"
+    port: 1883
+    username: ""
+    password: ""
+    discovery_prefix: "homeassistant"
+    base_topic: "parcel"
+    retain: true
 schema:
   dhl:
     enabled: bool
@@ -90,3 +98,11 @@ schema:
     interval: int(30,1440)
     max_parcels: int(1,20)
     log_response_details: bool
+  mqtt:
+    host: str
+    port: port
+    username: str
+    password: password
+    discovery_prefix: str
+    base_topic: str
+    retain: bool
