@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import signal
 import threading
 import time
@@ -36,6 +37,7 @@ DHL_AUTH_URL = (
 DHL_CODE_VERIFIER = "zmVs5AKfGvv45a9aUvuOid9a_erOirp7XL1sn9kWT_o"
 DHL_CLIENT_ID = "83471082-5c13-4fce-8dcb-19d2a3fca413"
 DHL_SESSION_FILE = "/data/dhl_session.json"
+DHL_TRACKING_PATTERN = re.compile(r"^[A-Z0-9]{10,40}$")
 
 
 @dataclass(frozen=True)
@@ -202,15 +204,20 @@ class DhlClient:
             if not isinstance(shipments, list):
                 LOG.warning("DHL account parcel list returned an unexpected response")
                 return []
-            numbers = [
-                dhl_tracking_id(item)
-                for item in shipments
-                if isinstance(item, dict)
-                and dhl_tracking_id(item)
-                and value_at(item, ["sendungsinfo", "sendungsliste"]) != "ARCHIVIERT"
-            ]
+            LOG.info("DHL account parcel list returned %s raw shipment item(s)", len(shipments))
+            numbers = []
+            for item in shipments:
+                if not isinstance(item, dict):
+                    continue
+                if value_at(item, ["sendungsinfo", "sendungsliste"]) == "ARCHIVIERT":
+                    continue
+                for tracking_id in dhl_tracking_ids(item):
+                    if tracking_id not in numbers:
+                        numbers.append(tracking_id)
             if not numbers:
-                LOG.info("DHL account parcel list was read, but no active parcel numbers were found")
+                LOG.info(
+                    "DHL account parcel list was read, but no active parcel numbers were found. Enable general.log_response_details for a masked DHL response log."
+                )
             return numbers
         except Exception as exc:
             LOG.warning("Could not fetch DHL account parcel list: %s", exc)
@@ -800,7 +807,11 @@ def dhl_code_from_url(value: str) -> str:
 
 
 def dhl_tracking_id(item: dict[str, Any]) -> str:
-    return first_text(
+    return first_text(*dhl_tracking_ids(item))
+
+
+def dhl_tracking_ids(item: dict[str, Any]) -> list[str]:
+    explicit = [
         item.get("id"),
         item.get("sendungsnummer"),
         item.get("piececode"),
@@ -810,7 +821,28 @@ def dhl_tracking_id(item: dict[str, Any]) -> str:
         value_at(item, ["sendungsinfo", "sendungsnummer"]),
         value_at(item, ["sendungsinfo", "piececode"]),
         value_at(item, ["sendungsdetails", "sendungsnummer"]),
-    )
+    ]
+    result = []
+    for value in explicit:
+        text = str(value or "").strip()
+        if text and text not in result:
+            result.append(text)
+    collect_dhl_tracking_candidates(item, result)
+    return result
+
+
+def collect_dhl_tracking_candidates(value: Any, result: list[str]) -> None:
+    if isinstance(value, dict):
+        for key, item in value.items():
+            key_text = str(key).lower()
+            if any(marker in key_text for marker in ("sendung", "shipment", "tracking", "piece", "barcode")):
+                text = str(item or "").strip()
+                if DHL_TRACKING_PATTERN.match(text) and text not in result:
+                    result.append(text)
+            collect_dhl_tracking_candidates(item, result)
+    elif isinstance(value, list):
+        for item in value:
+            collect_dhl_tracking_candidates(item, result)
 
 
 def option_group(raw: dict[str, Any], name: str) -> dict[str, Any]:
@@ -823,6 +855,13 @@ def option_value(raw: dict[str, Any], group: str, key: str, legacy_key: str, def
     if key in grouped:
         return grouped.get(key)
     return raw.get(legacy_key, default)
+
+
+def option_value_non_empty(raw: dict[str, Any], group: str, key: str, legacy_key: str, default: Any = "") -> Any:
+    value = option_value(raw, group, key, legacy_key, None)
+    if value is None or value == "":
+        return default
+    return value
 
 
 def option_bool(raw: dict[str, Any], group: str, key: str, legacy_key: str | None, default: bool) -> bool:
@@ -862,12 +901,12 @@ def load_options() -> Options:
         interval=max(30, int(option_value(raw, "general", "interval", "interval", 60))),
         max_parcels=max(1, min(20, int(option_value(raw, "general", "max_parcels", "max_parcels", MAX_DEFAULT_PARCELS)))),
         log_response_details=option_bool(raw, "general", "log_response_details", "log_response_details", False),
-        mqtt_host=str(option_value(raw, "mqtt", "host", "mqtt_host", mqtt.get("host") or "core-mosquitto")),
-        mqtt_port=int(option_value(raw, "mqtt", "port", "mqtt_port", mqtt.get("port") or 1883)),
-        mqtt_username=str(option_value(raw, "mqtt", "username", "mqtt_username", mqtt.get("username") or "")),
-        mqtt_password=str(option_value(raw, "mqtt", "password", "mqtt_password", mqtt.get("password") or "")),
-        discovery_prefix=str(option_value(raw, "mqtt", "discovery_prefix", "discovery_prefix", DEFAULT_DISCOVERY_PREFIX)).strip("/"),
-        base_topic=str(option_value(raw, "mqtt", "base_topic", "base_topic", DEFAULT_BASE_TOPIC)).strip("/"),
+        mqtt_host=str(option_value_non_empty(raw, "mqtt", "host", "mqtt_host", mqtt.get("host") or "core-mosquitto")),
+        mqtt_port=int(option_value_non_empty(raw, "mqtt", "port", "mqtt_port", mqtt.get("port") or 1883)),
+        mqtt_username=str(option_value_non_empty(raw, "mqtt", "username", "mqtt_username", mqtt.get("username") or "")),
+        mqtt_password=str(option_value_non_empty(raw, "mqtt", "password", "mqtt_password", mqtt.get("password") or "")),
+        discovery_prefix=str(option_value_non_empty(raw, "mqtt", "discovery_prefix", "discovery_prefix", DEFAULT_DISCOVERY_PREFIX)).strip("/"),
+        base_topic=str(option_value_non_empty(raw, "mqtt", "base_topic", "base_topic", DEFAULT_BASE_TOPIC)).strip("/"),
         retain=bool(option_value(raw, "mqtt", "retain", "retain", True)),
     )
 
