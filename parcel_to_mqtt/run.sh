@@ -5,4 +5,4 @@ if [ -f /data/options.json ]; then
   export OPTIONS_FILE=/data/options.json
 fi
 
-python3 /app/app/main.py
+python3 /app/main.py
