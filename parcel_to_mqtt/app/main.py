@@ -544,6 +544,7 @@ class MqttPublisher:
         summary = parcel_summary(parcels)
         self._publish_json(f"{self.options.base_topic}/all", [parcel_to_dict(parcel) for parcel in parcels])
         self._publish_json(f"{self.options.base_topic}/list", parcel_list_payload(parcels))
+        self._publish_json(f"{self.options.base_topic}/dhl/json", provider_detail_payload(parcels, "DHL"))
         self._publish_json(f"{self.options.base_topic}/allProviderJson", [parcel_to_provider_item(parcel) for parcel in parcels])
         self._publish_json(f"{self.options.base_topic}/allProviderObjects", {
             parcel.tracking_number: parcel_to_provider_item(parcel)
@@ -598,6 +599,14 @@ class MqttPublisher:
             "state_topic": f"{self.options.base_topic}/total",
             "json_attributes_topic": f"{self.options.base_topic}/allProviderObjects",
             "icon": "mdi:package-variant",
+            "device": self._device(),
+        })
+        self._publish_config("sensor", "dhl_json", {
+            "name": "Parcel DHL JSON",
+            "unique_id": "parcel_to_mqtt_dhl_json",
+            "state_topic": f"{self.options.base_topic}/total",
+            "json_attributes_topic": f"{self.options.base_topic}/dhl/json",
+            "icon": "mdi:truck",
             "device": self._device(),
         })
         counters = {
@@ -902,6 +911,52 @@ def parcel_to_provider_item(parcel: Parcel) -> dict[str, Any]:
         "delivery_status": parcel.delivery_status,
         "direction": parcel.direction_raw or parcel.direction,
         "direction_label": parcel.direction,
+    }
+
+
+def provider_detail_payload(parcels: list[Parcel], carrier: str) -> dict[str, Any]:
+    return {
+        "sendungen": [
+            parcel_to_iobroker_shipment(parcel)
+            for parcel in parcels
+            if parcel.carrier == carrier
+        ],
+        "mergedAnonymousShipmentListIds": [],
+        "rateLimited": False,
+    }
+
+
+def parcel_to_iobroker_shipment(parcel: Parcel) -> dict[str, Any]:
+    return {
+        "id": parcel.tracking_number,
+        "hasCompleteDetails": True,
+        "sendungsinfo": {
+            "gesuchteSendungsnummer": parcel.tracking_number,
+            "sendungsname": parcel.name,
+            "sendungsrichtung": parcel.direction_raw or parcel.direction,
+            "sendungsliste": "AKTUELL",
+        },
+        "sendungsdetails": {
+            "sendungsnummern": {
+                "sendungsnummer": parcel.tracking_number,
+            },
+            "panEmpfaenger": {
+                "name": parcel.recipient_name,
+                "ort": parcel.recipient_location,
+            },
+            "sendungsverlauf": {
+                "datumAktuellerStatus": parcel.last_event_time,
+                "status": parcel.status,
+                "fortschritt": max(0, parcel.delivery_status // 10),
+                "maximalFortschritt": 5,
+                "farbe": 0,
+                "events": parcel.events,
+            },
+            "zielland": parcel.destination,
+        },
+        "versandDatumBenoetigt": False,
+        "reasonForRejection": "",
+        "paeckchen": False,
     }
 
 
