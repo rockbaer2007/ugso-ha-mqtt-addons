@@ -286,6 +286,9 @@ class DhlClient:
                 "yes" if session_data.get("refresh_token") else "no",
             )
             return session_data
+        except requests.HTTPError as exc:
+            LOG.warning("DHL account login failed: %s", describe_http_error(exc))
+            return None
         except Exception as exc:
             LOG.warning("DHL account login failed: %s", exc)
             return None
@@ -329,6 +332,9 @@ class DhlClient:
             )
             self.save_session(session_data)
             return session_data
+        except requests.HTTPError as exc:
+            LOG.info("DHL refresh token could not be used: %s", describe_http_error(exc))
+            return None
         except Exception as exc:
             LOG.info("DHL refresh token could not be used: %s", exc)
             return None
@@ -681,6 +687,16 @@ def redact_debug_value(value: Any) -> Any:
     if isinstance(value, str) and len(value) > 2000:
         return value[:2000] + "...<truncated>"
     return value
+
+
+def describe_http_error(exc: requests.HTTPError) -> str:
+    response = exc.response
+    if response is None:
+        return str(exc)
+    text = response.text.strip().replace("\n", " ")
+    if len(text) > 500:
+        text = text[:500] + "...<truncated>"
+    return f"{response.status_code} {response.reason}: {text or str(exc)}"
 
 
 def dhl_last_event(item: dict[str, Any]) -> tuple[str, str]:
