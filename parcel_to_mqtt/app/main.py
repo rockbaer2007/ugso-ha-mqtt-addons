@@ -520,7 +520,7 @@ class MqttPublisher:
         self._publish(f"{self.options.base_topic}/last_update", datetime.now(timezone.utc).isoformat())
         summary = parcel_summary(parcels)
         self._publish_json(f"{self.options.base_topic}/all", [parcel_to_dict(parcel) for parcel in parcels])
-        self._publish_json(f"{self.options.base_topic}/list", [parcel_to_list_item(parcel) for parcel in parcels])
+        self._publish_json(f"{self.options.base_topic}/list", parcel_list_payload(parcels))
         for key, value in summary.items():
             self._publish(f"{self.options.base_topic}/{key}", str(value))
         for index in range(1, self.options.max_parcels + 1):
@@ -799,6 +799,13 @@ def parcel_to_list_item(parcel: Parcel) -> dict[str, Any]:
         "number": parcel.tracking_number,
         "status": parcel.status,
         "direction": parcel.direction,
+    }
+
+
+def parcel_list_payload(parcels: list[Parcel]) -> dict[str, Any]:
+    return {
+        "count": len(parcels),
+        "parcels": [parcel_to_list_item(parcel) for parcel in parcels],
     }
 
 
