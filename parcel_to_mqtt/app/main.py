@@ -76,8 +76,10 @@ class Parcel:
     index: int
     tracking_number: str
     carrier: str
+    name: str
     status: str
     status_group: str
+    delivery_status: int
     direction: str
     direction_raw: str
     last_event: str
@@ -372,12 +374,15 @@ class DhlClient:
         )
         last_event, last_event_time = dhl_last_event(item)
         status_group = normalize_status_group(f"{status_text} {last_event}")
+        progress = int(value_at(item, ["sendungsdetails", "sendungsverlauf", "fortschritt"]) or 0)
         return Parcel(
             index=0,
             tracking_number=dhl_tracking_id(item),
             carrier="DHL",
+            name=first_text(value_at(item, ["sendungsinfo", "sendungsname"]), value_at(item, ["sendungsdetails", "quelle"])),
             status=status_text or human_status(status_group),
             status_group=status_group,
+            delivery_status=delivery_status(progress, status_group),
             direction=parcel_direction(item),
             direction_raw=parcel_direction_raw(item),
             last_event=last_event,
@@ -443,8 +448,10 @@ class HermesClient:
             index=0,
             tracking_number=first_text(item.get("barcode"), item.get("trackingCode"), tracking_number),
             carrier="Hermes",
+            name=first_text(item.get("name"), item.get("senderName"), value_at(item, ["sender", "name"])),
             status=last_event or human_status(status_group),
             status_group=status_group,
+            delivery_status=delivery_status(0, status_group),
             direction=parcel_direction(item),
             direction_raw=parcel_direction_raw(item),
             last_event=last_event,
@@ -537,6 +544,12 @@ class MqttPublisher:
         summary = parcel_summary(parcels)
         self._publish_json(f"{self.options.base_topic}/all", [parcel_to_dict(parcel) for parcel in parcels])
         self._publish_json(f"{self.options.base_topic}/list", parcel_list_payload(parcels))
+        self._publish_json(f"{self.options.base_topic}/allProviderJson", [parcel_to_provider_item(parcel) for parcel in parcels])
+        self._publish_json(f"{self.options.base_topic}/allProviderObjects", {
+            parcel.tracking_number: parcel_to_provider_item(parcel)
+            for parcel in parcels
+            if parcel.tracking_number
+        })
         for key, value in summary.items():
             self._publish(f"{self.options.base_topic}/{key}", str(value))
         for index in range(1, self.options.max_parcels + 1):
@@ -577,6 +590,14 @@ class MqttPublisher:
             "state_topic": f"{self.options.base_topic}/total",
             "json_attributes_topic": f"{self.options.base_topic}/list",
             "icon": "mdi:format-list-bulleted",
+            "device": self._device(),
+        })
+        self._publish_config("sensor", "all_provider", {
+            "name": "Parcel alle Provider JSON",
+            "unique_id": "parcel_to_mqtt_all_provider",
+            "state_topic": f"{self.options.base_topic}/total",
+            "json_attributes_topic": f"{self.options.base_topic}/allProviderObjects",
+            "icon": "mdi:package-variant",
             "device": self._device(),
         })
         counters = {
@@ -802,6 +823,21 @@ def human_status(group: str) -> str:
     }.get(group, "Unbekannt")
 
 
+def delivery_status(progress: int, status_group: str) -> int:
+    if progress > 0:
+        return progress * 10
+    return {
+        "registered": 10,
+        "in_transit": 20,
+        "out_for_delivery": 40,
+        "at_pickup_point": 50,
+        "delivered": 100,
+        "returning": 70,
+        "exception": 90,
+        "unknown": 0,
+    }.get(status_group, 0)
+
+
 def parcel_summary(parcels: list[Parcel]) -> dict[str, int]:
     summary = {
         "total": len(parcels),
@@ -822,11 +858,15 @@ def parcel_summary(parcels: list[Parcel]) -> dict[str, int]:
 def parcel_to_dict(parcel: Parcel) -> dict[str, Any]:
     return {
         "index": parcel.index,
+        "id": parcel.tracking_number,
         "tracking_number": parcel.tracking_number,
         "number": parcel.tracking_number,
+        "name": parcel.name,
+        "source": parcel.carrier,
         "carrier": parcel.carrier,
         "status": parcel.status,
         "status_group": parcel.status_group,
+        "delivery_status": parcel.delivery_status,
         "direction": parcel.direction,
         "direction_raw": parcel.direction_raw,
         "last_event": parcel.last_event,
@@ -840,12 +880,28 @@ def parcel_to_dict(parcel: Parcel) -> dict[str, Any]:
 
 def parcel_to_list_item(parcel: Parcel) -> dict[str, Any]:
     return {
+        "id": parcel.tracking_number,
+        "name": parcel.name,
+        "source": parcel.carrier,
         "number": parcel.tracking_number,
         "status": parcel.status,
+        "delivery_status": parcel.delivery_status,
         "direction": parcel.direction,
         "direction_raw": parcel.direction_raw,
         "recipient_name": parcel.recipient_name,
         "recipient_location": parcel.recipient_location,
+    }
+
+
+def parcel_to_provider_item(parcel: Parcel) -> dict[str, Any]:
+    return {
+        "id": parcel.tracking_number,
+        "name": parcel.name,
+        "status": parcel.status,
+        "source": parcel.carrier,
+        "delivery_status": parcel.delivery_status,
+        "direction": parcel.direction_raw or parcel.direction,
+        "direction_label": parcel.direction,
     }
 
 
@@ -859,11 +915,15 @@ def parcel_list_payload(parcels: list[Parcel]) -> dict[str, Any]:
 def empty_parcel_attributes(index: int) -> dict[str, Any]:
     return {
         "index": index,
+        "id": "",
         "tracking_number": "",
         "number": "",
+        "name": "",
+        "source": "",
         "carrier": "",
         "status": "",
         "status_group": "",
+        "delivery_status": 0,
         "direction": "unbekannt",
         "direction_raw": "",
         "last_event": "",
