@@ -79,9 +79,13 @@ class Parcel:
     status: str
     status_group: str
     direction: str
+    direction_raw: str
     last_event: str
     last_event_time: str
     destination: str
+    recipient_name: str
+    recipient_location: str
+    events: list[dict[str, Any]]
     raw: dict[str, Any]
 
 
@@ -375,9 +379,13 @@ class DhlClient:
             status=status_text or human_status(status_group),
             status_group=status_group,
             direction=parcel_direction(item),
+            direction_raw=parcel_direction_raw(item),
             last_event=last_event,
             last_event_time=last_event_time,
             destination=str(value_at(item, ["sendungsinfo", "zielland"]) or ""),
+            recipient_name=first_text(value_at(item, ["panEmpfaenger", "name"]), value_at(item, ["empfaenger", "name"])),
+            recipient_location=first_text(value_at(item, ["panEmpfaenger", "ort"]), value_at(item, ["empfaenger", "ort"])),
+            events=dhl_events(item),
             raw=item,
         )
 
@@ -438,6 +446,7 @@ class HermesClient:
             status=last_event or human_status(status_group),
             status_group=status_group,
             direction=parcel_direction(item),
+            direction_raw=parcel_direction_raw(item),
             last_event=last_event,
             last_event_time=first_text(latest.get("timestamp"), latest.get("date"), item.get("eta")),
             destination=first_text(
@@ -445,6 +454,13 @@ class HermesClient:
                 value_at(item, ["receiver", "city"]),
                 value_at(item, ["deliveryAddress", "city"]),
             ),
+            recipient_name=first_text(value_at(item, ["recipient", "name"]), value_at(item, ["receiver", "name"])),
+            recipient_location=first_text(
+                value_at(item, ["recipient", "city"]),
+                value_at(item, ["receiver", "city"]),
+                value_at(item, ["deliveryAddress", "city"]),
+            ),
+            events=generic_events(history),
             raw=item,
         )
 
@@ -727,6 +743,30 @@ def dhl_last_event(item: dict[str, Any]) -> tuple[str, str]:
     )
 
 
+def dhl_events(item: dict[str, Any]) -> list[dict[str, Any]]:
+    history = value_at(item, ["sendungsdetails", "sendungsverlauf"])
+    if not isinstance(history, dict):
+        return []
+    events = history.get("events") or history.get("ereignisse") or history.get("eventsProgressbar")
+    return generic_events(events)
+
+
+def generic_events(events: Any) -> list[dict[str, Any]]:
+    if not isinstance(events, list):
+        return []
+    result = []
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        result.append({
+            "date": first_text(event.get("datum"), event.get("date"), event.get("timestamp"), event.get("time")),
+            "location": first_text(event.get("ort"), event.get("location"), event.get("place")),
+            "status": first_text(event.get("status"), event.get("text"), event.get("description"), event.get("historyText"), event.get("parcelStatus")),
+            "return": str(first_text(event.get("ruecksendung"), event.get("rücksendung"), event.get("return"), event.get("isReturn"))).lower() == "true",
+        })
+    return result
+
+
 def normalize_status_group(status: str) -> str:
     text = status.lower().replace("-", "_").replace(" ", "_")
     compact = text.replace("_", "")
@@ -788,9 +828,13 @@ def parcel_to_dict(parcel: Parcel) -> dict[str, Any]:
         "status": parcel.status,
         "status_group": parcel.status_group,
         "direction": parcel.direction,
+        "direction_raw": parcel.direction_raw,
         "last_event": parcel.last_event,
         "last_event_time": parcel.last_event_time,
         "destination": parcel.destination,
+        "recipient_name": parcel.recipient_name,
+        "recipient_location": parcel.recipient_location,
+        "events": parcel.events,
     }
 
 
@@ -799,6 +843,9 @@ def parcel_to_list_item(parcel: Parcel) -> dict[str, Any]:
         "number": parcel.tracking_number,
         "status": parcel.status,
         "direction": parcel.direction,
+        "direction_raw": parcel.direction_raw,
+        "recipient_name": parcel.recipient_name,
+        "recipient_location": parcel.recipient_location,
     }
 
 
@@ -818,9 +865,13 @@ def empty_parcel_attributes(index: int) -> dict[str, Any]:
         "status": "",
         "status_group": "",
         "direction": "unbekannt",
+        "direction_raw": "",
         "last_event": "",
         "last_event_time": "",
         "destination": "",
+        "recipient_name": "",
+        "recipient_location": "",
+        "events": [],
     }
 
 
@@ -858,19 +909,7 @@ def dhl_tracking_id(item: dict[str, Any]) -> str:
 
 
 def parcel_direction(item: dict[str, Any]) -> str:
-    explicit = " ".join(filter(None, [
-        first_text(
-            item.get("direction"),
-            item.get("richtung"),
-            item.get("sendungsrichtung"),
-            item.get("shipmentDirection"),
-            value_at(item, ["sendungsinfo", "richtung"]),
-            value_at(item, ["sendungsinfo", "sendungsrichtung"]),
-            value_at(item, ["sendungsinfo", "sendungsliste"]),
-            value_at(item, ["shipment", "direction"]),
-        ),
-        direction_text_candidates(item),
-    ]))
+    explicit = " ".join(filter(None, [parcel_direction_raw(item), direction_text_candidates(item)]))
     direction = direction_from_text(explicit)
     if direction != "unbekannt":
         return direction
@@ -882,6 +921,19 @@ def parcel_direction(item: dict[str, Any]) -> str:
         value_at(item, ["sendungsdetails", "sendungsverlauf", "kurzStatus"]),
     )
     return direction_from_text(status_text)
+
+
+def parcel_direction_raw(item: dict[str, Any]) -> str:
+    return first_text(
+        item.get("direction"),
+        item.get("richtung"),
+        item.get("sendungsrichtung"),
+        item.get("shipmentDirection"),
+        value_at(item, ["sendungsinfo", "richtung"]),
+        value_at(item, ["sendungsinfo", "sendungsrichtung"]),
+        value_at(item, ["sendungsinfo", "sendungsliste"]),
+        value_at(item, ["shipment", "direction"]),
+    )
 
 
 def direction_from_text(value: str) -> str:
@@ -896,6 +948,7 @@ def direction_from_text(value: str) -> str:
         "return",
         "rücksendung",
         "ruecksendung",
+        "abgehend",
     )
     inbound_markers = (
         "zu mir",
@@ -904,6 +957,7 @@ def direction_from_text(value: str) -> str:
         "inbound",
         "received",
         "empfangen",
+        "ankommend",
     )
     if any(marker in text for marker in outbound_markers):
         return "von mir"

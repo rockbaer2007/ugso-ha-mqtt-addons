@@ -1,5 +1,5 @@
 name: Parcel to MQTT
-version: "0.1.14"
+version: "0.1.15"
 slug: parcel_to_mqtt
 description: Publish parcel tracking data to Home Assistant via MQTT Discovery
 url: https://github.com/rockbaer2007/ugso-ha-mqtt-addons
