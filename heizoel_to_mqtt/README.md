@@ -1,5 +1,7 @@
 # Heizöl to MQTT
 
+![Heizöl to MQTT icon](./icon.png)
+
 Home Assistant app for publishing heating-oil price data through MQTT Discovery.
 
 Adapted from and inspired by the original ioBroker adapter:

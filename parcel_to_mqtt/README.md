@@ -1,5 +1,7 @@
 # Parcel to MQTT
 
+![Parcel to MQTT icon](./icon.png)
+
 Home Assistant app for publishing parcel tracking data through MQTT Discovery.
 
 Adapted from and inspired by the original ioBroker adapter:
