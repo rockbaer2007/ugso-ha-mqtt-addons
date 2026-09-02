@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.33
+
+- Pause call list, answering machine, DECT and phonebook polling while WAN/DSL
+  appears offline.
+- Keep WLAN, WAN and general connection status polling active so the app can
+  detect when the connection returns.
+- Refresh all paused polling groups immediately after WAN/DSL comes back online.
+
 ## 0.1.32
 
 - Split FRITZ!Box polling into lower-load groups.

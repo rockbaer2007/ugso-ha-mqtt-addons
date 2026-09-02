@@ -1,5 +1,5 @@
 name: FRITZ!Box to MQTT
-version: "0.1.32"
+version: "0.1.33"
 slug: fritzbox_tr064_tam
 description: Publish FRITZ!Box data and live call events to Home Assistant via MQTT Discovery
 url: https://github.com/rockbaer2007/fritzbox-to-mqtt

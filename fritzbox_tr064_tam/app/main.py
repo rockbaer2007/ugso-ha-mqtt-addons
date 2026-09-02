@@ -1675,14 +1675,16 @@ def run() -> None:
     next_call_list_poll = 0.0
     next_phonebook_poll = 0.0
     next_dect_poll = 0.0
+    wan_online: bool | None = None
 
     try:
         while not stop_event.is_set():
             now = time.monotonic()
             did_poll = False
             poll_started = now
+            allow_extended_polling = wan_online is not False
 
-            if now >= next_tam_poll:
+            if allow_extended_polling and now >= next_tam_poll:
                 tam_infos: list[TamInfo] = []
                 for index in range(options.max_tam):
                     try:
@@ -1718,10 +1720,21 @@ def run() -> None:
                     cache.box_status.update(box_status)
                 except Exception as exc:
                     LOG.debug("Box status not available or not readable: %s", exc)
+                next_wan_online = is_wan_online(cache.wan, cache.box_status)
+                if wan_online is not False and next_wan_online is False:
+                    LOG.warning("WAN/DSL appears offline; pausing call list, answering machine, DECT and phonebook polling")
+                elif wan_online is False and next_wan_online is not False:
+                    LOG.info("WAN/DSL appears online again; refreshing all paused polling groups now")
+                    next_tam_poll = 0.0
+                    next_call_list_poll = 0.0
+                    next_phonebook_poll = 0.0
+                    next_dect_poll = 0.0
+                wan_online = next_wan_online
                 next_wlan_wan_box_poll = now + options.poll_interval
                 did_poll = True
+                allow_extended_polling = wan_online is not False
 
-            if now >= next_call_list_poll:
+            if allow_extended_polling and now >= next_call_list_poll:
                 try:
                     cache.calls = fritz.get_call_entries()
                 except Exception as exc:
@@ -1730,7 +1743,7 @@ def run() -> None:
                 next_call_list_poll = now + options.call_list_poll_interval
                 did_poll = True
 
-            if now >= next_phonebook_poll:
+            if allow_extended_polling and now >= next_phonebook_poll:
                 try:
                     all_phonebook_ids = fritz.get_phonebook_ids()
                 except Exception as exc:
@@ -1747,7 +1760,7 @@ def run() -> None:
                 next_phonebook_poll = now + options.phonebook_poll_interval
                 did_poll = True
 
-            if now >= next_dect_poll:
+            if allow_extended_polling and now >= next_dect_poll:
                 try:
                     dect_status, dect_lines = fritz.get_dect_status(options.include_dect_lines, options.max_dect_lines)
                     cache.box_status.update(dect_status)
@@ -1797,7 +1810,10 @@ def run() -> None:
                     len(cache.all_phonebooks),
                     len(cache.dect_lines),
                 )
-            next_due = min(next_tam_poll, next_wlan_wan_box_poll, next_call_list_poll, next_phonebook_poll, next_dect_poll)
+            if wan_online is False:
+                next_due = next_wlan_wan_box_poll
+            else:
+                next_due = min(next_tam_poll, next_wlan_wan_box_poll, next_call_list_poll, next_phonebook_poll, next_dect_poll)
             stop_event.wait(max(1.0, min(30.0, next_due - time.monotonic())))
     finally:
         call_monitor.join(timeout=2)
@@ -1863,6 +1879,23 @@ def interval_seconds(value: Any, fallback: int, minimum: int = 30) -> int:
     except (TypeError, ValueError):
         seconds = fallback
     return max(minimum, seconds)
+
+
+def is_wan_online(wan: dict[str, Any], box_status: dict[str, Any]) -> bool | None:
+    offline_values = {"down", "disconnected", "0", "false", "no", "off", "disabled", "error"}
+    online_values = {"up", "connected", "1", "true", "yes", "on", "enabled"}
+    connection_status = str(box_status.get("box_ppp_connect") or "").strip().lower()
+    link_status = str(wan.get("physical_link_status") or "").strip().lower()
+
+    if connection_status in offline_values:
+        return False
+    if connection_status in online_values:
+        return True
+    if link_status in offline_values:
+        return False
+    if link_status in online_values:
+        return True
+    return None
 
 
 def apply_wan_rate_fallback(
