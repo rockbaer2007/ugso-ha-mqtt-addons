@@ -10,7 +10,7 @@ import threading
 import time
 import urllib.parse
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from hashlib import md5, pbkdf2_hmac
 from typing import Any
 
@@ -71,6 +71,10 @@ class Options:
     discovery_prefix: str
     base_topic: str
     poll_interval: int
+    call_list_poll_interval: int
+    tam_poll_interval: int
+    dect_poll_interval: int
+    phonebook_poll_interval: int
     max_tam: int
     max_wlan: int
     call_lists: str
@@ -86,6 +90,18 @@ class Options:
     dns_over_tls_enabled: bool
     log_value_details: bool
     retain: bool
+
+
+@dataclass
+class PollCache:
+    tam_infos: list["TamInfo"] = field(default_factory=list)
+    wlan_infos: list["WlanInfo"] = field(default_factory=list)
+    wan: dict[str, Any] = field(default_factory=dict)
+    calls: list["CallEntry"] = field(default_factory=list)
+    all_phonebooks: list["PhonebookInfo"] = field(default_factory=list)
+    phonebooks: list["PhonebookInfo"] = field(default_factory=list)
+    box_status: dict[str, Any] = field(default_factory=dict)
+    dect_lines: list["DectLineInfo"] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -320,9 +336,13 @@ class FritzBoxTr064Client:
 
         return result
 
-    def get_box_status(self, include_dect_lines: bool, max_dect_lines: int) -> tuple[dict[str, Any], list[DectLineInfo]]:
+    def get_box_status(
+        self,
+        include_dect_lines: bool,
+        max_dect_lines: int,
+        include_dect_status: bool = True,
+    ) -> tuple[dict[str, Any], list[DectLineInfo]]:
         result: dict[str, Any] = {}
-        dect_lines: list[DectLineInfo] = []
         try:
             info = self._soap("/upnp/control/deviceinfo", DEVICE_INFO_SERVICE, "GetInfo", {})
             self._log_values("Box DeviceInfo GetInfo", info)
@@ -356,6 +376,23 @@ class FritzBoxTr064Client:
                 if result.get("box_ppp_connect") and result.get("ipv4_extern"):
                     break
 
+        dect_lines: list[DectLineInfo] = []
+        if include_dect_status:
+            dect_status, dect_lines = self.get_dect_status(include_dect_lines, max_dect_lines)
+            result.update(dect_status)
+
+        if "box_dns_over_tls" in result:
+            pass
+        elif self.options.dns_over_tls_enabled:
+            result["box_dns_over_tls"] = True
+        else:
+            result.setdefault("box_dns_over_tls", None)
+        self._log_values("Box normalized status", result)
+        return result, dect_lines
+
+    def get_dect_status(self, include_dect_lines: bool, max_dect_lines: int) -> tuple[dict[str, Any], list[DectLineInfo]]:
+        result: dict[str, Any] = {}
+        dect_lines: list[DectLineInfo] = []
         try:
             dect = self._soap("/upnp/control/x_dect", DECT_SERVICE, "GetNumberOfDectEntries", {})
             self._log_values("DECT GetNumberOfDectEntries", dect)
@@ -369,14 +406,6 @@ class FritzBoxTr064Client:
         except Exception as exc:
             self._log_value_error("DECT GetNumberOfDectEntries", exc)
             LOG.debug("Could not read DECT info: %s", exc)
-
-        if "box_dns_over_tls" in result:
-            pass
-        elif self.options.dns_over_tls_enabled:
-            result["box_dns_over_tls"] = True
-        else:
-            result.setdefault("box_dns_over_tls", None)
-        self._log_values("Box normalized status", result)
         return result, dect_lines
 
     def _read_wan_connection_status(self, result: dict[str, Any], service: str, control_url: str) -> None:
@@ -1639,67 +1668,137 @@ def run() -> None:
     publisher.start()
     call_monitor = FritzBoxCallMonitor(options, publisher, stop_event)
     call_monitor.start()
+    cache = PollCache()
     last_wan_totals: dict[str, float] | None = None
+    next_tam_poll = 0.0
+    next_wlan_wan_box_poll = 0.0
+    next_call_list_poll = 0.0
+    next_phonebook_poll = 0.0
+    next_dect_poll = 0.0
 
     try:
         while not stop_event.is_set():
-            poll_started = time.monotonic()
-            tam_infos: list[TamInfo] = []
-            wlan_infos: list[WlanInfo] = []
-            for index in range(options.max_tam):
+            now = time.monotonic()
+            did_poll = False
+            poll_started = now
+
+            if now >= next_tam_poll:
+                tam_infos: list[TamInfo] = []
+                for index in range(options.max_tam):
+                    try:
+                        info = fritz.get_tam_info(index)
+                        if info.present:
+                            tam_infos.append(info)
+                    except Exception as exc:
+                        LOG.debug("AB%s not available or not readable: %s", index, exc)
+                cache.tam_infos = tam_infos
+                next_tam_poll = now + options.tam_poll_interval
+                did_poll = True
+
+            if now >= next_wlan_wan_box_poll:
+                wlan_infos: list[WlanInfo] = []
+                for index in range(1, options.max_wlan + 1):
+                    try:
+                        wlan_infos.append(fritz.get_wlan_info(index))
+                    except Exception as exc:
+                        LOG.debug("WLAN%s not available or not readable: %s", index, exc)
+                cache.wlan_infos = wlan_infos
                 try:
-                    info = fritz.get_tam_info(index)
-                    if info.present:
-                        tam_infos.append(info)
+                    wan = fritz.get_wan_common()
+                    last_wan_totals = apply_wan_rate_fallback(wan, last_wan_totals, poll_started)
+                    cache.wan = wan
                 except Exception as exc:
-                    LOG.debug("AB%s not available or not readable: %s", index, exc)
-            for index in range(1, options.max_wlan + 1):
+                    LOG.debug("WAN state not available or not readable: %s", exc)
                 try:
-                    wlan_infos.append(fritz.get_wlan_info(index))
+                    box_status, _dect_lines = fritz.get_box_status(
+                        options.include_dect_lines,
+                        options.max_dect_lines,
+                        include_dect_status=False,
+                    )
+                    cache.box_status.update(box_status)
                 except Exception as exc:
-                    LOG.debug("WLAN%s not available or not readable: %s", index, exc)
-            try:
-                calls = fritz.get_call_entries()
-            except Exception as exc:
-                LOG.debug("Call list not available or not readable: %s", exc)
-                calls = []
-            try:
-                all_phonebook_ids = fritz.get_phonebook_ids()
-            except Exception as exc:
-                LOG.debug("Phonebooks not available or not readable: %s", exc)
-                all_phonebook_ids = []
-            all_phonebooks = []
-            for phonebook_id in all_phonebook_ids:
+                    LOG.debug("Box status not available or not readable: %s", exc)
+                next_wlan_wan_box_poll = now + options.poll_interval
+                did_poll = True
+
+            if now >= next_call_list_poll:
                 try:
-                    all_phonebooks.append(fritz.get_phonebook_info(phonebook_id))
+                    cache.calls = fritz.get_call_entries()
                 except Exception as exc:
-                    LOG.debug("Phonebook %s not available or not readable: %s", phonebook_id, exc)
-            all_phonebooks = apply_phonebook_name_overrides(all_phonebooks, options.phonebook_names)
-            all_phonebooks = visible_phonebooks(all_phonebooks, options.phonebook_name_excludes)
+                    LOG.debug("Call list not available or not readable: %s", exc)
+                    cache.calls = []
+                next_call_list_poll = now + options.call_list_poll_interval
+                did_poll = True
+
+            if now >= next_phonebook_poll:
+                try:
+                    all_phonebook_ids = fritz.get_phonebook_ids()
+                except Exception as exc:
+                    LOG.debug("Phonebooks not available or not readable: %s", exc)
+                    all_phonebook_ids = []
+                all_phonebooks = []
+                for phonebook_id in all_phonebook_ids:
+                    try:
+                        all_phonebooks.append(fritz.get_phonebook_info(phonebook_id))
+                    except Exception as exc:
+                        LOG.debug("Phonebook %s not available or not readable: %s", phonebook_id, exc)
+                all_phonebooks = apply_phonebook_name_overrides(all_phonebooks, options.phonebook_names)
+                cache.all_phonebooks = visible_phonebooks(all_phonebooks, options.phonebook_name_excludes)
+                next_phonebook_poll = now + options.phonebook_poll_interval
+                did_poll = True
+
+            if now >= next_dect_poll:
+                try:
+                    dect_status, dect_lines = fritz.get_dect_status(options.include_dect_lines, options.max_dect_lines)
+                    cache.box_status.update(dect_status)
+                    cache.dect_lines = dect_lines
+                except Exception as exc:
+                    LOG.debug("DECT status not available or not readable: %s", exc)
+                next_dect_poll = now + options.dect_poll_interval
+                did_poll = True
+
             selected_phonebook_ids = selected_phonebooks(
                 publisher.selected_phonebooks,
-                all_phonebooks,
+                cache.all_phonebooks,
             )
-            phonebooks = [phonebook for phonebook in all_phonebooks if phonebook.phonebook_id in selected_phonebook_ids]
+            cache.phonebooks = [
+                phonebook for phonebook in cache.all_phonebooks if phonebook.phonebook_id in selected_phonebook_ids
+            ]
             call_views = selected_call_views(options.call_lists)
-            present_tam = {info.index for info in tam_infos}
-            present_wlan = {info.index for info in wlan_infos}
-            present_phonebooks = {phonebook.phonebook_id for phonebook in phonebooks}
-            wan = fritz.get_wan_common()
-            last_wan_totals = apply_wan_rate_fallback(wan, last_wan_totals, poll_started)
-            box_status, dect_lines = fritz.get_box_status(options.include_dect_lines, options.max_dect_lines)
-            publisher.publish_discovery(present_tam, present_wlan, call_views, present_phonebooks, all_phonebooks, dect_lines)
-            publisher.publish_states(tam_infos, wlan_infos, wan, calls, call_views, phonebooks, all_phonebooks, box_status, dect_lines)
-            LOG.info(
-                "Published %s answering machines, %s WLAN services, %s call views, %s selected phonebooks, %s listed phonebooks, %s DECT lines and WAN state",
-                len(tam_infos),
-                len(wlan_infos),
-                len(call_views),
-                len(phonebooks),
-                len(all_phonebooks),
-                len(dect_lines),
-            )
-            stop_event.wait(options.poll_interval)
+            present_tam = {info.index for info in cache.tam_infos}
+            present_wlan = {info.index for info in cache.wlan_infos}
+            present_phonebooks = {phonebook.phonebook_id for phonebook in cache.phonebooks}
+            if did_poll:
+                publisher.publish_discovery(
+                    present_tam,
+                    present_wlan,
+                    call_views,
+                    present_phonebooks,
+                    cache.all_phonebooks,
+                    cache.dect_lines,
+                )
+                publisher.publish_states(
+                    cache.tam_infos,
+                    cache.wlan_infos,
+                    cache.wan,
+                    cache.calls,
+                    call_views,
+                    cache.phonebooks,
+                    cache.all_phonebooks,
+                    cache.box_status,
+                    cache.dect_lines,
+                )
+                LOG.info(
+                    "Published cached state: %s answering machines, %s WLAN services, %s call views, %s selected phonebooks, %s listed phonebooks, %s DECT lines and WAN state",
+                    len(cache.tam_infos),
+                    len(cache.wlan_infos),
+                    len(call_views),
+                    len(cache.phonebooks),
+                    len(cache.all_phonebooks),
+                    len(cache.dect_lines),
+                )
+            next_due = min(next_tam_poll, next_wlan_wan_box_poll, next_call_list_poll, next_phonebook_poll, next_dect_poll)
+            stop_event.wait(max(1.0, min(30.0, next_due - time.monotonic())))
     finally:
         call_monitor.join(timeout=2)
         publisher.stop()
@@ -1735,7 +1834,11 @@ def load_options() -> Options:
         mqtt_password=str(os.getenv("MQTT_PASSWORD", raw.get("mqtt_password", ""))),
         discovery_prefix=str(raw.get("discovery_prefix", "homeassistant")).strip("/"),
         base_topic=str(raw.get("base_topic", "fritzbox")).strip("/"),
-        poll_interval=int(raw.get("poll_interval", 60)),
+        poll_interval=interval_seconds(raw.get("poll_interval", 120), 120),
+        call_list_poll_interval=interval_seconds(raw.get("call_list_poll_interval", 600), 600),
+        tam_poll_interval=interval_seconds(raw.get("tam_poll_interval", 600), 600),
+        dect_poll_interval=interval_seconds(raw.get("dect_poll_interval", 600), 600),
+        phonebook_poll_interval=interval_seconds(raw.get("phonebook_poll_interval", 3600), 3600),
         max_tam=max(1, min(5, int(raw.get("max_tam", 5)))),
         max_wlan=max(1, min(5, int(raw.get("max_wlan", 4)))),
         call_lists=str(raw.get("call_lists", "all,incoming,outgoing,missed")),
@@ -1752,6 +1855,14 @@ def load_options() -> Options:
         log_value_details=bool(raw.get("log_value_details", True)),
         retain=bool(raw.get("retain", True)),
     )
+
+
+def interval_seconds(value: Any, fallback: int, minimum: int = 30) -> int:
+    try:
+        seconds = int(value)
+    except (TypeError, ValueError):
+        seconds = fallback
+    return max(minimum, seconds)
 
 
 def apply_wan_rate_fallback(

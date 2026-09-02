@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.32
+
+- Split FRITZ!Box polling into lower-load groups.
+- Poll WLAN, WAN and general box status every 120 seconds by default.
+- Poll call lists, answering machines and DECT every 600 seconds by default.
+- Poll phonebooks every 3600 seconds by default.
+- Keep the call monitor live through port `1012`.
+
 ## 0.1.31
 
 - Added app icon and logo assets for the Home Assistant app store and repository documentation.

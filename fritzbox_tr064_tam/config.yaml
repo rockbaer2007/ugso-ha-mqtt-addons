@@ -1,5 +1,5 @@
 name: FRITZ!Box to MQTT
-version: "0.1.31"
+version: "0.1.32"
 slug: fritzbox_tr064_tam
 description: Publish FRITZ!Box data and live call events to Home Assistant via MQTT Discovery
 url: https://github.com/rockbaer2007/fritzbox-to-mqtt
@@ -23,6 +23,11 @@ options:
   phonebooks: all
   phonebook_names: 3:tellows Sperrliste 7,4:tellows Sperrliste 8-9
   phonebook_name_excludes: ""
+  poll_interval: 120
+  call_list_poll_interval: 600
+  tam_poll_interval: 600
+  dect_poll_interval: 600
+  phonebook_poll_interval: 3600
   call_monitor_enabled: true
   call_monitor_port: 1012
   max_calls: 20
@@ -40,6 +45,11 @@ schema:
   phonebooks: str
   phonebook_names: str
   phonebook_name_excludes: str
+  poll_interval: int(30,86400)
+  call_list_poll_interval: int(30,86400)
+  tam_poll_interval: int(30,86400)
+  dect_poll_interval: int(30,86400)
+  phonebook_poll_interval: int(30,86400)
   call_monitor_enabled: bool
   call_monitor_port: port
   max_calls: int(1,100)
