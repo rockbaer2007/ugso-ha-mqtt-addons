@@ -39,6 +39,7 @@ To reduce FRITZ!Box load, polling is split into groups:
 
 The live call monitor stays active on port `1012` and does not wait for these polling intervals.
 If WAN/DSL appears offline, the app pauses call list, answering machine, DECT and phonebook polling and keeps only WLAN, WAN and general connection status polling active. When WAN/DSL comes back online, the paused groups are refreshed immediately.
+The diagnostic sensors `Abfrage Modus` and `Abfrage Hinweis` show whether full polling is active (`full`) or detail polling is paused while the FRITZ!Box reconnects (`limited`).
 If `log_value_details` is true, the app logs the relevant raw TR-064 response dictionaries and the normalized values published to MQTT.
 `dns_over_tls_enabled` is only the fallback value for `Box DNS over TLS` when `query.lua` does not return `dnscfg:settings/dns_over_tls_enabled`.
 Only readable FRITZ!Box features are published to Home Assistant; missing optional services are hidden in normal logs and skipped in discovery.

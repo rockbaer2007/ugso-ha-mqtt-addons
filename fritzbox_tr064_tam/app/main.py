@@ -1037,6 +1037,7 @@ class HomeAssistantMqttPublisher:
         self._publish_phonebook_select_discovery(all_phonebooks)
         self._publish_call_monitor_discovery()
         self._publish_box_status_discovery()
+        self._publish_polling_status_discovery()
         if self.options.include_dect_lines:
             self._publish_dect_line_discovery(dect_lines)
         self._publish_wan_discovery()
@@ -1056,6 +1057,7 @@ class HomeAssistantMqttPublisher:
         all_phonebooks: list[PhonebookInfo],
         box_status: dict[str, Any],
         dect_lines: list[DectLineInfo],
+        wan_online: bool | None,
     ) -> None:
         for info in tam_infos:
             prefix = f"{self.options.base_topic}/ab/{info.index}"
@@ -1140,6 +1142,7 @@ class HomeAssistantMqttPublisher:
                     line.device_number or "unknown",
                 )
         self._publish_box_status_states(box_status)
+        self._publish_polling_status(wan_online)
         if self.options.include_dect_lines:
             for line in dect_lines:
                 prefix = f"{self.options.base_topic}/dect/{line.index}"
@@ -1502,6 +1505,27 @@ class HomeAssistantMqttPublisher:
             "device": self._device(),
         })
 
+    def _publish_polling_status_discovery(self) -> None:
+        prefix = f"{self.options.base_topic}/polling"
+        self._publish_config("sensor", "polling_mode", {
+            "name": "Abfrage Modus",
+            "unique_id": "fritzbox_tr064_polling_mode",
+            "state_topic": f"{prefix}/mode",
+            "json_attributes_topic": f"{prefix}/attributes",
+            "icon": "mdi:sync",
+            "entity_category": "diagnostic",
+            "device": self._device(),
+        })
+        self._publish_config("sensor", "polling_message", {
+            "name": "Abfrage Hinweis",
+            "unique_id": "fritzbox_tr064_polling_message",
+            "state_topic": f"{prefix}/message",
+            "json_attributes_topic": f"{prefix}/attributes",
+            "icon": "mdi:message-alert-outline",
+            "entity_category": "diagnostic",
+            "device": self._device(),
+        })
+
     def _publish_dect_line_discovery(self, dect_lines: list[DectLineInfo]) -> None:
         present = {line.index for line in dect_lines}
         lines_by_index = {line.index: line for line in dect_lines}
@@ -1559,6 +1583,17 @@ class HomeAssistantMqttPublisher:
             self._publish(f"{self.options.base_topic}/box/dns_over_tls", "ON" if dns_over_tls else "OFF")
         else:
             self._publish(f"{self.options.base_topic}/box/dns_over_tls", "")
+
+    def _publish_polling_status(self, wan_online: bool | None) -> None:
+        mode, message = polling_status(wan_online)
+        prefix = f"{self.options.base_topic}/polling"
+        self._publish(f"{prefix}/mode", mode)
+        self._publish(f"{prefix}/message", message)
+        self._publish_json(f"{prefix}/attributes", {
+            "wan_online": wan_online,
+            "mode": mode,
+            "limited_polling": wan_online is False,
+        })
 
     def _publish_wan_discovery(self) -> None:
         sensors = [
@@ -1800,6 +1835,7 @@ def run() -> None:
                     cache.all_phonebooks,
                     cache.box_status,
                     cache.dect_lines,
+                    wan_online,
                 )
                 LOG.info(
                     "Published cached state: %s answering machines, %s WLAN services, %s call views, %s selected phonebooks, %s listed phonebooks, %s DECT lines and WAN state",
@@ -1896,6 +1932,14 @@ def is_wan_online(wan: dict[str, Any], box_status: dict[str, Any]) -> bool | Non
     if link_status in online_values:
         return True
     return None
+
+
+def polling_status(wan_online: bool | None) -> tuple[str, str]:
+    if wan_online is False:
+        return "limited", "FRITZ!Box baut Verbindung auf, Detailabfragen pausiert"
+    if wan_online is True:
+        return "full", "FRITZ!Box online, alle Werte werden abgefragt"
+    return "unknown", "FRITZ!Box Verbindungsstatus wird ermittelt"
 
 
 def apply_wan_rate_fallback(

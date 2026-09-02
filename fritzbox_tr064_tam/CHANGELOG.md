@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.34
+
+- Added Home Assistant diagnostic sensors for the current polling mode and a
+  readable polling message.
+- Publish `full`, `limited` or `unknown` so dashboards and automations can show
+  whether detail polling is active or paused while WAN/DSL reconnects.
+
 ## 0.1.33
 
 - Pause call list, answering machine, DECT and phonebook polling while WAN/DSL
