@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.40
+
+- Add shared attributes to each legacy last-call sensor group with call index, availability, name, number, date/time, type, duration, caller and called values.
+
 ## 0.1.39
 
 - Expand the legacy last-call card sensors from 10 to 20 calls so dashboards can show more entries from today and the previous days.

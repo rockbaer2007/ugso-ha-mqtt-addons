@@ -1405,8 +1405,8 @@ class HomeAssistantMqttPublisher:
                     "object_id": object_id,
                     "unique_id": f"legacy_{object_id}",
                     "state_topic": f"{self.options.base_topic}/last_calls/call_{index}/{field}",
+                    "json_attributes_topic": f"{self.options.base_topic}/last_calls/call_{index}/attributes",
                     "icon": LEGACY_LAST_CALL_FIELD_ICONS[field],
-
                 })
 
     def _remove_legacy_last_call_discovery(self) -> None:
@@ -1428,6 +1428,7 @@ class HomeAssistantMqttPublisher:
             prefix = f"{self.options.base_topic}/last_calls/call_{index}"
             for field in LEGACY_LAST_CALL_FIELDS:
                 self._publish(f"{prefix}/{field}", legacy_last_call_value(call, field))
+            self._publish_json(f"{prefix}/attributes", legacy_last_call_attributes(call, index))
 
     def _publish_phonebook_discovery(self, phonebook: PhonebookInfo) -> None:
         object_part = safe_object_part(phonebook.phonebook_id)
@@ -2301,6 +2302,34 @@ def call_datetime(call: CallEntry) -> dt.datetime | None:
         except ValueError:
             continue
     return None
+
+
+def legacy_last_call_attributes(call: CallEntry | None, index: int) -> dict[str, str | int]:
+    if call is None:
+        return {
+            "call_index": index,
+            "available": "false",
+            "name": "unknown",
+            "number": "unknown",
+            "date": "unknown",
+            "time": "unknown",
+            "type": "unknown",
+            "duration": "unknown",
+        }
+    parsed = call_datetime(call)
+    return {
+        "call_index": index,
+        "available": "true",
+        "name": legacy_last_call_value(call, "name"),
+        "number": legacy_last_call_value(call, "number"),
+        "date": call.date or "unknown",
+        "time": parsed.strftime("%H:%M") if parsed is not None else "unknown",
+        "type": legacy_last_call_value(call, "type"),
+        "duration": legacy_last_call_value(call, "duration") or "unknown",
+        "caller": call.caller or "unknown",
+        "called": call.called or "unknown",
+        "type_id": call.type_id or "unknown",
+    }
 
 
 def legacy_last_call_value(call: CallEntry | None, field: str) -> str:
