@@ -73,10 +73,10 @@ class IntegrationTest(unittest.TestCase):
         try:
             wait(lambda: (f"{prefix}/availability", "online") in messages)
             self.assertEqual(state["calls"], [], "Retained ON must not switch on at startup")
-            self.assertIn((f"{prefix}/switch.test/state", "off"), messages)
-            self.assertIn((f"{prefix}/switch.test/attribute/friendly_name", "Test Switch"), messages)
-            probe.publish(f"{prefix}/switch.test/set", "ON", qos=1, retain=False)
-            wait(lambda: (f"{prefix}/switch.test/state", "on") in messages)
+            self.assertIn((f"{prefix}/test_switch/switch/state", "off"), messages)
+            self.assertIn((f"{prefix}/test_switch/switch/attribute/friendly_name", "Test Switch"), messages)
+            probe.publish(f"{prefix}/test_switch/switch/set", "ON", qos=1, retain=False)
+            wait(lambda: (f"{prefix}/test_switch/switch/state", "on") in messages)
             self.assertEqual(state["calls"], [("/api/services/switch/turn_on", {"entity_id": "switch.test"})])
             state["fail"] = True
             wait(lambda: (f"{prefix}/availability", "offline") in messages)

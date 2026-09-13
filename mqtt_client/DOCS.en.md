@@ -1,4 +1,4 @@
-# MQTT-Client 0.1.7
+# MQTT-Client 0.1.8
 
 An independent Home Assistant app connecting to an external MQTT broker, such as
 ioBroker's MQTT adapter in Server/Broker mode. Your existing HA broker and MQTT
@@ -17,7 +17,8 @@ popup to choose state and attributes in a dialog. For `switch`, `light`,
 `input_boolean`, `fan`, `input_number`,
 `number`, `input_select`, `select`, `input_text` and `text`, an additional
 bidirectional value checkbox is available. `button` and `input_button` are mapped
-as press buttons. Sensor-like domains remain outgoing-only.
+as press buttons. **Send all states for this device** selects all states of the
+chosen device at once. Sensor-like domains remain outgoing-only.
 
 The entity list shows an ioBroker-style target type: `press` maps to `button`,
 `state_boolean` maps to `switch`, and text/state values map to `state`.
@@ -27,18 +28,21 @@ immediately. No manual HA token is needed: access uses the Supervisor token and
 HA Core API proxy.
 
 States are polled every five seconds by default (`poll_interval`: 1–300 seconds).
-Changes are published as plain state strings to `<topic_prefix>/<entity_id>/state`
-and selected attributes to `<topic_prefix>/<entity_id>/attribute/<attribute>`
-with QoS 1 and Retain. After MQTT reconnection, all selected values are resent.
-The default prefix is `ha_external`. Only selected states and attributes are
-exported, with no MQTT Discovery. Short transitions between polls may be missed.
-Missing entities produce `unavailable`; `unknown`/`unavailable` are passed through.
+Changes are published as plain state strings to
+`<topic_prefix>/<device>/<value>/state` and selected attributes to
+`<topic_prefix>/<device>/<value>/attribute/<attribute>` with QoS 1 and Retain.
+This creates one ioBroker device folder with all values below it. After MQTT
+reconnection, all selected values are resent. The default prefix is
+`ha_external`. Only selected states and attributes are exported, with no MQTT
+Discovery. Short transitions between polls may be missed. Missing entities
+produce `unavailable`; `unknown`/`unavailable` are passed through.
 
 Optional `command_entities` must be a subset of `entities`. Publish without Retain
-to `<topic_prefix>/<entity_id>/set`: `ON` or `OFF` for toggle-like domains,
+to `<topic_prefix>/<device>/<value>/set`: `ON` or `OFF` for toggle-like domains,
 numbers for `input_number`/`number`, option names for `input_select`/`select`,
-text for `input_text`/`text`, and `PRESS` for `button`/`input_button`. The web UI
-only shows the bidirectional option for controllable domains. The default empty command list disables commands.
+text for `input_text`/`text`, and `PRESS` for `button`/`input_button`. Legacy
+entity-ID command topics such as `<topic_prefix>/switch.plug/set` remain accepted
+for compatibility. The web UI only shows the bidirectional option for controllable domains. The default empty command list disables commands.
 Retained messages received on subscription, invalid payloads and stale queued
 commands are discarded. Arbitrary HA service calls are unsupported.
 

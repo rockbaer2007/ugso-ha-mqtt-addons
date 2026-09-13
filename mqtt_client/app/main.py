@@ -28,7 +28,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.7"
+APP_VERSION = "0.1.8"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -162,6 +162,7 @@ INDEX_HTML = """<!doctype html>
         <h2 id="deviceDialogTitle">Gerät</h2>
         <div id="deviceDialogMeta" class="meta"></div>
       </div>
+      <label class="check"><input id="deviceSelectAll" type="checkbox"> Alle States dieses Geräts übertragen</label>
       <div id="deviceSections" class="deviceSections"></div>
       <div class="actions">
         <button id="closeDeviceDialog" class="secondary" type="button">Schließen</button>
@@ -200,6 +201,7 @@ INDEX_HTML = """<!doctype html>
     const selectionMessage = document.getElementById('selectionMessage');
     const deviceDialog = document.getElementById('deviceDialog');
     const deviceSections = document.getElementById('deviceSections');
+    const deviceSelectAll = document.getElementById('deviceSelectAll');
     const dialog = document.getElementById('entityDialog');
     const stateCheck = document.getElementById('stateCheck');
     const commandRow = document.getElementById('commandRow');
@@ -266,6 +268,10 @@ INDEX_HTML = """<!doctype html>
       return parts.length ? ` · ${parts.join(' · ')}` : '';
     }
 
+    function deviceStateEntities(device) {
+      return (device?.entities || []).map((item) => item.entity_id);
+    }
+
     function renderLists() {
       const term = filter.value.trim().toLowerCase();
       entityList.innerHTML = '';
@@ -313,6 +319,10 @@ INDEX_HTML = """<!doctype html>
       if (!activeDevice) return;
       document.getElementById('deviceDialogTitle').textContent = activeDevice.name || 'Gerät';
       document.getElementById('deviceDialogMeta').textContent = deviceCountLabel(activeDevice);
+      const deviceStates = deviceStateEntities(activeDevice);
+      const selectedCount = deviceStates.filter((entity) => selectedStates.has(entity)).length;
+      deviceSelectAll.checked = Boolean(deviceStates.length && selectedCount === deviceStates.length);
+      deviceSelectAll.indeterminate = Boolean(selectedCount && selectedCount < deviceStates.length);
       deviceSections.innerHTML = '';
       const groups = new Map([['Steuerung', []], ['Sensoren', []], ['Konfiguration', []], ['Diagnose', []]]);
       (activeDevice.entities || []).forEach((item) => groups.get(entitySection(item)).push(item));
@@ -476,6 +486,22 @@ INDEX_HTML = """<!doctype html>
 
     document.getElementById('closeDialog').addEventListener('click', () => dialog.close());
     document.getElementById('closeDeviceDialog').addEventListener('click', () => deviceDialog.close());
+    deviceSelectAll.addEventListener('change', async () => {
+      if (!activeDevice) return;
+      deviceStateEntities(activeDevice).forEach((entity) => {
+        if (deviceSelectAll.checked) selectedStates.add(entity);
+        else {
+          selectedStates.delete(entity);
+          commandEntities.delete(entity);
+        }
+      });
+      try {
+        await saveSelections();
+        openDevice(activeDevice.id);
+      } catch (error) {
+        selectionMessage.textContent = error.message;
+      }
+    });
     document.getElementById('reload').addEventListener('click', () => loadEntities().catch((error) => entityList.innerHTML = `<div class="sub">${error.message}</div>`));
     filter.addEventListener('input', renderLists);
 
@@ -642,6 +668,51 @@ def device_id_for_name(name):
     return slug or "device"
 
 
+def mqtt_slug(value):
+    text = str(value).casefold()
+    replacements = {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}
+    for source, target in replacements.items():
+        text = text.replace(source, target)
+    slug = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
+    return slug or "wert"
+
+
+def topic_value_name_for_entity(entity_id, name, device_name):
+    friendly = " ".join(str(name or entity_id).split())
+    device = " ".join(str(device_name or "").split())
+    value = friendly
+    if device and friendly.casefold().startswith(device.casefold()):
+        value = friendly[len(device):].strip(" -_:")
+    if not value or value == entity_id:
+        try:
+            domain, object_id = entity_id.split(".", 1)
+        except ValueError:
+            return entity_id
+        if domain in TOGGLE_COMMAND_DOMAINS:
+            return "switch"
+        if domain in PRESS_COMMAND_DOMAINS:
+            return "button"
+        device_slug = mqtt_slug(device)
+        object_slug = mqtt_slug(_strip_object_suffix(object_id))
+        prefix = f"{device_slug}_"
+        if object_slug.startswith(prefix) and len(object_slug) > len(prefix):
+            object_slug = object_slug[len(prefix):]
+        if not object_slug or object_slug == device_slug:
+            return "switch" if domain in TOGGLE_COMMAND_DOMAINS else domain
+        return object_slug
+    return value
+
+
+def device_topic_for_entity(entity_id, state_entry):
+    attributes = state_entry.get("attributes", {})
+    if not isinstance(attributes, dict):
+        attributes = {}
+    name = attributes.get("friendly_name") or entity_id
+    device_name = device_name_for_entity(entity_id, name, attributes)
+    value_name = topic_value_name_for_entity(entity_id, name, device_name)
+    return f"{mqtt_slug(device_name)}/{mqtt_slug(value_name)}"
+
+
 def iobroker_mapping(entity_id, state, attributes):
     domain = entity_id.split(".", 1)[0]
     device_class = str(attributes.get("device_class", "")).lower()
@@ -711,6 +782,7 @@ class Bridge:
             entity, attribute = entry.split(":", 1)
             self.attribute_map.setdefault(entity, []).append(attribute)
         self.command_topics = {config.topic(entity, "set"): entity for entity in config.command_entities}
+        self.subscribed_command_topics = set()
         self.client = client or mqtt.Client(mqtt.CallbackAPIVersion.VERSION2,
                                             client_id=config.client_id, clean_session=True)
         self.client.on_connect = self.on_connect
@@ -724,6 +796,23 @@ class Bridge:
             self.client.tls_set_context(ssl.create_default_context())
         self.client.will_set(self.availability, "offline", qos=1, retain=True)
 
+    def topic(self, entity, suffix, state_entry=None):
+        if state_entry:
+            return f"{self.config.prefix}/{device_topic_for_entity(entity, state_entry)}/{suffix}"
+        return self.config.topic(entity, suffix)
+
+    def refresh_command_topics(self, states):
+        topics = {self.config.topic(entity, "set"): entity for entity in self.config.command_entities}
+        for entity in self.config.command_entities:
+            entry = states.get(entity)
+            if entry:
+                topics[self.topic(entity, "set", entry)] = entity
+        self.command_topics = topics
+        if self.connected.is_set():
+            for topic in sorted(set(topics) - self.subscribed_command_topics):
+                self.client.subscribe(topic, qos=0)
+                self.subscribed_command_topics.add(topic)
+
     def on_connect(self, client, userdata, flags, reason_code, properties):
         if reason_code.is_failure:
             LOG.warning("MQTT-Anmeldung fehlgeschlagen: %s", reason_code)
@@ -731,9 +820,11 @@ class Bridge:
                 self.status.set_connected(False, "Keine Verbindung")
             return
         self.generation += 1
+        self.subscribed_command_topics.clear()
         for topic in self.command_topics:
             # QoS 0 avoids replay of QoS 1 command deliveries after reconnect.
             client.subscribe(topic, qos=0)
+            self.subscribed_command_topics.add(topic)
         self.connected.set()
         if self.status:
             self.status.set_connected(True, "Verbunden")
@@ -777,12 +868,13 @@ class Bridge:
             self.sent.clear()
             self.sent_generation = generation
         states = {state["entity_id"]: state for state in self.ha.full_states()}
+        self.refresh_command_topics(states)
         polled_entities = sorted(set(self.config.entities) | set(self.attribute_map))
         for entity in polled_entities:
             entry = states.get(entity, {"state": "unavailable", "attributes": {}})
             state = str(entry.get("state", "unavailable"))
             if entity in self.config.entities and self.sent.get(("state", entity)) != state:
-                self.publish(self.config.topic(entity, "state"), state)
+                self.publish(self.topic(entity, "state", entry if entity in states else None), state)
                 self.sent[("state", entity)] = state
             attributes = entry.get("attributes", {})
             if not isinstance(attributes, dict):
@@ -791,7 +883,7 @@ class Bridge:
                 value = encode_mqtt_payload(attributes.get(attribute, "unavailable"))
                 key = ("attribute", entity, attribute)
                 if self.sent.get(key) != value:
-                    self.publish(self.config.topic(entity, f"attribute/{attribute}"), value)
+                    self.publish(self.topic(entity, f"attribute/{attribute}", entry if entity in states else None), value)
                     self.sent[key] = value
         self.publish(self.availability, "online")
 

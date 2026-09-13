@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.7**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
+Version **0.1.8**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
 den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Dein HA-Broker und die vorhandene
 MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und
 dem externen Broker; sie ist keine Broker-Bridge.
@@ -19,6 +19,8 @@ dem externen Broker; sie ist keine Broker-Bridge.
    gewünschte Entität aus und gibst State, Attribute, den erkannten
    ioBroker-Zieltyp und bei unterstützten Domains optional
    **Bidirektional / Werte schreiben** frei.
+   Mit **Alle States dieses Geräts übertragen** aktivierst du alle States des
+   gewählten Geräts auf einmal.
    Rechts siehst du die aktuell ausgewählten Übertragungen.
 5. Speichern. Die Weboberfläche zeigt rot **Keine Verbindung** und grün
    **Verbunden**. Änderungen an den Broker-Zugangsdaten werden sofort angewendet.
@@ -48,11 +50,24 @@ command_entities:
 
 | Topic | Inhalt / Richtung |
 | --- | --- |
-| `ha_external/sensor.wohnzimmer_temperatur/state` | HA → ioBroker, beispielsweise `21.5` |
-| `ha_external/sensor.wohnzimmer_temperatur/attribute/unit_of_measurement` | HA → ioBroker, beispielsweise `°C` |
-| `ha_external/input_boolean.dashboard_christmas/state` | HA → ioBroker: `on` oder `off` |
-| `ha_external/input_boolean.dashboard_christmas/set` | ioBroker → HA: `ON` oder `OFF` |
+| `ha_external/wohnzimmer/temperatur/state` | HA → ioBroker, beispielsweise `21.5` |
+| `ha_external/wohnzimmer/temperatur/attribute/unit_of_measurement` | HA → ioBroker, beispielsweise `°C` |
+| `ha_external/dashboard/christmas/state` | HA → ioBroker: `on` oder `off` |
+| `ha_external/dashboard/christmas/set` | ioBroker → HA: `ON` oder `OFF` |
 | `ha_external/availability` | `online` nach erfolgreichem HA-Abgleich, sonst `offline` |
+
+Die Struktur ist nach Gerät und Wert aufgebaut:
+
+```text
+ha_external
+└── stecker_garten
+    ├── switch
+    │   └── state
+    ├── energie
+    │   └── state
+    └── firmware
+        └── state
+```
 
 ## ioBroker-Zuordnung
 
@@ -87,6 +102,9 @@ akzeptieren Text. `button` und `input_button` akzeptieren `PRESS`. Sensorwerte
 bleiben nur ausgehend. In ioBroker Befehle **ohne Retain** senden. Gespeicherte
 Retain-Befehle bei der Anmeldung, ungültige Payloads und alte Warteschlangenbefehle
 werden verworfen. Keine beliebigen HA-Serviceaufrufe.
+Alte Befehls-Topics mit Entity-ID, zum Beispiel
+`ha_external/switch.stecker_garten/set`, werden als Kompatibilität weiter
+angenommen.
 
 TLS verwendet die Zertifikatsprüfung des Systems; für TLS auch den Broker-Port
 anpassen (häufig 8883). Eigene CA-Dateien und Client-Zertifikate sind noch nicht
@@ -98,7 +116,7 @@ HA-Token ist nicht erforderlich. Die App legt keine HA-Konfigurationsdateien an.
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.7 mqtt_client
+docker build -t ugso-mqtt-client:0.1.8 mqtt_client
 ```
 
 [English documentation](DOCS.en.md)

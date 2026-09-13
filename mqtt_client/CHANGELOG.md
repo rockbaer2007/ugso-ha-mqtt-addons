@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.8
+
+- Changed published MQTT topics to a device/value tree for ioBroker, for example `ha_external/stecker_garten/energie/state`.
+- Added **Alle States dieses Geräts übertragen** in the device popup.
+- Kept legacy entity-ID `/set` command topics as compatibility input while adding device/value `/set` command topics.
+
 ## 0.1.7
 
 - Changed the left entity browser into a compact device search list.

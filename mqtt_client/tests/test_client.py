@@ -79,7 +79,7 @@ class ClientTests(unittest.TestCase):
                         self.ha, self.client)
         bridge.on_connect(self.client, None, None, SimpleNamespace(is_failure=False), None)
         bridge.poll()
-        self.client.publish.assert_any_call("ha_external/sensor.temperature/attribute/unit_of_measurement",
+        self.client.publish.assert_any_call("ha_external/temperature/sensor/attribute/unit_of_measurement",
                                             "°C", qos=1, retain=True)
 
     def test_attribute_can_publish_without_state(self):
@@ -89,7 +89,7 @@ class ClientTests(unittest.TestCase):
                         self.ha, self.client)
         bridge.on_connect(self.client, None, None, SimpleNamespace(is_failure=False), None)
         bridge.poll()
-        self.client.publish.assert_any_call("ha_external/sensor.temperature/attribute/unit_of_measurement",
+        self.client.publish.assert_any_call("ha_external/temperature/sensor/attribute/unit_of_measurement",
                                             "°C", qos=1, retain=True)
         self.assertNotIn("ha_external/sensor.temperature/state", str(self.client.publish.call_args_list))
 
