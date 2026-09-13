@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.9
+
+- Improved device grouping for Shelly-style German entity names such as `Neu starten`, `Stromstärke`, `Switch`, `Überhitzung`, `Überlast`, `Überspannung` and `Überstrom`.
+- Single-value device hits now open the entity editor directly instead of an extra device popup.
+
 ## 0.1.8
 
 - Changed published MQTT topics to a device/value tree for ioBroker, for example `ha_external/stecker_garten/energie/state`.

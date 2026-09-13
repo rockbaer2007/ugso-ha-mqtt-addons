@@ -222,11 +222,25 @@ class ClientTests(unittest.TestCase):
                  "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Energie"}},
                 {"entity_id": "update.1pm_mini_gen3_res1_firmware", "state": "off",
                  "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Firmware"}},
+                {"entity_id": "button.1pm_mini_gen3_res1_neu_starten", "state": "unknown",
+                 "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Neu starten"}},
+                {"entity_id": "sensor.1pm_mini_gen3_res1_stromstaerke", "state": "0.0",
+                 "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Stromstärke"}},
+                {"entity_id": "switch.1pm_mini_gen3_res1_switch", "state": "off",
+                 "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Switch"}},
+                {"entity_id": "binary_sensor.1pm_mini_gen3_res1_ueberhitzung", "state": "off",
+                 "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Überhitzung"}},
+                {"entity_id": "binary_sensor.1pm_mini_gen3_res1_ueberlast", "state": "off",
+                 "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Überlast"}},
+                {"entity_id": "binary_sensor.1pm_mini_gen3_res1_ueberspannung", "state": "off",
+                 "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Überspannung"}},
+                {"entity_id": "binary_sensor.1pm_mini_gen3_res1_ueberstrom", "state": "off",
+                 "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Überstrom"}},
             ])
             catalog = controller.entity_catalog()
             self.assertEqual(len(catalog["devices"]), 1)
             self.assertEqual(catalog["devices"][0]["name"], "1PM Mini Gen3-Res1")
-            self.assertEqual(len(catalog["devices"][0]["entities"]), 3)
+            self.assertEqual(len(catalog["devices"][0]["entities"]), 10)
             controller.stop()
 
     def test_device_name_prefers_device_attribute(self):

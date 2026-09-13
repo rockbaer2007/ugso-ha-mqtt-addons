@@ -28,14 +28,20 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.8"
+APP_VERSION = "0.1.9"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
     "Signal Strength",
     "Link Quality",
     "Failed Pings",
+    "Neu starten",
     "Gesamtenergie",
+    "Stromstärke",
+    "Überhitzung",
+    "Überspannung",
+    "Überstrom",
+    "Überlast",
     "Temperatur",
     "Feuchtigkeit",
     "Spannung",
@@ -53,9 +59,21 @@ DEVICE_SUFFIXES = (
     "Humidity",
     "RSSI",
     "Signal",
+    "Switch",
+    "Schalter",
     "Update",
 )
-DEVICE_OBJECT_SUFFIXES = tuple(f"_{suffix.casefold().replace(' ', '_')}" for suffix in DEVICE_SUFFIXES)
+
+
+def ascii_slug_text(value):
+    text = str(value).casefold()
+    replacements = {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}
+    for source, target in replacements.items():
+        text = text.replace(source, target)
+    return re.sub(r"[^a-z0-9]+", "_", text).strip("_")
+
+
+DEVICE_OBJECT_SUFFIXES = tuple(f"_{ascii_slug_text(suffix)}" for suffix in DEVICE_SUFFIXES)
 
 
 INDEX_HTML = """<!doctype html>
@@ -317,6 +335,10 @@ INDEX_HTML = """<!doctype html>
     function openDevice(deviceId) {
       activeDevice = devices.find((device) => device.id === deviceId);
       if (!activeDevice) return;
+      if ((activeDevice.entities || []).length === 1) {
+        openEntity(activeDevice.entities[0].entity_id);
+        return;
+      }
       document.getElementById('deviceDialogTitle').textContent = activeDevice.name || 'Gerät';
       document.getElementById('deviceDialogMeta').textContent = deviceCountLabel(activeDevice);
       const deviceStates = deviceStateEntities(activeDevice);
@@ -669,12 +691,7 @@ def device_id_for_name(name):
 
 
 def mqtt_slug(value):
-    text = str(value).casefold()
-    replacements = {"ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss"}
-    for source, target in replacements.items():
-        text = text.replace(source, target)
-    slug = re.sub(r"[^a-z0-9]+", "_", text).strip("_")
-    return slug or "wert"
+    return ascii_slug_text(value) or "wert"
 
 
 def topic_value_name_for_entity(entity_id, name, device_name):

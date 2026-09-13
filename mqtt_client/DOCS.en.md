@@ -1,4 +1,4 @@
-# MQTT-Client 0.1.8
+# MQTT-Client 0.1.9
 
 An independent Home Assistant app connecting to an external MQTT broker, such as
 ioBroker's MQTT adapter in Server/Broker mode. Your existing HA broker and MQTT

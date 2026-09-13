@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.8**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
+Version **0.1.9**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
 den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Dein HA-Broker und die vorhandene
 MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und
 dem externen Broker; sie ist keine Broker-Bridge.
@@ -116,7 +116,7 @@ HA-Token ist nicht erforderlich. Die App legt keine HA-Konfigurationsdateien an.
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.8 mqtt_client
+docker build -t ugso-mqtt-client:0.1.9 mqtt_client
 ```
 
 [English documentation](DOCS.en.md)
