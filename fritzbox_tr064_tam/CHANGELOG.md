@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.37
+
+- Publish the legacy last-call card sensors as simple MQTT Discovery entities whose names and object IDs directly match `sensor.fritzbox_letzte_anrufe_call_*`.
+- Clear both earlier legacy discovery variants before republishing so Home Assistant can rebuild the expected entities.
+
 ## 0.1.36
 
 - Force the legacy last-call discovery object IDs to the expected Home Assistant entity IDs such as `sensor.fritzbox_letzte_anrufe_call_1_name_2`.

@@ -1400,22 +1400,26 @@ class HomeAssistantMqttPublisher:
             for field in LEGACY_LAST_CALL_FIELDS:
                 object_id = f"fritzbox_letzte_anrufe_call_{index}_{field}_2"
                 self._publish_config("sensor", object_id, {
-                    "name": f"Letzte Anrufe Call {index} {LEGACY_LAST_CALL_FIELD_LABELS[field]}",
+                    "name": object_id,
                     "object_id": object_id,
-                    "unique_id": object_id,
+                    "unique_id": f"legacy_{object_id}",
                     "state_topic": f"{self.options.base_topic}/last_calls/call_{index}/{field}",
                     "icon": LEGACY_LAST_CALL_FIELD_ICONS[field],
-                    "device": self._device(),
+
                 })
 
     def _remove_legacy_last_call_discovery(self) -> None:
         for index in range(1, LEGACY_LAST_CALL_SENSOR_COUNT + 1):
             for field in LEGACY_LAST_CALL_FIELDS:
-                self._publish(
-                    f"{self.options.discovery_prefix}/sensor/fritzbox_tr064/letzte_anrufe_call_{index}_{field}_2/config",
-                    "",
-                    retain=True,
-                )
+                for object_id in [
+                    f"letzte_anrufe_call_{index}_{field}_2",
+                    f"fritzbox_letzte_anrufe_call_{index}_{field}_2",
+                ]:
+                    self._publish(
+                        f"{self.options.discovery_prefix}/sensor/fritzbox_tr064/{object_id}/config",
+                        "",
+                        retain=True,
+                    )
 
     def _publish_legacy_last_call_states(self, calls: list[CallEntry]) -> None:
         for index in range(1, LEGACY_LAST_CALL_SENSOR_COUNT + 1):
@@ -2442,3 +2446,4 @@ def escape_xml(value: Any) -> str:
 
 if __name__ == "__main__":
     run()
+
