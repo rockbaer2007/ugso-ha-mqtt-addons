@@ -1,5 +1,7 @@
 # MQTT-Client einrichten
 
+Der MQTT-Client überträgt ausgewählte Home-Assistant-Geräte und Werte gezielt an ioBroker oder einen anderen externen MQTT-Broker. Er ist eine schlanke Alternative dazu, über den ioBroker-HASS-Adapter den kompletten Home-Assistant-Bestand zu spiegeln. Du bestimmst, welche Geräte und Werte exportiert werden; daraus entsteht in ioBroker ein übersichtlicher Gerätebaum.
+
 Öffne nach dem Start **Open Web UI** und trage dort deinen externen Broker ein,
 zum Beispiel ioBroker im Modus Server/Broker. Die Oberfläche enthält Felder für
 IP oder Hostname, Port, Benutzername und Passwort. Port `1883` ist als

@@ -1,8 +1,6 @@
 # MQTT-Client 0.1.12
 
-An independent Home Assistant app connecting to an external MQTT broker, such as
-ioBroker's MQTT adapter in Server/Broker mode. Your existing HA broker and MQTT
-integration remain in place. This is a direct HA API client, not a broker bridge.
+An independent Home Assistant app for sending selected Home Assistant devices and values to ioBroker or another external MQTT broker. Instead of mirroring the whole Home Assistant inventory through ioBroker's HASS adapter, you choose the devices and values that should appear in ioBroker. This follows the familiar idea of ioBroker → Home Assistant via MQTT, but in the opposite direction and with explicit selection. Your existing HA broker and MQTT integration remain in place. This is a direct HA API client, not a broker bridge.
 
 Add `https://github.com/rockbaer2007/ugso-ha-mqtt-addons` to the HA app store and
 install **MQTT-Client** (amd64/aarch64). Open **Open Web UI** to configure the
