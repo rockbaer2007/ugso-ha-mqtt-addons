@@ -1,4 +1,4 @@
-# MQTT-Client 0.1.5
+# MQTT-Client 0.1.6
 
 An independent Home Assistant app connecting to an external MQTT broker, such as
 ioBroker's MQTT adapter in Server/Broker mode. Your existing HA broker and MQTT
@@ -8,10 +8,11 @@ Add `https://github.com/rockbaer2007/ugso-ha-mqtt-addons` to the HA app store an
 install **MQTT-Client** (amd64/aarch64). Open **Open Web UI** to configure the
 external broker IP/hostname, port, username and password. Port `1883` is the
 default for ioBroker's MQTT adapter. The web UI shows red **No connection** and
-green **Connected**. It also lists available Home Assistant entities on the left
-with the friendly name first and the entity ID as secondary text. Selected
-transmissions appear on the right. Click an entity to choose state and attributes
-in a dialog. For `switch`, `light`, `input_boolean`, `fan`, `input_number`,
+green **Connected**. It also lists available Home Assistant devices on the left
+with related switches, sensor values, updates, states and attributes grouped
+together. Each entity shows the friendly name first and the entity ID as secondary
+text. Selected transmissions appear on the right. Click an entity to choose state
+and attributes in a dialog. For `switch`, `light`, `input_boolean`, `fan`, `input_number`,
 `number`, `input_select`, `select`, `input_text` and `text`, an additional
 bidirectional value checkbox is available. `button` and `input_button` are mapped
 as press buttons. Sensor-like domains remain outgoing-only.

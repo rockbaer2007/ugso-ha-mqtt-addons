@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
-from main import AppController, Bridge, Config, iobroker_mapping
+from main import AppController, Bridge, Config, device_name_for_entity, iobroker_mapping
 
 
 class FakeBridge:
@@ -196,6 +196,7 @@ class ClientTests(unittest.TestCase):
             ])
             catalog = controller.entity_catalog()
             self.assertEqual(catalog["entities"][0]["entity_id"], "sensor.temperature")
+            self.assertEqual(catalog["devices"][0]["name"], "Temperature")
             self.assertIn("unit_of_measurement", catalog["entities"][0]["attributes"])
             self.assertEqual(catalog["entities"][0]["iobroker_type"], "number")
             updated = controller.update_selections({
@@ -207,6 +208,32 @@ class ClientTests(unittest.TestCase):
             saved = json.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(saved["command_entities"], [])
             controller.stop()
+
+    def test_controller_groups_entities_by_device_name(self):
+        FakeBridge.instances = []
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "options.json"
+            path.write_text(json.dumps({**self.options, "entity_attributes": []}), encoding="utf-8")
+            controller = AppController(path, "token", bridge_factory=FakeBridge)
+            controller.ha.full_states = Mock(return_value=[
+                {"entity_id": "switch.1pm_mini_gen3_res1", "state": "off",
+                 "attributes": {"friendly_name": "1PM Mini Gen3-Res1"}},
+                {"entity_id": "sensor.1pm_mini_gen3_res1_energie", "state": "7.1",
+                 "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Energie"}},
+                {"entity_id": "update.1pm_mini_gen3_res1_firmware", "state": "off",
+                 "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Firmware"}},
+            ])
+            catalog = controller.entity_catalog()
+            self.assertEqual(len(catalog["devices"]), 1)
+            self.assertEqual(catalog["devices"][0]["name"], "1PM Mini Gen3-Res1")
+            self.assertEqual(len(catalog["devices"][0]["entities"]), 3)
+            controller.stop()
+
+    def test_device_name_prefers_device_attribute(self):
+        self.assertEqual(
+            device_name_for_entity("sensor.anything", "Other Name Energie", {"device_name": "Shelly Keller"}),
+            "Shelly Keller",
+        )
 
     def test_iobroker_mapping_press_and_state_boolean(self):
         self.assertEqual(iobroker_mapping("button.restart", "unknown", {"device_class": "press"}),

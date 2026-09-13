@@ -28,7 +28,34 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.5"
+APP_VERSION = "0.1.6"
+DEVICE_SUFFIXES = (
+    "Energieeinspeisung",
+    "Last Response Time",
+    "Signal Strength",
+    "Link Quality",
+    "Failed Pings",
+    "Gesamtenergie",
+    "Temperatur",
+    "Feuchtigkeit",
+    "Spannung",
+    "Leistung",
+    "Batterie",
+    "Firmware",
+    "Uptime",
+    "Status",
+    "Energie",
+    "Energy",
+    "Power",
+    "Voltage",
+    "Current",
+    "Battery",
+    "Humidity",
+    "RSSI",
+    "Signal",
+    "Update",
+)
+DEVICE_OBJECT_SUFFIXES = tuple(f"_{suffix.casefold().replace(' ', '_')}" for suffix in DEVICE_SUFFIXES)
 
 
 INDEX_HTML = """<!doctype html>
@@ -62,7 +89,11 @@ INDEX_HTML = """<!doctype html>
     .entity-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; }
     .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .toolbar input { padding: 9px 10px; }
-    .list { display: grid; gap: 6px; max-height: 460px; overflow: auto; padding-right: 4px; }
+    .list { display: grid; gap: 8px; max-height: 460px; overflow: auto; padding-right: 4px; }
+    .device { border: 1px solid rgba(148, 163, 184, .22); border-radius: 10px; background: rgba(15, 23, 42, .18); overflow: hidden; }
+    .device summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; cursor: pointer; }
+    .device summary::marker { color: var(--secondary-text-color, #94a3b8); }
+    .deviceEntities { display: grid; gap: 6px; padding: 0 8px 8px 18px; }
     .entity, .selected { width: 100%; text-align: left; color: inherit; background: rgba(148, 163, 184, .12); display: grid; gap: 2px; }
     .entity:hover, .selected:hover { background: rgba(3, 169, 244, .18); }
     .selected { grid-template-columns: 1fr auto; align-items: center; }
@@ -106,9 +137,9 @@ INDEX_HTML = """<!doctype html>
 
     <section class="entity-grid">
       <div class="panel">
-        <h2>Entitäten</h2>
+        <h2>Geräte</h2>
         <div class="toolbar">
-          <input id="filter" type="search" placeholder="Entität suchen">
+          <input id="filter" type="search" placeholder="Gerät oder Entität suchen">
           <button id="reload" class="secondary" type="button">Neu laden</button>
         </div>
         <div id="entityList" class="list"></div>
@@ -157,6 +188,7 @@ INDEX_HTML = """<!doctype html>
     const commandCheck = document.getElementById('commandCheck');
     const attributeList = document.getElementById('attributeList');
     let catalog = [];
+    let devices = [];
     let selectedStates = new Set();
     let selectedAttributes = new Set();
     let commandEntities = new Set();
@@ -176,6 +208,14 @@ INDEX_HTML = """<!doctype html>
       return item.name || item.entity_id;
     }
 
+    function deviceMatches(device, term) {
+      if (!term) return true;
+      if ((device.name || '').toLowerCase().includes(term)) return true;
+      return (device.entities || []).some((item) => {
+        return entityLabel(item).toLowerCase().includes(term) || item.entity_id.toLowerCase().includes(term);
+      });
+    }
+
     function isCommandEntity(entityId) {
       return commandDomains.has(entityId.split('.')[0]);
     }
@@ -183,19 +223,35 @@ INDEX_HTML = """<!doctype html>
     function renderLists() {
       const term = filter.value.trim().toLowerCase();
       entityList.innerHTML = '';
-      catalog
-        .filter((item) => !term || entityLabel(item).toLowerCase().includes(term))
-        .forEach((item) => {
+      devices
+        .filter((device) => deviceMatches(device, term))
+        .forEach((device) => {
+          const details = document.createElement('details');
+          details.className = 'device';
+          details.open = true;
+          const summary = document.createElement('summary');
+          summary.innerHTML = '<span class="name"></span><span class="meta"></span>';
+          summary.querySelector('.name').textContent = device.name || 'Gerät';
+          summary.querySelector('.meta').textContent = `${(device.entities || []).length} Entitäten`;
+          const body = document.createElement('div');
+          body.className = 'deviceEntities';
+          (device.entities || []).forEach((item) => {
           const button = document.createElement('button');
           button.type = 'button';
           button.className = 'entity';
           button.innerHTML = `<span class="name"></span><span class="meta"></span>`;
           button.querySelector('.name').textContent = entityLabel(item);
-        const count = item.attributes.length;
-        button.querySelector('.meta').textContent = `${item.entity_id} · ${item.state} · ${item.iobroker_type} · ${count} Attribute`;
+          const count = item.attributes.length;
+          button.querySelector('.meta').textContent = `${item.entity_id} · ${item.state} · ${item.iobroker_type} · ${count} Attribute`;
           button.addEventListener('click', () => openEntity(item.entity_id));
-          entityList.appendChild(button);
+          body.appendChild(button);
+          });
+          details.append(summary, body);
+          entityList.appendChild(details);
         });
+      if (!entityList.children.length) {
+        entityList.innerHTML = '<div class="sub">Kein Gerät gefunden.</div>';
+      }
 
       selectedList.innerHTML = '';
       const selectedIds = new Set([...selectedStates, ...[...selectedAttributes].map((entry) => entry.split(':')[0])]);
@@ -276,6 +332,7 @@ INDEX_HTML = """<!doctype html>
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Entitäten konnten nicht geladen werden');
       catalog = data.entities || [];
+      devices = data.devices || [{ id: 'all', name: 'Alle Entitäten', entities: catalog }];
       renderLists();
     }
 
@@ -474,6 +531,46 @@ def mqtt_command(entity, payload):
             raise ValueError("PRESS erwartet")
         return "press"
     raise ValueError("Domain nicht unterstützt")
+
+
+def _strip_device_suffix(name):
+    clean = " ".join(str(name).replace("_", " ").split())
+    for suffix in DEVICE_SUFFIXES:
+        pattern = re.compile(rf"^(.+?)(?:\s+-|\s+)?\s+{re.escape(suffix)}$", re.IGNORECASE)
+        match = pattern.match(clean)
+        if match and len(match.group(1).strip()) >= 3:
+            return match.group(1).strip(" -_")
+    return clean
+
+
+def _strip_object_suffix(object_id):
+    clean = object_id.casefold()
+    for suffix in DEVICE_OBJECT_SUFFIXES:
+        if clean.endswith(suffix) and len(clean) > len(suffix) + 2:
+            return object_id[:-len(suffix)]
+    return object_id
+
+
+def device_name_for_entity(entity_id, name, attributes):
+    for key in ("device_name", "device", "device_id"):
+        value = attributes.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    friendly = str(name or entity_id)
+    base = _strip_device_suffix(friendly)
+    if base and base != entity_id:
+        return base
+    try:
+        object_id = entity_id.split(".", 1)[1]
+    except IndexError:
+        return base or entity_id
+    object_id = _strip_object_suffix(object_id)
+    return " ".join(part for part in object_id.replace("_", " ").split()).strip() or entity_id
+
+
+def device_id_for_name(name):
+    slug = re.sub(r"[^a-z0-9]+", "_", str(name).casefold()).strip("_")
+    return slug or "device"
 
 
 def iobroker_mapping(entity_id, state, attributes):
@@ -779,6 +876,7 @@ class AppController:
     def entity_catalog(self):
         states = self.ha.full_states()
         entities = []
+        device_map = {}
         for state in states:
             entity_id = state.get("entity_id", "")
             attributes = state.get("attributes", {})
@@ -786,17 +884,26 @@ class AppController:
                 continue
             name = attributes.get("friendly_name") or entity_id
             mapping = iobroker_mapping(entity_id, state.get("state", ""), attributes)
-            entities.append({
+            device_name = device_name_for_entity(entity_id, name, attributes)
+            entity = {
                 "entity_id": entity_id,
                 "name": str(name),
+                "device_name": device_name,
                 "state": str(state.get("state", "")),
                 "command_supported": entity_id.split(".")[0] in COMMAND_DOMAINS,
                 "state_type": mapping["state_type"],
                 "iobroker_type": mapping["iobroker_type"],
                 "attributes": sorted(str(attr) for attr in attributes if ATTRIBUTE.fullmatch(str(attr))),
-            })
+            }
+            entities.append(entity)
+            device_key = device_id_for_name(device_name)
+            device = device_map.setdefault(device_key, {"id": device_key, "name": device_name, "entities": []})
+            device["entities"].append(entity)
         entities.sort(key=lambda item: (item["name"].casefold(), item["entity_id"]))
-        return {"entities": entities}
+        devices = sorted(device_map.values(), key=lambda item: (item["name"].casefold(), item["id"]))
+        for device in devices:
+            device["entities"].sort(key=lambda item: (item["name"].casefold(), item["entity_id"]))
+        return {"entities": entities, "devices": devices}
 
 
 def make_handler(controller):

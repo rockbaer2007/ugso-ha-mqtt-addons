@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.6
+
+- Grouped the entity browser by device, similar to Home Assistant device details.
+- Related switches, sensors, updates, states and attributes now appear inside one device group when HA metadata or matching friendly-name prefixes allow it.
+- Kept the existing entity and attribute selection workflow unchanged inside each device group.
+
 ## 0.1.5
 
 - Added ioBroker-style entity mapping in the web UI: `press` maps to `button`, `state_boolean` maps to `switch`.

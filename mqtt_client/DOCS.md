@@ -6,10 +6,13 @@ IP oder Hostname, Port, Benutzername und Passwort. Port `1883` ist als
 ioBroker-Standardport voreingestellt. Rot bedeutet **Keine Verbindung**, grün
 bedeutet **Verbunden**.
 
-Darunter zeigt die Oberfläche links die verfügbaren Home-Assistant-Entitäten mit
-Namen als Hauptzeile und Entity-ID als Detail. Rechts stehen die ausgewählten
-Übertragungen. Klicke eine Entität an, um im Popup den State und einzelne Attribute
-per Checkbox freizugeben. Bei `switch`, `light`, `input_boolean` und `fan` kannst
+Darunter zeigt die Oberfläche links Geräte-Gruppen mit den zugehörigen
+Home-Assistant-Entitäten darin. Zusammengehörige Switches, Sensorwerte, Updates,
+States und Attribute stehen damit ähnlich wie in HA-Gerätedetails in einer
+Gruppe. Die Entitäten zeigen den Namen als Hauptzeile und die Entity-ID als
+Detail. Rechts stehen die ausgewählten Übertragungen. Klicke eine Entität an, um
+im Popup den State und einzelne Attribute per Checkbox freizugeben. Bei `switch`,
+`light`, `input_boolean` und `fan` kannst
 du zusätzlich **Bidirektional / Werte schreiben** aktivieren. Dasselbe gilt für
 Eingabewerte wie `input_number`, `number`, `input_select`, `select`, `input_text`
 und `text` sowie für `button` und `input_button`. Sensorwerte bleiben nur ausgehend. Der bestehende HA-Broker bleibt erhalten. Die App benötigt keinen
