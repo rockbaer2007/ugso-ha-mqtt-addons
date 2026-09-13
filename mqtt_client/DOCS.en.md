@@ -1,4 +1,4 @@
-# MQTT-Client 0.1.4
+# MQTT-Client 0.1.5
 
 An independent Home Assistant app connecting to an external MQTT broker, such as
 ioBroker's MQTT adapter in Server/Broker mode. Your existing HA broker and MQTT
@@ -13,7 +13,11 @@ with the friendly name first and the entity ID as secondary text. Selected
 transmissions appear on the right. Click an entity to choose state and attributes
 in a dialog. For `switch`, `light`, `input_boolean`, `fan`, `input_number`,
 `number`, `input_select`, `select`, `input_text` and `text`, an additional
-bidirectional value checkbox is available. Sensor-like domains remain outgoing-only.
+bidirectional value checkbox is available. `button` and `input_button` are mapped
+as press buttons. Sensor-like domains remain outgoing-only.
+
+The entity list shows an ioBroker-style target type: `press` maps to `button`,
+`state_boolean` maps to `switch`, and text/state values map to `state`.
 
 Broker settings and selected states/attributes from the web UI are applied
 immediately. No manual HA token is needed: access uses the Supervisor token and
@@ -30,8 +34,8 @@ Missing entities produce `unavailable`; `unknown`/`unavailable` are passed throu
 Optional `command_entities` must be a subset of `entities`. Publish without Retain
 to `<topic_prefix>/<entity_id>/set`: `ON` or `OFF` for toggle-like domains,
 numbers for `input_number`/`number`, option names for `input_select`/`select`,
-and text for `input_text`/`text`. The web UI only shows the bidirectional option
-for controllable domains. The default empty command list disables commands.
+text for `input_text`/`text`, and `PRESS` for `button`/`input_button`. The web UI
+only shows the bidirectional option for controllable domains. The default empty command list disables commands.
 Retained messages received on subscription, invalid payloads and stale queued
 commands are discarded. Arbitrary HA service calls are unsupported.
 

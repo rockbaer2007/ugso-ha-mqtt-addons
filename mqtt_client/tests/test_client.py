@@ -8,7 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
-from main import AppController, Bridge, Config
+from main import AppController, Bridge, Config, iobroker_mapping
 
 
 class FakeBridge:
@@ -43,6 +43,8 @@ class ClientTests(unittest.TestCase):
             {"entity_id": "input_number.level", "state": "3", "attributes": {}},
             {"entity_id": "input_select.mode", "state": "auto", "attributes": {}},
             {"entity_id": "input_text.note", "state": "", "attributes": {}},
+            {"entity_id": "button.restart", "state": "unknown",
+             "attributes": {"friendly_name": "Restart", "device_class": "press"}},
             {"entity_id": "sensor.private", "state": "secret", "attributes": {}},
         ]
         self.bridge = Bridge(Config.load(self.options), self.ha, self.client)
@@ -128,6 +130,16 @@ class ClientTests(unittest.TestCase):
         self.ha.command.assert_any_call("input_select.mode", "select_option", {"option": "Urlaub"})
         self.ha.command.assert_any_call("input_text.note", "set_value", {"value": "Hallo"})
 
+    def test_press_command_calls_ha_press_service(self):
+        config = Config.load({**self.options, "entities": ["button.restart"],
+                              "command_entities": ["button.restart"]})
+        bridge = Bridge(config, self.ha, self.client)
+        bridge.on_connect(self.client, None, None, SimpleNamespace(is_failure=False), None)
+        bridge.on_message(self.client, None, SimpleNamespace(topic="ha_external/button.restart/set",
+                                                             payload=b"PRESS", retain=False))
+        bridge.process_command(bridge.commands.get_nowait())
+        self.ha.command.assert_called_with("button.restart", "press")
+
     def test_invalid_value_commands_are_dropped(self):
         config = Config.load({**self.options, "entities": ["input_number.level"],
                               "command_entities": ["input_number.level"]})
@@ -185,6 +197,7 @@ class ClientTests(unittest.TestCase):
             catalog = controller.entity_catalog()
             self.assertEqual(catalog["entities"][0]["entity_id"], "sensor.temperature")
             self.assertIn("unit_of_measurement", catalog["entities"][0]["attributes"])
+            self.assertEqual(catalog["entities"][0]["iobroker_type"], "number")
             updated = controller.update_selections({
                 "entities": ["sensor.temperature"],
                 "entity_attributes": ["sensor.temperature:unit_of_measurement"],
@@ -194,6 +207,14 @@ class ClientTests(unittest.TestCase):
             saved = json.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(saved["command_entities"], [])
             controller.stop()
+
+    def test_iobroker_mapping_press_and_state_boolean(self):
+        self.assertEqual(iobroker_mapping("button.restart", "unknown", {"device_class": "press"}),
+                         {"state_type": "press", "iobroker_type": "button"})
+        self.assertEqual(iobroker_mapping("switch.plug", "off", {}),
+                         {"state_type": "state_boolean", "iobroker_type": "switch"})
+        self.assertEqual(iobroker_mapping("sensor.text", "Hallo", {"device_class": "text"}),
+                         {"state_type": "state", "iobroker_type": "state"})
 
     def test_controller_saves_only_supported_bidirectional_entities(self):
         FakeBridge.instances = []

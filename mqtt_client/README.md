@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.4**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
+Version **0.1.5**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
 den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Dein HA-Broker und die vorhandene
 MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und
 dem externen Broker; sie ist keine Broker-Bridge.
@@ -14,7 +14,8 @@ dem externen Broker; sie ist keine Broker-Bridge.
    ioBroker-Brokers eintragen. Port `1883` ist voreingestellt.
 4. Links in der Entitätsliste eine HA-Entität anklicken. Die Liste zeigt den Namen
    zuerst und die Entity-ID klein darunter. Im Popup wählst du State, Attribute
-   und bei unterstützten Domains optional **Bidirektional / Werte schreiben**.
+   den erkannten ioBroker-Zieltyp und bei unterstützten Domains optional
+   **Bidirektional / Werte schreiben**.
    Rechts siehst du die aktuell ausgewählten Übertragungen.
 5. Speichern. Die Weboberfläche zeigt rot **Keine Verbindung** und grün
    **Verbunden**. Änderungen an den Broker-Zugangsdaten werden sofort angewendet.
@@ -50,6 +51,15 @@ command_entities:
 | `ha_external/input_boolean.dashboard_christmas/set` | ioBroker → HA: `ON` oder `OFF` |
 | `ha_external/availability` | `online` nach erfolgreichem HA-Abgleich, sonst `offline` |
 
+## ioBroker-Zuordnung
+
+| HA-Erkennung | ioBroker-Ziel |
+| --- | --- |
+| `device_class: press` / `press` | `button` |
+| `state_boolean` | `switch` |
+| `device_class: text` / `state` | `state` |
+| Zahlwert | `number` |
+
 Zustände werden standardmäßig alle fünf Sekunden abgefragt und nur bei Änderungen
 gesendet; nach einer MQTT-Neuverbindung erneut vollständig. Kurze Zustandswechsel
 zwischen zwei Abfragen können fehlen. Übertragen werden der State und die
@@ -70,9 +80,10 @@ auch in `entities` stehen und können in der Weboberfläche über **Bidirektiona
 Werte schreiben** gesetzt werden. `switch`, `light`, `input_boolean` und `fan`
 akzeptieren `ON` oder `OFF`. `input_number` und `number` akzeptieren Zahlen,
 `input_select` und `select` akzeptieren den Optionsnamen, `input_text` und `text`
-akzeptieren Text. Sensorwerte bleiben nur ausgehend. In ioBroker Befehle **ohne
-Retain** senden. Gespeicherte Retain-Befehle bei der Anmeldung, ungültige Payloads
-und alte Warteschlangenbefehle werden verworfen. Keine beliebigen HA-Serviceaufrufe.
+akzeptieren Text. `button` und `input_button` akzeptieren `PRESS`. Sensorwerte
+bleiben nur ausgehend. In ioBroker Befehle **ohne Retain** senden. Gespeicherte
+Retain-Befehle bei der Anmeldung, ungültige Payloads und alte Warteschlangenbefehle
+werden verworfen. Keine beliebigen HA-Serviceaufrufe.
 
 TLS verwendet die Zertifikatsprüfung des Systems; für TLS auch den Broker-Port
 anpassen (häufig 8883). Eigene CA-Dateien und Client-Zertifikate sind noch nicht
@@ -84,7 +95,7 @@ HA-Token ist nicht erforderlich. Die App legt keine HA-Konfigurationsdateien an.
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.4 mqtt_client
+docker build -t ugso-mqtt-client:0.1.5 mqtt_client
 ```
 
 [English documentation](DOCS.en.md)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+- Added ioBroker-style entity mapping in the web UI: `press` maps to `button`, `state_boolean` maps to `switch`.
+- Added `button` and `input_button` as bidirectional press-capable domains.
+- The entity list now shows the detected ioBroker target type in the secondary line.
+
 ## 0.1.4
 
 - Added bidirectional value commands for `input_number`, `number`, `input_select`, `select`, `input_text` and `text`.

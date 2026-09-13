@@ -27,4 +27,4 @@ configuration:
     description: Values in entity_id:attribute format. Can be selected in the web UI.
   command_entities:
     name: Entities allowed to receive write commands
-    description: Subset of the list above. Supports toggle domains and value inputs such as number, select and text. Empty disables commands.
+    description: Subset of the list above. Supports toggle domains, value inputs such as number/select/text, and buttons. Empty disables commands.

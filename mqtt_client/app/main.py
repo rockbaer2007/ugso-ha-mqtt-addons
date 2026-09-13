@@ -24,10 +24,11 @@ ENTITY = re.compile(r"^[a-z0-9_]+\.[a-z0-9_]+$")
 ATTRIBUTE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]*$")
 TOGGLE_COMMAND_DOMAINS = {"switch", "light", "input_boolean", "fan"}
 VALUE_COMMAND_DOMAINS = {"input_number", "number", "input_select", "select", "input_text", "text"}
-COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS
+PRESS_COMMAND_DOMAINS = {"button", "input_button"}
+COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.4"
+APP_VERSION = "0.1.5"
 
 
 INDEX_HTML = """<!doctype html>
@@ -160,7 +161,7 @@ INDEX_HTML = """<!doctype html>
     let selectedAttributes = new Set();
     let commandEntities = new Set();
     let activeEntity = null;
-    const commandDomains = new Set(['switch', 'light', 'input_boolean', 'fan', 'input_number', 'number', 'input_select', 'select', 'input_text', 'text']);
+    const commandDomains = new Set(['switch', 'light', 'input_boolean', 'fan', 'input_number', 'number', 'input_select', 'select', 'input_text', 'text', 'button', 'input_button']);
 
     function setStatus(data) {
       statusBox.classList.toggle('connected', Boolean(data.connected));
@@ -191,7 +192,7 @@ INDEX_HTML = """<!doctype html>
           button.innerHTML = `<span class="name"></span><span class="meta"></span>`;
           button.querySelector('.name').textContent = entityLabel(item);
         const count = item.attributes.length;
-        button.querySelector('.meta').textContent = `${item.entity_id} · ${item.state} · ${count} Attribute`;
+        button.querySelector('.meta').textContent = `${item.entity_id} · ${item.state} · ${item.iobroker_type} · ${count} Attribute`;
           button.addEventListener('click', () => openEntity(item.entity_id));
           entityList.appendChild(button);
         });
@@ -468,7 +469,30 @@ def mqtt_command(entity, payload):
         return ("select_option", {"option": payload})
     if domain in {"input_text", "text"}:
         return ("set_value", {"value": payload})
+    if domain in PRESS_COMMAND_DOMAINS:
+        if payload and payload.upper() not in {"PRESS", "ON", "TRUE", "1"}:
+            raise ValueError("PRESS erwartet")
+        return "press"
     raise ValueError("Domain nicht unterstützt")
+
+
+def iobroker_mapping(entity_id, state, attributes):
+    domain = entity_id.split(".", 1)[0]
+    device_class = str(attributes.get("device_class", "")).lower()
+    state_value = str(state).lower()
+    if device_class == "press" or domain in PRESS_COMMAND_DOMAINS:
+        return {"state_type": "press", "iobroker_type": "button"}
+    if domain in {"switch", "input_boolean", "binary_sensor"} or state_value in {"on", "off", "true", "false"}:
+        return {"state_type": "state_boolean", "iobroker_type": "switch"}
+    if domain in {"input_number", "number"}:
+        return {"state_type": "state_number", "iobroker_type": "number"}
+    if device_class == "text" or domain in {"input_text", "text", "input_select", "select"}:
+        return {"state_type": "state", "iobroker_type": "state"}
+    try:
+        float(str(state))
+    except ValueError:
+        return {"state_type": "state", "iobroker_type": "state"}
+    return {"state_type": "state_number", "iobroker_type": "number"}
 
 
 class HomeAssistant:
@@ -761,11 +785,14 @@ class AppController:
             if not ENTITY.fullmatch(entity_id) or not isinstance(attributes, dict):
                 continue
             name = attributes.get("friendly_name") or entity_id
+            mapping = iobroker_mapping(entity_id, state.get("state", ""), attributes)
             entities.append({
                 "entity_id": entity_id,
                 "name": str(name),
                 "state": str(state.get("state", "")),
                 "command_supported": entity_id.split(".")[0] in COMMAND_DOMAINS,
+                "state_type": mapping["state_type"],
+                "iobroker_type": mapping["iobroker_type"],
                 "attributes": sorted(str(attr) for attr in attributes if ATTRIBUTE.fullmatch(str(attr))),
             })
         entities.sort(key=lambda item: (item["name"].casefold(), item["entity_id"]))
