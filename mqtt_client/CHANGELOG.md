@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.12
+
+- Moved value-row checkboxes to the left side before the text.
+- Removed bold styling from value-row names and values.
+- Stopped reopening the device popup after checkbox changes, so closing the popup stays closed.
+
 ## 0.1.11
 
 - Changed device popup rows to right-side checkboxes.
