@@ -50,6 +50,22 @@ CALL_TYPE_VIEWS = {
     "9": "rejected",
     "10": "blocked",
 }
+LEGACY_LAST_CALL_SENSOR_COUNT = 10
+LEGACY_LAST_CALL_FIELDS = ("name", "number", "date", "type", "duration")
+LEGACY_LAST_CALL_FIELD_LABELS = {
+    "name": "Name",
+    "number": "Nummer",
+    "date": "Datum",
+    "type": "Typ",
+    "duration": "Dauer",
+}
+LEGACY_LAST_CALL_FIELD_ICONS = {
+    "name": "mdi:account",
+    "number": "mdi:phone",
+    "date": "mdi:calendar-clock",
+    "type": "mdi:phone-log",
+    "duration": "mdi:timer-outline",
+}
 WLAN_ROLES = {
     1: ("wlan2_4", "WLAN 2.4 GHz"),
     2: ("wlan5", "WLAN 5 GHz"),
@@ -1027,6 +1043,7 @@ class HomeAssistantMqttPublisher:
             self._publish_call_discovery(view)
         for view in self.known_call_views - call_views:
             self._remove_call_discovery(view)
+        self._publish_legacy_last_call_discovery()
         phonebooks_by_id = {phonebook.phonebook_id: phonebook for phonebook in all_phonebooks}
         for phonebook_id in phonebook_ids:
             fallback = PhonebookInfo(phonebook_id, f"Telefonbuch {phonebook_id}", [])
@@ -1094,6 +1111,7 @@ class HomeAssistantMqttPublisher:
                 "entries": [call_to_dict(call) for call in visible],
                 "lines": [call_to_line(call) for call in visible],
             })
+        self._publish_legacy_last_call_states(calls[:LEGACY_LAST_CALL_SENSOR_COUNT])
 
         for phonebook in phonebooks:
             prefix = f"{self.options.base_topic}/phonebook/{safe_object_part(phonebook.phonebook_id)}"
@@ -1375,6 +1393,26 @@ class HomeAssistantMqttPublisher:
             "",
             retain=True,
         )
+
+    def _publish_legacy_last_call_discovery(self) -> None:
+        for index in range(1, LEGACY_LAST_CALL_SENSOR_COUNT + 1):
+            for field in LEGACY_LAST_CALL_FIELDS:
+                object_id = f"letzte_anrufe_call_{index}_{field}_2"
+                self._publish_config("sensor", object_id, {
+                    "name": f"Letzte Anrufe Call {index} {LEGACY_LAST_CALL_FIELD_LABELS[field]}",
+                    "object_id": f"fritzbox_{object_id}",
+                    "unique_id": f"fritzbox_tr064_last_call_{index}_{field}_2",
+                    "state_topic": f"{self.options.base_topic}/last_calls/call_{index}/{field}",
+                    "icon": LEGACY_LAST_CALL_FIELD_ICONS[field],
+                    "device": self._device(),
+                })
+
+    def _publish_legacy_last_call_states(self, calls: list[CallEntry]) -> None:
+        for index in range(1, LEGACY_LAST_CALL_SENSOR_COUNT + 1):
+            call = calls[index - 1] if index <= len(calls) else None
+            prefix = f"{self.options.base_topic}/last_calls/call_{index}"
+            for field in LEGACY_LAST_CALL_FIELDS:
+                self._publish(f"{prefix}/{field}", legacy_last_call_value(call, field))
 
     def _publish_phonebook_discovery(self, phonebook: PhonebookInfo) -> None:
         object_part = safe_object_part(phonebook.phonebook_id)
@@ -2220,6 +2258,22 @@ def call_to_line(call: CallEntry) -> str:
     direction = call.caller or call.called or call.number
     duration = f", {call.duration}" if call.duration else ""
     return f"{call.date} | {label} | {person} | {direction}{duration}"
+
+
+def legacy_last_call_value(call: CallEntry | None, field: str) -> str:
+    if call is None:
+        return "unknown"
+    if field == "name":
+        return call.name or call.number or "Unbekannt"
+    if field == "number":
+        return call.number or call.caller or call.called or "unknown"
+    if field == "date":
+        return call.date or "unknown"
+    if field == "type":
+        return CALL_VIEW_LABELS.get(call.view, call.view).replace("Anrufliste ", "") or "unknown"
+    if field == "duration":
+        return call.duration or ""
+    return "unknown"
 
 
 def parse_call_monitor_line(line: str) -> CallMonitorEvent | None:

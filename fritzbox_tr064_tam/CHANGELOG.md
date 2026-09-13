@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.35
+
+- Added legacy individual last-call MQTT Discovery sensors for Lovelace cards that expect `sensor.fritzbox_letzte_anrufe_call_1_name_2`, number, date, type and duration entities up to call 10.
+- Kept the existing call list sensors with `entries` and `lines` attributes unchanged.
+
 ## 0.1.34
 
 - Added Home Assistant diagnostic sensors for the current polling mode and a
