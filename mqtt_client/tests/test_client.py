@@ -68,6 +68,15 @@ class ClientTests(unittest.TestCase):
         self.bridge.poll()
         self.assertEqual(self.client.publish.call_count, 3)
 
+    def test_states_publish_before_command_topics_are_subscribed(self):
+        self.bridge.poll()
+        calls = self.client.method_calls
+        state_index = next(index for index, call in enumerate(calls)
+                           if call[0] == "publish" and call.args[0] == "ha_external/test/switch/state")
+        command_index = next(index for index, call in enumerate(calls)
+                             if call[0] == "subscribe" and call.args[0] == "ha_external/test/switch/set")
+        self.assertLess(state_index, command_index)
+
     def test_missing_entity_becomes_unavailable(self):
         self.ha.full_states.return_value = []
         self.bridge.poll()

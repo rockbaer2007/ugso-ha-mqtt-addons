@@ -28,7 +28,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.13"
+APP_VERSION = "0.1.14"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -151,6 +151,9 @@ INDEX_HTML = """<!doctype html>
       </div>
       <label>Username
         <input id="username" name="username" autocomplete="username">
+      </label>
+      <label>Publish-Pause in ms
+        <input id="publish_delay_ms" name="publish_delay_ms" type="number" min="0" max="1000" value="50">
       </label>
       <label>Passwort
         <input id="password" name="password" type="password" autocomplete="new-password" placeholder="unverändert lassen">
@@ -467,6 +470,7 @@ INDEX_HTML = """<!doctype html>
       form.broker_host.value = data.broker_host || '';
       form.broker_port.value = data.broker_port || 1883;
       form.username.value = data.username || '';
+      form.publish_delay_ms.value = data.publish_delay_ms ?? 50;
       selectedStates = new Set(data.entities || []);
       selectedAttributes = new Set(data.entity_attributes || []);
       commandEntities = new Set(data.command_entities || []);
@@ -500,7 +504,8 @@ INDEX_HTML = """<!doctype html>
       const payload = {
         broker_host: form.broker_host.value.trim(),
         broker_port: Number(form.broker_port.value || 1883),
-        username: form.username.value.trim()
+        username: form.username.value.trim(),
+        publish_delay_ms: Number(form.publish_delay_ms.value || 50)
       };
       if (form.password.value) payload.password = form.password.value;
       try {
@@ -601,6 +606,7 @@ class Config:
     entities: tuple
     entity_attributes: tuple
     command_entities: tuple
+    publish_delay_ms: int
 
     @classmethod
     def load(cls, options):
@@ -615,8 +621,9 @@ class Config:
             raise ValueError("client_id muss gesetzt sein")
         port = int(options.get("broker_port", 1883))
         interval = int(options.get("poll_interval", 5))
-        if not 1 <= port <= 65535 or not 1 <= interval <= 300:
-            raise ValueError("Port oder Abfrageintervall liegt außerhalb des erlaubten Bereichs")
+        publish_delay_ms = int(options.get("publish_delay_ms", 50))
+        if not 1 <= port <= 65535 or not 1 <= interval <= 300 or not 0 <= publish_delay_ms <= 1000:
+            raise ValueError("Port, Abfrageintervall oder Publish-Verzögerung liegt außerhalb des erlaubten Bereichs")
         entities = validate_entities(options.get("entities", []), "entities")
         requested_commands = validate_entities(options.get("command_entities", []), "command_entities")
         entity_attributes = validate_entity_attributes(options.get("entity_attributes", []))
@@ -626,7 +633,8 @@ class Config:
             raise ValueError("Befehle sind nur für unterstützte steuerbare Domains erlaubt")
         commands = automatic_command_entities(entities)
         return cls(host, port, str(options.get("username", "")), str(options.get("password", "")),
-                   bool(options.get("tls", False)), client_id, prefix, interval, entities, entity_attributes, commands)
+                   bool(options.get("tls", False)), client_id, prefix, interval, entities, entity_attributes,
+                   commands, publish_delay_ms)
 
     def topic(self, entity, suffix):
         return f"{self.prefix}/{entity}/{suffix}"
@@ -943,10 +951,6 @@ class Bridge:
             return
         self.generation += 1
         self.subscribed_command_topics.clear()
-        for topic in self.command_topics:
-            # QoS 0 avoids replay of QoS 1 command deliveries after reconnect.
-            client.subscribe(topic, qos=0)
-            self.subscribed_command_topics.add(topic)
         self.connected.set()
         if self.status:
             self.status.set_connected(True, "Verbunden")
@@ -976,13 +980,15 @@ class Bridge:
         except queue.Full:
             LOG.warning("Befehlswarteschlange voll; Befehl verworfen")
 
-    def publish(self, topic, payload):
+    def publish(self, topic, payload, throttle=False):
         info = self.client.publish(topic, payload, qos=1, retain=True)
         if info.rc != mqtt.MQTT_ERR_SUCCESS:
             raise ConnectionError("MQTT publish failed")
         info.wait_for_publish(timeout=5)
         if not info.is_published():
             raise ConnectionError("MQTT publish acknowledgement timed out")
+        if throttle and self.config.publish_delay_ms:
+            time.sleep(self.config.publish_delay_ms / 1000)
 
     def poll(self):
         generation = self.generation
@@ -991,13 +997,12 @@ class Bridge:
             self.sent_generation = generation
         states = {state["entity_id"]: state for state in self.ha.full_states()}
         prefixes = common_prefixes_from_states(states)
-        self.refresh_command_topics(states, prefixes)
         polled_entities = sorted(set(self.config.entities) | set(self.attribute_map))
         for entity in polled_entities:
             entry = states.get(entity, {"state": "unavailable", "attributes": {}})
             state = str(entry.get("state", "unavailable"))
             if entity in self.config.entities and self.sent.get(("state", entity)) != state:
-                self.publish(self.topic(entity, "state", entry if entity in states else None, prefixes), state)
+                self.publish(self.topic(entity, "state", entry if entity in states else None, prefixes), state, throttle=True)
                 self.sent[("state", entity)] = state
             attributes = entry.get("attributes", {})
             if not isinstance(attributes, dict):
@@ -1006,9 +1011,10 @@ class Bridge:
                 value = encode_mqtt_payload(attributes.get(attribute, "unavailable"))
                 key = ("attribute", entity, attribute)
                 if self.sent.get(key) != value:
-                    self.publish(self.topic(entity, f"attribute/{attribute}", entry if entity in states else None, prefixes), value)
+                    self.publish(self.topic(entity, f"attribute/{attribute}", entry if entity in states else None, prefixes), value, throttle=True)
                     self.sent[key] = value
         self.publish(self.availability, "online")
+        self.refresh_command_topics(states, prefixes)
 
     def process_command(self, command):
         created, generation, entity, service = command
@@ -1121,13 +1127,14 @@ class AppController:
             "entities": entities,
             "entity_attributes": options.get("entity_attributes", []),
             "command_entities": command_entities,
+            "publish_delay_ms": options.get("publish_delay_ms", 50),
             "status": self.status.snapshot(),
         }
 
     def update_connection(self, payload):
         with self.lock:
             options = self.read_options()
-            for key in ("broker_host", "broker_port", "username"):
+            for key in ("broker_host", "broker_port", "username", "publish_delay_ms"):
                 if key in payload:
                     options[key] = payload[key]
             if "password" in payload:

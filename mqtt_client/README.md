@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.13**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
+Version **0.1.14**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
 
 ## Installation und Einrichtung
 
@@ -28,6 +28,7 @@ tls: false
 client_id: ugso-ha-mqtt-client
 topic_prefix: ha_external
 poll_interval: 5
+publish_delay_ms: 50
 entities:
   - sensor.wohnzimmer_temperatur
   - input_boolean.dashboard_christmas
@@ -77,8 +78,10 @@ MQTT-Discovery.
 Fehlende Entitäten erhalten `unavailable`; HA-Zustände `unknown` und `unavailable`
 werden unverändert weitergegeben.
 
-Die App sendet mit QoS 1 und Retain. Beim Entfernen einer Entität oder Ändern des
-Topic-Präfixes bleiben alte Retain-Nachrichten auf dem Broker bestehen, bis du sie
+Die App sendet mit QoS 1 und Retain. Beim ersten Abgleich werden States und
+Attribute vor den `/set`-Rückkanälen gesendet und mit `publish_delay_ms` in kleinen
+Häppchen gedrosselt, damit ioBroker die Objekte sauber anlegen kann. Beim Entfernen
+einer Entität oder Ändern des Topic-Präfixes bleiben alte Retain-Nachrichten auf dem Broker bestehen, bis du sie
 dort löschst. Verwende pro App-Instanz eine eigene Client-ID und ein eigenes Präfix.
 Automatische Wiederverbindung, Last Will und ein sauberer Offline-Status beim
 Beenden sind enthalten. `online` bezeichnet den letzten erfolgreichen Abgleich;
@@ -107,7 +110,7 @@ HA-Token ist nicht erforderlich. Die App legt keine HA-Konfigurationsdateien an.
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.13 mqtt_client
+docker build -t ugso-mqtt-client:0.1.14 mqtt_client
 ```
 
 [English documentation](DOCS.en.md)

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.14
+
+- Published states and attributes before subscribing device/value `/set` command topics, so ioBroker receives the value tree before return-command branches.
+- Added `publish_delay_ms` with a 50 ms default to send new retained MQTT values in small batches.
+- Added the publish-delay setting to the Web UI.
+
 ## 0.1.13
 
 - Enabled return commands automatically for selected controllable states, including switches, inputs, sliders, selects, text fields and buttons/tasters.

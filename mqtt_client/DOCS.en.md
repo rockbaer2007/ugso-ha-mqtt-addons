@@ -1,4 +1,4 @@
-# MQTT-Client 0.1.13
+# MQTT-Client 0.1.14
 
 An independent Home Assistant app for sending selected Home Assistant devices and values to ioBroker or another external MQTT broker. Instead of mirroring the whole Home Assistant inventory through ioBroker's HASS adapter, you choose the devices and values that should appear in ioBroker. This follows the familiar idea of ioBroker → Home Assistant via MQTT, but in the opposite direction and with explicit selection. Your existing HA broker and MQTT integration remain in place. This is a direct HA API client, not a broker bridge.
 
@@ -23,8 +23,10 @@ States are polled every five seconds by default (`poll_interval`: 1–300 second
 Changes are published as plain state strings to
 `<topic_prefix>/<device>/<value>/state` and selected attributes to
 `<topic_prefix>/<device>/<value>/attribute/<attribute>` with QoS 1 and Retain.
-This creates one ioBroker device folder with all values below it. After MQTT
-reconnection, all selected values are resent. The default prefix is
+This creates one ioBroker device folder with all values below it. During the first
+sync, states and attributes are published before `/set` return-command topics are
+subscribed, with a default 50 ms delay between new MQTT values so ioBroker can
+create objects in small batches. After MQTT reconnection, all selected values are resent. The default prefix is
 `ha_external`. Only selected states and attributes are exported, with no MQTT
 Discovery. Short transitions between polls may be missed. Missing entities
 produce `unavailable`; `unknown`/`unavailable` are passed through.

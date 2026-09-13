@@ -24,7 +24,10 @@ Die Standard-Topics sind gerätebasiert: `ha_external/<gerät>/<wert>/state`,
 `ha_external/<gerät>/<wert>/attribute/<attribut>` und
 `ha_external/availability`. So erscheint in ioBroker ein Geräteordner mit den
 Werten darunter. Die Abfrage erfolgt alle fünf Sekunden. Nur explizit
-ausgewählte States und Attribute werden exportiert; keine Discovery.
+ausgewählte States und Attribute werden exportiert; keine Discovery. Beim ersten
+Abgleich sendet die App States und Attribute vor den `/set`-Rückkanälen und
+drosselt neue MQTT-Werte standardmäßig mit 50 ms Pause, damit ioBroker die Objekte
+in kleinen Häppchen anlegen kann.
 
 Für ausgewählte steuerbare States aktiviert die App Rückbefehle automatisch.
 Sende ohne Retain an `ha_external/<gerät>/<wert>/set`: `ON` oder `OFF` für
