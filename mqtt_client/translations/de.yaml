@@ -1,0 +1,27 @@
+configuration:
+  broker_host:
+    name: Externer MQTT-Broker
+    description: IP-Adresse oder Hostname von ioBroker im Modus Server/Broker.
+  broker_port:
+    name: Broker-Port
+  username:
+    name: MQTT-Benutzername
+  password:
+    name: MQTT-Passwort
+  tls:
+    name: TLS aktivieren
+    description: Prüft das Serverzertifikat. Passe auch den Broker-Port an.
+  client_id:
+    name: MQTT-Client-ID
+    description: Muss auf dem Broker eindeutig sein.
+  topic_prefix:
+    name: Topic-Präfix
+    description: Eigener Namensbereich für Zustände, Befehle und Verfügbarkeit.
+  poll_interval:
+    name: Abfrageintervall in Sekunden
+  entities:
+    name: Zu übertragende HA-Entitäten
+    description: Liste konkreter Entity-IDs. Nur Zustandstexte werden übertragen.
+  command_entities:
+    name: Für Ein/Aus-Befehle freigegebene Entitäten
+    description: Teilmenge der obigen Liste. Erlaubt sind switch, light, input_boolean und fan. Leer bedeutet keine Befehle.

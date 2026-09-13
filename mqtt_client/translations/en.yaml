@@ -1,0 +1,27 @@
+configuration:
+  broker_host:
+    name: External MQTT broker
+    description: IP address or hostname of ioBroker in Server/Broker mode.
+  broker_port:
+    name: Broker port
+  username:
+    name: MQTT username
+  password:
+    name: MQTT password
+  tls:
+    name: Enable TLS
+    description: Verifies the server certificate. Adjust the broker port as well.
+  client_id:
+    name: MQTT client ID
+    description: Must be unique on the broker.
+  topic_prefix:
+    name: Topic prefix
+    description: Separate namespace for states, commands and availability.
+  poll_interval:
+    name: Poll interval in seconds
+  entities:
+    name: HA entities to export
+    description: List of exact entity IDs. Only plain states are published.
+  command_entities:
+    name: Entities allowed to receive ON/OFF commands
+    description: Subset of the list above. Supports switch, light, input_boolean and fan. Empty disables commands.

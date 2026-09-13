@@ -1,0 +1,25 @@
+name: MQTT-Client checks
+on:
+  push:
+    paths:
+      - mqtt_client/**
+      - .github/workflows/mqtt-client.yml
+  pull_request:
+    paths:
+      - mqtt_client/**
+      - .github/workflows/mqtt-client.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r mqtt_client/requirements.txt
+      - run: python -m unittest discover -s mqtt_client/tests -v
+      - run: docker build -t mqtt-client:test mqtt_client
+      - run: docker run --rm -v "$PWD/mqtt_client/tests:/tests:ro" mqtt-client:test python -m unittest discover -s /tests -v

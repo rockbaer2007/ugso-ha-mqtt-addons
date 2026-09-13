@@ -9,6 +9,7 @@ Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetrage
 - FRITZ!Box to MQTT
 - Heizoel to MQTT
 - Parcel to MQTT
+- [MQTT-Client](mqtt_client/README.md): ausgewählte HA-Zustände an einen externen Broker (z. B. ioBroker) senden, optional mit Ein/Aus-Befehlen zurück an HA.
 
 ## Installation
 
@@ -28,6 +29,6 @@ Danach koennen die einzelnen Add-ons installiert und separat konfiguriert werden
 
 ## Hinweise
 
-- Die Add-ons nutzen Home-Assistant-MQTT-Discovery.
-- Ein MQTT-Broker muss in Home Assistant vorhanden sein.
+- FRITZ!Box, Heizoel und Parcel to MQTT nutzen Home-Assistant-MQTT-Discovery und einen MQTT-Broker für Home Assistant.
+- MQTT-Client verbindet sich zusätzlich mit einem externen Broker; der vorhandene HA-Broker bleibt bestehen. Die App verwendet keine MQTT-Discovery.
 - Die einzelnen Projekt-Repositories bleiben weiterhin als Quell- und Entwicklungsrepos bestehen.
