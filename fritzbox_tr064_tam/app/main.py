@@ -1043,6 +1043,7 @@ class HomeAssistantMqttPublisher:
             self._publish_call_discovery(view)
         for view in self.known_call_views - call_views:
             self._remove_call_discovery(view)
+        self._remove_legacy_last_call_discovery()
         self._publish_legacy_last_call_discovery()
         phonebooks_by_id = {phonebook.phonebook_id: phonebook for phonebook in all_phonebooks}
         for phonebook_id in phonebook_ids:
@@ -1397,15 +1398,24 @@ class HomeAssistantMqttPublisher:
     def _publish_legacy_last_call_discovery(self) -> None:
         for index in range(1, LEGACY_LAST_CALL_SENSOR_COUNT + 1):
             for field in LEGACY_LAST_CALL_FIELDS:
-                object_id = f"letzte_anrufe_call_{index}_{field}_2"
+                object_id = f"fritzbox_letzte_anrufe_call_{index}_{field}_2"
                 self._publish_config("sensor", object_id, {
                     "name": f"Letzte Anrufe Call {index} {LEGACY_LAST_CALL_FIELD_LABELS[field]}",
-                    "object_id": f"fritzbox_{object_id}",
-                    "unique_id": f"fritzbox_tr064_last_call_{index}_{field}_2",
+                    "object_id": object_id,
+                    "unique_id": object_id,
                     "state_topic": f"{self.options.base_topic}/last_calls/call_{index}/{field}",
                     "icon": LEGACY_LAST_CALL_FIELD_ICONS[field],
                     "device": self._device(),
                 })
+
+    def _remove_legacy_last_call_discovery(self) -> None:
+        for index in range(1, LEGACY_LAST_CALL_SENSOR_COUNT + 1):
+            for field in LEGACY_LAST_CALL_FIELDS:
+                self._publish(
+                    f"{self.options.discovery_prefix}/sensor/fritzbox_tr064/letzte_anrufe_call_{index}_{field}_2/config",
+                    "",
+                    retain=True,
+                )
 
     def _publish_legacy_last_call_states(self, calls: list[CallEntry]) -> None:
         for index in range(1, LEGACY_LAST_CALL_SENSOR_COUNT + 1):

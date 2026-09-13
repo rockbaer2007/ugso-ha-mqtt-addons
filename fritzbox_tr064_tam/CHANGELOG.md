@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.36
+
+- Force the legacy last-call discovery object IDs to the expected Home Assistant entity IDs such as `sensor.fritzbox_letzte_anrufe_call_1_name_2`.
+- Remove the earlier intermediate discovery topics so Home Assistant can recreate the corrected entities after the add-on restarts.
+
 ## 0.1.35
 
 - Added legacy individual last-call MQTT Discovery sensors for Lovelace cards that expect `sensor.fritzbox_letzte_anrufe_call_1_name_2`, number, date, type and duration entities up to call 10.
