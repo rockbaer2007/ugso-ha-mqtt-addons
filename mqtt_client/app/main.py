@@ -28,7 +28,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.12"
+APP_VERSION = "0.1.13"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -263,6 +263,14 @@ INDEX_HTML = """<!doctype html>
       return commandDomains.has(entityId.split('.')[0]);
     }
 
+    function syncAutomaticCommand(item) {
+      if (selectedStates.has(item.entity_id) && isCommandEntity(item.entity_id)) {
+        commandEntities.add(item.entity_id);
+      } else {
+        commandEntities.delete(item.entity_id);
+      }
+    }
+
     function entityDomain(item) {
       return item.entity_id.split('.')[0];
     }
@@ -286,7 +294,7 @@ INDEX_HTML = """<!doctype html>
       const parts = [];
       if (selectedStates.has(entityId)) parts.push('State');
       if (attrs.length) parts.push(`${attrs.length} Attribute`);
-      if (commandEntities.has(entityId)) parts.push('bidirektional');
+      if (commandEntities.has(entityId)) parts.push('Rückbefehl aktiv');
       return parts.length ? ` · ${parts.join(' · ')}` : '';
     }
 
@@ -296,10 +304,8 @@ INDEX_HTML = """<!doctype html>
 
     function selectEntityWithAttributes(item, selected) {
       if (selected) selectedStates.add(item.entity_id);
-      else {
-        selectedStates.delete(item.entity_id);
-        commandEntities.delete(item.entity_id);
-      }
+      else selectedStates.delete(item.entity_id);
+      syncAutomaticCommand(item);
       (item.attributes || []).forEach((attr) => {
         const key = attrKey(item.entity_id, attr);
         if (selected) selectedAttributes.add(key);
@@ -359,7 +365,7 @@ INDEX_HTML = """<!doctype html>
         const parts = [];
         if (selectedStates.has(entity)) parts.push('State');
         if (attrs.length) parts.push(`${attrs.length} Attribute`);
-        if (commandEntities.has(entity)) parts.push('bidirektional');
+        if (commandEntities.has(entity)) parts.push('Rückbefehl aktiv');
         button.querySelector('.meta').textContent = parts.join(' · ') || 'Keine Auswahl';
         button.addEventListener('click', () => openEntity(entity));
         selectedList.appendChild(button);
@@ -519,12 +525,7 @@ INDEX_HTML = """<!doctype html>
       if (!activeEntity) return;
       if (stateCheck.checked) selectedStates.add(activeEntity.entity_id);
       else selectedStates.delete(activeEntity.entity_id);
-      if (isCommandEntity(activeEntity.entity_id) && commandCheck.checked) {
-        selectedStates.add(activeEntity.entity_id);
-        commandEntities.add(activeEntity.entity_id);
-      } else {
-        commandEntities.delete(activeEntity.entity_id);
-      }
+      syncAutomaticCommand(activeEntity);
       activeEntity.attributes.forEach((attr) => selectedAttributes.delete(attrKey(activeEntity.entity_id, attr)));
       attributeList.querySelectorAll('input:checked').forEach((input) => selectedAttributes.add(attrKey(activeEntity.entity_id, input.value)));
       try {
@@ -617,12 +618,13 @@ class Config:
         if not 1 <= port <= 65535 or not 1 <= interval <= 300:
             raise ValueError("Port oder Abfrageintervall liegt außerhalb des erlaubten Bereichs")
         entities = validate_entities(options.get("entities", []), "entities")
-        commands = validate_entities(options.get("command_entities", []), "command_entities")
+        requested_commands = validate_entities(options.get("command_entities", []), "command_entities")
         entity_attributes = validate_entity_attributes(options.get("entity_attributes", []))
-        if not set(commands).issubset(entities):
+        if not set(requested_commands).issubset(entities):
             raise ValueError("command_entities muss eine Teilmenge von entities sein")
-        if any(entity.split('.')[0] not in COMMAND_DOMAINS for entity in commands):
+        if any(entity.split('.')[0] not in COMMAND_DOMAINS for entity in requested_commands):
             raise ValueError("Befehle sind nur für unterstützte steuerbare Domains erlaubt")
+        commands = automatic_command_entities(entities)
         return cls(host, port, str(options.get("username", "")), str(options.get("password", "")),
                    bool(options.get("tls", False)), client_id, prefix, interval, entities, entity_attributes, commands)
 
@@ -634,6 +636,10 @@ def validate_entities(values, key):
     if not isinstance(values, list) or any(not isinstance(v, str) or not ENTITY.fullmatch(v) for v in values):
         raise ValueError(f"{key} muss eine Liste konkreter Entity-IDs sein")
     return tuple(dict.fromkeys(values))
+
+
+def automatic_command_entities(entities):
+    return tuple(entity for entity in entities if entity.split('.')[0] in COMMAND_DOMAINS)
 
 
 def validate_entity_attributes(values):
@@ -1105,14 +1111,16 @@ class AppController:
 
     def public_config(self):
         options = self.read_options()
+        entities = options.get("entities", [])
+        command_entities = list(automatic_command_entities(validate_entities(entities, "entities"))) if isinstance(entities, list) else []
         return {
             "broker_host": options.get("broker_host", ""),
             "broker_port": options.get("broker_port", 1883),
             "username": options.get("username", ""),
             "has_password": bool(options.get("password")),
-            "entities": options.get("entities", []),
+            "entities": entities,
             "entity_attributes": options.get("entity_attributes", []),
-            "command_entities": options.get("command_entities", []),
+            "command_entities": command_entities,
             "status": self.status.snapshot(),
         }
 
@@ -1135,9 +1143,8 @@ class AppController:
             options = self.read_options()
             entities = validate_entities(payload.get("entities", []), "entities")
             entity_attributes = validate_entity_attributes(payload.get("entity_attributes", []))
-            requested_commands = validate_entities(payload.get("command_entities", []), "command_entities")
-            commands = [entity for entity in requested_commands
-                        if entity in entities and entity.split(".")[0] in COMMAND_DOMAINS]
+            validate_entities(payload.get("command_entities", []), "command_entities")
+            commands = list(automatic_command_entities(entities))
             options["entities"] = list(entities)
             options["entity_attributes"] = list(entity_attributes)
             options["command_entities"] = commands

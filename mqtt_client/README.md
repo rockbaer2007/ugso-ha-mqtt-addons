@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.12**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
+Version **0.1.13**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
 
 ## Installation und Einrichtung
 
@@ -34,8 +34,7 @@ entities:
 entity_attributes:
   - sensor.wohnzimmer_temperatur:unit_of_measurement
   - sensor.wohnzimmer_temperatur:friendly_name
-command_entities:
-  - input_boolean.dashboard_christmas
+command_entities: []
 ```
 
 ## Daten und Befehle
@@ -85,13 +84,13 @@ Automatische Wiederverbindung, Last Will und ein sauberer Offline-Status beim
 Beenden sind enthalten. `online` bezeichnet den letzten erfolgreichen Abgleich;
 Verbindungsfehler werden nach Timeout beziehungsweise MQTT-Keepalive erkannt.
 
-Befehle sind standardmäßig deaktiviert (`command_entities: []`). Freigaben müssen
-auch in `entities` stehen und können in der Weboberfläche über **Bidirektional /
-Werte schreiben** gesetzt werden. `switch`, `light`, `input_boolean` und `fan`
+Rückbefehle werden für ausgewählte steuerbare Entitäten automatisch aktiviert,
+sobald ihr State übertragen wird. `switch`, `light`, `input_boolean` und `fan`
 akzeptieren `ON` oder `OFF`. `input_number` und `number` akzeptieren Zahlen,
 `input_select` und `select` akzeptieren den Optionsnamen, `input_text` und `text`
-akzeptieren Text. `button` und `input_button` akzeptieren `PRESS`. Sensorwerte
-bleiben nur ausgehend. In ioBroker Befehle **ohne Retain** senden. Gespeicherte
+akzeptieren Text. `button` und `input_button` akzeptieren `PRESS`, zum Beispiel
+für Taster wie `taster_auf`, `taster_ab` oder `taster_stop`. Sensorwerte bleiben
+nur ausgehend. In ioBroker Befehle **ohne Retain** senden. Gespeicherte
 Retain-Befehle bei der Anmeldung, ungültige Payloads und alte Warteschlangenbefehle
 werden verworfen. Keine beliebigen HA-Serviceaufrufe.
 Alte Befehls-Topics mit Entity-ID, zum Beispiel
@@ -108,7 +107,7 @@ HA-Token ist nicht erforderlich. Die App legt keine HA-Konfigurationsdateien an.
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.12 mqtt_client
+docker build -t ugso-mqtt-client:0.1.13 mqtt_client
 ```
 
 [English documentation](DOCS.en.md)

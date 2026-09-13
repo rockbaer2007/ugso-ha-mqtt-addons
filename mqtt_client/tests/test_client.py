@@ -259,21 +259,26 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(iobroker_mapping("sensor.text", "Hallo", {"device_class": "text"}),
                          {"state_type": "state", "iobroker_type": "state"})
 
-    def test_controller_saves_only_supported_bidirectional_entities(self):
+    def test_controller_automatically_enables_supported_bidirectional_entities(self):
         FakeBridge.instances = []
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "options.json"
             path.write_text(json.dumps({**self.options, "command_entities": []}), encoding="utf-8")
             controller = AppController(path, "token", bridge_factory=FakeBridge)
             updated = controller.update_selections({
-                "entities": ["sensor.temperature", "switch.test", "input_number.level"],
+                "entities": ["sensor.temperature", "switch.test", "input_number.level", "button.restart"],
                 "entity_attributes": [],
-                "command_entities": ["sensor.temperature", "switch.test", "input_number.level"],
+                "command_entities": [],
             })
-            self.assertEqual(updated["command_entities"], ["switch.test", "input_number.level"])
+            self.assertEqual(updated["command_entities"], ["switch.test", "input_number.level", "button.restart"])
             saved = json.loads(path.read_text(encoding="utf-8"))
-            self.assertEqual(saved["command_entities"], ["switch.test", "input_number.level"])
+            self.assertEqual(saved["command_entities"], ["switch.test", "input_number.level", "button.restart"])
             controller.stop()
+
+    def test_config_automatically_enables_existing_selected_commands(self):
+        config = Config.load({**self.options, "entities": ["sensor.temperature", "switch.test", "button.restart"],
+                              "command_entities": []})
+        self.assertEqual(config.command_entities, ("switch.test", "button.restart"))
 
 
 if __name__ == "__main__":

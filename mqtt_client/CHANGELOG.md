@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.13
+
+- Enabled return commands automatically for selected controllable states, including switches, inputs, sliders, selects, text fields and buttons/tasters.
+- Existing selected controllable entities now receive their device/value `/set` command topics without needing a separate bidirectional checkbox.
+- Kept sensor-like values outgoing-only.
+
 ## 0.1.12
 
 - Moved value-row checkboxes to the left side before the text.

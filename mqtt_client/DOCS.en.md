@@ -1,4 +1,4 @@
-# MQTT-Client 0.1.12
+# MQTT-Client 0.1.13
 
 An independent Home Assistant app for sending selected Home Assistant devices and values to ioBroker or another external MQTT broker. Instead of mirroring the whole Home Assistant inventory through ioBroker's HASS adapter, you choose the devices and values that should appear in ioBroker. This follows the familiar idea of ioBroker → Home Assistant via MQTT, but in the opposite direction and with explicit selection. Your existing HA broker and MQTT integration remain in place. This is a direct HA API client, not a broker bridge.
 
@@ -29,12 +29,13 @@ reconnection, all selected values are resent. The default prefix is
 Discovery. Short transitions between polls may be missed. Missing entities
 produce `unavailable`; `unknown`/`unavailable` are passed through.
 
-Optional `command_entities` must be a subset of `entities`. Publish without Retain
-to `<topic_prefix>/<device>/<value>/set`: `ON` or `OFF` for toggle-like domains,
-numbers for `input_number`/`number`, option names for `input_select`/`select`,
-text for `input_text`/`text`, and `PRESS` for `button`/`input_button`. Legacy
-entity-ID command topics such as `<topic_prefix>/switch.plug/set` remain accepted
-for compatibility. The web UI only shows the bidirectional option for controllable domains. The default empty command list disables commands.
+For selected controllable states, return commands are enabled automatically.
+Publish without Retain to `<topic_prefix>/<device>/<value>/set`: `ON` or `OFF`
+for toggle-like domains, numbers for `input_number`/`number`, option names for
+`input_select`/`select`, text for `input_text`/`text`, and `PRESS` for
+`button`/`input_button`, including button-style values such as up, down or stop.
+Legacy entity-ID command topics such as `<topic_prefix>/switch.plug/set` remain
+accepted for compatibility. Sensor-like domains remain outgoing-only.
 Retained messages received on subscription, invalid payloads and stale queued
 commands are discarded. Arbitrary HA service calls are unsupported.
 
