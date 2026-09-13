@@ -11,13 +11,7 @@ Geräte auch über enthaltene Entitäten, zum Beispiel alle Stecker. Beim Klick 
 ein Gerät öffnet sich ein Popup mit den Bereichen **Steuerung**, **Sensoren**,
 **Konfiguration** und **Diagnose**. Dort stehen die zugehörigen
 Home-Assistant-Entitäten mit State, Zieltyp und Attributanzahl. Rechts stehen die
-ausgewählten Übertragungen. Klicke im Geräte-Popup eine Entität an, um den State
-und einzelne Attribute per Checkbox freizugeben. Bei `switch`, `light`,
-`input_boolean` und `fan` kannst
-du zusätzlich **Bidirektional / Werte schreiben** aktivieren. Dasselbe gilt für
-Eingabewerte wie `input_number`, `number`, `input_select`, `select`, `input_text`
-und `text` sowie für `button` und `input_button`. Mit **Alle States dieses Geräts
-übertragen** aktivierst du alle States eines Geräts auf einmal. Sensorwerte
+ausgewählten Übertragungen. Setze im Geräte-Popup rechts an einer Wert-Zeile die Checkbox, um den State und alle Attribute dieses Werts freizugeben. **Alle States dieses Geräts übertragen** aktiviert alle Werte eines Geräts inklusive Attribute auf einmal. Sensorwerte
 bleiben nur ausgehend. Der bestehende HA-Broker bleibt erhalten. Die App benötigt keinen
 manuellen HA-Token. Änderungen aus der Weboberfläche werden sofort angewendet.
 

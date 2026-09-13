@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.10**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
+Version **0.1.11**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
 den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Dein HA-Broker und die vorhandene
 MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und
 dem externen Broker; sie ist keine Broker-Bridge.
@@ -15,12 +15,7 @@ dem externen Broker; sie ist keine Broker-Bridge.
 4. Links nach einem Gerät suchen, zum Beispiel nach einem Stecker, und das Gerät
    anklicken. In einem Geräte-Popup stehen zusammengehörige Switches,
    Sensorwerte, Updates, States und Attribute in Bereichen wie **Steuerung**,
-   **Sensoren**, **Konfiguration** und **Diagnose**. Darin wählst du die
-   gewünschte Entität aus und gibst State, Attribute, den erkannten
-   ioBroker-Zieltyp und bei unterstützten Domains optional
-   **Bidirektional / Werte schreiben** frei.
-   Mit **Alle States dieses Geräts übertragen** aktivierst du alle States des
-   gewählten Geräts auf einmal.
+   **Sensoren**, **Konfiguration** und **Diagnose**. Rechts in jeder Wert-Zeile aktivierst du die Checkbox; dadurch werden State und alle Attribute dieses Werts übernommen. Mit **Alle States dieses Geräts übertragen** aktivierst du alle Werte des gewählten Geräts inklusive Attribute auf einmal.
    Rechts siehst du die aktuell ausgewählten Übertragungen.
 5. Speichern. Die Weboberfläche zeigt rot **Keine Verbindung** und grün
    **Verbunden**. Änderungen an den Broker-Zugangsdaten werden sofort angewendet.
@@ -116,7 +111,7 @@ HA-Token ist nicht erforderlich. Die App legt keine HA-Konfigurationsdateien an.
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.10 mqtt_client
+docker build -t ugso-mqtt-client:0.1.11 mqtt_client
 ```
 
 [English documentation](DOCS.en.md)

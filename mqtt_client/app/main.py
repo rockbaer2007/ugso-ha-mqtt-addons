@@ -28,7 +28,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.10"
+APP_VERSION = "0.1.11"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -115,6 +115,9 @@ INDEX_HTML = """<!doctype html>
     .deviceSection { border: 1px solid rgba(148, 163, 184, .25); border-radius: 10px; padding: 12px; background: rgba(148, 163, 184, .08); }
     .deviceSection h3 { margin: 0 0 10px; font-size: .98rem; }
     .deviceRows { display: grid; gap: 6px; }
+    .entityRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 8px; background: rgba(148, 163, 184, .12); }
+    .entityRow input { width: auto; }
+    .entityValue { font-weight: 650; white-space: nowrap; }
     .entity, .selected { width: 100%; text-align: left; color: inherit; background: rgba(148, 163, 184, .12); display: grid; gap: 2px; }
     .entity:hover, .selected:hover { background: rgba(3, 169, 244, .18); }
     .selected { grid-template-columns: 1fr auto; align-items: center; }
@@ -290,6 +293,23 @@ INDEX_HTML = """<!doctype html>
       return (device?.entities || []).map((item) => item.entity_id);
     }
 
+    function selectEntityWithAttributes(item, selected) {
+      if (selected) selectedStates.add(item.entity_id);
+      else {
+        selectedStates.delete(item.entity_id);
+        commandEntities.delete(item.entity_id);
+      }
+      (item.attributes || []).forEach((attr) => {
+        const key = attrKey(item.entity_id, attr);
+        if (selected) selectedAttributes.add(key);
+        else selectedAttributes.delete(key);
+      });
+    }
+
+    function entityFullySelected(item) {
+      return selectedStates.has(item.entity_id) && (item.attributes || []).every((attr) => selectedAttributes.has(attrKey(item.entity_id, attr)));
+    }
+
     function renderLists() {
       const term = filter.value.trim().toLowerCase();
       entityList.innerHTML = '';
@@ -341,10 +361,10 @@ INDEX_HTML = """<!doctype html>
       }
       document.getElementById('deviceDialogTitle').textContent = activeDevice.name || 'Gerät';
       document.getElementById('deviceDialogMeta').textContent = deviceCountLabel(activeDevice);
-      const deviceStates = deviceStateEntities(activeDevice);
-      const selectedCount = deviceStates.filter((entity) => selectedStates.has(entity)).length;
-      deviceSelectAll.checked = Boolean(deviceStates.length && selectedCount === deviceStates.length);
-      deviceSelectAll.indeterminate = Boolean(selectedCount && selectedCount < deviceStates.length);
+      const deviceItems = activeDevice.entities || [];
+      const selectedCount = deviceItems.filter((item) => entityFullySelected(item)).length;
+      deviceSelectAll.checked = Boolean(deviceItems.length && selectedCount === deviceItems.length);
+      deviceSelectAll.indeterminate = Boolean(selectedCount && selectedCount < deviceItems.length);
       deviceSections.innerHTML = '';
       const groups = new Map([['Steuerung', []], ['Sensoren', []], ['Konfiguration', []], ['Diagnose', []]]);
       (activeDevice.entities || []).forEach((item) => groups.get(entitySection(item)).push(item));
@@ -356,17 +376,24 @@ INDEX_HTML = """<!doctype html>
         section.querySelector('h3').textContent = title;
         const rows = section.querySelector('.deviceRows');
         items.forEach((item) => {
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'entity';
-          button.innerHTML = '<span class="name"></span><span class="meta"></span>';
-          button.querySelector('.name').textContent = entityLabel(item);
-          button.querySelector('.meta').textContent = `${item.entity_id} · ${item.state} · ${item.iobroker_type} · ${item.attributes.length} Attribute${selectedSummary(item.entity_id)}`;
-          button.addEventListener('click', () => {
-            deviceDialog.close();
-            openEntity(item.entity_id);
+          const row = document.createElement('label');
+          row.className = 'entityRow';
+          row.innerHTML = '<span><span class="name"></span><span class="meta"></span></span><span class="entityValue"></span><input type="checkbox">';
+          row.querySelector('.name').textContent = entityLabel(item);
+          row.querySelector('.meta').textContent = `${item.entity_id} · ${item.iobroker_type} · ${item.attributes.length} Attribute${selectedSummary(item.entity_id)}`;
+          row.querySelector('.entityValue').textContent = item.state;
+          const input = row.querySelector('input');
+          input.checked = entityFullySelected(item);
+          input.addEventListener('change', async () => {
+            selectEntityWithAttributes(item, input.checked);
+            try {
+              await saveSelections();
+              openDevice(activeDevice.id);
+            } catch (error) {
+              selectionMessage.textContent = error.message;
+            }
           });
-          rows.appendChild(button);
+          rows.appendChild(row);
         });
         deviceSections.appendChild(section);
       });
@@ -510,13 +537,7 @@ INDEX_HTML = """<!doctype html>
     document.getElementById('closeDeviceDialog').addEventListener('click', () => deviceDialog.close());
     deviceSelectAll.addEventListener('change', async () => {
       if (!activeDevice) return;
-      deviceStateEntities(activeDevice).forEach((entity) => {
-        if (deviceSelectAll.checked) selectedStates.add(entity);
-        else {
-          selectedStates.delete(entity);
-          commandEntities.delete(entity);
-        }
-      });
+      (activeDevice.entities || []).forEach((item) => selectEntityWithAttributes(item, deviceSelectAll.checked));
       try {
         await saveSelections();
         openDevice(activeDevice.id);

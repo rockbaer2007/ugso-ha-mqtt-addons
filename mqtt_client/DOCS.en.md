@@ -1,4 +1,4 @@
-# MQTT-Client 0.1.10
+# MQTT-Client 0.1.11
 
 An independent Home Assistant app connecting to an external MQTT broker, such as
 ioBroker's MQTT adapter in Server/Broker mode. Your existing HA broker and MQTT
@@ -12,13 +12,7 @@ green **Connected**. It shows a compact device list on the left; the search also
 matches entities inside each device, for example all plugs. Clicking a device
 opens a popup with **Control**, **Sensors**, **Configuration** and **Diagnostics**
 sections. Each entity shows its friendly name, state, target type and attribute
-count. Selected transmissions appear on the right. Click an entity in the device
-popup to choose state and attributes in a dialog. For `switch`, `light`,
-`input_boolean`, `fan`, `input_number`,
-`number`, `input_select`, `select`, `input_text` and `text`, an additional
-bidirectional value checkbox is available. `button` and `input_button` are mapped
-as press buttons. **Send all states for this device** selects all states of the
-chosen device at once. Sensor-like domains remain outgoing-only.
+count. Selected transmissions appear on the right. Use the checkbox on the right side of a value row to send that value state plus all of its attributes. **Send all states for this device** selects every value of the device including attributes. Sensor-like domains remain outgoing-only.
 
 The entity list shows an ioBroker-style target type: `press` maps to `button`,
 `state_boolean` maps to `switch`, and text/state values map to `state`.

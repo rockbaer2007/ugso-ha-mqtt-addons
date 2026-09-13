@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.11
+
+- Changed device popup rows to right-side checkboxes.
+- Selecting one value now includes its state and all attributes.
+- The device-level select-all checkbox now selects all values including all attributes.
+
 ## 0.1.10
 
 - Added common Entity-ID prefix grouping so `1pm_mini_gen3_res1_*` values are merged into the main `1PM Mini Gen3-Res1` device even when the value suffix is unknown.
