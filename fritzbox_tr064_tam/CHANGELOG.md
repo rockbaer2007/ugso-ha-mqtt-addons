@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.38
+
+- Sort the legacy last-call sensors by the FRITZ!Box call date and publish today's calls first, so dashboard cards show the current day's recent calls before older entries.
+
 ## 0.1.37
 
 - Publish the legacy last-call card sensors as simple MQTT Discovery entities whose names and object IDs directly match `sensor.fritzbox_letzte_anrufe_call_*`.

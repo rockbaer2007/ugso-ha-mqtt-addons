@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import datetime as dt
 import logging
 import os
 import re
@@ -1112,7 +1113,7 @@ class HomeAssistantMqttPublisher:
                 "entries": [call_to_dict(call) for call in visible],
                 "lines": [call_to_line(call) for call in visible],
             })
-        self._publish_legacy_last_call_states(calls[:LEGACY_LAST_CALL_SENSOR_COUNT])
+        self._publish_legacy_last_call_states(legacy_last_calls(calls))
 
         for phonebook in phonebooks:
             prefix = f"{self.options.base_topic}/phonebook/{safe_object_part(phonebook.phonebook_id)}"
@@ -2272,6 +2273,34 @@ def call_to_line(call: CallEntry) -> str:
     direction = call.caller or call.called or call.number
     duration = f", {call.duration}" if call.duration else ""
     return f"{call.date} | {label} | {person} | {direction}{duration}"
+
+
+def legacy_last_calls(calls: list[CallEntry]) -> list[CallEntry]:
+    today = dt.date.today()
+    sorted_calls = sorted(calls, key=call_sort_key, reverse=True)
+    todays_calls = [call for call in sorted_calls if call_date(call) == today]
+    older_calls = [call for call in sorted_calls if call_date(call) != today]
+    return (todays_calls + older_calls)[:LEGACY_LAST_CALL_SENSOR_COUNT]
+
+
+def call_sort_key(call: CallEntry) -> tuple[dt.datetime, str]:
+    parsed = call_datetime(call)
+    return parsed or dt.datetime.min, call.name or call.number
+
+
+def call_date(call: CallEntry) -> dt.date | None:
+    parsed = call_datetime(call)
+    return parsed.date() if parsed is not None else None
+
+
+def call_datetime(call: CallEntry) -> dt.datetime | None:
+    value = call.date.strip()
+    for pattern in ("%d.%m.%y %H:%M", "%d.%m.%Y %H:%M", "%d.%m.%y", "%d.%m.%Y"):
+        try:
+            return dt.datetime.strptime(value, pattern)
+        except ValueError:
+            continue
+    return None
 
 
 def legacy_last_call_value(call: CallEntry | None, field: str) -> str:
