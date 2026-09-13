@@ -6,14 +6,16 @@ IP oder Hostname, Port, Benutzername und Passwort. Port `1883` ist als
 ioBroker-Standardport voreingestellt. Rot bedeutet **Keine Verbindung**, grün
 bedeutet **Verbunden**.
 
-Füge in der App-Konfiguration unter `entities` die gewünschten HA-Entity-IDs hinzu.
-Der bestehende HA-Broker bleibt erhalten. Die App benötigt keinen manuellen HA-Token.
-Änderungen an IP, Port, Benutzer und Passwort aus der Weboberfläche werden sofort
-angewendet.
+Darunter zeigt die Oberfläche links die verfügbaren Home-Assistant-Entitäten und
+rechts die ausgewählten Übertragungen. Klicke eine Entität an, um im Popup den
+State und einzelne Attribute per Checkbox freizugeben. Der bestehende HA-Broker
+bleibt erhalten. Die App benötigt keinen manuellen HA-Token. Änderungen aus der
+Weboberfläche werden sofort angewendet.
 
-Die Standard-Topics sind `ha_external/<entity_id>/state` und
-`ha_external/availability`. Die Abfrage erfolgt alle fünf Sekunden. Nur explizit
-ausgewählte Zustandstexte werden exportiert; keine Attribute oder Discovery.
+Die Standard-Topics sind `ha_external/<entity_id>/state`,
+`ha_external/<entity_id>/attribute/<attribut>` und `ha_external/availability`.
+Die Abfrage erfolgt alle fünf Sekunden. Nur explizit ausgewählte States und
+Attribute werden exportiert; keine Discovery.
 
 Optional erlaubst du unter `command_entities` eine Teilmenge dieser Entitäten für
 Ein/Aus-Befehle: `switch`, `light`, `input_boolean` und `fan`. Sende `ON` oder `OFF`

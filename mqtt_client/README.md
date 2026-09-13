@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.1**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
+Version **0.1.2**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
 den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Dein HA-Broker und die vorhandene
 MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und
 dem externen Broker; sie ist keine Broker-Bridge.
@@ -12,8 +12,9 @@ dem externen Broker; sie ist keine Broker-Bridge.
 2. **MQTT-Client** installieren (amd64 oder aarch64).
 3. **Open Web UI** öffnen und IP/Hostname, Port, Username und Passwort des
    ioBroker-Brokers eintragen. Port `1883` ist voreingestellt.
-4. Unter `entities` die gewünschten HA-Entity-IDs auswählen, indem du sie als Liste
-   einträgst. In dieser ersten Version gibt es noch keine eigene Auswahloberfläche.
+4. Links in der Entitätsliste eine HA-Entität anklicken und im Popup auswählen,
+   ob der State und welche Attribute übertragen werden sollen. Rechts siehst du
+   die aktuell ausgewählten Übertragungen.
 5. Speichern. Die Weboberfläche zeigt rot **Keine Verbindung** und grün
    **Verbunden**. Änderungen an den Broker-Zugangsdaten werden sofort angewendet.
 
@@ -31,6 +32,9 @@ poll_interval: 5
 entities:
   - sensor.wohnzimmer_temperatur
   - input_boolean.dashboard_christmas
+entity_attributes:
+  - sensor.wohnzimmer_temperatur:unit_of_measurement
+  - sensor.wohnzimmer_temperatur:friendly_name
 command_entities:
   - input_boolean.dashboard_christmas
 ```
@@ -40,14 +44,16 @@ command_entities:
 | Topic | Inhalt / Richtung |
 | --- | --- |
 | `ha_external/sensor.wohnzimmer_temperatur/state` | HA → ioBroker, beispielsweise `21.5` |
+| `ha_external/sensor.wohnzimmer_temperatur/attribute/unit_of_measurement` | HA → ioBroker, beispielsweise `°C` |
 | `ha_external/input_boolean.dashboard_christmas/state` | HA → ioBroker: `on` oder `off` |
 | `ha_external/input_boolean.dashboard_christmas/set` | ioBroker → HA: `ON` oder `OFF` |
 | `ha_external/availability` | `online` nach erfolgreichem HA-Abgleich, sonst `offline` |
 
 Zustände werden standardmäßig alle fünf Sekunden abgefragt und nur bei Änderungen
 gesendet; nach einer MQTT-Neuverbindung erneut vollständig. Kurze Zustandswechsel
-zwischen zwei Abfragen können fehlen. Übertragen wird nur der Zustandstext der
-freigegebenen Entitäten, keine Attribute und keine automatische MQTT-Discovery.
+zwischen zwei Abfragen können fehlen. Übertragen werden der State und die
+ausgewählten Attribute der freigegebenen Entitäten, aber keine automatische
+MQTT-Discovery.
 Fehlende Entitäten erhalten `unavailable`; HA-Zustände `unknown` und `unavailable`
 werden unverändert weitergegeben.
 
@@ -74,7 +80,7 @@ HA-Token ist nicht erforderlich. Die App legt keine HA-Konfigurationsdateien an.
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.1 mqtt_client
+docker build -t ugso-mqtt-client:0.1.2 mqtt_client
 ```
 
 [English documentation](DOCS.en.md)

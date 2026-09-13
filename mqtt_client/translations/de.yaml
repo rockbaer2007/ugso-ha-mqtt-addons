@@ -21,7 +21,10 @@ configuration:
     name: Abfrageintervall in Sekunden
   entities:
     name: Zu übertragende HA-Entitäten
-    description: Liste konkreter Entity-IDs. Nur Zustandstexte werden übertragen.
+    description: Liste konkreter Entity-IDs, deren State übertragen wird.
+  entity_attributes:
+    name: Zu übertragende Attribute
+    description: Werte im Format entity_id:attribut. Kann über die Weboberfläche ausgewählt werden.
   command_entities:
     name: Für Ein/Aus-Befehle freigegebene Entitäten
     description: Teilmenge der obigen Liste. Erlaubt sind switch, light, input_boolean und fan. Leer bedeutet keine Befehle.

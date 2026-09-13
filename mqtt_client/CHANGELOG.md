@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+- Added entity browser in the web UI with available Home Assistant entities on the left and selected transmissions on the right.
+- Added entity detail dialog with checkboxes for state and selectable attributes.
+- Added retained MQTT publishing for selected attributes on `attribute/<name>` topics.
+
 ## 0.1.1
 
 - Added Home Assistant Ingress web UI for broker IP/hostname, port, username and password.

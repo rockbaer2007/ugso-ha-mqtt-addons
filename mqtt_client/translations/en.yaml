@@ -21,7 +21,10 @@ configuration:
     name: Poll interval in seconds
   entities:
     name: HA entities to export
-    description: List of exact entity IDs. Only plain states are published.
+    description: List of exact entity IDs whose state is published.
+  entity_attributes:
+    name: Attributes to export
+    description: Values in entity_id:attribute format. Can be selected in the web UI.
   command_entities:
     name: Entities allowed to receive ON/OFF commands
     description: Subset of the list above. Supports switch, light, input_boolean and fan. Empty disables commands.

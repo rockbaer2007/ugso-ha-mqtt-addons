@@ -1,5 +1,5 @@
 name: MQTT-Client
-version: "0.1.1"
+version: "0.1.2"
 slug: mqtt_client
 description: Send selected Home Assistant states to an external MQTT broker such as ioBroker
 url: https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/mqtt_client
@@ -24,6 +24,7 @@ options:
   topic_prefix: ha_external
   poll_interval: 5
   entities: []
+  entity_attributes: []
   command_entities: []
 schema:
   broker_host: str
@@ -35,6 +36,8 @@ schema:
   topic_prefix: str
   poll_interval: int(1,300)
   entities:
+    - str
+  entity_attributes:
     - str
   command_entities:
     - str

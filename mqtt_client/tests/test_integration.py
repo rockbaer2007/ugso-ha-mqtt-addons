@@ -33,7 +33,8 @@ class IntegrationTest(unittest.TestCase):
                     return self.respond({}, 401)
                 if state["fail"]:
                     return self.respond({}, 503)
-                self.respond([{"entity_id": "switch.test", "state": state["value"]}])
+                self.respond([{"entity_id": "switch.test", "state": state["value"],
+                               "attributes": {"friendly_name": "Test Switch"}}])
 
             def do_POST(self):
                 data = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
@@ -64,6 +65,7 @@ class IntegrationTest(unittest.TestCase):
         config = Config.load({"broker_host": "127.0.0.1", "broker_port": port,
                               "client_id": f"app-{os.getpid()}", "topic_prefix": prefix,
                               "poll_interval": 1, "entities": ["switch.test"],
+                              "entity_attributes": ["switch.test:friendly_name"],
                               "command_entities": ["switch.test"]})
         bridge = Bridge(config, HomeAssistant("test-only-token", f"http://127.0.0.1:{server.server_port}/api"))
         worker = threading.Thread(target=bridge.run, daemon=True)
@@ -72,6 +74,7 @@ class IntegrationTest(unittest.TestCase):
             wait(lambda: (f"{prefix}/availability", "online") in messages)
             self.assertEqual(state["calls"], [], "Retained ON must not switch on at startup")
             self.assertIn((f"{prefix}/switch.test/state", "off"), messages)
+            self.assertIn((f"{prefix}/switch.test/attribute/friendly_name", "Test Switch"), messages)
             probe.publish(f"{prefix}/switch.test/set", "ON", qos=1, retain=False)
             wait(lambda: (f"{prefix}/switch.test/state", "on") in messages)
             self.assertEqual(state["calls"], [("/api/services/switch/turn_on", {"entity_id": "switch.test"})])

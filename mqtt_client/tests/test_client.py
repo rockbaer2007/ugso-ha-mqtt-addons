@@ -36,7 +36,12 @@ class ClientTests(unittest.TestCase):
         self.client.publish.return_value.rc = 0
         self.client.publish.return_value.is_published.return_value = True
         self.ha = Mock()
-        self.ha.states.return_value = {"sensor.temperature": "21.5", "switch.test": "off", "sensor.private": "secret"}
+        self.ha.full_states.return_value = [
+            {"entity_id": "sensor.temperature", "state": "21.5",
+             "attributes": {"friendly_name": "Temperature", "unit_of_measurement": "°C"}},
+            {"entity_id": "switch.test", "state": "off", "attributes": {}},
+            {"entity_id": "sensor.private", "state": "secret", "attributes": {}},
+        ]
         self.bridge = Bridge(Config.load(self.options), self.ha, self.client)
         self.bridge.on_connect(self.client, None, None, SimpleNamespace(is_failure=False), None)
 
@@ -59,9 +64,29 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(self.client.publish.call_count, 3)
 
     def test_missing_entity_becomes_unavailable(self):
-        self.ha.states.return_value = {}
+        self.ha.full_states.return_value = []
         self.bridge.poll()
         self.client.publish.assert_any_call("ha_external/switch.test/state", "unavailable", qos=1, retain=True)
+
+    def test_selected_attributes_publish_to_separate_topics(self):
+        bridge = Bridge(Config.load({**self.options,
+                                     "entity_attributes": ["sensor.temperature:unit_of_measurement"]}),
+                        self.ha, self.client)
+        bridge.on_connect(self.client, None, None, SimpleNamespace(is_failure=False), None)
+        bridge.poll()
+        self.client.publish.assert_any_call("ha_external/sensor.temperature/attribute/unit_of_measurement",
+                                            "°C", qos=1, retain=True)
+
+    def test_attribute_can_publish_without_state(self):
+        bridge = Bridge(Config.load({**self.options, "entities": [],
+                                     "command_entities": [],
+                                     "entity_attributes": ["sensor.temperature:unit_of_measurement"]}),
+                        self.ha, self.client)
+        bridge.on_connect(self.client, None, None, SimpleNamespace(is_failure=False), None)
+        bridge.poll()
+        self.client.publish.assert_any_call("ha_external/sensor.temperature/attribute/unit_of_measurement",
+                                            "°C", qos=1, retain=True)
+        self.assertNotIn("ha_external/sensor.temperature/state", str(self.client.publish.call_args_list))
 
     def test_failed_publish_is_not_cached(self):
         self.client.publish.return_value.rc = 4
@@ -95,7 +120,7 @@ class ClientTests(unittest.TestCase):
         for changes in ({"topic_prefix": "ha/#"}, {"broker_host": "mqtt://host"},
                         {"entities": ["switch.+"]}, {"command_entities": ["light.other"]},
                         {"entities": ["lock.front"], "command_entities": ["lock.front"]},
-                        {"poll_interval": 0}):
+                        {"poll_interval": 0}, {"entity_attributes": ["sensor.temperature:bad/attr"]}):
             with self.subTest(changes=changes), self.assertRaises(ValueError):
                 Config.load({**self.options, **changes})
 
@@ -116,6 +141,30 @@ class ClientTests(unittest.TestCase):
             self.assertEqual(saved["password"], "new")
             self.assertEqual(second["broker_host"], "192.168.1.21")
             self.assertGreaterEqual(len(FakeBridge.instances), 3)
+            controller.stop()
+
+    def test_controller_lists_entities_and_updates_selection(self):
+        FakeBridge.instances = []
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "options.json"
+            path.write_text(json.dumps({**self.options, "entity_attributes": []}), encoding="utf-8")
+            controller = AppController(path, "token", bridge_factory=FakeBridge)
+            controller.ha.full_states = Mock(return_value=[
+                {"entity_id": "sensor.temperature", "state": "21.5",
+                 "attributes": {"friendly_name": "Temperature", "unit_of_measurement": "°C"}},
+                {"entity_id": "bad.entity/id", "state": "x", "attributes": {}},
+            ])
+            catalog = controller.entity_catalog()
+            self.assertEqual(catalog["entities"][0]["entity_id"], "sensor.temperature")
+            self.assertIn("unit_of_measurement", catalog["entities"][0]["attributes"])
+            updated = controller.update_selections({
+                "entities": ["sensor.temperature"],
+                "entity_attributes": ["sensor.temperature:unit_of_measurement"],
+            })
+            self.assertEqual(updated["entities"], ["sensor.temperature"])
+            self.assertEqual(updated["entity_attributes"], ["sensor.temperature:unit_of_measurement"])
+            saved = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(saved["command_entities"], [])
             controller.stop()
 
 
