@@ -167,6 +167,22 @@ class ClientTests(unittest.TestCase):
             self.assertEqual(saved["command_entities"], [])
             controller.stop()
 
+    def test_controller_saves_only_supported_bidirectional_entities(self):
+        FakeBridge.instances = []
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "options.json"
+            path.write_text(json.dumps({**self.options, "command_entities": []}), encoding="utf-8")
+            controller = AppController(path, "token", bridge_factory=FakeBridge)
+            updated = controller.update_selections({
+                "entities": ["sensor.temperature", "switch.test"],
+                "entity_attributes": [],
+                "command_entities": ["sensor.temperature", "switch.test"],
+            })
+            self.assertEqual(updated["command_entities"], ["switch.test"])
+            saved = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(saved["command_entities"], ["switch.test"])
+            controller.stop()
+
 
 if __name__ == "__main__":
     unittest.main()

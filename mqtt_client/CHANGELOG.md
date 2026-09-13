@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3
+
+- Entity list now shows the friendly name first and the entity ID as secondary text.
+- Added explicit bidirectional command checkbox for supported domains only.
+- Sensor-like entities remain outgoing-only unless their domain supports commands.
+
 ## 0.1.2
 
 - Added entity browser in the web UI with available Home Assistant entities on the left and selected transmissions on the right.

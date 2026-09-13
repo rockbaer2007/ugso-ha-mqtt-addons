@@ -25,7 +25,7 @@ ATTRIBUTE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]*$")
 COMMAND_DOMAINS = {"switch", "light", "input_boolean", "fan"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.2"
+APP_VERSION = "0.1.3"
 
 
 INDEX_HTML = """<!doctype html>
@@ -65,6 +65,8 @@ INDEX_HTML = """<!doctype html>
     .selected { grid-template-columns: 1fr auto; align-items: center; }
     .name { font-weight: 650; overflow-wrap: anywhere; }
     .meta { color: var(--secondary-text-color, #94a3b8); font-size: .78rem; overflow-wrap: anywhere; }
+    .check.bidirectional { display: none; }
+    .check.bidirectional.visible { display: flex; }
     dialog { width: min(560px, calc(100vw - 28px)); border: 1px solid rgba(148, 163, 184, .4); border-radius: 8px; padding: 0; background: var(--ha-card-background, #111827); color: inherit; }
     dialog::backdrop { background: rgba(0, 0, 0, .45); }
     .dialog-body { display: grid; gap: 14px; padding: 18px; }
@@ -124,6 +126,7 @@ INDEX_HTML = """<!doctype html>
         <div id="dialogMeta" class="meta"></div>
       </div>
       <label class="check"><input id="stateCheck" type="checkbox"> State übertragen</label>
+      <label id="commandRow" class="check bidirectional"><input id="commandCheck" type="checkbox"> Bidirektional / Befehle erlauben</label>
       <div>
         <h2>Attribute</h2>
         <div id="attributeList" class="checks"></div>
@@ -147,11 +150,15 @@ INDEX_HTML = """<!doctype html>
     const selectionMessage = document.getElementById('selectionMessage');
     const dialog = document.getElementById('entityDialog');
     const stateCheck = document.getElementById('stateCheck');
+    const commandRow = document.getElementById('commandRow');
+    const commandCheck = document.getElementById('commandCheck');
     const attributeList = document.getElementById('attributeList');
     let catalog = [];
     let selectedStates = new Set();
     let selectedAttributes = new Set();
+    let commandEntities = new Set();
     let activeEntity = null;
+    const commandDomains = new Set(['switch', 'light', 'input_boolean', 'fan']);
 
     function setStatus(data) {
       statusBox.classList.toggle('connected', Boolean(data.connected));
@@ -163,7 +170,11 @@ INDEX_HTML = """<!doctype html>
     }
 
     function entityLabel(item) {
-      return item.name && item.name !== item.entity_id ? `${item.name} (${item.entity_id})` : item.entity_id;
+      return item.name || item.entity_id;
+    }
+
+    function isCommandEntity(entityId) {
+      return commandDomains.has(entityId.split('.')[0]);
     }
 
     function renderLists() {
@@ -177,8 +188,8 @@ INDEX_HTML = """<!doctype html>
           button.className = 'entity';
           button.innerHTML = `<span class="name"></span><span class="meta"></span>`;
           button.querySelector('.name').textContent = entityLabel(item);
-          const count = item.attributes.length;
-          button.querySelector('.meta').textContent = `${item.state} · ${count} Attribute`;
+        const count = item.attributes.length;
+        button.querySelector('.meta').textContent = `${item.entity_id} · ${item.state} · ${count} Attribute`;
           button.addEventListener('click', () => openEntity(item.entity_id));
           entityList.appendChild(button);
         });
@@ -196,6 +207,7 @@ INDEX_HTML = """<!doctype html>
         const parts = [];
         if (selectedStates.has(entity)) parts.push('State');
         if (attrs.length) parts.push(`${attrs.length} Attribute`);
+        if (commandEntities.has(entity)) parts.push('bidirektional');
         button.querySelector('.meta').textContent = parts.join(' · ') || 'Keine Auswahl';
         button.addEventListener('click', () => openEntity(entity));
         selectedList.appendChild(button);
@@ -208,8 +220,10 @@ INDEX_HTML = """<!doctype html>
     function openEntity(entityId) {
       activeEntity = catalog.find((item) => item.entity_id === entityId) || { entity_id: entityId, name: entityId, state: '', attributes: [] };
       document.getElementById('dialogTitle').textContent = entityLabel(activeEntity);
-      document.getElementById('dialogMeta').textContent = activeEntity.state ? `Aktueller State: ${activeEntity.state}` : '';
+      document.getElementById('dialogMeta').textContent = activeEntity.state ? `${activeEntity.entity_id} · aktueller State: ${activeEntity.state}` : activeEntity.entity_id;
       stateCheck.checked = selectedStates.has(entityId);
+      commandCheck.checked = commandEntities.has(entityId);
+      commandRow.classList.toggle('visible', isCommandEntity(entityId));
       attributeList.innerHTML = '';
       activeEntity.attributes.forEach((attr) => {
         const label = document.createElement('label');
@@ -232,7 +246,7 @@ INDEX_HTML = """<!doctype html>
       const response = await fetch('./api/selections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entities: [...selectedStates], entity_attributes: [...selectedAttributes] })
+        body: JSON.stringify({ entities: [...selectedStates], entity_attributes: [...selectedAttributes], command_entities: [...commandEntities] })
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Auswahl konnte nicht gespeichert werden');
@@ -248,6 +262,7 @@ INDEX_HTML = """<!doctype html>
       form.username.value = data.username || '';
       selectedStates = new Set(data.entities || []);
       selectedAttributes = new Set(data.entity_attributes || []);
+      commandEntities = new Set(data.command_entities || []);
       setStatus(data.status || {});
       renderLists();
     }
@@ -302,6 +317,12 @@ INDEX_HTML = """<!doctype html>
       if (!activeEntity) return;
       if (stateCheck.checked) selectedStates.add(activeEntity.entity_id);
       else selectedStates.delete(activeEntity.entity_id);
+      if (isCommandEntity(activeEntity.entity_id) && commandCheck.checked) {
+        selectedStates.add(activeEntity.entity_id);
+        commandEntities.add(activeEntity.entity_id);
+      } else {
+        commandEntities.delete(activeEntity.entity_id);
+      }
       activeEntity.attributes.forEach((attr) => selectedAttributes.delete(attrKey(activeEntity.entity_id, attr)));
       attributeList.querySelectorAll('input:checked').forEach((input) => selectedAttributes.add(attrKey(activeEntity.entity_id, input.value)));
       try {
@@ -315,6 +336,7 @@ INDEX_HTML = """<!doctype html>
     document.getElementById('removeEntity').addEventListener('click', async () => {
       if (!activeEntity) return;
       selectedStates.delete(activeEntity.entity_id);
+      commandEntities.delete(activeEntity.entity_id);
       [...selectedAttributes].forEach((entry) => { if (entry.startsWith(`${activeEntity.entity_id}:`)) selectedAttributes.delete(entry); });
       try {
         await saveSelections();
@@ -660,6 +682,7 @@ class AppController:
             "has_password": bool(options.get("password")),
             "entities": options.get("entities", []),
             "entity_attributes": options.get("entity_attributes", []),
+            "command_entities": options.get("command_entities", []),
             "status": self.status.snapshot(),
         }
 
@@ -682,7 +705,9 @@ class AppController:
             options = self.read_options()
             entities = validate_entities(payload.get("entities", []), "entities")
             entity_attributes = validate_entity_attributes(payload.get("entity_attributes", []))
-            commands = [entity for entity in options.get("command_entities", []) if entity in entities]
+            requested_commands = validate_entities(payload.get("command_entities", []), "command_entities")
+            commands = [entity for entity in requested_commands
+                        if entity in entities and entity.split(".")[0] in COMMAND_DOMAINS]
             options["entities"] = list(entities)
             options["entity_attributes"] = list(entity_attributes)
             options["command_entities"] = commands
@@ -709,9 +734,10 @@ class AppController:
                 "entity_id": entity_id,
                 "name": str(name),
                 "state": str(state.get("state", "")),
+                "command_supported": entity_id.split(".")[0] in COMMAND_DOMAINS,
                 "attributes": sorted(str(attr) for attr in attributes if ATTRIBUTE.fullmatch(str(attr))),
             })
-        entities.sort(key=lambda item: item["entity_id"])
+        entities.sort(key=lambda item: (item["name"].casefold(), item["entity_id"]))
         return {"entities": entities}
 
 

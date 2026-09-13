@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.2**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
+Version **0.1.3**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
 den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Dein HA-Broker und die vorhandene
 MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und
 dem externen Broker; sie ist keine Broker-Bridge.
@@ -12,9 +12,10 @@ dem externen Broker; sie ist keine Broker-Bridge.
 2. **MQTT-Client** installieren (amd64 oder aarch64).
 3. **Open Web UI** öffnen und IP/Hostname, Port, Username und Passwort des
    ioBroker-Brokers eintragen. Port `1883` ist voreingestellt.
-4. Links in der Entitätsliste eine HA-Entität anklicken und im Popup auswählen,
-   ob der State und welche Attribute übertragen werden sollen. Rechts siehst du
-   die aktuell ausgewählten Übertragungen.
+4. Links in der Entitätsliste eine HA-Entität anklicken. Die Liste zeigt den Namen
+   zuerst und die Entity-ID klein darunter. Im Popup wählst du State, Attribute
+   und bei unterstützten Domains optional **Bidirektional / Befehle erlauben**.
+   Rechts siehst du die aktuell ausgewählten Übertragungen.
 5. Speichern. Die Weboberfläche zeigt rot **Keine Verbindung** und grün
    **Verbunden**. Änderungen an den Broker-Zugangsdaten werden sofort angewendet.
 
@@ -65,10 +66,12 @@ Beenden sind enthalten. `online` bezeichnet den letzten erfolgreichen Abgleich;
 Verbindungsfehler werden nach Timeout beziehungsweise MQTT-Keepalive erkannt.
 
 Befehle sind standardmäßig deaktiviert (`command_entities: []`). Freigaben müssen
-auch in `entities` stehen. Unterstützt werden ausschließlich `ON`/`OFF` für
-`switch`, `light`, `input_boolean` und `fan`. In ioBroker Befehle **ohne Retain**
-senden. Gespeicherte Retain-Befehle bei der Anmeldung, ungültige Payloads und alte
-Warteschlangenbefehle werden verworfen. Keine beliebigen HA-Serviceaufrufe.
+auch in `entities` stehen und können in der Weboberfläche über **Bidirektional /
+Befehle erlauben** gesetzt werden. Unterstützt werden ausschließlich `ON`/`OFF`
+für `switch`, `light`, `input_boolean` und `fan`; Sensorwerte bleiben nur
+ausgehend. In ioBroker Befehle **ohne Retain** senden. Gespeicherte Retain-Befehle
+bei der Anmeldung, ungültige Payloads und alte Warteschlangenbefehle werden
+verworfen. Keine beliebigen HA-Serviceaufrufe.
 
 TLS verwendet die Zertifikatsprüfung des Systems; für TLS auch den Broker-Port
 anpassen (häufig 8883). Eigene CA-Dateien und Client-Zertifikate sind noch nicht
@@ -80,7 +83,7 @@ HA-Token ist nicht erforderlich. Die App legt keine HA-Konfigurationsdateien an.
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.2 mqtt_client
+docker build -t ugso-mqtt-client:0.1.3 mqtt_client
 ```
 
 [English documentation](DOCS.en.md)
