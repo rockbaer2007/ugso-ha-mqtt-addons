@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+- Added bidirectional value commands for `input_number`, `number`, `input_select`, `select`, `input_text` and `text`.
+- Numeric MQTT `/set` payloads now call `set_value`; select payloads call `select_option`; text payloads call `set_value`.
+- Kept sensor-like entities outgoing-only.
+
 ## 0.1.3
 
 - Entity list now shows the friendly name first and the entity ID as secondary text.

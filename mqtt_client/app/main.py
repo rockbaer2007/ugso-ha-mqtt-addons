@@ -22,10 +22,12 @@ import paho.mqtt.client as mqtt
 LOG = logging.getLogger("mqtt-client")
 ENTITY = re.compile(r"^[a-z0-9_]+\.[a-z0-9_]+$")
 ATTRIBUTE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]*$")
-COMMAND_DOMAINS = {"switch", "light", "input_boolean", "fan"}
+TOGGLE_COMMAND_DOMAINS = {"switch", "light", "input_boolean", "fan"}
+VALUE_COMMAND_DOMAINS = {"input_number", "number", "input_select", "select", "input_text", "text"}
+COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.3"
+APP_VERSION = "0.1.4"
 
 
 INDEX_HTML = """<!doctype html>
@@ -126,7 +128,7 @@ INDEX_HTML = """<!doctype html>
         <div id="dialogMeta" class="meta"></div>
       </div>
       <label class="check"><input id="stateCheck" type="checkbox"> State übertragen</label>
-      <label id="commandRow" class="check bidirectional"><input id="commandCheck" type="checkbox"> Bidirektional / Befehle erlauben</label>
+      <label id="commandRow" class="check bidirectional"><input id="commandCheck" type="checkbox"> Bidirektional / Werte schreiben</label>
       <div>
         <h2>Attribute</h2>
         <div id="attributeList" class="checks"></div>
@@ -158,7 +160,7 @@ INDEX_HTML = """<!doctype html>
     let selectedAttributes = new Set();
     let commandEntities = new Set();
     let activeEntity = null;
-    const commandDomains = new Set(['switch', 'light', 'input_boolean', 'fan']);
+    const commandDomains = new Set(['switch', 'light', 'input_boolean', 'fan', 'input_number', 'number', 'input_select', 'select', 'input_text', 'text']);
 
     function setStatus(data) {
       statusBox.classList.toggle('connected', Boolean(data.connected));
@@ -409,7 +411,7 @@ class Config:
         if not set(commands).issubset(entities):
             raise ValueError("command_entities muss eine Teilmenge von entities sein")
         if any(entity.split('.')[0] not in COMMAND_DOMAINS for entity in commands):
-            raise ValueError("Befehle sind nur für switch, light, input_boolean und fan erlaubt")
+            raise ValueError("Befehle sind nur für unterstützte steuerbare Domains erlaubt")
         return cls(host, port, str(options.get("username", "")), str(options.get("password", "")),
                    bool(options.get("tls", False)), client_id, prefix, interval, entities, entity_attributes, commands)
 
@@ -447,6 +449,28 @@ def encode_mqtt_payload(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def mqtt_command(entity, payload):
+    domain = entity.split(".", 1)[0]
+    if domain in TOGGLE_COMMAND_DOMAINS:
+        service = {"ON": "turn_on", "OFF": "turn_off"}.get(payload.upper())
+        if service is None:
+            raise ValueError("nur ON/OFF erlaubt")
+        return service
+    if domain in {"input_number", "number"}:
+        try:
+            value = float(payload)
+        except ValueError as error:
+            raise ValueError("Zahl erwartet") from error
+        return ("set_value", {"value": value})
+    if domain in {"input_select", "select"}:
+        if not payload:
+            raise ValueError("Option darf nicht leer sein")
+        return ("select_option", {"option": payload})
+    if domain in {"input_text", "text"}:
+        return ("set_value", {"value": payload})
+    raise ValueError("Domain nicht unterstützt")
+
+
 class HomeAssistant:
     def __init__(self, token, base_url="http://supervisor/core/api"):
         self.base_url = base_url.rstrip("/")
@@ -473,8 +497,11 @@ class HomeAssistant:
             raise ValueError("Invalid HA states response")
         return states
 
-    def command(self, entity, service):
-        return self.request(f"services/{entity.split('.')[0]}/{service}", {"entity_id": entity})
+    def command(self, entity, service, data=None):
+        payload = {"entity_id": entity}
+        if data:
+            payload.update(data)
+        return self.request(f"services/{entity.split('.')[0]}/{service}", payload)
 
 
 class Bridge:
@@ -530,18 +557,19 @@ class Bridge:
 
     def on_message(self, client, userdata, message):
         entity = self.command_topics.get(message.topic)
-        if entity is None or message.retain or len(message.payload) > 16:
+        if entity is None or message.retain or len(message.payload) > 256:
             return
         try:
-            payload = message.payload.decode("utf-8").strip().upper()
+            payload = message.payload.decode("utf-8").strip()
         except UnicodeDecodeError:
             return
-        service = {"ON": "turn_on", "OFF": "turn_off"}.get(payload)
-        if service is None:
-            LOG.warning("Ungültiger Befehl verworfen; nur ON/OFF erlaubt")
+        try:
+            command = mqtt_command(entity, payload)
+        except ValueError as error:
+            LOG.warning("Ungültiger Befehl verworfen (%s)", error)
             return
         try:
-            self.commands.put_nowait((time.monotonic(), self.generation, entity, service))
+            self.commands.put_nowait((time.monotonic(), self.generation, entity, command))
         except queue.Full:
             LOG.warning("Befehlswarteschlange voll; Befehl verworfen")
 
@@ -580,7 +608,10 @@ class Bridge:
     def process_command(self, command):
         created, generation, entity, service = command
         if self.connected.is_set() and generation == self.generation and time.monotonic() - created <= 10:
-            self.ha.command(entity, service)
+            if isinstance(service, tuple):
+                self.ha.command(entity, service[0], service[1])
+            else:
+                self.ha.command(entity, service)
 
     def run(self):
         self.client.connect_async(self.config.host, self.config.port, keepalive=30)

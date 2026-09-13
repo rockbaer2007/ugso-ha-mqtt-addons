@@ -40,6 +40,9 @@ class ClientTests(unittest.TestCase):
             {"entity_id": "sensor.temperature", "state": "21.5",
              "attributes": {"friendly_name": "Temperature", "unit_of_measurement": "°C"}},
             {"entity_id": "switch.test", "state": "off", "attributes": {}},
+            {"entity_id": "input_number.level", "state": "3", "attributes": {}},
+            {"entity_id": "input_select.mode", "state": "auto", "attributes": {}},
+            {"entity_id": "input_text.note", "state": "", "attributes": {}},
             {"entity_id": "sensor.private", "state": "secret", "attributes": {}},
         ]
         self.bridge = Bridge(Config.load(self.options), self.ha, self.client)
@@ -109,6 +112,31 @@ class ClientTests(unittest.TestCase):
         self.bridge.process_command(self.bridge.commands.get_nowait())
         self.ha.command.assert_called_once_with("switch.test", "turn_on")
 
+    def test_value_commands_write_numeric_select_and_text_values(self):
+        config = Config.load({**self.options,
+                              "entities": ["input_number.level", "input_select.mode", "input_text.note"],
+                              "command_entities": ["input_number.level", "input_select.mode", "input_text.note"]})
+        bridge = Bridge(config, self.ha, self.client)
+        bridge.on_connect(self.client, None, None, SimpleNamespace(is_failure=False), None)
+        for topic, payload in (
+                ("ha_external/input_number.level/set", b"42.5"),
+                ("ha_external/input_select.mode/set", "Urlaub".encode()),
+                ("ha_external/input_text.note/set", "Hallo".encode())):
+            bridge.on_message(self.client, None, SimpleNamespace(topic=topic, payload=payload, retain=False))
+            bridge.process_command(bridge.commands.get_nowait())
+        self.ha.command.assert_any_call("input_number.level", "set_value", {"value": 42.5})
+        self.ha.command.assert_any_call("input_select.mode", "select_option", {"option": "Urlaub"})
+        self.ha.command.assert_any_call("input_text.note", "set_value", {"value": "Hallo"})
+
+    def test_invalid_value_commands_are_dropped(self):
+        config = Config.load({**self.options, "entities": ["input_number.level"],
+                              "command_entities": ["input_number.level"]})
+        bridge = Bridge(config, self.ha, self.client)
+        bridge.on_connect(self.client, None, None, SimpleNamespace(is_failure=False), None)
+        bridge.on_message(self.client, None, SimpleNamespace(topic="ha_external/input_number.level/set",
+                                                             payload=b"hoch", retain=False))
+        self.assertTrue(bridge.commands.empty())
+
     def test_stale_and_previous_connection_commands_are_dropped(self):
         self.bridge.process_command((time.monotonic() - 11, self.bridge.generation, "switch.test", "turn_on"))
         self.message()
@@ -174,13 +202,13 @@ class ClientTests(unittest.TestCase):
             path.write_text(json.dumps({**self.options, "command_entities": []}), encoding="utf-8")
             controller = AppController(path, "token", bridge_factory=FakeBridge)
             updated = controller.update_selections({
-                "entities": ["sensor.temperature", "switch.test"],
+                "entities": ["sensor.temperature", "switch.test", "input_number.level"],
                 "entity_attributes": [],
-                "command_entities": ["sensor.temperature", "switch.test"],
+                "command_entities": ["sensor.temperature", "switch.test", "input_number.level"],
             })
-            self.assertEqual(updated["command_entities"], ["switch.test"])
+            self.assertEqual(updated["command_entities"], ["switch.test", "input_number.level"])
             saved = json.loads(path.read_text(encoding="utf-8"))
-            self.assertEqual(saved["command_entities"], ["switch.test"])
+            self.assertEqual(saved["command_entities"], ["switch.test", "input_number.level"])
             controller.stop()
 
 

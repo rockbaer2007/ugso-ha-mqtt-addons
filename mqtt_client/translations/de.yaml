@@ -26,5 +26,5 @@ configuration:
     name: Zu übertragende Attribute
     description: Werte im Format entity_id:attribut. Kann über die Weboberfläche ausgewählt werden.
   command_entities:
-    name: Für Ein/Aus-Befehle freigegebene Entitäten
-    description: Teilmenge der obigen Liste. Erlaubt sind switch, light, input_boolean und fan. Leer bedeutet keine Befehle.
+    name: Für Schreibbefehle freigegebene Entitäten
+    description: Teilmenge der obigen Liste. Erlaubt sind Schalter-Domains und Eingabewerte wie number, select und text. Leer bedeutet keine Befehle.
