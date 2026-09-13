@@ -28,7 +28,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.9"
+APP_VERSION = "0.1.10"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -690,6 +690,49 @@ def device_id_for_name(name):
     return slug or "device"
 
 
+def object_id_for_entity(entity_id):
+    try:
+        return entity_id.split(".", 1)[1]
+    except IndexError:
+        return entity_id
+
+
+def display_name_from_object_id(object_id):
+    return " ".join(part for part in object_id.replace("_", " ").split()).strip() or object_id
+
+
+def common_object_prefixes(entities):
+    candidates = {}
+    prefix_counts = {}
+    for entity in entities:
+        object_id = entity["object_id"]
+        base = _strip_object_suffix(object_id)
+        candidates.setdefault(base, entity["device_name"])
+        parts = object_id.split("_")
+        if len(parts) > 2:
+            prefix = "_".join(parts[:-1])
+            prefix_counts[prefix] = prefix_counts.get(prefix, 0) + 1
+    for prefix, count in prefix_counts.items():
+        if count >= 2 and prefix not in candidates:
+            candidates[prefix] = display_name_from_object_id(prefix)
+    child_candidates = [
+        candidate for candidate in candidates
+        if any(candidate.startswith(f"{parent}_") for parent in candidates if parent != candidate)
+    ]
+    for candidate in child_candidates:
+        candidates.pop(candidate, None)
+    return candidates
+
+
+def canonical_device_for_entity(entity, prefixes):
+    object_id = entity["object_id"]
+    matches = [prefix for prefix in prefixes if object_id == prefix or object_id.startswith(f"{prefix}_")]
+    if not matches:
+        return device_id_for_name(entity["device_name"]), entity["device_name"]
+    prefix = max(matches, key=len)
+    return device_id_for_name(prefix), prefixes[prefix]
+
+
 def mqtt_slug(value):
     return ascii_slug_text(value) or "wert"
 
@@ -720,14 +763,34 @@ def topic_value_name_for_entity(entity_id, name, device_name):
     return value
 
 
-def device_topic_for_entity(entity_id, state_entry):
+def device_topic_for_entity(entity_id, state_entry, prefixes=None):
     attributes = state_entry.get("attributes", {})
     if not isinstance(attributes, dict):
         attributes = {}
     name = attributes.get("friendly_name") or entity_id
     device_name = device_name_for_entity(entity_id, name, attributes)
+    if prefixes:
+        _, device_name = canonical_device_for_entity(
+            {"object_id": object_id_for_entity(entity_id), "device_name": device_name},
+            prefixes,
+        )
     value_name = topic_value_name_for_entity(entity_id, name, device_name)
     return f"{mqtt_slug(device_name)}/{mqtt_slug(value_name)}"
+
+
+def common_prefixes_from_states(states):
+    entities = []
+    for state in states.values():
+        entity_id = state.get("entity_id", "")
+        attributes = state.get("attributes", {})
+        if not ENTITY.fullmatch(entity_id) or not isinstance(attributes, dict):
+            continue
+        name = attributes.get("friendly_name") or entity_id
+        entities.append({
+            "object_id": object_id_for_entity(entity_id),
+            "device_name": device_name_for_entity(entity_id, name, attributes),
+        })
+    return common_object_prefixes(entities)
 
 
 def iobroker_mapping(entity_id, state, attributes):
@@ -813,17 +876,17 @@ class Bridge:
             self.client.tls_set_context(ssl.create_default_context())
         self.client.will_set(self.availability, "offline", qos=1, retain=True)
 
-    def topic(self, entity, suffix, state_entry=None):
+    def topic(self, entity, suffix, state_entry=None, prefixes=None):
         if state_entry:
-            return f"{self.config.prefix}/{device_topic_for_entity(entity, state_entry)}/{suffix}"
+            return f"{self.config.prefix}/{device_topic_for_entity(entity, state_entry, prefixes)}/{suffix}"
         return self.config.topic(entity, suffix)
 
-    def refresh_command_topics(self, states):
+    def refresh_command_topics(self, states, prefixes=None):
         topics = {self.config.topic(entity, "set"): entity for entity in self.config.command_entities}
         for entity in self.config.command_entities:
             entry = states.get(entity)
             if entry:
-                topics[self.topic(entity, "set", entry)] = entity
+                topics[self.topic(entity, "set", entry, prefixes)] = entity
         self.command_topics = topics
         if self.connected.is_set():
             for topic in sorted(set(topics) - self.subscribed_command_topics):
@@ -885,13 +948,14 @@ class Bridge:
             self.sent.clear()
             self.sent_generation = generation
         states = {state["entity_id"]: state for state in self.ha.full_states()}
-        self.refresh_command_topics(states)
+        prefixes = common_prefixes_from_states(states)
+        self.refresh_command_topics(states, prefixes)
         polled_entities = sorted(set(self.config.entities) | set(self.attribute_map))
         for entity in polled_entities:
             entry = states.get(entity, {"state": "unavailable", "attributes": {}})
             state = str(entry.get("state", "unavailable"))
             if entity in self.config.entities and self.sent.get(("state", entity)) != state:
-                self.publish(self.topic(entity, "state", entry if entity in states else None), state)
+                self.publish(self.topic(entity, "state", entry if entity in states else None, prefixes), state)
                 self.sent[("state", entity)] = state
             attributes = entry.get("attributes", {})
             if not isinstance(attributes, dict):
@@ -900,7 +964,7 @@ class Bridge:
                 value = encode_mqtt_payload(attributes.get(attribute, "unavailable"))
                 key = ("attribute", entity, attribute)
                 if self.sent.get(key) != value:
-                    self.publish(self.topic(entity, f"attribute/{attribute}", entry if entity in states else None), value)
+                    self.publish(self.topic(entity, f"attribute/{attribute}", entry if entity in states else None, prefixes), value)
                     self.sent[key] = value
         self.publish(self.availability, "online")
 
@@ -1054,7 +1118,6 @@ class AppController:
     def entity_catalog(self):
         states = self.ha.full_states()
         entities = []
-        device_map = {}
         for state in states:
             entity_id = state.get("entity_id", "")
             attributes = state.get("attributes", {})
@@ -1067,6 +1130,7 @@ class AppController:
                 "entity_id": entity_id,
                 "name": str(name),
                 "device_name": device_name,
+                "object_id": object_id_for_entity(entity_id),
                 "state": str(state.get("state", "")),
                 "command_supported": entity_id.split(".")[0] in COMMAND_DOMAINS,
                 "state_type": mapping["state_type"],
@@ -1074,13 +1138,19 @@ class AppController:
                 "attributes": sorted(str(attr) for attr in attributes if ATTRIBUTE.fullmatch(str(attr))),
             }
             entities.append(entity)
-            device_key = device_id_for_name(device_name)
+        prefixes = common_object_prefixes(entities)
+        device_map = {}
+        for entity in entities:
+            device_key, device_name = canonical_device_for_entity(entity, prefixes)
+            entity["device_name"] = device_name
             device = device_map.setdefault(device_key, {"id": device_key, "name": device_name, "entities": []})
             device["entities"].append(entity)
         entities.sort(key=lambda item: (item["name"].casefold(), item["entity_id"]))
         devices = sorted(device_map.values(), key=lambda item: (item["name"].casefold(), item["id"]))
         for device in devices:
             device["entities"].sort(key=lambda item: (item["name"].casefold(), item["entity_id"]))
+        for entity in entities:
+            entity.pop("object_id", None)
         return {"entities": entities, "devices": devices}
 
 

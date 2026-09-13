@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.10
+
+- Added common Entity-ID prefix grouping so `1pm_mini_gen3_res1_*` values are merged into the main `1PM Mini Gen3-Res1` device even when the value suffix is unknown.
+- Kept **Alle States dieses Geräts übertragen** inside the device popup where the values are listed.
+
 ## 0.1.9
 
 - Improved device grouping for Shelly-style German entity names such as `Neu starten`, `Stromstärke`, `Switch`, `Überhitzung`, `Überlast`, `Überspannung` and `Überstrom`.

@@ -236,11 +236,13 @@ class ClientTests(unittest.TestCase):
                  "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Überspannung"}},
                 {"entity_id": "binary_sensor.1pm_mini_gen3_res1_ueberstrom", "state": "off",
                  "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Überstrom"}},
+                {"entity_id": "sensor.1pm_mini_gen3_res1_sonderwert", "state": "ok",
+                 "attributes": {"friendly_name": "1PM Mini Gen3-Res1 Sonderwert"}},
             ])
             catalog = controller.entity_catalog()
             self.assertEqual(len(catalog["devices"]), 1)
             self.assertEqual(catalog["devices"][0]["name"], "1PM Mini Gen3-Res1")
-            self.assertEqual(len(catalog["devices"][0]["entities"]), 10)
+            self.assertEqual(len(catalog["devices"][0]["entities"]), 11)
             controller.stop()
 
     def test_device_name_prefers_device_attribute(self):
