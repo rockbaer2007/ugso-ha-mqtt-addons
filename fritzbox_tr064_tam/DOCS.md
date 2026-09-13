@@ -70,7 +70,6 @@ For several selected phonebooks at once, use the `Telefonbücher Auswahl` text e
 The default maps phonebook `3` to `tellows Sperrliste 7` and phonebook `4` to `tellows Sperrliste 8-9`.
 `phonebook_name_excludes` is a comma-separated name filter; for example `tellows` hides matching phonebooks from the list and from `Alle Telefonbücher`.
 `max_calls` limits how many calls are included in the call list sensor attributes. The sensor state still reports the total count for the selected list.
-For older Lovelace/button-card dashboards, the app also exposes the newest twenty calls as individual sensors named like `sensor.fritzbox_letzte_anrufe_call_1_name_2`, `sensor.fritzbox_letzte_anrufe_call_1_number_2`, `sensor.fritzbox_letzte_anrufe_call_1_date_2`, `sensor.fritzbox_letzte_anrufe_call_1_type_2`, and `sensor.fritzbox_letzte_anrufe_call_1_duration_2`. Sensors are created up to call 20. Missing entries publish `unknown`, so cards can skip empty rows.
 
 If `call_monitor_enabled` is true, the app also connects to the FRITZ!Box call monitor on `call_monitor_port` and publishes live `RING`, `CALL`, `CONNECT`, and `DISCONNECT` events. `max_live_events` limits the live event history. The call monitor must be enabled on the FRITZ!Box, usually with `#96*5*` from a connected phone.
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import datetime as dt
 import logging
 import os
 import re
@@ -50,22 +49,6 @@ CALL_TYPE_VIEWS = {
     "3": "outgoing",
     "9": "rejected",
     "10": "blocked",
-}
-LEGACY_LAST_CALL_SENSOR_COUNT = 20
-LEGACY_LAST_CALL_FIELDS = ("name", "number", "date", "type", "duration")
-LEGACY_LAST_CALL_FIELD_LABELS = {
-    "name": "Name",
-    "number": "Nummer",
-    "date": "Datum",
-    "type": "Typ",
-    "duration": "Dauer",
-}
-LEGACY_LAST_CALL_FIELD_ICONS = {
-    "name": "mdi:account",
-    "number": "mdi:phone",
-    "date": "mdi:calendar-clock",
-    "type": "mdi:phone-log",
-    "duration": "mdi:timer-outline",
 }
 WLAN_ROLES = {
     1: ("wlan2_4", "WLAN 2.4 GHz"),
@@ -1045,7 +1028,6 @@ class HomeAssistantMqttPublisher:
         for view in self.known_call_views - call_views:
             self._remove_call_discovery(view)
         self._remove_legacy_last_call_discovery()
-        self._publish_legacy_last_call_discovery()
         phonebooks_by_id = {phonebook.phonebook_id: phonebook for phonebook in all_phonebooks}
         for phonebook_id in phonebook_ids:
             fallback = PhonebookInfo(phonebook_id, f"Telefonbuch {phonebook_id}", [])
@@ -1113,8 +1095,6 @@ class HomeAssistantMqttPublisher:
                 "entries": [call_to_dict(call) for call in visible],
                 "lines": [call_to_line(call) for call in visible],
             })
-        self._publish_legacy_last_call_states(legacy_last_calls(calls))
-
         for phonebook in phonebooks:
             prefix = f"{self.options.base_topic}/phonebook/{safe_object_part(phonebook.phonebook_id)}"
             self._publish(f"{prefix}/count", str(len(phonebook.contacts)))
@@ -1396,22 +1376,9 @@ class HomeAssistantMqttPublisher:
             retain=True,
         )
 
-    def _publish_legacy_last_call_discovery(self) -> None:
-        for index in range(1, LEGACY_LAST_CALL_SENSOR_COUNT + 1):
-            for field in LEGACY_LAST_CALL_FIELDS:
-                object_id = f"fritzbox_letzte_anrufe_call_{index}_{field}_2"
-                self._publish_config("sensor", object_id, {
-                    "name": object_id,
-                    "object_id": object_id,
-                    "unique_id": f"legacy_{object_id}",
-                    "state_topic": f"{self.options.base_topic}/last_calls/call_{index}/{field}",
-                    "json_attributes_topic": f"{self.options.base_topic}/last_calls/call_{index}/attributes",
-                    "icon": LEGACY_LAST_CALL_FIELD_ICONS[field],
-                })
-
     def _remove_legacy_last_call_discovery(self) -> None:
-        for index in range(1, LEGACY_LAST_CALL_SENSOR_COUNT + 1):
-            for field in LEGACY_LAST_CALL_FIELDS:
+        for index in range(1, 21):
+            for field in ["name", "number", "date", "type", "duration"]:
                 for object_id in [
                     f"letzte_anrufe_call_{index}_{field}_2",
                     f"fritzbox_letzte_anrufe_call_{index}_{field}_2",
@@ -1421,14 +1388,6 @@ class HomeAssistantMqttPublisher:
                         "",
                         retain=True,
                     )
-
-    def _publish_legacy_last_call_states(self, calls: list[CallEntry]) -> None:
-        for index in range(1, LEGACY_LAST_CALL_SENSOR_COUNT + 1):
-            call = calls[index - 1] if index <= len(calls) else None
-            prefix = f"{self.options.base_topic}/last_calls/call_{index}"
-            for field in LEGACY_LAST_CALL_FIELDS:
-                self._publish(f"{prefix}/{field}", legacy_last_call_value(call, field))
-            self._publish_json(f"{prefix}/attributes", legacy_last_call_attributes(call, index))
 
     def _publish_phonebook_discovery(self, phonebook: PhonebookInfo) -> None:
         object_part = safe_object_part(phonebook.phonebook_id)
@@ -2274,78 +2233,6 @@ def call_to_line(call: CallEntry) -> str:
     direction = call.caller or call.called or call.number
     duration = f", {call.duration}" if call.duration else ""
     return f"{call.date} | {label} | {person} | {direction}{duration}"
-
-
-def legacy_last_calls(calls: list[CallEntry]) -> list[CallEntry]:
-    today = dt.date.today()
-    sorted_calls = sorted(calls, key=call_sort_key, reverse=True)
-    todays_calls = [call for call in sorted_calls if call_date(call) == today]
-    older_calls = [call for call in sorted_calls if call_date(call) != today]
-    return (todays_calls + older_calls)[:LEGACY_LAST_CALL_SENSOR_COUNT]
-
-
-def call_sort_key(call: CallEntry) -> tuple[dt.datetime, str]:
-    parsed = call_datetime(call)
-    return parsed or dt.datetime.min, call.name or call.number
-
-
-def call_date(call: CallEntry) -> dt.date | None:
-    parsed = call_datetime(call)
-    return parsed.date() if parsed is not None else None
-
-
-def call_datetime(call: CallEntry) -> dt.datetime | None:
-    value = call.date.strip()
-    for pattern in ("%d.%m.%y %H:%M", "%d.%m.%Y %H:%M", "%d.%m.%y", "%d.%m.%Y"):
-        try:
-            return dt.datetime.strptime(value, pattern)
-        except ValueError:
-            continue
-    return None
-
-
-def legacy_last_call_attributes(call: CallEntry | None, index: int) -> dict[str, str | int]:
-    if call is None:
-        return {
-            "call_index": index,
-            "available": "false",
-            "name": "unknown",
-            "number": "unknown",
-            "date": "unknown",
-            "time": "unknown",
-            "type": "unknown",
-            "duration": "unknown",
-        }
-    parsed = call_datetime(call)
-    return {
-        "call_index": index,
-        "available": "true",
-        "name": legacy_last_call_value(call, "name"),
-        "number": legacy_last_call_value(call, "number"),
-        "date": call.date or "unknown",
-        "time": parsed.strftime("%H:%M") if parsed is not None else "unknown",
-        "type": legacy_last_call_value(call, "type"),
-        "duration": legacy_last_call_value(call, "duration") or "unknown",
-        "caller": call.caller or "unknown",
-        "called": call.called or "unknown",
-        "type_id": call.type_id or "unknown",
-    }
-
-
-def legacy_last_call_value(call: CallEntry | None, field: str) -> str:
-    if call is None:
-        return "unknown"
-    if field == "name":
-        return call.name or call.number or "Unbekannt"
-    if field == "number":
-        return call.number or call.caller or call.called or "unknown"
-    if field == "date":
-        return call.date or "unknown"
-    if field == "type":
-        return CALL_VIEW_LABELS.get(call.view, call.view).replace("Anrufliste ", "") or "unknown"
-    if field == "duration":
-        return call.duration or ""
-    return "unknown"
 
 
 def parse_call_monitor_line(line: str) -> CallMonitorEvent | None:

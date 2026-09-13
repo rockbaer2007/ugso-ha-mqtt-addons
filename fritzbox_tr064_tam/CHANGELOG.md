@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.41
+
+- Remove the optional legacy individual last-call sensors again. The add-on keeps only the normal call list sensors with `entries` and `lines` attributes.
+- Clear previously published legacy last-call MQTT Discovery topics on startup so Home Assistant can remove the temporary entities.
+
 ## 0.1.40
 
 - Add shared attributes to each legacy last-call sensor group with call index, availability, name, number, date/time, type, duration, caller and called values.
