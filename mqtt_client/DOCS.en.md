@@ -1,15 +1,19 @@
-# MQTT-Client 0.1.0
+# MQTT-Client 0.1.1
 
 An independent Home Assistant app connecting to an external MQTT broker, such as
 ioBroker's MQTT adapter in Server/Broker mode. Your existing HA broker and MQTT
 integration remain in place. This is a direct HA API client, not a broker bridge.
 
 Add `https://github.com/rockbaer2007/ugso-ha-mqtt-addons` to the HA app store and
-install **MQTT-Client** (amd64/aarch64). Configure the external broker host, port,
-credentials, optional TLS, unique client ID and topic prefix. Enter the desired HA
-entity IDs under `entities`. Version 0.1.0 uses the app options, with no separate
-entity picker. Save and restart after changing options. No manual HA token is
-needed: access uses the Supervisor token and HA Core API proxy.
+install **MQTT-Client** (amd64/aarch64). Open **Open Web UI** to configure the
+external broker IP/hostname, port, username and password. Port `1883` is the
+default for ioBroker's MQTT adapter. The web UI shows red **No connection** and
+green **Connected**.
+
+Enter the desired HA entity IDs under `entities` in the app options. Version 0.1.1
+still has no separate entity picker. Broker host, port, username and password
+changes from the web UI are applied immediately. No manual HA token is needed:
+access uses the Supervisor token and HA Core API proxy.
 
 States are polled every five seconds by default (`poll_interval`: 1–300 seconds).
 Changes are published as plain state strings to `<topic_prefix>/<entity_id>/state`

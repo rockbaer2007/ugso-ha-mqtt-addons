@@ -1,9 +1,15 @@
 # MQTT-Client einrichten
 
-Trage in der App-Konfiguration deinen externen Broker (z. B. ioBroker im Modus
-Server/Broker), Port, Benutzer und Passwort ein. Füge unter `entities` die gewünschten
-HA-Entity-IDs hinzu. Speichern, dann die App starten beziehungsweise neu starten.
+Öffne nach dem Start **Open Web UI** und trage dort deinen externen Broker ein,
+zum Beispiel ioBroker im Modus Server/Broker. Die Oberfläche enthält Felder für
+IP oder Hostname, Port, Benutzername und Passwort. Port `1883` ist als
+ioBroker-Standardport voreingestellt. Rot bedeutet **Keine Verbindung**, grün
+bedeutet **Verbunden**.
+
+Füge in der App-Konfiguration unter `entities` die gewünschten HA-Entity-IDs hinzu.
 Der bestehende HA-Broker bleibt erhalten. Die App benötigt keinen manuellen HA-Token.
+Änderungen an IP, Port, Benutzer und Passwort aus der Weboberfläche werden sofort
+angewendet.
 
 Die Standard-Topics sind `ha_external/<entity_id>/state` und
 `ha_external/availability`. Die Abfrage erfolgt alle fünf Sekunden. Nur explizit

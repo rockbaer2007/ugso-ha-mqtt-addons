@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.0**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
+Version **0.1.1**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise
 den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Dein HA-Broker und die vorhandene
 MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und
 dem externen Broker; sie ist keine Broker-Bridge.
@@ -10,10 +10,12 @@ dem externen Broker; sie ist keine Broker-Bridge.
 1. Dieses Repository im Home-Assistant-App-Store hinzufügen:
    `https://github.com/rockbaer2007/ugso-ha-mqtt-addons`.
 2. **MQTT-Client** installieren (amd64 oder aarch64).
-3. In der Konfiguration Host, Port und Zugangsdaten des ioBroker-Brokers eintragen.
+3. **Open Web UI** öffnen und IP/Hostname, Port, Username und Passwort des
+   ioBroker-Brokers eintragen. Port `1883` ist voreingestellt.
 4. Unter `entities` die gewünschten HA-Entity-IDs auswählen, indem du sie als Liste
    einträgst. In dieser ersten Version gibt es noch keine eigene Auswahloberfläche.
-5. Speichern und starten. Änderungen der Optionen erfordern einen App-Neustart.
+5. Speichern. Die Weboberfläche zeigt rot **Keine Verbindung** und grün
+   **Verbunden**. Änderungen an den Broker-Zugangsdaten werden sofort angewendet.
 
 Beispiel mit Demo-Entitäten, die du durch deine eigenen ersetzen musst:
 
@@ -72,7 +74,7 @@ HA-Token ist nicht erforderlich. Die App legt keine HA-Konfigurationsdateien an.
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.0 mqtt_client
+docker build -t ugso-mqtt-client:0.1.1 mqtt_client
 ```
 
 [English documentation](DOCS.en.md)

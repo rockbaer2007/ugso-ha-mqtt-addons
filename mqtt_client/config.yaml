@@ -1,5 +1,5 @@
 name: MQTT-Client
-version: "0.1.0"
+version: "0.1.1"
 slug: mqtt_client
 description: Send selected Home Assistant states to an external MQTT broker such as ioBroker
 url: https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/mqtt_client
@@ -10,6 +10,10 @@ startup: application
 boot: auto
 init: false
 homeassistant_api: true
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:lan-connect
+panel_title: MQTT-Client
 options:
   broker_host: ""
   broker_port: 1883

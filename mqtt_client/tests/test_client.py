@@ -1,4 +1,6 @@
+import json
 import sys
+import tempfile
 import time
 import unittest
 from pathlib import Path
@@ -6,7 +8,24 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
-from main import Bridge, Config
+from main import AppController, Bridge, Config
+
+
+class FakeBridge:
+    instances = []
+
+    def __init__(self, config, ha, status=None):
+        self.config = config
+        self.ha = ha
+        self.status = status
+        self.stop = SimpleNamespace(set=Mock())
+        FakeBridge.instances.append(self)
+
+    def run(self):
+        if self.status:
+            self.status.set_connected(True, "Verbunden")
+        while not self.stop.set.called:
+            time.sleep(0.01)
 
 
 class ClientTests(unittest.TestCase):
@@ -79,6 +98,25 @@ class ClientTests(unittest.TestCase):
                         {"poll_interval": 0}):
             with self.subTest(changes=changes), self.assertRaises(ValueError):
                 Config.load({**self.options, **changes})
+
+    def test_controller_updates_connection_and_keeps_password_when_empty(self):
+        FakeBridge.instances = []
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "options.json"
+            path.write_text(json.dumps({**self.options, "password": "old"}), encoding="utf-8")
+            controller = AppController(path, "token", bridge_factory=FakeBridge)
+            controller.start()
+            updated = controller.update_connection({"broker_host": "192.168.1.20", "broker_port": 1883,
+                                                    "username": "ha", "password": "new"})
+            self.assertEqual(updated["broker_host"], "192.168.1.20")
+            self.assertTrue(updated["has_password"])
+            second = controller.update_connection({"broker_host": "192.168.1.21", "broker_port": 1883,
+                                                   "username": "ha"})
+            saved = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(saved["password"], "new")
+            self.assertEqual(second["broker_host"], "192.168.1.21")
+            self.assertGreaterEqual(len(FakeBridge.instances), 3)
+            controller.stop()
 
 
 if __name__ == "__main__":
