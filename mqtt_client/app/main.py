@@ -28,7 +28,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.6"
+APP_VERSION = "0.1.7"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -90,10 +90,13 @@ INDEX_HTML = """<!doctype html>
     .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .toolbar input { padding: 9px 10px; }
     .list { display: grid; gap: 8px; max-height: 460px; overflow: auto; padding-right: 4px; }
-    .device { border: 1px solid rgba(148, 163, 184, .22); border-radius: 10px; background: rgba(15, 23, 42, .18); overflow: hidden; }
-    .device summary { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; cursor: pointer; }
-    .device summary::marker { color: var(--secondary-text-color, #94a3b8); }
-    .deviceEntities { display: grid; gap: 6px; padding: 0 8px 8px 18px; }
+    .device { width: 100%; text-align: left; color: inherit; background: rgba(148, 163, 184, .12); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+    .device:hover { background: rgba(3, 169, 244, .18); }
+    .devicePopup { width: min(920px, calc(100vw - 28px)); }
+    .deviceSections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-height: 62vh; overflow: auto; }
+    .deviceSection { border: 1px solid rgba(148, 163, 184, .25); border-radius: 10px; padding: 12px; background: rgba(148, 163, 184, .08); }
+    .deviceSection h3 { margin: 0 0 10px; font-size: .98rem; }
+    .deviceRows { display: grid; gap: 6px; }
     .entity, .selected { width: 100%; text-align: left; color: inherit; background: rgba(148, 163, 184, .12); display: grid; gap: 2px; }
     .entity:hover, .selected:hover { background: rgba(3, 169, 244, .18); }
     .selected { grid-template-columns: 1fr auto; align-items: center; }
@@ -108,7 +111,7 @@ INDEX_HTML = """<!doctype html>
     .check { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 8px; background: rgba(148, 163, 184, .12); }
     .check input { width: auto; }
     .actions { display: flex; justify-content: flex-end; gap: 10px; }
-    @media (max-width: 820px) { .entity-grid, .row { grid-template-columns: 1fr; } main { padding-top: 18px; } }
+    @media (max-width: 820px) { .entity-grid, .row, .deviceSections { grid-template-columns: 1fr; } main { padding-top: 18px; } }
   </style>
 </head>
 <body>
@@ -153,6 +156,19 @@ INDEX_HTML = """<!doctype html>
     </section>
   </main>
 
+  <dialog id="deviceDialog" class="devicePopup">
+    <div class="dialog-body">
+      <div>
+        <h2 id="deviceDialogTitle">Gerät</h2>
+        <div id="deviceDialogMeta" class="meta"></div>
+      </div>
+      <div id="deviceSections" class="deviceSections"></div>
+      <div class="actions">
+        <button id="closeDeviceDialog" class="secondary" type="button">Schließen</button>
+      </div>
+    </div>
+  </dialog>
+
   <dialog id="entityDialog">
     <div class="dialog-body">
       <div>
@@ -182,6 +198,8 @@ INDEX_HTML = """<!doctype html>
     const entityList = document.getElementById('entityList');
     const selectedList = document.getElementById('selectedList');
     const selectionMessage = document.getElementById('selectionMessage');
+    const deviceDialog = document.getElementById('deviceDialog');
+    const deviceSections = document.getElementById('deviceSections');
     const dialog = document.getElementById('entityDialog');
     const stateCheck = document.getElementById('stateCheck');
     const commandRow = document.getElementById('commandRow');
@@ -193,6 +211,7 @@ INDEX_HTML = """<!doctype html>
     let selectedAttributes = new Set();
     let commandEntities = new Set();
     let activeEntity = null;
+    let activeDevice = null;
     const commandDomains = new Set(['switch', 'light', 'input_boolean', 'fan', 'input_number', 'number', 'input_select', 'select', 'input_text', 'text', 'button', 'input_button']);
 
     function setStatus(data) {
@@ -220,34 +239,47 @@ INDEX_HTML = """<!doctype html>
       return commandDomains.has(entityId.split('.')[0]);
     }
 
+    function entityDomain(item) {
+      return item.entity_id.split('.')[0];
+    }
+
+    function entitySection(item) {
+      const domain = entityDomain(item);
+      const label = `${entityLabel(item)} ${item.entity_id}`.toLowerCase();
+      if (label.match(/diagnose|diagnostic|überhitz|overheat|überlast|overload|failed|ping|response|rssi|signal|uptime|status/)) return 'Diagnose';
+      if (['update', 'button', 'input_button'].includes(domain) || label.match(/firmware|konfiguration|configuration|restart|neu starten/)) return 'Konfiguration';
+      if (['switch', 'light', 'input_boolean', 'fan', 'cover', 'lock', 'input_number', 'number', 'input_select', 'select', 'input_text', 'text'].includes(domain)) return 'Steuerung';
+      return 'Sensoren';
+    }
+
+    function deviceCountLabel(device) {
+      const count = (device.entities || []).length;
+      return count === 1 ? '1 Entität' : `${count} Entitäten`;
+    }
+
+    function selectedSummary(entityId) {
+      const attrs = [...selectedAttributes].filter((entry) => entry.startsWith(`${entityId}:`));
+      const parts = [];
+      if (selectedStates.has(entityId)) parts.push('State');
+      if (attrs.length) parts.push(`${attrs.length} Attribute`);
+      if (commandEntities.has(entityId)) parts.push('bidirektional');
+      return parts.length ? ` · ${parts.join(' · ')}` : '';
+    }
+
     function renderLists() {
       const term = filter.value.trim().toLowerCase();
       entityList.innerHTML = '';
       devices
         .filter((device) => deviceMatches(device, term))
         .forEach((device) => {
-          const details = document.createElement('details');
-          details.className = 'device';
-          details.open = true;
-          const summary = document.createElement('summary');
-          summary.innerHTML = '<span class="name"></span><span class="meta"></span>';
-          summary.querySelector('.name').textContent = device.name || 'Gerät';
-          summary.querySelector('.meta').textContent = `${(device.entities || []).length} Entitäten`;
-          const body = document.createElement('div');
-          body.className = 'deviceEntities';
-          (device.entities || []).forEach((item) => {
           const button = document.createElement('button');
           button.type = 'button';
-          button.className = 'entity';
+          button.className = 'device';
           button.innerHTML = `<span class="name"></span><span class="meta"></span>`;
-          button.querySelector('.name').textContent = entityLabel(item);
-          const count = item.attributes.length;
-          button.querySelector('.meta').textContent = `${item.entity_id} · ${item.state} · ${item.iobroker_type} · ${count} Attribute`;
-          button.addEventListener('click', () => openEntity(item.entity_id));
-          body.appendChild(button);
-          });
-          details.append(summary, body);
-          entityList.appendChild(details);
+          button.querySelector('.name').textContent = device.name || 'Gerät';
+          button.querySelector('.meta').textContent = deviceCountLabel(device);
+          button.addEventListener('click', () => openDevice(device.id));
+          entityList.appendChild(button);
         });
       if (!entityList.children.length) {
         entityList.innerHTML = '<div class="sub">Kein Gerät gefunden.</div>';
@@ -274,6 +306,42 @@ INDEX_HTML = """<!doctype html>
       if (!selectedIds.size) {
         selectedList.innerHTML = '<div class="sub">Noch keine Entität ausgewählt.</div>';
       }
+    }
+
+    function openDevice(deviceId) {
+      activeDevice = devices.find((device) => device.id === deviceId);
+      if (!activeDevice) return;
+      document.getElementById('deviceDialogTitle').textContent = activeDevice.name || 'Gerät';
+      document.getElementById('deviceDialogMeta').textContent = deviceCountLabel(activeDevice);
+      deviceSections.innerHTML = '';
+      const groups = new Map([['Steuerung', []], ['Sensoren', []], ['Konfiguration', []], ['Diagnose', []]]);
+      (activeDevice.entities || []).forEach((item) => groups.get(entitySection(item)).push(item));
+      groups.forEach((items, title) => {
+        if (!items.length) return;
+        const section = document.createElement('section');
+        section.className = 'deviceSection';
+        section.innerHTML = '<h3></h3><div class="deviceRows"></div>';
+        section.querySelector('h3').textContent = title;
+        const rows = section.querySelector('.deviceRows');
+        items.forEach((item) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'entity';
+          button.innerHTML = '<span class="name"></span><span class="meta"></span>';
+          button.querySelector('.name').textContent = entityLabel(item);
+          button.querySelector('.meta').textContent = `${item.entity_id} · ${item.state} · ${item.iobroker_type} · ${item.attributes.length} Attribute${selectedSummary(item.entity_id)}`;
+          button.addEventListener('click', () => {
+            deviceDialog.close();
+            openEntity(item.entity_id);
+          });
+          rows.appendChild(button);
+        });
+        deviceSections.appendChild(section);
+      });
+      if (!deviceSections.children.length) {
+        deviceSections.innerHTML = '<div class="sub">Keine Entitäten gefunden.</div>';
+      }
+      deviceDialog.showModal();
     }
 
     function openEntity(entityId) {
@@ -407,6 +475,7 @@ INDEX_HTML = """<!doctype html>
     });
 
     document.getElementById('closeDialog').addEventListener('click', () => dialog.close());
+    document.getElementById('closeDeviceDialog').addEventListener('click', () => deviceDialog.close());
     document.getElementById('reload').addEventListener('click', () => loadEntities().catch((error) => entityList.innerHTML = `<div class="sub">${error.message}</div>`));
     filter.addEventListener('input', renderLists);
 

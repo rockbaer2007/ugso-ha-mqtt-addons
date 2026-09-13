@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.7
+
+- Changed the left entity browser into a compact device search list.
+- Device clicks now open a device popup with grouped sections for Steuerung, Sensoren, Konfiguration and Diagnose.
+- Entity transmission details remain editable from inside the device popup.
+
 ## 0.1.6
 
 - Grouped the entity browser by device, similar to Home Assistant device details.
