@@ -51,7 +51,7 @@ CALL_TYPE_VIEWS = {
     "9": "rejected",
     "10": "blocked",
 }
-LEGACY_LAST_CALL_SENSOR_COUNT = 10
+LEGACY_LAST_CALL_SENSOR_COUNT = 20
 LEGACY_LAST_CALL_FIELDS = ("name", "number", "date", "type", "duration")
 LEGACY_LAST_CALL_FIELD_LABELS = {
     "name": "Name",

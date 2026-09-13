@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.39
+
+- Expand the legacy last-call card sensors from 10 to 20 calls so dashboards can show more entries from today and the previous days.
+
 ## 0.1.38
 
 - Sort the legacy last-call sensors by the FRITZ!Box call date and publish today's calls first, so dashboard cards show the current day's recent calls before older entries.

@@ -66,7 +66,7 @@ Call list entities, depending on `call_lists`:
 - `Gesperrte Anrufe`
 
 Each call list sensor reports the total count as its state and exposes up to `max_calls` entries in the `entries` and `lines` attributes.
-For dashboard cards that need simple entities, the app also publishes ten legacy last-call sensor groups: `sensor.fritzbox_letzte_anrufe_call_1_name_2`, `..._number_2`, `..._date_2`, `..._type_2`, and `..._duration_2` up to call 10.
+For dashboard cards that need simple entities, the app also publishes twenty legacy last-call sensor groups: `sensor.fritzbox_letzte_anrufe_call_1_name_2`, `..._number_2`, `..._date_2`, `..._type_2`, and `..._duration_2` up to call 20.
 
 Live call monitor entities, if `call_monitor_enabled` is true:
 
