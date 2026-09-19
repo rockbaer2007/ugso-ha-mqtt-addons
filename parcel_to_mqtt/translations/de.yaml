@@ -40,7 +40,7 @@ configuration:
         description: Liefer-Postleitzahl fuer GLS-Sendungen.
   dpd:
     name: DPD
-    description: Aktive DPD-Paketverfolgung mit manuellen Sendungsnummern und Empfänger-Postleitzahl.
+    description: Aktive DPD-Paketverfolgung über das DPD-Konto oder manuelle Sendungsnummern.
     fields:
       enabled:
         name: DPD aktivieren
@@ -50,7 +50,13 @@ configuration:
         description: DPD-Sendungsnummern, mit Komma getrennt.
       postal_code:
         name: DPD Empfänger-Postleitzahl
-        description: Die Empfänger-Postleitzahl für die DPD-Privatsphäre-Prüfung. Für die Paketabfrage erforderlich.
+        description: Optional für manuelle Sendungsnummern. Die Empfänger-Postleitzahl wird für die DPD-Privatsphäre-Prüfung benötigt.
+      username:
+        name: DPD Benutzername
+        description: Benutzername für das DPD-Konto. Damit werden die Sendungen des Kontos automatisch gelesen.
+      password:
+        name: DPD Passwort
+        description: Passwort für das DPD-Konto.
   ups:
     name: UPS
     description: Vorbereitet fuer spaetere UPS-Konto- oder API-Anbindung.

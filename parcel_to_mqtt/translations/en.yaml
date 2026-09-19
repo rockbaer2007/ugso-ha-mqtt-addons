@@ -40,7 +40,7 @@ configuration:
         description: Delivery postal code for GLS parcels.
   dpd:
     name: DPD
-    description: Active DPD parcel tracking with manual tracking numbers and the recipient postal code.
+    description: Active DPD parcel tracking through the DPD account or manual tracking numbers.
     fields:
       enabled:
         name: Enable DPD
@@ -50,7 +50,13 @@ configuration:
         description: DPD tracking numbers separated by commas.
       postal_code:
         name: DPD recipient postal code
-        description: The recipient postal code used for DPD's privacy check. Required for parcel polling.
+        description: Optional for manual tracking numbers. The recipient postal code is used for DPD's privacy check.
+      username:
+        name: DPD username
+        description: DPD account username. The account parcels are read automatically.
+      password:
+        name: DPD password
+        description: DPD account password.
   ups:
     name: UPS
     description: Prepared for a later UPS account or API connector.

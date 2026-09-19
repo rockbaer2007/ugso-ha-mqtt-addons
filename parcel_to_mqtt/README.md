@@ -44,6 +44,8 @@ dpd:
   enabled: false
   tracking_numbers: ""
   postal_code: ""
+  username: ""
+  password: ""
 ups:
   enabled: false
   tracking_numbers: ""
@@ -70,7 +72,7 @@ The Home Assistant app options are grouped by provider. These groups are the int
 `dhl.login_url` is a copy helper for the DHL browser login. Open it in Chrome, sign in to DHL, open the developer console with `F12`, copy the failed `dhllogin://...` redirect URL and paste it into `dhl.login_code`.
 After the first successful login the app stores the refresh token in `/data/dhl_session.json` and reads the DHL account parcel list automatically.
 `dhl.tracking_numbers`, `hermes.tracking_numbers` and `dpd.tracking_numbers` accept comma-separated lists.
-DPD uses direct parcel tracking. Enter the recipient postal code in `dpd.postal_code`; DPD uses it to confirm that you are the recipient before returning tracking data.
+DPD can read the parcel list from a DPD account through `dpd.username` and `dpd.password`. The session is stored in `/data/dpd_session.json` and is renewed automatically when necessary. Alternatively, manual DPD tracking numbers can be queried with `dpd.postal_code`; DPD uses this recipient postal code to confirm that you are the recipient.
 GLS, UPS, Amazon Logistics, Deutsche Post letters and FedEx are already present as provider sections, but polling is only active for DHL, Hermes and DPD until their stable login/session or direct tracking flow is implemented.
 `general.log_response_details` writes masked provider requests and responses to the add-on log and `/data/provider_debug.log`. The file keeps at most 100 JSON lines.
 Notifications should be created as Home Assistant automations using the generated entities.
@@ -109,5 +111,5 @@ columns:
 - Hermes: currently active by manual tracking number; account login with app username and app password is planned.
 - UPS: prepared with app username, password and manual tracking numbers.
 - GLS: prepared with manual tracking numbers and delivery postal code.
-- DPD: active through manual tracking numbers and the recipient postal code.
+- DPD: active through DPD account tracking or manual tracking numbers with the recipient postal code.
 - Deutsche Post letters and FedEx: prepared with manual tracking numbers for later connectors.

@@ -1,5 +1,5 @@
 name: Parcel to MQTT
-version: "0.1.18"
+version: "0.1.19"
 slug: parcel_to_mqtt
 description: Publish parcel tracking data to Home Assistant via MQTT Discovery
 url: https://github.com/rockbaer2007/ugso-ha-mqtt-addons
@@ -31,6 +31,8 @@ options:
     enabled: false
     tracking_numbers: ""
     postal_code: ""
+    username: ""
+    password: ""
   ups:
     enabled: false
     tracking_numbers: ""
@@ -76,6 +78,8 @@ schema:
     enabled: bool
     tracking_numbers: str
     postal_code: str
+    username: str
+    password: password
   ups:
     enabled: bool
     tracking_numbers: str

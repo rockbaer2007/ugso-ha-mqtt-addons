@@ -7,10 +7,14 @@ import re
 import signal
 import threading
 import time
+from base64 import b64encode
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
+from hashlib import md5
+from html import escape
 from typing import Any
 from urllib.parse import parse_qs, urlparse
+from xml.etree import ElementTree
 
 import paho.mqtt.client as mqtt
 import requests
@@ -53,6 +57,8 @@ class Options:
     dpd_enabled: bool
     dpd_tracking_numbers: list[str]
     dpd_postal_code: str
+    dpd_username: str
+    dpd_password: str
     ups_enabled: bool
     ups_tracking_numbers: list[str]
     amazon_enabled: bool
@@ -376,7 +382,9 @@ class DhlClient:
             value_at(item, ["sendungsinfo", "status"]),
         )
         last_event, last_event_time = dhl_last_event(item)
-        status_group = normalize_status_group(f"{status_text} {last_event}")
+        status_group = dpd_status_group(item.get("status_id"), f"{status_text} {last_event}")
+        if item.get("delivered"):
+            status_group = "delivered"
         progress = int(value_at(item, ["sendungsdetails", "sendungsverlauf", "fortschritt"]) or 0)
         return Parcel(
             index=0,
@@ -493,14 +501,17 @@ class GlsClient:
 
 
 class DpdClient:
-    """Track DPD parcels by tracking number and recipient postal code.
-
-    DPD protects recipient tracking data with the postal-code confirmation.
-    The public response uses a compact lifecycle format which is normalized into
-    the same parcel payload that DHL and Hermes publish.
-    """
+    """Track DPD account parcels and optionally manual parcel numbers."""
 
     VERIFY_URL = "https://www.mydpd.at/jws.php/parcel/verify"
+    SERVICE_URL = "https://api.paketnavigator.de/services/v1/Navigator3Service.asmx"
+    NAMESPACE = "https://cloud.dpd.com/"
+    PARTNER_NAME = "Android Paketnavigator3"
+    PARTNER_TOKEN = "A33363237662F5945576"
+    PARTNER_PASSWORD = "272 WetFd2mpXrgD"
+    API_VERSION = 100
+    LANGUAGE = "de_DE"
+    SESSION_FILE = "/data/dpd_session.json"
 
     def __init__(self, options: Options) -> None:
         self.options = options
@@ -515,11 +526,17 @@ class DpdClient:
         })
 
     def poll(self) -> list[Parcel]:
+        account_parcels = self.fetch_account_parcels()
+        manual_parcels = self.fetch_manual_parcels()
+        if not account_parcels and not manual_parcels:
+            LOG.info("DPD has no account parcels or usable manual tracking numbers")
+        return account_parcels + manual_parcels
+
+    def fetch_manual_parcels(self) -> list[Parcel]:
         if not self.options.dpd_tracking_numbers:
-            LOG.info("DPD has no manual tracking numbers to poll")
             return []
         if not self.options.dpd_postal_code:
-            LOG.warning("DPD tracking numbers are configured, but dpd.postal_code is empty")
+            LOG.warning("DPD manual tracking numbers are configured, but dpd.postal_code is empty")
             return []
 
         parcels = []
@@ -555,6 +572,182 @@ class DpdClient:
             except Exception as exc:
                 LOG.warning("Could not fetch DPD parcel %s: %s", tracking_number, exc)
         return parcels
+
+    def fetch_account_parcels(self) -> list[Parcel]:
+        if not self.options.dpd_username or not self.options.dpd_password:
+            return []
+        session = self.ensure_account_session()
+        if not session:
+            return []
+        response = self.get_session_full_state(session)
+        if not response:
+            return []
+        session_token = dpd_xml_text(response, "SessionToken")
+        if session_token and session_token != session.get("session_token"):
+            self.save_session({**session, "session_token": session_token})
+        parcels = []
+        for item in dpd_account_parcel_items(response):
+            parcels.append(self.normalize_parcel(first_text(item.get("pno")), item))
+        LOG.info("DPD account returned %s parcel(s)", len(parcels))
+        return parcels
+
+    def ensure_account_session(self) -> dict[str, Any] | None:
+        stored = self.load_session()
+        if stored and stored.get("session_token") and stored.get("cloud_user_id"):
+            return stored
+        return self.login_account()
+
+    def login_account(self) -> dict[str, Any] | None:
+        anonymous_response = self.soap_call(
+            "getSessionFullState",
+            self.session_request_body("", 0),
+        )
+        if not anonymous_response:
+            return None
+        anonymous_token = dpd_xml_text(anonymous_response, "SessionToken")
+        if not anonymous_token:
+            LOG.warning("DPD anonymous session did not return a session token")
+            return None
+
+        key_phase = self.key_phase(0, "getUserLogin")
+        body = (
+            f'<getUserLoginRequest xmlns="{self.NAMESPACE}">'
+            f"<Version>{self.API_VERSION}</Version><Language>{self.LANGUAGE}</Language>"
+            f"{self.partner_credentials(key_phase)}"
+            f"<SessionToken>{escape(anonymous_token)}</SessionToken>"
+            f"<UserName>{escape(self.options.dpd_username)}</UserName>"
+            f"<UserPassword>{escape(self.options.dpd_password)}</UserPassword>"
+            "</getUserLoginRequest>"
+        )
+        login_response = self.soap_call("getUserLogin", body)
+        if not login_response:
+            return None
+        if dpd_xml_text(login_response, "Ack").lower() != "true":
+            LOG.warning("DPD login was rejected: %s", first_text(dpd_xml_text(login_response, "ErrorMsg"), dpd_xml_text(login_response, "ErrorCode")))
+            return None
+        session_token = dpd_xml_text(login_response, "SessionToken")
+        cloud_user_id = dpd_xml_text(login_response, "cloudUserID")
+        if not session_token or not cloud_user_id:
+            LOG.warning("DPD login did not return a complete user session")
+            return None
+        session = {"session_token": session_token, "cloud_user_id": cloud_user_id}
+        self.save_session(session)
+        LOG.info("DPD account login successful; the session will be reused on the next start")
+        return session
+
+    def get_session_full_state(self, session: dict[str, Any]) -> str:
+        response = self.soap_call(
+            "getSessionFullState",
+            self.session_request_body(
+                str(session.get("session_token") or ""),
+                int(str(session.get("cloud_user_id") or "0")),
+            ),
+        )
+        if not response:
+            return ""
+        if dpd_xml_text(response, "Ack").lower() == "true":
+            return response
+
+        LOG.info("DPD account session is no longer valid; signing in again")
+        self.clear_session()
+        renewed = self.login_account()
+        if not renewed:
+            return ""
+        retry = self.soap_call(
+            "getSessionFullState",
+            self.session_request_body(
+                str(renewed.get("session_token") or ""),
+                int(str(renewed.get("cloud_user_id") or "0")),
+            ),
+        )
+        return retry if retry and dpd_xml_text(retry, "Ack").lower() == "true" else ""
+
+    def session_request_body(self, session_token: str, cloud_user_id: int) -> str:
+        return (
+            f'<getSessionFullStateRequest xmlns="{self.NAMESPACE}">'
+            f"<Version>{self.API_VERSION}</Version><Language>{self.LANGUAGE}</Language>"
+            f"{self.partner_credentials(self.key_phase(cloud_user_id, 'getSessionFullState'))}"
+            f"<SessionToken>{escape(session_token)}</SessionToken>"
+            "<DeviceData><Version>1</Version><HardwareID>parcel-to-mqtt</HardwareID>"
+            "<BootSystemID>Android_Phone</BootSystemID><Name>Parcel to MQTT</Name>"
+            "<AppVersion>4.1.2</AppVersion><PushToken></PushToken>"
+            "<AllowPushNotifications>false</AllowPushNotifications></DeviceData>"
+            "</getSessionFullStateRequest>"
+        )
+
+    def partner_credentials(self, key_phase: str) -> str:
+        return (
+            f'<PartnerCredentials xmlns="{self.NAMESPACE}"><Name>{self.PARTNER_NAME}</Name>'
+            f"<Token>{self.PARTNER_TOKEN}</Token><KeyPhase>{escape(key_phase)}</KeyPhase></PartnerCredentials>"
+        )
+
+    def key_phase(self, cloud_user_id: int, operation: str) -> str:
+        now = datetime.now(timezone.utc)
+        time_seed = str(((now.hour * 60 + now.minute + 1000) * 3))
+        digest = b64encode(md5(f"{time_seed}{self.PARTNER_NAME}{cloud_user_id}{operation}{self.PARTNER_PASSWORD}".encode()).digest()).decode()
+        return f"{time_seed}{digest[:16]}"
+
+    def soap_call(self, operation: str, body: str) -> str:
+        envelope = (
+            '<?xml version="1.0" encoding="UTF-8"?>'
+            '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body>'
+            f'<{operation} xmlns="{self.NAMESPACE}">{body}</{operation}>'
+            "</soap:Body></soap:Envelope>"
+        )
+        try:
+            response = self.session.post(
+                self.SERVICE_URL,
+                headers={
+                    "content-type": "text/xml; charset=utf-8",
+                    "soapaction": f"{self.NAMESPACE}{operation}",
+                    "accept": "text/xml",
+                    "user-agent": "ksoap2-android/2.6.0+",
+                },
+                data=envelope.encode("utf-8"),
+                timeout=60,
+            )
+            response.raise_for_status()
+            debug_provider_exchange(
+                self.options,
+                provider="DPD",
+                phase=operation,
+                request_data={"method": "POST", "url": response.url, "operation": operation},
+                response=response,
+                response_data={"ack": dpd_xml_text(response.text, "Ack")},
+            )
+            return response.text
+        except requests.HTTPError as exc:
+            LOG.warning("DPD %s failed: %s", operation, describe_http_error(exc))
+        except Exception as exc:
+            LOG.warning("DPD %s failed: %s", operation, exc)
+        return ""
+
+    @classmethod
+    def load_session(cls) -> dict[str, Any] | None:
+        try:
+            if os.path.exists(cls.SESSION_FILE):
+                with open(cls.SESSION_FILE, encoding="utf-8") as handle:
+                    data = json.load(handle)
+                return data if isinstance(data, dict) else None
+        except Exception as exc:
+            LOG.warning("Could not read stored DPD session: %s", exc)
+        return None
+
+    @classmethod
+    def save_session(cls, session: dict[str, Any]) -> None:
+        try:
+            with open(cls.SESSION_FILE, "w", encoding="utf-8") as handle:
+                json.dump(session, handle)
+        except Exception as exc:
+            LOG.warning("Could not store DPD session: %s", exc)
+
+    @classmethod
+    def clear_session(cls) -> None:
+        try:
+            if os.path.exists(cls.SESSION_FILE):
+                os.remove(cls.SESSION_FILE)
+        except Exception as exc:
+            LOG.warning("Could not remove stored DPD session: %s", exc)
 
     @staticmethod
     def normalize_parcel(tracking_number: str, item: dict[str, Any]) -> Parcel:
@@ -973,6 +1166,107 @@ def dpd_events(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ]
 
 
+def dpd_status_group(status_id: Any, text: str) -> str:
+    status_map = {
+        "NO_TRACKINGDATA": "registered",
+        "DATA_TRANSMITTED": "registered",
+        "ACCEPTED": "registered",
+        "START": "registered",
+        "COLLECTED": "in_transit",
+        "AT_SENDING_DEPOT": "in_transit",
+        "ON_THE_ROAD": "in_transit",
+        "AT_DELIVERY_DEPOT": "in_transit",
+        "SORTED": "in_transit",
+        "SORTED_TO_PICKUP_LOCATION": "in_transit",
+        "PARCEL_PROCESSING": "in_transit",
+        "OUT_FOR_DELIVERY": "out_for_delivery",
+        "IN_DELIVERY": "out_for_delivery",
+        "AT_PARCELSHOP": "at_pickup_point",
+        "DELIVERED": "delivered",
+        "PICKED_UP": "delivered",
+        "RETURN_TO_SENDER": "returning",
+    }
+    return status_map.get(str(status_id or "").upper(), normalize_status_group(text))
+
+
+def dpd_xml_local_name(element: ElementTree.Element) -> str:
+    return element.tag.rsplit("}", 1)[-1]
+
+
+def dpd_xml_text(xml: str, name: str) -> str:
+    if not xml:
+        return ""
+    try:
+        root = ElementTree.fromstring(xml)
+    except ElementTree.ParseError:
+        return ""
+    for element in root.iter():
+        if dpd_xml_local_name(element) == name:
+            return first_text(element.text)
+    return ""
+
+
+def dpd_xml_descendant_text(element: ElementTree.Element, name: str) -> str:
+    for child in element.iter():
+        if dpd_xml_local_name(child) == name:
+            return first_text(child.text)
+    return ""
+
+
+def dpd_account_parcel_items(xml: str) -> list[dict[str, Any]]:
+    try:
+        root = ElementTree.fromstring(xml)
+    except ElementTree.ParseError:
+        return []
+
+    lists = (
+        ("ReceiveTrackingDataList", "ReceiveTrackingData", "receive"),
+        ("SendTrackingDataList", "SendTrackingData", "send"),
+        ("ReturnTrackingDataList", "ReturnTrackingData", "return"),
+    )
+    parcels = []
+    for list_name, item_name, direction in lists:
+        for tracking_list in root.iter():
+            if dpd_xml_local_name(tracking_list) != list_name:
+                continue
+            for item in tracking_list.iter():
+                if dpd_xml_local_name(item) != item_name:
+                    continue
+                parcel_number = dpd_xml_descendant_text(item, "ParcelNo")
+                if not parcel_number:
+                    continue
+                status_container = next((child for child in item.iter() if dpd_xml_local_name(child) == "LastStatusInfo"), item)
+                status = first_text(
+                    dpd_xml_descendant_text(status_container, "StatusText_Mobile"),
+                    dpd_xml_descendant_text(item, "StatusText_Mobile"),
+                    dpd_xml_descendant_text(item, "DataViewStatus"),
+                )
+                status_id = first_text(
+                    dpd_xml_descendant_text(status_container, "StatusID"),
+                    dpd_xml_descendant_text(item, "StatusID"),
+                )
+                status_date = first_text(
+                    dpd_xml_descendant_text(status_container, "StatusDate"),
+                    dpd_xml_descendant_text(item, "StatusDate"),
+                )
+                parcels.append({
+                    "pno": parcel_number,
+                    "name": first_text(dpd_xml_descendant_text(item, "ParcelNicName"), parcel_number),
+                    "status": status,
+                    "status_id": status_id,
+                    "delivered": dpd_xml_descendant_text(item, "Delivered").lower() == "true",
+                    "direction": direction,
+                    "eta": dpd_xml_descendant_text(item, "EstimatedDeliveryDateTimeFrom"),
+                    "lifecycle": {
+                        "entries": [{
+                            "datetime": status_date,
+                            "state": {"text": status},
+                        }],
+                    },
+                })
+    return parcels
+
+
 def normalize_status_group(status: str) -> str:
     text = status.lower().replace("-", "_").replace(" ", "_")
     compact = text.replace("_", "")
@@ -1229,11 +1523,16 @@ def parcel_direction_raw(item: dict[str, Any]) -> str:
 
 def direction_from_text(value: str) -> str:
     text = str(value or "").lower()
+    if text.strip() in {"send", "return"}:
+        return "von mir"
+    if text.strip() in {"receive", "received"}:
+        return "zu mir"
     outbound_markers = (
         "von mir",
         "ausgehend",
         "ausgang",
         "outbound",
+        "send",
         "sent",
         "retoure",
         "return",
@@ -1246,6 +1545,7 @@ def direction_from_text(value: str) -> str:
         "eingehend",
         "eingang",
         "inbound",
+        "receive",
         "received",
         "empfangen",
         "ankommend",

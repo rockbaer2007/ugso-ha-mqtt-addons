@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.19
+
+- Added DPD account tracking with a reusable DPD session.
+- Kept recipient-postal-code tracking as an optional fallback for manually entered DPD numbers.
+
 ## 0.1.18
 
 - Added direct DPD tracking for manually configured tracking numbers.
