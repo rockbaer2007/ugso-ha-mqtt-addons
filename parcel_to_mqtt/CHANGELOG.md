@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.18
+
+- Added direct DPD tracking for manually configured tracking numbers.
+- Added the DPD recipient postal-code setting required by the DPD privacy check.
+- Normalized DPD lifecycle events into the shared MQTT and ioBroker-style provider payloads.
+
 ## 0.1.17
 
 - Added an ioBroker-style DHL JSON payload at `parcel/dhl/json`.

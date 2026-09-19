@@ -52,6 +52,7 @@ class Options:
     gls_postal_code: str
     dpd_enabled: bool
     dpd_tracking_numbers: list[str]
+    dpd_postal_code: str
     ups_enabled: bool
     ups_tracking_numbers: list[str]
     amazon_enabled: bool
@@ -101,6 +102,8 @@ class ParcelPoller:
             self.clients.append(HermesClient(options))
         if options.gls_enabled:
             self.clients.append(GlsClient(options))
+        if options.dpd_enabled:
+            self.clients.append(DpdClient(options))
         self.clients.extend(planned_provider_clients(options))
 
     def poll(self) -> list[Parcel]:
@@ -489,6 +492,109 @@ class GlsClient:
         return []
 
 
+class DpdClient:
+    """Track DPD parcels by tracking number and recipient postal code.
+
+    DPD protects recipient tracking data with the postal-code confirmation.
+    The public response uses a compact lifecycle format which is normalized into
+    the same parcel payload that DHL and Hermes publish.
+    """
+
+    VERIFY_URL = "https://www.mydpd.at/jws.php/parcel/verify"
+
+    def __init__(self, options: Options) -> None:
+        self.options = options
+        self.session = requests.Session()
+        self.session.headers.update({
+            "accept": "application/json",
+            "content-type": "application/json",
+            "accept-language": "de-DE,de;q=0.9",
+            "origin": "https://www.mydpd.at",
+            "referer": "https://www.mydpd.at/",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36",
+        })
+
+    def poll(self) -> list[Parcel]:
+        if not self.options.dpd_tracking_numbers:
+            LOG.info("DPD has no manual tracking numbers to poll")
+            return []
+        if not self.options.dpd_postal_code:
+            LOG.warning("DPD tracking numbers are configured, but dpd.postal_code is empty")
+            return []
+
+        parcels = []
+        for tracking_number in self.options.dpd_tracking_numbers:
+            try:
+                response = self.session.post(
+                    self.VERIFY_URL,
+                    json=[tracking_number, self.options.dpd_postal_code],
+                    timeout=30,
+                )
+                response.raise_for_status()
+                data = response.json()
+                debug_provider_exchange(
+                    self.options,
+                    provider="DPD",
+                    phase="tracking",
+                    request_data={
+                        "method": "POST",
+                        "url": response.url,
+                        "tracking_number": tracking_number,
+                        "postal_code": "***",
+                    },
+                    response=response,
+                    response_data=data,
+                )
+                items = dpd_parcel_items(data)
+                if not items:
+                    LOG.info("DPD parcel %s is unknown, not scanned yet, or does not match the postal code", tracking_number)
+                    continue
+                parcels.extend(self.normalize_parcel(tracking_number, item) for item in items)
+            except requests.HTTPError as exc:
+                LOG.warning("Could not fetch DPD parcel %s: %s", tracking_number, describe_http_error(exc))
+            except Exception as exc:
+                LOG.warning("Could not fetch DPD parcel %s: %s", tracking_number, exc)
+        return parcels
+
+    @staticmethod
+    def normalize_parcel(tracking_number: str, item: dict[str, Any]) -> Parcel:
+        entries = dpd_lifecycle_entries(item)
+        latest = dpd_latest_event(entries)
+        last_event = dpd_event_status(latest)
+        status_text = first_text(
+            last_event,
+            value_at(item, ["status", "text"]),
+            item.get("status"),
+            item.get("state"),
+        )
+        status_group = normalize_status_group(f"{status_text} {last_event}")
+        recipient = first_dict(item.get("recipient"), item.get("receiver"), item.get("consignee"))
+        recipient_location = first_text(
+            recipient.get("city"),
+            recipient.get("place"),
+            item.get("destination"),
+            value_at(item, ["deliveryAddress", "city"]),
+        )
+        return Parcel(
+            index=0,
+            tracking_number=first_text(item.get("pno"), item.get("parcelNumber"), item.get("trackingNumber"), tracking_number),
+            carrier="DPD",
+            name=first_text(item.get("name"), item.get("senderName"), value_at(item, ["sender", "name"]), value_at(item, ["shipper", "name"])),
+            status=status_text or human_status(status_group),
+            status_group=status_group,
+            delivery_status=delivery_status(0, status_group),
+            direction=parcel_direction(item),
+            direction_raw=parcel_direction_raw(item),
+            last_event=last_event or status_text,
+            last_event_time=dpd_event_time(latest),
+            destination=first_text(item.get("destinationCountry"), item.get("destination"), recipient.get("country")),
+            recipient_name=first_text(recipient.get("name"), recipient.get("fullName")),
+            recipient_location=recipient_location,
+            events=dpd_events(entries),
+            raw=item,
+        )
+
+
 class PlannedProviderClient:
     def __init__(self, provider: str, reason: str) -> None:
         self.provider = provider
@@ -504,8 +610,6 @@ class PlannedProviderClient:
 
 def planned_provider_clients(options: Options) -> list[PlannedProviderClient]:
     clients: list[PlannedProviderClient] = []
-    if options.dpd_enabled:
-        clients.append(PlannedProviderClient("DPD", "waiting for a stable account, session or official API flow"))
     if options.ups_enabled:
         clients.append(PlannedProviderClient("UPS", "waiting for a stable account or official API flow"))
     if options.amazon_enabled:
@@ -545,6 +649,7 @@ class MqttPublisher:
         self._publish_json(f"{self.options.base_topic}/all", [parcel_to_dict(parcel) for parcel in parcels])
         self._publish_json(f"{self.options.base_topic}/list", parcel_list_payload(parcels))
         self._publish_json(f"{self.options.base_topic}/dhl/json", provider_detail_payload(parcels, "DHL"))
+        self._publish_json(f"{self.options.base_topic}/dpd/json", provider_detail_payload(parcels, "DPD"))
         self._publish_json(f"{self.options.base_topic}/allProviderJson", [parcel_to_provider_item(parcel) for parcel in parcels])
         self._publish_json(f"{self.options.base_topic}/allProviderObjects", {
             parcel.tracking_number: parcel_to_provider_item(parcel)
@@ -606,6 +711,14 @@ class MqttPublisher:
             "unique_id": "parcel_to_mqtt_dhl_json",
             "state_topic": f"{self.options.base_topic}/total",
             "json_attributes_topic": f"{self.options.base_topic}/dhl/json",
+            "icon": "mdi:truck",
+            "device": self._device(),
+        })
+        self._publish_config("sensor", "dpd_json", {
+            "name": "Parcel DPD JSON",
+            "unique_id": "parcel_to_mqtt_dpd_json",
+            "state_topic": f"{self.options.base_topic}/total",
+            "json_attributes_topic": f"{self.options.base_topic}/dpd/json",
             "icon": "mdi:truck",
             "device": self._device(),
         })
@@ -795,6 +908,69 @@ def generic_events(events: Any) -> list[dict[str, Any]]:
             "return": str(first_text(event.get("ruecksendung"), event.get("rücksendung"), event.get("return"), event.get("isReturn"))).lower() == "true",
         })
     return result
+
+
+def first_dict(*values: Any) -> dict[str, Any]:
+    for value in values:
+        if isinstance(value, dict):
+            return value
+    return {}
+
+
+def dpd_parcel_items(data: Any) -> list[dict[str, Any]]:
+    if not isinstance(data, dict):
+        return []
+    if str(data.get("state") or "").lower() in {"failure", "error"}:
+        return []
+    candidates = data.get("data") or data.get("parcels") or data.get("parcel")
+    if isinstance(candidates, list):
+        return [item for item in candidates if isinstance(item, dict)]
+    if isinstance(candidates, dict):
+        return [candidates]
+    if isinstance(data.get("lifecycle"), dict) or isinstance(data.get("lifeCycle"), dict):
+        return [data]
+    return []
+
+
+def dpd_lifecycle_entries(item: dict[str, Any]) -> list[dict[str, Any]]:
+    lifecycle = first_dict(item.get("lifecycle"), item.get("lifeCycle"), item.get("parcelLifecycle"))
+    entries = lifecycle.get("entries") or lifecycle.get("events") or item.get("events")
+    return [entry for entry in entries if isinstance(entry, dict)] if isinstance(entries, list) else []
+
+
+def dpd_event_time(event: dict[str, Any]) -> str:
+    return first_text(event.get("datetime"), event.get("timestamp"), event.get("date"), event.get("time"))
+
+
+def dpd_event_status(event: dict[str, Any]) -> str:
+    state = event.get("state")
+    state_text = first_text(state.get("text"), state.get("label"), state.get("description")) if isinstance(state, dict) else state
+    return first_text(state_text, event.get("status"), event.get("text"), event.get("description"), event.get("historyText"))
+
+
+def dpd_event_location(event: dict[str, Any]) -> str:
+    depot = event.get("depotData") or event.get("depot")
+    if isinstance(depot, list):
+        return ", ".join(str(item).strip() for item in depot if str(item).strip())
+    if isinstance(depot, dict):
+        return first_text(depot.get("city"), depot.get("name"), depot.get("location"))
+    return first_text(depot, event.get("location"), event.get("place"), event.get("city"))
+
+
+def dpd_latest_event(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    return max(entries, key=dpd_event_time, default={})
+
+
+def dpd_events(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "date": dpd_event_time(event),
+            "location": dpd_event_location(event),
+            "status": dpd_event_status(event),
+            "return": False,
+        }
+        for event in entries
+    ]
 
 
 def normalize_status_group(status: str) -> str:
@@ -1180,6 +1356,7 @@ def load_options() -> Options:
         gls_postal_code=str(option_value(raw, "gls", "postal_code", "gls_postal_code")).strip(),
         dpd_enabled=option_bool(raw, "dpd", "enabled", None, False),
         dpd_tracking_numbers=parse_tracking_numbers(option_value(raw, "dpd", "tracking_numbers", "dpd_tracking_numbers")),
+        dpd_postal_code=str(option_value(raw, "dpd", "postal_code", "dpd_postal_code")).strip(),
         ups_enabled=option_bool(raw, "ups", "enabled", None, False),
         ups_tracking_numbers=parse_tracking_numbers(option_value(raw, "ups", "tracking_numbers", "ups_tracking_numbers")),
         amazon_enabled=option_bool(raw, "amazon", "enabled", None, False),
