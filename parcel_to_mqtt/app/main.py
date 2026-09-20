@@ -821,16 +821,33 @@ class MqttPublisher:
         if options.mqtt_username:
             self.client.username_pw_set(options.mqtt_username, options.mqtt_password)
         self._published_discovery = False
+        self._network_loop_started = False
+        self._connected = False
 
     def connect(self) -> None:
         LOG.info("Using MQTT broker %s:%s as user '%s'", self.options.mqtt_host, self.options.mqtt_port, self.options.mqtt_username or "<empty>")
         self.client.on_connect = self._on_connect
         self.client.connect(self.options.mqtt_host, self.options.mqtt_port, keepalive=60)
         self.client.loop_start()
+        self._network_loop_started = True
+        self._connected = True
 
     def disconnect(self) -> None:
-        self.client.loop_stop()
-        self.client.disconnect()
+        if not self._network_loop_started:
+            return
+
+        try:
+            if self._connected:
+                self.client.disconnect()
+        except (OSError, RuntimeError) as exc:
+            LOG.debug("MQTT was already disconnected during shutdown: %s", exc)
+        finally:
+            self._connected = False
+            try:
+                self.client.loop_stop()
+            except (OSError, RuntimeError) as exc:
+                LOG.debug("MQTT loop was already stopped during shutdown: %s", exc)
+            self._network_loop_started = False
 
     def publish_results(self, parcels: list[Parcel]) -> None:
         if not self._published_discovery:
@@ -960,7 +977,13 @@ class MqttPublisher:
         self._publish(topic, json.dumps(payload, separators=(",", ":"), ensure_ascii=False), retain=retain)
 
     def _publish(self, topic: str, payload: str, retain: bool | None = None) -> None:
-        self.client.publish(topic, payload, qos=0, retain=self.options.retain if retain is None else retain)
+        if not self._connected:
+            LOG.debug("Skipped MQTT publish during shutdown: %s", topic)
+            return
+        try:
+            self.client.publish(topic, payload, qos=0, retain=self.options.retain if retain is None else retain)
+        except (OSError, RuntimeError) as exc:
+            LOG.debug("MQTT publish failed during shutdown for %s: %s", topic, exc)
 
     @staticmethod
     def _device() -> dict[str, Any]:
@@ -1727,8 +1750,10 @@ def main() -> None:
                 publisher._publish(f"{options.base_topic}/status", "offline")
             stop_event.wait(options.interval * 60)
     finally:
-        publisher._publish(f"{options.base_topic}/status", "offline")
-        publisher.disconnect()
+        try:
+            publisher._publish(f"{options.base_topic}/status", "offline")
+        finally:
+            publisher.disconnect()
 
 
 if __name__ == "__main__":

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.21
+
+- Made MQTT shutdown tolerant of an already closed connection or stopped network loop.
+- Avoided MQTT publishes after shutdown has started.
+
 ## 0.1.20
 
 - Added ioBroker-style JSON MQTT topics and Home Assistant Discovery sensors for every configured parcel provider.
