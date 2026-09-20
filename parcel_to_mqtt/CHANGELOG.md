@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.20
+
+- Added ioBroker-style JSON MQTT topics and Home Assistant Discovery sensors for every configured parcel provider.
+- Added the combined `parcel/all/json` payload for a dashboard card covering all providers.
+- Added reusable Flex Table Card examples for every provider and the combined parcel list.
+
 ## 0.1.19
 
 - Added DPD account tracking with a reusable DPD session.

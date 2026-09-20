@@ -841,8 +841,12 @@ class MqttPublisher:
         summary = parcel_summary(parcels)
         self._publish_json(f"{self.options.base_topic}/all", [parcel_to_dict(parcel) for parcel in parcels])
         self._publish_json(f"{self.options.base_topic}/list", parcel_list_payload(parcels))
-        self._publish_json(f"{self.options.base_topic}/dhl/json", provider_detail_payload(parcels, "DHL"))
-        self._publish_json(f"{self.options.base_topic}/dpd/json", provider_detail_payload(parcels, "DPD"))
+        self._publish_json(f"{self.options.base_topic}/all/json", provider_detail_payload(parcels))
+        for slug, _name, carrier, _icon in PROVIDER_DETAIL_SENSORS:
+            self._publish_json(
+                f"{self.options.base_topic}/{slug}/json",
+                provider_detail_payload(parcels, carrier),
+            )
         self._publish_json(f"{self.options.base_topic}/allProviderJson", [parcel_to_provider_item(parcel) for parcel in parcels])
         self._publish_json(f"{self.options.base_topic}/allProviderObjects", {
             parcel.tracking_number: parcel_to_provider_item(parcel)
@@ -899,22 +903,23 @@ class MqttPublisher:
             "icon": "mdi:package-variant",
             "device": self._device(),
         })
-        self._publish_config("sensor", "dhl_json", {
-            "name": "Parcel DHL JSON",
-            "unique_id": "parcel_to_mqtt_dhl_json",
+        self._publish_config("sensor", "all_json", {
+            "name": "Parcel Alle JSON",
+            "unique_id": "parcel_to_mqtt_all_json",
             "state_topic": f"{self.options.base_topic}/total",
-            "json_attributes_topic": f"{self.options.base_topic}/dhl/json",
-            "icon": "mdi:truck",
+            "json_attributes_topic": f"{self.options.base_topic}/all/json",
+            "icon": "mdi:package-variant-closed",
             "device": self._device(),
         })
-        self._publish_config("sensor", "dpd_json", {
-            "name": "Parcel DPD JSON",
-            "unique_id": "parcel_to_mqtt_dpd_json",
-            "state_topic": f"{self.options.base_topic}/total",
-            "json_attributes_topic": f"{self.options.base_topic}/dpd/json",
-            "icon": "mdi:truck",
-            "device": self._device(),
-        })
+        for slug, name, _carrier, icon in PROVIDER_DETAIL_SENSORS:
+            self._publish_config("sensor", f"{slug}_json", {
+                "name": f"Parcel {name} JSON",
+                "unique_id": f"parcel_to_mqtt_{slug}_json",
+                "state_topic": f"{self.options.base_topic}/total",
+                "json_attributes_topic": f"{self.options.base_topic}/{slug}/json",
+                "icon": icon,
+                "device": self._device(),
+            })
         counters = {
             "total": ("Parcel Gesamt", "mdi:package-variant-closed"),
             "registered": ("Parcel Angemeldet", "mdi:package-plus"),
@@ -1384,12 +1389,24 @@ def parcel_to_provider_item(parcel: Parcel) -> dict[str, Any]:
     }
 
 
-def provider_detail_payload(parcels: list[Parcel], carrier: str) -> dict[str, Any]:
+PROVIDER_DETAIL_SENSORS: tuple[tuple[str, str, str, str], ...] = (
+    ("dhl", "DHL", "DHL", "mdi:truck"),
+    ("hermes", "Hermes", "Hermes", "mdi:truck"),
+    ("gls", "GLS", "GLS", "mdi:truck"),
+    ("dpd", "DPD", "DPD", "mdi:truck"),
+    ("ups", "UPS", "UPS", "mdi:truck"),
+    ("amazon", "Amazon Logistics", "Amazon Logistics", "mdi:truck"),
+    ("deutsche_post", "Deutsche Post", "Deutsche Post letters", "mdi:email"),
+    ("fedex", "FedEx", "FedEx", "mdi:truck"),
+)
+
+
+def provider_detail_payload(parcels: list[Parcel], carrier: str | None = None) -> dict[str, Any]:
     return {
         "sendungen": [
             parcel_to_iobroker_shipment(parcel)
             for parcel in parcels
-            if parcel.carrier == carrier
+            if carrier is None or parcel.carrier == carrier
         ],
         "mergedAnonymousShipmentListIds": [],
         "rateLimited": False,
@@ -1399,6 +1416,7 @@ def provider_detail_payload(parcels: list[Parcel], carrier: str) -> dict[str, An
 def parcel_to_iobroker_shipment(parcel: Parcel) -> dict[str, Any]:
     return {
         "id": parcel.tracking_number,
+        "source": parcel.carrier,
         "hasCompleteDetails": True,
         "sendungsinfo": {
             "gesuchteSendungsnummer": parcel.tracking_number,

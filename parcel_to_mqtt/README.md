@@ -22,6 +22,8 @@ The shared parcel status model is inspired by the MIT licensed Home Assistant pa
 - `Parcel Problem`
 - `Parcel Unbekannt`
 - `Parcel 01` through configured parcel slots
+- `Parcel Alle JSON` for all provider details in ioBroker-compatible `sendungen` format
+- one JSON detail entity per provider, for example `Parcel DHL JSON` and `Parcel DPD JSON`
 
 Each parcel slot exposes tracking number, carrier, status, last event, last event time and raw status as attributes.
 
@@ -77,15 +79,21 @@ GLS, UPS, Amazon Logistics, Deutsche Post letters and FedEx are already present 
 `general.log_response_details` writes masked provider requests and responses to the add-on log and `/data/provider_debug.log`. The file keeps at most 100 JSON lines.
 Notifications should be created as Home Assistant automations using the generated entities.
 
-## Dashboard example
+## Dashboard cards
 
 ![Parcel flex-table-card example](docs/images/parcel-flex-table-card.png)
 
+The add-on publishes the same `sendungen` structure for every provider. Ready-to-paste
+Flex Table Card examples are saved in [`docs/cards`](docs/cards): DHL, Hermes, GLS,
+DPD, UPS, Amazon Logistics, Deutsche Post, FedEx and a combined all-provider card.
+
+The DPD card uses `sensor.parcel_to_mqtt_parcel_dpd_json`:
+
 ```yaml
 type: custom:flex-table-card
-title: Pakete
+title: DPD
 entities:
-  include: sensor.parcel_to_mqtt_parcel_dhl_json
+  include: sensor.parcel_to_mqtt_parcel_dpd_json
 columns:
   - name: Richtung
     data: sendungen
@@ -102,7 +110,15 @@ columns:
   - name: Nummer
     data: sendungen
     modify: x.sendungsdetails.sendungsnummern.sendungsnummer
+css:
+  table+: 'font-size: 15px;'
+  tbody tr+: 'font-size: 15px;'
+  tbody td+: 'font-size: 13px;'
 ```
+
+For a combined table, use
+`sensor.parcel_to_mqtt_parcel_alle_json` and the example
+[`all-providers-flex-table-card.yaml`](docs/cards/all-providers-flex-table-card.yaml).
 
 ## Provider roadmap
 

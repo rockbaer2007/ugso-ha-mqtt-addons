@@ -1,0 +1,24 @@
+type: custom:flex-table-card
+title: DHL
+entities:
+  include: sensor.parcel_to_mqtt_parcel_dhl_json
+columns:
+  - name: Richtung
+    data: sendungen
+    modify: x.sendungsinfo.sendungsrichtung
+  - name: Name
+    data: sendungen
+    modify: x.sendungsinfo.sendungsname
+  - name: Status
+    data: sendungen
+    modify: x.sendungsdetails.sendungsverlauf.status
+  - name: Fortschritt
+    data: sendungen
+    modify: x.sendungsdetails.sendungsverlauf.fortschritt
+  - name: Nummer
+    data: sendungen
+    modify: x.sendungsdetails.sendungsnummern.sendungsnummer
+css:
+  table+: 'font-size: 15px;'
+  tbody tr+: 'font-size: 15px;'
+  tbody td+: 'font-size: 13px;'
