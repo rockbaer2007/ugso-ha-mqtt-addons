@@ -1698,6 +1698,8 @@ def load_options() -> Options:
         dpd_enabled=option_bool(raw, "dpd", "enabled", None, False),
         dpd_tracking_numbers=parse_tracking_numbers(option_value(raw, "dpd", "tracking_numbers", "dpd_tracking_numbers")),
         dpd_postal_code=str(option_value(raw, "dpd", "postal_code", "dpd_postal_code")).strip(),
+        dpd_username=str(option_value(raw, "dpd", "username", "dpd_username")).strip(),
+        dpd_password=str(option_value(raw, "dpd", "password", "dpd_password")).strip(),
         ups_enabled=option_bool(raw, "ups", "enabled", None, False),
         ups_tracking_numbers=parse_tracking_numbers(option_value(raw, "ups", "tracking_numbers", "ups_tracking_numbers")),
         amazon_enabled=option_bool(raw, "amazon", "enabled", None, False),

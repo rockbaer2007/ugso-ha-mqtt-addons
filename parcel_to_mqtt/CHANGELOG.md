@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.22
+
+- Fixed the startup crash when DPD account username and password are not configured.
+
 ## 0.1.21
 
 - Made MQTT shutdown tolerant of an already closed connection or stopped network loop.
