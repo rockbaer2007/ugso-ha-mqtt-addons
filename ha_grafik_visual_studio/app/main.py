@@ -11,7 +11,7 @@ from urllib.parse import urlparse
 LOG = logging.getLogger("ha-grafik-visual-studio")
 PORT = int(os.environ.get("HA_GRAFIK_INGRESS_PORT", "8098"))
 DATA_DIR = Path(os.environ.get("HA_GRAFIK_DATA", "/data"))
-WEB_DIR = Path(__file__).resolve().parent / "web"
+WEB_DIR = Path(__file__).resolve().parent.parent / "web"
 PROJECT_FILE = DATA_DIR / "project.json"
 MAX_BODY = 1_000_000
 
@@ -26,7 +26,7 @@ MIME_TYPES = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charse
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.0"
+    server_version = "HAGrafikVisualStudio/0.1.1"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -46,7 +46,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path.rstrip("/") or "/"
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.0"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.1"})
             return
         if path == "/api/project":
             self.send_json(HTTPStatus.OK, self.read_project())

@@ -10,7 +10,7 @@ Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetrage
 - Heizoel to MQTT
 - Parcel to MQTT
 - [MQTT-Client](mqtt_client/README.md): ausgewählte HA-Zustände an einen externen Broker (z. B. ioBroker) senden, optional mit Ein/Aus-Befehlen zurück an HA.
-- [HA Grafik Visual Studio](ha_grafik_visual_studio/README.md): unabhängiges Grundgerüst für eine grafische HA-Visualisierung mit getrenntem Editor- und Runtime-Modus.
+- [HA Grafik Visual Studio](ha_grafik_visual_studio/README.md): **experimentelles** Grundgerüst für eine grafische HA-Visualisierung mit getrenntem Editor- und Runtime-Modus.
 
 ## Installation
 

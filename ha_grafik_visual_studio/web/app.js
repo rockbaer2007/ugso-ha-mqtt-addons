@@ -13,7 +13,7 @@ const params = new URLSearchParams(location.search);
 const runtimeMode = location.pathname.endsWith("/runtime") || params.get("mode") === "runtime";
 const workspace = $("#workspace");
 const stage = $("#stage");
-const state = { project: null, selectedId: null, nextId: 1 };
+const state = { project: null, selectedId: null, nextId: 1, propertyTab: "widget" };
 
 async function loadProject() {
   try {
@@ -53,7 +53,13 @@ function renderPalette() {
 function addWidget(definition) {
   const id = `widget-${state.nextId++}`;
   const index = state.project.widgets.length;
-  state.project.widgets.push({ id, type: definition.type, ...structuredClone(definition.defaults), x: 24 + (index % 4) * 150, y: 24 + Math.floor(index / 4) * 90, width: 140, height: 62, radius: 8, visible: true });
+  state.project.widgets.push({
+    id, type: definition.type,
+    x: 24 + (index % 4) * 150, y: 24 + Math.floor(index / 4) * 90, width: 140, height: 62, radius: 8, visible: true,
+    fontSize: 13, fontWeight: "400", textAlign: "left", textColor: "#e7ecee", backgroundColor: "",
+    borderColor: "#626c70", borderWidth: 1, borderStyle: "solid", padding: 8, shadow: false, opacity: 1,
+    ...structuredClone(definition.defaults),
+  });
   state.selectedId = id;
   render();
 }
@@ -67,12 +73,44 @@ function renderStage() {
   for (const widget of state.project.widgets) {
     if (widget.visible === false) continue;
     const element = document.createElement("div");
-    element.className = `widget${widget.id === state.selectedId ? " selected" : ""}`;
-    element.style.cssText = `left:${widget.x}px;top:${widget.y}px;width:${widget.width}px;height:${widget.height}px;border-radius:${widget.radius}px${widget.color ? `;color:${widget.color}` : ""}`;
+    element.className = `widget${widget.type === "text" ? " widget-text" : ""}${widget.id === state.selectedId ? " selected" : ""}`;
+    if (widget.cssClass) {
+      const safeClasses = String(widget.cssClass).split(/\s+/).filter((name) => /^[A-Za-z_][\w-]*$/.test(name));
+      element.classList.add(...safeClasses);
+    }
+    Object.assign(element.style, {
+      left: `${widget.x}px`, top: `${widget.y}px`, width: `${widget.width}px`, height: `${widget.height}px`,
+      borderRadius: `${widget.radius}px`, color: widget.textColor || widget.color || "",
+      backgroundColor: widget.backgroundColor || "", borderColor: widget.borderColor || "",
+      borderWidth: `${widget.borderWidth ?? 1}px`, fontSize: `${widget.fontSize ?? 13}px`,
+      fontWeight: widget.fontWeight || "400", textAlign: widget.textAlign || "left",
+      padding: `${widget.padding ?? 8}px`, opacity: `${widget.opacity ?? 1}`,
+    });
+    if (widget.shadow) element.style.boxShadow = "0 2px 8px #0006";
+    else element.style.removeProperty("box-shadow");
+    if (widget.borderStyle) element.style.borderStyle = widget.borderStyle;
+    else element.style.removeProperty("border-style");
+    if (widget.type === "text") {
+      element.textContent = widget.textContent ?? widget.state ?? "";
+      element.style.whiteSpace = widget.whiteSpace || "pre-wrap";
+      element.style.alignItems = "flex-start";
+      element.style.justifyContent = "flex-start";
+      element.addEventListener("click", () => { if (!runtimeMode) { state.selectedId = widget.id; render(); } });
+      if (!runtimeMode) makeDraggable(element, widget);
+      stage.append(element);
+      continue;
+    }
     const glyph = document.createElement("span"); glyph.className = "glyph"; glyph.textContent = widget.icon || "●";
     const copy = document.createElement("span");
     const title = document.createElement("strong"); title.textContent = widget.title || widget.type;
-    const value = document.createElement("span"); value.className = "value"; value.textContent = `${widget.entityId || "Entity nicht verbunden"} · ${widget.state ?? "--"}${widget.unit || ""}`;
+    const value = document.createElement("span"); value.className = "value";
+    let displayValue = widget.state ?? "--";
+    if (widget.type === "sensor" && Number.isFinite(Number(displayValue))) {
+      const scaled = Number(displayValue) * Number(widget.factor ?? 1);
+      displayValue = scaled.toFixed(Number(widget.digits ?? 1));
+      if (widget.decimalComma) displayValue = displayValue.replace(".", ",");
+    }
+    value.textContent = `${widget.entityId ? `${widget.entityId} · ` : ""}${widget.prefix || ""}${displayValue}${widget.unit || ""}`;
     copy.append(title, document.createElement("br"), value);
     element.append(glyph, copy);
     element.addEventListener("click", () => { if (!runtimeMode) { state.selectedId = widget.id; render(); } });
@@ -100,21 +138,47 @@ function makeDraggable(element, widget) {
 
 function field(descriptor, widget) {
   const wrapper = document.createElement("label"); wrapper.textContent = descriptor.label;
-  const input = document.createElement("input"); input.type = descriptor.type || "text";
+  let input;
+  if (descriptor.type === "textarea") input = document.createElement("textarea");
+  else if (descriptor.type === "select") {
+    input = document.createElement("select");
+    for (const optionValue of descriptor.options || []) {
+      const option = document.createElement("option"); option.value = optionValue; option.textContent = optionValue; input.append(option);
+    }
+  } else { input = document.createElement("input"); input.type = descriptor.type || "text"; }
   if (input.type === "checkbox") input.checked = widget[descriptor.key] !== false;
-  else input.value = widget[descriptor.key] ?? (input.type === "color" ? "#29c8b5" : "");
+  else input.value = widget[descriptor.key] ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? descriptor.options?.[0] || "" : "");
+  if (descriptor.min !== undefined) input.min = descriptor.min;
+  if (descriptor.max !== undefined) input.max = descriptor.max;
+  if (descriptor.step !== undefined) input.step = descriptor.step;
+  input.disabled = descriptor.disabled === true;
   input.addEventListener("input", () => { widget[descriptor.key] = input.type === "number" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value; renderStage(); });
   wrapper.append(input); return wrapper;
 }
 
 function renderProperties() {
   const panel = $("#properties"); panel.replaceChildren();
+  const tabs = document.createElement("nav"); tabs.className = "property-tabs"; tabs.setAttribute("aria-label", "Eigenschaften-Reiter");
+  for (const [id, label] of [["view", "ANSICHT"], ["widget", "WIDGET"], ["css", "CSS"], ["scripts", "SKRIPTE"]]) {
+    const tab = document.createElement("button"); tab.type = "button"; tab.textContent = label;
+    tab.classList.toggle("active", state.propertyTab === id);
+    tab.setAttribute("aria-pressed", String(state.propertyTab === id));
+    tab.addEventListener("click", () => { state.propertyTab = id; renderProperties(); });
+    tabs.append(tab);
+  }
+  panel.append(tabs);
   const widget = state.project.widgets.find((item) => item.id === state.selectedId);
-  if (!widget) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Wähle ein Widget aus, um seine Eigenschaften zu bearbeiten."; panel.append(empty); return; }
-  for (const group of getWidgetDefinition(widget.type).propertyGroups) {
-    const details = document.createElement("details"); details.className = "property-section"; details.open = true;
+  if (!widget && state.propertyTab !== "view") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Wähle ein Widget aus, um seine Eigenschaften zu bearbeiten."; panel.append(empty); return; }
+  if (state.propertyTab === "view") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Seiteneigenschaften werden ergänzt."; panel.append(empty); return; }
+  if (state.propertyTab === "scripts") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Widget-Skripte werden in einem späteren Ausbauschritt ergänzt."; panel.append(empty); return; }
+  const groups = getWidgetDefinition(widget.type).propertyGroups.filter((group) => state.propertyTab === "css" ? group.css === true : group.css !== true);
+  const heading = document.createElement("div"); heading.className = "selected-widget-heading";
+  heading.textContent = `${getWidgetDefinition(widget.type).label} · ${widget.id}`; panel.append(heading);
+  for (const [index, group] of groups.entries()) {
+    const details = document.createElement("details"); details.className = "property-section"; details.open = index === 0;
     const summary = document.createElement("summary"); summary.textContent = group.label;
     const body = document.createElement("div"); body.className = "property-fields";
+    if (group.hint) { const hint = document.createElement("p"); hint.className = "property-hint"; hint.textContent = group.hint; body.append(hint); }
     body.append(...group.fields.map((descriptor) => field(descriptor, widget)));
     details.append(summary, body); panel.append(details);
   }

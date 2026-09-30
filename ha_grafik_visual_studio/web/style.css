@@ -26,6 +26,10 @@ button { cursor: pointer; }
 .panel-heading h2 { margin: 0; font-size: 13px; font-weight: 650; }
 .collapse { width: 24px; height: 24px; padding: 0; color: var(--accent); font-size: 18px; line-height: 1; }
 .panel-content { padding: 8px; }
+.property-tabs { position: sticky; top: 0; z-index: 2; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 4px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.property-tabs button { padding: 5px 2px; border: 0; border-radius: 3px 3px 0 0; background: transparent; color: var(--muted); font-size: 10px; }
+.property-tabs button.active { color: var(--text); box-shadow: inset 0 -2px var(--accent); }
+.selected-widget-heading { margin: 0 0 8px; padding: 3px 2px 7px; color: var(--muted); font-size: 11px; border-bottom: 1px solid var(--line); }
 .side.collapsed { overflow: hidden; }
 .side.collapsed .panel-heading { justify-content: center; padding: 7px 4px; }
 .side.collapsed .panel-heading h2 { display: none; }
@@ -47,7 +51,13 @@ button { cursor: pointer; }
 .property-section summary { padding: 7px 8px; cursor: pointer; font-weight: 600; }
 .property-fields { display: grid; gap: 7px; padding: 7px; }
 .property-fields label { display: grid; gap: 3px; color: var(--muted); font-size: 11px; }
-.property-fields input, .property-fields select { width: 100%; min-width: 0; }
+.property-fields input, .property-fields select, .property-fields textarea { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 4px; padding: 5px 6px; background: var(--bg); }
+.property-fields textarea { min-height: 76px; resize: vertical; }
+.property-fields input[type="checkbox"] { width: auto; justify-self: start; accent-color: var(--accent); }
+.property-fields input[type="color"] { height: 30px; padding: 2px; }
+.property-fields input:disabled, .property-fields select:disabled { opacity: .55; cursor: not-allowed; }
+.property-hint { margin: 0; color: var(--muted); font-size: 10px; }
+.widget.widget-text { display: block; overflow: hidden; border: 0; background: transparent; cursor: grab; user-select: none; }
 .empty { margin: 3px; color: var(--muted); }
 body.runtime-mode { overflow: auto; background: #111; }
 body.runtime-mode .toolbar { display: none; }

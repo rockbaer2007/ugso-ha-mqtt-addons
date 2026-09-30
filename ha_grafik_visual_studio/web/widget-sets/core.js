@@ -1,25 +1,96 @@
 import { registerWidgetSet } from "../widget-registry.js";
 
-const geometry = () => [
-  { label: "Größe und Position", fields: [{ label: "Breite", key: "width", type: "number" }, { label: "Höhe", key: "height", type: "number" }, { label: "Eckenradius", key: "radius", type: "number" }, { label: "X", key: "x", type: "number" }, { label: "Y", key: "y", type: "number" }] },
+const fields = (items) => ({ label: "Größe und Position", fields: items });
+const geometry = () => fields([
+  { label: "Breite (px)", key: "width", type: "number", min: 16, max: 7680 },
+  { label: "Höhe (px)", key: "height", type: "number", min: 16, max: 4320 },
+  { label: "X (px)", key: "x", type: "number", min: 0 },
+  { label: "Y (px)", key: "y", type: "number", min: 0 },
+]);
+const cssGroups = () => [
+  { label: "CSS Font & Text", css: true, fields: [
+    { label: "Schriftgröße (px)", key: "fontSize", type: "number", min: 6, max: 160 },
+    { label: "Schriftstärke", key: "fontWeight", type: "select", options: ["400", "500", "600", "700"] },
+    { label: "Textausrichtung", key: "textAlign", type: "select", options: ["left", "center", "right"] },
+    { label: "Textfarbe", key: "textColor", type: "color" },
+  ] },
+  { label: "CSS Hintergrund", css: true, fields: [{ label: "Hintergrundfarbe", key: "backgroundColor", type: "color" }] },
+  { label: "CSS Ränder", css: true, fields: [
+    { label: "Rahmenfarbe", key: "borderColor", type: "color" },
+    { label: "Rahmenbreite (px)", key: "borderWidth", type: "number", min: 0, max: 32 },
+    { label: "Eckenradius (px)", key: "radius", type: "number", min: 0, max: 200 },
+    { label: "Rahmenstil", key: "borderStyle", type: "select", options: ["solid", "dashed", "dotted", "none"] },
+  ] },
+  { label: "CSS Schatten und Abstand", css: true, fields: [
+    { label: "Innenabstand (px)", key: "padding", type: "number", min: 0, max: 200 },
+    { label: "Schatten anzeigen", key: "shadow", type: "checkbox" },
+    { label: "Deckkraft", key: "opacity", type: "number", min: 0, max: 1, step: 0.05 },
+  ] },
 ];
-const common = (entity = true, unit = false) => [
-  { label: "Allgemein", fields: [{ label: "Beschriftung", key: "title" }, ...(entity ? [{ label: "Home-Assistant-Entity (Entity-Picker folgt)", key: "entityId" }] : [])] },
-  ...geometry(),
-  { label: "Darstellung", fields: [{ label: "Symbol", key: "icon" }, { label: "Farbe", key: "color", type: "color" }, ...(unit ? [{ label: "Einheit", key: "unit" }] : [])] },
-  { label: "Sichtbarkeit", fields: [{ label: "Anzeigen", key: "visible", type: "checkbox" }] },
+const metadata = () => ({ label: "Generell", fields: [
+  { label: "Name", key: "title" },
+  { label: "Kommentar", key: "comment" },
+  { label: "CSS Klasse", key: "cssClass" },
+  { label: "Filterwort", key: "filterWord" },
+  { label: "multi-views", key: "multiViews" },
+] });
+const visibility = () => ({ label: "Sichtbarkeit", hint: "Bedingte Sichtbarkeit wird aktiv, sobald die Home-Assistant-Zustandsbindung verfügbar ist.", fields: [
+  { label: "Anzeigen", key: "visible", type: "checkbox" },
+  { label: "Objekt-ID für Bedingung", key: "visibilityEntityId", disabled: true },
+  { label: "Bedingung", key: "visibilityCondition", type: "select", options: ["==", "!=", ">", ">=", "<", "<="], disabled: true },
+  { label: "Wert für die Bedingung", key: "visibilityValue", disabled: true },
+  { label: "Nur für Gruppen", key: "visibilityGroups", disabled: true },
+  { label: "Falls nicht erfüllt", key: "visibilityFallback", type: "select", options: ["ausblenden", "deaktivieren"], disabled: true },
+] });
+const entityWidget = (unit = false) => [
+  metadata(),
+  visibility(),
+  { label: "Allgemein", fields: [
+    { label: "Objekt-ID / Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+    { label: "HTML voranstellen", key: "prefix" },
+    { label: "HTML anhängen (Singular)", key: "suffixSingular" },
+    { label: "HTML anhängen (Plural)", key: "suffixPlural" },
+    ...(unit ? [{ label: "Einheit", key: "unit" }] : []),
+  ] },
+  geometry(),
+  { label: "Widget-Darstellung", fields: [
+    { label: "Symbol", key: "icon" },
+    { label: "Akzentfarbe", key: "color", type: "color" },
+  ] },
+  ...cssGroups(),
 ];
 
 registerWidgetSet({
   id: "ha-grafik-core",
   label: "HA Grafik – Basis",
   widgets: [
-    { type: "button", label: "Schaltfläche", icon: "◉", defaults: { title: "Schaltfläche", entityId: "", state: "Aus" }, propertyGroups: common() },
-    { type: "toggle", label: "Schalter", icon: "⏻", defaults: { title: "Schalter", entityId: "", state: "Aus" }, propertyGroups: common() },
-    { type: "slider", label: "Regler", icon: "◉", defaults: { title: "Regler", entityId: "", state: "50 %" }, propertyGroups: common() },
-    { type: "sensor", label: "Sensorwert", icon: "⌁", defaults: { title: "Sensor", entityId: "", state: "--", unit: "" }, propertyGroups: common(true, true) },
-    { type: "text", label: "Text", icon: "T", defaults: { title: "Text", state: "Eigener Text" }, propertyGroups: [{ label: "Allgemein", fields: [{ label: "Beschriftung", key: "title" }, { label: "Textinhalt", key: "state" }] }, ...geometry(), { label: "Darstellung", fields: [{ label: "Farbe", key: "color", type: "color" }] }, { label: "Sichtbarkeit", fields: [{ label: "Anzeigen", key: "visible", type: "checkbox" }] }] },
-    { type: "gauge", label: "Messanzeige", icon: "◴", defaults: { title: "Messanzeige", entityId: "", state: "--", unit: "%" }, propertyGroups: common(true, true) },
-    { type: "image", label: "Bild / Kamera", icon: "▧", defaults: { title: "Kamera", entityId: "", state: "Bildfläche" }, propertyGroups: common() },
+    { type: "button", label: "Schaltfläche", icon: "◉", defaults: { title: "Schaltfläche", entityId: "", state: "Aus" }, propertyGroups: entityWidget() },
+    { type: "toggle", label: "Schalter", icon: "⏻", defaults: { title: "Schalter", entityId: "", state: "Aus" }, propertyGroups: entityWidget() },
+    { type: "slider", label: "Regler", icon: "◉", defaults: { title: "Regler", entityId: "", state: "50 %" }, propertyGroups: entityWidget() },
+    { type: "sensor", label: "Zahlenwert", icon: "⌁", defaults: { title: "Sensor", entityId: "", state: "--", unit: "", digits: 1, factor: 1, decimalComma: true }, propertyGroups: [
+      metadata(), visibility(),
+      { label: "Allgemein", fields: [
+        { label: "Objekt-ID / Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+        { label: "HTML voranstellen", key: "prefix" },
+        { label: "HTML anhängen (Singular)", key: "suffixSingular" },
+        { label: "HTML anhängen (Plural)", key: "suffixPlural" },
+        { label: "Einheit", key: "unit" },
+      ] },
+      { label: "Zahlenformat", fields: [
+        { label: "Nachkommastellen", key: "digits", type: "number", min: 0, max: 10 },
+        { label: "Multiplikator", key: "factor", type: "number", step: 0.1 },
+        { label: "Dezimalkomma verwenden", key: "decimalComma", type: "checkbox" },
+      ] },
+      geometry(), ...cssGroups(),
+    ] },
+    { type: "text", label: "Text", icon: "T", defaults: { title: "Text", textContent: "Eigener Text", backgroundColor: "", borderWidth: 0, borderStyle: "none" }, propertyGroups: [
+      metadata(), visibility(),
+      { label: "Text", fields: [
+        { label: "Inhalt", key: "textContent", type: "textarea" },
+      ] },
+      geometry(), ...cssGroups(),
+    ] },
+    { type: "gauge", label: "Messanzeige", icon: "◴", defaults: { title: "Messanzeige", entityId: "", state: "--", unit: "%" }, propertyGroups: entityWidget(true) },
+    { type: "image", label: "Bild / Kamera", icon: "▧", defaults: { title: "Kamera", entityId: "", state: "Bildfläche" }, propertyGroups: entityWidget() },
   ],
 });

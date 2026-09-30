@@ -1,5 +1,7 @@
 # HA Grafik Visual Studio
 
+> **Status: Experimentell.** Das Projekt befindet sich in einer frühen Entwicklungsphase. Funktionen, Projektformat und Bedienung können sich ändern; noch nicht für produktive Dashboards einplanen.
+
 Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mit getrenntem Editor und Runtime. Das Paket ist ein frühes Grundgerüst, keine fertige VIS2-Alternative.
 
 ## Aktueller Stand
@@ -10,7 +12,10 @@ Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mi
 - Erste eigene, HA-orientierte Widget-Definitionen sind nach Kategorien registriert.
 - Das Widget-Register ist separat; weitere eigene Widget-Sets können später unabhängig ergänzt werden.
 - Seitengrößen Desktop, Tablet und Telefon können im Editor gewählt werden.
-- Widget-Eigenschaften enthalten bereits Position, Größe, Eckenradius und Sichtbarkeit.
+- Das Text-Widget ist ein freies Textfeld ohne Entitätsbindung oder Entitäts-Fehlermeldung.
+- Der rechte Eigenschaftenbereich orientiert sich an VIS2s Reitern für Ansicht, Widget, CSS und Skripte; Widget-Metadaten, Sichtbarkeit, Inhalt und CSS sind getrennt gruppiert.
+- Zahlenwerte bieten erste Formatoptionen wie Nachkommastellen, Multiplikator, Dezimalkomma sowie Vor- und Nachsilbe.
+- CSS-Eigenschaften umfassen Schrift, Farbe, Hintergrund, Rahmen, Eckenradius, Schatten, Abstand und Deckkraft.
 
 ## Geplante nächste Bausteine
 
