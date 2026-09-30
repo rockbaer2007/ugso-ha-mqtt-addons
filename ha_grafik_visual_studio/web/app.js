@@ -64,7 +64,7 @@ const fileTypes = {
   audio: ["mp3", "wav", "ogg", "m4a", "flac"],
   video: ["mp4", "webm", "mov", "mkv"],
 };
-const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", objectPath: "", selectedFiles: [] };
+const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", objectPath: "", selectedFiles: [], fileView: "list" };
 let mdiIcons = null;
 let mdiIconsPromise = null;
 let activeIconInput = null;
@@ -398,6 +398,7 @@ async function uploadFiles(fileList) {
 
 async function renderObjects() {
   const browser = $("#objects-browser");
+  browser.classList.toggle("grid-view", state.fileView === "grid");
   const breadcrumb = $("#objects-breadcrumb");
   browser.replaceChildren(); breadcrumb.replaceChildren();
   renderFileSelection();
@@ -1440,6 +1441,15 @@ $("#files-upload").addEventListener("click", () => {
 $("#files-upload-input").addEventListener("change", (event) => { void uploadFiles(event.target.files); });
 $("#files-type-filter").addEventListener("change", () => { state.selectedFiles = []; void renderObjects(); });
 $("#files-reload").addEventListener("click", () => { void renderObjects(); });
+$("#files-view-toggle").addEventListener("click", () => {
+  state.fileView = state.fileView === "list" ? "grid" : "list";
+  const grid = state.fileView === "grid";
+  const button = $("#files-view-toggle");
+  button.querySelector("img").src = grid ? "icons/view-list.svg" : "icons/view-grid.svg";
+  button.title = grid ? "Listenansicht anzeigen" : "Kachelansicht anzeigen";
+  button.setAttribute("aria-label", button.title);
+  void renderObjects();
+});
 $("#files-folder").addEventListener("click", async () => {
   const name = window.prompt("Name des neuen Ordners");
   if (!name?.trim()) return;

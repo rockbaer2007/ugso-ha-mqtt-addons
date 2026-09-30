@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.33
+
+- Ergänzt einen SVG-Ansichtsbutton zum Umschalten zwischen Listen- und Kachelansicht im Dateien-Dialog.
+
 ## 0.1.32
 
 - Zentriert die SVG-Icons in den Aktionsbuttons des Dateien-Dialogs.
