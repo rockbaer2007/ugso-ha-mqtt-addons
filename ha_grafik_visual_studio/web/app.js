@@ -57,7 +57,7 @@ const params = new URLSearchParams(location.search);
 const runtimeMode = location.pathname.endsWith("/runtime") || params.get("mode") === "runtime";
 const workspace = $("#workspace");
 const stage = $("#stage");
-const state = { project: null, selectedId: null, nextId: 1, propertyTab: "widget" };
+const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", objectPath: "" };
 let mdiIcons = null;
 let mdiIconsPromise = null;
 let activeIconInput = null;
@@ -144,6 +144,7 @@ $("#icon-picker-value").addEventListener("keydown", (event) => {
   if (event.key === "Enter") { event.preventDefault(); applyIconPickerValue(); }
 });
 $("#icon-picker-close").addEventListener("click", () => $("#icon-picker").close());
+$("#icon-picker-objects").addEventListener("click", () => openObjects());
 $("#icon-picker").addEventListener("click", (event) => {
   if (event.target === event.currentTarget) event.currentTarget.close();
 });
@@ -223,13 +224,17 @@ function currentPage() {
 
 async function loadProject() {
   try {
-    const response = await fetch("api/project");
+    const projectsResponse = await fetch("api/projects");
+    const projects = projectsResponse.ok ? await projectsResponse.json() : [];
+    if (projects.length && !projects.some((project) => project.id === state.projectId)) state.projectId = projects[0].id;
+    const response = await fetch(`api/project?project=${encodeURIComponent(state.projectId)}`);
     if (!response.ok) throw new Error("Projekt konnte nicht geladen werden");
     state.project = await response.json();
   } catch {
     state.project = { schemaVersion: 2, name: "Mein Zuhause", pages: [{ id: "page-1", name: "main", visible: true, page: { preset: "desktop", ...PRESETS.desktop, background: "#242729", backgroundMode: "tile" }, widgets: [] }], currentPageId: "page-1" };
   }
   ensureProjectPages(state.project);
+  state.project.settings ??= {};
   state.nextId = Math.max(0, ...state.project.pages.flatMap((page) => page.widgets).map((widget) => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   render();
 }
@@ -309,6 +314,82 @@ function renderWidgetFinder() {
     select.append(option);
   }
   select.disabled = page.widgets.length === 0;
+  $("#widget-duplicate").disabled = !state.selectedId;
+  $("#widget-delete").disabled = !state.selectedId;
+}
+
+function openObjects(path = "") {
+  state.objectPath = path;
+  const dialog = $("#objects-dialog");
+  if (!dialog.open) dialog.showModal();
+  void renderObjects();
+}
+
+async function renderObjects() {
+  const browser = $("#objects-browser");
+  const breadcrumb = $("#objects-breadcrumb");
+  browser.replaceChildren(); breadcrumb.replaceChildren();
+  const parts = state.objectPath ? state.objectPath.split("/") : [];
+  const root = document.createElement("button"); root.type = "button"; root.textContent = "www"; root.addEventListener("click", () => openObjects("")); breadcrumb.append(root);
+  let path = "";
+  for (const part of parts) {
+    path = path ? `${path}/${part}` : part;
+    const current = path; const crumb = document.createElement("button"); crumb.type = "button"; crumb.textContent = part; crumb.addEventListener("click", () => openObjects(current)); breadcrumb.append(" / ", crumb);
+  }
+  const response = await fetch(`api/objects?path=${encodeURIComponent(state.objectPath)}`);
+  const data = response.ok ? await response.json() : { available: false, folders: [], files: [] };
+  if (!data.available) { const hint = document.createElement("p"); hint.className = "empty"; hint.textContent = "Der HA-www-Ordner ist nicht verfügbar. Prüfe die schreibgeschützte Konfigurationseinbindung."; browser.append(hint); return; }
+  if (state.objectPath) {
+    const up = document.createElement("button"); up.type = "button"; up.className = "object-folder"; up.textContent = "⬆ Übergeordneter Ordner";
+    up.addEventListener("click", () => openObjects(parts.slice(0, -1).join("/"))); browser.append(up);
+  }
+  for (const folder of data.folders) {
+    const button = document.createElement("button"); button.type = "button"; button.className = "object-folder"; button.textContent = `📁 ${folder.name}`;
+    button.addEventListener("click", () => openObjects(folder.path)); browser.append(button);
+  }
+  for (const file of data.files) {
+    const button = document.createElement("button"); button.type = "button"; button.className = "object-file"; button.title = file.path;
+    const image = document.createElement("img"); image.src = file.url; image.alt = ""; image.loading = "lazy";
+    const name = document.createElement("span"); name.textContent = file.name; button.append(image, name);
+    button.addEventListener("click", async () => {
+      const haPath = `/local/${file.path}`;
+      if (activeIconInput) {
+        activeIconInput.value = haPath; activeIconInput.dispatchEvent(new Event("input", { bubbles: true }));
+        $("#objects-dialog").close(); $("#icon-picker").close(); activeIconInput.focus(); activeIconInput = null;
+      } else {
+        try { await navigator.clipboard.writeText(haPath); } catch { /* Clipboard may be unavailable outside a secure context. */ }
+        $("#status").textContent = `Bildpfad: ${haPath}`;
+      }
+    }); browser.append(button);
+  }
+  if (!data.folders.length && !data.files.length) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Dieser Ordner enthält keine unterstützten Bilder."; browser.append(empty); }
+}
+
+async function renderProjects() {
+  const list = $("#projects-list"); list.replaceChildren();
+  const response = await fetch("api/projects");
+  const projects = response.ok ? await response.json() : [];
+  for (const project of projects) {
+    const row = document.createElement("div"); row.className = "project-row";
+    const name = document.createElement("strong"); name.textContent = project.name; row.append(name);
+    const edit = document.createElement("button"); edit.type = "button"; edit.textContent = "Editor"; edit.addEventListener("click", () => { location.href = `?mode=editor&project=${encodeURIComponent(project.id)}`; }); row.append(edit);
+    const runtime = document.createElement("button"); runtime.type = "button"; runtime.textContent = "Runtime"; runtime.addEventListener("click", () => { window.open(`?mode=runtime&project=${encodeURIComponent(project.id)}`, "_blank", "noopener"); }); row.append(runtime);
+    const rename = document.createElement("button"); rename.type = "button"; rename.textContent = "✎"; rename.title = "Projekt umbenennen"; rename.addEventListener("click", async () => {
+      const newName = window.prompt("Projektname", project.name); if (!newName?.trim()) return;
+      await fetch(`api/projects/${encodeURIComponent(project.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newName.trim() }) }); void renderProjects();
+    }); row.append(rename);
+    const duplicate = document.createElement("button"); duplicate.type = "button"; duplicate.textContent = "▣"; duplicate.title = "Projekt duplizieren"; duplicate.addEventListener("click", async () => {
+      const newName = window.prompt("Name für die Projektkopie", `${project.name} (Kopie)`); if (!newName?.trim()) return;
+      await fetch("api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newName.trim(), source: project.id }) }); void renderProjects();
+    }); row.append(duplicate);
+    if (projects.length > 1) { const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "🗑"; remove.title = "Projekt löschen"; remove.addEventListener("click", async () => {
+      if (!window.confirm(`Projekt „${project.name}“ löschen?`)) return;
+      const result = await fetch(`api/projects/${encodeURIComponent(project.id)}`, { method: "DELETE" });
+      if (result.ok && project.id === state.projectId) location.href = `?mode=editor&project=${encodeURIComponent(projects.find((item) => item.id !== project.id).id)}`;
+      else void renderProjects();
+    }); row.append(remove); }
+    list.append(row);
+  }
 }
 
 function focusWidget(widgetId) {
@@ -328,6 +409,24 @@ function focusWidget(widgetId) {
       behavior: "smooth",
     });
   });
+}
+
+function duplicateSelectedWidget() {
+  const page = currentPage();
+  const source = page.widgets.find((widget) => widget.id === state.selectedId);
+  if (!source) return;
+  const copy = structuredClone(source);
+  copy.id = `widget-${state.nextId++}`;
+  copy.x = Math.min(Math.max(0, currentPage().page.width - (copy.width || 140)), (copy.x || 0) + 20);
+  copy.y = Math.min(Math.max(0, currentPage().page.height - (copy.height || 62)), (copy.y || 0) + 20);
+  page.widgets.push(copy); state.selectedId = copy.id; render();
+}
+
+function deleteSelectedWidget() {
+  const page = currentPage();
+  if (!state.selectedId) return;
+  page.widgets = page.widgets.filter((widget) => widget.id !== state.selectedId);
+  state.selectedId = null; render();
 }
 
 function makePageId() { return `page-${Date.now()}-${state.project.pages.length + 1}`; }
@@ -1079,6 +1178,13 @@ function render() {
   document.body.classList.toggle("editor-mode", !runtimeMode);
   $("#editor-link").classList.toggle("active", !runtimeMode);
   $("#runtime-link").classList.toggle("active", runtimeMode);
+  const projectQuery = `project=${encodeURIComponent(state.projectId)}`;
+  $("#editor-link").href = `?mode=editor&${projectQuery}`;
+  $("#runtime-link").href = `?mode=runtime&${projectQuery}`;
+  document.title = `${state.project.settings?.title || state.project.name} · HA Grafik Visual Studio`;
+  const favicon = safeUrl(state.project.settings?.favicon || "", true);
+  $("#project-favicon-link").href = favicon || "studio-icon.svg";
+  document.body.style.overflow = runtimeMode ? (state.project.settings?.bodyOverflow || "auto") : "hidden";
   $("#active-page-name").textContent = page.name;
   $("#preset").value = page.page.preset || "custom";
   $("#custom-size").hidden = page.page.preset !== "custom";
@@ -1088,6 +1194,8 @@ function render() {
 }
 
 $("#widget-finder").addEventListener("change", (event) => focusWidget(event.target.value));
+$("#widget-duplicate").addEventListener("click", duplicateSelectedWidget);
+$("#widget-delete").addEventListener("click", deleteSelectedWidget);
 
 $("#preset").addEventListener("change", (event) => {
   const preset = event.target.value;
@@ -1109,7 +1217,7 @@ for (const [id, key, max] of [["page-width", "width", 7680], ["page-height", "he
   });
 }
 $("#save").addEventListener("click", async () => {
-  const response = await fetch("api/project", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(projectForSave(state.project)) });
+  const response = await fetch(`api/project?project=${encodeURIComponent(state.projectId)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(projectForSave(state.project)) });
   if (response.ok) {
     state.project = projectForSave(state.project);
     render();
@@ -1120,6 +1228,50 @@ $("#pages-menu-toggle").addEventListener("click", () => togglePagesMenu());
 $("#runtime-pages-menu-toggle").addEventListener("click", () => togglePagesMenu());
 $("#pages-close").addEventListener("click", () => togglePagesMenu(false));
 $("#page-add").addEventListener("click", addPage);
+$("#widgets-menu").addEventListener("click", () => {
+  const panel = $("#palette-panel"); panel.hidden = !panel.hidden;
+  $("#widgets-menu").setAttribute("aria-pressed", String(!panel.hidden));
+});
+$("#settings-menu").addEventListener("click", () => {
+  const settings = state.project.settings ??= {};
+  $("#settings-reload").value = settings.reloadMode || "reload";
+  $("#settings-dark-reconnect").checked = Boolean(settings.darkReconnect);
+  $("#settings-debounce").value = settings.debounceMs ?? 200;
+  $("#settings-instance").value = settings.browserInstanceId || crypto.randomUUID().slice(0, 8);
+  $("#settings-public").checked = Boolean(settings.public);
+  $("#project-title").value = settings.title || state.project.name || "";
+  $("#project-favicon").value = settings.favicon || "";
+  $("#settings-ignore-unloaded").checked = settings.ignoreUnloaded !== false;
+  $("#settings-overflow").value = settings.bodyOverflow || "auto";
+  $("#settings-dialog").showModal();
+});
+$("#settings-instance-new").addEventListener("click", () => { $("#settings-instance").value = crypto.randomUUID().slice(0, 8); });
+$("#settings-save").addEventListener("click", async (event) => {
+  event.preventDefault();
+  state.project.settings ??= {};
+  Object.assign(state.project.settings, {
+    reloadMode: $("#settings-reload").value,
+    darkReconnect: $("#settings-dark-reconnect").checked,
+    debounceMs: Math.max(0, Math.min(10000, Number($("#settings-debounce").value) || 0)),
+    browserInstanceId: $("#settings-instance").value.trim(),
+    public: $("#settings-public").checked,
+    ignoreUnloaded: $("#settings-ignore-unloaded").checked,
+    bodyOverflow: $("#settings-overflow").value,
+  });
+  state.project.settings.title = $("#project-title").value.trim();
+  state.project.settings.favicon = $("#project-favicon").value.trim();
+  const response = await fetch(`api/project?project=${encodeURIComponent(state.projectId)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(projectForSave(state.project)) });
+  if (response.ok) { $("#settings-dialog").close(); render(); $("#status").textContent = "Projekteinstellungen gespeichert"; }
+});
+$("#objects-menu").addEventListener("click", () => openObjects());
+$("#objects-close").addEventListener("click", () => $("#objects-dialog").close());
+$("#projects-menu").addEventListener("click", () => { $("#projects-dialog").showModal(); void renderProjects(); });
+$("#projects-close").addEventListener("click", () => $("#projects-dialog").close());
+$("#project-create").addEventListener("click", async () => {
+  const name = window.prompt("Name des neuen Projekts", "Neues Projekt"); if (!name?.trim()) return;
+  const response = await fetch("api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name.trim() }) });
+  if (response.ok) { const project = await response.json(); location.href = `?mode=editor&project=${encodeURIComponent(project.id)}`; }
+});
 document.querySelectorAll(".collapse").forEach((button) => button.addEventListener("click", () => {
   const panel = document.getElementById(button.dataset.target);
   panel.classList.toggle("collapsed");

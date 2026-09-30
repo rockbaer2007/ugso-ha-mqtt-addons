@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.21
+
+- Ergänzt die Bereiche Widgets, Projekteinstellungen, Objekte und Projekte in der Editor-Leiste.
+- Ermöglicht mehrere getrennte Visualisierungsprojekte mit eigenem Editor- und Runtime-Link sowie Umbenennen, Duplizieren und Löschen.
+- Ergänzt einen Bildbrowser für PNG, JPG, SVG und WebP unter `/config/www`, inklusive Ordnernavigation, Miniaturen und Übernahme als `/local/...`-Pfad.
+- Ergänzt projektspezifische Laufzeit- und Browseroptionen und bindet den HA-Konfigurationsordner ausschließlich schreibgeschützt ein.
+
 ## 0.1.20
 
 - Ergänzt neben dem Seitenmenü eine Widget-Auswahl mit Widgetname, Typ und ID.

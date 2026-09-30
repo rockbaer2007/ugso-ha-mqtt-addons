@@ -3,10 +3,12 @@
 import json
 import logging
 import os
+import re
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
+from uuid import uuid4
 
 LOG = logging.getLogger("ha-grafik-visual-studio")
 PORT = int(os.environ.get("HA_GRAFIK_INGRESS_PORT", "8098"))
@@ -16,7 +18,11 @@ WEB_DIR = APP_DIR / "web"
 if not WEB_DIR.is_dir():
     WEB_DIR = APP_DIR.parent / "web"
 PROJECT_FILE = DATA_DIR / "project.json"
+PROJECTS_DIR = DATA_DIR / "projects"
+WWW_DIR = Path(os.environ.get("HA_GRAFIK_WWW_DIR", "/homeassistant/www"))
 MAX_BODY = 1_000_000
+MAX_OBJECT_BYTES = 20_000_000
+DEFAULT_PROJECT_ID = "main"
 
 DEFAULT_PROJECT = {
     "schemaVersion": 2,
@@ -32,10 +38,12 @@ DEFAULT_PROJECT = {
 }
 
 MIME_TYPES = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml"}
+OBJECT_MIME_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml"}
+PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.20"
+    server_version = "HAGrafikVisualStudio/0.1.21"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -53,12 +61,28 @@ class Handler(BaseHTTPRequestHandler):
         self.send_bytes(status, json.dumps(value, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
 
     def do_GET(self):
-        path = urlparse(self.path).path.rstrip("/") or "/"
+        parsed = urlparse(self.path)
+        path = parsed.path.rstrip("/") or "/"
+        query = parse_qs(parsed.query)
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.20"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.21"})
+            return
+        if path == "/api/projects":
+            self.send_json(HTTPStatus.OK, self.list_projects())
+            return
+        if path == "/api/objects":
+            self.send_json(HTTPStatus.OK, self.list_objects(query.get("path", [""])[0]))
+            return
+        if path == "/api/object-file":
+            self.send_object_file(query.get("path", [""])[0])
             return
         if path == "/api/project":
-            self.send_json(HTTPStatus.OK, self.read_project())
+            project_id = query.get("project", [DEFAULT_PROJECT_ID])[0]
+            project = self.read_project(project_id)
+            if project is None:
+                self.send_error(HTTPStatus.NOT_FOUND)
+                return
+            self.send_json(HTTPStatus.OK, project)
             return
         asset = "index.html" if path in ("/", "/editor", "/runtime") else path.lstrip("/")
         target = (WEB_DIR / asset).resolve()
@@ -72,53 +96,235 @@ class Handler(BaseHTTPRequestHandler):
         self.send_bytes(HTTPStatus.OK, target.read_bytes(), content_type)
 
     def do_PUT(self):
-        if urlparse(self.path).path != "/api/project":
+        parsed = urlparse(self.path)
+        if parsed.path != "/api/project":
             self.send_error(HTTPStatus.NOT_FOUND)
             return
-        length = int(self.headers.get("Content-Length", "0"))
-        if length <= 0 or length > MAX_BODY:
-            self.send_json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"error": "Projektdatei ist leer oder zu groß."})
+        project_id = parse_qs(parsed.query).get("project", [DEFAULT_PROJECT_ID])[0]
+        project = self.read_request_json()
+        if project is None:
+            return
+        if not self.valid_project_id(project_id) or not self.valid_project(project):
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Ungültiges Projektformat."})
             return
         try:
-            project = json.loads(self.rfile.read(length))
-            if not isinstance(project, dict):
-                raise ValueError("Ungültiges Projektformat")
-            if project.get("schemaVersion") == 1 and isinstance(project.get("widgets"), list):
-                pass
-            elif project.get("schemaVersion") == 2 and isinstance(project.get("pages"), list) and project["pages"] and all(
-                isinstance(page, dict) and isinstance(page.get("id"), str) and isinstance(page.get("name"), str)
-                and isinstance(page.get("page"), dict) and isinstance(page.get("widgets"), list)
-                for page in project["pages"]
-            ):
-                if project.get("currentPageId") not in {page["id"] for page in project["pages"]}:
-                    raise ValueError("Ungültige aktive Seite")
-            else:
-                raise ValueError("Ungültiges Projektformat")
-            DATA_DIR.mkdir(parents=True, exist_ok=True)
-            temporary = PROJECT_FILE.with_suffix(".json.tmp")
-            temporary.write_text(json.dumps(project, ensure_ascii=False, indent=2), encoding="utf-8")
-            temporary.replace(PROJECT_FILE)
-        except (json.JSONDecodeError, ValueError, OSError) as error:
+            self.write_project(project_id, project)
+        except OSError as error:
             LOG.warning("Projekt konnte nicht gespeichert werden: %s", error)
-            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Projekt konnte nicht gespeichert werden."})
+            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Projekt konnte nicht gespeichert werden."})
             return
         self.send_json(HTTPStatus.OK, {"saved": True})
 
-    @staticmethod
-    def read_project():
+    def do_POST(self):
+        if urlparse(self.path).path != "/api/projects":
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        request = self.read_request_json()
+        if request is None:
+            return
+        name = str(request.get("name", "Neues Projekt")).strip()[:100] or "Neues Projekt"
+        source_id = request.get("source")
+        project = self.read_project(source_id) if source_id else json.loads(json.dumps(DEFAULT_PROJECT))
+        if project is None:
+            self.send_json(HTTPStatus.NOT_FOUND, {"error": "Vorlageprojekt wurde nicht gefunden."})
+            return
+        project["name"] = name
+        project_id = self.new_project_id(name)
         try:
-            project = json.loads(PROJECT_FILE.read_text(encoding="utf-8"))
-            if isinstance(project, dict) and project.get("schemaVersion") == 1 and isinstance(project.get("widgets"), list):
-                return project
-            if isinstance(project, dict) and project.get("schemaVersion") == 2 and isinstance(project.get("pages"), list) and project["pages"] and all(
-                isinstance(page, dict) and isinstance(page.get("id"), str) and isinstance(page.get("name"), str)
-                and isinstance(page.get("page"), dict) and isinstance(page.get("widgets"), list)
-                for page in project["pages"]
-            ):
-                return project
+            self.write_project(project_id, project)
+        except OSError as error:
+            LOG.warning("Projekt konnte nicht angelegt werden: %s", error)
+            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Projekt konnte nicht angelegt werden."})
+            return
+        self.send_json(HTTPStatus.CREATED, {"id": project_id, "name": name})
+
+    def do_PATCH(self):
+        path = urlparse(self.path).path
+        project_id = path.removeprefix("/api/projects/")
+        if not path.startswith("/api/projects/") or not self.valid_project_id(project_id):
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        request = self.read_request_json()
+        if request is None:
+            return
+        project = self.read_project(project_id)
+        if project is None:
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        project["name"] = str(request.get("name", project.get("name", ""))).strip()[:100] or "Unbenanntes Projekt"
+        self.write_project(project_id, project)
+        self.send_json(HTTPStatus.OK, {"id": project_id, "name": project["name"]})
+
+    def do_DELETE(self):
+        path = urlparse(self.path).path
+        project_id = path.removeprefix("/api/projects/")
+        if not path.startswith("/api/projects/") or not self.valid_project_id(project_id):
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        projects = self.list_projects()
+        if len(projects) <= 1:
+            self.send_json(HTTPStatus.CONFLICT, {"error": "Das letzte Projekt kann nicht gelöscht werden."})
+            return
+        project_file = self.project_path(project_id)
+        if not project_file.is_file():
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        project_file.unlink()
+        self.send_json(HTTPStatus.OK, {"deleted": True})
+
+    @staticmethod
+    def valid_project_id(project_id):
+        return isinstance(project_id, str) and PROJECT_ID_PATTERN.fullmatch(project_id) is not None
+
+    @staticmethod
+    def valid_project(project):
+        if not isinstance(project, dict):
+            return False
+        if project.get("schemaVersion") == 1 and isinstance(project.get("widgets"), list):
+            return True
+        if project.get("schemaVersion") != 2 or not isinstance(project.get("pages"), list) or not project["pages"]:
+            return False
+        return all(
+            isinstance(page, dict) and isinstance(page.get("id"), str) and isinstance(page.get("name"), str)
+            and isinstance(page.get("page"), dict) and isinstance(page.get("widgets"), list)
+            for page in project["pages"]
+        ) and project.get("currentPageId") in {page["id"] for page in project["pages"]}
+
+    @classmethod
+    def project_path(cls, project_id):
+        if not cls.valid_project_id(project_id):
+            raise ValueError("Ungültige Projekt-ID")
+        return PROJECTS_DIR / f"{project_id}.json"
+
+    @staticmethod
+    def new_project_id(name):
+        slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:40] or "projekt"
+        return f"{slug}-{uuid4().hex[:8]}"
+
+    @classmethod
+    def write_project(cls, project_id, project):
+        PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+        target = cls.project_path(project_id)
+        temporary = target.with_suffix(".json.tmp")
+        temporary.write_text(json.dumps(project, ensure_ascii=False, indent=2), encoding="utf-8")
+        temporary.replace(target)
+
+    @classmethod
+    def ensure_projects(cls):
+        PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+        if any(cls.valid_project_id(path.stem) and path.is_file() for path in PROJECTS_DIR.glob("*.json")):
+            return
+        try:
+            legacy = json.loads(PROJECT_FILE.read_text(encoding="utf-8"))
+            project = legacy if cls.valid_project(legacy) else json.loads(json.dumps(DEFAULT_PROJECT))
         except (OSError, json.JSONDecodeError):
-            pass
-        return DEFAULT_PROJECT
+            project = json.loads(json.dumps(DEFAULT_PROJECT))
+        cls.write_project(DEFAULT_PROJECT_ID, project)
+
+    @classmethod
+    def read_project(cls, project_id=DEFAULT_PROJECT_ID):
+        if not cls.valid_project_id(project_id):
+            return None
+        cls.ensure_projects()
+        try:
+            project = json.loads(cls.project_path(project_id).read_text(encoding="utf-8"))
+            return project if cls.valid_project(project) else None
+        except (OSError, json.JSONDecodeError, ValueError):
+            return None
+
+    @classmethod
+    def list_projects(cls):
+        cls.ensure_projects()
+        projects = []
+        for path in PROJECTS_DIR.glob("*.json"):
+            if not cls.valid_project_id(path.stem):
+                continue
+            project = cls.read_project_file(path)
+            if project is not None:
+                projects.append({"id": path.stem, "name": str(project.get("name", path.stem))})
+        return sorted(projects, key=lambda item: item["name"].casefold())
+
+    @classmethod
+    def read_project_file(cls, path):
+        try:
+            project = json.loads(path.read_text(encoding="utf-8"))
+            return project if cls.valid_project(project) else None
+        except (OSError, json.JSONDecodeError):
+            return None
+
+    def read_request_json(self):
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = 0
+        if length <= 0 or length > MAX_BODY:
+            self.send_json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"error": "Anfrage ist leer oder zu groß."})
+            return None
+        try:
+            value = json.loads(self.rfile.read(length))
+            if not isinstance(value, dict):
+                raise ValueError("JSON-Objekt erwartet")
+            return value
+        except (json.JSONDecodeError, ValueError):
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Ungültige JSON-Anfrage."})
+            return None
+
+    @staticmethod
+    def resolve_object_path(relative_path):
+        relative = unquote(str(relative_path or "")).replace("\\", "/")
+        if relative.startswith("/") or any(part in (".", "..") for part in relative.split("/")):
+            return None
+        root = WWW_DIR.resolve()
+        target = (root / relative).resolve()
+        try:
+            target.relative_to(root)
+        except ValueError:
+            return None
+        return target
+
+    @classmethod
+    def list_objects(cls, relative_path):
+        target = cls.resolve_object_path(relative_path)
+        if target is None or not target.is_dir():
+            return {"available": WWW_DIR.is_dir(), "path": relative_path or "", "folders": [], "files": []}
+        folders, files = [], []
+        try:
+            for entry in target.iterdir():
+                resolved = entry.resolve()
+                try:
+                    resolved.relative_to(WWW_DIR.resolve())
+                except ValueError:
+                    continue
+                relative = resolved.relative_to(WWW_DIR.resolve()).as_posix()
+                if entry.is_dir():
+                    folders.append({"name": entry.name, "path": relative})
+                elif entry.is_file() and entry.suffix.lower() in OBJECT_MIME_TYPES and entry.stat().st_size <= MAX_OBJECT_BYTES:
+                    files.append({"name": entry.name, "path": relative, "url": f"api/object-file?path={quote(relative, safe='/')}"})
+        except OSError:
+            return {"available": False, "path": relative_path or "", "folders": [], "files": []}
+        return {"available": True, "path": relative_path or "", "folders": sorted(folders, key=lambda item: item["name"].casefold()), "files": sorted(files, key=lambda item: item["name"].casefold())}
+
+    def send_object_file(self, relative_path):
+        target = self.resolve_object_path(relative_path)
+        if target is None or not target.is_file() or target.suffix.lower() not in OBJECT_MIME_TYPES:
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        try:
+            if target.stat().st_size > MAX_OBJECT_BYTES:
+                self.send_error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+                return
+            body = target.read_bytes()
+        except OSError:
+            self.send_error(HTTPStatus.NOT_FOUND)
+            return
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", OBJECT_MIME_TYPES[target.suffix.lower()])
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Content-Security-Policy", "default-src 'none'; sandbox")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(body)
 
 
 if __name__ == "__main__":

@@ -6,18 +6,29 @@
   <meta name="color-scheme" content="dark light">
   <base href="./">
   <title>HA Grafik Visual Studio</title>
+  <link id="project-favicon-link" rel="icon" href="studio-icon.svg">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="toolbar">
     <div class="brand"><img class="brand-mark" src="studio-icon.svg" alt=""><span>Grafik Visual Studio</span></div>
     <button class="page-menu-toggle" id="pages-menu-toggle" type="button" aria-expanded="false">☰ Seiten</button>
+    <nav class="studio-menu" aria-label="Visual Studio">
+      <button id="widgets-menu" type="button" aria-pressed="true">Widgets</button>
+      <button id="settings-menu" type="button">Einstellungen</button>
+      <button id="objects-menu" type="button">Objekte</button>
+      <button id="projects-menu" type="button">Projekte</button>
+    </nav>
     <label class="widget-finder" aria-label="Widget suchen">
       <span>Widget finden</span>
       <select id="widget-finder" aria-label="Widget nach Name und Typ auswählen">
         <option value="">Widget suchen …</option>
       </select>
     </label>
+    <div class="widget-actions" aria-label="Ausgewähltes Widget">
+      <button id="widget-duplicate" type="button" title="Widget duplizieren" aria-label="Widget duplizieren">▣</button>
+      <button id="widget-delete" type="button" title="Widget löschen" aria-label="Widget löschen">▤</button>
+    </div>
     <nav class="mode-switch" aria-label="Modus">
       <a href="?mode=editor" id="editor-link">Editor</a>
       <a href="?mode=runtime" id="runtime-link">Runtime</a>
@@ -65,8 +76,35 @@
       <p class="property-hint">MDI-Icons auswählen oder einen Icon-Namen bzw. Bildpfad eintragen. Unterstützt werden z. B. mdi:home, atlas:home, custom:..., /local/... sowie PNG, JPG und SVG.</p>
       <div id="icon-picker-results" class="icon-picker-results" role="listbox" aria-label="Icon-Suchergebnisse"></div>
       <div class="icon-picker-custom"><input id="icon-picker-value" type="text" placeholder="mdi:home, atlas:home, custom:... oder /local/...">
+        <button id="icon-picker-objects" type="button">Objekte …</button>
         <button id="icon-picker-apply" type="button" class="primary">Wert übernehmen</button></div>
     </div>
+  </dialog>
+  <dialog id="settings-dialog" class="studio-dialog">
+    <form method="dialog" id="settings-form">
+      <header class="icon-picker-heading"><strong>Projekteinstellungen</strong><button value="cancel" aria-label="Schließen">×</button></header>
+      <label>Bei Projektänderungen laden <select id="settings-reload"><option value="reload">Alle Browser neu laden</option><option value="manual">Nicht automatisch neu laden</option></select></label>
+      <label class="settings-check"><input id="settings-dark-reconnect" type="checkbox"> Dunkler Bildschirm zum erneuten Verbinden</label>
+      <label>Zustands-Entprellzeit (Millisekunden) <input id="settings-debounce" type="number" min="0" max="10000" step="10"></label>
+      <label class="settings-inline">Browserinstanz-ID <input id="settings-instance" maxlength="24"><button id="settings-instance-new" type="button">Neue ID</button></label>
+      <label class="settings-check"><input id="settings-public" type="checkbox"> Projekt für alle Benutzer zugänglich</label>
+      <label>Titel der Runtime <input id="project-title" maxlength="100"></label>
+      <label>Favicon / Bildpfad <input id="project-favicon" placeholder="/local/icons/dashboard.png"></label>
+      <label class="settings-check"><input id="settings-ignore-unloaded" type="checkbox"> Nicht geladene Widgets ignorieren</label>
+      <label>Body overflow <select id="settings-overflow"><option>auto</option><option>hidden</option><option>scroll</option><option>visible</option></select></label>
+      <div class="dialog-actions"><button value="cancel">Abbrechen</button><button id="settings-save" value="default" class="primary">Speichern</button></div>
+    </form>
+  </dialog>
+  <dialog id="objects-dialog" class="studio-dialog objects-dialog">
+    <header class="icon-picker-heading"><strong>Objekte · www</strong><button id="objects-close" type="button" aria-label="Schließen">×</button></header>
+    <div id="objects-breadcrumb" class="objects-breadcrumb"></div>
+    <div id="objects-browser" class="objects-browser"></div>
+    <p class="property-hint">PNG, JPG, SVG und WebP aus /config/www. Auswahl kopiert den HA-Pfad ins Icon-/Bildfeld, wenn ein solches Feld geöffnet wurde.</p>
+  </dialog>
+  <dialog id="projects-dialog" class="studio-dialog">
+    <header class="icon-picker-heading"><strong>Projekte</strong><button id="projects-close" type="button" aria-label="Schließen">×</button></header>
+    <div id="projects-list" class="projects-list"></div>
+    <div class="dialog-actions"><button id="project-create" type="button" class="primary">＋ Neues Projekt</button></div>
   </dialog>
   <script type="module" src="app.js"></script>
 </body>

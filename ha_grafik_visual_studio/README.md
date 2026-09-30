@@ -7,8 +7,9 @@ Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mi
 ## Aktueller Stand
 
 - Home Assistant App-Store-Paket für dieses gemeinsame App-Repository.
-- Ein gemeinsamer Projektentwurf wird unter `/data/project.json` gespeichert.
-- Editor- und Runtime-Modus verwenden denselben Entwurf.
+- Visualisierungsprojekte werden getrennt unter `/data/projects/` gespeichert; vorhandene Projekte aus `/data/project.json` werden beim ersten Start übernommen.
+- Jedes Projekt hat eigene Seiten, Einstellungen und getrennte Editor- sowie Runtime-Links.
+- Die Leiste bietet Widget-Auswahl, Projekteinstellungen, Projektverwaltung und einen Bildbrowser für `/config/www`. Bilder können als `/local/...`-Pfad in Icon- und Bildfelder übernommen werden.
 - Ein Projekt kann mehrere benannte Seiten mit jeweils eigener Größe, eigenem Hintergrund und eigenen Widgets enthalten. Das linke Seitenmenü kann Seiten hinzufügen, umbenennen, duplizieren, ausblenden und löschen; die Runtime bietet die sichtbaren Seiten zur Auswahl an.
 - Im Editor findet die Widget-Auswahl neben dem Seitenmenü Elemente anhand ihres Namens und Typs; die Auswahl markiert das Widget und öffnet seine Eigenschaften.
 - Erste eigene, HA-orientierte Widget-Definitionen sind nach Kategorien registriert.

@@ -6,8 +6,13 @@ button, select { border: 1px solid var(--line); border-radius: 5px; background: 
 button { cursor: pointer; }
 .toolbar { height: 48px; display: flex; gap: 16px; align-items: center; padding: 0 12px; border-bottom: 1px solid var(--line); background: var(--panel); }
 .page-menu-toggle { flex: none; padding: 5px 9px; color: var(--text); }
+.studio-menu { display: flex; align-items: center; gap: 3px; }
+.studio-menu button { border-color: transparent; background: transparent; padding: 6px 8px; white-space: nowrap; }
+.studio-menu button:hover, .studio-menu button[aria-pressed="true"] { border-color: var(--line); background: #344143; }
 .widget-finder { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px; min-width: 220px; max-width: 390px; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .widget-finder select { width: 100%; min-width: 0; overflow: hidden; padding: 5px 7px; text-overflow: ellipsis; }
+.widget-actions { display: flex; gap: 3px; }
+.widget-actions button { width: 30px; height: 30px; padding: 2px; }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 650; white-space: nowrap; }
 .brand-mark { display: block; width: 27px; height: 27px; flex: none; }
 .mode-switch { display: flex; gap: 3px; }
@@ -161,6 +166,24 @@ button { cursor: pointer; }
 .icon-picker-option svg { width: 22px; height: 22px; color: var(--accent); }
 .icon-picker-option span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .icon-picker-custom { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
+.icon-picker-custom { grid-template-columns: minmax(0, 1fr) auto auto; }
+.studio-dialog { width: min(620px, calc(100vw - 24px)); max-height: min(760px, calc(100vh - 24px)); overflow: auto; border: 1px solid var(--line); border-radius: 8px; padding: 14px; color: var(--text); background: #292f31; box-shadow: 0 8px 32px #0009; }
+.studio-dialog::backdrop { background: #0009; }
+.studio-dialog form { display: grid; gap: 12px; }
+.studio-dialog form > label { display: grid; gap: 5px; color: var(--muted); }
+.studio-dialog input { min-width: 0; padding: 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 10px; }
+.objects-dialog { width: min(900px, calc(100vw - 24px)); }
+.objects-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 10px 0; color: var(--muted); }
+.objects-breadcrumb button, .object-folder { border: 0; background: #202426; }
+.objects-browser { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; max-height: min(520px, 58vh); overflow: auto; padding: 5px; }
+.object-file { display: grid; grid-template-rows: 88px auto; align-items: center; gap: 5px; min-width: 0; padding: 6px; }
+.object-file img { width: 100%; height: 88px; object-fit: contain; }
+.object-file span { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.object-folder { min-height: 38px; text-align: left; }
+.projects-list { display: grid; gap: 6px; }
+.project-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto 34px 34px 34px; align-items: center; gap: 5px; padding: 6px; border: 1px solid var(--line); border-radius: 5px; }
+.project-row strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .property-fields input, .property-fields select, .property-fields textarea { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 4px; padding: 5px 6px; background: var(--bg); }
 .property-fields textarea { min-height: 76px; resize: vertical; }
 .project-css-editor { display: block; width: 100%; min-height: calc(100vh - 240px); resize: vertical; border: 1px solid var(--line); border-radius: 4px; padding: 8px; color: var(--text); background: #1e1e1e; font: 12px/1.5 ui-monospace, Consolas, monospace; tab-size: 2; }
@@ -180,4 +203,5 @@ body.runtime-mode .stage { border: 0; }
 body.runtime-mode .stage::before { display: none; }
 body.runtime-mode .stage.runtime-grid::before { display: block; }
 body.runtime-mode .runtime-page-menu-toggle { position: fixed; z-index: 10; top: 10px; left: 10px; display: block; width: 38px; height: 38px; padding: 0; border-radius: 50%; background: #202426cc; }
-@media (max-width: 760px) { .workspace { --left-panel-width: 175px; --right-panel-width: 210px; } .toolbar { gap: 6px; padding: 0 6px; } .brand span:last-child { display: none; } .widget-finder { grid-template-columns: minmax(0, 1fr); min-width: 110px; gap: 0; } .widget-finder > span { display: none; } .page-size { font-size: 11px; } }
+@media (max-width: 900px) { .toolbar { gap: 5px; padding: 0 6px; } .brand span:last-child { display: none; } .studio-menu button { padding: 5px; font-size: 11px; } .widget-finder { grid-template-columns: minmax(0, 1fr); min-width: 90px; gap: 0; } .widget-finder > span { display: none; } .page-size { font-size: 11px; } }
+@media (max-width: 650px) { .brand, .mode-switch, .page-size, #save { display: none; } .toolbar { overflow-x: auto; } .studio-menu { flex: none; } .widget-finder { min-width: 95px; } .custom-size { display: none; } .project-row { grid-template-columns: minmax(0, 1fr) auto auto; } .project-row strong { grid-column: 1 / -1; } }
