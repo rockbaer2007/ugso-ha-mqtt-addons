@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.37
+
+- Zeigt die Entitätenauswahl konsequent als Gerätebaum mit Ordnersymbolen; ein Klick auf ein Gerät klappt dessen Entitäten auf.
+- Ordnet Entitäten anhand ihrer Geräte-ID auch dann einem Geräteordner zu, wenn der Geräte-Registry-Eintrag fehlt.
+
 ## 0.1.36
 
 - Lädt Entitäten, Geräte und Zustände direkt im Add-on über den Home-Assistant-WebSocket-Proxy; der Abruf hängt nicht mehr vom optionalen Sidebar-Panel ab.

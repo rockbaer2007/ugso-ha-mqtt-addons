@@ -426,10 +426,9 @@ function renderEntities() {
   const devices = new Map(state.devices.map((device) => [device.id, device]));
   const groups = new Map(); const unassigned = [];
   for (const entity of state.entities) {
-    const device = devices.get(entity.device_id);
-    if (!device) { unassigned.push(entity); continue; }
-    if (!groups.has(device.id)) groups.set(device.id, []);
-    groups.get(device.id).push(entity);
+    if (!entity.device_id) { unassigned.push(entity); continue; }
+    if (!groups.has(entity.device_id)) groups.set(entity.device_id, []);
+    groups.get(entity.device_id).push(entity);
   }
   const createEntityRow = (entity) => {
     const row = document.createElement("button"); row.type = "button"; row.className = "entity-tree-item"; row.setAttribute("role", "treeitem");
@@ -451,8 +450,8 @@ function renderEntities() {
     tree.append(group);
   }
   for (const [deviceId, deviceEntities] of groups) {
-    const device = devices.get(deviceId);
-    const deviceName = device.name_by_user || device.name || device.model || device.manufacturer || "Unbenanntes Gerät";
+    const device = devices.get(deviceId) || {};
+    const deviceName = device.name_by_user || device.name || device.model || device.manufacturer || `Gerät ${deviceId}`;
     const deviceMatches = !query || deviceName.toLocaleLowerCase("de").includes(query);
     const matching = deviceMatches ? deviceEntities : deviceEntities.filter((entity) => `${entityName(entity)} ${entity.entity_id}`.toLocaleLowerCase("de").includes(query));
     if (!matching.length) continue;
@@ -460,7 +459,7 @@ function renderEntities() {
     const expanded = deviceMatches && query ? true : state.expandedDevices.has(deviceId);
     const heading = document.createElement("button"); heading.type = "button"; heading.className = "entity-device-row"; heading.setAttribute("role", "treeitem"); heading.setAttribute("aria-expanded", String(expanded));
     const caret = document.createElement("span"); caret.className = "entity-caret"; caret.textContent = expanded ? "▾" : "▸";
-    const icon = document.createElement("img"); icon.src = "icons/device.svg"; icon.alt = "";
+    const icon = document.createElement("img"); icon.src = "icons/folder.svg"; icon.alt = "";
     const label = document.createElement("strong"); label.textContent = deviceName;
     const count = document.createElement("small"); count.textContent = `${matching.length}`;
     heading.append(caret, icon, label, count);
