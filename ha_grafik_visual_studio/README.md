@@ -4,6 +4,8 @@
 
 Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mit getrenntem Editor und Runtime. Das Paket ist ein frühes Grundgerüst, keine fertige VIS2-Alternative.
 
+Das Add-on enthält ein eigenes Icon und Logo für die Darstellung im Home-Assistant-App-Store.
+
 ## Aktueller Stand
 
 - Home Assistant App-Store-Paket für dieses gemeinsame App-Repository.

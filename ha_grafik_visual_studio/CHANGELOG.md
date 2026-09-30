@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.29
+
+- Fügt ein eigenes App-Icon und ein passendes Logo für HA Grafik Visual Studio hinzu.
+
 ## 0.1.28
 
 - Ergänzt Upload- und Dateifilter für Bilder, Code/JSON, Text, Audio und Video.
