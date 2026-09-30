@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <base href="./">
+  <title>HA Grafik Visual Studio</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="toolbar">
+    <div class="brand"><span class="brand-mark">HA</span><span>Grafik Visual Studio</span></div>
+    <nav class="mode-switch" aria-label="Modus">
+      <a href="?mode=editor" id="editor-link">Editor</a>
+      <a href="?mode=runtime" id="runtime-link">Runtime</a>
+    </nav>
+    <div class="toolbar-actions">
+      <label class="page-size">Seitengröße
+        <select id="preset">
+          <option value="desktop">Desktop 1920 × 1080</option>
+          <option value="tablet">Tablet 1280 × 800</option>
+          <option value="phone">Telefon 390 × 844</option>
+          <option value="custom">Benutzerdefiniert</option>
+        </select>
+      </label>
+      <div class="custom-size" id="custom-size" hidden>
+        <label>Breite <input id="page-width" type="number" min="240" max="7680" step="1"></label>
+        <label>Höhe <input id="page-height" type="number" min="240" max="4320" step="1"></label>
+      </div>
+      <button id="save" class="primary">Speichern</button>
+    </div>
+  </header>
+  <main class="workspace" id="workspace">
+    <aside class="side palette" id="palette-panel">
+      <div class="panel-heading"><button class="collapse" data-target="palette-panel" aria-label="Palette einklappen">‹</button><h2>Widget-Palette</h2></div>
+      <div class="panel-content" id="palette"></div>
+    </aside>
+    <section class="stage-wrap">
+      <div class="stage-meta"><strong id="project-name">Mein Zuhause</strong><span id="status">Grundgerüst – Widgets sind eigene HA-Elemente</span></div>
+      <div class="stage-scroll"><div class="stage" id="stage" aria-label="Visualisierungsfläche"></div></div>
+    </section>
+    <aside class="side properties" id="properties-panel">
+      <div class="panel-heading"><button class="collapse" data-target="properties-panel" aria-label="Eigenschaften einklappen">›</button><h2>Eigenschaften</h2></div>
+      <div class="panel-content" id="properties"><p class="empty">Wähle ein Widget aus, um seine Eigenschaften zu bearbeiten.</p></div>
+    </aside>
+  </main>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

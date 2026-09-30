@@ -1,0 +1,7 @@
+FROM python:3.13-alpine
+WORKDIR /app
+COPY app/ ./
+COPY web/ ./web/
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+EXPOSE 8098
+CMD ["python", "main.py"]
