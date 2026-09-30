@@ -103,9 +103,33 @@ function renderStage() {
       content.append(button);
     } else if (widget.type === "toggle") {
       const label = document.createElement("label"); label.className = "widget-toggle";
-      const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.checked === true;
+      const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true";
+      checkbox.tabIndex = runtimeMode ? 0 : -1;
       const caption = document.createElement("span"); caption.textContent = widget.title || "Schalter";
+      const track = document.createElement("span"); track.className = "switch-track"; track.setAttribute("aria-hidden", "true");
+      label.append(checkbox, track, caption); content.append(label);
+    } else if (widget.type === "checkbox") {
+      const label = document.createElement("label"); label.className = "widget-checkbox";
+      const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true";
+      checkbox.tabIndex = runtimeMode ? 0 : -1;
+      const caption = document.createElement("span"); caption.textContent = widget.title || "Checkbox";
       label.append(checkbox, caption); content.append(label);
+    } else if (widget.type === "bulb") {
+      const isOn = widget.state === true || widget.state === "true";
+      const iconUrl = isOn ? widget.icon_on : widget.icon_off;
+      if (iconUrl) {
+        const image = document.createElement("img"); image.className = "bulb-image"; image.src = iconUrl;
+        image.alt = `${widget.title || "Lampe"}: ${isOn ? "ein" : "aus"}`; content.append(image);
+      } else {
+      const svgNS = "http://www.w3.org/2000/svg";
+      const bulb = document.createElementNS(svgNS, "svg"); bulb.setAttribute("viewBox", "0 0 64 64"); bulb.setAttribute("role", "img");
+      bulb.setAttribute("aria-label", `${widget.title || "Lampe"}: ${isOn ? "ein" : "aus"}`);
+      bulb.classList.add("bulb-symbol", isOn ? "is-on" : "is-off");
+      const glass = document.createElementNS(svgNS, "path"); glass.setAttribute("d", "M20 25a12 12 0 1 1 24 0c0 5-3 8-6 12l-1 5H27l-1-5c-3-4-6-7-6-12Z");
+      const base = document.createElementNS(svgNS, "path"); base.setAttribute("d", "M27 46h10m-9 5h8m-6 5h4");
+      bulb.append(glass, base); content.append(bulb);
+      }
+      if (widget.title) { const caption = document.createElement("span"); caption.className = "bulb-title"; caption.textContent = widget.title; content.append(caption); }
     } else if (widget.type === "slider") {
       const range = document.createElement("input"); range.type = "range";
       range.min = String(widget.min ?? 0); range.max = String(widget.max ?? 100); range.value = String(widget.value ?? 50);

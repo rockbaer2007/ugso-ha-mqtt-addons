@@ -1,5 +1,5 @@
 name: HA Grafik Visual Studio
-version: "0.1.2"
+version: "0.1.3"
 slug: ha_grafik_visual_studio
 description: Experimentelles Grundgerüst für grafische Home-Assistant-Visualisierungen
 url: https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/ha_grafik_visual_studio

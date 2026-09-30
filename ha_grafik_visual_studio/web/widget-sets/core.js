@@ -65,8 +65,31 @@ registerWidgetSet({
   label: "HA Grafik – Basis",
   widgets: [
     { type: "button", label: "Schaltfläche", icon: "◉", defaults: { title: "Schaltfläche", entityId: "", state: "Aus" }, propertyGroups: entityWidget() },
-    { type: "toggle", label: "Schalter", icon: "⏻", defaults: { title: "Schalter", entityId: "", state: "Aus" }, propertyGroups: entityWidget() },
-    { type: "slider", label: "Regler", icon: "◉", defaults: { title: "Regler", entityId: "", state: "50 %" }, propertyGroups: entityWidget() },
+    { type: "toggle", label: "Switch", icon: "⏻", defaults: { title: "Schalter", entityId: "", state: false }, propertyGroups: entityWidget() },
+    { type: "checkbox", label: "Checkbox", icon: "☑", defaults: { title: "Checkbox", entityId: "", state: false }, propertyGroups: entityWidget() },
+    { type: "bulb", label: "Lampe ein/aus", icon: "💡", defaults: { title: "Lampe", entityId: "", state: false, min: 0, max: 1, icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
+      metadata(), visibility(),
+      { label: "Allgemein", fields: [
+        { label: "Objekt-ID / Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+        { label: "Minimum", key: "min", type: "number" },
+        { label: "Maximum", key: "max", type: "number" },
+        { label: "Symbol Aus (Bild-URL)", key: "icon_off" },
+        { label: "Symbol Ein (Bild-URL)", key: "icon_on" },
+        { label: "Nur lesen", key: "readOnly", type: "checkbox" },
+      ] },
+      geometry(), ...cssGroups(),
+    ] },
+    { type: "slider", label: "Slider", icon: "◉", defaults: { title: "Regler", entityId: "", value: 50, min: 0, max: 100, step: 1 }, propertyGroups: [
+      metadata(), visibility(),
+      { label: "Allgemein", fields: [
+        { label: "Objekt-ID / Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+        { label: "Minimum", key: "min", type: "number" },
+        { label: "Maximum", key: "max", type: "number" },
+        { label: "Schrittweite", key: "step", type: "number", min: 0.01 },
+        { label: "Vorschauwert", key: "value", type: "number" },
+      ] },
+      geometry(), ...cssGroups(),
+    ] },
     { type: "sensor", label: "Zahlenwert", icon: "⌁", defaults: { title: "Sensor", entityId: "", state: "--", unit: "", digits: 1, factor: 1, decimalComma: true }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [

@@ -14,6 +14,7 @@ Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mi
 - Seitengrößen Desktop, Tablet und Telefon können im Editor gewählt werden.
 - Das Text-Widget ist ein freies Textfeld ohne Entitätsbindung oder Entitäts-Fehlermeldung.
 - Widgets sind frei platzierte HTML-Elemente; Auswahl zeigt ihre Widget-ID und einen blauen Rahmen mit Resize-Griff.
+- Die Basispalette enthält passende grafische Elemente: Switch, Checkbox, Lampe ein/aus, Slider, Text und Zahlenwert.
 - Der rechte Eigenschaftenbereich orientiert sich an VIS2s Reitern für Ansicht, Widget, CSS und Skripte; Widget-Metadaten, Sichtbarkeit, Inhalt und CSS sind getrennt gruppiert.
 - Zahlenwerte bieten erste Formatoptionen wie Nachkommastellen, Multiplikator, Dezimalkomma sowie Vor- und Nachsilbe.
 - CSS-Eigenschaften umfassen Schrift, Farbe, Hintergrund, Rahmen, Eckenradius, Schatten, Abstand und Deckkraft.

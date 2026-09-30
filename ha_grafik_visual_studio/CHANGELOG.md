@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3
+
+- Ergänzt grafische Basic-Widgets für Switch, Checkbox, Lampe ein/aus und Slider.
+- Rendert Schalter, Checkboxen und Slider als passende Bedienelemente statt als generische Widget-Karten.
+- Die Lampe nutzt ein eigenes SVG-Symbol oder wählbare Ein-/Aus-Bilddateien.
+
 ## 0.1.2
 
 - Stellt Widgets als frei platzierte HTML-Elemente statt als einheitliche Kartenboxen dar.
