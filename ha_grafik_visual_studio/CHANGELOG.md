@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.6
+
+- Korrigiert die Ingress-URL der zusätzlichen Editor- und Runtime-Panels. Sie verwenden jetzt die vom Supervisor gelieferte `ingress_url` statt der Add-on-ID.
+
 ## 0.1.5
 
 - Kennzeichnet das Add-on im Home-Assistant-Store ausdrücklich als experimentell.

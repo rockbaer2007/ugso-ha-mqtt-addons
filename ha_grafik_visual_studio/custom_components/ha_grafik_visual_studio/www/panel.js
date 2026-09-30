@@ -38,6 +38,7 @@ class HaGrafikIngressPanel extends HTMLElement {
       });
       const addon = (result.addons || []).find((item) => item.slug.endsWith(addonSuffix) && item.ingress);
       if (!addon) throw new Error("Das installierte HA Grafik Visual Studio Add-on wurde nicht gefunden.");
+      if (!addon.ingress_url) throw new Error("Home Assistant hat keine Ingress-Adresse für das Add-on geliefert.");
 
       const session = await this._hass.callWS({
         type: "supervisor/api",
@@ -50,7 +51,10 @@ class HaGrafikIngressPanel extends HTMLElement {
 
       const frame = document.createElement("iframe");
       frame.title = this._panel.config.path === "/runtime" ? "HA Grafik Runtime" : "HA Grafik Editor";
-      frame.src = `/api/hassio_ingress/${addon.slug}${this._panel.config.path}`;
+      const ingressUrl = new URL(addon.ingress_url, location.origin);
+      if (ingressUrl.origin !== location.origin) throw new Error("Die Ingress-Adresse verweist auf einen unerwarteten Host.");
+      const ingressBase = ingressUrl.pathname.endsWith("/") ? ingressUrl.pathname : `${ingressUrl.pathname}/`;
+      frame.src = `${ingressBase}${this._panel.config.path.replace(/^\/+/, "")}`;
       this.shadowRoot.replaceChildren(this.shadowRoot.querySelector("style"), frame);
       this._frame = frame;
     } catch (error) {
