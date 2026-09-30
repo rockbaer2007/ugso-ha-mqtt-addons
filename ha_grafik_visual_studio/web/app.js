@@ -57,6 +57,13 @@ const params = new URLSearchParams(location.search);
 const runtimeMode = location.pathname.endsWith("/runtime") || params.get("mode") === "runtime";
 const workspace = $("#workspace");
 const stage = $("#stage");
+const fileTypes = {
+  image: ["png", "jpg", "jpeg", "webp", "svg", "gif", "bmp", "ico"],
+  code: ["json", "js", "css", "xml", "yaml", "yml"],
+  text: ["txt", "md", "csv", "log"],
+  audio: ["mp3", "wav", "ogg", "m4a", "flac"],
+  video: ["mp4", "webm", "mov", "mkv"],
+};
 const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", objectPath: "", selectedFiles: [] };
 let mdiIcons = null;
 let mdiIconsPromise = null;
@@ -333,8 +340,19 @@ function renderFileSelection() {
   const count = state.selectedFiles.length;
   $("#files-selection-count").textContent = count ? count + " Datei(en) ausgewählt" : "Keine Dateien ausgewählt";
   $("#files-copy").disabled = count === 0;
-  $("#files-apply").disabled = !activeIconInput || count !== 1;
-  $("#files-apply").title = count > 1 ? "Zum Übernehmen bitte genau eine Datei auswählen" : "Ausgewählte Datei ins Feld übernehmen";
+  const oneImage = count === 1 && fileCategory(state.selectedFiles[0]) === "image";
+  $("#files-apply").disabled = !activeIconInput || !oneImage;
+  $("#files-apply").title = count > 1 ? "Zum Übernehmen bitte genau eine Bilddatei auswählen" : "Ausgewählte Bilddatei ins Feld übernehmen";
+}
+
+function fileCategory(path) {
+  const extension = String(path).split(".").pop().toLowerCase();
+  return Object.entries(fileTypes).find(([, extensions]) => extensions.includes(extension))?.[0] || "other";
+}
+
+function fileAccept(category) {
+  const extensions = category === "all" ? Object.values(fileTypes).flat() : fileTypes[category] || [];
+  return extensions.map((extension) => "." + extension).join(",");
 }
 
 function cancelFileSelection() {
@@ -404,11 +422,18 @@ async function renderObjects() {
     const count = document.createElement("span"); count.className = "object-size"; count.textContent = "Ordner";
     row.append(button, count, document.createElement("span")); browser.append(row);
   }
-  for (const file of data.files) {
+  const category = $("#files-type-filter").value;
+  const visibleFiles = data.files.filter((file) => category === "all" || fileCategory(file.path) === category);
+  for (const file of visibleFiles) {
     const row = document.createElement("div"); row.className = "object-row object-file-row";
     const select = document.createElement("button"); select.type = "button"; select.className = "object-file"; select.title = `Datei ${file.name} auswählen`;
-    const image = document.createElement("img"); image.src = file.url; image.alt = ""; image.loading = "lazy";
-    const name = document.createElement("span"); name.textContent = file.name; select.append(image, name);
+    if (fileCategory(file.path) === "image") {
+      const image = document.createElement("img"); image.src = file.url; image.alt = ""; image.loading = "lazy"; select.append(image);
+    } else {
+      const typeIcon = document.createElement("span"); typeIcon.className = "object-type-icon";
+      typeIcon.textContent = ({ code: "{}", text: "Tt", audio: "♫", video: "▶" })[fileCategory(file.path)] || "▤"; select.append(typeIcon);
+    }
+    const name = document.createElement("span"); name.textContent = file.name; select.append(name);
     select.setAttribute("aria-pressed", String(state.selectedFiles.includes(file.path)));
     select.addEventListener("click", () => {
       state.selectedFiles = state.selectedFiles.includes(file.path)
@@ -434,7 +459,7 @@ async function renderObjects() {
     });
     actions.append(download, remove); row.append(select, size, actions); browser.append(row);
   }
-  if (!data.folders.length && !data.files.length) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Dieser Ordner enthält keine unterstützten Bilder."; browser.append(empty); }
+  if (!data.folders.length && !visibleFiles.length) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = category === "all" ? "Dieser Ordner enthält keine unterstützten Dateien." : "Keine Dateien dieses Typs in diesem Ordner."; browser.append(empty); }
   renderFileSelection();
 }
 
@@ -1402,8 +1427,23 @@ $("#settings-save").addEventListener("click", async (event) => {
 $("#files-menu").addEventListener("click", () => openObjects());
 $("#objects-close").addEventListener("click", cancelFileSelection);
 $("#files-cancel").addEventListener("click", cancelFileSelection);
-$("#files-upload").addEventListener("click", () => $("#files-upload-input").click());
+$("#files-upload").addEventListener("click", () => {
+  $("#files-upload-input").accept = fileAccept($("#files-type-filter").value);
+  $("#files-upload-input").click();
+});
 $("#files-upload-input").addEventListener("change", (event) => { void uploadFiles(event.target.files); });
+$("#files-type-filter").addEventListener("change", () => { state.selectedFiles = []; void renderObjects(); });
+$("#files-reload").addEventListener("click", () => { void renderObjects(); });
+$("#files-folder").addEventListener("click", async () => {
+  const name = window.prompt("Name des neuen Ordners");
+  if (!name?.trim()) return;
+  const path = [state.objectPath, name.trim()].filter(Boolean).join("/");
+  const response = await fetch("api/files/folder?path=" + encodeURIComponent(path), { method: "POST" });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) { $("#status").textContent = result.error || "Ordner konnte nicht erstellt werden"; return; }
+  $("#status").textContent = `Ordner ${name.trim()} erstellt`;
+  await renderObjects();
+});
 $("#files-copy").addEventListener("click", async () => {
   const paths = state.selectedFiles.map((path) => "/local/" + path);
   try {

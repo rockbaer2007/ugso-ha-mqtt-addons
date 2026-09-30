@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.28
+
+- Ergänzt Upload- und Dateifilter für Bilder, Code/JSON, Text, Audio und Video.
+- Stellt Dateiaktionen als kompakte Icon-Schaltflächen dar und ergänzt Ordner erstellen sowie neu laden.
+- Vergrößert den Dateien-Dialog auf 90 vw × 75 vh.
+
 ## 0.1.27
 
 - Stellt den Dateien-Dialog auf eine Dateiliste mit Miniaturansichten und Dateigrößen um.

@@ -46,12 +46,18 @@ DEFAULT_PROJECT = {
 }
 
 MIME_TYPES = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml"}
-OBJECT_MIME_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml"}
+FILE_MIME_TYPES = {
+    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml", ".gif": "image/gif", ".bmp": "image/bmp", ".ico": "image/x-icon",
+    ".json": "application/json", ".js": "text/javascript", ".css": "text/css", ".xml": "application/xml", ".yaml": "text/yaml", ".yml": "text/yaml",
+    ".txt": "text/plain", ".md": "text/markdown", ".csv": "text/csv", ".log": "text/plain",
+    ".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg", ".m4a": "audio/mp4", ".flac": "audio/flac",
+    ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime", ".mkv": "video/x-matroska",
+}
 PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.27"
+    server_version = "HAGrafikVisualStudio/0.1.28"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -73,7 +79,7 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.27"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.28"})
             return
         if path == "/api/projects":
             self.send_json(HTTPStatus.OK, self.list_projects())
@@ -125,6 +131,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/files/folder":
+            self.create_object_folder(parse_qs(parsed.query).get("path", [""])[0])
+            return
         if parsed.path == "/api/files":
             self.save_uploaded_file(parse_qs(parsed.query).get("path", [""])[0])
             return
@@ -155,8 +164,8 @@ class Handler(BaseHTTPRequestHandler):
         if target is None or not target.name or target.name in (".", ".."):
             self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Ungültiger Dateipfad."})
             return
-        if target.suffix.lower() not in OBJECT_MIME_TYPES:
-            self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "Erlaubt sind PNG, JPG, SVG und WebP."})
+        if target.suffix.lower() not in FILE_MIME_TYPES:
+            self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "Dieser Dateityp wird nicht unterstützt."})
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -187,6 +196,22 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Datei konnte nicht gespeichert werden."})
             return
         self.send_json(HTTPStatus.CREATED, {"uploaded": True, "path": target.relative_to(WWW_DIR.resolve()).as_posix()})
+
+    def create_object_folder(self, relative_path):
+        target = self.resolve_object_path(relative_path)
+        if target is None or not target.name or not target.parent.is_dir():
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Ungültiger Ordnername oder Zielpfad."})
+            return
+        try:
+            target.mkdir()
+        except FileExistsError:
+            self.send_json(HTTPStatus.CONFLICT, {"error": "Ein Ordner oder eine Datei mit diesem Namen existiert bereits."})
+            return
+        except OSError as error:
+            LOG.warning("Ordner konnte nicht erstellt werden: %s", error)
+            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Ordner konnte nicht erstellt werden."})
+            return
+        self.send_json(HTTPStatus.CREATED, {"created": True, "path": target.relative_to(WWW_DIR.resolve()).as_posix()})
 
     def do_PATCH(self):
         path = urlparse(self.path).path
@@ -352,16 +377,16 @@ class Handler(BaseHTTPRequestHandler):
                 relative = resolved.relative_to(WWW_DIR.resolve()).as_posix()
                 if entry.is_dir():
                     folders.append({"name": entry.name, "path": relative})
-                elif entry.is_file() and entry.suffix.lower() in OBJECT_MIME_TYPES and entry.stat().st_size <= MAX_OBJECT_BYTES:
-                    files.append({"name": entry.name, "path": relative, "size": entry.stat().st_size, "url": f"api/object-file?path={quote(relative, safe='/')}"})
+                elif entry.is_file() and entry.suffix.lower() in FILE_MIME_TYPES and entry.stat().st_size <= MAX_OBJECT_BYTES:
+                    files.append({"name": entry.name, "path": relative, "size": entry.stat().st_size, "mime": FILE_MIME_TYPES[entry.suffix.lower()], "url": f"api/object-file?path={quote(relative, safe='/')}"})
         except OSError:
             return {"available": False, "checked": [str(path) for path in WWW_CANDIDATES], "path": relative_path or "", "folders": [], "files": []}
         return {"available": True, "checked": [str(WWW_DIR)], "path": relative_path or "", "folders": sorted(folders, key=lambda item: item["name"].casefold()), "files": sorted(files, key=lambda item: item["name"].casefold())}
 
     def delete_object_file(self, relative_path):
         target = self.resolve_object_path(relative_path)
-        if target is None or not target.is_file() or target.suffix.lower() not in OBJECT_MIME_TYPES:
-            self.send_json(HTTPStatus.NOT_FOUND, {"error": "Bilddatei wurde nicht gefunden."})
+        if target is None or not target.is_file() or target.suffix.lower() not in FILE_MIME_TYPES:
+            self.send_json(HTTPStatus.NOT_FOUND, {"error": "Datei wurde nicht gefunden."})
             return
         try:
             target.unlink()
@@ -373,7 +398,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def send_object_file(self, relative_path):
         target = self.resolve_object_path(relative_path)
-        if target is None or not target.is_file() or target.suffix.lower() not in OBJECT_MIME_TYPES:
+        if target is None or not target.is_file() or target.suffix.lower() not in FILE_MIME_TYPES:
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         try:
@@ -385,7 +410,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         self.send_response(HTTPStatus.OK)
-        self.send_header("Content-Type", OBJECT_MIME_TYPES[target.suffix.lower()])
+        self.send_header("Content-Type", FILE_MIME_TYPES[target.suffix.lower()])
         self.send_header("Content-Length", str(len(body)))
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Content-Security-Policy", "default-src 'none'; sandbox")
