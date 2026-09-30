@@ -316,6 +316,9 @@ function renderWidgetFinder() {
   select.disabled = page.widgets.length === 0;
   $("#widget-duplicate").disabled = !state.selectedId;
   $("#widget-delete").disabled = !state.selectedId;
+  $("#widget-layer-up").disabled = !state.selectedId;
+  $("#widget-layer-down").disabled = !state.selectedId || Number(page.widgets.find((widget) => widget.id === state.selectedId)?.layer || 0) <= 0;
+  $("#widget-export").disabled = !state.selectedId;
 }
 
 function openObjects(path = "") {
@@ -427,6 +430,53 @@ function deleteSelectedWidget() {
   if (!state.selectedId) return;
   page.widgets = page.widgets.filter((widget) => widget.id !== state.selectedId);
   state.selectedId = null; render();
+}
+
+function changeSelectedWidgetLayer(direction) {
+  const widget = currentPage().widgets.find((item) => item.id === state.selectedId);
+  if (!widget) return;
+  const current = Math.max(0, Math.trunc(Number(widget.layer) || 0));
+  widget.layer = Math.min(9999, Math.max(0, current + direction));
+  widget.cssZIndex = "";
+  renderStage(); renderProperties(); renderWidgetFinder();
+  $("#status").textContent = `Widget ${widget.id}: Ebene ${widget.layer}`;
+}
+
+function exportSelectedWidget() {
+  const widget = currentPage().widgets.find((item) => item.id === state.selectedId);
+  if (!widget) return;
+  const blob = new Blob([`${JSON.stringify({ schemaVersion: 1, widget }, null, 2)}\n`], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a"); link.href = url; link.download = `${widget.type}-${widget.id}.json`; link.click();
+  URL.revokeObjectURL(url);
+  $("#status").textContent = `Widget ${widget.id} exportiert`;
+}
+
+async function importWidgets(file) {
+  try {
+    const data = JSON.parse(await file.text());
+    const incoming = Array.isArray(data) ? data : Array.isArray(data.widgets) ? data.widgets : [data.widget || data];
+    const knownTypes = new Set(getWidgetSets().flatMap((set) => set.widgets.map((definition) => definition.type)));
+    const widgets = incoming.filter((widget) => widget && typeof widget === "object" && knownTypes.has(widget.type));
+    if (!widgets.length) throw new Error("Die Datei enthält keine unterstützten Widgets.");
+    for (const source of widgets) {
+      const widget = structuredClone(source);
+      widget.id = `widget-${state.nextId++}`;
+      widget.x = Math.max(0, Number(widget.x) || 0);
+      widget.y = Math.max(0, Number(widget.y) || 0);
+      widget.width = Math.max(16, Number(widget.width) || 140);
+      widget.height = Math.max(16, Number(widget.height) || 62);
+      widget.layer = Math.max(0, Math.min(9999, Math.trunc(Number(widget.layer) || 0)));
+      currentPage().widgets.push(widget);
+    }
+    state.selectedId = currentPage().widgets.at(-widgets.length).id;
+    render();
+    $("#status").textContent = `${widgets.length} Widget(s) importiert`;
+  } catch (error) {
+    $("#status").textContent = `Widget-Import fehlgeschlagen: ${error.message}`;
+  } finally {
+    $("#widget-import-file").value = "";
+  }
 }
 
 function makePageId() { return `page-${Date.now()}-${state.project.pages.length + 1}`; }
@@ -1196,6 +1246,11 @@ function render() {
 $("#widget-finder").addEventListener("change", (event) => focusWidget(event.target.value));
 $("#widget-duplicate").addEventListener("click", duplicateSelectedWidget);
 $("#widget-delete").addEventListener("click", deleteSelectedWidget);
+$("#widget-layer-up").addEventListener("click", () => changeSelectedWidgetLayer(1));
+$("#widget-layer-down").addEventListener("click", () => changeSelectedWidgetLayer(-1));
+$("#widget-export").addEventListener("click", exportSelectedWidget);
+$("#widget-import").addEventListener("click", () => $("#widget-import-file").click());
+$("#widget-import-file").addEventListener("change", (event) => { if (event.target.files[0]) void importWidgets(event.target.files[0]); });
 
 $("#preset").addEventListener("change", (event) => {
   const preset = event.target.value;

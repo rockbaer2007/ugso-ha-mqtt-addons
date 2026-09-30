@@ -12,6 +12,7 @@ Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mi
 - Die Leiste bietet Widget-Auswahl, Projekteinstellungen, Projektverwaltung und einen Bildbrowser für `/config/www`. Bilder können als `/local/...`-Pfad in Icon- und Bildfelder übernommen werden.
 - Ein Projekt kann mehrere benannte Seiten mit jeweils eigener Größe, eigenem Hintergrund und eigenen Widgets enthalten. Das linke Seitenmenü kann Seiten hinzufügen, umbenennen, duplizieren, ausblenden und löschen; die Runtime bietet die sichtbaren Seiten zur Auswahl an.
 - Im Editor findet die Widget-Auswahl neben dem Seitenmenü Elemente anhand ihres Namens und Typs; die Auswahl markiert das Widget und öffnet seine Eigenschaften.
+- Das ausgewählte Widget kann um eine Ebene nach vorn oder hinten verschoben, als JSON exportiert oder aus einem JSON-Widgetpaket importiert werden.
 - Erste eigene, HA-orientierte Widget-Definitionen sind nach Kategorien registriert.
 - Das Widget-Register ist separat; weitere eigene Widget-Sets können später unabhängig ergänzt werden.
 - Seitengrößen Desktop, Tablet und Telefon können im Editor gewählt werden.

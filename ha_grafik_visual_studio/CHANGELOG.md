@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.22
+
+- Ergänzt Werkzeuge, um das ausgewählte Widget um eine Ebene nach vorn oder hinten zu verschieben.
+- Ergänzt den JSON-Import mehrerer Widgets und den JSON-Export des ausgewählten Widgets.
+
 ## 0.1.21
 
 - Ergänzt die Bereiche Widgets, Projekteinstellungen, Objekte und Projekte in der Editor-Leiste.
