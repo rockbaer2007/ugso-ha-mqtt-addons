@@ -11,7 +11,7 @@ Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sow
 - Home Assistant App-Store-Paket für dieses gemeinsame App-Repository.
 - Visualisierungsprojekte werden getrennt unter `/data/projects/` gespeichert; vorhandene Projekte aus `/data/project.json` werden beim ersten Start übernommen.
 - Jedes Projekt hat eigene Seiten, Einstellungen und getrennte Editor- sowie Runtime-Links.
-- Die Leiste bietet Widget-Auswahl, Projekteinstellungen, Projektverwaltung, einen Dateienbrowser für Dateien unter `/config/www` und einen Entitätenbrowser. Der Entitätenbrowser liest Entitäten, Geräte und aktuelle Zustände beim Öffnen sowie auf Anforderung neu ein; Geräte lassen sich aufklappen und die Entity-ID kann gesucht, kopiert oder direkt in ein Widget-Feld eingefügt werden.
+- Die Leiste bietet Widget-Auswahl, Projekteinstellungen, Projektverwaltung, einen Dateienbrowser für Dateien unter `/config/www` und einen Entitätenbrowser. Der Entitätenbrowser liest Entitäten, Geräte und aktuelle Zustände beim Öffnen sowie auf Anforderung neu über den Home-Assistant-WebSocket-Proxy ein; Geräte lassen sich aufklappen und die Entity-ID kann gesucht, kopiert oder direkt in ein Widget-Feld eingefügt werden. Dafür ist die Add-on-Berechtigung `homeassistant_api` aktiviert; das Supervisor-Token bleibt serverseitig.
 - Der Dateienbrowser sucht den Home-Assistant-www-Mount in den üblichen Containerpfaden `/homeassistant/www`, `/homeassistant_config/www` und `/config/www`.
 - Die Dateiauswahl steht in Icon-/Bildfeldern sowie bei Hintergrundbild und Runtime-Favicon direkt zur Verfügung.
 - Der Dateienbrowser erlaubt Mehrfachuploads unterstützter Bilder, Code-/JSON-, Text-, Audio- und Videodateien bis 20 MB in den offenen www-Ordner. Der Dateitypfilter begrenzt sowohl die Dateiliste als auch die Typen im Upload-Auswahldialog. Ausgewählte `/local/...`-Pfade lassen sich kopieren; Bilddateien können einzeln in das aktive Feld übernommen werden. Für Uploads benötigt das Add-on Schreibzugriff auf die Home-Assistant-Konfiguration.
@@ -74,7 +74,7 @@ Das Add-on stellt weiterhin den normalen Ingress-Eintrag bereit. Für zwei separ
 
 Diese Integration ist wie das Add-on experimentell. Bei Fehlern kannst du den Integrationsordner entfernen und Home Assistant neu starten; der normale Add-on-Ingress bleibt verfügbar.
 
-Nach Updates müssen Änderungen im Ordner `custom_components/ha_grafik_visual_studio` erneut nach `/config/custom_components/ha_grafik_visual_studio` kopiert und Home Assistant neu gestartet werden. Der normale Add-on-Seiteneintrag öffnet nur Ingress und stellt die Entity-Bridge nicht bereit; für die Entitätenauswahl muss **HA Grafik Editor** aus der optionalen Integration geöffnet werden.
+Die Entitätenauswahl funktioniert auch im normalen Add-on-Ingress. Die optionale Integration ist nur für separate Einträge **HA Grafik Editor** und **HA Grafik Runtime** erforderlich. Nach Updates dieser Integration müssen Änderungen im Ordner `custom_components/ha_grafik_visual_studio` erneut nach `/config/custom_components/ha_grafik_visual_studio` kopiert und Home Assistant neu gestartet werden.
 
 ## VIS2 als Referenz
 

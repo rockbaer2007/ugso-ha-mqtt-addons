@@ -31,6 +31,7 @@ else:
 MAX_BODY = 1_000_000
 MAX_OBJECT_BYTES = 20_000_000
 DEFAULT_PROJECT_ID = "main"
+HOME_ASSISTANT_WS_URL = "ws://supervisor/core/websocket"
 
 DEFAULT_PROJECT = {
     "schemaVersion": 2,
@@ -45,6 +46,86 @@ DEFAULT_PROJECT = {
     }],
 }
 
+
+class HomeAssistantAPIError(RuntimeError):
+    """Raised when the Home Assistant WebSocket API cannot provide entities."""
+
+
+def load_home_assistant_entities():
+    """Read entity registry, device registry, and current states via Supervisor."""
+    try:
+        import websocket
+    except ImportError as error:
+        raise HomeAssistantAPIError("WebSocket-Abhängigkeit fehlt. Erstelle das Add-on-Image neu.") from error
+
+    token = os.environ.get("SUPERVISOR_TOKEN")
+    if not token:
+        raise HomeAssistantAPIError(
+            "Home-Assistant-API-Zugriff fehlt. Aktualisiere das Add-on und starte es neu."
+        )
+
+    connection = None
+    try:
+        connection = websocket.create_connection(
+            HOME_ASSISTANT_WS_URL,
+            timeout=12,
+            suppress_origin=True,
+            http_no_proxy=["supervisor"],
+        )
+        connection.settimeout(12)
+        greeting = json.loads(connection.recv())
+        if greeting.get("type") != "auth_required":
+            raise HomeAssistantAPIError("Home Assistant hat die WebSocket-Verbindung abgelehnt.")
+
+        connection.send(json.dumps({"type": "auth", "access_token": token}))
+        authentication = json.loads(connection.recv())
+        if authentication.get("type") != "auth_ok":
+            raise HomeAssistantAPIError("Home-Assistant-API-Authentifizierung fehlgeschlagen.")
+
+        def command(identifier, command_type):
+            connection.send(json.dumps({"id": identifier, "type": command_type}))
+            while True:
+                response = json.loads(connection.recv())
+                if response.get("id") != identifier:
+                    continue
+                if not response.get("success"):
+                    message = response.get("error", {}).get("message", "Unbekannter API-Fehler")
+                    raise HomeAssistantAPIError(f"Home Assistant: {message}")
+                return response.get("result")
+
+        entity_entries = command(1, "config/entity_registry/list")
+        device_entries = command(2, "config/device_registry/list")
+        state_entries = command(3, "get_states")
+        entities = [
+            {key: entry[key] for key in ("entity_id", "name", "name_by_user", "original_name", "device_id", "disabled_by") if key in entry}
+            for entry in entity_entries if isinstance(entry, dict)
+        ]
+        devices = [
+            {key: entry[key] for key in ("id", "name", "name_by_user", "model", "manufacturer") if key in entry}
+            for entry in device_entries if isinstance(entry, dict)
+        ]
+        states = [
+            {
+                "entity_id": entry["entity_id"],
+                "state": entry.get("state"),
+                "attributes": {"friendly_name": entry.get("attributes", {}).get("friendly_name")},
+            }
+            for entry in state_entries if isinstance(entry, dict) and "entity_id" in entry
+        ]
+        return {"entities": entities, "devices": devices, "states": states}
+    except HomeAssistantAPIError:
+        raise
+    except (websocket.WebSocketException, OSError, ValueError, TypeError) as error:
+        raise HomeAssistantAPIError(
+            "Home-Assistant-API nicht erreichbar. Prüfe die Add-on-Berechtigung „homeassistant_api“."
+        ) from error
+    finally:
+        if connection is not None:
+            try:
+                connection.close()
+            except websocket.WebSocketException:
+                pass
+
 MIME_TYPES = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml"}
 FILE_MIME_TYPES = {
     ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml", ".gif": "image/gif", ".bmp": "image/bmp", ".ico": "image/x-icon",
@@ -57,7 +138,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.35"
+    server_version = "HAGrafikVisualStudio/0.1.36"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -79,7 +160,14 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.35"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.36"})
+            return
+        if path == "/api/entities":
+            try:
+                self.send_json(HTTPStatus.OK, load_home_assistant_entities())
+            except HomeAssistantAPIError as error:
+                LOG.warning("Home-Assistant-Entitäten konnten nicht geladen werden: %s", error)
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})
             return
         if path == "/api/projects":
             self.send_json(HTTPStatus.OK, self.list_projects())

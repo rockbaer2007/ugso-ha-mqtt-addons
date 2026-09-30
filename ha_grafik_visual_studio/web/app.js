@@ -64,7 +64,7 @@ const fileTypes = {
   audio: ["mp3", "wav", "ogg", "m4a", "flac"],
   video: ["mp4", "webm", "mov", "mkv"],
 };
-const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entityDialogMode: "copy", entityRequestId: "", entitySnapshot: null };
+const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null };
 let mdiIcons = null;
 let mdiIconsPromise = null;
 let activeIconInput = null;
@@ -339,7 +339,6 @@ function openObjects(path = "") {
 
 function openEntities(input = null) {
   activeEntityInput = input;
-  state.entityDialogMode = input ? "insert" : "copy";
   const dialog = $("#entities-dialog");
   $("#entities-copy").hidden = Boolean(input);
   $("#entities-insert").hidden = !input;
@@ -355,36 +354,34 @@ function openEntities(input = null) {
 function closeEntities() {
   $("#entities-dialog").close();
   activeEntityInput = null;
-  state.entityRequestId = "";
-}
-
-function requestEntities() {
-  const requestId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
-  state.entityRequestId = requestId;
-  $("#entities-status").textContent = "Entitäten und Zustände werden von Home Assistant geladen …";
-  window.parent.postMessage({ type: "ha-grafik:entities-request", requestId }, location.origin);
   window.clearTimeout(state.entityRequestTimeout);
-  state.entityRequestTimeout = window.setTimeout(() => {
-    if (state.entityRequestId !== requestId) return;
-    state.entityRequestId = "";
-    $("#entities-status").textContent = "Keine Antwort vom HA-Bridge-Panel. Öffne „HA Grafik Editor“ (nicht den normalen Add-on-Eintrag) und installiere oder aktualisiere dafür die optionale Sidebar-Integration; danach Home Assistant neu starten.";
-  }, 15000);
+  state.entityController?.abort();
+  state.entityController = null;
 }
 
 async function loadEntities() {
-  requestEntities();
+  state.entityController?.abort();
+  const controller = new AbortController();
+  state.entityController = controller;
+  $("#entities-status").textContent = "Entitäten und Zustände werden von Home Assistant geladen …";
+  state.entityRequestTimeout = window.setTimeout(() => controller.abort(), 20000);
+  try {
+    const response = await fetch("api/entities", { cache: "no-store", signal: controller.signal });
+    const data = await response.json().catch(() => ({}));
+    if (state.entityController !== controller) return;
+    if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+    receiveEntities(data);
+  } catch (error) {
+    if (state.entityController !== controller) return;
+    const message = error.name === "AbortError" ? "Zeitüberschreitung beim Abruf der Home-Assistant-API." : error.message;
+    $("#entities-status").textContent = `Entitäten konnten nicht geladen werden: ${message}`;
+  } finally {
+    window.clearTimeout(state.entityRequestTimeout);
+    if (state.entityController === controller) state.entityController = null;
+  }
 }
 
-function receiveEntities(event) {
-  if (event.source !== window.parent || event.origin !== location.origin) return;
-  const message = event.data;
-  if (!message || message.type !== "ha-grafik:entities-response" || message.requestId !== state.entityRequestId) return;
-  window.clearTimeout(state.entityRequestTimeout);
-  state.entityRequestId = "";
-  if (message.error) {
-    $("#entities-status").textContent = `Entitäten konnten nicht geladen werden: ${message.error}`;
-    return;
-  }
+function receiveEntities(message) {
   const entities = Array.isArray(message.entities) ? message.entities.filter((entity) => entity.entity_id && !entity.disabled_by) : [];
   const devices = Array.isArray(message.devices) ? message.devices : [];
   const entityStates = Object.fromEntries((Array.isArray(message.states) ? message.states : []).map((item) => [item.entity_id, item]));
@@ -423,7 +420,6 @@ function renderEntities() {
   $("#entities-copy").disabled = !selected;
   $("#entities-insert").disabled = !selected || !activeEntityInput;
   if (!state.entities.length) {
-    if (!state.entityRequestId && !$("#entities-status").textContent.includes("konnten nicht geladen")) $("#entities-status").textContent = "Keine Home-Assistant-Entitäten gefunden.";
     return;
   }
   const query = $("#entities-search").value.trim().toLocaleLowerCase("de");
@@ -1589,8 +1585,9 @@ $("#entities-menu").addEventListener("click", () => openEntities());
 $("#entities-close").addEventListener("click", closeEntities);
 $("#entities-dialog").addEventListener("close", () => {
   activeEntityInput = null;
-  state.entityRequestId = "";
   window.clearTimeout(state.entityRequestTimeout);
+  state.entityController?.abort();
+  state.entityController = null;
 });
 $("#entities-reload").addEventListener("click", () => { void loadEntities(); });
 $("#entities-search").addEventListener("input", renderEntities);
@@ -1607,7 +1604,6 @@ $("#entities-insert").addEventListener("click", () => {
   activeEntityInput.dispatchEvent(new Event("input", { bubbles: true }));
   closeEntities();
 });
-window.addEventListener("message", receiveEntities);
 $("#objects-close").addEventListener("click", cancelFileSelection);
 $("#files-cancel").addEventListener("click", cancelFileSelection);
 $("#files-upload").addEventListener("click", () => {

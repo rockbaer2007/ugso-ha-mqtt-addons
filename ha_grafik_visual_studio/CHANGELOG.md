@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.36
+
+- Lädt Entitäten, Geräte und Zustände direkt im Add-on über den Home-Assistant-WebSocket-Proxy; der Abruf hängt nicht mehr vom optionalen Sidebar-Panel ab.
+- Aktiviert dafür den Home-Assistant-API-Zugriff des Add-ons und liefert verständliche API-Fehler im Entitäten-Dialog.
+
 ## 0.1.35
 
 - Erklärt bei fehlender Entity-Bridge, dass der separate Sidebar-Eintrag „HA Grafik Editor“ geöffnet und die optionale Integration installiert sein muss.
