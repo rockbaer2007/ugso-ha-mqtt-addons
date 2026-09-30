@@ -341,7 +341,7 @@ async function renderObjects() {
   }
   const response = await fetch(`api/objects?path=${encodeURIComponent(state.objectPath)}`);
   const data = response.ok ? await response.json() : { available: false, folders: [], files: [] };
-  if (!data.available) { const hint = document.createElement("p"); hint.className = "empty"; hint.textContent = "Der HA-www-Ordner ist nicht verfügbar. Prüfe die schreibgeschützte Konfigurationseinbindung."; browser.append(hint); return; }
+  if (!data.available) { const hint = document.createElement("p"); hint.className = "empty"; hint.textContent = `Der HA-www-Ordner ist nicht verfügbar. Geprüfte Pfade: ${(data.checked || []).join(", ")}. Prüfe die schreibgeschützte Konfigurationseinbindung.`; browser.append(hint); return; }
   if (state.objectPath) {
     const up = document.createElement("button"); up.type = "button"; up.className = "object-folder"; up.textContent = "⬆ Übergeordneter Ordner";
     up.addEventListener("click", () => openObjects(parts.slice(0, -1).join("/"))); browser.append(up);

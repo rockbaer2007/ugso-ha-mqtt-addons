@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.24
+
+- Erkennt den Home-Assistant-www-Ordner über die üblichen Add-on-Mountpfade und zeigt die geprüften Pfade bei fehlender Einbindung an.
+
 ## 0.1.23
 
 - Verschiebt den Grafikbrowser in den eigenen Menüpunkt „Dateien“.

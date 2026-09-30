@@ -19,7 +19,15 @@ if not WEB_DIR.is_dir():
     WEB_DIR = APP_DIR.parent / "web"
 PROJECT_FILE = DATA_DIR / "project.json"
 PROJECTS_DIR = DATA_DIR / "projects"
-WWW_DIR = Path(os.environ.get("HA_GRAFIK_WWW_DIR", "/homeassistant/www"))
+WWW_CANDIDATES = (
+    Path("/homeassistant/www"),
+    Path("/homeassistant_config/www"),
+    Path("/config/www"),
+)
+if os.environ.get("HA_GRAFIK_WWW_DIR"):
+    WWW_DIR = Path(os.environ["HA_GRAFIK_WWW_DIR"])
+else:
+    WWW_DIR = next((candidate for candidate in WWW_CANDIDATES if candidate.is_dir()), WWW_CANDIDATES[0])
 MAX_BODY = 1_000_000
 MAX_OBJECT_BYTES = 20_000_000
 DEFAULT_PROJECT_ID = "main"
@@ -43,7 +51,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.23"
+    server_version = "HAGrafikVisualStudio/0.1.24"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -65,7 +73,7 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.23"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.24"})
             return
         if path == "/api/projects":
             self.send_json(HTTPStatus.OK, self.list_projects())
@@ -286,7 +294,7 @@ class Handler(BaseHTTPRequestHandler):
     def list_objects(cls, relative_path):
         target = cls.resolve_object_path(relative_path)
         if target is None or not target.is_dir():
-            return {"available": WWW_DIR.is_dir(), "path": relative_path or "", "folders": [], "files": []}
+            return {"available": WWW_DIR.is_dir(), "checked": [str(path) for path in WWW_CANDIDATES], "path": relative_path or "", "folders": [], "files": []}
         folders, files = [], []
         try:
             for entry in target.iterdir():
@@ -301,8 +309,8 @@ class Handler(BaseHTTPRequestHandler):
                 elif entry.is_file() and entry.suffix.lower() in OBJECT_MIME_TYPES and entry.stat().st_size <= MAX_OBJECT_BYTES:
                     files.append({"name": entry.name, "path": relative, "url": f"api/object-file?path={quote(relative, safe='/')}"})
         except OSError:
-            return {"available": False, "path": relative_path or "", "folders": [], "files": []}
-        return {"available": True, "path": relative_path or "", "folders": sorted(folders, key=lambda item: item["name"].casefold()), "files": sorted(files, key=lambda item: item["name"].casefold())}
+            return {"available": False, "checked": [str(path) for path in WWW_CANDIDATES], "path": relative_path or "", "folders": [], "files": []}
+        return {"available": True, "checked": [str(WWW_DIR)], "path": relative_path or "", "folders": sorted(folders, key=lambda item: item["name"].casefold()), "files": sorted(files, key=lambda item: item["name"].casefold())}
 
     def send_object_file(self, relative_path):
         target = self.resolve_object_path(relative_path)
