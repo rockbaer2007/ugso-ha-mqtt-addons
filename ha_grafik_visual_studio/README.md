@@ -37,6 +37,23 @@ Der geplante Widget-Paket-Importer soll eine vom Nutzer angegebene Paket-URL ein
 
 Die App-Oberfläche stellt momentan einen einzigen Ingress-Eintrag in der Home-Assistant-Seitenleiste bereit. Zwei eigenständige Sidebar-Einträge benötigen zusätzlich eine Home-Assistant-Integration; das wird nicht durch die App-Store-Installation allein erledigt.
 
+### Getrennte Sidebar-Einträge für Editor und Runtime (experimentell)
+
+Das Add-on stellt weiterhin den normalen Ingress-Eintrag bereit. Für zwei separate Seitenleisteneinträge kann die optionale Integration aus `custom_components/ha_grafik_visual_studio` installiert werden. Sie registriert **HA Grafik Editor** und **HA Grafik Runtime** und öffnet beide über die authentifizierte Add-on-Ingress-Sitzung.
+
+1. Diese optionale Sidebar-Integration setzt Home Assistant OS oder Home Assistant Supervised mit Supervisor voraus. Kopiere den Ordner `custom_components/ha_grafik_visual_studio` nach `/config/custom_components/ha_grafik_visual_studio`.
+2. Ergänze in `/config/configuration.yaml` den Integrationsschlüssel (vorhandene YAML-Schlüssel auf oberster Ebene nicht doppelt anlegen):
+
+   ```yaml
+   ha_grafik_visual_studio:
+   ```
+
+3. Starte Home Assistant neu.
+4. Öffne die beiden neuen Einträge in der Seitenleiste. Die Integration sucht das installierte Add-on anhand seines Slugs; der Supervisor-Zugriff ist auf Administratoren beschränkt.
+5. Wenn du nur die zwei neuen Einträge verwenden möchtest, deaktiviere **In Seitenleiste anzeigen** in den Add-on-Einstellungen. Das Add-on selbst muss weiterlaufen.
+
+Diese Integration ist wie das Add-on experimentell. Bei Fehlern kannst du den Integrationsordner entfernen und Home Assistant neu starten; der normale Add-on-Ingress bleibt verfügbar.
+
 ## VIS2 als Referenz
 
 VIS2 wurde auf Paket- und Quellcodeebene untersucht. Es trennt Editor (`Editor.tsx`) und Runtime (`Runtime.tsx`), lädt Widget-Sets über einen Widget-Katalog und unterstützt unter anderem mehrere Ansichten, Widget-Eigenschaften, Seitenauflösungen sowie absolute und rasterbasierte Layouts. Dieses Projekt übernimmt nur diese allgemeinen Produktideen. Es enthält keinen VIS2-Code, keine VIS2-Widgets und keine VIS2-Ressourcen. Die Widget-Registrierung ist für eigenständige Home-Assistant-Widgets vorgesehen. Ein späterer Importer ist als Konvertierungshilfe geplant, nicht als Möglichkeit, VIS-Widgets samt Abhängigkeiten direkt in Home Assistant auszuführen.

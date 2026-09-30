@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+- Kennzeichnet das Add-on im Home-Assistant-Store ausdrücklich als experimentell.
+- Ergänzt eine optionale Home-Assistant-Integration mit getrennten Sidebar-Panels für Editor und Runtime.
+- Die Panels öffnen den Add-on-Ingress mit einer aktuellen Supervisor-Ingress-Sitzung.
+
 ## 0.1.4
 
 - Fügt ein eigenes Rahmen-Widget mit Titel- und Kopfzeilenoptionen hinzu.
