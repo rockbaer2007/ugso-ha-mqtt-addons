@@ -16,7 +16,7 @@ const VIEW_PROPERTY_GROUPS = [
     { label: "Wenn der Benutzer nicht in der Gruppe ist", key: "outsideGroup", type: "select", options: ["ausblenden", "deaktivieren"] },
   ] },
   { label: "CSS-Hintergrund", fields: [
-    { label: "Bild (Datei oder HA-Pfad)", key: "backgroundAsset" }, { label: "Hintergrundklasse", key: "backgroundClass" },
+    { label: "Bild (Datei oder HA-Pfad)", key: "backgroundAsset", previewImage: true }, { label: "Hintergrundklasse", key: "backgroundClass" },
     { label: "Ein Parameter", key: "backgroundSingleParameter", type: "checkbox", default: false },
     { label: "background-color", key: "background", type: "color" }, { label: "background-image", key: "backgroundImage" },
     { label: "background-repeat", key: "backgroundRepeat", type: "select", options: ["", "repeat", "no-repeat", "repeat-x", "repeat-y"] },
@@ -681,8 +681,25 @@ function field(descriptor, widget) {
   if (descriptor.max !== undefined) input.max = descriptor.max;
   if (descriptor.step !== undefined) input.step = descriptor.step;
   input.disabled = descriptor.disabled === true;
+  let preview;
+  let previewRow;
+  const updatePreview = () => {
+    if (!preview) return;
+    const source = safeUrl(input.value, true);
+    previewRow.classList.toggle("has-preview", Boolean(source));
+    preview.hidden = !source;
+    preview.removeAttribute("src");
+    if (source) preview.src = source;
+  };
+  if (descriptor.previewImage) {
+    const row = document.createElement("span"); row.className = "property-input-row"; previewRow = row;
+    preview = document.createElement("img"); preview.className = "property-image-preview"; preview.alt = ""; preview.loading = "lazy";
+    preview.addEventListener("error", () => { preview.hidden = true; });
+    row.append(input, preview); wrapper.append(row); updatePreview();
+  } else wrapper.append(input);
   const update = () => {
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    updatePreview();
     renderStage();
     if (descriptor.refreshProperties) renderProperties();
   };
@@ -691,7 +708,7 @@ function field(descriptor, widget) {
     if (PRESETS[input.value]) Object.assign(widget, PRESETS[input.value]);
     render();
   });
-  wrapper.append(input); return wrapper;
+  return wrapper;
 }
 
 function renderProperties() {
@@ -772,7 +789,7 @@ function renderProperties() {
         { label: "Objekt-ID", key: "entityId" },
         { label: "Bedingung", key: "condition", type: "select", options: ["==", "!=", ">", ">=", "<", "<="] },
         { label: "Wert für die Bedingung", key: "value" },
-        { label: "Bild (URL oder HA-Pfad)", key: "image" }, { label: "Kleines Symbol", key: "smallIcon" },
+        { label: "Bild (URL oder HA-Pfad)", key: "image", previewImage: true }, { label: "Kleines Symbol", key: "smallIcon", previewImage: true },
         { label: "Bildgröße in px", key: "imageSize", type: "range", min: 8, max: 128, step: 1 },
         { label: "CSS Bildstil", key: "imageStyle" }, { label: "Text oder Vorlage ({value})", key: "text" },
         { label: "CSS Textstil", key: "textStyle" }, { label: "Klassen", key: "className" },

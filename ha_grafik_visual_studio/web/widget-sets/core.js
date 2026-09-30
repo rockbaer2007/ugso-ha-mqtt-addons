@@ -84,7 +84,7 @@ const entityWidget = (unit = false) => [
   ] },
   geometry(),
   { label: "Widget-Darstellung", fields: [
-    { label: "Symbol", key: "icon" },
+    { label: "Symbol", key: "icon", previewImage: true },
     { label: "Akzentfarbe", key: "color", type: "color" },
   ] },
   ...cssGroups(),
@@ -108,8 +108,8 @@ registerWidgetSet({
       { label: "Allgemein", fields: [
         { label: "Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
         { label: "Zustand", key: "state", type: "select", options: [{ value: "off", label: "Aus" }, { value: "on", label: "Ein" }] },
-        { label: "Icon für Aus (Bild-URL)", key: "icon_off" },
-        { label: "Icon für Ein (Bild-URL)", key: "icon_on" },
+        { label: "Icon für Aus (Bild-URL)", key: "icon_off", previewImage: true },
+        { label: "Icon für Ein (Bild-URL)", key: "icon_on", previewImage: true },
         { label: "Nur lesen", key: "readOnly", type: "checkbox" },
       ] },
       geometry(), ...cssGroups(),
@@ -130,8 +130,8 @@ registerWidgetSet({
         { label: "Zustand", key: "state", type: "select", options: [{ value: "off", label: "Aus" }, { value: "on", label: "Ein" }] },
         { label: "Minimum", key: "min", type: "number" },
         { label: "Maximum", key: "max", type: "number" },
-        { label: "Symbol Aus (Bild-URL)", key: "icon_off" },
-        { label: "Symbol Ein (Bild-URL)", key: "icon_on" },
+        { label: "Symbol Aus (Bild-URL)", key: "icon_off", previewImage: true },
+        { label: "Symbol Ein (Bild-URL)", key: "icon_on", previewImage: true },
         { label: "Nur lesen", key: "readOnly", type: "checkbox" },
       ] },
       geometry(), ...cssGroups(),
@@ -172,7 +172,7 @@ registerWidgetSet({
       { label: "HTML voranstellen", key: "prefix", type: "textarea" }, { label: "HTML anhängen", key: "suffix", type: "textarea" },
     ]),
     basicDataWidget("image-source", "String img src", "▧", { title: "Bild aus Entity", entityId: "", state: "", alt: "Bild" }, [
-      { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Bild-URL / Testwert", key: "state" }, { label: "Alternativtext", key: "alt" },
+      { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Bild-URL / Testwert", key: "state", previewImage: true }, { label: "Alternativtext", key: "alt" },
     ]),
     ...[
       ["time-value", "TimesValue", "◷", "state"], ["timestamp-value", "Timestamp Value", "◷", "state"],

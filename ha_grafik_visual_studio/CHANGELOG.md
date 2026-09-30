@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.16
+
+- Zeigt für Bild- und Icon-Pfade eine kleine Vorschau direkt neben dem Eingabefeld.
+- Aktualisiert die Vorschau sofort beim Ändern und unterstützt lokale HA-Pfade sowie normale Bild-URLs.
+
 ## 0.1.15
 
 - Ergänzt im Reiter Ansicht die gezeigten Gruppen für allgemeine CSS-Werte, Hintergrund, Schrift und Text, Optionen, Navigation, Anwendungsleiste und responsive Einstellungen.
