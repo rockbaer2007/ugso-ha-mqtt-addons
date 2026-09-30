@@ -1318,7 +1318,7 @@ $("#settings-save").addEventListener("click", async (event) => {
   const response = await fetch(`api/project?project=${encodeURIComponent(state.projectId)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(projectForSave(state.project)) });
   if (response.ok) { $("#settings-dialog").close(); render(); $("#status").textContent = "Projekteinstellungen gespeichert"; }
 });
-$("#objects-menu").addEventListener("click", () => openObjects());
+$("#files-menu").addEventListener("click", () => openObjects());
 $("#objects-close").addEventListener("click", () => $("#objects-dialog").close());
 $("#projects-menu").addEventListener("click", () => { $("#projects-dialog").showModal(); void renderProjects(); });
 $("#projects-close").addEventListener("click", () => $("#projects-dialog").close());

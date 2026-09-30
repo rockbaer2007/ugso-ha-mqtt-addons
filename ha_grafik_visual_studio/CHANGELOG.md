@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.23
+
+- Verschiebt den Grafikbrowser in den eigenen Menüpunkt „Dateien“.
+- Reserviert „Objekte“ für die geplante Home-Assistant-Geräte- und Entitätenansicht.
+
 ## 0.1.22
 
 - Ergänzt Werkzeuge, um das ausgewählte Widget um eine Ebene nach vorn oder hinten zu verschieben.

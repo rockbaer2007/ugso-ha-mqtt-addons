@@ -16,7 +16,8 @@
     <nav class="studio-menu" aria-label="Visual Studio">
       <button id="widgets-menu" type="button" aria-pressed="true">Widgets</button>
       <button id="settings-menu" type="button">Einstellungen</button>
-      <button id="objects-menu" type="button">Objekte</button>
+      <button id="objects-menu" type="button" disabled title="Die Home-Assistant-Entitätenansicht folgt separat">Objekte</button>
+      <button id="files-menu" type="button">Dateien</button>
       <button id="projects-menu" type="button">Projekte</button>
     </nav>
     <label class="widget-finder" aria-label="Widget suchen">
@@ -81,7 +82,7 @@
       <p class="property-hint">MDI-Icons auswählen oder einen Icon-Namen bzw. Bildpfad eintragen. Unterstützt werden z. B. mdi:home, atlas:home, custom:..., /local/... sowie PNG, JPG und SVG.</p>
       <div id="icon-picker-results" class="icon-picker-results" role="listbox" aria-label="Icon-Suchergebnisse"></div>
       <div class="icon-picker-custom"><input id="icon-picker-value" type="text" placeholder="mdi:home, atlas:home, custom:... oder /local/...">
-        <button id="icon-picker-objects" type="button">Objekte …</button>
+        <button id="icon-picker-objects" type="button">Dateien …</button>
         <button id="icon-picker-apply" type="button" class="primary">Wert übernehmen</button></div>
     </div>
   </dialog>
@@ -101,7 +102,7 @@
     </form>
   </dialog>
   <dialog id="objects-dialog" class="studio-dialog objects-dialog">
-    <header class="icon-picker-heading"><strong>Objekte · www</strong><button id="objects-close" type="button" aria-label="Schließen">×</button></header>
+    <header class="icon-picker-heading"><strong>Dateien · /config/www</strong><button id="objects-close" type="button" aria-label="Schließen">×</button></header>
     <div id="objects-breadcrumb" class="objects-breadcrumb"></div>
     <div id="objects-browser" class="objects-browser"></div>
     <p class="property-hint">PNG, JPG, SVG und WebP aus /config/www. Auswahl kopiert den HA-Pfad ins Icon-/Bildfeld, wenn ein solches Feld geöffnet wurde.</p>
