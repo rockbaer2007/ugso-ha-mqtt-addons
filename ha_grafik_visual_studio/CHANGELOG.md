@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.14
+
+- Ergänzt pro Eigenschaftsabschnitt eine Checkbox, mit der die Abschnittswerte beim Speichern aus dem Projektcode ausgeschlossen werden.
+- Klappt Eigenschaftsabschnitte standardmäßig zu; Überschrift und Auswahl bleiben sichtbar.
+- Ergänzt ein eigenes Leinwand-und-Stift-Icon für die App und den Editor-Sidebar-Eintrag.
+
 ## 0.1.13
 
 - Ergänzt Mehrseiten-Projekte mit separaten Widgets, Seitengrößen und Hintergründen.

@@ -15,6 +15,33 @@ const workspace = $("#workspace");
 const stage = $("#stage");
 const state = { project: null, selectedId: null, nextId: 1, propertyTab: "widget" };
 
+function propertyGroupKey(group, index) {
+  return group.id || `${index}-${group.label.toLocaleLowerCase("de").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+}
+
+function propertyGroupEnabled(widget, group, index) {
+  return widget.enabledPropertyGroups?.[propertyGroupKey(group, index)] !== false;
+}
+
+function projectForSave(project) {
+  const saved = structuredClone(project);
+  for (const page of saved.pages || []) {
+    for (const widget of page.widgets || []) {
+      const groups = getWidgetDefinition(widget.type).propertyGroups;
+      widget.enabledPropertyGroups ??= {};
+      for (const [index, group] of groups.entries()) {
+        if (propertyGroupEnabled(widget, group, index)) continue;
+        for (const descriptor of group.fields) delete widget[descriptor.key];
+        if (group.signalImages) {
+          delete widget.signalCount;
+          delete widget.signalImages;
+        }
+      }
+    }
+  }
+  return saved;
+}
+
 function ensureProjectPages(project) {
   if (!Array.isArray(project.pages)) {
     project.pages = [{ id: "page-1", name: "main", visible: true, page: project.page || { preset: "desktop", ...PRESETS.desktop, background: "#242729", backgroundMode: "tile" }, widgets: Array.isArray(project.widgets) ? project.widgets : [] }];
@@ -612,7 +639,7 @@ function renderProperties() {
   if (!widget && !["view", "css"].includes(state.propertyTab)) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Wähle ein Widget aus, um seine Eigenschaften zu bearbeiten."; panel.append(empty); return; }
   if (state.propertyTab === "view") {
     const heading = document.createElement("div"); heading.className = "selected-widget-heading"; heading.textContent = "Ansicht / Hintergrund"; panel.append(heading);
-    const details = document.createElement("details"); details.className = "property-section"; details.open = true;
+    const details = document.createElement("details"); details.className = "property-section";
     const summary = document.createElement("summary"); summary.textContent = "Seiteneigenschaften";
     const body = document.createElement("div"); body.className = "property-fields";
     const descriptors = [
@@ -642,8 +669,20 @@ function renderProperties() {
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
   heading.textContent = `${getWidgetDefinition(widget.type).label} · ${widget.id}`; panel.append(heading);
   for (const [index, group] of groups.entries()) {
-    const details = document.createElement("details"); details.className = "property-section"; details.open = index === 0;
-    const summary = document.createElement("summary"); summary.textContent = group.label;
+    const details = document.createElement("details"); details.className = "property-section";
+    const summary = document.createElement("summary");
+    const title = document.createElement("span"); title.className = "property-section-title"; title.textContent = group.label;
+    const enabled = document.createElement("input"); enabled.type = "checkbox"; enabled.className = "property-section-enabled";
+    enabled.checked = propertyGroupEnabled(widget, group, index);
+    enabled.setAttribute("aria-label", `${group.label}: Optionen im Projekt speichern`);
+    enabled.title = "Optionen dieser Gruppe im gespeicherten Projekt übernehmen";
+    enabled.addEventListener("click", (event) => event.stopPropagation());
+    enabled.addEventListener("change", (event) => {
+      event.stopPropagation();
+      widget.enabledPropertyGroups ??= {};
+      widget.enabledPropertyGroups[propertyGroupKey(group, index)] = enabled.checked;
+    });
+    summary.append(title, enabled);
     const body = document.createElement("div"); body.className = "property-fields";
     if (group.hint) { const hint = document.createElement("p"); hint.className = "property-hint"; hint.textContent = group.hint; body.append(hint); }
     body.append(...group.fields.map((descriptor) => field(descriptor, widget)));
@@ -713,7 +752,11 @@ for (const [id, key, max] of [["page-width", "width", 7680], ["page-height", "he
   });
 }
 $("#save").addEventListener("click", async () => {
-  const response = await fetch("api/project", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(state.project) });
+  const response = await fetch("api/project", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(projectForSave(state.project)) });
+  if (response.ok) {
+    state.project = projectForSave(state.project);
+    render();
+  }
   $("#status").textContent = response.ok ? "Projekt lokal gespeichert" : "Speichern fehlgeschlagen";
 });
 $("#pages-menu-toggle").addEventListener("click", () => togglePagesMenu());

@@ -23,7 +23,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     )
 
     for name, title, icon, path in (
-        ("ha-grafik-editor", "HA Grafik Editor", "mdi:view-dashboard-edit", "/editor"),
+        ("ha-grafik-editor", "HA Grafik Editor", "mdi:vector-square-edit", "/editor"),
         ("ha-grafik-runtime", "HA Grafik Runtime", "mdi:monitor-dashboard", "/runtime"),
     ):
         await panel_custom.async_register_panel(
