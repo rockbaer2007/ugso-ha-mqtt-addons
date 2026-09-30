@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.17
+
+- Ergänzt eine durchsuchbare MDI-Auswahl für Icon- und Bildfelder.
+- Akzeptiert Home-Assistant-Iconset-Namen wie `mdi:home`, `atlas:home` und `custom:home` sowie Grafikpfade wie `/local/icons/home.png`.
+- Zeigt MDI-Symbole und erreichbare Grafikdateien direkt neben dem Eingabefeld sowie MDI-Symbole in Schaltern und Lampen an.
+- Ergänzt Lizenzhinweise zum eingebetteten Material Design Icons-Katalog.
+
 ## 0.1.16
 
 - Zeigt für Bild- und Icon-Pfade eine kleine Vorschau direkt neben dem Eingabefeld.

@@ -57,6 +57,107 @@ const runtimeMode = location.pathname.endsWith("/runtime") || params.get("mode")
 const workspace = $("#workspace");
 const stage = $("#stage");
 const state = { project: null, selectedId: null, nextId: 1, propertyTab: "widget" };
+let mdiIcons = null;
+let mdiIconsPromise = null;
+let activeIconInput = null;
+
+async function loadMdiIcons() {
+  if (mdiIcons) return mdiIcons;
+  mdiIconsPromise ??= fetch("mdi-icons.json").then((response) => {
+    if (!response.ok) throw new Error("MDI-Katalog konnte nicht geladen werden.");
+    return response.json();
+  }).then((catalog) => {
+    mdiIcons = new Map(catalog.icons.map((icon) => [icon.name, icon.path]));
+    return mdiIcons;
+  });
+  return mdiIconsPromise;
+}
+
+function iconDataUrl(path, color) {
+  if (!/^[MmZzLlHhVvCcSsQqTtAa0-9.,+\-\sEe]+$/.test(path)) return "";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="${color}" d="${path}"/></svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function openIconPicker(input) {
+  activeIconInput = input;
+  const dialog = $("#icon-picker");
+  const search = $("#icon-picker-search");
+  $("#icon-picker-value").value = input.value;
+  search.value = input.value;
+  renderIconPickerResults(search.value);
+  dialog.showModal();
+  search.focus();
+}
+
+async function renderIconPickerResults(query) {
+  const results = $("#icon-picker-results");
+  results.replaceChildren();
+  const normalized = String(query || "").trim().toLowerCase().replace(/^mdi:/, "");
+  if (!normalized || normalized.includes(":")) return;
+  let icons;
+  try { icons = await loadMdiIcons(); }
+  catch (error) {
+    const notice = document.createElement("p"); notice.className = "property-hint"; notice.textContent = error.message; results.append(notice); return;
+  }
+  if (normalized !== $("#icon-picker-search").value.trim().toLowerCase().replace(/^mdi:/, "")) return;
+  const matches = [...icons.entries()].filter(([name]) => name.includes(normalized)).slice(0, 72);
+  for (const [name, path] of matches) {
+    const option = document.createElement("button"); option.type = "button"; option.className = "icon-picker-option";
+    option.setAttribute("role", "option"); option.title = `mdi:${name}`;
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
+    const shape = document.createElementNS("http://www.w3.org/2000/svg", "path"); shape.setAttribute("d", path); shape.setAttribute("fill", "currentColor"); svg.append(shape);
+    const label = document.createElement("span"); label.textContent = name;
+    option.append(svg, label);
+    option.addEventListener("click", () => applyIconPickerValue(`mdi:${name}`));
+    results.append(option);
+  }
+  if (!matches.length) {
+    const empty = document.createElement("p"); empty.className = "property-hint"; empty.textContent = "Keine passenden MDI-Icons gefunden. Andere Iconsets oder Bildpfade kannst du unten direkt eintragen."; results.append(empty);
+  }
+}
+
+function applyIconPickerValue(value = $("#icon-picker-value").value) {
+  if (!activeIconInput) return;
+  const selected = String(value || "").trim();
+  activeIconInput.value = selected && !selected.includes(":") && !selected.startsWith("/") && !/\.(png|jpe?g|svg|webp)(\?.*)?$/i.test(selected) ? `mdi:${selected}` : selected;
+  activeIconInput.dispatchEvent(new Event("input", { bubbles: true }));
+  $("#icon-picker").close();
+  activeIconInput.focus();
+  activeIconInput = null;
+}
+
+$("#icon-picker-search").addEventListener("input", (event) => {
+  $("#icon-picker-value").value = event.target.value;
+  void renderIconPickerResults(event.target.value);
+});
+$("#icon-picker-value").addEventListener("input", (event) => {
+  const search = $("#icon-picker-search");
+  if (event.target.value.startsWith("mdi:") || !event.target.value.includes(":")) {
+    search.value = event.target.value;
+    void renderIconPickerResults(search.value);
+  }
+});
+$("#icon-picker-apply").addEventListener("click", () => applyIconPickerValue());
+$("#icon-picker-value").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") { event.preventDefault(); applyIconPickerValue(); }
+});
+$("#icon-picker-close").addEventListener("click", () => $("#icon-picker").close());
+$("#icon-picker").addEventListener("click", (event) => {
+  if (event.target === event.currentTarget) event.currentTarget.close();
+});
+
+function setIconImageSource(image, value) {
+  const source = safeUrl(value, true);
+  if (source) { image.src = source; return; }
+  const match = String(value || "").match(/^mdi:([a-z0-9-]+)$/i);
+  if (!match) return;
+  image.dataset.iconValue = value;
+  void loadMdiIcons().then((icons) => {
+    const path = icons.get(match[1]);
+    if (path && image.isConnected && image.dataset.iconValue === value) image.src = iconDataUrl(path, getComputedStyle(document.body).color);
+  }).catch(() => {});
+}
 
 function propertyGroupKey(group, index) {
   return group.id || `${index}-${group.label.toLocaleLowerCase("de").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
@@ -424,9 +525,10 @@ function renderStage() {
       content.append(header, heading);
     } else if (widget.type === "button") {
       const on = isOn(widget.state);
-      const iconUrl = safeUrl(on ? widget.icon_on : widget.icon_off, true);
-      if (iconUrl) {
-        const image = document.createElement("img"); image.className = "button-icon"; image.src = iconUrl;
+      const iconValue = on ? widget.icon_on : widget.icon_off;
+      const iconUrl = safeUrl(iconValue, true);
+      if (iconUrl || /^mdi:[a-z0-9-]+$/i.test(iconValue || "")) {
+        const image = document.createElement("img"); image.className = "button-icon"; setIconImageSource(image, iconValue);
         image.alt = `${widget.title || "Schaltfläche"}: ${on ? "ein" : "aus"}`; content.append(image);
       } else {
         const fallback = document.createElement("span"); fallback.className = `button-icon-fallback ${on ? "is-on" : "is-off"}`;
@@ -461,8 +563,8 @@ function renderStage() {
     } else if (widget.type === "bulb") {
       const isOnState = isOn(widget.state);
       const iconUrl = isOnState ? widget.icon_on : widget.icon_off;
-      if (iconUrl) {
-        const image = document.createElement("img"); image.className = "bulb-image"; image.src = safeUrl(iconUrl, true);
+      if (safeUrl(iconUrl, true) || /^mdi:[a-z0-9-]+$/i.test(iconUrl || "")) {
+        const image = document.createElement("img"); image.className = "bulb-image"; setIconImageSource(image, iconUrl);
         image.alt = `${widget.title || "Lampe"}: ${isOnState ? "ein" : "aus"}`; content.append(image);
       } else {
       const svgNS = "http://www.w3.org/2000/svg";
@@ -587,18 +689,18 @@ function renderStage() {
       const actual = widget.state ?? widget.value ?? "";
       if (!matchesCondition(actual, signal.condition || "==", signal.value ?? "true")) continue;
       const imageSrc = safeUrl(signal.image, true);
-      if (!imageSrc) continue;
+      if (!imageSrc && !/^mdi:[a-z0-9-]+$/i.test(signal.image || "")) continue;
       const overlay = document.createElement("span"); overlay.className = "signal-overlay";
       overlay.style.left = `${Number(signal.horizontal) || 0}px`; overlay.style.top = `${Number(signal.vertical) || 0}px`;
       overlay.style.zIndex = String(20 + signalIndex);
       for (const name of String(signal.className || "").split(/\s+/).filter((item) => /^[A-Za-z_][\w-]*$/.test(item))) overlay.classList.add(name);
       if (signal.blink) overlay.classList.add("signal-blink");
-      const image = document.createElement("img"); image.src = imageSrc; image.alt = signal.text || `Signal ${signalIndex + 1}`;
+      const image = document.createElement("img"); setIconImageSource(image, signal.image); image.alt = signal.text || `Signal ${signalIndex + 1}`;
       const imageSize = Math.max(8, Math.min(256, Number(signal.imageSize) || 24));
       image.style.width = `${imageSize}px`; image.style.height = `${imageSize}px`; image.style.objectFit = "contain";
       applySafeStyle(image, signal.imageStyle); overlay.append(image);
       const smallIconUrl = safeUrl(signal.smallIcon, true);
-      if (smallIconUrl) { const smallIcon = document.createElement("img"); smallIcon.className = "signal-small-icon"; smallIcon.src = smallIconUrl; smallIcon.alt = ""; smallIcon.style.width = `${Math.round(imageSize * 0.45)}px`; smallIcon.style.height = `${Math.round(imageSize * 0.45)}px`; overlay.append(smallIcon); }
+      if (smallIconUrl || /^mdi:[a-z0-9-]+$/i.test(signal.smallIcon || "")) { const smallIcon = document.createElement("img"); smallIcon.className = "signal-small-icon"; setIconImageSource(smallIcon, signal.smallIcon); smallIcon.alt = ""; smallIcon.style.width = `${Math.round(imageSize * 0.45)}px`; smallIcon.style.height = `${Math.round(imageSize * 0.45)}px`; overlay.append(smallIcon); }
       if (signal.text) {
         const caption = document.createElement("span"); caption.className = "signal-caption";
         caption.textContent = String(signal.text).replaceAll("{value}", String(actual)).replaceAll("{entity}", String(signal.entityId || ""));
@@ -682,24 +784,57 @@ function field(descriptor, widget) {
   if (descriptor.step !== undefined) input.step = descriptor.step;
   input.disabled = descriptor.disabled === true;
   let preview;
+  let aliasPreview;
   let previewRow;
-  const updatePreview = () => {
+  const updatePreview = async () => {
     if (!preview) return;
-    const source = safeUrl(input.value, true);
-    previewRow.classList.toggle("has-preview", Boolean(source));
+    const value = input.value.trim();
+    let source = safeUrl(value, true);
+    let alias = "";
+    const iconMatch = value.match(/^([a-z0-9_-]+):([a-z0-9_-]+)$/i);
+    if (!source && iconMatch) {
+      alias = iconMatch[1];
+      if (alias.toLowerCase() === "mdi") {
+        try {
+          const icons = await loadMdiIcons();
+          const path = icons.get(iconMatch[2]);
+          if (path && input.value.trim() === value) source = iconDataUrl(path, getComputedStyle(document.body).color);
+        } catch { /* Keep the entered icon name visible when the catalog cannot be loaded. */ }
+      }
+    }
+    if (input.value.trim() !== value) return;
+    const showAlias = Boolean(alias && !source);
+    previewRow.classList.toggle("has-preview", Boolean(source || showAlias));
     preview.hidden = !source;
     preview.removeAttribute("src");
     if (source) preview.src = source;
+    else if (iconMatch?.[1].toLowerCase() === "mdi") setIconImageSource(preview, value);
+    aliasPreview.hidden = !showAlias;
+    aliasPreview.textContent = alias ? alias.slice(0, 3) : "";
   };
   if (descriptor.previewImage) {
     const row = document.createElement("span"); row.className = "property-input-row"; previewRow = row;
     preview = document.createElement("img"); preview.className = "property-image-preview"; preview.alt = ""; preview.loading = "lazy";
-    preview.addEventListener("error", () => { preview.hidden = true; });
-    row.append(input, preview); wrapper.append(row); updatePreview();
+    preview.addEventListener("error", () => {
+      preview.hidden = true;
+      if (input.value.trim() && /^[a-z0-9_-]+:[a-z0-9_-]+$/i.test(input.value.trim())) {
+        const namespace = input.value.trim().split(":", 1)[0];
+        aliasPreview.textContent = namespace.slice(0, 3);
+        aliasPreview.hidden = false;
+        previewRow.classList.add("has-preview");
+      } else {
+        previewRow.classList.remove("has-preview");
+      }
+    });
+    aliasPreview = document.createElement("span"); aliasPreview.className = "property-iconset-preview"; aliasPreview.hidden = true;
+    const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button"; picker.textContent = "…";
+    picker.title = "Icon oder Bild auswählen"; picker.setAttribute("aria-label", "Icon oder Bild auswählen");
+    picker.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); openIconPicker(input); });
+    row.append(preview, aliasPreview, input, picker); wrapper.append(row); void updatePreview();
   } else wrapper.append(input);
   const update = () => {
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
-    updatePreview();
+    void updatePreview();
     renderStage();
     if (descriptor.refreshProperties) renderProperties();
   };

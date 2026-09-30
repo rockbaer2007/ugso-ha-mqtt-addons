@@ -120,17 +120,40 @@ button { cursor: pointer; }
 .resize-ne { top: -4px; right: -4px; } .resize-sw { bottom: -4px; left: -4px; }
 .resize-nw { top: -4px; left: -4px; } .resize-se { right: -4px; bottom: -4px; }
 .property-section { margin-bottom: 7px; border: 1px solid var(--line); border-radius: 5px; }
-.property-section > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 8px; cursor: pointer; font-weight: 600; }
+.property-section > summary { display: flex; align-items: center; justify-content: flex-start; gap: 7px; padding: 7px 8px; cursor: pointer; font-weight: 600; list-style: none; }
+.property-section > summary::before { width: 10px; flex: none; color: var(--muted); content: "▸"; font-size: 12px; }
+.property-section[open] > summary::before { content: "▾"; }
 .property-section-title { min-width: 0; }
+.property-section-enabled { margin-left: auto !important; }
 .property-section-enabled { width: 15px; height: 15px; flex: none; margin: 0; accent-color: var(--accent); }
 .signal-section { border: 1px solid var(--line); border-radius: 4px; }
-.signal-section > summary { padding: 5px 7px; cursor: pointer; color: var(--accent); }
+.signal-section > summary { display: flex; align-items: center; gap: 5px; padding: 5px 7px; cursor: pointer; color: var(--accent); list-style: none; }
+.signal-section > summary::before { width: 9px; flex: none; content: "▸"; }
+.signal-section[open] > summary::before { content: "▾"; }
 .property-fields { display: grid; gap: 7px; padding: 7px; }
 .property-fields label { display: grid; gap: 3px; color: var(--muted); font-size: 11px; }
-.property-input-row { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 6px; min-width: 0; }
-.property-input-row.has-preview { grid-template-columns: minmax(0, 1fr) 38px; }
-.property-image-preview { width: 36px; height: 32px; object-fit: contain; border: 1px solid var(--line); border-radius: 4px; background: #1116; }
+.property-input-row { display: grid; grid-template-columns: minmax(0, 1fr) 28px; align-items: center; gap: 5px; min-width: 0; }
+.property-input-row.has-preview { grid-template-columns: 34px minmax(0, 1fr) 28px; }
+.property-image-preview, .property-iconset-preview { display: grid; place-items: center; width: 32px; height: 30px; object-fit: contain; border: 1px solid var(--line); border-radius: 4px; color: var(--accent); background: #1116; }
+.property-iconset-preview { font-size: 9px; font-weight: 700; text-transform: uppercase; }
 .property-image-preview[hidden] { display: none; }
+.property-iconset-preview[hidden] { display: none; }
+.property-icon-picker-button { width: 28px; min-width: 28px; height: 29px; padding: 0; color: var(--accent); font-size: 18px; line-height: 1; }
+.property-input-row input { grid-column: 1; }
+.property-input-row.has-preview input { grid-column: 2; }
+.icon-picker { width: min(760px, calc(100vw - 28px)); max-width: 760px; max-height: min(780px, calc(100vh - 28px)); padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: var(--panel); }
+.icon-picker::backdrop { background: #0009; }
+.icon-picker-panel { display: grid; gap: 10px; padding: 13px; }
+.icon-picker-heading { display: flex; align-items: center; justify-content: space-between; }
+.icon-picker-heading strong { font-size: 15px; }
+.icon-picker-heading button { min-width: 32px; padding: 2px 8px; font-size: 20px; }
+.icon-picker-panel > input, .icon-picker-custom input { min-width: 0; padding: 8px; border: 1px solid var(--line); border-radius: 5px; color: var(--text); background: var(--bg); }
+.icon-picker-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 5px; min-height: 80px; max-height: min(470px, 52vh); overflow: auto; }
+.icon-picker-option { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 6px; min-width: 0; padding: 6px; text-align: left; }
+.icon-picker-option:hover { border-color: var(--accent); background: #29c8b51c; }
+.icon-picker-option svg { width: 22px; height: 22px; color: var(--accent); }
+.icon-picker-option span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.icon-picker-custom { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
 .property-fields input, .property-fields select, .property-fields textarea { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 4px; padding: 5px 6px; background: var(--bg); }
 .property-fields textarea { min-height: 76px; resize: vertical; }
 .project-css-editor { display: block; width: 100%; min-height: calc(100vh - 240px); resize: vertical; border: 1px solid var(--line); border-radius: 4px; padding: 8px; color: var(--text); background: #1e1e1e; font: 12px/1.5 ui-monospace, Consolas, monospace; tab-size: 2; }

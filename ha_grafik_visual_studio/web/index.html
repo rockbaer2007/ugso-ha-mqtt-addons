@@ -52,6 +52,16 @@
     </aside>
   </main>
   <button class="runtime-page-menu-toggle" id="runtime-pages-menu-toggle" type="button" aria-label="Seiten öffnen">☰</button>
+  <dialog id="icon-picker" class="icon-picker">
+    <div class="icon-picker-panel">
+      <header class="icon-picker-heading"><strong>Icon oder Bild auswählen</strong><button id="icon-picker-close" type="button" aria-label="Schließen">×</button></header>
+      <input id="icon-picker-search" type="search" placeholder="Icon suchen, z. B. home, mdi:home oder atlas:home" autocomplete="off">
+      <p class="property-hint">MDI-Icons auswählen oder einen Icon-Namen bzw. Bildpfad eintragen. Unterstützt werden z. B. mdi:home, atlas:home, custom:..., /local/... sowie PNG, JPG und SVG.</p>
+      <div id="icon-picker-results" class="icon-picker-results" role="listbox" aria-label="Icon-Suchergebnisse"></div>
+      <div class="icon-picker-custom"><input id="icon-picker-value" type="text" placeholder="mdi:home, atlas:home, custom:... oder /local/...">
+        <button id="icon-picker-apply" type="button" class="primary">Wert übernehmen</button></div>
+    </div>
+  </dialog>
   <script type="module" src="app.js"></script>
 </body>
 </html>
