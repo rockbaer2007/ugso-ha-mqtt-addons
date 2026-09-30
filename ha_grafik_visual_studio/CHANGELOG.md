@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.20
+
+- Ergänzt neben dem Seitenmenü eine Widget-Auswahl mit Widgetname, Typ und ID.
+- Springt bei Auswahl zum Widget, markiert es und öffnet seine Eigenschaften.
+
 ## 0.1.19
 
 - Benennt das Widget-Set „HA Grafik – Basic 2“ in „HA Grafik – Interaktiv“ und das Universal-Widget in „Zustands-Element“ um.

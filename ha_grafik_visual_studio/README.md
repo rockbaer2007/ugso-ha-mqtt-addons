@@ -10,6 +10,7 @@ Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mi
 - Ein gemeinsamer Projektentwurf wird unter `/data/project.json` gespeichert.
 - Editor- und Runtime-Modus verwenden denselben Entwurf.
 - Ein Projekt kann mehrere benannte Seiten mit jeweils eigener Größe, eigenem Hintergrund und eigenen Widgets enthalten. Das linke Seitenmenü kann Seiten hinzufügen, umbenennen, duplizieren, ausblenden und löschen; die Runtime bietet die sichtbaren Seiten zur Auswahl an.
+- Im Editor findet die Widget-Auswahl neben dem Seitenmenü Elemente anhand ihres Namens und Typs; die Auswahl markiert das Widget und öffnet seine Eigenschaften.
 - Erste eigene, HA-orientierte Widget-Definitionen sind nach Kategorien registriert.
 - Das Widget-Register ist separat; weitere eigene Widget-Sets können später unabhängig ergänzt werden.
 - Seitengrößen Desktop, Tablet und Telefon können im Editor gewählt werden.

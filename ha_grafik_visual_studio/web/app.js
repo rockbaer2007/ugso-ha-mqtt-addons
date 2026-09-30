@@ -294,6 +294,42 @@ function renderPageMenu() {
   }
 }
 
+function renderWidgetFinder() {
+  const select = $("#widget-finder");
+  const page = currentPage();
+  select.replaceChildren();
+  const placeholder = document.createElement("option"); placeholder.value = "";
+  placeholder.textContent = page.widgets.length ? "Widget suchen …" : "Keine Widgets auf dieser Seite";
+  select.append(placeholder);
+  for (const widget of page.widgets) {
+    const option = document.createElement("option"); option.value = widget.id;
+    const definition = getWidgetDefinition(widget.type);
+    option.textContent = `${widget.title?.trim() || "Ohne Namen"} — ${definition.label} · ${widget.id}`;
+    option.selected = widget.id === state.selectedId;
+    select.append(option);
+  }
+  select.disabled = page.widgets.length === 0;
+}
+
+function focusWidget(widgetId) {
+  const widget = currentPage().widgets.find((item) => item.id === widgetId);
+  if (!widget) return;
+  state.selectedId = widget.id;
+  renderStage(); renderProperties(); renderWidgetFinder();
+  requestAnimationFrame(() => {
+    const element = document.getElementById(widget.id);
+    const container = $(".stage-scroll");
+    if (!element || !container) return;
+    const elementRect = element.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    container.scrollBy({
+      left: elementRect.left + elementRect.width / 2 - containerRect.left - container.clientWidth / 2,
+      top: elementRect.top + elementRect.height / 2 - containerRect.top - container.clientHeight / 2,
+      behavior: "smooth",
+    });
+  });
+}
+
 function makePageId() { return `page-${Date.now()}-${state.project.pages.length + 1}`; }
 
 function addPage() {
@@ -891,6 +927,7 @@ function field(descriptor, widget) {
     void updatePreview();
     renderStage();
     if (descriptor.refreshProperties) renderProperties();
+    if (descriptor.key === "title" && widget.id) renderWidgetFinder();
   };
   input.addEventListener(descriptor.type === "select" ? "change" : "input", update);
   if (descriptor.key === "preset") input.addEventListener("change", () => {
@@ -1047,8 +1084,10 @@ function render() {
   $("#custom-size").hidden = page.page.preset !== "custom";
   $("#page-width").value = page.page.width;
   $("#page-height").value = page.page.height;
-  renderPalette(); renderPageMenu(); renderStage(); renderProperties();
+  renderPalette(); renderPageMenu(); renderStage(); renderProperties(); renderWidgetFinder();
 }
+
+$("#widget-finder").addEventListener("change", (event) => focusWidget(event.target.value));
 
 $("#preset").addEventListener("change", (event) => {
   const preset = event.target.value;
