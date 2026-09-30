@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.25
+
+- Ergänzt die Dateiauswahl auch für den Ansichts-Hintergrund und das Runtime-Favicon.
+- Ermöglicht die Dateiauswahl direkt aus einem Dialogfeld, ohne vorher den Icon-Katalog zu öffnen.
+
 ## 0.1.24
 
 - Erkennt den Home-Assistant-www-Ordner über die üblichen Add-on-Mountpfade und zeigt die geprüften Pfade bei fehlender Einbindung an.

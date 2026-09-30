@@ -171,6 +171,8 @@ button { cursor: pointer; }
 .studio-dialog::backdrop { background: #0009; }
 .studio-dialog form { display: grid; gap: 12px; }
 .studio-dialog form > label { display: grid; gap: 5px; color: var(--muted); }
+.settings-path-row { display: grid; grid-template-columns: minmax(0, 1fr) 38px; gap: 5px; }
+.settings-path-row button { padding: 4px; }
 .studio-dialog input { min-width: 0; padding: 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 10px; }
 .objects-dialog { width: min(900px, calc(100vw - 24px)); }

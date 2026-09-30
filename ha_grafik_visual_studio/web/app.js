@@ -19,7 +19,7 @@ const VIEW_PROPERTY_GROUPS = [
   { label: "CSS-Hintergrund", fields: [
     { label: "Bild (Datei oder HA-Pfad)", key: "backgroundAsset", previewImage: true }, { label: "Hintergrundklasse", key: "backgroundClass" },
     { label: "Ein Parameter", key: "backgroundSingleParameter", type: "checkbox", default: false },
-    { label: "background-color", key: "background", type: "color" }, { label: "background-image", key: "backgroundImage" },
+    { label: "background-color", key: "background", type: "color" }, { label: "background-image", key: "backgroundImage", previewImage: true },
     { label: "background-repeat", key: "backgroundRepeat", type: "select", options: ["", "repeat", "no-repeat", "repeat-x", "repeat-y"] },
     { label: "background-attachment", key: "backgroundAttachment", type: "select", options: ["", "scroll", "fixed", "local"] },
     { label: "background-position", key: "backgroundPosition" }, { label: "background-size", key: "backgroundSize" },
@@ -358,7 +358,9 @@ async function renderObjects() {
       const haPath = `/local/${file.path}`;
       if (activeIconInput) {
         activeIconInput.value = haPath; activeIconInput.dispatchEvent(new Event("input", { bubbles: true }));
-        $("#objects-dialog").close(); $("#icon-picker").close(); activeIconInput.focus(); activeIconInput = null;
+        $("#objects-dialog").close();
+        if ($("#icon-picker").open) $("#icon-picker").close();
+        activeIconInput.focus(); activeIconInput = null;
       } else {
         try { await navigator.clipboard.writeText(haPath); } catch { /* Clipboard may be unavailable outside a secure context. */ }
         $("#status").textContent = `Bildpfad: ${haPath}`;
@@ -1299,6 +1301,10 @@ $("#settings-menu").addEventListener("click", () => {
   $("#settings-ignore-unloaded").checked = settings.ignoreUnloaded !== false;
   $("#settings-overflow").value = settings.bodyOverflow || "auto";
   $("#settings-dialog").showModal();
+});
+$("#project-favicon-browse").addEventListener("click", () => {
+  activeIconInput = $("#project-favicon");
+  openObjects();
 });
 $("#settings-instance-new").addEventListener("click", () => { $("#settings-instance").value = crypto.randomUUID().slice(0, 8); });
 $("#settings-save").addEventListener("click", async (event) => {

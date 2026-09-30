@@ -11,6 +11,7 @@ Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mi
 - Jedes Projekt hat eigene Seiten, Einstellungen und getrennte Editor- sowie Runtime-Links.
 - Die Leiste bietet Widget-Auswahl, Projekteinstellungen, Projektverwaltung und einen Dateienbrowser für Bilder unter `/config/www`; die Geräte- und Entitätenansicht ist als eigener Menüpunkt vorgesehen. Bilder können als `/local/...`-Pfad in Icon- und Bildfelder übernommen werden.
 - Der Dateienbrowser sucht den read-only Home-Assistant-www-Mount in den üblichen Containerpfaden `/homeassistant/www`, `/homeassistant_config/www` und `/config/www`.
+- Die Dateiauswahl steht in Icon-/Bildfeldern sowie bei Hintergrundbild und Runtime-Favicon direkt zur Verfügung.
 - Ein Projekt kann mehrere benannte Seiten mit jeweils eigener Größe, eigenem Hintergrund und eigenen Widgets enthalten. Das linke Seitenmenü kann Seiten hinzufügen, umbenennen, duplizieren, ausblenden und löschen; die Runtime bietet die sichtbaren Seiten zur Auswahl an.
 - Im Editor findet die Widget-Auswahl neben dem Seitenmenü Elemente anhand ihres Namens und Typs; die Auswahl markiert das Widget und öffnet seine Eigenschaften.
 - Das ausgewählte Widget kann um eine Ebene nach vorn oder hinten verschoben, als JSON exportiert oder aus einem JSON-Widgetpaket importiert werden.
