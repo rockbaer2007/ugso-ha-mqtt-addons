@@ -66,7 +66,7 @@ const metadata = () => ({ label: "Generell", hint: "Der Name ist optional. Lass 
 ] });
 const visibility = () => ({ label: "Sichtbarkeit", hint: "Bedingte Sichtbarkeit wird aktiv, sobald die Home-Assistant-Zustandsbindung verfügbar ist.", fields: [
   { label: "Anzeigen", key: "visible", type: "checkbox" },
-  { label: "Objekt-ID für Bedingung", key: "visibilityEntityId", disabled: true },
+  { label: "Entität für Bedingung", key: "visibilityEntityId", disabled: true },
   { label: "Bedingung", key: "visibilityCondition", type: "select", options: ["==", "!=", ">", ">=", "<", "<="], disabled: true },
   { label: "Wert für die Bedingung", key: "visibilityValue", disabled: true },
   { label: "Nur für Gruppen", key: "visibilityGroups", disabled: true },
@@ -76,7 +76,7 @@ const entityWidget = (unit = false) => [
   metadata(),
   visibility(),
   { label: "Allgemein", fields: [
-    { label: "Objekt-ID / Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+    { label: "Home-Assistant-Entität", key: "entityId" },
     { label: "HTML voranstellen", key: "prefix" },
     { label: "HTML anhängen (Singular)", key: "suffixSingular" },
     { label: "HTML anhängen (Plural)", key: "suffixPlural" },
@@ -106,7 +106,7 @@ registerWidgetSet({
     { type: "button", label: "Schaltfläche (Icon Ein/Aus)", icon: "◉", defaults: { title: "Schaltfläche", entityId: "", state: "off", icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
-        { label: "Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+        { label: "Home-Assistant-Entität", key: "entityId" },
         { label: "Zustand", key: "state", type: "select", options: [{ value: "off", label: "Aus" }, { value: "on", label: "Ein" }] },
         { label: "Icon für Aus (Bild-URL)", key: "icon_off", previewImage: true },
         { label: "Icon für Ein (Bild-URL)", key: "icon_on", previewImage: true },
@@ -117,7 +117,7 @@ registerWidgetSet({
     { type: "toggle", label: "Switch", icon: "⏻", defaults: { title: "Schalter", entityId: "", state: "off" }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
-        { label: "Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+        { label: "Home-Assistant-Entität", key: "entityId" },
         { label: "Zustand", key: "state", type: "select", options: ["off", "on"] },
       ] },
       geometry(), ...cssGroups(),
@@ -126,7 +126,7 @@ registerWidgetSet({
     { type: "bulb", label: "Lampe ein/aus", icon: "💡", defaults: { title: "Lampe", entityId: "", state: false, min: 0, max: 1, icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
-        { label: "Objekt-ID / Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+        { label: "Home-Assistant-Entität", key: "entityId" },
         { label: "Zustand", key: "state", type: "select", options: [{ value: "off", label: "Aus" }, { value: "on", label: "Ein" }] },
         { label: "Minimum", key: "min", type: "number" },
         { label: "Maximum", key: "max", type: "number" },
@@ -139,7 +139,7 @@ registerWidgetSet({
     { type: "slider", label: "Slider", icon: "◉", defaults: { title: "Regler", entityId: "", value: 50, min: 0, max: 100, step: 1 }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
-        { label: "Objekt-ID / Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+        { label: "Home-Assistant-Entität", key: "entityId" },
         { label: "Minimum", key: "min", type: "number" },
         { label: "Maximum", key: "max", type: "number" },
         { label: "Schrittweite", key: "step", type: "number", min: 0.01 },
@@ -150,7 +150,7 @@ registerWidgetSet({
     { type: "sensor", label: "Zahlenwert", icon: "⌁", defaults: { title: "Sensor", entityId: "", state: "--", unit: "", digits: 1, factor: 1, decimalComma: true }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
-        { label: "Objekt-ID / Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+        { label: "Home-Assistant-Entität", key: "entityId" },
         { label: "HTML voranstellen", key: "prefix" },
         { label: "HTML anhängen (Singular)", key: "suffixSingular" },
         { label: "HTML anhängen (Plural)", key: "suffixPlural" },

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.34
+
+- Ergänzt den Home-Assistant-Entitäten-Dialog mit Gerätebaum, Suche, Zustandsanzeige, Aktualisieren, Kopieren und Einfügen in Widget-Felder.
+- Lädt Entitäten, Geräte und Zustände beim Öffnen oder manuellen Aktualisieren über die Home-Assistant-Oberfläche.
+- Benennt den Menüpunkt „Objekte“ in „Entitäten“ um.
+
 ## 0.1.33
 
 - Ergänzt einen SVG-Ansichtsbutton zum Umschalten zwischen Listen- und Kachelansicht im Dateien-Dialog.

@@ -64,10 +64,11 @@ const fileTypes = {
   audio: ["mp3", "wav", "ogg", "m4a", "flac"],
   video: ["mp4", "webm", "mov", "mkv"],
 };
-const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", objectPath: "", selectedFiles: [], fileView: "list" };
+const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entityDialogMode: "copy", entityRequestId: "", entitySnapshot: null };
 let mdiIcons = null;
 let mdiIconsPromise = null;
 let activeIconInput = null;
+let activeEntityInput = null;
 
 async function loadMdiIcons() {
   if (mdiIcons) return mdiIcons;
@@ -334,6 +335,151 @@ function openObjects(path = "") {
   const dialog = $("#objects-dialog");
   if (!dialog.open) dialog.showModal();
   void renderObjects();
+}
+
+function openEntities(input = null) {
+  activeEntityInput = input;
+  state.entityDialogMode = input ? "insert" : "copy";
+  const dialog = $("#entities-dialog");
+  $("#entities-copy").hidden = Boolean(input);
+  $("#entities-insert").hidden = !input;
+  $("#entities-insert").disabled = !state.selectedEntityId;
+  $("#entities-copy").disabled = !state.selectedEntityId;
+  if (input?.value) state.selectedEntityId = input.value;
+  if (!dialog.open) dialog.showModal();
+  $("#entities-search").focus();
+  renderEntities();
+  void loadEntities();
+}
+
+function closeEntities() {
+  $("#entities-dialog").close();
+  activeEntityInput = null;
+  state.entityRequestId = "";
+}
+
+function requestEntities() {
+  const requestId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+  state.entityRequestId = requestId;
+  $("#entities-status").textContent = "Entitäten und Zustände werden von Home Assistant geladen …";
+  window.parent.postMessage({ type: "ha-grafik:entities-request", requestId }, location.origin);
+  window.clearTimeout(state.entityRequestTimeout);
+  state.entityRequestTimeout = window.setTimeout(() => {
+    if (state.entityRequestId !== requestId) return;
+    state.entityRequestId = "";
+    $("#entities-status").textContent = "Home Assistant antwortet nicht. Öffne Grafik Visual Studio über den Home-Assistant-Seiteneintrag.";
+  }, 15000);
+}
+
+async function loadEntities() {
+  requestEntities();
+}
+
+function receiveEntities(event) {
+  if (event.source !== window.parent || event.origin !== location.origin) return;
+  const message = event.data;
+  if (!message || message.type !== "ha-grafik:entities-response" || message.requestId !== state.entityRequestId) return;
+  window.clearTimeout(state.entityRequestTimeout);
+  state.entityRequestId = "";
+  if (message.error) {
+    $("#entities-status").textContent = `Entitäten konnten nicht geladen werden: ${message.error}`;
+    return;
+  }
+  const entities = Array.isArray(message.entities) ? message.entities.filter((entity) => entity.entity_id && !entity.disabled_by) : [];
+  const devices = Array.isArray(message.devices) ? message.devices : [];
+  const entityStates = Object.fromEntries((Array.isArray(message.states) ? message.states : []).map((item) => [item.entity_id, item]));
+  const signature = (entity) => JSON.stringify([entity.entity_id, entity.name, entity.name_by_user, entity.device_id, entityStates[entity.entity_id]?.state]);
+  const nextSnapshot = new Map(entities.map((entity) => [entity.entity_id, signature(entity)]));
+  let summary = `${entities.length} Entitäten geladen`;
+  if (state.entitySnapshot) {
+    let added = 0; let removed = 0; let changed = 0;
+    for (const [id, value] of nextSnapshot) {
+      if (!state.entitySnapshot.has(id)) added++;
+      else if (state.entitySnapshot.get(id) !== value) changed++;
+    }
+    for (const id of state.entitySnapshot.keys()) if (!nextSnapshot.has(id)) removed++;
+    summary += added || removed || changed ? ` · ${added} neu, ${removed} entfernt, ${changed} geändert` : " · keine Änderungen";
+  }
+  state.entitySnapshot = nextSnapshot;
+  state.entities = entities;
+  state.devices = devices;
+  state.entityStates = entityStates;
+  if (!entities.some((entity) => entity.entity_id === state.selectedEntityId)) state.selectedEntityId = "";
+  $("#entities-status").textContent = summary;
+  renderEntities();
+}
+
+function entityName(entity) {
+  const stateEntry = state.entityStates[entity.entity_id];
+  return stateEntry?.attributes?.friendly_name || entity.name_by_user || entity.name || entity.original_name || entity.entity_id;
+}
+
+function renderEntities() {
+  const tree = $("#entities-tree");
+  tree.replaceChildren();
+  const selected = state.entities.find((entity) => entity.entity_id === state.selectedEntityId);
+  $("#entity-selected-id").textContent = selected?.entity_id || "Keine Entität ausgewählt";
+  $("#entity-selected-state").textContent = selected ? `Zustand: ${state.entityStates[selected.entity_id]?.state ?? "unbekannt"}` : "";
+  $("#entities-copy").disabled = !selected;
+  $("#entities-insert").disabled = !selected || !activeEntityInput;
+  if (!state.entities.length) {
+    if (!state.entityRequestId && !$("#entities-status").textContent.includes("konnten nicht geladen")) $("#entities-status").textContent = "Keine Home-Assistant-Entitäten gefunden.";
+    return;
+  }
+  const query = $("#entities-search").value.trim().toLocaleLowerCase("de");
+  const devices = new Map(state.devices.map((device) => [device.id, device]));
+  const groups = new Map(); const unassigned = [];
+  for (const entity of state.entities) {
+    const device = devices.get(entity.device_id);
+    if (!device) { unassigned.push(entity); continue; }
+    if (!groups.has(device.id)) groups.set(device.id, []);
+    groups.get(device.id).push(entity);
+  }
+  const createEntityRow = (entity) => {
+    const row = document.createElement("button"); row.type = "button"; row.className = "entity-tree-item"; row.setAttribute("role", "treeitem");
+    row.setAttribute("aria-selected", String(entity.entity_id === state.selectedEntityId));
+    const icon = document.createElement("img"); icon.src = "icons/entity.svg"; icon.alt = "";
+    const text = document.createElement("span"); text.className = "entity-tree-label";
+    const title = document.createElement("strong"); title.textContent = entityName(entity);
+    const id = document.createElement("small"); id.textContent = entity.entity_id; text.append(title, id);
+    const value = document.createElement("span"); value.className = "entity-tree-state"; value.textContent = state.entityStates[entity.entity_id]?.state ?? "—";
+    row.append(icon, text, value);
+    row.addEventListener("click", () => { state.selectedEntityId = entity.entity_id; renderEntities(); });
+    return row;
+  };
+  const matchingUnassigned = unassigned.filter((entity) => !query || `${entityName(entity)} ${entity.entity_id}`.toLocaleLowerCase("de").includes(query));
+  if (matchingUnassigned.length) {
+    const group = document.createElement("section"); group.className = "entity-tree-group";
+    const heading = document.createElement("h3"); heading.textContent = `Ohne Gerät (${matchingUnassigned.length})`; group.append(heading);
+    for (const entity of matchingUnassigned) group.append(createEntityRow(entity));
+    tree.append(group);
+  }
+  for (const [deviceId, deviceEntities] of groups) {
+    const device = devices.get(deviceId);
+    const deviceName = device.name_by_user || device.name || device.model || device.manufacturer || "Unbenanntes Gerät";
+    const deviceMatches = !query || deviceName.toLocaleLowerCase("de").includes(query);
+    const matching = deviceMatches ? deviceEntities : deviceEntities.filter((entity) => `${entityName(entity)} ${entity.entity_id}`.toLocaleLowerCase("de").includes(query));
+    if (!matching.length) continue;
+    const section = document.createElement("section"); section.className = "entity-tree-group";
+    const expanded = deviceMatches && query ? true : state.expandedDevices.has(deviceId);
+    const heading = document.createElement("button"); heading.type = "button"; heading.className = "entity-device-row"; heading.setAttribute("role", "treeitem"); heading.setAttribute("aria-expanded", String(expanded));
+    const caret = document.createElement("span"); caret.className = "entity-caret"; caret.textContent = expanded ? "▾" : "▸";
+    const icon = document.createElement("img"); icon.src = "icons/device.svg"; icon.alt = "";
+    const label = document.createElement("strong"); label.textContent = deviceName;
+    const count = document.createElement("small"); count.textContent = `${matching.length}`;
+    heading.append(caret, icon, label, count);
+    heading.addEventListener("click", () => {
+      if (state.expandedDevices.has(deviceId)) state.expandedDevices.delete(deviceId); else state.expandedDevices.add(deviceId);
+      renderEntities();
+    });
+    section.append(heading);
+    if (expanded) for (const entity of matching) section.append(createEntityRow(entity));
+    tree.append(section);
+  }
+  if (!tree.childElementCount) {
+    const empty = document.createElement("p"); empty.className = "empty";
+    empty.textContent = "Keine passenden Entitäten gefunden."; tree.append(empty);
+  }
 }
 
 function renderFileSelection() {
@@ -1160,7 +1306,14 @@ function field(descriptor, widget) {
     aliasPreview.hidden = !showAlias;
     aliasPreview.textContent = alias ? alias.slice(0, 3) : "";
   };
-  if (descriptor.previewImage) {
+  if (descriptor.key === "entityId") {
+    const row = document.createElement("span"); row.className = "property-entity-row";
+    const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button";
+    const icon = document.createElement("img"); icon.src = "icons/entity.svg"; icon.alt = ""; picker.append(icon);
+    picker.title = "Home-Assistant-Entität auswählen"; picker.setAttribute("aria-label", picker.title);
+    picker.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); openEntities(input); });
+    row.append(input, picker); wrapper.append(row);
+  } else if (descriptor.previewImage) {
     const row = document.createElement("span"); row.className = "property-input-row"; previewRow = row;
     preview = document.createElement("img"); preview.className = "property-image-preview"; preview.alt = ""; preview.loading = "lazy";
     preview.addEventListener("error", () => {
@@ -1303,7 +1456,7 @@ function renderProperties() {
       const count = Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
       widget.signalImages ??= [];
       const signalFields = [
-        { label: "Objekt-ID", key: "entityId" },
+        { label: "Home-Assistant-Entität", key: "entityId" },
         { label: "Bedingung", key: "condition", type: "select", options: ["==", "!=", ">", ">=", "<", "<="] },
         { label: "Wert für die Bedingung", key: "value" },
         { label: "Bild (URL oder HA-Pfad)", key: "image", previewImage: true }, { label: "Kleines Symbol", key: "smallIcon", previewImage: true },
@@ -1432,6 +1585,29 @@ $("#settings-save").addEventListener("click", async (event) => {
   if (response.ok) { $("#settings-dialog").close(); render(); $("#status").textContent = "Projekteinstellungen gespeichert"; }
 });
 $("#files-menu").addEventListener("click", () => openObjects());
+$("#entities-menu").addEventListener("click", () => openEntities());
+$("#entities-close").addEventListener("click", closeEntities);
+$("#entities-dialog").addEventListener("close", () => {
+  activeEntityInput = null;
+  state.entityRequestId = "";
+  window.clearTimeout(state.entityRequestTimeout);
+});
+$("#entities-reload").addEventListener("click", () => { void loadEntities(); });
+$("#entities-search").addEventListener("input", renderEntities);
+$("#entities-copy").addEventListener("click", async () => {
+  if (!state.selectedEntityId) return;
+  try {
+    await navigator.clipboard.writeText(state.selectedEntityId);
+    $("#entities-status").textContent = `${state.selectedEntityId} in die Zwischenablage kopiert`;
+  } catch { $("#entities-status").textContent = "Zwischenablage nicht verfügbar"; }
+});
+$("#entities-insert").addEventListener("click", () => {
+  if (!activeEntityInput || !state.selectedEntityId) return;
+  activeEntityInput.value = state.selectedEntityId;
+  activeEntityInput.dispatchEvent(new Event("input", { bubbles: true }));
+  closeEntities();
+});
+window.addEventListener("message", receiveEntities);
 $("#objects-close").addEventListener("click", cancelFileSelection);
 $("#files-cancel").addEventListener("click", cancelFileSelection);
 $("#files-upload").addEventListener("click", () => {

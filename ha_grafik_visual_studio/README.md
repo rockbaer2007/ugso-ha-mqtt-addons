@@ -11,7 +11,7 @@ Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sow
 - Home Assistant App-Store-Paket für dieses gemeinsame App-Repository.
 - Visualisierungsprojekte werden getrennt unter `/data/projects/` gespeichert; vorhandene Projekte aus `/data/project.json` werden beim ersten Start übernommen.
 - Jedes Projekt hat eigene Seiten, Einstellungen und getrennte Editor- sowie Runtime-Links.
-- Die Leiste bietet Widget-Auswahl, Projekteinstellungen, Projektverwaltung und einen Dateienbrowser für Dateien unter `/config/www`; die Geräte- und Entitätenansicht ist als eigener Menüpunkt vorgesehen. Bilder können als `/local/...`-Pfad in Icon- und Bildfelder übernommen werden.
+- Die Leiste bietet Widget-Auswahl, Projekteinstellungen, Projektverwaltung, einen Dateienbrowser für Dateien unter `/config/www` und einen Entitätenbrowser. Der Entitätenbrowser liest Entitäten, Geräte und aktuelle Zustände beim Öffnen sowie auf Anforderung neu ein; Geräte lassen sich aufklappen und die Entity-ID kann gesucht, kopiert oder direkt in ein Widget-Feld eingefügt werden.
 - Der Dateienbrowser sucht den Home-Assistant-www-Mount in den üblichen Containerpfaden `/homeassistant/www`, `/homeassistant_config/www` und `/config/www`.
 - Die Dateiauswahl steht in Icon-/Bildfeldern sowie bei Hintergrundbild und Runtime-Favicon direkt zur Verfügung.
 - Der Dateienbrowser erlaubt Mehrfachuploads unterstützter Bilder, Code-/JSON-, Text-, Audio- und Videodateien bis 20 MB in den offenen www-Ordner. Der Dateitypfilter begrenzt sowohl die Dateiliste als auch die Typen im Upload-Auswahldialog. Ausgewählte `/local/...`-Pfade lassen sich kopieren; Bilddateien können einzeln in das aktive Feld übernommen werden. Für Uploads benötigt das Add-on Schreibzugriff auf die Home-Assistant-Konfiguration.
@@ -32,12 +32,12 @@ Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sow
 - Jedes Widget stellt eigene CSS-Gruppen für Position/Layout, Text, Hintergrund, Rahmen sowie Schatten und Abstände bereit.
 - Die Basispalette enthält VIS-inspirierte native Widgets: Zahlenwert, String, bereinigtes HTML, Bild-URL aus einem Wert, Zeit-/Zeitstempelwerte, Wertelisten als Text/HTML/HTML mit Stil, Bool-HTML-Anzeige und -Steuerung, Auswahl, Tabelle, Vollbild, Balken, Navigation und Filter-Dropdown. Dazu kommen Switch mit direktem Ein-/Aus-Zustand, Checkbox, Icon-Schaltfläche mit separaten Ein-/Aus-Bild-URLs, Lampe ein/aus, Slider, Text und Rahmen.
 - Das eigenständige Widget-Set „HA Grafik – Interaktiv“ startet mit einem Zustands-Element: bis zu fünf Werte können unterschiedliche Icons, Bilder, Texte oder bereinigtes HTML anzeigen. Icongröße und Farbe, Bildgröße und -anpassung sowie Inhaltsanordnung sind je Zustand einstellbar. Schalter- und Button-Modus lassen sich in der Runtime lokal testen; die echte Entity-Bindung ist noch nicht enthalten.
-- HTML-Ausgaben werden auf sichere Elemente und Attribute begrenzt. Zahlen, Zeiten, Tabellen und Wertelisten verwenden aktuell lokale Testwerte; die Home-Assistant-Entity-Auswahl und Live-Zustandsbindung stehen noch aus. ioBroker-spezifische AckFlag-Anzeigen entfallen, da Home Assistant kein direktes `ack`-Gegenstück bereitstellt.
+- HTML-Ausgaben werden auf sichere Elemente und Attribute begrenzt. Zahlen, Zeiten, Tabellen und Wertelisten verwenden aktuell lokale Testwerte; die Entitätsauswahl ist verfügbar, die Live-Zustandsbindung in Widgets steht noch aus. ioBroker-spezifische AckFlag-Anzeigen entfallen, da Home Assistant kein direktes `ack`-Gegenstück bereitstellt.
 - Der Filter-Dropdown filtert Widgets anhand des Felds „Filterwort“ in deren Eigenschaften. Navigation öffnet eine sichere URL oder einen relativen Home-Assistant-Pfad; ein Wechsel zwischen mehreren Projektseiten folgt mit der Mehrseiten-Unterstützung.
 - Der Seitenhintergrund unterstützt eine Farbe oder ein Bild mit Kachel-, Zentriert- und Stretch-Darstellung.
 - Der rechte Eigenschaftenbereich orientiert sich an VIS2s Reitern für Ansicht, Widget, CSS und Skripte; Widget-Metadaten, Sichtbarkeit, Inhalt und CSS sind getrennt gruppiert.
 - Der CSS-Reiter enthält projektweite CSS-Regeln für alle Widgets; CSS-Felder für das aktuell ausgewählte Widget stehen in dessen Widget-Eigenschaften.
-- Zahlenwerte bieten erste Formatoptionen wie Nachkommastellen, Multiplikator, Dezimalkomma sowie Vor- und Nachsilbe.
+- Zahlenwerte bieten erste Formatoptionen wie Nachkommastellen, Multiplikator, Dezimalkomma sowie Vor- und Nachsilbe. Entitätsfelder im Widget-Editor lassen sich über die Entitätenauswahl befüllen; Live-Zustandsbindung in der Runtime steht noch aus.
 - CSS-Eigenschaften umfassen Schrift, Farbe, Hintergrund, Rahmen, Eckenradius, Schatten, Abstand und Deckkraft.
 
 ## Geplante nächste Bausteine

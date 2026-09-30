@@ -16,7 +16,7 @@
     <nav class="studio-menu" aria-label="Visual Studio">
       <button id="widgets-menu" type="button" aria-pressed="true">Widgets</button>
       <button id="settings-menu" type="button">Einstellungen</button>
-      <button id="objects-menu" type="button" disabled title="Die Home-Assistant-Entitätenansicht folgt separat">Objekte</button>
+      <button id="entities-menu" type="button">Entitäten</button>
       <button id="files-menu" type="button">Dateien</button>
       <button id="projects-menu" type="button">Projekte</button>
     </nav>
@@ -121,6 +121,18 @@
     </div>
     <div id="objects-browser" class="objects-browser"></div>
     <p class="property-hint">Bilder, Code/JSON, Text, Audio und Video bis 20 MB. Für Icons und Bildfelder können Bilddateien übernommen werden.</p>
+  </dialog>
+  <dialog id="entities-dialog" class="studio-dialog entities-dialog">
+    <header class="icon-picker-heading"><strong>Home-Assistant-Entitäten</strong><button id="entities-close" class="icon-button" type="button" title="Entitäten-Dialog schließen" aria-label="Schließen"><img src="icons/close.svg" alt=""></button></header>
+    <div class="entities-toolbar">
+      <button id="entities-reload" class="icon-button" type="button" title="Entitäten und Zustände neu laden" aria-label="Neu laden"><img src="icons/refresh.svg" alt=""></button>
+      <input id="entities-search" type="search" placeholder="Entitäten oder Geräte suchen …" aria-label="Entitäten suchen" autocomplete="off">
+      <button id="entities-copy" class="primary" type="button" title="Entity-ID in die Zwischenablage kopieren" disabled>Zwischenablage</button>
+      <button id="entities-insert" class="primary" type="button" title="Entity-ID ins aktive Widget-Feld einfügen" hidden disabled>Einfügen</button>
+    </div>
+    <div class="entity-selected" aria-live="polite"><span>Ausgewählt</span><code id="entity-selected-id">Keine Entität ausgewählt</code><span id="entity-selected-state"></span></div>
+    <p id="entities-status" class="property-hint" role="status">Entitäten werden geladen …</p>
+    <div id="entities-tree" class="entities-tree" role="tree" aria-label="Home-Assistant-Entitäten"></div>
   </dialog>
   <dialog id="projects-dialog" class="studio-dialog">
     <header class="icon-picker-heading"><strong>Projekte</strong><button id="projects-close" type="button" aria-label="Schließen">×</button></header>

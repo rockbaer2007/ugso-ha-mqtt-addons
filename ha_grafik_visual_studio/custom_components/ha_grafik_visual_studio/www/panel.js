@@ -4,6 +4,12 @@ class HaGrafikIngressPanel extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._loaded = false;
     this._opening = false;
+    this._onMessage = (event) => { void this._handleMessage(event); };
+    window.addEventListener("message", this._onMessage);
+  }
+
+  disconnectedCallback() {
+    window.removeEventListener("message", this._onMessage);
   }
 
   set hass(value) {
@@ -17,6 +23,32 @@ class HaGrafikIngressPanel extends HTMLElement {
   set panel(value) {
     this._panel = value;
     this._openPanel();
+  }
+
+  async _handleMessage(event) {
+    if (!this._frame || event.source !== this._frame.contentWindow || event.origin !== location.origin) return;
+    const message = event.data;
+    if (!message || message.type !== "ha-grafik:entities-request" || typeof message.requestId !== "string") return;
+    try {
+      const [entities, devices, states] = await Promise.all([
+        this._hass.callWS({ type: "config/entity_registry/list" }),
+        this._hass.callWS({ type: "config/device_registry/list" }),
+        this._hass.callWS({ type: "get_states" }),
+      ]);
+      this._frame.contentWindow.postMessage({
+        type: "ha-grafik:entities-response",
+        requestId: message.requestId,
+        entities,
+        devices,
+        states,
+      }, location.origin);
+    } catch (error) {
+      this._frame.contentWindow.postMessage({
+        type: "ha-grafik:entities-response",
+        requestId: message.requestId,
+        error: error.message || "Home-Assistant-Daten konnten nicht gelesen werden.",
+      }, location.origin);
+    }
   }
 
   async _openPanel() {

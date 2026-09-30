@@ -25,7 +25,7 @@ registerWidgetSet({
     propertyGroups: [
       { label: "Allgemein", fields: [
         { label: "Beschriftung (optional)", key: "title" },
-        { label: "Home-Assistant-Entity (Vorschau: lokal)", key: "entityId" },
+        { label: "Home-Assistant-Entität", key: "entityId" },
         { label: "Bedienung", key: "interaction", type: "select", options: [
           { value: "switch", label: "Schalter: Zustand wechseln" },
           { value: "button", label: "Button: nächsten Zustand zeigen" },
