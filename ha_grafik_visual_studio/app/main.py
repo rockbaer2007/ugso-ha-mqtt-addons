@@ -51,7 +51,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.26"
+    server_version = "HAGrafikVisualStudio/0.1.27"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -73,7 +73,7 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.26"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.27"})
             return
         if path == "/api/projects":
             self.send_json(HTTPStatus.OK, self.list_projects())
@@ -206,7 +206,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(HTTPStatus.OK, {"id": project_id, "name": project["name"]})
 
     def do_DELETE(self):
-        path = urlparse(self.path).path
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/files":
+            self.delete_object_file(parse_qs(parsed.query).get("path", [""])[0])
+            return
+        path = parsed.path
         project_id = path.removeprefix("/api/projects/")
         if not path.startswith("/api/projects/") or not self.valid_project_id(project_id):
             self.send_error(HTTPStatus.NOT_FOUND)
@@ -349,10 +353,23 @@ class Handler(BaseHTTPRequestHandler):
                 if entry.is_dir():
                     folders.append({"name": entry.name, "path": relative})
                 elif entry.is_file() and entry.suffix.lower() in OBJECT_MIME_TYPES and entry.stat().st_size <= MAX_OBJECT_BYTES:
-                    files.append({"name": entry.name, "path": relative, "url": f"api/object-file?path={quote(relative, safe='/')}"})
+                    files.append({"name": entry.name, "path": relative, "size": entry.stat().st_size, "url": f"api/object-file?path={quote(relative, safe='/')}"})
         except OSError:
             return {"available": False, "checked": [str(path) for path in WWW_CANDIDATES], "path": relative_path or "", "folders": [], "files": []}
         return {"available": True, "checked": [str(WWW_DIR)], "path": relative_path or "", "folders": sorted(folders, key=lambda item: item["name"].casefold()), "files": sorted(files, key=lambda item: item["name"].casefold())}
+
+    def delete_object_file(self, relative_path):
+        target = self.resolve_object_path(relative_path)
+        if target is None or not target.is_file() or target.suffix.lower() not in OBJECT_MIME_TYPES:
+            self.send_json(HTTPStatus.NOT_FOUND, {"error": "Bilddatei wurde nicht gefunden."})
+            return
+        try:
+            target.unlink()
+        except OSError as error:
+            LOG.warning("Datei konnte nicht gelöscht werden: %s", error)
+            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Datei konnte nicht gelöscht werden."})
+            return
+        self.send_json(HTTPStatus.OK, {"deleted": True, "path": relative_path})
 
     def send_object_file(self, relative_path):
         target = self.resolve_object_path(relative_path)

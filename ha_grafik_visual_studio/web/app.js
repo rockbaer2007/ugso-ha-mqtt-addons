@@ -394,28 +394,55 @@ async function renderObjects() {
   const data = response.ok ? await response.json() : { available: false, folders: [], files: [] };
   if (!data.available) { const hint = document.createElement("p"); hint.className = "empty"; hint.textContent = `Der HA-www-Ordner ist nicht verfügbar. Geprüfte Pfade: ${(data.checked || []).join(", ")}. Prüfe die schreibgeschützte Konfigurationseinbindung.`; browser.append(hint); return; }
   if (state.objectPath) {
-    const up = document.createElement("button"); up.type = "button"; up.className = "object-folder"; up.textContent = "⬆ Übergeordneter Ordner";
+    const up = document.createElement("button"); up.type = "button"; up.className = "object-folder object-folder-up"; up.textContent = "⬆ Übergeordneter Ordner";
     up.addEventListener("click", () => openObjects(parts.slice(0, -1).join("/"))); browser.append(up);
   }
   for (const folder of data.folders) {
+    const row = document.createElement("div"); row.className = "object-row object-folder-row";
     const button = document.createElement("button"); button.type = "button"; button.className = "object-folder"; button.textContent = `📁 ${folder.name}`;
-    button.addEventListener("click", () => openObjects(folder.path)); browser.append(button);
+    button.title = `Ordner ${folder.name} öffnen`; button.addEventListener("click", () => openObjects(folder.path));
+    const count = document.createElement("span"); count.className = "object-size"; count.textContent = "Ordner";
+    row.append(button, count, document.createElement("span")); browser.append(row);
   }
   for (const file of data.files) {
-    const button = document.createElement("button"); button.type = "button"; button.className = "object-file"; button.title = file.path;
+    const row = document.createElement("div"); row.className = "object-row object-file-row";
+    const select = document.createElement("button"); select.type = "button"; select.className = "object-file"; select.title = `Datei ${file.name} auswählen`;
     const image = document.createElement("img"); image.src = file.url; image.alt = ""; image.loading = "lazy";
-    const name = document.createElement("span"); name.textContent = file.name; button.append(image, name);
-    button.setAttribute("aria-pressed", String(state.selectedFiles.includes(file.path)));
-    button.addEventListener("click", () => {
+    const name = document.createElement("span"); name.textContent = file.name; select.append(image, name);
+    select.setAttribute("aria-pressed", String(state.selectedFiles.includes(file.path)));
+    select.addEventListener("click", () => {
       state.selectedFiles = state.selectedFiles.includes(file.path)
         ? state.selectedFiles.filter((path) => path !== file.path)
         : [...state.selectedFiles, file.path];
-      button.setAttribute("aria-pressed", String(state.selectedFiles.includes(file.path)));
+      select.setAttribute("aria-pressed", String(state.selectedFiles.includes(file.path)));
       renderFileSelection();
-    }); browser.append(button);
+    });
+    const size = document.createElement("span"); size.className = "object-size"; size.textContent = formatFileSize(file.size);
+    const actions = document.createElement("span"); actions.className = "object-file-actions";
+    const download = document.createElement("a"); download.className = "object-icon-action"; download.href = file.url; download.download = file.name;
+    download.textContent = "⇩"; download.title = `Datei ${file.name} herunterladen`; download.setAttribute("aria-label", `Datei ${file.name} herunterladen`);
+    const remove = document.createElement("button"); remove.type = "button"; remove.className = "object-icon-action"; remove.textContent = "🗑";
+    remove.title = `Datei ${file.name} löschen`; remove.setAttribute("aria-label", `Datei ${file.name} löschen`);
+    remove.addEventListener("click", async () => {
+      if (!window.confirm(`Datei „${file.name}“ dauerhaft löschen?`)) return;
+      const response = await fetch(`api/files?path=${encodeURIComponent(file.path)}`, { method: "DELETE" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) { $("#status").textContent = result.error || "Datei konnte nicht gelöscht werden"; return; }
+      state.selectedFiles = state.selectedFiles.filter((path) => path !== file.path);
+      $("#status").textContent = `Datei ${file.name} gelöscht`;
+      await renderObjects();
+    });
+    actions.append(download, remove); row.append(select, size, actions); browser.append(row);
   }
   if (!data.folders.length && !data.files.length) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Dieser Ordner enthält keine unterstützten Bilder."; browser.append(empty); }
   renderFileSelection();
+}
+
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes)) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 async function renderProjects() {

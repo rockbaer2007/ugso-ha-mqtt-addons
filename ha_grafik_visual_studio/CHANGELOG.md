@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.27
+
+- Stellt den Dateien-Dialog auf eine Dateiliste mit Miniaturansichten und Dateigrößen um.
+- Ergänzt je Bilddatei beschriftete Download- und Löschaktionen; Löschen erfordert eine Bestätigung.
+
 ## 0.1.26
 
 - Ergänzt Mehrfachauswahl und Upload von PNG-, JPG-, SVG- und WebP-Dateien in den geöffneten www-Ordner.

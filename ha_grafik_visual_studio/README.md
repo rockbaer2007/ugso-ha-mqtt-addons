@@ -13,6 +13,7 @@ Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mi
 - Der Dateienbrowser sucht den read-only Home-Assistant-www-Mount in den üblichen Containerpfaden `/homeassistant/www`, `/homeassistant_config/www` und `/config/www`.
 - Die Dateiauswahl steht in Icon-/Bildfeldern sowie bei Hintergrundbild und Runtime-Favicon direkt zur Verfügung.
 - Der Dateienbrowser erlaubt Mehrfachuploads von PNG, JPG, SVG und WebP in den offenen www-Ordner, kopiert ausgewählte `/local/...`-Pfade in die Zwischenablage und übernimmt einzelne Dateien in das aktive Feld. Für Uploads benötigt das Add-on Schreibzugriff auf die Home-Assistant-Konfiguration; die App-Oberfläche beschränkt Uploads auf diese Bildformate im www-Verzeichnis.
+- Dateien erscheinen als Liste mit Miniaturansicht und Größe. Jede Bilddatei kann über die Aktionssymbole heruntergeladen oder nach Bestätigung gelöscht werden.
 - Ein Projekt kann mehrere benannte Seiten mit jeweils eigener Größe, eigenem Hintergrund und eigenen Widgets enthalten. Das linke Seitenmenü kann Seiten hinzufügen, umbenennen, duplizieren, ausblenden und löschen; die Runtime bietet die sichtbaren Seiten zur Auswahl an.
 - Im Editor findet die Widget-Auswahl neben dem Seitenmenü Elemente anhand ihres Namens und Typs; die Auswahl markiert das Widget und öffnet seine Eigenschaften.
 - Das ausgewählte Widget kann um eine Ebene nach vorn oder hinten verschoben, als JSON exportiert oder aus einem JSON-Widgetpaket importiert werden.
