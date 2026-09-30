@@ -60,6 +60,85 @@ function applyProjectCss() {
   style.textContent = state.project.css || "";
 }
 
+function isOn(value) {
+  return value === true || value === 1 || ["true", "on", "yes", "1"].includes(String(value).toLowerCase());
+}
+
+const safeHtmlTags = new Set(["a", "b", "br", "caption", "code", "div", "em", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "li", "ol", "p", "small", "span", "strong", "sub", "sup", "table", "tbody", "td", "th", "thead", "tr", "u", "ul"]);
+function safeUrl(value, allowDataImage = false) {
+  const raw = String(value || "").trim();
+  if (!raw || /[\u0000-\u0020]/.test(raw) && !raw.startsWith("/")) return "";
+  if (allowDataImage && /^data:image\/(png|jpeg|gif|webp|svg\+xml);base64,/i.test(raw)) return raw;
+  try {
+    const url = new URL(raw, location.href);
+    if (["http:", "https:"].includes(url.protocol)) return raw;
+    if (url.origin === location.origin && (raw.startsWith("/") || raw.startsWith("./") || raw.startsWith("../"))) return raw;
+  } catch { /* invalid URL */ }
+  return "";
+}
+
+function appendSafeHtml(parent, markup) {
+  const template = document.createElement("template");
+  template.innerHTML = String(markup ?? "");
+  const copyNode = (node, target) => {
+    if (node.nodeType === Node.TEXT_NODE) { target.append(document.createTextNode(node.textContent)); return; }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const tag = node.tagName.toLowerCase();
+    if (!safeHtmlTags.has(tag)) return;
+    const safe = document.createElement(tag);
+    for (const attribute of node.attributes) {
+      const name = attribute.name.toLowerCase();
+      if (["class", "title", "alt", "width", "height", "colspan", "rowspan", "role"].includes(name) || name.startsWith("aria-")) safe.setAttribute(name, attribute.value);
+      if (name === "href" && tag === "a") {
+        const url = safeUrl(attribute.value);
+        if (url) { safe.setAttribute("href", url); safe.setAttribute("rel", "noopener noreferrer"); }
+      }
+      if (name === "src" && tag === "img") {
+        const url = safeUrl(attribute.value, true);
+        if (url) safe.setAttribute("src", url);
+      }
+    }
+    for (const child of node.childNodes) copyNode(child, safe);
+    target.append(safe);
+  };
+  for (const node of template.content.childNodes) copyNode(node, parent);
+}
+
+function formatDate(value, format, relative) {
+  let date = value instanceof Date ? value : new Date(value);
+  if (typeof value === "number" || /^\d{10,13}$/.test(String(value))) {
+    const numeric = Number(value);
+    date = new Date(numeric < 1e12 ? numeric * 1000 : numeric);
+  }
+  if (!Number.isFinite(date.getTime())) return String(value ?? "--");
+  const pad = (number) => String(number).padStart(2, "0");
+  const parts = { YYYY: String(date.getFullYear()), MM: pad(date.getMonth() + 1), DD: pad(date.getDate()), HH: pad(date.getHours()), mm: pad(date.getMinutes()), ss: pad(date.getSeconds()) };
+  const formatted = String(format || "DD.MM.YYYY HH:mm:ss").replace(/YYYY|MM|DD|HH|mm|ss/g, (token) => parts[token]);
+  if (!relative) return formatted;
+  const seconds = Math.round((date.getTime() - Date.now()) / 1000);
+  const absolute = Math.abs(seconds);
+  const [amount, unit] = absolute < 60 ? [absolute, "Sek."] : absolute < 3600 ? [Math.round(absolute / 60), "Min."] : absolute < 86400 ? [Math.round(absolute / 3600), "Std."] : [Math.round(absolute / 86400), "Tage"];
+  return `${formatted} (${seconds <= 0 ? "vor" : "in"} ${amount} ${unit})`;
+}
+
+function listEntry(widget) {
+  const values = String(widget.valueList || "").split(/\r?\n|;/);
+  const raw = Number(widget.state ?? widget.testIndex ?? 0);
+  const index = Number.isFinite(raw) ? Math.trunc(raw) : 0;
+  return { values, index, value: values[index] ?? "" };
+}
+
+function applySafeStyle(element, cssText) {
+  const allowed = new Set(["color", "background-color", "font-weight", "font-style", "text-align", "border", "border-radius", "padding", "opacity"]);
+  for (const declaration of String(cssText || "").split(";")) {
+    const separator = declaration.indexOf(":");
+    if (separator < 1) continue;
+    const property = declaration.slice(0, separator).trim().toLowerCase();
+    const value = declaration.slice(separator + 1).trim();
+    if (allowed.has(property) && value && !/url\s*\(|expression|javascript:/i.test(value)) element.style.setProperty(property, value);
+  }
+}
+
 function addWidget(definition) {
   const id = `widget-${state.nextId++}`;
   const index = state.project.widgets.length;
@@ -85,8 +164,11 @@ function renderStage() {
   stage.style.backgroundPosition = page.backgroundMode === "center" ? "center center" : "0 0";
   stage.style.backgroundSize = page.backgroundMode === "stretch" ? "100% 100%" : "auto";
   stage.replaceChildren();
+  const activeFilter = state.activeFilter || "";
   for (const widget of state.project.widgets) {
     if (widget.visible === false) continue;
+    const filterTags = String(widget.filterWord || "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
+    if (widget.type !== "filter-dropdown" && activeFilter && filterTags.length && !filterTags.includes(activeFilter)) continue;
     const element = document.createElement("div");
     element.id = widget.id;
     element.dataset.widgetId = widget.id;
@@ -130,7 +212,7 @@ function renderStage() {
       const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true" || widget.state === "on";
       checkbox.tabIndex = runtimeMode ? 0 : -1;
       checkbox.setAttribute("aria-label", widget.title || "Schalter"); checkbox.dataset.state = checkbox.checked ? "on" : "off";
-      checkbox.addEventListener("change", () => { widget.state = checkbox.checked ? "on" : "off"; checkbox.dataset.state = widget.state; });
+      checkbox.addEventListener("change", (event) => { event.stopPropagation(); widget.state = checkbox.checked ? "on" : "off"; checkbox.dataset.state = widget.state; });
       const caption = document.createElement("span"); caption.textContent = widget.title || "Schalter";
       const track = document.createElement("span"); track.className = "switch-track"; track.setAttribute("aria-hidden", "true");
       label.append(checkbox, track, caption); content.append(label);
@@ -139,40 +221,127 @@ function renderStage() {
       const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true" || widget.state === "on";
       checkbox.tabIndex = runtimeMode ? 0 : -1;
       const caption = document.createElement("span"); caption.textContent = widget.title || "Checkbox";
+      checkbox.addEventListener("change", (event) => { event.stopPropagation(); widget.state = checkbox.checked ? "on" : "off"; });
       label.append(checkbox, caption); content.append(label);
     } else if (widget.type === "bulb") {
-      const isOn = widget.state === true || widget.state === "true" || widget.state === "on";
-      const iconUrl = isOn ? widget.icon_on : widget.icon_off;
+      const isOnState = isOn(widget.state);
+      const iconUrl = isOnState ? widget.icon_on : widget.icon_off;
       if (iconUrl) {
-        const image = document.createElement("img"); image.className = "bulb-image"; image.src = iconUrl;
-        image.alt = `${widget.title || "Lampe"}: ${isOn ? "ein" : "aus"}`; content.append(image);
+        const image = document.createElement("img"); image.className = "bulb-image"; image.src = safeUrl(iconUrl, true);
+        image.alt = `${widget.title || "Lampe"}: ${isOnState ? "ein" : "aus"}`; content.append(image);
       } else {
       const svgNS = "http://www.w3.org/2000/svg";
       const bulb = document.createElementNS(svgNS, "svg"); bulb.setAttribute("viewBox", "0 0 64 64"); bulb.setAttribute("role", "img");
-      bulb.setAttribute("aria-label", `${widget.title || "Lampe"}: ${isOn ? "ein" : "aus"}`);
-      bulb.classList.add("bulb-symbol", isOn ? "is-on" : "is-off");
+      bulb.setAttribute("aria-label", `${widget.title || "Lampe"}: ${isOnState ? "ein" : "aus"}`);
+      bulb.classList.add("bulb-symbol", isOnState ? "is-on" : "is-off");
       const glass = document.createElementNS(svgNS, "path"); glass.setAttribute("d", "M20 25a12 12 0 1 1 24 0c0 5-3 8-6 12l-1 5H27l-1-5c-3-4-6-7-6-12Z");
       const base = document.createElementNS(svgNS, "path"); base.setAttribute("d", "M27 46h10m-9 5h8m-6 5h4");
       bulb.append(glass, base); content.append(bulb);
       }
       if (widget.title) { const caption = document.createElement("span"); caption.className = "bulb-title"; caption.textContent = widget.title; content.append(caption); }
+      if (runtimeMode && !widget.readOnly) {
+        content.classList.add("is-interactive"); content.setAttribute("role", "button"); content.tabIndex = 0;
+        content.addEventListener("click", (event) => { event.stopPropagation(); widget.state = isOn(widget.state) ? "off" : "on"; renderStage(); });
+        content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); widget.state = isOn(widget.state) ? "off" : "on"; renderStage(); } });
+      }
     } else if (widget.type === "slider") {
       const range = document.createElement("input"); range.type = "range";
       range.min = String(widget.min ?? 0); range.max = String(widget.max ?? 100); range.value = String(widget.value ?? 50);
-      range.setAttribute("aria-label", widget.title || "Regler"); content.append(range);
+      range.step = String(widget.step ?? 1); range.disabled = !runtimeMode;
+      range.setAttribute("aria-label", widget.title || "Regler");
+      range.addEventListener("input", () => { widget.value = Number(range.value); }); content.append(range);
     } else if (widget.type === "image") {
-      if (widget.imageSrc) { const image = document.createElement("img"); image.src = widget.imageSrc; image.alt = widget.title || "Bild"; content.append(image); }
+      if (widget.imageSrc) { const image = document.createElement("img"); image.src = safeUrl(widget.imageSrc, true); image.alt = widget.title || "Bild"; content.append(image); }
       else { content.textContent = widget.title || "Bild"; content.classList.add("image-placeholder"); }
+    } else if (widget.type === "string") {
+      const text = document.createElement("span"); text.className = "basic-string"; text.textContent = `${widget.prefix || ""}${widget.state ?? ""}${widget.suffix || ""}`; content.append(text);
+    } else if (widget.type === "string-raw") {
+      appendSafeHtml(content, `${widget.prefix || ""}${widget.state ?? ""}${widget.suffix || ""}`);
+    } else if (widget.type === "image-source") {
+      const src = safeUrl(widget.state, true);
+      if (src) { const image = document.createElement("img"); image.className = "source-image"; image.src = src; image.alt = widget.alt || widget.title || "Bild"; content.append(image); }
+      else { content.textContent = widget.alt || "Bild-URL nicht gesetzt"; content.classList.add("image-placeholder"); }
+    } else if (["time-value", "timestamp-value", "timestamp", "last-changed"].includes(widget.type)) {
+      const sourceKey = widget.type === "timestamp" ? "lastUpdated" : widget.type === "last-changed" ? "lastChanged" : "state";
+      const value = formatDate(widget[sourceKey], widget.dateFormat, widget.showInterval);
+      const output = document.createElement("span"); output.className = "basic-date"; output.textContent = value; content.append(output);
+    } else if (["value-list-text", "value-list-html", "value-list-html-style"].includes(widget.type)) {
+      const { value, index } = listEntry(widget);
+      if (widget.type === "value-list-text") content.textContent = value;
+      else {
+        appendSafeHtml(content, value);
+        if (widget.type === "value-list-html-style") applySafeStyle(content, String(widget.styleList || "").split(/\r?\n/)[index] || "");
+      }
+    } else if (widget.type === "bool-display" || widget.type === "bool-html-control") {
+      const current = isOn(widget.state);
+      const output = document.createElement("span"); output.className = "bool-html";
+      appendSafeHtml(output, current ? widget.htmlTrue : widget.htmlFalse); content.append(output);
+      if (widget.type === "bool-html-control") {
+        output.classList.add("is-interactive"); output.setAttribute("role", "button"); output.tabIndex = runtimeMode ? 0 : -1;
+        const toggle = (event) => { if (!runtimeMode) return; event.stopPropagation(); widget.state = current ? "off" : "on"; renderStage(); };
+        output.addEventListener("click", toggle);
+        output.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(event); } });
+      }
+    } else if (widget.type === "bool-select") {
+      const select = document.createElement("select"); select.className = "widget-control";
+      for (const [value, label] of [["off", widget.textOff || "Aus"], ["on", widget.textOn || "Ein"]]) { const option = document.createElement("option"); option.value = value; option.textContent = label; select.append(option); }
+      select.value = isOn(widget.state) ? "on" : "off"; select.disabled = !runtimeMode;
+      select.setAttribute("aria-label", widget.title || "Bool Select");
+      select.addEventListener("change", (event) => { event.stopPropagation(); widget.state = select.value; }); content.append(select);
+    } else if (widget.type === "html-state" || widget.type === "html") {
+      const output = document.createElement("div"); output.className = "safe-html"; appendSafeHtml(output, widget.htmlContent || "");
+      const url = safeUrl(widget.clickUrl);
+      if (widget.type === "html-state" && url) { const link = document.createElement("a"); link.href = url; link.rel = "noopener noreferrer"; link.append(output); content.append(link); }
+      else content.append(output);
+    } else if (widget.type === "table") {
+      const tableWrap = document.createElement("div"); tableWrap.className = "widget-table-wrap";
+      try {
+        const data = JSON.parse(widget.tableData || "[]");
+        const rows = Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : [];
+        if (rows.length) {
+          const columns = [...new Set(rows.flatMap((row) => row && typeof row === "object" ? Object.keys(row) : []))];
+          const table = document.createElement("table"); const head = table.createTHead().insertRow();
+          columns.forEach((column) => { const cell = document.createElement("th"); cell.textContent = column; head.append(cell); });
+          const body = table.createTBody();
+          rows.forEach((row) => { const tr = body.insertRow(); columns.forEach((column) => { const cell = tr.insertCell(); cell.textContent = row?.[column] == null ? "" : String(row[column]); }); });
+          tableWrap.append(table);
+        } else tableWrap.textContent = "Keine Tabellendaten";
+      } catch { tableWrap.textContent = "Ungültige JSON-Testdaten"; }
+      content.append(tableWrap);
+    } else if (widget.type === "fullscreen") {
+      const button = document.createElement("button"); button.type = "button"; button.className = "fullscreen-button"; button.textContent = widget.buttonText || "Vollbild";
+      button.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); }
+        catch { button.textContent = "Vollbild nicht verfügbar"; }
+      }); content.append(button);
+    } else if (widget.type === "bar") {
+      const min = Number(widget.min ?? 0); const max = Number(widget.max ?? 100); const current = Number(widget.state);
+      const ratio = Number.isFinite(current) && max > min ? Math.max(0, Math.min(1, (current - min) / (max - min))) : 0;
+      const track = document.createElement("div"); track.className = `bar-track ${widget.orientation === "vertical" ? "vertical" : "horizontal"}`;
+      const fill = document.createElement("span"); fill.className = "bar-fill"; fill.style.backgroundColor = widget.barColor || "var(--accent)";
+      fill.style[widget.orientation === "vertical" ? "height" : "width"] = `${ratio * 100}%`; track.append(fill); content.append(track);
+    } else if (widget.type === "navigation") {
+      const href = safeUrl(widget.navUrl);
+      if (href) { const link = document.createElement("a"); link.className = "widget-navigation"; link.href = href; link.textContent = widget.navLabel || "Öffnen"; content.append(link); }
+      else content.textContent = widget.navLabel || "Ziel-URL fehlt";
+    } else if (widget.type === "filter-dropdown") {
+      const select = document.createElement("select"); select.className = "widget-control"; select.setAttribute("aria-label", widget.title || "Widget-Filter");
+      const all = document.createElement("option"); all.value = ""; all.textContent = "Alle Widgets"; select.append(all);
+      for (const value of String(widget.filterOptions || "").split(/[;,\n]/).map((item) => item.trim()).filter(Boolean)) { const option = document.createElement("option"); option.value = value; option.textContent = value; select.append(option); }
+      select.value = activeFilter; select.addEventListener("change", (event) => { event.stopPropagation(); state.activeFilter = select.value; renderStage(); }); content.append(select);
     } else {
       const title = document.createElement("span"); title.className = "widget-title"; title.textContent = widget.title || widget.type;
       const value = document.createElement("span"); value.className = "value";
     let displayValue = widget.state ?? "--";
+    let suffix = widget.unit || "";
     if (widget.type === "sensor" && Number.isFinite(Number(displayValue))) {
       const scaled = Number(displayValue) * Number(widget.factor ?? 1);
       displayValue = scaled.toFixed(Number(widget.digits ?? 1));
       if (widget.decimalComma) displayValue = displayValue.replace(".", ",");
+      suffix = Number(displayValue.replace(",", ".")) === 1 ? widget.suffixSingular || suffix : widget.suffixPlural || suffix;
     }
-    value.textContent = `${widget.entityId ? `${widget.entityId} · ` : ""}${widget.prefix || ""}${displayValue}${widget.unit || ""}`;
+    value.textContent = `${widget.entityId ? `${widget.entityId} · ` : ""}${widget.prefix || ""}${displayValue}${suffix}`;
       content.append(title, value);
       if (widget.type === "gauge") content.classList.add("widget-gauge");
     }

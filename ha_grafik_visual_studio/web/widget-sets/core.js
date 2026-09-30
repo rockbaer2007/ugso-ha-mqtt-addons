@@ -60,6 +60,15 @@ const entityWidget = (unit = false) => [
   ] },
   ...cssGroups(),
 ];
+const basicDataWidget = (type, label, icon, defaults, dataFields, hint = "Entity-Auswahl ist vorbereitet; die Vorschau nutzt derzeit den konfigurierten Testwert.") => ({
+  type, label, icon, defaults,
+  propertyGroups: [
+    metadata(), visibility(),
+    { label: "Daten", ...(hint ? { hint } : {}), fields: dataFields },
+    geometry(), ...cssGroups(),
+  ],
+});
+const dateFormats = ["YYYY-MM-DD HH:mm:ss", "DD.MM.YYYY HH:mm:ss", "DD.MM.YYYY HH:mm", "YYYY-MM-DD", "HH:mm:ss"];
 
 registerWidgetSet({
   id: "ha-grafik-core",
@@ -115,6 +124,72 @@ registerWidgetSet({
       ] },
       geometry(), ...cssGroups(),
     ] },
+    basicDataWidget("string", "String", "T", { title: "Textwert", entityId: "", state: "Beispieltext", prefix: "", suffix: "" }, [
+      { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testwert", key: "state" },
+      { label: "HTML voranstellen", key: "prefix" }, { label: "HTML anhängen", key: "suffix" },
+    ], "Text wird sicher als Text ausgegeben; eine Entity-Bindung folgt."),
+    basicDataWidget("string-raw", "String (HTML, bereinigt)", "<>…", { title: "HTML-Wert", entityId: "", state: "<strong>Beispiel</strong>", prefix: "", suffix: "" }, [
+      { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testwert (HTML)", key: "state", type: "textarea" },
+      { label: "HTML voranstellen", key: "prefix", type: "textarea" }, { label: "HTML anhängen", key: "suffix", type: "textarea" },
+    ]),
+    basicDataWidget("image-source", "String img src", "▧", { title: "Bild aus Entity", entityId: "", state: "", alt: "Bild" }, [
+      { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Bild-URL / Testwert", key: "state" }, { label: "Alternativtext", key: "alt" },
+    ]),
+    ...[
+      ["time-value", "TimesValue", "◷", "state"], ["timestamp-value", "Timestamp Value", "◷", "state"],
+      ["timestamp", "Timestamp", "◷", "lastUpdated"], ["last-changed", "Last change Timestamp", "◷", "lastChanged"],
+    ].map(([type, label, icon, sourceKey]) => basicDataWidget(type, label, icon, {
+      title: label, entityId: "", state: "2026-09-30T12:00:00.000Z", lastUpdated: "2026-09-30T12:00:00.000Z", lastChanged: "2026-09-30T11:45:00.000Z", dateFormat: "DD.MM.YYYY HH:mm:ss", showInterval: false,
+    }, [
+      { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testwert / Zeitstempel", key: sourceKey },
+      { label: "Datumsformat", key: "dateFormat", type: "select", options: dateFormats },
+      { label: "Relative Zeit anzeigen", key: "showInterval", type: "checkbox" },
+    ])),
+    ...[
+      ["value-list-text", "ValueList Text"], ["value-list-html", "ValueList HTML"], ["value-list-html-style", "ValueList HTML Style"],
+    ].map(([type, label]) => basicDataWidget(type, label, "☷", {
+      title: label, entityId: "", state: "0", valueList: "Aus;Ein;Automatik", styleList: "color:#9aa;\ncolor:#29c8b5;\ncolor:#ffb74d", testIndex: 0,
+    }, [
+      { label: "Home-Assistant-Entity (Indexwert)", key: "entityId" }, { label: "Test-Index / Zustand", key: "state" },
+      { label: "Werteliste (ein Eintrag pro Zeile oder mit Semikolon)", key: "valueList", type: "textarea" },
+      ...(type === "value-list-html-style" ? [{ label: "CSS-Stil je Zeile", key: "styleList", type: "textarea" }] : []),
+      { label: "Vorschau-Index", key: "testIndex", type: "number", min: 0 },
+    ])),
+    basicDataWidget("bool-display", "Bool HTML", "⇄", { title: "Bool HTML", entityId: "", state: false, htmlTrue: "<strong>Ein</strong>", htmlFalse: "Aus" }, [
+      { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testzustand", key: "state", type: "select", options: [{ value: "false", label: "Aus" }, { value: "true", label: "Ein" }] },
+      { label: "HTML für Ein", key: "htmlTrue", type: "textarea" }, { label: "HTML für Aus", key: "htmlFalse", type: "textarea" },
+    ]),
+    basicDataWidget("bool-select", "Bool Select", "☑", { title: "Bool Select", entityId: "", state: "off", textOn: "Ein", textOff: "Aus" }, [
+      { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Zustand", key: "state", type: "select", options: [{ value: "off", label: "Aus" }, { value: "on", label: "Ein" }] },
+      { label: "Text für Ein", key: "textOn" }, { label: "Text für Aus", key: "textOff" },
+    ]),
+    basicDataWidget("bool-html-control", "Bool HTML-Steuerung", "⇆", { title: "HTML-Steuerung", entityId: "", state: false, htmlTrue: "Ein", htmlFalse: "Aus" }, [
+      { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testzustand", key: "state", type: "select", options: [{ value: "false", label: "Aus" }, { value: "true", label: "Ein" }] },
+      { label: "HTML für Ein", key: "htmlTrue", type: "textarea" }, { label: "HTML für Aus", key: "htmlFalse", type: "textarea" },
+    ]),
+    basicDataWidget("html-state", "HTML State", "HTML", { title: "HTML State", htmlContent: "<strong>Eigener HTML-Inhalt</strong>", clickUrl: "" }, [
+      { label: "HTML-Inhalt (bereinigt)", key: "htmlContent", type: "textarea" }, { label: "URL beim Anklicken (optional)", key: "clickUrl" },
+    ]),
+    basicDataWidget("table", "Table", "▦", { title: "Tabelle", entityId: "", tableData: "[{\"Name\":\"Temperatur\",\"Wert\":21.5},{\"Name\":\"Luftfeuchte\",\"Wert\":48}]" }, [
+      { label: "Home-Assistant-Entity (JSON-Attribut, später)", key: "entityId" }, { label: "JSON-Testdaten", key: "tableData", type: "textarea" },
+    ]),
+    basicDataWidget("fullscreen", "Full Screen", "⛶", { title: "Vollbild", buttonText: "Vollbild" }, [
+      { label: "Schaltflächentext", key: "buttonText" },
+    ], "Der Button schaltet den Vollbildmodus für die Oberfläche ein und aus."),
+    basicDataWidget("bar", "Bar", "▰", { title: "Balken", entityId: "", state: 35, min: 0, max: 100, barColor: "#29c8b5", orientation: "horizontal" }, [
+      { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testwert", key: "state", type: "number" },
+      { label: "Minimum", key: "min", type: "number" }, { label: "Maximum", key: "max", type: "number" },
+      { label: "Farbe", key: "barColor", type: "color" }, { label: "Ausrichtung", key: "orientation", type: "select", options: [{ value: "horizontal", label: "Horizontal" }, { value: "vertical", label: "Vertikal" }] },
+    ]),
+    basicDataWidget("html", "HTML", "<>…", { title: "HTML", htmlContent: "<h3>Überschrift</h3><p>Eigener HTML-Inhalt</p>" }, [
+      { label: "HTML-Inhalt (bereinigt)", key: "htmlContent", type: "textarea" },
+    ], "Aktiver Inhalt wird aus Sicherheitsgründen auf harmlose HTML-Elemente und Attribute begrenzt."),
+    basicDataWidget("navigation", "HTML Navigation", "➜", { title: "Navigation", navLabel: "Öffnen", navUrl: "" }, [
+      { label: "Linktext", key: "navLabel" }, { label: "Ziel-URL oder HA-Pfad", key: "navUrl" },
+    ]),
+    basicDataWidget("filter-dropdown", "Filter Dropdown", "▽", { title: "Filter", filterOptions: "Licht;Heizung;Sicherheit" }, [
+      { label: "Filteroptionen (durch Semikolon getrennt)", key: "filterOptions" },
+    ], "Ordne Widgets über „Filterwort“ in Generell einer Filteroption zu."),
     { type: "text", label: "Text", icon: "T", defaults: { title: "Text", textContent: "Eigener Text", backgroundColor: "", borderWidth: 0, borderStyle: "none" }, propertyGroups: [
       metadata(), visibility(),
       { label: "Text", fields: [

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.9
+
+- Ergänzt VIS-inspirierte Basic-Widgets für Strings, bereinigtes HTML, Zeitwerte, Wertelisten, boolesche Ausgaben und Steuerungen, Tabellen, Vollbild, Balken, Navigation und Widget-Filter.
+- Zeigt Zahlenwerte mit Singular-/Plural-Nachsilben an und unterstützt Bild-URLs aus dem Wert eines Widgets.
+- Begrenzt HTML-Ausgaben und URLs auf sichere Elemente, Attribute und Protokolle.
+- Hält fest, dass Entity-Livebindung und mehrseitige Navigation noch folgen und ioBroker-Ack-Metadaten keine direkte Home-Assistant-Entsprechung haben.
+
 ## 0.1.8
 
 - Trennt projektweites CSS für alle Widgets von den CSS-Eigenschaften eines ausgewählten Widgets.

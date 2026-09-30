@@ -52,6 +52,19 @@ button { cursor: pointer; }
 .border-title { position: absolute; max-width: 90%; padding: 0 5px; transform: translateY(-50%); white-space: nowrap; }
 .widget-content > button { max-width: 100%; max-height: 100%; cursor: pointer; }
 .widget-content > input[type="range"] { width: 100%; }
+.widget-content > img, .source-image { max-width: 100%; max-height: 100%; object-fit: contain; }
+.safe-html, .bool-html { min-width: 0; max-width: 100%; overflow: auto; }
+.safe-html table, .widget-table-wrap table { width: 100%; border-collapse: collapse; }
+.safe-html th, .safe-html td, .widget-table-wrap th, .widget-table-wrap td { padding: 3px 5px; border: 1px solid currentColor; text-align: left; }
+.widget-table-wrap { width: 100%; height: 100%; overflow: auto; }
+.widget-control { max-width: 100%; }
+.fullscreen-button { width: 100%; height: 100%; }
+.widget-navigation { color: inherit; }
+.is-interactive { cursor: pointer; }
+.bar-track { position: relative; width: 100%; height: 100%; min-width: 12px; min-height: 12px; overflow: hidden; border: 1px solid currentColor; border-radius: 3px; background: #87919533; }
+.bar-fill { position: absolute; display: block; background: var(--accent); }
+.bar-track.horizontal .bar-fill { inset: 0 auto 0 0; }
+.bar-track.vertical .bar-fill { inset: auto 0 0; }
 .widget-toggle, .widget-checkbox { display: inline-flex; align-items: center; gap: 7px; }
 .widget-toggle input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .switch-track { position: relative; flex: none; width: 34px; height: 18px; border: 1px solid #7b8589; border-radius: 99px; background: #50585b; transition: background .12s ease; }

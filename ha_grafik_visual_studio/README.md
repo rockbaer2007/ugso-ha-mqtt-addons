@@ -14,7 +14,9 @@ Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mi
 - Seitengrößen Desktop, Tablet und Telefon können im Editor gewählt werden.
 - Das Text-Widget ist ein freies Textfeld ohne Entitätsbindung oder Entitäts-Fehlermeldung.
 - Widgets sind frei platzierte HTML-Elemente; Auswahl zeigt ihre Widget-ID und einen blauen Rahmen mit Resize-Griff. Jedes Element liegt standardmäßig auf Ebene 0; die Ebene lässt sich je Widget einstellen.
-- Die Basispalette enthält passende grafische Elemente: Switch mit direktem Ein-/Aus-Zustand, Checkbox, Lampe ein/aus, Slider, Text, Zahlenwert und einen eigenen Rahmen mit Titel/Kopfzeile.
+- Die Basispalette enthält VIS-inspirierte native Widgets: Zahlenwert, String, bereinigtes HTML, Bild-URL aus einem Wert, Zeit-/Zeitstempelwerte, Wertelisten als Text/HTML/HTML mit Stil, Bool-HTML-Anzeige und -Steuerung, Auswahl, Tabelle, Vollbild, Balken, Navigation und Filter-Dropdown. Dazu kommen Switch mit direktem Ein-/Aus-Zustand, Checkbox, Lampe ein/aus, Slider, Text und Rahmen.
+- HTML-Ausgaben werden auf sichere Elemente und Attribute begrenzt. Zahlen, Zeiten, Tabellen und Wertelisten verwenden aktuell lokale Testwerte; die Home-Assistant-Entity-Auswahl und Live-Zustandsbindung stehen noch aus. ioBroker-spezifische AckFlag-Anzeigen entfallen, da Home Assistant kein direktes `ack`-Gegenstück bereitstellt.
+- Der Filter-Dropdown filtert Widgets anhand des Felds „Filterwort“ in deren Eigenschaften. Navigation öffnet eine sichere URL oder einen relativen Home-Assistant-Pfad; ein Wechsel zwischen mehreren Projektseiten folgt mit der Mehrseiten-Unterstützung.
 - Der Seitenhintergrund unterstützt eine Farbe oder ein Bild mit Kachel-, Zentriert- und Stretch-Darstellung.
 - Der rechte Eigenschaftenbereich orientiert sich an VIS2s Reitern für Ansicht, Widget, CSS und Skripte; Widget-Metadaten, Sichtbarkeit, Inhalt und CSS sind getrennt gruppiert.
 - Der CSS-Reiter enthält projektweite CSS-Regeln für alle Widgets; CSS-Felder für das aktuell ausgewählte Widget stehen in dessen Widget-Eigenschaften.
