@@ -524,7 +524,7 @@ function renderStage() {
       content.style.flexDirection = widget.contentLayout === "horizontal" ? "row" : "column";
       content.style.justifyContent = widget.contentAlign === "start" ? "flex-start" : widget.contentAlign === "end" ? "flex-end" : "center";
       content.style.alignItems = widget.contentAlign === "start" ? "flex-start" : widget.contentAlign === "end" ? "flex-end" : "center";
-      content.setAttribute("aria-label", widget.title || `Universal-Widget: ${widget.state ?? ""}`);
+      content.setAttribute("aria-label", widget.title || `Zustands-Element: ${widget.state ?? ""}`);
       if (visual.contentType === "icon") {
         const iconValue = String(visual.icon || "").trim();
         if (safeUrl(iconValue, true) || /^mdi:[a-z0-9-]+$/i.test(iconValue)) {

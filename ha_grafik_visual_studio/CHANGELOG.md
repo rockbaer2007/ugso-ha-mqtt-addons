@@ -1,8 +1,12 @@
 # Changelog
 
+## 0.1.19
+
+- Benennt das Widget-Set „HA Grafik – Basic 2“ in „HA Grafik – Interaktiv“ und das Universal-Widget in „Zustands-Element“ um.
+
 ## 0.1.18
 
-- Ergänzt das getrennte Widget-Set „HA Grafik – Basic 2“ mit einem Universal-Widget für bis zu fünf zustandsabhängige Inhalte.
+- Ergänzt das getrennte Widget-Set „HA Grafik – Interaktiv“ mit einem Zustands-Element für bis zu fünf zustandsabhängige Inhalte.
 - Unterstützt pro Zustand MDI-/Iconset-Icons, Grafiken, Text oder bereinigtes HTML sowie Größe, Farbe, Layout und Bildanpassung.
 - Fügt lokale Runtime-Testbedienung für Schalter, Buttons und Navigation hinzu; echte Entity-Bindung folgt später.
 

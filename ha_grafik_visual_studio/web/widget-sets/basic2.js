@@ -9,10 +9,10 @@ const layout = () => ({ label: "Größe und Position", fields: [
 
 registerWidgetSet({
   id: "ha-grafik-basic2",
-  label: "HA Grafik – Basic 2",
+  label: "HA Grafik – Interaktiv",
   widgets: [{
     type: "universal-button",
-    label: "Universal-Widget",
+    label: "Zustands-Element",
     icon: "◉",
     defaults: {
       title: "", entityId: "", state: "off", interaction: "switch", targetUrl: "", width: 144, height: 112,
