@@ -412,12 +412,16 @@ async function renderObjects() {
   const data = response.ok ? await response.json() : { available: false, folders: [], files: [] };
   if (!data.available) { const hint = document.createElement("p"); hint.className = "empty"; hint.textContent = `Der HA-www-Ordner ist nicht verfügbar. Geprüfte Pfade: ${(data.checked || []).join(", ")}. Prüfe die schreibgeschützte Konfigurationseinbindung.`; browser.append(hint); return; }
   if (state.objectPath) {
-    const up = document.createElement("button"); up.type = "button"; up.className = "object-folder object-folder-up"; up.textContent = "⬆ Übergeordneter Ordner";
+    const up = document.createElement("button"); up.type = "button"; up.className = "object-folder object-folder-up";
+    const upIcon = document.createElement("img"); upIcon.src = "icons/arrow-up.svg"; upIcon.alt = "";
+    const upName = document.createElement("span"); upName.textContent = "Übergeordneter Ordner"; up.append(upIcon, upName);
     up.addEventListener("click", () => openObjects(parts.slice(0, -1).join("/"))); browser.append(up);
   }
   for (const folder of data.folders) {
     const row = document.createElement("div"); row.className = "object-row object-folder-row";
-    const button = document.createElement("button"); button.type = "button"; button.className = "object-folder"; button.textContent = `📁 ${folder.name}`;
+    const button = document.createElement("button"); button.type = "button"; button.className = "object-folder";
+    const folderIcon = document.createElement("img"); folderIcon.src = "icons/folder.svg"; folderIcon.alt = "";
+    const folderName = document.createElement("span"); folderName.textContent = folder.name; button.append(folderIcon, folderName);
     button.title = `Ordner ${folder.name} öffnen`; button.addEventListener("click", () => openObjects(folder.path));
     const count = document.createElement("span"); count.className = "object-size"; count.textContent = "Ordner";
     row.append(button, count, document.createElement("span")); browser.append(row);
@@ -430,8 +434,8 @@ async function renderObjects() {
     if (fileCategory(file.path) === "image") {
       const image = document.createElement("img"); image.src = file.url; image.alt = ""; image.loading = "lazy"; select.append(image);
     } else {
-      const typeIcon = document.createElement("span"); typeIcon.className = "object-type-icon";
-      typeIcon.textContent = ({ code: "{}", text: "Tt", audio: "♫", video: "▶" })[fileCategory(file.path)] || "▤"; select.append(typeIcon);
+      const typeIcon = document.createElement("img"); typeIcon.className = "object-type-icon";
+      typeIcon.src = `icons/${fileCategory(file.path) === "other" ? "file" : fileCategory(file.path)}.svg`; typeIcon.alt = ""; select.append(typeIcon);
     }
     const name = document.createElement("span"); name.textContent = file.name; select.append(name);
     select.setAttribute("aria-pressed", String(state.selectedFiles.includes(file.path)));
@@ -445,8 +449,10 @@ async function renderObjects() {
     const size = document.createElement("span"); size.className = "object-size"; size.textContent = formatFileSize(file.size);
     const actions = document.createElement("span"); actions.className = "object-file-actions";
     const download = document.createElement("a"); download.className = "object-icon-action"; download.href = file.url; download.download = file.name;
-    download.textContent = "⇩"; download.title = `Datei ${file.name} herunterladen`; download.setAttribute("aria-label", `Datei ${file.name} herunterladen`);
-    const remove = document.createElement("button"); remove.type = "button"; remove.className = "object-icon-action"; remove.textContent = "🗑";
+    const downloadIcon = document.createElement("img"); downloadIcon.src = "icons/download.svg"; downloadIcon.alt = ""; download.append(downloadIcon);
+    download.title = `Datei ${file.name} herunterladen`; download.setAttribute("aria-label", `Datei ${file.name} herunterladen`);
+    const remove = document.createElement("button"); remove.type = "button"; remove.className = "object-icon-action";
+    const deleteIcon = document.createElement("img"); deleteIcon.src = "icons/delete.svg"; deleteIcon.alt = ""; remove.append(deleteIcon);
     remove.title = `Datei ${file.name} löschen`; remove.setAttribute("aria-label", `Datei ${file.name} löschen`);
     remove.addEventListener("click", async () => {
       if (!window.confirm(`Datei „${file.name}“ dauerhaft löschen?`)) return;

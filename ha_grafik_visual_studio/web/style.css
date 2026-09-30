@@ -181,7 +181,9 @@ button { cursor: pointer; }
 .files-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
 .files-actions button { min-height: 32px; }
 .files-actions .icon-button { width: 34px; min-width: 34px; padding: 0; font-size: 17px; }
+.files-actions .icon-button img, .icon-picker-heading .icon-button img { width: 18px; height: 18px; display: block; }
 .files-filter { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 7px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); }
+.files-filter > img { width: 17px; height: 17px; }
 .files-filter select { max-width: 130px; padding: 5px 20px 5px 2px; border: 0; color: var(--text); background: transparent; }
 .files-actions button:disabled { opacity: .45; cursor: not-allowed; }
 .files-actions > span:not(.files-action-spacer) { color: var(--muted); font-size: 11px; }
@@ -195,11 +197,14 @@ button { cursor: pointer; }
 .object-file img { width: 24px; height: 24px; object-fit: contain; }
 .object-file span { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
 .object-file .object-type-icon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 4px; color: var(--accent); background: #29c8b522; font-size: 10px; font-weight: 700; }
-.object-folder { min-height: 28px; border: 0; background: transparent; text-align: left; }
+.object-folder { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 28px; border: 0; background: transparent; text-align: left; }
+.object-folder img { flex: 0 0 20px; width: 20px; height: 20px; }
+.object-folder span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .object-folder-up { background: #202426; }
 .object-size { color: var(--muted); font-size: 11px; text-align: right; white-space: nowrap; }
 .object-file-actions { display: flex; justify-content: flex-end; gap: 4px; }
 .object-icon-action { display: inline-grid; place-items: center; width: 30px; height: 28px; padding: 0; border: 0; border-radius: 4px; color: var(--text); background: transparent; text-decoration: none; font-size: 16px; cursor: pointer; }
+.object-icon-action img { width: 18px; height: 18px; }
 .object-icon-action:hover { color: var(--accent); background: #ffffff14; }
 @media (max-width: 600px) {
   .objects-dialog { width: 90vw; }

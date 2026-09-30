@@ -102,20 +102,20 @@
     </form>
   </dialog>
   <dialog id="objects-dialog" class="studio-dialog objects-dialog">
-    <header class="icon-picker-heading"><strong>Dateien · /config/www</strong><button id="objects-close" type="button" aria-label="Schließen">×</button></header>
+    <header class="icon-picker-heading"><strong>Dateien · /config/www</strong><button id="objects-close" class="icon-button" type="button" title="Dateien-Dialog schließen" aria-label="Schließen"><img src="icons/close.svg" alt=""></button></header>
     <div id="objects-breadcrumb" class="objects-breadcrumb"></div>
     <div class="files-actions">
-      <button id="files-upload" class="icon-button" type="button" title="Dateien des gewählten Typs hochladen" aria-label="Dateien hochladen">⬆</button>
-      <button id="files-folder" class="icon-button" type="button" title="Ordner im aktuellen Verzeichnis erstellen" aria-label="Ordner erstellen">📁+</button>
-      <button id="files-reload" class="icon-button" type="button" title="Dateiliste neu laden" aria-label="Dateiliste neu laden">⟳</button>
-      <label class="files-filter" title="Dateien nach Typ filtern">☷ <select id="files-type-filter" aria-label="Dateien filtern">
+      <button id="files-upload" class="icon-button" type="button" title="Dateien des gewählten Typs hochladen" aria-label="Dateien hochladen"><img src="icons/upload.svg" alt=""></button>
+      <button id="files-folder" class="icon-button" type="button" title="Ordner im aktuellen Verzeichnis erstellen" aria-label="Ordner erstellen"><img src="icons/folder-plus.svg" alt=""></button>
+      <button id="files-reload" class="icon-button" type="button" title="Dateiliste neu laden" aria-label="Dateiliste neu laden"><img src="icons/refresh.svg" alt=""></button>
+      <label class="files-filter" title="Dateien nach Typ filtern"><img src="icons/filter.svg" alt=""><select id="files-type-filter" aria-label="Dateien filtern">
         <option value="all">Alle Dateien</option><option value="image">Bilder</option><option value="code">Code/JSON</option><option value="text">Text</option><option value="audio">Audio</option><option value="video">Video</option>
       </select></label>
-      <button id="files-copy" class="icon-button" type="button" title="Ausgewählte Pfade in die Zwischenablage kopieren" aria-label="In Zwischenablage kopieren" disabled>▣</button>
+      <button id="files-copy" class="icon-button" type="button" title="Ausgewählte Pfade in die Zwischenablage kopieren" aria-label="In Zwischenablage kopieren" disabled><img src="icons/copy.svg" alt=""></button>
       <span id="files-selection-count">Keine Dateien ausgewählt</span>
       <span class="files-action-spacer"></span>
-      <button id="files-cancel" class="icon-button" type="button" title="Dialog abbrechen" aria-label="Abbrechen">×</button>
-      <button id="files-apply" class="icon-button primary" type="button" title="Ausgewählte Datei übernehmen" aria-label="Ausgewählte Datei übernehmen" disabled>✓</button>
+      <button id="files-cancel" class="icon-button" type="button" title="Dialog abbrechen" aria-label="Abbrechen"><img src="icons/close.svg" alt=""></button>
+      <button id="files-apply" class="icon-button primary" type="button" title="Ausgewählte Datei übernehmen" aria-label="Ausgewählte Datei übernehmen" disabled><img src="icons/check.svg" alt=""></button>
       <input id="files-upload-input" type="file" multiple hidden>
     </div>
     <div id="objects-browser" class="objects-browser"></div>

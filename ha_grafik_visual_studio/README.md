@@ -16,6 +16,7 @@ Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sow
 - Die Dateiauswahl steht in Icon-/Bildfeldern sowie bei Hintergrundbild und Runtime-Favicon direkt zur Verfügung.
 - Der Dateienbrowser erlaubt Mehrfachuploads unterstützter Bilder, Code-/JSON-, Text-, Audio- und Videodateien bis 20 MB in den offenen www-Ordner. Der Dateitypfilter begrenzt sowohl die Dateiliste als auch die Typen im Upload-Auswahldialog. Ausgewählte `/local/...`-Pfade lassen sich kopieren; Bilddateien können einzeln in das aktive Feld übernommen werden. Für Uploads benötigt das Add-on Schreibzugriff auf die Home-Assistant-Konfiguration.
 - Dateien erscheinen als Liste mit Miniaturansicht beziehungsweise Dateitypsymbol und Dateigröße. Jede Datei kann über die Aktionssymbole heruntergeladen oder nach Bestätigung gelöscht werden. Ordner lassen sich erstellen und die Dateiliste neu laden.
+- Die Aktionen und Dateitypen im Dateien-Dialog verwenden lokale SVG-Symbole.
 - Ein Projekt kann mehrere benannte Seiten mit jeweils eigener Größe, eigenem Hintergrund und eigenen Widgets enthalten. Das linke Seitenmenü kann Seiten hinzufügen, umbenennen, duplizieren, ausblenden und löschen; die Runtime bietet die sichtbaren Seiten zur Auswahl an.
 - Im Editor findet die Widget-Auswahl neben dem Seitenmenü Elemente anhand ihres Namens und Typs; die Auswahl markiert das Widget und öffnet seine Eigenschaften.
 - Das ausgewählte Widget kann um eine Ebene nach vorn oder hinten verschoben, als JSON exportiert oder aus einem JSON-Widgetpaket importiert werden.

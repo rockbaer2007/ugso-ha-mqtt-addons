@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.31
+
+- Ersetzt Zeichen und Emojis im Dateien-Dialog durch einheitliche, lokal gespeicherte SVG-Symbole.
+
 ## 0.1.30
 
 - Ersetzt das App-Icon und Logo durch neu gestaltete SVG-Dateien.
