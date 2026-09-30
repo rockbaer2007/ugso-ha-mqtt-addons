@@ -28,7 +28,7 @@ const cssGroups = () => [
     { label: "Deckkraft", key: "opacity", type: "number", min: 0, max: 1, step: 0.05 },
   ] },
 ];
-const metadata = () => ({ label: "Generell", fields: [
+const metadata = () => ({ label: "Generell", hint: "Der Name ist optional. Lass ihn leer, wenn du das Widget zum Beispiel über ein separates Textfeld beschriftest.", fields: [
   { label: "Name", key: "title" },
   { label: "Kommentar", key: "comment" },
   { label: "CSS Klasse", key: "cssClass" },

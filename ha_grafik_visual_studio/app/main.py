@@ -29,7 +29,7 @@ MIME_TYPES = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charse
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.10"
+    server_version = "HAGrafikVisualStudio/0.1.11"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -49,7 +49,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path.rstrip("/") or "/"
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.10"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.11"})
             return
         if path == "/api/project":
             self.send_json(HTTPStatus.OK, self.read_project())

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.11
+
+- Macht den Widget-Namen ausdrücklich optional; leere Namen erzeugen keine sichtbare Ersatzbeschriftung.
+- Ergänzt im Eigenschaftenbereich den Hinweis, dass ein separates Text-Widget als Beschriftung dienen kann.
+
 ## 0.1.10
 
 - Ändert die Schaltfläche zu einem zustandsabhängigen Icon-Feld mit separaten Bild-URLs für Ein und Aus.

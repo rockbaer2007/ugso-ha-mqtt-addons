@@ -226,16 +226,18 @@ function renderStage() {
       checkbox.tabIndex = runtimeMode ? 0 : -1;
       checkbox.setAttribute("aria-label", widget.title || "Schalter"); checkbox.dataset.state = checkbox.checked ? "on" : "off";
       checkbox.addEventListener("change", (event) => { event.stopPropagation(); widget.state = checkbox.checked ? "on" : "off"; checkbox.dataset.state = widget.state; });
-      const caption = document.createElement("span"); caption.textContent = widget.title || "Schalter";
       const track = document.createElement("span"); track.className = "switch-track"; track.setAttribute("aria-hidden", "true");
-      label.append(checkbox, track, caption); content.append(label);
+      label.append(checkbox, track);
+      if (widget.title) { const caption = document.createElement("span"); caption.textContent = widget.title; label.append(caption); }
+      content.append(label);
     } else if (widget.type === "checkbox") {
       const label = document.createElement("label"); label.className = "widget-checkbox";
       const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true" || widget.state === "on";
       checkbox.tabIndex = runtimeMode ? 0 : -1;
-      const caption = document.createElement("span"); caption.textContent = widget.title || "Checkbox";
       checkbox.addEventListener("change", (event) => { event.stopPropagation(); widget.state = checkbox.checked ? "on" : "off"; });
-      label.append(checkbox, caption); content.append(label);
+      label.append(checkbox);
+      if (widget.title) { const caption = document.createElement("span"); caption.textContent = widget.title; label.append(caption); }
+      content.append(label);
     } else if (widget.type === "bulb") {
       const isOnState = isOn(widget.state);
       const iconUrl = isOnState ? widget.icon_on : widget.icon_off;
@@ -265,7 +267,7 @@ function renderStage() {
       range.addEventListener("input", () => { widget.value = Number(range.value); }); content.append(range);
     } else if (widget.type === "image") {
       if (widget.imageSrc) { const image = document.createElement("img"); image.src = safeUrl(widget.imageSrc, true); image.alt = widget.title || "Bild"; content.append(image); }
-      else { content.textContent = widget.title || "Bild"; content.classList.add("image-placeholder"); }
+      else { content.classList.add("image-placeholder"); content.setAttribute("aria-label", widget.title || "Bild"); }
     } else if (widget.type === "string") {
       const text = document.createElement("span"); text.className = "basic-string"; text.textContent = `${widget.prefix || ""}${widget.state ?? ""}${widget.suffix || ""}`; content.append(text);
     } else if (widget.type === "string-raw") {
@@ -344,7 +346,6 @@ function renderStage() {
       for (const value of String(widget.filterOptions || "").split(/[;,\n]/).map((item) => item.trim()).filter(Boolean)) { const option = document.createElement("option"); option.value = value; option.textContent = value; select.append(option); }
       select.value = activeFilter; select.addEventListener("change", (event) => { event.stopPropagation(); state.activeFilter = select.value; renderStage(); }); content.append(select);
     } else {
-      const title = document.createElement("span"); title.className = "widget-title"; title.textContent = widget.title || widget.type;
       const value = document.createElement("span"); value.className = "value";
     let displayValue = widget.state ?? "--";
     let suffix = widget.unit || "";
@@ -355,7 +356,8 @@ function renderStage() {
       suffix = Number(displayValue.replace(",", ".")) === 1 ? widget.suffixSingular || suffix : widget.suffixPlural || suffix;
     }
     value.textContent = `${widget.entityId ? `${widget.entityId} · ` : ""}${widget.prefix || ""}${displayValue}${suffix}`;
-      content.append(title, value);
+      if (widget.title) { const title = document.createElement("span"); title.className = "widget-title"; title.textContent = widget.title; content.append(title); }
+      content.append(value);
       if (widget.type === "gauge") content.classList.add("widget-gauge");
     }
     element.append(content);
