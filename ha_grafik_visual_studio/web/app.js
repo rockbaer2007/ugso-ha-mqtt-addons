@@ -57,7 +57,7 @@ const params = new URLSearchParams(location.search);
 const runtimeMode = location.pathname.endsWith("/runtime") || params.get("mode") === "runtime";
 const workspace = $("#workspace");
 const stage = $("#stage");
-const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", objectPath: "" };
+const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", objectPath: "", selectedFiles: [] };
 let mdiIcons = null;
 let mdiIconsPromise = null;
 let activeIconInput = null;
@@ -323,15 +323,66 @@ function renderWidgetFinder() {
 
 function openObjects(path = "") {
   state.objectPath = path;
+  state.selectedFiles = [];
   const dialog = $("#objects-dialog");
   if (!dialog.open) dialog.showModal();
   void renderObjects();
+}
+
+function renderFileSelection() {
+  const count = state.selectedFiles.length;
+  $("#files-selection-count").textContent = count ? count + " Datei(en) ausgewählt" : "Keine Dateien ausgewählt";
+  $("#files-copy").disabled = count === 0;
+  $("#files-apply").disabled = !activeIconInput || count !== 1;
+  $("#files-apply").title = count > 1 ? "Zum Übernehmen bitte genau eine Datei auswählen" : "Ausgewählte Datei ins Feld übernehmen";
+}
+
+function cancelFileSelection() {
+  $("#objects-dialog").close();
+  state.selectedFiles = [];
+  renderFileSelection();
+  if (!$("#icon-picker").open) activeIconInput = null;
+}
+
+async function uploadFiles(fileList) {
+  const files = [...fileList];
+  if (!files.length) return;
+  $("#files-upload").disabled = true;
+  $("#files-upload").textContent = "Upload läuft …";
+  const results = [];
+  let uploadError = "";
+  try {
+    for (const file of files) {
+      const path = [state.objectPath, file.name].filter(Boolean).join("/");
+      const response = await fetch("api/files?path=" + encodeURIComponent(path), {
+        method: "POST", headers: { "Content-Type": file.type || "application/octet-stream" }, body: file,
+      });
+      const result = await response.json().catch(() => ({}));
+      results.push({ file, response, result });
+    }
+  } catch (error) {
+    uploadError = error.message;
+  } finally {
+    $("#files-upload").disabled = false;
+    $("#files-upload").textContent = "⬆ Hochladen";
+  }
+  const succeeded = results.filter((item) => item.response.ok).length;
+  const failures = results.filter((item) => !item.response.ok);
+  const messages = failures.map((item) => item.file.name + ": " + (item.result.error || item.response.statusText));
+  if (uploadError) messages.push("Übertragung abgebrochen: " + uploadError);
+  $("#status").textContent = messages.length
+    ? succeeded + "/" + files.length + " Dateien hochgeladen. " + messages.join("; ")
+    : succeeded + " Datei(en) hochgeladen";
+  $("#files-upload-input").value = "";
+  state.selectedFiles = [];
+  await renderObjects();
 }
 
 async function renderObjects() {
   const browser = $("#objects-browser");
   const breadcrumb = $("#objects-breadcrumb");
   browser.replaceChildren(); breadcrumb.replaceChildren();
+  renderFileSelection();
   const parts = state.objectPath ? state.objectPath.split("/") : [];
   const root = document.createElement("button"); root.type = "button"; root.textContent = "www"; root.addEventListener("click", () => openObjects("")); breadcrumb.append(root);
   let path = "";
@@ -354,20 +405,17 @@ async function renderObjects() {
     const button = document.createElement("button"); button.type = "button"; button.className = "object-file"; button.title = file.path;
     const image = document.createElement("img"); image.src = file.url; image.alt = ""; image.loading = "lazy";
     const name = document.createElement("span"); name.textContent = file.name; button.append(image, name);
-    button.addEventListener("click", async () => {
-      const haPath = `/local/${file.path}`;
-      if (activeIconInput) {
-        activeIconInput.value = haPath; activeIconInput.dispatchEvent(new Event("input", { bubbles: true }));
-        $("#objects-dialog").close();
-        if ($("#icon-picker").open) $("#icon-picker").close();
-        activeIconInput.focus(); activeIconInput = null;
-      } else {
-        try { await navigator.clipboard.writeText(haPath); } catch { /* Clipboard may be unavailable outside a secure context. */ }
-        $("#status").textContent = `Bildpfad: ${haPath}`;
-      }
+    button.setAttribute("aria-pressed", String(state.selectedFiles.includes(file.path)));
+    button.addEventListener("click", () => {
+      state.selectedFiles = state.selectedFiles.includes(file.path)
+        ? state.selectedFiles.filter((path) => path !== file.path)
+        : [...state.selectedFiles, file.path];
+      button.setAttribute("aria-pressed", String(state.selectedFiles.includes(file.path)));
+      renderFileSelection();
     }); browser.append(button);
   }
   if (!data.folders.length && !data.files.length) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Dieser Ordner enthält keine unterstützten Bilder."; browser.append(empty); }
+  renderFileSelection();
 }
 
 async function renderProjects() {
@@ -1325,7 +1373,27 @@ $("#settings-save").addEventListener("click", async (event) => {
   if (response.ok) { $("#settings-dialog").close(); render(); $("#status").textContent = "Projekteinstellungen gespeichert"; }
 });
 $("#files-menu").addEventListener("click", () => openObjects());
-$("#objects-close").addEventListener("click", () => $("#objects-dialog").close());
+$("#objects-close").addEventListener("click", cancelFileSelection);
+$("#files-cancel").addEventListener("click", cancelFileSelection);
+$("#files-upload").addEventListener("click", () => $("#files-upload-input").click());
+$("#files-upload-input").addEventListener("change", (event) => { void uploadFiles(event.target.files); });
+$("#files-copy").addEventListener("click", async () => {
+  const paths = state.selectedFiles.map((path) => "/local/" + path);
+  try {
+    await navigator.clipboard.writeText(paths.join("\n"));
+    $("#status").textContent = paths.length + " Pfad(e) in die Zwischenablage kopiert";
+  } catch {
+    $("#status").textContent = "Zwischenablage nicht verfügbar";
+  }
+});
+$("#files-apply").addEventListener("click", () => {
+  if (!activeIconInput || state.selectedFiles.length !== 1) return;
+  activeIconInput.value = "/local/" + state.selectedFiles[0];
+  activeIconInput.dispatchEvent(new Event("input", { bubbles: true }));
+  $("#objects-dialog").close();
+  if ($("#icon-picker").open) $("#icon-picker").close();
+  activeIconInput.focus(); activeIconInput = null; state.selectedFiles = [];
+});
 $("#projects-menu").addEventListener("click", () => { $("#projects-dialog").showModal(); void renderProjects(); });
 $("#projects-close").addEventListener("click", () => $("#projects-dialog").close());
 $("#project-create").addEventListener("click", async () => {

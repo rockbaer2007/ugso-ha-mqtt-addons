@@ -51,7 +51,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.25"
+    server_version = "HAGrafikVisualStudio/0.1.26"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -73,7 +73,7 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.25"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.26"})
             return
         if path == "/api/projects":
             self.send_json(HTTPStatus.OK, self.list_projects())
@@ -124,7 +124,11 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(HTTPStatus.OK, {"saved": True})
 
     def do_POST(self):
-        if urlparse(self.path).path != "/api/projects":
+        parsed = urlparse(self.path)
+        if parsed.path == "/api/files":
+            self.save_uploaded_file(parse_qs(parsed.query).get("path", [""])[0])
+            return
+        if parsed.path != "/api/projects":
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         request = self.read_request_json()
@@ -145,6 +149,44 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Projekt konnte nicht angelegt werden."})
             return
         self.send_json(HTTPStatus.CREATED, {"id": project_id, "name": name})
+
+    def save_uploaded_file(self, relative_path):
+        target = self.resolve_object_path(relative_path)
+        if target is None or not target.name or target.name in (".", ".."):
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Ungültiger Dateipfad."})
+            return
+        if target.suffix.lower() not in OBJECT_MIME_TYPES:
+            self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "Erlaubt sind PNG, JPG, SVG und WebP."})
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = 0
+        if length <= 0 or length > MAX_OBJECT_BYTES:
+            self.send_json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"error": "Datei ist leer oder größer als 20 MB."})
+            return
+        if not target.parent.is_dir():
+            self.send_json(HTTPStatus.NOT_FOUND, {"error": "Zielordner wurde nicht gefunden."})
+            return
+        body = self.rfile.read(length)
+        if len(body) != length:
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Datei wurde nicht vollständig übertragen."})
+            return
+        try:
+            with target.open("xb") as uploaded:
+                uploaded.write(body)
+        except FileExistsError:
+            self.send_json(HTTPStatus.CONFLICT, {"error": "Eine Datei mit diesem Namen existiert bereits."})
+            return
+        except OSError as error:
+            LOG.warning("Datei konnte nicht hochgeladen werden: %s", error)
+            try:
+                target.unlink(missing_ok=True)
+            except OSError:
+                pass
+            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Datei konnte nicht gespeichert werden."})
+            return
+        self.send_json(HTTPStatus.CREATED, {"uploaded": True, "path": target.relative_to(WWW_DIR.resolve()).as_posix()})
 
     def do_PATCH(self):
         path = urlparse(self.path).path

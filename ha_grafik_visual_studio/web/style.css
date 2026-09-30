@@ -178,6 +178,12 @@ button { cursor: pointer; }
 .objects-dialog { width: min(900px, calc(100vw - 24px)); }
 .objects-breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 10px 0; color: var(--muted); }
 .objects-breadcrumb button, .object-folder { border: 0; background: #202426; }
+.files-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
+.files-actions button { min-height: 32px; }
+.files-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.files-actions > span:not(.files-action-spacer) { color: var(--muted); font-size: 11px; }
+.files-action-spacer { flex: 1; }
+.object-file[aria-pressed="true"] { outline: 2px solid var(--accent); background: #29c8b522; }
 .objects-browser { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; max-height: min(520px, 58vh); overflow: auto; padding: 5px; }
 .object-file { display: grid; grid-template-rows: 88px auto; align-items: center; gap: 5px; min-width: 0; padding: 6px; }
 .object-file img { width: 100%; height: 88px; object-fit: contain; }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.26
+
+- Ergänzt Mehrfachauswahl und Upload von PNG-, JPG-, SVG- und WebP-Dateien in den geöffneten www-Ordner.
+- Ergänzt Pfadkopie in die Zwischenablage, Einzelübernahme ins aktive Feld und Abbrechen im Dateien-Dialog.
+- Verhindert das Überschreiben gleichnamiger Dateien; Uploads sind auf www-Dateien bis 20 MB begrenzt.
+
 ## 0.1.25
 
 - Ergänzt die Dateiauswahl auch für den Ansichts-Hintergrund und das Runtime-Favicon.

@@ -104,8 +104,17 @@
   <dialog id="objects-dialog" class="studio-dialog objects-dialog">
     <header class="icon-picker-heading"><strong>Dateien · /config/www</strong><button id="objects-close" type="button" aria-label="Schließen">×</button></header>
     <div id="objects-breadcrumb" class="objects-breadcrumb"></div>
+    <div class="files-actions">
+      <button id="files-upload" type="button">⬆ Hochladen</button>
+      <button id="files-copy" type="button" disabled>▣ Zwischenablage</button>
+      <span id="files-selection-count">Keine Dateien ausgewählt</span>
+      <span class="files-action-spacer"></span>
+      <button id="files-cancel" type="button">Abbrechen</button>
+      <button id="files-apply" type="button" class="primary" disabled>Übernehmen</button>
+      <input id="files-upload-input" type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp,.png,.jpg,.jpeg,.svg,.webp" multiple hidden>
+    </div>
     <div id="objects-browser" class="objects-browser"></div>
-    <p class="property-hint">PNG, JPG, SVG und WebP aus /config/www. Auswahl kopiert den HA-Pfad ins Icon-/Bildfeld, wenn ein solches Feld geöffnet wurde.</p>
+    <p class="property-hint">PNG, JPG, SVG und WebP. Mehrere lokale Dateien können in den geöffneten Ordner hochgeladen werden.</p>
   </dialog>
   <dialog id="projects-dialog" class="studio-dialog">
     <header class="icon-picker-heading"><strong>Projekte</strong><button id="projects-close" type="button" aria-label="Schließen">×</button></header>
