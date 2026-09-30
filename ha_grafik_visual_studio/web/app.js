@@ -73,37 +73,49 @@ function renderStage() {
   for (const widget of state.project.widgets) {
     if (widget.visible === false) continue;
     const element = document.createElement("div");
-    element.className = `widget${widget.type === "text" ? " widget-text" : ""}${widget.id === state.selectedId ? " selected" : ""}`;
+    element.id = widget.id;
+    element.dataset.widgetId = widget.id;
+    const selected = !runtimeMode && widget.id === state.selectedId;
+    element.className = `widget widget-${widget.type}${selected ? " selected" : ""}`;
     if (widget.cssClass) {
       const safeClasses = String(widget.cssClass).split(/\s+/).filter((name) => /^[A-Za-z_][\w-]*$/.test(name));
       element.classList.add(...safeClasses);
     }
-    Object.assign(element.style, {
-      left: `${widget.x}px`, top: `${widget.y}px`, width: `${widget.width}px`, height: `${widget.height}px`,
+    Object.assign(element.style, { left: `${widget.x}px`, top: `${widget.y}px`, width: `${widget.width}px`, height: `${widget.height}px` });
+    const content = document.createElement("div");
+    content.className = "widget-content";
+    Object.assign(content.style, {
       borderRadius: `${widget.radius}px`, color: widget.textColor || widget.color || "",
       backgroundColor: widget.backgroundColor || "", borderColor: widget.borderColor || "",
       borderWidth: `${widget.borderWidth ?? 1}px`, fontSize: `${widget.fontSize ?? 13}px`,
       fontWeight: widget.fontWeight || "400", textAlign: widget.textAlign || "left",
-      padding: `${widget.padding ?? 8}px`, opacity: `${widget.opacity ?? 1}`,
+      padding: `${widget.padding ?? 0}px`, opacity: `${widget.opacity ?? 1}`,
+      boxShadow: widget.shadow ? "0 2px 8px #0006" : "none",
+      borderStyle: widget.borderStyle || "none",
     });
-    if (widget.shadow) element.style.boxShadow = "0 2px 8px #0006";
-    else element.style.removeProperty("box-shadow");
-    if (widget.borderStyle) element.style.borderStyle = widget.borderStyle;
-    else element.style.removeProperty("border-style");
     if (widget.type === "text") {
-      element.textContent = widget.textContent ?? widget.state ?? "";
-      element.style.whiteSpace = widget.whiteSpace || "pre-wrap";
-      element.style.alignItems = "flex-start";
-      element.style.justifyContent = "flex-start";
-      element.addEventListener("click", () => { if (!runtimeMode) { state.selectedId = widget.id; render(); } });
-      if (!runtimeMode) makeDraggable(element, widget);
-      stage.append(element);
-      continue;
-    }
-    const glyph = document.createElement("span"); glyph.className = "glyph"; glyph.textContent = widget.icon || "●";
-    const copy = document.createElement("span");
-    const title = document.createElement("strong"); title.textContent = widget.title || widget.type;
-    const value = document.createElement("span"); value.className = "value";
+      content.textContent = widget.textContent ?? widget.state ?? "";
+      content.style.whiteSpace = widget.whiteSpace || "pre-wrap";
+    } else if (widget.type === "button") {
+      const button = document.createElement("button");
+      button.type = "button"; button.textContent = widget.title || "Schaltfläche";
+      button.style.cssText = "font:inherit;color:inherit;background:inherit;border:inherit;border-radius:inherit;padding:inherit";
+      content.append(button);
+    } else if (widget.type === "toggle") {
+      const label = document.createElement("label"); label.className = "widget-toggle";
+      const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.checked === true;
+      const caption = document.createElement("span"); caption.textContent = widget.title || "Schalter";
+      label.append(checkbox, caption); content.append(label);
+    } else if (widget.type === "slider") {
+      const range = document.createElement("input"); range.type = "range";
+      range.min = String(widget.min ?? 0); range.max = String(widget.max ?? 100); range.value = String(widget.value ?? 50);
+      range.setAttribute("aria-label", widget.title || "Regler"); content.append(range);
+    } else if (widget.type === "image") {
+      if (widget.imageSrc) { const image = document.createElement("img"); image.src = widget.imageSrc; image.alt = widget.title || "Bild"; content.append(image); }
+      else { content.textContent = widget.title || "Bild"; content.classList.add("image-placeholder"); }
+    } else {
+      const title = document.createElement("span"); title.className = "widget-title"; title.textContent = widget.title || widget.type;
+      const value = document.createElement("span"); value.className = "value";
     let displayValue = widget.state ?? "--";
     if (widget.type === "sensor" && Number.isFinite(Number(displayValue))) {
       const scaled = Number(displayValue) * Number(widget.factor ?? 1);
@@ -111,8 +123,21 @@ function renderStage() {
       if (widget.decimalComma) displayValue = displayValue.replace(".", ",");
     }
     value.textContent = `${widget.entityId ? `${widget.entityId} · ` : ""}${widget.prefix || ""}${displayValue}${widget.unit || ""}`;
-    copy.append(title, document.createElement("br"), value);
-    element.append(glyph, copy);
+      content.append(title, value);
+      if (widget.type === "gauge") content.classList.add("widget-gauge");
+    }
+    element.append(content);
+    if (selected) {
+      const flag = document.createElement("span"); flag.className = "widget-id-flag"; flag.textContent = widget.id;
+      element.append(flag);
+      for (const direction of ["n", "ne", "e", "se", "s", "sw", "w", "nw"]) {
+        const handle = document.createElement("span"); handle.className = `resize-handle resize-${direction}`;
+        handle.dataset.direction = direction; handle.setAttribute("role", "separator");
+        handle.setAttribute("aria-label", `Widget ${widget.id} an der ${direction.toUpperCase()}-Kante skalieren`);
+        handle.title = "Ziehen zum Ändern der Größe"; element.append(handle);
+        makeResizable(element, handle, widget);
+      }
+    }
     element.addEventListener("click", () => { if (!runtimeMode) { state.selectedId = widget.id; render(); } });
     if (!runtimeMode) makeDraggable(element, widget);
     stage.append(element);
@@ -123,6 +148,7 @@ function makeDraggable(element, widget) {
   let origin;
   element.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
+    if (event.target.closest(".resize-handle")) return;
     origin = { x: event.clientX, y: event.clientY, left: widget.x, top: widget.y };
     element.setPointerCapture(event.pointerId);
   });
@@ -134,6 +160,29 @@ function makeDraggable(element, widget) {
     element.style.left = `${widget.x}px`; element.style.top = `${widget.y}px`;
   });
   element.addEventListener("pointerup", () => { origin = null; });
+}
+
+function makeResizable(element, handle, widget) {
+  let origin;
+  handle.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    event.preventDefault(); event.stopPropagation();
+    origin = { x: event.clientX, y: event.clientY, left: widget.x, top: widget.y, width: widget.width, height: widget.height };
+    handle.setPointerCapture(event.pointerId);
+  });
+  handle.addEventListener("pointermove", (event) => {
+    if (!origin || !(event.buttons & 1)) return;
+    const scale = stage.clientWidth / Number.parseFloat(stage.style.width);
+    const direction = handle.dataset.direction;
+    const dx = (event.clientX - origin.x) / scale; const dy = (event.clientY - origin.y) / scale;
+    if (direction.includes("e")) widget.width = Math.max(16, Math.round(origin.width + dx));
+    if (direction.includes("s")) widget.height = Math.max(16, Math.round(origin.height + dy));
+    if (direction.includes("w")) { widget.width = Math.max(16, Math.round(origin.width - dx)); widget.x = Math.max(0, Math.round(origin.left + origin.width - widget.width)); }
+    if (direction.includes("n")) { widget.height = Math.max(16, Math.round(origin.height - dy)); widget.y = Math.max(0, Math.round(origin.top + origin.height - widget.height)); }
+    element.style.left = `${widget.x}px`; element.style.top = `${widget.y}px`;
+    element.style.width = `${widget.width}px`; element.style.height = `${widget.height}px`;
+  });
+  handle.addEventListener("pointerup", () => { origin = null; });
 }
 
 function field(descriptor, widget) {
