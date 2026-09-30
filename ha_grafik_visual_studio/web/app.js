@@ -367,7 +367,7 @@ function requestEntities() {
   state.entityRequestTimeout = window.setTimeout(() => {
     if (state.entityRequestId !== requestId) return;
     state.entityRequestId = "";
-    $("#entities-status").textContent = "Home Assistant antwortet nicht. Öffne Grafik Visual Studio über den Home-Assistant-Seiteneintrag.";
+    $("#entities-status").textContent = "Keine Antwort vom HA-Bridge-Panel. Öffne „HA Grafik Editor“ (nicht den normalen Add-on-Eintrag) und installiere oder aktualisiere dafür die optionale Sidebar-Integration; danach Home Assistant neu starten.";
   }, 15000);
 }
 

@@ -74,6 +74,8 @@ Das Add-on stellt weiterhin den normalen Ingress-Eintrag bereit. Für zwei separ
 
 Diese Integration ist wie das Add-on experimentell. Bei Fehlern kannst du den Integrationsordner entfernen und Home Assistant neu starten; der normale Add-on-Ingress bleibt verfügbar.
 
+Nach Updates müssen Änderungen im Ordner `custom_components/ha_grafik_visual_studio` erneut nach `/config/custom_components/ha_grafik_visual_studio` kopiert und Home Assistant neu gestartet werden. Der normale Add-on-Seiteneintrag öffnet nur Ingress und stellt die Entity-Bridge nicht bereit; für die Entitätenauswahl muss **HA Grafik Editor** aus der optionalen Integration geöffnet werden.
+
 ## VIS2 als Referenz
 
 VIS2 wurde auf Paket- und Quellcodeebene untersucht. Es trennt Editor (`Editor.tsx`) und Runtime (`Runtime.tsx`), lädt Widget-Sets über einen Widget-Katalog und unterstützt unter anderem mehrere Ansichten, Widget-Eigenschaften, Seitenauflösungen sowie absolute und rasterbasierte Layouts. Dieses Projekt übernimmt nur diese allgemeinen Produktideen. Es enthält keinen VIS2-Code, keine VIS2-Widgets und keine VIS2-Ressourcen. Die Widget-Registrierung ist für eigenständige Home-Assistant-Widgets vorgesehen. Ein späterer Importer ist als Konvertierungshilfe geplant, nicht als Möglichkeit, VIS-Widgets samt Abhängigkeiten direkt in Home Assistant auszuführen.

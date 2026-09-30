@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.35
+
+- Erklärt bei fehlender Entity-Bridge, dass der separate Sidebar-Eintrag „HA Grafik Editor“ geöffnet und die optionale Integration installiert sein muss.
+- Ergänzt die Anleitung, die Sidebar-Integration nach Add-on-Updates erneut zu kopieren und Home Assistant neu zu starten.
+
 ## 0.1.34
 
 - Ergänzt den Home-Assistant-Entitäten-Dialog mit Gerätebaum, Suche, Zustandsanzeige, Aktualisieren, Kopieren und Einfügen in Widget-Felder.
