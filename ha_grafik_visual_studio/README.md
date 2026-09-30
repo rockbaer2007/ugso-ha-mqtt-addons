@@ -4,7 +4,7 @@
 
 Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mit getrenntem Editor und Runtime. Das Paket ist ein frühes Grundgerüst, keine fertige VIS2-Alternative.
 
-Das Add-on enthält ein eigenes Icon und Logo für die Darstellung im Home-Assistant-App-Store.
+Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sowie daraus gerenderte PNG-Dateien für den Home-Assistant-App-Store.
 
 ## Aktueller Stand
 

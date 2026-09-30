@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.30
+
+- Ersetzt das App-Icon und Logo durch neu gestaltete SVG-Dateien.
+- Rendert passende `icon.png` und `logo.png` aus den SVG-Quellen für den Home-Assistant-App-Store.
+
 ## 0.1.29
 
 - Fügt ein eigenes App-Icon und ein passendes Logo für HA Grafik Visual Studio hinzu.
