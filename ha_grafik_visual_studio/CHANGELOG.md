@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.8
+
+- Trennt projektweites CSS für alle Widgets von den CSS-Eigenschaften eines ausgewählten Widgets.
+- Der Reiter CSS bietet einen live angewendeten Projekt-CSS-Editor; individuelle CSS-Gruppen liegen im Reiter Widget.
+
 ## 0.1.7
 
 - Behebt 404-Antworten beim Öffnen im Add-on-Docker-Image, indem der Server den tatsächlichen Web-Ordner im Container findet.

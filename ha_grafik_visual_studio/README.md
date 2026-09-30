@@ -17,6 +17,7 @@ Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mi
 - Die Basispalette enthält passende grafische Elemente: Switch mit direktem Ein-/Aus-Zustand, Checkbox, Lampe ein/aus, Slider, Text, Zahlenwert und einen eigenen Rahmen mit Titel/Kopfzeile.
 - Der Seitenhintergrund unterstützt eine Farbe oder ein Bild mit Kachel-, Zentriert- und Stretch-Darstellung.
 - Der rechte Eigenschaftenbereich orientiert sich an VIS2s Reitern für Ansicht, Widget, CSS und Skripte; Widget-Metadaten, Sichtbarkeit, Inhalt und CSS sind getrennt gruppiert.
+- Der CSS-Reiter enthält projektweite CSS-Regeln für alle Widgets; CSS-Felder für das aktuell ausgewählte Widget stehen in dessen Widget-Eigenschaften.
 - Zahlenwerte bieten erste Formatoptionen wie Nachkommastellen, Multiplikator, Dezimalkomma sowie Vor- und Nachsilbe.
 - CSS-Eigenschaften umfassen Schrift, Farbe, Hintergrund, Rahmen, Eckenradius, Schatten, Abstand und Deckkraft.
 

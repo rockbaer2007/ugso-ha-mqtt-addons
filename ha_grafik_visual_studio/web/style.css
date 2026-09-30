@@ -86,6 +86,9 @@ button { cursor: pointer; }
 .property-fields label { display: grid; gap: 3px; color: var(--muted); font-size: 11px; }
 .property-fields input, .property-fields select, .property-fields textarea { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 4px; padding: 5px 6px; background: var(--bg); }
 .property-fields textarea { min-height: 76px; resize: vertical; }
+.project-css-editor { display: block; width: 100%; min-height: calc(100vh - 240px); resize: vertical; border: 1px solid var(--line); border-radius: 4px; padding: 8px; color: var(--text); background: #1e1e1e; font: 12px/1.5 ui-monospace, Consolas, monospace; tab-size: 2; }
+.project-css-editor::placeholder { color: #879195; opacity: .8; }
+.global-css-hint { margin: 0 0 8px; }
 .property-fields input[type="checkbox"] { width: auto; justify-self: start; accent-color: var(--accent); }
 .property-fields input[type="color"] { height: 30px; padding: 2px; }
 .property-fields input:disabled, .property-fields select:disabled { opacity: .55; cursor: not-allowed; }

@@ -50,6 +50,16 @@ function renderPalette() {
   }
 }
 
+function applyProjectCss() {
+  let style = document.getElementById("project-user-css");
+  if (!style) {
+    style = document.createElement("style");
+    style.id = "project-user-css";
+    document.head.append(style);
+  }
+  style.textContent = state.project.css || "";
+}
+
 function addWidget(definition) {
   const id = `widget-${state.nextId++}`;
   const index = state.project.widgets.length;
@@ -258,7 +268,7 @@ function renderProperties() {
   }
   panel.append(tabs);
   const widget = state.project.widgets.find((item) => item.id === state.selectedId);
-  if (!widget && state.propertyTab !== "view") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Wähle ein Widget aus, um seine Eigenschaften zu bearbeiten."; panel.append(empty); return; }
+  if (!widget && !["view", "css"].includes(state.propertyTab)) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Wähle ein Widget aus, um seine Eigenschaften zu bearbeiten."; panel.append(empty); return; }
   if (state.propertyTab === "view") {
     const heading = document.createElement("div"); heading.className = "selected-widget-heading"; heading.textContent = "Ansicht / Hintergrund"; panel.append(heading);
     const details = document.createElement("details"); details.className = "property-section"; details.open = true;
@@ -274,9 +284,20 @@ function renderProperties() {
     body.append(...descriptors.map((descriptor) => field(descriptor, state.project.page)));
     details.append(summary, body); panel.append(details); return;
   }
+  if (state.propertyTab === "css") {
+    const heading = document.createElement("div"); heading.className = "selected-widget-heading"; heading.textContent = "Globales CSS · alle Widgets dieses Projekts"; panel.append(heading);
+    const hint = document.createElement("p"); hint.className = "property-hint global-css-hint";
+    hint.textContent = "Diese Regeln gelten projektweit. Individuelle CSS-Werte des ausgewählten Widgets findest du unter WIDGET.";
+    const editor = document.createElement("textarea"); editor.className = "project-css-editor"; editor.setAttribute("aria-label", "Globales Projekt-CSS");
+    editor.spellcheck = false; editor.value = state.project.css || "";
+    editor.placeholder = ".widget-toggle {\n  /* CSS für alle Switch-Widgets */\n}\n\n.widget-text {\n  /* CSS für alle Text-Widgets */\n}";
+    editor.addEventListener("input", () => { state.project.css = editor.value; applyProjectCss(); });
+    panel.append(hint, editor);
+    return;
+  }
   if (state.propertyTab === "scripts") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Widget-Skripte werden in einem späteren Ausbauschritt ergänzt."; panel.append(empty); return; }
   if (widget.type === "toggle" && typeof widget.state === "boolean") widget.state = widget.state ? "on" : "off";
-  const groups = getWidgetDefinition(widget.type).propertyGroups.filter((group) => state.propertyTab === "css" ? group.css === true : group.css !== true);
+  const groups = getWidgetDefinition(widget.type).propertyGroups;
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
   heading.textContent = `${getWidgetDefinition(widget.type).label} · ${widget.id}`; panel.append(heading);
   for (const [index, group] of groups.entries()) {
@@ -290,6 +311,7 @@ function renderProperties() {
 }
 
 function render() {
+  applyProjectCss();
   workspace.classList.toggle("runtime", runtimeMode);
   document.body.classList.toggle("runtime-mode", runtimeMode);
   $("#editor-link").classList.toggle("active", !runtimeMode);
