@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.18
+
+- Ergänzt das getrennte Widget-Set „HA Grafik – Basic 2“ mit einem Universal-Widget für bis zu fünf zustandsabhängige Inhalte.
+- Unterstützt pro Zustand MDI-/Iconset-Icons, Grafiken, Text oder bereinigtes HTML sowie Größe, Farbe, Layout und Bildanpassung.
+- Fügt lokale Runtime-Testbedienung für Schalter, Buttons und Navigation hinzu; echte Entity-Bindung folgt später.
+
 ## 0.1.17
 
 - Ergänzt eine durchsuchbare MDI-Auswahl für Icon- und Bildfelder.

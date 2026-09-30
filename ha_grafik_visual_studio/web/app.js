@@ -1,5 +1,6 @@
 import { getWidgetSets, getWidgetDefinition } from "./widget-registry.js";
 import "./widget-sets/core.js";
+import "./widget-sets/basic2.js";
 
 const PRESETS = {
   desktop: { width: 1920, height: 1080 },
@@ -147,7 +148,7 @@ $("#icon-picker").addEventListener("click", (event) => {
   if (event.target === event.currentTarget) event.currentTarget.close();
 });
 
-function setIconImageSource(image, value) {
+function setIconImageSource(image, value, color = "") {
   const source = safeUrl(value, true);
   if (source) { image.src = source; return; }
   const match = String(value || "").match(/^mdi:([a-z0-9-]+)$/i);
@@ -155,7 +156,8 @@ function setIconImageSource(image, value) {
   image.dataset.iconValue = value;
   void loadMdiIcons().then((icons) => {
     const path = icons.get(match[1]);
-    if (path && image.isConnected && image.dataset.iconValue === value) image.src = iconDataUrl(path, getComputedStyle(document.body).color);
+    const safeColor = /^#[0-9a-f]{3,8}$/i.test(color) ? color : getComputedStyle(document.body).color;
+    if (path && image.isConnected && image.dataset.iconValue === value) image.src = iconDataUrl(path, safeColor);
   }).catch(() => {});
 }
 
@@ -511,7 +513,59 @@ function renderStage() {
     });
     const widgetBackgroundImage = safeUrl(widget.backgroundImage);
     content.style.backgroundImage = widgetBackgroundImage ? `url(${JSON.stringify(widgetBackgroundImage)})` : "";
-    if (widget.type === "text") {
+    if (widget.type === "universal-button") {
+      const visualStates = widget.visualStates || [];
+      const matchingIndex = visualStates.findIndex((item) => matchesCondition(widget.state, item.condition || "==", item.value));
+      const visualIndex = matchingIndex >= 0 ? matchingIndex : 0;
+      const visual = visualStates[visualIndex] || {};
+      content.classList.add("universal-widget-content");
+      content.dataset.state = String(widget.state ?? "");
+      content.style.display = "flex";
+      content.style.flexDirection = widget.contentLayout === "horizontal" ? "row" : "column";
+      content.style.justifyContent = widget.contentAlign === "start" ? "flex-start" : widget.contentAlign === "end" ? "flex-end" : "center";
+      content.style.alignItems = widget.contentAlign === "start" ? "flex-start" : widget.contentAlign === "end" ? "flex-end" : "center";
+      content.setAttribute("aria-label", widget.title || `Universal-Widget: ${widget.state ?? ""}`);
+      if (visual.contentType === "icon") {
+        const iconValue = String(visual.icon || "").trim();
+        if (safeUrl(iconValue, true) || /^mdi:[a-z0-9-]+$/i.test(iconValue)) {
+          const image = document.createElement("img"); image.className = "universal-widget-icon";
+          const iconSize = Math.max(8, Math.min(512, Number(visual.iconSize) || 48));
+          image.style.width = `${iconSize}px`; image.style.height = `${iconSize}px`; image.style.objectFit = "contain";
+          setIconImageSource(image, iconValue, visual.iconColor); image.alt = visual.text || iconValue; content.append(image);
+        } else if (/^[a-z0-9_-]+:[a-z0-9_-]+$/i.test(iconValue)) {
+          const name = document.createElement("span"); name.className = "universal-widget-icon-fallback"; name.textContent = iconValue; content.append(name);
+        }
+      } else if (visual.contentType === "image") {
+        const imageUrl = safeUrl(visual.image, true);
+        if (imageUrl) {
+          const image = document.createElement("img"); image.className = "universal-widget-image";
+          const size = Math.max(8, Math.min(768, Number(visual.iconSize) || 96));
+          image.style.width = `${size}px`; image.style.height = `${size}px`; image.style.objectFit = visual.imageFit || "contain";
+          image.src = imageUrl; image.alt = visual.text || ""; content.append(image);
+        }
+      } else if (visual.contentType === "text") {
+        const text = document.createElement("span"); text.className = "universal-widget-text"; text.textContent = visual.text || ""; content.append(text);
+      } else if (visual.contentType === "html") {
+        const html = document.createElement("span"); html.className = "universal-widget-html"; appendSafeHtml(html, visual.html || ""); content.append(html);
+      }
+      if (runtimeMode && widget.interaction !== "read-only") {
+        content.classList.add("is-interactive"); content.tabIndex = 0;
+        if (widget.interaction === "navigation") content.setAttribute("role", "link");
+        else content.setAttribute("role", "button");
+        const activate = (event) => {
+          event.stopPropagation();
+          if (widget.interaction === "navigation") {
+            const target = safeUrl(widget.targetUrl);
+            if (target) window.open(target, "_blank", "noopener,noreferrer");
+          } else {
+            widget.state = visualStates[(visualIndex + 1) % Math.max(visualStates.length, 1)]?.value ?? "on";
+            renderStage();
+          }
+        };
+        content.addEventListener("click", activate);
+        content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); activate(event); } });
+      }
+    } else if (widget.type === "text") {
       content.textContent = widget.textContent ?? widget.state ?? "";
       content.style.whiteSpace = widget.whiteSpace || "pre-wrap";
     } else if (widget.type === "border") {
@@ -916,7 +970,40 @@ function renderProperties() {
     summary.append(title, enabled);
     const body = document.createElement("div"); body.className = "property-fields";
     if (group.hint) { const hint = document.createElement("p"); hint.className = "property-hint"; hint.textContent = group.hint; body.append(hint); }
-    body.append(...group.fields.map((descriptor) => field(descriptor, widget)));
+    const visibleFields = (fields, model) => fields.filter((descriptor) => !descriptor.showWhen || model[descriptor.showWhen.key] === descriptor.showWhen.value).map((descriptor) => field(descriptor, model));
+    body.append(...visibleFields(group.fields, widget));
+    if (group.universalStates) {
+      const count = Math.max(1, Math.min(5, Number(widget.stateCount) || 2));
+      widget.visualStates ??= [];
+      while (widget.visualStates.length < count) {
+        const stateIndex = widget.visualStates.length;
+        widget.visualStates.push({ condition: "==", value: `state-${stateIndex + 1}`, contentType: "icon", icon: "mdi:checkbox-blank-circle", image: "", text: "", html: "", iconSize: 48, iconColor: "#29c8b5", imageFit: "contain" });
+      }
+      const stateFields = [
+        { label: "Vergleich", key: "condition", type: "select", options: ["==", "!=", ">", ">=", "<", "<="] },
+        { label: "Zustandswert", key: "value" },
+        { label: "Inhalt", key: "contentType", type: "select", refreshProperties: true, options: [
+          { value: "icon", label: "Icon" }, { value: "image", label: "Bild" }, { value: "text", label: "Text" }, { value: "html", label: "HTML (bereinigt)" },
+        ] },
+        { label: "Icon / Iconset", key: "icon", previewImage: true, showWhen: { key: "contentType", value: "icon" } },
+        { label: "Bildpfad / URL", key: "image", previewImage: true, showWhen: { key: "contentType", value: "image" } },
+        { label: "Text", key: "text", type: "textarea", showWhen: { key: "contentType", value: "text" } },
+        { label: "HTML-Inhalt", key: "html", type: "textarea", showWhen: { key: "contentType", value: "html" } },
+        { label: "Icongröße (px)", key: "iconSize", type: "range", min: 8, max: 512, step: 1, showWhen: { key: "contentType", value: "icon" } },
+        { label: "Bildgröße (px)", key: "iconSize", type: "range", min: 8, max: 768, step: 1, showWhen: { key: "contentType", value: "image" } },
+        { label: "Iconfarbe", key: "iconColor", type: "color", showWhen: { key: "contentType", value: "icon" } },
+        { label: "Bildanpassung", key: "imageFit", type: "select", options: ["contain", "cover", "fill"], showWhen: { key: "contentType", value: "image" } },
+      ];
+      for (let stateIndex = 0; stateIndex < count; stateIndex += 1) {
+        const visualState = widget.visualStates[stateIndex];
+        const details = document.createElement("details"); details.className = "signal-section";
+        const summary = document.createElement("summary"); summary.textContent = `Zustand ${stateIndex + 1}`; details.append(summary);
+        const fields = document.createElement("div"); fields.className = "property-fields";
+        fields.append(...visibleFields(stateFields, visualState));
+        details.append(fields); body.append(details);
+      }
+      widget.visualStates.length = count;
+    }
     if (group.signalImages) {
       const count = Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
       widget.signalImages ??= [];

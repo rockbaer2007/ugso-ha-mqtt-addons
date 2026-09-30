@@ -139,6 +139,11 @@ button { cursor: pointer; }
 .property-image-preview[hidden] { display: none; }
 .property-iconset-preview[hidden] { display: none; }
 .property-icon-picker-button { width: 28px; min-width: 28px; height: 29px; padding: 0; color: var(--accent); font-size: 18px; line-height: 1; }
+.universal-widget-content { box-sizing: border-box; gap: 6px; overflow: hidden; user-select: none; }
+.universal-widget-content.is-interactive { cursor: pointer; }
+.universal-widget-icon, .universal-widget-image { display: block; flex: none; }
+.universal-widget-text, .universal-widget-html { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.universal-widget-icon-fallback { max-width: 100%; overflow: hidden; color: var(--accent); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .property-input-row input { grid-column: 1; }
 .property-input-row.has-preview input { grid-column: 2; }
 .icon-picker { width: min(760px, calc(100vw - 28px)); max-width: 760px; max-height: min(780px, calc(100vh - 28px)); padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: var(--panel); }
