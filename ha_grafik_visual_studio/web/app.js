@@ -61,7 +61,7 @@ function applyProjectCss() {
 }
 
 function isOn(value) {
-  return value === true || value === 1 || ["true", "on", "yes", "1"].includes(String(value).toLowerCase());
+  return value === true || value === 1 || ["true", "on", "ein", "yes", "1"].includes(String(value).toLowerCase());
 }
 
 const safeHtmlTags = new Set(["a", "b", "br", "caption", "code", "div", "em", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "li", "ol", "p", "small", "span", "strong", "sub", "sup", "table", "tbody", "td", "th", "thead", "tr", "u", "ul"]);
@@ -203,10 +203,23 @@ function renderStage() {
       heading.style.top = `${widget.titleTopOffset ?? -9}px`; heading.style.left = `${widget.titleLeftOffset ?? 16}px`;
       content.append(header, heading);
     } else if (widget.type === "button") {
-      const button = document.createElement("button");
-      button.type = "button"; button.textContent = widget.title || "Schaltfläche";
-      button.style.cssText = "font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:inherit;padding:4px 8px";
-      content.append(button);
+      const on = isOn(widget.state);
+      const iconUrl = safeUrl(on ? widget.icon_on : widget.icon_off, true);
+      if (iconUrl) {
+        const image = document.createElement("img"); image.className = "button-icon"; image.src = iconUrl;
+        image.alt = `${widget.title || "Schaltfläche"}: ${on ? "ein" : "aus"}`; content.append(image);
+      } else {
+        const fallback = document.createElement("span"); fallback.className = `button-icon-fallback ${on ? "is-on" : "is-off"}`;
+        fallback.textContent = on ? "●" : "○"; fallback.setAttribute("aria-hidden", "true"); content.append(fallback);
+      }
+      if (widget.title) { const caption = document.createElement("span"); caption.className = "button-icon-title"; caption.textContent = widget.title; content.append(caption); }
+      content.setAttribute("aria-label", `${widget.title || "Schaltfläche"}: ${on ? "ein" : "aus"}`);
+      if (runtimeMode && !widget.readOnly) {
+        content.classList.add("is-interactive"); content.setAttribute("role", "button"); content.tabIndex = 0;
+        const toggle = (event) => { event.stopPropagation(); widget.state = on ? "off" : "on"; renderStage(); };
+        content.addEventListener("click", toggle);
+        content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(event); } });
+      }
     } else if (widget.type === "toggle") {
       const label = document.createElement("label"); label.className = "widget-toggle";
       const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true" || widget.state === "on";

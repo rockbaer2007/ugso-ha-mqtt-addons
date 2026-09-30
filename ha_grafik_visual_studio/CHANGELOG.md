@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.10
+
+- Ändert die Schaltfläche zu einem zustandsabhängigen Icon-Feld mit separaten Bild-URLs für Ein und Aus.
+- Das ganze Feld schaltet den lokalen Vorschauzustand in der Runtime um; optional kann es auf Nur-Lesen gesetzt werden.
+
 ## 0.1.9
 
 - Ergänzt VIS-inspirierte Basic-Widgets für Strings, bereinigtes HTML, Zeitwerte, Wertelisten, boolesche Ausgaben und Steuerungen, Tabellen, Vollbild, Balken, Navigation und Widget-Filter.

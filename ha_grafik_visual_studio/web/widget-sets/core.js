@@ -74,7 +74,17 @@ registerWidgetSet({
   id: "ha-grafik-core",
   label: "HA Grafik – Basis",
   widgets: [
-    { type: "button", label: "Schaltfläche", icon: "◉", defaults: { title: "Schaltfläche", entityId: "", state: "Aus" }, propertyGroups: entityWidget() },
+    { type: "button", label: "Schaltfläche (Icon Ein/Aus)", icon: "◉", defaults: { title: "Schaltfläche", entityId: "", state: "off", icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
+      metadata(), visibility(),
+      { label: "Allgemein", fields: [
+        { label: "Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+        { label: "Zustand", key: "state", type: "select", options: [{ value: "off", label: "Aus" }, { value: "on", label: "Ein" }] },
+        { label: "Icon für Aus (Bild-URL)", key: "icon_off" },
+        { label: "Icon für Ein (Bild-URL)", key: "icon_on" },
+        { label: "Nur lesen", key: "readOnly", type: "checkbox" },
+      ] },
+      geometry(), ...cssGroups(),
+    ] },
     { type: "toggle", label: "Switch", icon: "⏻", defaults: { title: "Schalter", entityId: "", state: "off" }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
