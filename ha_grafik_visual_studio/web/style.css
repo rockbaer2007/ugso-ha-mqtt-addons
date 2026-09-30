@@ -84,6 +84,11 @@ button { cursor: pointer; }
 .bulb-title { white-space: nowrap; }
 .widget-title { font-size: .85em; }
 .widget .value { color: inherit; }
+.signal-overlay { position: absolute; display: inline-flex; align-items: center; gap: 2px; pointer-events: none; white-space: nowrap; }
+.signal-overlay > img { flex: none; object-fit: contain; }
+.signal-caption { padding: 1px 3px; background: #111a; font-size: 10px; }
+.signal-blink { animation: signal-blink 1s steps(2, start) infinite; }
+@keyframes signal-blink { to { visibility: hidden; } }
 .widget-gauge { justify-content: center; border-radius: 50%; }
 .image-placeholder { display: grid; place-items: center; border: 1px dashed currentColor; }
 .widget.selected { outline: 1px dashed #1688e7; outline-offset: 0; }
@@ -99,6 +104,8 @@ button { cursor: pointer; }
 .resize-nw { top: -4px; left: -4px; } .resize-se { right: -4px; bottom: -4px; }
 .property-section { margin-bottom: 7px; border: 1px solid var(--line); border-radius: 5px; }
 .property-section summary { padding: 7px 8px; cursor: pointer; font-weight: 600; }
+.signal-section { border: 1px solid var(--line); border-radius: 4px; }
+.signal-section > summary { padding: 5px 7px; cursor: pointer; color: var(--accent); }
 .property-fields { display: grid; gap: 7px; padding: 7px; }
 .property-fields label { display: grid; gap: 3px; color: var(--muted); font-size: 11px; }
 .property-fields input, .property-fields select, .property-fields textarea { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 4px; padding: 5px 6px; background: var(--bg); }

@@ -129,13 +129,28 @@ function listEntry(widget) {
 }
 
 function applySafeStyle(element, cssText) {
-  const allowed = new Set(["color", "background-color", "font-weight", "font-style", "text-align", "border", "border-radius", "padding", "opacity"]);
+  const allowed = new Set(["color", "background-color", "font-weight", "font-style", "text-align", "border", "border-radius", "padding", "opacity", "filter", "object-fit", "object-position", "box-shadow", "transform", "display", "width", "height", "margin"]);
   for (const declaration of String(cssText || "").split(";")) {
     const separator = declaration.indexOf(":");
     if (separator < 1) continue;
     const property = declaration.slice(0, separator).trim().toLowerCase();
     const value = declaration.slice(separator + 1).trim();
     if (allowed.has(property) && value && !/url\s*\(|expression|javascript:/i.test(value)) element.style.setProperty(property, value);
+  }
+}
+
+function matchesCondition(actual, condition, expected) {
+  const actualString = String(actual ?? ""); const expectedString = String(expected ?? "");
+  const a = Number(actual); const b = Number(expected);
+  const numeric = actualString.trim() !== "" && expectedString.trim() !== "" && Number.isFinite(a) && Number.isFinite(b);
+  const left = numeric ? a : actualString.toLowerCase(); const right = numeric ? b : expectedString.toLowerCase();
+  switch (condition) {
+    case "!=": return left !== right;
+    case ">": return left > right;
+    case ">=": return left >= right;
+    case "<": return left < right;
+    case "<=": return left <= right;
+    default: return left === right;
   }
 }
 
@@ -178,7 +193,15 @@ function renderStage() {
       const safeClasses = String(widget.cssClass).split(/\s+/).filter((name) => /^[A-Za-z_][\w-]*$/.test(name));
       element.classList.add(...safeClasses);
     }
-    Object.assign(element.style, { left: `${widget.x}px`, top: `${widget.y}px`, width: `${widget.width}px`, height: `${widget.height}px`, zIndex: String(Math.max(0, Number(widget.layer) || 0) + 2) });
+    Object.assign(element.style, {
+      position: widget.cssPosition || "absolute", display: widget.cssDisplay || "",
+      left: widget.cssLeft || `${widget.x}px`, top: widget.cssTop || `${widget.y}px`,
+      width: widget.cssWidth || `${widget.width}px`, height: widget.cssHeight || `${widget.height}px`,
+      zIndex: widget.cssZIndex === undefined || widget.cssZIndex === "" ? String(Math.max(0, Number(widget.layer) || 0) + 2) : String(widget.cssZIndex),
+      overflowX: widget.cssOverflowX || "visible", overflowY: widget.cssOverflowY || "visible",
+      cursor: widget.cssCursor || "", transform: widget.cssTransform || "",
+      marginLeft: widget.marginLeft || "", marginTop: widget.marginTop || "", marginRight: widget.marginRight || "", marginBottom: widget.marginBottom || "",
+    });
     const content = document.createElement("div");
     content.className = "widget-content";
     Object.assign(content.style, {
@@ -187,9 +210,17 @@ function renderStage() {
       borderWidth: `${widget.borderWidth ?? 1}px`, fontSize: `${widget.fontSize ?? 13}px`,
       fontWeight: widget.fontWeight || "400", textAlign: widget.textAlign || "left",
       padding: `${widget.padding ?? 0}px`, opacity: `${widget.opacity ?? 1}`,
-      boxShadow: widget.shadow ? "0 2px 8px #0006" : "none",
       borderStyle: widget.borderStyle || "none",
+      fontFamily: widget.fontFamily || "", fontStyle: widget.fontStyle || "", fontVariant: widget.fontVariant || "",
+      lineHeight: widget.lineHeight || "", letterSpacing: widget.letterSpacing || "", wordSpacing: widget.wordSpacing || "", textShadow: widget.textShadow || "",
+      paddingLeft: widget.paddingLeft || "", paddingTop: widget.paddingTop || "", paddingRight: widget.paddingRight || "", paddingBottom: widget.paddingBottom || "",
+      boxShadow: widget.boxShadow || (widget.shadow ? "0 2px 8px #0006" : "none"),
+      backgroundRepeat: widget.backgroundRepeat || "", backgroundAttachment: widget.backgroundAttachment || "",
+      backgroundPosition: widget.backgroundPosition || "", backgroundSize: widget.backgroundSize || "",
+      backgroundClip: widget.backgroundClip || "", backgroundOrigin: widget.backgroundOrigin || "",
     });
+    const widgetBackgroundImage = safeUrl(widget.backgroundImage);
+    content.style.backgroundImage = widgetBackgroundImage ? `url(${JSON.stringify(widgetBackgroundImage)})` : "";
     if (widget.type === "text") {
       content.textContent = widget.textContent ?? widget.state ?? "";
       content.style.whiteSpace = widget.whiteSpace || "pre-wrap";
@@ -361,6 +392,31 @@ function renderStage() {
       if (widget.type === "gauge") content.classList.add("widget-gauge");
     }
     element.append(content);
+    const signalCount = Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
+    for (const [signalIndex, signal] of (widget.signalImages || []).slice(0, signalCount).entries()) {
+      if (!signal || (!runtimeMode && signal.hideInEditor)) continue;
+      const actual = widget.state ?? widget.value ?? "";
+      if (!matchesCondition(actual, signal.condition || "==", signal.value ?? "true")) continue;
+      const imageSrc = safeUrl(signal.image, true);
+      if (!imageSrc) continue;
+      const overlay = document.createElement("span"); overlay.className = "signal-overlay";
+      overlay.style.left = `${Number(signal.horizontal) || 0}px`; overlay.style.top = `${Number(signal.vertical) || 0}px`;
+      overlay.style.zIndex = String(20 + signalIndex);
+      for (const name of String(signal.className || "").split(/\s+/).filter((item) => /^[A-Za-z_][\w-]*$/.test(item))) overlay.classList.add(name);
+      if (signal.blink) overlay.classList.add("signal-blink");
+      const image = document.createElement("img"); image.src = imageSrc; image.alt = signal.text || `Signal ${signalIndex + 1}`;
+      const imageSize = Math.max(8, Math.min(256, Number(signal.imageSize) || 24));
+      image.style.width = `${imageSize}px`; image.style.height = `${imageSize}px`; image.style.objectFit = "contain";
+      applySafeStyle(image, signal.imageStyle); overlay.append(image);
+      const smallIconUrl = safeUrl(signal.smallIcon, true);
+      if (smallIconUrl) { const smallIcon = document.createElement("img"); smallIcon.className = "signal-small-icon"; smallIcon.src = smallIconUrl; smallIcon.alt = ""; smallIcon.style.width = `${Math.round(imageSize * 0.45)}px`; smallIcon.style.height = `${Math.round(imageSize * 0.45)}px`; overlay.append(smallIcon); }
+      if (signal.text) {
+        const caption = document.createElement("span"); caption.className = "signal-caption";
+        caption.textContent = String(signal.text).replaceAll("{value}", String(actual)).replaceAll("{entity}", String(signal.entityId || ""));
+        applySafeStyle(caption, signal.textStyle); overlay.append(caption);
+      }
+      element.append(overlay);
+    }
     if (selected) {
       const flag = document.createElement("span"); flag.className = "widget-id-flag"; flag.textContent = widget.id;
       element.append(flag);
@@ -436,7 +492,12 @@ function field(descriptor, widget) {
   if (descriptor.max !== undefined) input.max = descriptor.max;
   if (descriptor.step !== undefined) input.step = descriptor.step;
   input.disabled = descriptor.disabled === true;
-  input.addEventListener("input", () => { widget[descriptor.key] = input.type === "number" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value; renderStage(); });
+  const update = () => {
+    widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    renderStage();
+    if (descriptor.refreshProperties) renderProperties();
+  };
+  input.addEventListener(descriptor.type === "select" ? "change" : "input", update);
   wrapper.append(input); return wrapper;
 }
 
@@ -490,6 +551,32 @@ function renderProperties() {
     const body = document.createElement("div"); body.className = "property-fields";
     if (group.hint) { const hint = document.createElement("p"); hint.className = "property-hint"; hint.textContent = group.hint; body.append(hint); }
     body.append(...group.fields.map((descriptor) => field(descriptor, widget)));
+    if (group.signalImages) {
+      const count = Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
+      widget.signalImages ??= [];
+      const signalFields = [
+        { label: "Objekt-ID", key: "entityId" },
+        { label: "Bedingung", key: "condition", type: "select", options: ["==", "!=", ">", ">=", "<", "<="] },
+        { label: "Wert für die Bedingung", key: "value" },
+        { label: "Bild (URL oder HA-Pfad)", key: "image" }, { label: "Kleines Symbol", key: "smallIcon" },
+        { label: "Bildgröße in px", key: "imageSize", type: "range", min: 8, max: 128, step: 1 },
+        { label: "CSS Bildstil", key: "imageStyle" }, { label: "Text oder Vorlage ({value})", key: "text" },
+        { label: "CSS Textstil", key: "textStyle" }, { label: "Klassen", key: "className" },
+        { label: "Blinken", key: "blink", type: "checkbox" },
+        { label: "Horizontale Position (px)", key: "horizontal", type: "number" },
+        { label: "Vertikale Position (px)", key: "vertical", type: "number" },
+        { label: "Nicht im Editor zeigen", key: "hideInEditor", type: "checkbox" },
+      ];
+      for (let signalIndex = 0; signalIndex < count; signalIndex += 1) {
+        const signal = widget.signalImages[signalIndex] ??= { condition: "==", value: "true", imageSize: 24, horizontal: 0, vertical: 0, blink: false, hideInEditor: false };
+        const details = document.createElement("details"); details.className = "signal-section"; details.open = count === 1 && signalIndex === 0;
+        const summary = document.createElement("summary"); summary.textContent = `Signal [${signalIndex}]`; details.append(summary);
+        const fields = document.createElement("div"); fields.className = "property-fields";
+        fields.append(...signalFields.map((descriptor) => field({ ...descriptor, label: `${descriptor.label} [${signalIndex}]` }, signal)));
+        details.append(fields); body.append(details);
+      }
+      widget.signalImages.length = count;
+    }
     details.append(summary, body); panel.append(details);
   }
 }

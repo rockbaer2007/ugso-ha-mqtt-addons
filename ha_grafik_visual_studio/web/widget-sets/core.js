@@ -9,13 +9,35 @@ const geometry = () => fields([
   { label: "Y (px)", key: "y", type: "number", min: 0 },
 ]);
 const cssGroups = () => [
+  { label: "CSS Allgemein", css: true, fields: [
+    { label: "position", key: "cssPosition", type: "select", options: ["", "absolute", "relative", "static", "fixed"] },
+    { label: "display", key: "cssDisplay", type: "select", options: ["", "block", "inline", "inline-block", "flex", "grid", "none"] },
+    { label: "left", key: "cssLeft" }, { label: "top", key: "cssTop" },
+    { label: "width", key: "cssWidth" }, { label: "height", key: "cssHeight" },
+    { label: "z-index", key: "cssZIndex", type: "number" },
+    { label: "overflow-x", key: "cssOverflowX", type: "select", options: ["", "visible", "hidden", "auto", "scroll"] },
+    { label: "overflow-y", key: "cssOverflowY", type: "select", options: ["", "visible", "hidden", "auto", "scroll"] },
+    { label: "opacity", key: "opacity", type: "number", min: 0, max: 1, step: 0.05 },
+    { label: "cursor", key: "cssCursor" }, { label: "transform", key: "cssTransform" },
+  ] },
   { label: "CSS Font & Text", css: true, fields: [
-    { label: "Schriftgröße (px)", key: "fontSize", type: "number", min: 6, max: 160 },
+    { label: "Farbe", key: "textColor", type: "color" },
     { label: "Schriftstärke", key: "fontWeight", type: "select", options: ["400", "500", "600", "700"] },
     { label: "Textausrichtung", key: "textAlign", type: "select", options: ["left", "center", "right"] },
-    { label: "Textfarbe", key: "textColor", type: "color" },
+    { label: "text-shadow", key: "textShadow" }, { label: "font-family", key: "fontFamily" },
+    { label: "font-style", key: "fontStyle", type: "select", options: ["", "normal", "italic", "oblique"] },
+    { label: "font-variant", key: "fontVariant", type: "select", options: ["", "normal", "small-caps"] },
+    { label: "font-size", key: "fontSize", type: "number", min: 6, max: 160 },
+    { label: "line-height", key: "lineHeight" }, { label: "letter-spacing", key: "letterSpacing" }, { label: "word-spacing", key: "wordSpacing" },
   ] },
-  { label: "CSS Hintergrund", css: true, fields: [{ label: "Hintergrundfarbe", key: "backgroundColor", type: "color" }] },
+  { label: "CSS Hintergrund", css: true, fields: [
+    { label: "background-color", key: "backgroundColor", type: "color" }, { label: "background-image", key: "backgroundImage" },
+    { label: "background-repeat", key: "backgroundRepeat", type: "select", options: ["", "repeat", "no-repeat", "repeat-x", "repeat-y"] },
+    { label: "background-attachment", key: "backgroundAttachment", type: "select", options: ["", "scroll", "fixed", "local"] },
+    { label: "background-position", key: "backgroundPosition" }, { label: "background-size", key: "backgroundSize" },
+    { label: "background-clip", key: "backgroundClip", type: "select", options: ["", "border-box", "padding-box", "content-box"] },
+    { label: "background-origin", key: "backgroundOrigin", type: "select", options: ["", "border-box", "padding-box", "content-box"] },
+  ] },
   { label: "CSS Ränder", css: true, fields: [
     { label: "Rahmenfarbe", key: "borderColor", type: "color" },
     { label: "Rahmenbreite (px)", key: "borderWidth", type: "number", min: 0, max: 32 },
@@ -23,11 +45,18 @@ const cssGroups = () => [
     { label: "Rahmenstil", key: "borderStyle", type: "select", options: ["solid", "dashed", "dotted", "none"] },
   ] },
   { label: "CSS Schatten und Abstand", css: true, fields: [
-    { label: "Innenabstand (px)", key: "padding", type: "number", min: 0, max: 200 },
-    { label: "Schatten anzeigen", key: "shadow", type: "checkbox" },
-    { label: "Deckkraft", key: "opacity", type: "number", min: 0, max: 1, step: 0.05 },
+    { label: "Abstand", key: "padding", type: "number", min: 0, max: 200 },
+    { label: "padding-left", key: "paddingLeft" }, { label: "padding-top", key: "paddingTop" },
+    { label: "padding-right", key: "paddingRight" }, { label: "padding-bottom", key: "paddingBottom" },
+    { label: "box-shadow", key: "boxShadow" },
+    { label: "margin-left", key: "marginLeft" }, { label: "margin-top", key: "marginTop" },
+    { label: "margin-right", key: "marginRight" }, { label: "margin-bottom", key: "marginBottom" },
+    { label: "Schatten aktivieren", key: "shadow", type: "checkbox" },
   ] },
 ];
+const signalImages = () => ({ label: "Signalbilder", signalImages: true, fields: [
+  { label: "Anzahl der Signale", key: "signalCount", type: "select", refreshProperties: true, options: Array.from({ length: 10 }, (_, index) => String(index)) },
+] , hint: "Zustandsabhängige Bild-Overlays, zum Beispiel für Warnungen oder Batteriestände. Die Vorschau vergleicht den konfigurierten Wert mit dem Widget-Testzustand." });
 const metadata = () => ({ label: "Generell", hint: "Der Name ist optional. Lass ihn leer, wenn du das Widget zum Beispiel über ein separates Textfeld beschriftest.", fields: [
   { label: "Name", key: "title" },
   { label: "Kommentar", key: "comment" },
@@ -222,5 +251,10 @@ registerWidgetSet({
     ] },
     { type: "gauge", label: "Messanzeige", icon: "◴", defaults: { title: "Messanzeige", entityId: "", state: "--", unit: "%" }, propertyGroups: entityWidget(true) },
     { type: "image", label: "Bild / Kamera", icon: "▧", defaults: { title: "Kamera", entityId: "", state: "Bildfläche" }, propertyGroups: entityWidget() },
-  ],
+  ].map((widget) => {
+    if (["button", "toggle", "checkbox", "bulb", "slider", "sensor", "string", "string-raw", "image-source", "time-value", "timestamp-value", "timestamp", "last-changed", "value-list-text", "value-list-html", "value-list-html-style", "bool-display", "bool-select", "bool-html-control", "table", "bar", "gauge", "image"].includes(widget.type)) {
+      widget.propertyGroups.push(signalImages());
+    }
+    return widget;
+  }),
 });

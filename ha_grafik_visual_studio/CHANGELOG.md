@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.12
+
+- Ergänzt bei zustandsgebundenen Widgets bis zu neun bedingte Signalbild-Overlays mit Bild, kleinem Symbol, Text, CSS-Klassen, Blinken und Position.
+- Erweitert die Widget-CSS-Eigenschaften um Layout, Schrift, Hintergrundbild, Rahmen sowie einzelne Abstände und Schattenwerte.
+
 ## 0.1.11
 
 - Macht den Widget-Namen ausdrücklich optional; leere Namen erzeugen keine sichtbare Ersatzbeschriftung.
