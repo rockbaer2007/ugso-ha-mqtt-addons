@@ -7,6 +7,49 @@ const PRESETS = {
   phone: { width: 390, height: 844 },
   custom: { width: 1600, height: 900 },
 };
+const VIEW_PROPERTY_GROUPS = [
+  { label: "CSS allgemein", fields: [
+    { label: "Anzeige", key: "display", type: "select", options: ["", "block", "none"] },
+    { label: "Kommentar", key: "comment" }, { label: "CSS-Klasse", key: "cssClass" },
+    { label: "Anfangsfilter", key: "filterWord" }, { label: "Nur für Gruppen", key: "groups" },
+    { label: "Thema", key: "theme" },
+    { label: "Wenn der Benutzer nicht in der Gruppe ist", key: "outsideGroup", type: "select", options: ["ausblenden", "deaktivieren"] },
+  ] },
+  { label: "CSS-Hintergrund", fields: [
+    { label: "Bild (Datei oder HA-Pfad)", key: "backgroundAsset" }, { label: "Hintergrundklasse", key: "backgroundClass" },
+    { label: "Ein Parameter", key: "backgroundSingleParameter", type: "checkbox", default: false },
+    { label: "background-color", key: "background", type: "color" }, { label: "background-image", key: "backgroundImage" },
+    { label: "background-repeat", key: "backgroundRepeat", type: "select", options: ["", "repeat", "no-repeat", "repeat-x", "repeat-y"] },
+    { label: "background-attachment", key: "backgroundAttachment", type: "select", options: ["", "scroll", "fixed", "local"] },
+    { label: "background-position", key: "backgroundPosition" }, { label: "background-size", key: "backgroundSize" },
+    { label: "background-clip", key: "backgroundClip", type: "select", options: ["", "border-box", "padding-box", "content-box"] },
+    { label: "background-origin", key: "backgroundOrigin", type: "select", options: ["", "border-box", "padding-box", "content-box"] },
+    { label: "Darstellung", key: "backgroundMode", type: "select", options: [{ value: "tile", label: "Kacheln" }, { value: "center", label: "Zentriert" }, { value: "stretch", label: "Stretch" }] },
+  ] },
+  { label: "CSS-Schriftart und -Text", fields: [
+    { label: "Farbe", key: "textColor", type: "color", default: "#e7ecee" }, { label: "Text-Schatten", key: "textShadow" },
+    { label: "Schriftfamilie", key: "fontFamily" }, { label: "Schriftstil", key: "fontStyle", type: "select", options: ["", "normal", "italic", "oblique"] },
+    { label: "Schriftart-Variante", key: "fontVariant", type: "select", options: ["", "normal", "small-caps"] },
+    { label: "Schriftstärke", key: "fontWeight", type: "select", options: ["", "400", "500", "600", "700"] },
+    { label: "Schriftgröße", key: "fontSize", type: "number", min: 6, max: 160 }, { label: "Zeilenhöhe", key: "lineHeight" },
+    { label: "Buchstaben-Abstand", key: "letterSpacing" }, { label: "Wortabstand", key: "wordSpacing" },
+  ] },
+  { label: "Optionen", fields: [
+    { label: "Standard", key: "standard", type: "checkbox", default: false }, { label: "Immer rendern", key: "alwaysRender", type: "checkbox", default: false },
+    { label: "Netz", key: "grid", type: "select", options: ["", "aus", "sichtbar", "beim Bearbeiten"] },
+    { label: "Auflösung", key: "preset", type: "select", refreshProperties: true, options: [
+      { value: "custom", label: "Benutzerdefiniert" }, { value: "desktop", label: "Desktop 1920 × 1080" },
+      { value: "tablet", label: "Tablet 1280 × 800" }, { value: "phone", label: "Telefon 390 × 844" },
+    ] },
+  ] },
+  { label: "Navigation", fields: [{ label: "Navigation anzeigen", key: "navigationVisible", type: "checkbox", default: true }] },
+  { label: "Anwendungsleiste", fields: [{ label: "Anzeigen", key: "appBarVisible", type: "checkbox", default: false }] },
+  { label: "Responsive Einstellungen", fields: [
+    { label: "Spaltenbreite (px)", key: "columnWidth", type: "range", min: 0, max: 1200 },
+    { label: "Spaltenlücke (px)", key: "columnGap", type: "range", min: 0, max: 200 },
+    { label: "Reihenlücke (px)", key: "rowGap", type: "range", min: 0, max: 200 },
+  ] },
+];
 
 const $ = (selector) => document.querySelector(selector);
 const params = new URLSearchParams(location.search);
@@ -26,6 +69,11 @@ function propertyGroupEnabled(widget, group, index) {
 function projectForSave(project) {
   const saved = structuredClone(project);
   for (const page of saved.pages || []) {
+    page.page.enabledPropertyGroups ??= {};
+    for (const [index, group] of VIEW_PROPERTY_GROUPS.entries()) {
+      if (propertyGroupEnabled(page.page, group, index)) continue;
+      for (const descriptor of group.fields) delete page.page[descriptor.key];
+    }
     for (const widget of page.widgets || []) {
       const groups = getWidgetDefinition(widget.type).propertyGroups;
       widget.enabledPropertyGroups ??= {};
@@ -295,11 +343,30 @@ function renderStage() {
   stage.style.width = `${page.width}px`;
   stage.style.height = `${page.height}px`;
   stage.style.backgroundColor = page.background || "#242729";
-  const backgroundImage = safeUrl(page.backgroundImage, true);
+  const backgroundImage = safeUrl(page.backgroundAsset || page.backgroundImage, true);
   stage.style.backgroundImage = backgroundImage ? `url(${JSON.stringify(backgroundImage)})` : "none";
-  stage.style.backgroundRepeat = page.backgroundMode === "tile" ? "repeat" : "no-repeat";
-  stage.style.backgroundPosition = page.backgroundMode === "center" ? "center center" : "0 0";
-  stage.style.backgroundSize = page.backgroundMode === "stretch" ? "100% 100%" : "auto";
+  stage.style.backgroundRepeat = page.backgroundRepeat || (page.backgroundMode === "tile" ? "repeat" : "no-repeat");
+  stage.style.backgroundAttachment = page.backgroundAttachment || "scroll";
+  stage.style.backgroundPosition = page.backgroundPosition || (page.backgroundMode === "center" ? "center center" : "0 0");
+  stage.style.backgroundSize = page.backgroundSize || (page.backgroundMode === "stretch" ? "100% 100%" : "auto");
+  stage.style.backgroundClip = page.backgroundClip || "";
+  stage.style.backgroundOrigin = page.backgroundOrigin || "";
+  stage.style.color = page.textColor || "";
+  stage.style.fontFamily = page.fontFamily || "";
+  stage.style.fontStyle = page.fontStyle || "";
+  stage.style.fontVariant = page.fontVariant || "";
+  stage.style.fontWeight = page.fontWeight || "";
+  stage.style.fontSize = page.fontSize ? `${page.fontSize}px` : "";
+  stage.style.lineHeight = page.lineHeight || "";
+  stage.style.letterSpacing = page.letterSpacing || "";
+  stage.style.wordSpacing = page.wordSpacing || "";
+  stage.style.textShadow = page.textShadow || "";
+  stage.style.display = runtimeMode && page.display === "none" ? "none" : "";
+  const pageClasses = `${page.cssClass || ""} ${page.backgroundClass || ""}`.split(/\s+/).filter((name) => /^[A-Za-z_][\w-]*$/.test(name));
+  const runtimeGrid = runtimeMode && page.grid === "sichtbar";
+  const hideEditorGrid = !runtimeMode && page.grid === "aus";
+  stage.className = `stage${runtimeGrid ? " runtime-grid" : ""}${hideEditorGrid ? " no-grid" : ""}${pageClasses.map((name) => ` ${name}`).join("")}`;
+  $("#runtime-pages-menu-toggle").hidden = page.navigationVisible === false;
   stage.replaceChildren();
   const activeFilter = state.activeFilter || "";
   for (const widget of activePage.widgets) {
@@ -608,8 +675,8 @@ function field(descriptor, widget) {
       option.textContent = typeof item === "string" ? item : item.label; input.append(option);
     }
   } else { input = document.createElement("input"); input.type = descriptor.type || "text"; }
-  if (input.type === "checkbox") input.checked = widget[descriptor.key] !== false;
-  else input.value = widget[descriptor.key] ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
+  if (input.type === "checkbox") input.checked = widget[descriptor.key] ?? descriptor.default ?? true;
+  else input.value = widget[descriptor.key] ?? descriptor.default ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
   if (descriptor.min !== undefined) input.min = descriptor.min;
   if (descriptor.max !== undefined) input.max = descriptor.max;
   if (descriptor.step !== undefined) input.step = descriptor.step;
@@ -620,6 +687,10 @@ function field(descriptor, widget) {
     if (descriptor.refreshProperties) renderProperties();
   };
   input.addEventListener(descriptor.type === "select" ? "change" : "input", update);
+  if (descriptor.key === "preset") input.addEventListener("change", () => {
+    if (PRESETS[input.value]) Object.assign(widget, PRESETS[input.value]);
+    render();
+  });
   wrapper.append(input); return wrapper;
 }
 
@@ -639,18 +710,26 @@ function renderProperties() {
   if (!widget && !["view", "css"].includes(state.propertyTab)) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Wähle ein Widget aus, um seine Eigenschaften zu bearbeiten."; panel.append(empty); return; }
   if (state.propertyTab === "view") {
     const heading = document.createElement("div"); heading.className = "selected-widget-heading"; heading.textContent = "Ansicht / Hintergrund"; panel.append(heading);
-    const details = document.createElement("details"); details.className = "property-section";
-    const summary = document.createElement("summary"); summary.textContent = "Seiteneigenschaften";
-    const body = document.createElement("div"); body.className = "property-fields";
-    const descriptors = [
-      { label: "Hintergrundfarbe", key: "background", type: "color" },
-      { label: "Hintergrundbild (URL oder HA-Pfad)", key: "backgroundImage" },
-      { label: "Darstellung", key: "backgroundMode", type: "select", options: [
-        { value: "tile", label: "Kacheln" }, { value: "center", label: "Zentriert" }, { value: "stretch", label: "Stretch" },
-      ] },
-    ];
-    body.append(...descriptors.map((descriptor) => field(descriptor, page.page)));
-    details.append(summary, body); panel.append(details); return;
+    for (const [index, group] of VIEW_PROPERTY_GROUPS.entries()) {
+      const details = document.createElement("details"); details.className = "property-section";
+      const summary = document.createElement("summary");
+      const title = document.createElement("span"); title.className = "property-section-title"; title.textContent = group.label;
+      const enabled = document.createElement("input"); enabled.type = "checkbox"; enabled.className = "property-section-enabled";
+      enabled.checked = propertyGroupEnabled(page.page, group, index);
+      enabled.setAttribute("aria-label", `${group.label}: Optionen im Projekt speichern`);
+      enabled.title = "Optionen dieser Gruppe im gespeicherten Projekt übernehmen";
+      enabled.addEventListener("click", (event) => event.stopPropagation());
+      enabled.addEventListener("change", (event) => {
+        event.stopPropagation();
+        page.page.enabledPropertyGroups ??= {};
+        page.page.enabledPropertyGroups[propertyGroupKey(group, index)] = enabled.checked;
+      });
+      summary.append(title, enabled);
+      const body = document.createElement("div"); body.className = "property-fields";
+      body.append(...group.fields.map((descriptor) => field(descriptor, page.page)));
+      details.append(summary, body); panel.append(details);
+    }
+    return;
   }
   if (state.propertyTab === "css") {
     const heading = document.createElement("div"); heading.className = "selected-widget-heading"; heading.textContent = "Globales CSS · alle Widgets dieses Projekts"; panel.append(heading);

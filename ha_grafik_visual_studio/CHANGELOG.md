@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.15
+
+- Ergänzt im Reiter Ansicht die gezeigten Gruppen für allgemeine CSS-Werte, Hintergrund, Schrift und Text, Optionen, Navigation, Anwendungsleiste und responsive Einstellungen.
+- Ergänzt für Ansichtsgruppen die Checkbox zum Ein- oder Ausschließen der Werte im gespeicherten Projekt.
+- Wendet Hintergrund-, Schrift- und Anzeigeoptionen in der Visualisierungsfläche an.
+
 ## 0.1.14
 
 - Ergänzt pro Eigenschaftsabschnitt eine Checkbox, mit der die Abschnittswerte beim Speichern aus dem Projektcode ausgeschlossen werden.
