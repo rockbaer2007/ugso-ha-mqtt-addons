@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.32
+
+- Zentriert die SVG-Icons in den Aktionsbuttons des Dateien-Dialogs.
+- Stellt die Typauswahlliste auf dunkle Schrift und weißen Hintergrund.
+
 ## 0.1.31
 
 - Ersetzt Zeichen und Emojis im Dateien-Dialog durch einheitliche, lokal gespeicherte SVG-Symbole.

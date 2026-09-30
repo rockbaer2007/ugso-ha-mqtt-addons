@@ -159,6 +159,7 @@ button { cursor: pointer; }
 .icon-picker-heading { display: flex; align-items: center; justify-content: space-between; }
 .icon-picker-heading strong { font-size: 15px; }
 .icon-picker-heading button { min-width: 32px; padding: 2px 8px; font-size: 20px; }
+.icon-picker-heading .icon-button { display: grid; place-items: center; width: 34px; height: 34px; padding: 0; }
 .icon-picker-panel > input, .icon-picker-custom input { min-width: 0; padding: 8px; border: 1px solid var(--line); border-radius: 5px; color: var(--text); background: var(--bg); }
 .icon-picker-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(115px, 1fr)); gap: 5px; min-height: 80px; max-height: min(470px, 52vh); overflow: auto; }
 .icon-picker-option { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 6px; min-width: 0; padding: 6px; text-align: left; }
@@ -180,11 +181,12 @@ button { cursor: pointer; }
 .objects-breadcrumb button, .object-folder { border: 0; background: #202426; }
 .files-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 8px; }
 .files-actions button { min-height: 32px; }
-.files-actions .icon-button { width: 34px; min-width: 34px; padding: 0; font-size: 17px; }
+.files-actions .icon-button { display: inline-grid; place-items: center; flex: 0 0 34px; width: 34px; min-width: 34px; height: 34px; padding: 0; line-height: 1; }
 .files-actions .icon-button img, .icon-picker-heading .icon-button img { width: 18px; height: 18px; display: block; }
 .files-filter { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 7px; border: 1px solid var(--line); border-radius: 5px; color: var(--muted); }
 .files-filter > img { width: 17px; height: 17px; }
-.files-filter select { max-width: 130px; padding: 5px 20px 5px 2px; border: 0; color: var(--text); background: transparent; }
+.files-filter select { max-width: 130px; padding: 5px 20px 5px 2px; border: 0; color: #111; background: #fff; color-scheme: light; }
+.files-filter select option { color: #111; background: #fff; }
 .files-actions button:disabled { opacity: .45; cursor: not-allowed; }
 .files-actions > span:not(.files-action-spacer) { color: var(--muted); font-size: 11px; }
 .files-action-spacer { flex: 1; }
