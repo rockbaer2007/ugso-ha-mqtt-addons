@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.13
+
+- Ergänzt Mehrseiten-Projekte mit separaten Widgets, Seitengrößen und Hintergründen.
+- Fügt ein Seitenmenü mit Hamburger-Schaltfläche, neuer Seite, Umbenennen, Duplizieren, Sichtbarkeit und Löschen hinzu.
+- Ermöglicht den Seitenwechsel in Editor und Runtime und migriert gespeicherte Einseiten-Projekte automatisch.
+
 ## 0.1.12
 
 - Ergänzt bei zustandsgebundenen Widgets bis zu neun bedingte Signalbild-Overlays mit Bild, kleinem Symbol, Text, CSS-Klassen, Blinken und Position.

@@ -11,6 +11,7 @@
 <body>
   <header class="toolbar">
     <div class="brand"><span class="brand-mark">HA</span><span>Grafik Visual Studio</span></div>
+    <button class="page-menu-toggle" id="pages-menu-toggle" type="button" aria-expanded="false">☰ Seiten</button>
     <nav class="mode-switch" aria-label="Modus">
       <a href="?mode=editor" id="editor-link">Editor</a>
       <a href="?mode=runtime" id="runtime-link">Runtime</a>
@@ -32,12 +33,17 @@
     </div>
   </header>
   <main class="workspace" id="workspace">
+    <aside class="pages-panel" id="pages-panel" hidden aria-label="Seiten">
+      <div class="pages-heading"><h2>Seiten</h2><button id="pages-close" type="button" aria-label="Seitenmenü schließen">×</button></div>
+      <div class="page-actions"><button id="page-add" type="button" aria-label="Neue Seite" title="Neue Seite">＋</button></div>
+      <div class="page-list" id="page-list"></div>
+    </aside>
     <aside class="side palette" id="palette-panel">
       <div class="panel-heading"><button class="collapse" data-target="palette-panel" aria-label="Palette einklappen">‹</button><h2>Widget-Palette</h2></div>
       <div class="panel-content" id="palette"></div>
     </aside>
     <section class="stage-wrap">
-      <div class="stage-meta"><strong id="project-name">Mein Zuhause</strong><span id="status">Grundgerüst – Widgets sind eigene HA-Elemente</span></div>
+      <div class="stage-meta"><strong id="active-page-name">main</strong><span id="status">Grundgerüst – Widgets sind eigene HA-Elemente</span></div>
       <div class="stage-scroll"><div class="stage" id="stage" aria-label="Visualisierungsfläche"></div></div>
     </section>
     <aside class="side properties" id="properties-panel">
@@ -45,6 +51,7 @@
       <div class="panel-content" id="properties"><p class="empty">Wähle ein Widget aus, um seine Eigenschaften zu bearbeiten.</p></div>
     </aside>
   </main>
+  <button class="runtime-page-menu-toggle" id="runtime-pages-menu-toggle" type="button" aria-label="Seiten öffnen">☰</button>
   <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -15,15 +15,44 @@ const workspace = $("#workspace");
 const stage = $("#stage");
 const state = { project: null, selectedId: null, nextId: 1, propertyTab: "widget" };
 
+function ensureProjectPages(project) {
+  if (!Array.isArray(project.pages)) {
+    project.pages = [{ id: "page-1", name: "main", visible: true, page: project.page || { preset: "desktop", ...PRESETS.desktop, background: "#242729", backgroundMode: "tile" }, widgets: Array.isArray(project.widgets) ? project.widgets : [] }];
+  }
+  if (!project.pages.length) project.pages.push({ id: "page-1", name: "main", visible: true, page: { preset: "desktop", ...PRESETS.desktop, background: "#242729", backgroundMode: "tile" }, widgets: [] });
+  project.pages.forEach((page, index) => {
+    page.id ||= `page-${index + 1}`;
+    page.name ||= `Seite ${index + 1}`;
+    page.visible ??= true;
+    page.page ||= { preset: "desktop", ...PRESETS.desktop, background: "#242729", backgroundMode: "tile" };
+    page.widgets = Array.isArray(page.widgets) ? page.widgets : [];
+  });
+  project.currentPageId = project.pages.some((page) => page.id === project.currentPageId) ? project.currentPageId : project.pages[0].id;
+  project.schemaVersion = 2;
+  delete project.page;
+  delete project.widgets;
+  return project;
+}
+
+function currentPage() {
+  const selected = state.project.pages.find((page) => page.id === state.project.currentPageId);
+  if (runtimeMode && selected && !selected.visible) {
+    const visible = state.project.pages.find((page) => page.visible);
+    if (visible) { state.project.currentPageId = visible.id; return visible; }
+  }
+  return selected || state.project.pages[0];
+}
+
 async function loadProject() {
   try {
     const response = await fetch("api/project");
     if (!response.ok) throw new Error("Projekt konnte nicht geladen werden");
     state.project = await response.json();
   } catch {
-    state.project = { schemaVersion: 1, name: "Mein Zuhause", page: { preset: "desktop", ...PRESETS.desktop, background: "#242729", backgroundMode: "tile" }, widgets: [] };
+    state.project = { schemaVersion: 2, name: "Mein Zuhause", pages: [{ id: "page-1", name: "main", visible: true, page: { preset: "desktop", ...PRESETS.desktop, background: "#242729", backgroundMode: "tile" }, widgets: [] }], currentPageId: "page-1" };
   }
-  state.nextId = Math.max(0, ...state.project.widgets.map((widget) => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
+  ensureProjectPages(state.project);
+  state.nextId = Math.max(0, ...state.project.pages.flatMap((page) => page.widgets).map((widget) => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   render();
 }
 
@@ -48,6 +77,70 @@ function renderPalette() {
     group.append(summary, list);
     palette.append(group);
   }
+}
+
+function renderPageMenu() {
+  const list = $("#page-list");
+  list.replaceChildren();
+  for (const page of state.project.pages) {
+    if (runtimeMode && !page.visible) continue;
+    const row = document.createElement("div");
+    row.className = `page-row${page.id === state.project.currentPageId ? " active" : ""}${page.visible ? "" : " hidden-page"}`;
+    if (runtimeMode) row.classList.add("runtime-page-row");
+    const select = document.createElement("button"); select.type = "button"; select.className = "page-select";
+    select.textContent = `${page.visible ? "◉" : "◌"}  ${page.name}`;
+    select.setAttribute("aria-current", String(page.id === state.project.currentPageId));
+    select.addEventListener("click", () => { state.project.currentPageId = page.id; state.selectedId = null; render(); });
+    row.append(select);
+    if (!runtimeMode) {
+      const visibility = document.createElement("button"); visibility.type = "button"; visibility.textContent = page.visible ? "◉" : "◌"; visibility.title = page.visible ? "In Runtime sichtbar" : "In Runtime ausgeblendet"; visibility.setAttribute("aria-label", `${page.visible ? "Ausblenden" : "Einblenden"}: ${page.name}`);
+      visibility.disabled = page.visible && state.project.pages.filter((item) => item.visible).length <= 1;
+      visibility.addEventListener("click", () => {
+        if (page.visible && state.project.pages.filter((item) => item.visible).length <= 1) return;
+        page.visible = !page.visible; render();
+      }); row.append(visibility);
+      const rename = document.createElement("button"); rename.type = "button"; rename.textContent = "✎"; rename.title = "Seitennamen bearbeiten"; rename.setAttribute("aria-label", `Name von ${page.name} bearbeiten`);
+      rename.addEventListener("click", () => {
+        const name = window.prompt("Name der Seite", page.name);
+        if (name !== null && name.trim()) { page.name = name.trim(); render(); }
+      });
+      row.append(rename);
+      const duplicate = document.createElement("button"); duplicate.type = "button"; duplicate.textContent = "▣"; duplicate.title = "Seite duplizieren"; duplicate.setAttribute("aria-label", `${page.name} duplizieren`);
+      duplicate.addEventListener("click", () => duplicatePage(page)); row.append(duplicate);
+      if (state.project.pages.length > 1) {
+        const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "▤"; remove.title = "Seite löschen"; remove.setAttribute("aria-label", `${page.name} löschen`);
+        remove.addEventListener("click", () => { if (window.confirm(`Seite „${page.name}“ löschen?`)) deletePage(page); }); row.append(remove);
+      }
+    }
+    list.append(row);
+  }
+}
+
+function makePageId() { return `page-${Date.now()}-${state.project.pages.length + 1}`; }
+
+function addPage() {
+  const name = state.project.pages.some((page) => page.name === "Neue Seite") ? `Seite ${state.project.pages.length + 1}` : "Neue Seite";
+  const page = currentPage();
+  const created = { id: makePageId(), name, visible: true, page: structuredClone(page.page), widgets: [] };
+  state.project.pages.push(created); state.project.currentPageId = created.id; state.selectedId = null; render();
+}
+
+function duplicatePage(page) {
+  const copy = structuredClone(page); copy.id = makePageId(); copy.name = `${page.name} (Kopie)`;
+  for (const widget of copy.widgets) widget.id = `widget-${state.nextId++}`;
+  state.project.pages.push(copy); state.project.currentPageId = copy.id; state.selectedId = null; render();
+}
+
+function deletePage(page) {
+  state.project.pages = state.project.pages.filter((item) => item.id !== page.id);
+  if (state.project.currentPageId === page.id) state.project.currentPageId = state.project.pages[0].id;
+  state.selectedId = null; render();
+}
+
+function togglePagesMenu(open = $("#pages-panel").hidden) {
+  $("#pages-panel").hidden = !open;
+  $("#pages-menu-toggle").setAttribute("aria-expanded", String(open));
+  $("#runtime-pages-menu-toggle").setAttribute("aria-expanded", String(open));
 }
 
 function applyProjectCss() {
@@ -156,8 +249,9 @@ function matchesCondition(actual, condition, expected) {
 
 function addWidget(definition) {
   const id = `widget-${state.nextId++}`;
-  const index = state.project.widgets.length;
-  state.project.widgets.push({
+  const page = currentPage();
+  const index = page.widgets.length;
+  page.widgets.push({
     id, type: definition.type,
     x: 24 + (index % 4) * 150, y: 24 + Math.floor(index / 4) * 90, width: 140, height: 62, radius: 8, visible: true, layer: 0,
     fontSize: 13, fontWeight: "400", textAlign: "left", textColor: "#e7ecee", backgroundColor: "",
@@ -169,18 +263,19 @@ function addWidget(definition) {
 }
 
 function renderStage() {
-  const page = state.project.page;
+  const activePage = currentPage();
+  const page = activePage.page;
   stage.style.width = `${page.width}px`;
   stage.style.height = `${page.height}px`;
   stage.style.backgroundColor = page.background || "#242729";
-  const backgroundImage = String(page.backgroundImage || "").trim();
+  const backgroundImage = safeUrl(page.backgroundImage, true);
   stage.style.backgroundImage = backgroundImage ? `url(${JSON.stringify(backgroundImage)})` : "none";
   stage.style.backgroundRepeat = page.backgroundMode === "tile" ? "repeat" : "no-repeat";
   stage.style.backgroundPosition = page.backgroundMode === "center" ? "center center" : "0 0";
   stage.style.backgroundSize = page.backgroundMode === "stretch" ? "100% 100%" : "auto";
   stage.replaceChildren();
   const activeFilter = state.activeFilter || "";
-  for (const widget of state.project.widgets) {
+  for (const widget of activePage.widgets) {
     if (widget.visible === false) continue;
     const filterTags = String(widget.filterWord || "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
     if (widget.type !== "filter-dropdown" && activeFilter && filterTags.length && !filterTags.includes(activeFilter)) continue;
@@ -512,7 +607,8 @@ function renderProperties() {
     tabs.append(tab);
   }
   panel.append(tabs);
-  const widget = state.project.widgets.find((item) => item.id === state.selectedId);
+  const page = currentPage();
+  const widget = page.widgets.find((item) => item.id === state.selectedId);
   if (!widget && !["view", "css"].includes(state.propertyTab)) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Wähle ein Widget aus, um seine Eigenschaften zu bearbeiten."; panel.append(empty); return; }
   if (state.propertyTab === "view") {
     const heading = document.createElement("div"); heading.className = "selected-widget-heading"; heading.textContent = "Ansicht / Hintergrund"; panel.append(heading);
@@ -526,7 +622,7 @@ function renderProperties() {
         { value: "tile", label: "Kacheln" }, { value: "center", label: "Zentriert" }, { value: "stretch", label: "Stretch" },
       ] },
     ];
-    body.append(...descriptors.map((descriptor) => field(descriptor, state.project.page)));
+    body.append(...descriptors.map((descriptor) => field(descriptor, page.page)));
     details.append(summary, body); panel.append(details); return;
   }
   if (state.propertyTab === "css") {
@@ -583,30 +679,34 @@ function renderProperties() {
 
 function render() {
   applyProjectCss();
+  const page = currentPage();
   workspace.classList.toggle("runtime", runtimeMode);
   document.body.classList.toggle("runtime-mode", runtimeMode);
+  document.body.classList.toggle("editor-mode", !runtimeMode);
   $("#editor-link").classList.toggle("active", !runtimeMode);
   $("#runtime-link").classList.toggle("active", runtimeMode);
-  $("#project-name").textContent = state.project.name || "Unbenanntes Projekt";
-  $("#preset").value = state.project.page.preset || "custom";
-  $("#custom-size").hidden = state.project.page.preset !== "custom";
-  $("#page-width").value = state.project.page.width;
-  $("#page-height").value = state.project.page.height;
-  renderPalette(); renderStage(); renderProperties();
+  $("#active-page-name").textContent = page.name;
+  $("#preset").value = page.page.preset || "custom";
+  $("#custom-size").hidden = page.page.preset !== "custom";
+  $("#page-width").value = page.page.width;
+  $("#page-height").value = page.page.height;
+  renderPalette(); renderPageMenu(); renderStage(); renderProperties();
 }
 
 $("#preset").addEventListener("change", (event) => {
   const preset = event.target.value;
-  state.project.page = { ...state.project.page, preset, ...(PRESETS[preset] || {}) };
+  const page = currentPage().page;
+  Object.assign(page, { ...page, preset, ...(PRESETS[preset] || {}) });
   $("#custom-size").hidden = preset !== "custom";
-  $("#page-width").value = state.project.page.width;
-  $("#page-height").value = state.project.page.height;
+  $("#page-width").value = page.width;
+  $("#page-height").value = page.height;
   renderStage();
 });
 for (const [id, key, max] of [["page-width", "width", 7680], ["page-height", "height", 4320]]) {
   $("#" + id).addEventListener("change", (event) => {
-    state.project.page.preset = "custom";
-    state.project.page[key] = Math.max(240, Math.min(max, Number(event.target.value) || 240));
+    const page = currentPage().page;
+    page.preset = "custom";
+    page[key] = Math.max(240, Math.min(max, Number(event.target.value) || 240));
     $("#preset").value = "custom";
     $("#custom-size").hidden = false;
     renderStage();
@@ -616,6 +716,10 @@ $("#save").addEventListener("click", async () => {
   const response = await fetch("api/project", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(state.project) });
   $("#status").textContent = response.ok ? "Projekt lokal gespeichert" : "Speichern fehlgeschlagen";
 });
+$("#pages-menu-toggle").addEventListener("click", () => togglePagesMenu());
+$("#runtime-pages-menu-toggle").addEventListener("click", () => togglePagesMenu());
+$("#pages-close").addEventListener("click", () => togglePagesMenu(false));
+$("#page-add").addEventListener("click", addPage);
 document.querySelectorAll(".collapse").forEach((button) => button.addEventListener("click", () => {
   const panel = document.getElementById(button.dataset.target);
   panel.classList.toggle("collapsed");

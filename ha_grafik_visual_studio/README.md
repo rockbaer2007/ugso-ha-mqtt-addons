@@ -9,6 +9,7 @@ Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mi
 - Home Assistant App-Store-Paket für dieses gemeinsame App-Repository.
 - Ein gemeinsamer Projektentwurf wird unter `/data/project.json` gespeichert.
 - Editor- und Runtime-Modus verwenden denselben Entwurf.
+- Ein Projekt kann mehrere benannte Seiten mit jeweils eigener Größe, eigenem Hintergrund und eigenen Widgets enthalten. Das linke Seitenmenü kann Seiten hinzufügen, umbenennen, duplizieren, ausblenden und löschen; die Runtime bietet die sichtbaren Seiten zur Auswahl an.
 - Erste eigene, HA-orientierte Widget-Definitionen sind nach Kategorien registriert.
 - Das Widget-Register ist separat; weitere eigene Widget-Sets können später unabhängig ergänzt werden.
 - Seitengrößen Desktop, Tablet und Telefon können im Editor gewählt werden.
@@ -33,7 +34,7 @@ Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mi
 - Optionales Editor-Plugin zum Importieren eines ioBroker-VIS-Widget-Pakets per URL. Der Importer soll das Paket analysieren, unterstützte Widget-Definitionen in das native HA-Grafik-Widget-Format überführen und nicht unterstützte Eigenschaften mit verständlichen Hinweisen melden.
 - Importvorschau mit Zuordnung der Entity-Felder zu Home-Assistant-Entities sowie Prüfung und Bestätigung, bevor ein konvertiertes Widget-Set installiert wird.
 - Native Home-Assistant-Integration, die Runtime und Editor als separate Sidebar-Panels registriert.
-- Projekte, mehrere Seiten, Import/Export, Vorschau und responsives Verhalten.
+- Projekte, Import/Export, Vorschau und responsives Verhalten.
 
 ## Inspiration und Widget-Import
 

@@ -19,17 +19,23 @@ PROJECT_FILE = DATA_DIR / "project.json"
 MAX_BODY = 1_000_000
 
 DEFAULT_PROJECT = {
-    "schemaVersion": 1,
+    "schemaVersion": 2,
     "name": "Mein Zuhause",
-    "page": {"preset": "desktop", "width": 1920, "height": 1080, "background": "#202124", "backgroundMode": "tile"},
-    "widgets": [],
+    "currentPageId": "page-1",
+    "pages": [{
+        "id": "page-1",
+        "name": "main",
+        "visible": True,
+        "page": {"preset": "desktop", "width": 1920, "height": 1080, "background": "#202124", "backgroundMode": "tile"},
+        "widgets": [],
+    }],
 }
 
 MIME_TYPES = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".svg": "image/svg+xml"}
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.12"
+    server_version = "HAGrafikVisualStudio/0.1.13"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -49,7 +55,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path.rstrip("/") or "/"
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.12"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.13"})
             return
         if path == "/api/project":
             self.send_json(HTTPStatus.OK, self.read_project())
@@ -75,7 +81,18 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             project = json.loads(self.rfile.read(length))
-            if not isinstance(project, dict) or project.get("schemaVersion") != 1 or not isinstance(project.get("widgets"), list):
+            if not isinstance(project, dict):
+                raise ValueError("Ungültiges Projektformat")
+            if project.get("schemaVersion") == 1 and isinstance(project.get("widgets"), list):
+                pass
+            elif project.get("schemaVersion") == 2 and isinstance(project.get("pages"), list) and project["pages"] and all(
+                isinstance(page, dict) and isinstance(page.get("id"), str) and isinstance(page.get("name"), str)
+                and isinstance(page.get("page"), dict) and isinstance(page.get("widgets"), list)
+                for page in project["pages"]
+            ):
+                if project.get("currentPageId") not in {page["id"] for page in project["pages"]}:
+                    raise ValueError("Ungültige aktive Seite")
+            else:
                 raise ValueError("Ungültiges Projektformat")
             DATA_DIR.mkdir(parents=True, exist_ok=True)
             temporary = PROJECT_FILE.with_suffix(".json.tmp")
@@ -92,6 +109,12 @@ class Handler(BaseHTTPRequestHandler):
         try:
             project = json.loads(PROJECT_FILE.read_text(encoding="utf-8"))
             if isinstance(project, dict) and project.get("schemaVersion") == 1 and isinstance(project.get("widgets"), list):
+                return project
+            if isinstance(project, dict) and project.get("schemaVersion") == 2 and isinstance(project.get("pages"), list) and project["pages"] and all(
+                isinstance(page, dict) and isinstance(page.get("id"), str) and isinstance(page.get("name"), str)
+                and isinstance(page.get("page"), dict) and isinstance(page.get("widgets"), list)
+                for page in project["pages"]
+            ):
                 return project
         except (OSError, json.JSONDecodeError):
             pass
