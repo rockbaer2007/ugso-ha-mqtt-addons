@@ -2,6 +2,7 @@ import { registerWidgetSet } from "../widget-registry.js";
 
 const fields = (items) => ({ label: "Größe und Position", fields: items });
 const geometry = () => fields([
+  { label: "Ebene (ab 0)", key: "layer", type: "number", min: 0, max: 9999 },
   { label: "Breite (px)", key: "width", type: "number", min: 16, max: 7680 },
   { label: "Höhe (px)", key: "height", type: "number", min: 16, max: 4320 },
   { label: "X (px)", key: "x", type: "number", min: 0 },
@@ -65,12 +66,20 @@ registerWidgetSet({
   label: "HA Grafik – Basis",
   widgets: [
     { type: "button", label: "Schaltfläche", icon: "◉", defaults: { title: "Schaltfläche", entityId: "", state: "Aus" }, propertyGroups: entityWidget() },
-    { type: "toggle", label: "Switch", icon: "⏻", defaults: { title: "Schalter", entityId: "", state: false }, propertyGroups: entityWidget() },
+    { type: "toggle", label: "Switch", icon: "⏻", defaults: { title: "Schalter", entityId: "", state: "off" }, propertyGroups: [
+      metadata(), visibility(),
+      { label: "Allgemein", fields: [
+        { label: "Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+        { label: "Zustand", key: "state", type: "select", options: ["off", "on"] },
+      ] },
+      geometry(), ...cssGroups(),
+    ] },
     { type: "checkbox", label: "Checkbox", icon: "☑", defaults: { title: "Checkbox", entityId: "", state: false }, propertyGroups: entityWidget() },
     { type: "bulb", label: "Lampe ein/aus", icon: "💡", defaults: { title: "Lampe", entityId: "", state: false, min: 0, max: 1, icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
         { label: "Objekt-ID / Home-Assistant-Entity (Auswahl folgt)", key: "entityId" },
+        { label: "Zustand", key: "state", type: "select", options: [{ value: "off", label: "Aus" }, { value: "on", label: "Ein" }] },
         { label: "Minimum", key: "min", type: "number" },
         { label: "Maximum", key: "max", type: "number" },
         { label: "Symbol Aus (Bild-URL)", key: "icon_off" },
@@ -110,6 +119,19 @@ registerWidgetSet({
       metadata(), visibility(),
       { label: "Text", fields: [
         { label: "Inhalt", key: "textContent", type: "textarea" },
+      ] },
+      geometry(), ...cssGroups(),
+    ] },
+    { type: "border", label: "Rahmen", icon: "▱", defaults: { title: "Titel", borderColor: "#1688e7", borderWidth: 1, borderStyle: "solid", backgroundColor: "", titleBackground: "", titleColor: "#e7ecee", titleTopOffset: -9, titleLeftOffset: 16, headerHeight: 0, headerColor: "" }, propertyGroups: [
+      metadata(), visibility(),
+      { label: "Allgemein", fields: [
+        { label: "Titel", key: "title" },
+        { label: "Titelhintergrund", key: "titleBackground", type: "color" },
+        { label: "Titel-Oben-Abstand (px)", key: "titleTopOffset", type: "number" },
+        { label: "Titel-Links-Abstand (px)", key: "titleLeftOffset", type: "number" },
+        { label: "Kopfhöhe (px)", key: "headerHeight", type: "number", min: 0 },
+        { label: "Kopffarbe", key: "headerColor", type: "color" },
+        { label: "Titelfarbe", key: "titleColor", type: "color" },
       ] },
       geometry(), ...cssGroups(),
     ] },

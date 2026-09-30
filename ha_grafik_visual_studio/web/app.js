@@ -21,7 +21,7 @@ async function loadProject() {
     if (!response.ok) throw new Error("Projekt konnte nicht geladen werden");
     state.project = await response.json();
   } catch {
-    state.project = { schemaVersion: 1, name: "Mein Zuhause", page: { preset: "desktop", ...PRESETS.desktop, background: "#242729" }, widgets: [] };
+    state.project = { schemaVersion: 1, name: "Mein Zuhause", page: { preset: "desktop", ...PRESETS.desktop, background: "#242729", backgroundMode: "tile" }, widgets: [] };
   }
   state.nextId = Math.max(0, ...state.project.widgets.map((widget) => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   render();
@@ -55,9 +55,9 @@ function addWidget(definition) {
   const index = state.project.widgets.length;
   state.project.widgets.push({
     id, type: definition.type,
-    x: 24 + (index % 4) * 150, y: 24 + Math.floor(index / 4) * 90, width: 140, height: 62, radius: 8, visible: true,
+    x: 24 + (index % 4) * 150, y: 24 + Math.floor(index / 4) * 90, width: 140, height: 62, radius: 8, visible: true, layer: 0,
     fontSize: 13, fontWeight: "400", textAlign: "left", textColor: "#e7ecee", backgroundColor: "",
-    borderColor: "#626c70", borderWidth: 1, borderStyle: "solid", padding: 8, shadow: false, opacity: 1,
+    borderColor: "#626c70", borderWidth: 0, borderStyle: "none", padding: 0, shadow: false, opacity: 1,
     ...structuredClone(definition.defaults),
   });
   state.selectedId = id;
@@ -69,6 +69,11 @@ function renderStage() {
   stage.style.width = `${page.width}px`;
   stage.style.height = `${page.height}px`;
   stage.style.backgroundColor = page.background || "#242729";
+  const backgroundImage = String(page.backgroundImage || "").trim();
+  stage.style.backgroundImage = backgroundImage ? `url(${JSON.stringify(backgroundImage)})` : "none";
+  stage.style.backgroundRepeat = page.backgroundMode === "tile" ? "repeat" : "no-repeat";
+  stage.style.backgroundPosition = page.backgroundMode === "center" ? "center center" : "0 0";
+  stage.style.backgroundSize = page.backgroundMode === "stretch" ? "100% 100%" : "auto";
   stage.replaceChildren();
   for (const widget of state.project.widgets) {
     if (widget.visible === false) continue;
@@ -81,7 +86,7 @@ function renderStage() {
       const safeClasses = String(widget.cssClass).split(/\s+/).filter((name) => /^[A-Za-z_][\w-]*$/.test(name));
       element.classList.add(...safeClasses);
     }
-    Object.assign(element.style, { left: `${widget.x}px`, top: `${widget.y}px`, width: `${widget.width}px`, height: `${widget.height}px` });
+    Object.assign(element.style, { left: `${widget.x}px`, top: `${widget.y}px`, width: `${widget.width}px`, height: `${widget.height}px`, zIndex: String(Math.max(0, Number(widget.layer) || 0) + 2) });
     const content = document.createElement("div");
     content.className = "widget-content";
     Object.assign(content.style, {
@@ -96,26 +101,37 @@ function renderStage() {
     if (widget.type === "text") {
       content.textContent = widget.textContent ?? widget.state ?? "";
       content.style.whiteSpace = widget.whiteSpace || "pre-wrap";
+    } else if (widget.type === "border") {
+      content.classList.add("border-content");
+      const header = document.createElement("span"); header.className = "border-header";
+      header.style.height = `${Math.max(0, Number(widget.headerHeight) || 0)}px`; header.style.backgroundColor = widget.headerColor || "transparent";
+      const heading = document.createElement("span"); heading.className = "border-title"; heading.textContent = widget.title || "";
+      heading.style.backgroundColor = widget.titleBackground || "transparent";
+      heading.style.color = widget.titleColor || "inherit";
+      heading.style.top = `${widget.titleTopOffset ?? -9}px`; heading.style.left = `${widget.titleLeftOffset ?? 16}px`;
+      content.append(header, heading);
     } else if (widget.type === "button") {
       const button = document.createElement("button");
       button.type = "button"; button.textContent = widget.title || "Schaltfläche";
-      button.style.cssText = "font:inherit;color:inherit;background:inherit;border:inherit;border-radius:inherit;padding:inherit";
+      button.style.cssText = "font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:inherit;padding:4px 8px";
       content.append(button);
     } else if (widget.type === "toggle") {
       const label = document.createElement("label"); label.className = "widget-toggle";
-      const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true";
+      const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true" || widget.state === "on";
       checkbox.tabIndex = runtimeMode ? 0 : -1;
+      checkbox.setAttribute("aria-label", widget.title || "Schalter"); checkbox.dataset.state = checkbox.checked ? "on" : "off";
+      checkbox.addEventListener("change", () => { widget.state = checkbox.checked ? "on" : "off"; checkbox.dataset.state = widget.state; });
       const caption = document.createElement("span"); caption.textContent = widget.title || "Schalter";
       const track = document.createElement("span"); track.className = "switch-track"; track.setAttribute("aria-hidden", "true");
       label.append(checkbox, track, caption); content.append(label);
     } else if (widget.type === "checkbox") {
       const label = document.createElement("label"); label.className = "widget-checkbox";
-      const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true";
+      const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true" || widget.state === "on";
       checkbox.tabIndex = runtimeMode ? 0 : -1;
       const caption = document.createElement("span"); caption.textContent = widget.title || "Checkbox";
       label.append(checkbox, caption); content.append(label);
     } else if (widget.type === "bulb") {
-      const isOn = widget.state === true || widget.state === "true";
+      const isOn = widget.state === true || widget.state === "true" || widget.state === "on";
       const iconUrl = isOn ? widget.icon_on : widget.icon_off;
       if (iconUrl) {
         const image = document.createElement("img"); image.className = "bulb-image"; image.src = iconUrl;
@@ -215,12 +231,13 @@ function field(descriptor, widget) {
   if (descriptor.type === "textarea") input = document.createElement("textarea");
   else if (descriptor.type === "select") {
     input = document.createElement("select");
-    for (const optionValue of descriptor.options || []) {
-      const option = document.createElement("option"); option.value = optionValue; option.textContent = optionValue; input.append(option);
+    for (const item of descriptor.options || []) {
+      const option = document.createElement("option"); option.value = typeof item === "string" ? item : item.value;
+      option.textContent = typeof item === "string" ? item : item.label; input.append(option);
     }
   } else { input = document.createElement("input"); input.type = descriptor.type || "text"; }
   if (input.type === "checkbox") input.checked = widget[descriptor.key] !== false;
-  else input.value = widget[descriptor.key] ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? descriptor.options?.[0] || "" : "");
+  else input.value = widget[descriptor.key] ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
   if (descriptor.min !== undefined) input.min = descriptor.min;
   if (descriptor.max !== undefined) input.max = descriptor.max;
   if (descriptor.step !== undefined) input.step = descriptor.step;
@@ -242,8 +259,23 @@ function renderProperties() {
   panel.append(tabs);
   const widget = state.project.widgets.find((item) => item.id === state.selectedId);
   if (!widget && state.propertyTab !== "view") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Wähle ein Widget aus, um seine Eigenschaften zu bearbeiten."; panel.append(empty); return; }
-  if (state.propertyTab === "view") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Seiteneigenschaften werden ergänzt."; panel.append(empty); return; }
+  if (state.propertyTab === "view") {
+    const heading = document.createElement("div"); heading.className = "selected-widget-heading"; heading.textContent = "Ansicht / Hintergrund"; panel.append(heading);
+    const details = document.createElement("details"); details.className = "property-section"; details.open = true;
+    const summary = document.createElement("summary"); summary.textContent = "Seiteneigenschaften";
+    const body = document.createElement("div"); body.className = "property-fields";
+    const descriptors = [
+      { label: "Hintergrundfarbe", key: "background", type: "color" },
+      { label: "Hintergrundbild (URL oder HA-Pfad)", key: "backgroundImage" },
+      { label: "Darstellung", key: "backgroundMode", type: "select", options: [
+        { value: "tile", label: "Kacheln" }, { value: "center", label: "Zentriert" }, { value: "stretch", label: "Stretch" },
+      ] },
+    ];
+    body.append(...descriptors.map((descriptor) => field(descriptor, state.project.page)));
+    details.append(summary, body); panel.append(details); return;
+  }
   if (state.propertyTab === "scripts") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Widget-Skripte werden in einem späteren Ausbauschritt ergänzt."; panel.append(empty); return; }
+  if (widget.type === "toggle" && typeof widget.state === "boolean") widget.state = widget.state ? "on" : "off";
   const groups = getWidgetDefinition(widget.type).propertyGroups.filter((group) => state.propertyTab === "css" ? group.css === true : group.css !== true);
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
   heading.textContent = `${getWidgetDefinition(widget.type).label} · ${widget.id}`; panel.append(heading);

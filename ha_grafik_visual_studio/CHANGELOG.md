@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4
+
+- Fügt ein eigenes Rahmen-Widget mit Titel- und Kopfzeilenoptionen hinzu.
+- Ergänzt Ebenen ab 0 für jedes Widget; höhere Ebenen liegen im Editor und in der Runtime weiter vorn.
+- Ergänzt Seitenhintergründe mit Farbe und Bild sowie den Modi Kacheln, Zentriert und Stretch.
+- Schalter besitzen einen direkten Ein-/Aus-Zustand und lassen sich in der Runtime lokal umschalten.
+
 ## 0.1.3
 
 - Ergänzt grafische Basic-Widgets für Switch, Checkbox, Lampe ein/aus und Slider.

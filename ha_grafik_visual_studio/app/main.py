@@ -18,7 +18,7 @@ MAX_BODY = 1_000_000
 DEFAULT_PROJECT = {
     "schemaVersion": 1,
     "name": "Mein Zuhause",
-    "page": {"preset": "desktop", "width": 1920, "height": 1080, "background": "#202124"},
+    "page": {"preset": "desktop", "width": 1920, "height": 1080, "background": "#202124", "backgroundMode": "tile"},
     "widgets": [],
 }
 
@@ -26,7 +26,7 @@ MIME_TYPES = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charse
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.3"
+    server_version = "HAGrafikVisualStudio/0.1.4"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -46,7 +46,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path.rstrip("/") or "/"
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.3"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.4"})
             return
         if path == "/api/project":
             self.send_json(HTTPStatus.OK, self.read_project())

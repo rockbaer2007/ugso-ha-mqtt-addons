@@ -13,16 +13,16 @@ Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mi
 - Das Widget-Register ist separat; weitere eigene Widget-Sets können später unabhängig ergänzt werden.
 - Seitengrößen Desktop, Tablet und Telefon können im Editor gewählt werden.
 - Das Text-Widget ist ein freies Textfeld ohne Entitätsbindung oder Entitäts-Fehlermeldung.
-- Widgets sind frei platzierte HTML-Elemente; Auswahl zeigt ihre Widget-ID und einen blauen Rahmen mit Resize-Griff.
-- Die Basispalette enthält passende grafische Elemente: Switch, Checkbox, Lampe ein/aus, Slider, Text und Zahlenwert.
+- Widgets sind frei platzierte HTML-Elemente; Auswahl zeigt ihre Widget-ID und einen blauen Rahmen mit Resize-Griff. Jedes Element liegt standardmäßig auf Ebene 0; die Ebene lässt sich je Widget einstellen.
+- Die Basispalette enthält passende grafische Elemente: Switch mit direktem Ein-/Aus-Zustand, Checkbox, Lampe ein/aus, Slider, Text, Zahlenwert und einen eigenen Rahmen mit Titel/Kopfzeile.
+- Der Seitenhintergrund unterstützt eine Farbe oder ein Bild mit Kachel-, Zentriert- und Stretch-Darstellung.
 - Der rechte Eigenschaftenbereich orientiert sich an VIS2s Reitern für Ansicht, Widget, CSS und Skripte; Widget-Metadaten, Sichtbarkeit, Inhalt und CSS sind getrennt gruppiert.
 - Zahlenwerte bieten erste Formatoptionen wie Nachkommastellen, Multiplikator, Dezimalkomma sowie Vor- und Nachsilbe.
 - CSS-Eigenschaften umfassen Schrift, Farbe, Hintergrund, Rahmen, Eckenradius, Schatten, Abstand und Deckkraft.
 
 ## Geplante nächste Bausteine
 
-- Echte Home-Assistant-Entity-Auswahl und Zustandsbindung.
-- Bedingungen für die Sichtbarkeit und übereinanderliegende Widgets.
+- Echte Home-Assistant-Entity-Auswahl und Zustandsbindung für Schalter und andere Widgets.
 - Widget-Sets als getrennte, installierbare Erweiterungen.
 - Optionales Editor-Plugin zum Importieren eines ioBroker-VIS-Widget-Pakets per URL. Der Importer soll das Paket analysieren, unterstützte Widget-Definitionen in das native HA-Grafik-Widget-Format überführen und nicht unterstützte Eigenschaften mit verständlichen Hinweisen melden.
 - Importvorschau mit Zuordnung der Entity-Felder zu Home-Assistant-Entities sowie Prüfung und Bestätigung, bevor ein konvertiertes Widget-Set installiert wird.

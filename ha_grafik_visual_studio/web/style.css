@@ -42,10 +42,14 @@ button { cursor: pointer; }
 .stage-meta { height: 35px; display: flex; align-items: center; gap: 12px; padding: 0 10px; color: var(--muted); border-bottom: 1px solid var(--line); font-size: 12px; }
 .stage-meta strong { color: var(--text); }
 .stage-scroll { flex: 1; min-height: 0; overflow: auto; padding: 16px; }
-.stage { position: relative; min-width: 390px; min-height: 420px; margin: 0 auto; overflow: hidden; border: 1px dashed #536063; background-color: #242729; background-image: linear-gradient(#ffffff09 1px, transparent 1px), linear-gradient(90deg, #ffffff09 1px, transparent 1px); background-size: 20px 20px; }
+.stage { position: relative; min-width: 390px; min-height: 420px; margin: 0 auto; overflow: hidden; border: 1px dashed #536063; background-color: #242729; background-repeat: no-repeat; background-position: 0 0; background-size: auto; }
+.stage::before { position: absolute; z-index: 1; inset: 0; background-image: linear-gradient(#ffffff09 1px, transparent 1px), linear-gradient(90deg, #ffffff09 1px, transparent 1px); background-size: 20px 20px; content: ""; pointer-events: none; }
 .widget { position: absolute; min-width: 16px; min-height: 16px; overflow: visible; cursor: grab; user-select: none; touch-action: none; }
 .widget-content { width: 100%; height: 100%; display: flex; align-items: center; gap: 5px; overflow: hidden; }
 .widget-text .widget-content { display: block; white-space: pre-wrap; }
+.widget-border .widget-content { position: relative; display: block; overflow: visible; }
+.border-header { position: absolute; top: 0; right: 0; left: 0; display: block; pointer-events: none; }
+.border-title { position: absolute; max-width: 90%; padding: 0 5px; transform: translateY(-50%); white-space: nowrap; }
 .widget-content > button { max-width: 100%; max-height: 100%; cursor: pointer; }
 .widget-content > input[type="range"] { width: 100%; }
 .widget-toggle, .widget-checkbox { display: inline-flex; align-items: center; gap: 7px; }
@@ -65,7 +69,7 @@ button { cursor: pointer; }
 .widget .value { color: inherit; }
 .widget-gauge { justify-content: center; border-radius: 50%; }
 .image-placeholder { display: grid; place-items: center; border: 1px dashed currentColor; }
-.widget.selected { z-index: 10; outline: 1px dashed #1688e7; outline-offset: 0; }
+.widget.selected { outline: 1px dashed #1688e7; outline-offset: 0; }
 .widget-id-flag { position: absolute; left: 0; top: -18px; max-width: 100%; overflow: hidden; padding: 1px 5px; border-radius: 3px 3px 0 0; color: #fff; background: #0878c9; font-size: 10px; line-height: 16px; white-space: nowrap; }
 .resize-handle { position: absolute; width: 8px; height: 8px; border: 1px solid #fff; background: #1688e7; touch-action: none; }
 .resize-n, .resize-s { left: calc(50% - 4px); cursor: ns-resize; }
@@ -92,5 +96,6 @@ body.runtime-mode { overflow: auto; background: #111; }
 body.runtime-mode .toolbar { display: none; }
 body.runtime-mode .workspace { height: 100vh; }
 body.runtime-mode .stage-scroll { display: grid; place-items: center; padding: 0; }
-body.runtime-mode .stage { border: 0; background-image: none; }
+body.runtime-mode .stage { border: 0; }
+body.runtime-mode .stage::before { display: none; }
 @media (max-width: 760px) { .workspace { --left-panel-width: 175px; --right-panel-width: 210px; } .toolbar { gap: 6px; padding: 0 6px; } .brand span:last-child { display: none; } .page-size { font-size: 11px; } }
