@@ -379,13 +379,25 @@ if (!runtimeMode) setInterval(() => {
 function renderPalette() {
   const palette = $("#palette");
   palette.replaceChildren();
-  for (const set of getWidgetSets()) {
+  const widgetSets = getWidgetSets();
+  if (!state.paletteAccordionReady) {
+    state.collapsedWidgetSets = new Set(widgetSets.slice(1).map(set => set.id));
+    state.paletteAccordionReady = true;
+  }
+  for (const set of widgetSets) {
     const group = document.createElement("details");
     group.className = "widget-group";
+    group.dataset.widgetSetId = set.id;
     group.open = !state.collapsedWidgetSets.has(set.id);
     group.addEventListener("toggle", () => {
-      if (group.open) state.collapsedWidgetSets.delete(set.id);
-      else state.collapsedWidgetSets.add(set.id);
+      if (group.open) {
+        state.collapsedWidgetSets.delete(set.id);
+        for (const other of palette.querySelectorAll(".widget-group")) {
+          if (other === group) continue;
+          other.open = false;
+          state.collapsedWidgetSets.add(other.dataset.widgetSetId);
+        }
+      } else state.collapsedWidgetSets.add(set.id);
     });
     const summary = document.createElement("summary");
     summary.textContent = set.label;

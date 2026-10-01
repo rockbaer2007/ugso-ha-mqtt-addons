@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.60
+
+- Changes the widget palette to an accordion so opening one widget group closes the other groups.
+- Keeps every other widget-group heading visible in collapsed form below or above the open group.
+- Opens the first widget group initially and preserves the active group while the editor rerenders.
+
 ## 0.1.59
 
 - Adds an editable, persistent widget name to every widget type while keeping the technical widget ID unchanged.
