@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.53
+
+- Opens a centered point-type dialog when an SVG connection line is clicked in the editor, with `Klick` selected by default and `Sammelpunkt` as the explicit coupling option.
+- Inserts the new point on the clicked path segment and switches the connection to the manual multi-point path while preserving the connection as one widget with one name.
+- Keeps normal widgets selectable below the selected connection line and keeps explicitly opened property sections open across editor updates until the user closes them.
+
 ## 0.1.52
 
 - Snaps dragged SVG connection start and end handles to enabled widget anchors within a visible 24-pixel capture radius.

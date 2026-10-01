@@ -65,7 +65,7 @@ const fileTypes = {
   audio: ["mp3", "wav", "ogg", "m4a", "flac"],
   video: ["mp4", "webm", "mov", "mkv"],
 };
-const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", collapsedWidgetSets: new Set(), objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null };
+const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", collapsedWidgetSets: new Set(), expandedPropertySections: new Set(), objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null };
 let mdiIcons = null;
 let mdiIconsPromise = null;
 let activeIconInput = null;
@@ -1022,6 +1022,52 @@ function connectionRoute(widget, widgets, reverse = false) {
   return points;
 }
 
+function closestConnectionSegmentIndex(widget, widgets, point) {
+  const route = connectionRoute(widget, widgets);
+  let closest = { index: Math.max(0, route.length - 2), distance: Number.POSITIVE_INFINITY };
+  for (let index = 0; index < route.length - 1; index += 1) {
+    const start = route[index]; const end = route[index + 1];
+    const dx = end.x - start.x; const dy = end.y - start.y;
+    const lengthSquared = dx * dx + dy * dy;
+    const ratio = lengthSquared ? Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared)) : 0;
+    const projectedX = start.x + ratio * dx; const projectedY = start.y + ratio * dy;
+    const distance = Math.hypot(point.x - projectedX, point.y - projectedY);
+    if (distance < closest.distance) closest = { index, distance };
+  }
+  return closest.index;
+}
+
+function openConnectionPointDialog(widget, widgets, point) {
+  const dialog = document.createElement("dialog"); dialog.className = "studio-dialog connection-point-type-dialog";
+  const heading = document.createElement("h2"); heading.textContent = "Punkt auf der Linie erstellen";
+  const hint = document.createElement("p"); hint.className = "property-hint";
+  hint.textContent = "Ein Klickpunkt teilt den Pfad in weitere Segmente. Nur ein Sammelpunkt kann von anderen Linien gezielt verwendet werden.";
+  const choices = document.createElement("fieldset"); const legend = document.createElement("legend"); legend.textContent = "Punkttyp"; choices.append(legend);
+  const name = `connection-point-type-${createRandomId()}`;
+  for (const [value, label, checked] of [["click", "Klick", true], ["collector", "Sammelpunkt", false]]) {
+    const row = document.createElement("label"); const radio = document.createElement("input"); radio.type = "radio"; radio.name = name; radio.value = value; radio.checked = checked;
+    row.append(radio, document.createTextNode(label)); choices.append(row);
+  }
+  const actions = document.createElement("div"); actions.className = "dialog-actions";
+  const confirm = document.createElement("button"); confirm.type = "button"; confirm.textContent = "OK";
+  const cancel = document.createElement("button"); cancel.type = "button"; cancel.textContent = "Abbrechen";
+  confirm.addEventListener("click", () => {
+    const collectorEnabled = choices.querySelector("input:checked")?.value === "collector";
+    const points = widget.connectionPoints ??= [];
+    const count = points.length + 1;
+    const insertAt = Math.min(points.length, closestConnectionSegmentIndex(widget, widgets, point));
+    points.splice(insertAt, 0, {
+      id: createRandomId(), name: `${collectorEnabled ? "Sammelpunkt" : "Klickpunkt"} ${count}`,
+      x: point.x, y: point.y, collectorEnabled, display: collectorEnabled ? "distributor" : "point",
+    });
+    widget.pathMode = "zigzag";
+    dialog.close(); render();
+  });
+  cancel.addEventListener("click", () => dialog.close());
+  actions.append(confirm, cancel); dialog.append(heading, hint, choices, actions); document.body.append(dialog);
+  dialog.addEventListener("close", () => dialog.remove()); dialog.showModal(); confirm.focus();
+}
+
 function connectionPathData(widget, widgets, reverse = false) {
   const points = connectionRoute(widget, widgets, reverse);
   if (points.length < 2) return "";
@@ -1181,7 +1227,18 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
       });
     }
   }
-  hit.addEventListener("click", event => { if (!runtimeMode) { event.stopPropagation(); state.selectedId = widget.id; render(); } });
+  hit.addEventListener("click", event => {
+    if (runtimeMode) return;
+    event.stopPropagation();
+    const coveredWidget = document.elementsFromPoint(event.clientX, event.clientY).map(element => element.closest?.(".widget")).find(element => element && !element.classList.contains("widget-svg-connection"));
+    if (coveredWidget) { state.selectedId = coveredWidget.dataset.widgetId; render(); return; }
+    state.selectedId = widget.id;
+    const bounds = stage.getBoundingClientRect();
+    openConnectionPointDialog(widget, widgets, {
+      x: Math.max(0, Math.min(width, Math.round((event.clientX - bounds.left) * width / bounds.width))),
+      y: Math.max(0, Math.min(height, Math.round((event.clientY - bounds.top) * height / bounds.height))),
+    });
+  });
   return svg;
 }
 
@@ -1962,6 +2019,9 @@ function renderProperties() {
     const heading = document.createElement("div"); heading.className = "selected-widget-heading"; heading.textContent = "Ansicht / Hintergrund"; panel.append(heading);
     for (const [index, group] of VIEW_PROPERTY_GROUPS.entries()) {
       const details = document.createElement("details"); details.className = "property-section";
+      const sectionKey = `view:${group.label}:${index}`;
+      details.open = state.expandedPropertySections.has(sectionKey);
+      details.addEventListener("toggle", () => { if (details.open) state.expandedPropertySections.add(sectionKey); else state.expandedPropertySections.delete(sectionKey); });
       const summary = document.createElement("summary");
       const title = document.createElement("span"); title.className = "property-section-title"; title.textContent = group.label;
       const enabled = document.createElement("input"); enabled.type = "checkbox"; enabled.className = "property-section-enabled";
@@ -2010,6 +2070,9 @@ function renderProperties() {
   heading.textContent = `${getWidgetDefinition(widget.type).label} · ${widget.id}`; panel.append(heading);
   for (const [index, group] of groups.entries()) {
     const details = document.createElement("details"); details.className = "property-section";
+    const sectionKey = `widget:${widget.id}:${group.label}:${index}`;
+    details.open = state.expandedPropertySections.has(sectionKey);
+    details.addEventListener("toggle", () => { if (details.open) state.expandedPropertySections.add(sectionKey); else state.expandedPropertySections.delete(sectionKey); });
     const summary = document.createElement("summary");
     const title = document.createElement("span"); title.className = "property-section-title"; title.textContent = group.label;
     summary.append(title);
@@ -2080,6 +2143,9 @@ function renderProperties() {
       for (let stateIndex = 0; stateIndex < count; stateIndex += 1) {
         const visualState = widget.visualStates[stateIndex];
         const details = document.createElement("details"); details.className = "signal-section";
+        const nestedKey = `widget:${widget.id}:${group.label}:state:${stateIndex}`;
+        details.open = state.expandedPropertySections.has(nestedKey);
+        details.addEventListener("toggle", () => { if (details.open) state.expandedPropertySections.add(nestedKey); else state.expandedPropertySections.delete(nestedKey); });
         const summary = document.createElement("summary"); summary.textContent = `Zustand ${stateIndex + 1}`; details.append(summary);
         const fields = document.createElement("div"); fields.className = "property-fields";
         fields.append(...visibleFields(stateFields, visualState));
@@ -2105,7 +2171,10 @@ function renderProperties() {
       ];
       for (let signalIndex = 0; signalIndex < count; signalIndex += 1) {
         const signal = widget.signalImages[signalIndex] ??= { condition: "==", value: "true", imageSize: 24, horizontal: 0, vertical: 0, blink: false, hideInEditor: false };
-        const details = document.createElement("details"); details.className = "signal-section"; details.open = count === 1 && signalIndex === 0;
+        const details = document.createElement("details"); details.className = "signal-section";
+        const nestedKey = `widget:${widget.id}:${group.label}:signal:${signalIndex}`;
+        details.open = state.expandedPropertySections.has(nestedKey);
+        details.addEventListener("toggle", () => { if (details.open) state.expandedPropertySections.add(nestedKey); else state.expandedPropertySections.delete(nestedKey); });
         const summary = document.createElement("summary"); summary.textContent = `Signal [${signalIndex}]`; details.append(summary);
         const fields = document.createElement("div"); fields.className = "property-fields";
         fields.append(...signalFields.map((descriptor) => field({ ...descriptor, label: `${descriptor.label} [${signalIndex}]` }, signal)));

@@ -171,7 +171,7 @@ button { cursor: pointer; }
 .widget-svg-connection .widget-content { overflow: visible; pointer-events: none; }
 .svg-connection-canvas { display: block; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .connection-hit-target { pointer-events: stroke; cursor: pointer; }
-.widget-svg-connection.selected .connection-hit-target { pointer-events: none; }
+.widget-svg-connection.selected .connection-hit-target { pointer-events: stroke; }
 .svg-connection-canvas.is-click-through .connection-hit-target { pointer-events: none; }
 .connection-crossing-gap { fill: none; stroke: var(--stage-background, #242729); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 .connection-flow { pointer-events: none; animation: connection-flow 2s linear infinite; }
@@ -193,6 +193,9 @@ button { cursor: pointer; }
 .connection-points-list { display: grid; gap: 7px; max-height: 55vh; overflow: auto; }
 .connection-point-row { display: grid; grid-template-columns: minmax(110px, 1.4fr) 75px 75px minmax(145px, 1.5fr) minmax(110px, 1fr) auto; align-items: end; gap: 6px; padding: 7px; border: 1px solid var(--line); border-radius: 5px; }
 .connection-point-row label { display: grid; gap: 3px; min-width: 0; color: var(--muted); font-size: 10px; }
+.connection-point-type-dialog { width: min(420px, calc(100vw - 24px)); }
+.connection-point-type-dialog fieldset { display: grid; gap: 8px; margin: 12px 0; padding: 10px; border: 1px solid var(--line); border-radius: 6px; }
+.connection-point-type-dialog fieldset label { display: flex; align-items: center; gap: 8px; color: var(--text); }
 .connection-point-row input, .connection-point-row select { min-width: 0; width: 100%; }
 .connection-point-row input[type="checkbox"] { width: auto; }
 .connection-point-actions { display: flex; gap: 3px; }
