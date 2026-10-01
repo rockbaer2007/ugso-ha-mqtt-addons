@@ -17,7 +17,7 @@ const cssGroups = () => [
     { label: "z-index", key: "cssZIndex", type: "number" },
     { label: "overflow-x", key: "cssOverflowX", type: "select", options: ["", "visible", "hidden", "auto", "scroll"] },
     { label: "overflow-y", key: "cssOverflowY", type: "select", options: ["", "visible", "hidden", "auto", "scroll"] },
-    { label: "opacity", key: "opacity", type: "number", min: 0, max: 1, step: 0.05 },
+    { label: "opacity", key: "opacity", type: "range", min: 0, max: 1, step: 0.05 },
     { label: "cursor", key: "cssCursor" }, { label: "transform", key: "cssTransform" },
   ] },
   { label: "CSS Font & Text", css: true, fields: [
@@ -166,8 +166,8 @@ registerWidgetSet({
     basicDataWidget("string", "String", "T", { title: "Textwert", entityId: "", state: "Beispieltext", prefix: "", suffix: "" }, [
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testwert", key: "state" },
       { label: "HTML voranstellen", key: "prefix" }, { label: "HTML anhängen", key: "suffix" },
-    ], "Text wird sicher als Text ausgegeben; eine Entity-Bindung folgt."),
-    basicDataWidget("string-raw", "String (HTML, bereinigt)", "<>…", { title: "HTML-Wert", entityId: "", state: "<strong>Beispiel</strong>", prefix: "", suffix: "" }, [
+    ], "Der Zustandswert wird als Text ausgegeben, vorangestellter und angehängter HTML-Code als HTML. Eine Entity-Bindung folgt."),
+    basicDataWidget("string-raw", "String (unescaped)", "<>…", { title: "HTML-Wert", entityId: "", state: "<strong>Beispiel</strong>", prefix: "", suffix: "" }, [
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testwert (HTML)", key: "state", type: "textarea" },
       { label: "HTML voranstellen", key: "prefix", type: "textarea" }, { label: "HTML anhängen", key: "suffix", type: "textarea" },
     ]),
@@ -207,7 +207,7 @@ registerWidgetSet({
       { label: "HTML für Ein", key: "htmlTrue", type: "textarea" }, { label: "HTML für Aus", key: "htmlFalse", type: "textarea" },
     ]),
     basicDataWidget("html-state", "HTML State", "HTML", { title: "HTML State", htmlContent: "<strong>Eigener HTML-Inhalt</strong>", clickUrl: "" }, [
-      { label: "HTML-Inhalt (bereinigt)", key: "htmlContent", type: "textarea" }, { label: "URL beim Anklicken (optional)", key: "clickUrl" },
+      { label: "HTML-Inhalt", key: "htmlContent", type: "textarea" }, { label: "URL beim Anklicken (optional)", key: "clickUrl" },
     ]),
     basicDataWidget("table", "Table", "▦", { title: "Tabelle", entityId: "", tableData: "[{\"Name\":\"Temperatur\",\"Wert\":21.5},{\"Name\":\"Luftfeuchte\",\"Wert\":48}]" }, [
       { label: "Home-Assistant-Entity (JSON-Attribut, später)", key: "entityId" }, { label: "JSON-Testdaten", key: "tableData", type: "textarea" },
@@ -221,8 +221,8 @@ registerWidgetSet({
       { label: "Farbe", key: "barColor", type: "color" }, { label: "Ausrichtung", key: "orientation", type: "select", options: [{ value: "horizontal", label: "Horizontal" }, { value: "vertical", label: "Vertikal" }] },
     ]),
     basicDataWidget("html", "HTML", "<>…", { title: "HTML", htmlContent: "<h3>Überschrift</h3><p>Eigener HTML-Inhalt</p>" }, [
-      { label: "HTML-Inhalt (bereinigt)", key: "htmlContent", type: "textarea" },
-    ], "Aktiver Inhalt wird aus Sicherheitsgründen auf harmlose HTML-Elemente und Attribute begrenzt."),
+      { label: "HTML-Inhalt", key: "htmlContent", type: "textarea" },
+    ], "HTML-Code wird mit seinen Elementen, Attributen und Formatierungen dargestellt."),
     basicDataWidget("navigation", "HTML Navigation", "➜", { title: "Navigation", navLabel: "Öffnen", navUrl: "" }, [
       { label: "Linktext", key: "navLabel" }, { label: "Ziel-URL oder HA-Pfad", key: "navUrl" },
     ]),
@@ -241,9 +241,9 @@ registerWidgetSet({
       { label: "Allgemein", fields: [
         { label: "Titel", key: "title" },
         { label: "Titelhintergrund", key: "titleBackground", type: "color" },
-        { label: "Titel-Oben-Abstand (px)", key: "titleTopOffset", type: "number" },
-        { label: "Titel-Links-Abstand (px)", key: "titleLeftOffset", type: "number" },
-        { label: "Kopfhöhe (px)", key: "headerHeight", type: "number", min: 0 },
+        { label: "Titel-Oben-Abstand (px)", key: "titleTopOffset", type: "range", min: -20, max: 20, step: 1 },
+        { label: "Titel-Links-Abstand (px)", key: "titleLeftOffset", type: "range", min: -20, max: 30, step: 1 },
+        { label: "Kopfhöhe (px)", key: "headerHeight", type: "range", min: 0, max: 100, step: 1 },
         { label: "Kopffarbe", key: "headerColor", type: "color" },
         { label: "Titelfarbe", key: "titleColor", type: "color" },
       ] },

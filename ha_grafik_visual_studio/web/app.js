@@ -809,7 +809,6 @@ function isOn(value) {
   return value === true || value === 1 || ["true", "on", "ein", "yes", "1"].includes(String(value).toLowerCase());
 }
 
-const safeHtmlTags = new Set(["a", "b", "br", "caption", "code", "div", "em", "h1", "h2", "h3", "h4", "h5", "h6", "hr", "i", "img", "li", "ol", "p", "small", "span", "strong", "sub", "sup", "table", "tbody", "td", "th", "thead", "tr", "u", "ul"]);
 function safeUrl(value, allowDataImage = false) {
   const raw = String(value || "").trim();
   if (!raw || /[\u0000-\u0020]/.test(raw) && !raw.startsWith("/")) return "";
@@ -825,28 +824,7 @@ function safeUrl(value, allowDataImage = false) {
 function appendSafeHtml(parent, markup) {
   const template = document.createElement("template");
   template.innerHTML = String(markup ?? "");
-  const copyNode = (node, target) => {
-    if (node.nodeType === Node.TEXT_NODE) { target.append(document.createTextNode(node.textContent)); return; }
-    if (node.nodeType !== Node.ELEMENT_NODE) return;
-    const tag = node.tagName.toLowerCase();
-    if (!safeHtmlTags.has(tag)) return;
-    const safe = document.createElement(tag);
-    for (const attribute of node.attributes) {
-      const name = attribute.name.toLowerCase();
-      if (["class", "title", "alt", "width", "height", "colspan", "rowspan", "role"].includes(name) || name.startsWith("aria-")) safe.setAttribute(name, attribute.value);
-      if (name === "href" && tag === "a") {
-        const url = safeUrl(attribute.value);
-        if (url) { safe.setAttribute("href", url); safe.setAttribute("rel", "noopener noreferrer"); }
-      }
-      if (name === "src" && tag === "img") {
-        const url = safeUrl(attribute.value, true);
-        if (url) safe.setAttribute("src", url);
-      }
-    }
-    for (const child of node.childNodes) copyNode(child, safe);
-    target.append(safe);
-  };
-  for (const node of template.content.childNodes) copyNode(node, parent);
+  parent.append(template.content);
 }
 
 function formatDate(value, format, relative) {
@@ -1119,7 +1097,7 @@ function renderStage() {
       if (widget.imageSrc) { const image = document.createElement("img"); image.src = safeUrl(widget.imageSrc, true); image.alt = widget.title || "Bild"; content.append(image); }
       else { content.classList.add("image-placeholder"); content.setAttribute("aria-label", widget.title || "Bild"); }
     } else if (widget.type === "string") {
-      const text = document.createElement("span"); text.className = "basic-string"; text.textContent = `${widget.prefix || ""}${widget.state ?? ""}${widget.suffix || ""}`; content.append(text);
+      const text = document.createElement("span"); text.className = "basic-string"; appendSafeHtml(text, widget.prefix || ""); text.append(document.createTextNode(String(widget.state ?? ""))); appendSafeHtml(text, widget.suffix || ""); content.append(text);
     } else if (widget.type === "string-raw") {
       appendSafeHtml(content, `${widget.prefix || ""}${widget.state ?? ""}${widget.suffix || ""}`);
     } else if (widget.type === "image-source") {
@@ -1205,10 +1183,15 @@ function renderStage() {
       if (widget.decimalComma) displayValue = displayValue.replace(".", ",");
       suffix = Number(displayValue.replace(",", ".")) === 1 ? widget.suffixSingular || suffix : widget.suffixPlural || suffix;
     }
-    value.textContent = `${widget.entityId ? `${widget.entityId} · ` : ""}${widget.prefix || ""}${displayValue}${suffix}`;
+    if (widget.entityId) value.append(document.createTextNode(`${widget.entityId} · `));
+    appendSafeHtml(value, widget.prefix || ""); value.append(document.createTextNode(String(displayValue))); appendSafeHtml(value, suffix);
       if (widget.title) { const title = document.createElement("span"); title.className = "widget-title"; title.textContent = widget.title; content.append(title); }
       content.append(value);
       if (widget.type === "gauge") content.classList.add("widget-gauge");
+    }
+    if (["checkbox", "button", "image"].includes(widget.type)) {
+      const prefix = document.createElement("span"); appendSafeHtml(prefix, widget.prefix || ""); content.prepend(prefix);
+      appendSafeHtml(content, Number(widget.state) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || "");
     }
     element.append(content);
     const signalCount = Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
@@ -1294,10 +1277,45 @@ function makeResizable(element, handle, widget) {
   handle.addEventListener("pointerup", () => { origin = null; });
 }
 
+function openPageSelector(input) {
+  const dialog = document.createElement("dialog"); dialog.className = "studio-dialog";
+  const heading = document.createElement("h2"); heading.textContent = "Seiten auswählen"; dialog.append(heading);
+  const selected = new Set(input.value.split(/[;,]/).map(value => value.trim()));
+  const options = [];
+  for (const page of state.project.pages) {
+    const label = document.createElement("label"); const check = document.createElement("input"); check.type = "checkbox"; check.checked = selected.has(page.id) || selected.has(page.name);
+    label.append(check, document.createTextNode(page.name)); dialog.append(label); options.push([page.id, check]);
+  }
+  const actions = document.createElement("div"); actions.className = "dialog-actions";
+  for (const [label, apply] of [["Übernehmen", true], ["Abbrechen", false]]) {
+    const button = document.createElement("button"); button.type = "button"; button.textContent = label;
+    button.addEventListener("click", () => { if (apply) { input.value = options.filter(([, check]) => check.checked).map(([id]) => id).join(";"); input.dispatchEvent(new Event("input", { bubbles: true })); } dialog.close(); }); actions.append(button);
+  }
+  dialog.append(actions); document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); dialog.showModal();
+}
+
+function openHtmlEditor(input) {
+  const dialog = document.createElement("dialog"); dialog.className = "studio-dialog html-editor";
+  const heading = document.createElement("h2"); heading.textContent = "HTML bearbeiten";
+  const area = document.createElement("div"); area.className = "html-editor-code";
+  const lines = document.createElement("pre"); lines.setAttribute("aria-hidden", "true");
+  const editor = document.createElement("textarea"); editor.value = input.value; editor.spellcheck = false; editor.setAttribute("aria-label", "HTML-Code");
+  const updateLines = () => { lines.textContent = Array.from({ length: editor.value.split("\n").length }, (_, index) => index + 1).join("\n"); };
+  editor.addEventListener("input", updateLines); editor.addEventListener("scroll", () => { lines.scrollTop = editor.scrollTop; }); updateLines();
+  const actions = document.createElement("div"); actions.className = "dialog-actions";
+  for (const [label, save] of [["Speichern", true], ["Abbrechen", false]]) {
+    const button = document.createElement("button"); button.type = "button"; button.textContent = label;
+    button.addEventListener("click", () => { if (save) { input.value = editor.value; input.dispatchEvent(new Event("input", { bubbles: true })); } dialog.close(); }); actions.append(button);
+  }
+  area.append(lines, editor); dialog.append(heading, area, actions); document.body.append(dialog);
+  dialog.addEventListener("close", () => { dialog.remove(); input.focus(); }); dialog.showModal(); editor.focus();
+}
+
 function field(descriptor, widget) {
+  const htmlField = descriptor.html === true || descriptor.type === "html" || /HTML/i.test(descriptor.label) || (descriptor.key === "state" && ["string", "string-raw"].includes(widget.type));
   const wrapper = document.createElement("label"); wrapper.textContent = descriptor.label;
   let input;
-  if (descriptor.type === "textarea") input = document.createElement("textarea");
+  if (descriptor.type === "textarea" || htmlField) input = document.createElement("textarea");
   else if (descriptor.type === "select") {
     input = document.createElement("select");
     for (const item of descriptor.options || []) {
@@ -1305,11 +1323,11 @@ function field(descriptor, widget) {
       option.textContent = typeof item === "string" ? item : item.label; input.append(option);
     }
   } else { input = document.createElement("input"); input.type = descriptor.type || "text"; }
-  if (input.type === "checkbox") input.checked = widget[descriptor.key] ?? descriptor.default ?? true;
-  else input.value = widget[descriptor.key] ?? descriptor.default ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
   if (descriptor.min !== undefined) input.min = descriptor.min;
   if (descriptor.max !== undefined) input.max = descriptor.max;
   if (descriptor.step !== undefined) input.step = descriptor.step;
+  if (input.type === "checkbox") input.checked = widget[descriptor.key] ?? descriptor.default ?? true;
+  else input.value = widget[descriptor.key] ?? descriptor.default ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
   input.disabled = descriptor.disabled === true;
   let preview;
   let aliasPreview;
@@ -1340,14 +1358,15 @@ function field(descriptor, widget) {
     aliasPreview.hidden = !showAlias;
     aliasPreview.textContent = alias ? alias.slice(0, 3) : "";
   };
-  if (descriptor.key === "entityId") {
+  if (descriptor.key === "entityId" || descriptor.key === "visibilityEntityId") {
     const row = document.createElement("span"); row.className = "property-entity-row";
     const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button";
-    const icon = document.createElement("img"); icon.src = "icons/entity.svg"; icon.alt = ""; picker.append(icon);
+    picker.textContent = "…";
     picker.title = "Home-Assistant-Entität auswählen"; picker.setAttribute("aria-label", picker.title);
+    picker.disabled = input.disabled;
     picker.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); openEntities(input); });
     row.append(input, picker); wrapper.append(row);
-  } else if (descriptor.previewImage) {
+  } else if (descriptor.previewImage || descriptor.key === "backgroundImage") {
     const row = document.createElement("span"); row.className = "property-input-row"; previewRow = row;
     preview = document.createElement("img"); preview.className = "property-image-preview"; preview.alt = ""; preview.loading = "lazy";
     preview.addEventListener("error", () => {
@@ -1366,7 +1385,20 @@ function field(descriptor, widget) {
     picker.title = "Icon oder Bild auswählen"; picker.setAttribute("aria-label", "Icon oder Bild auswählen");
     picker.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); openIconPicker(input); });
     row.append(preview, aliasPreview, input, picker); wrapper.append(row); void updatePreview();
+  } else if (descriptor.key === "multiViews") {
+    const row = document.createElement("span"); row.className = "property-input-row";
+    const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button"; picker.textContent = "…"; picker.title = "Seiten auswählen"; picker.setAttribute("aria-label", picker.title);
+    picker.addEventListener("click", () => openPageSelector(input)); row.append(input, picker); wrapper.append(row);
+  } else if (htmlField) {
+    const row = document.createElement("span"); row.className = "property-input-row";
+    const button = document.createElement("button"); button.type = "button"; button.className = "property-icon-picker-button"; button.textContent = "✎"; button.title = "HTML bearbeiten"; button.setAttribute("aria-label", button.title);
+    button.disabled = input.disabled; button.addEventListener("click", () => openHtmlEditor(input)); row.append(input, button); wrapper.append(row);
   } else wrapper.append(input);
+  if (input.type === "range") {
+    const number = document.createElement("input"); number.type = "number"; number.min = input.min; number.max = input.max; number.step = input.step; number.value = input.value; number.setAttribute("aria-label", descriptor.label);
+    input.addEventListener("input", () => { number.value = input.value; });
+    number.addEventListener("input", () => { input.value = number.value; number.value = input.value; input.dispatchEvent(new Event("input", { bubbles: true })); }); wrapper.append(number);
+  }
   const update = () => {
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     void updatePreview();
@@ -1465,7 +1497,7 @@ function renderProperties() {
         { label: "Vergleich", key: "condition", type: "select", options: ["==", "!=", ">", ">=", "<", "<="] },
         { label: "Zustandswert", key: "value" },
         { label: "Inhalt", key: "contentType", type: "select", refreshProperties: true, options: [
-          { value: "icon", label: "Icon" }, { value: "image", label: "Bild" }, { value: "text", label: "Text" }, { value: "html", label: "HTML (bereinigt)" },
+          { value: "icon", label: "Icon" }, { value: "image", label: "Bild" }, { value: "text", label: "Text" }, { value: "html", label: "HTML" },
         ] },
         { label: "Icon / Iconset", key: "icon", previewImage: true, showWhen: { key: "contentType", value: "icon" } },
         { label: "Bildpfad / URL", key: "image", previewImage: true, showWhen: { key: "contentType", value: "image" } },

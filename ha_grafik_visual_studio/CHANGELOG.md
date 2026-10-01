@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.40
+
+- Ergänzt an HTML-Feldern einen Code-Editor mit Zeilennummern, Speichern und Abbrechen; mehrzeiliger Code bleibt erhalten.
+- Stellt HTML-Elemente und Formatierungen ohne die bisherige Element-/Attribut-Whitelist dar, auch in vorangestellten und angehängten Inhalten.
+- Vereinheitlicht Auswahlknöpfe als drei Punkte für Entitäten, Icons, Bilder und die multi-views-Seitenauswahl.
+- Ergänzt Slider mit Zahlenanzeige und die Border-Grenzen für Titel oben (-20 bis 20), Titel links (-20 bis 30) und Kopfhöhe (0 bis 100).
+- Hält den Attributbereich bei vielen aufgeklappten Gruppen scrollbar.
+
 ## 0.1.39
 
 - Speichert Editoränderungen standardmäßig fünf Sekunden nach der letzten Änderung automatisch.
