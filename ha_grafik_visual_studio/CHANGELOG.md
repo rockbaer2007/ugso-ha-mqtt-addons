@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.69
+
+- SVG connection lines now show a compact name tab near their start point in the editor. Selecting the tab opens the line properties; its edit button renames the line directly.
+
 ## 0.1.68
 
 - Selecting an SVG connection now shows its editable properties on the first click; clicking the selected line again opens the point dialog.

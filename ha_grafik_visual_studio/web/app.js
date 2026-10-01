@@ -2083,6 +2083,54 @@ function renderStage() {
       appendSafeHtml(content, widget.suffix ?? (Number(widget.state) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""));
     }
     element.append(content);
+    if (isConnection && !runtimeMode) {
+      const start = connectionEndpoint(widget, "start", activePage.widgets);
+      const tab = document.createElement("div");
+      tab.className = "connection-name-tab";
+      tab.style.left = `${Math.max(0, Math.min(Math.max(0, page.width - 140), start.x + 10))}px`;
+      tab.style.top = `${start.y >= 30 ? start.y - 27 : start.y + 12}px`;
+      const select = document.createElement("button"); select.type = "button";
+      select.className = "connection-name-select"; select.textContent = widgetDisplayName(widget);
+      select.title = "Linie auswählen und Eigenschaften anzeigen";
+      select.addEventListener("click", event => {
+        event.stopPropagation();
+        setSingleWidgetSelection(widget.id); state.propertyTab = "widget";
+        renderStage(); renderProperties(); renderWidgetFinder();
+      });
+      const edit = document.createElement("button"); edit.type = "button";
+      edit.className = "connection-name-edit"; edit.textContent = "✎";
+      edit.title = "Liniennamen bearbeiten"; edit.setAttribute("aria-label", `Liniennamen von ${widgetDisplayName(widget)} bearbeiten`);
+      edit.addEventListener("click", event => {
+        event.stopPropagation();
+        setSingleWidgetSelection(widget.id); state.propertyTab = "widget";
+        renderProperties(); renderWidgetFinder();
+        const input = document.createElement("input"); input.type = "text";
+        input.className = "connection-name-input"; input.value = widgetDisplayName(widget);
+        input.setAttribute("aria-label", "Linienname");
+        tab.replaceChildren(input);
+        let finished = false;
+        const finish = save => {
+          if (finished) return;
+          finished = true;
+          const name = input.value.trim();
+          if (save && name && name !== widgetDisplayName(widget)) {
+            recordHistorySnapshot();
+            widget.name = uniqueWidgetName(activePage, name, widget.id);
+            renderWidgetFinder(); renderProperties();
+          }
+          renderStage();
+        };
+        input.addEventListener("keydown", keyEvent => {
+          if (keyEvent.key === "Enter") { keyEvent.preventDefault(); finish(true); }
+          if (keyEvent.key === "Escape") { keyEvent.preventDefault(); finish(false); }
+          keyEvent.stopPropagation();
+        });
+        input.addEventListener("blur", () => finish(true));
+        input.addEventListener("click", inputEvent => inputEvent.stopPropagation());
+        input.focus(); input.select();
+      });
+      tab.append(select, edit); element.append(tab);
+    }
     const hasConnections = activePage.widgets.some(item => item.type === "svg-connection" && item.visible !== false);
     const showDockPoints = !runtimeMode && !isConnection && widget.dockPointsEnabled !== false && (selected || widget.dockAlwaysVisible || hasConnections);
     if (showDockPoints) {

@@ -215,6 +215,12 @@ button { cursor: pointer; }
 .widget-svg-connection { min-width: 0; min-height: 0; pointer-events: none; cursor: default; }
 .widget-svg-connection.selected { outline: 0; }
 .widget-svg-connection .widget-content { overflow: visible; pointer-events: none; }
+.connection-name-tab { position: absolute; display: flex; align-items: center; max-width: 180px; height: 19px; border-radius: 4px 4px 0 0; color: #fff; background: #0878c9; box-shadow: 0 1px 4px #0008; pointer-events: auto; }
+.connection-name-tab button { height: 19px; border: 0; border-radius: 0; padding: 0 4px; color: inherit; background: transparent; font-size: 11px; line-height: 19px; }
+.connection-name-select { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.connection-name-tab .connection-name-edit { flex: none; font-size: 13px; }
+.connection-name-tab button:hover, .connection-name-tab button:focus-visible { background: #ffffff26; }
+.connection-name-input { width: 160px; height: 19px; border: 1px solid #fff; border-radius: 3px; padding: 0 4px; color: #fff; background: #075d9b; font-size: 11px; }
 .svg-connection-canvas { display: block; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .connection-hit-target { pointer-events: stroke; cursor: grab; touch-action: none; }
 .connection-hit-target.is-dragging { cursor: grabbing; }
