@@ -2,7 +2,7 @@
 
 ## 0.1.76
 
-- The existing numeric-value widget is listed as "Number" in the palette, separately from "Red Number", and can now be found by searching for "number". Existing saved numeric widgets keep their type and settings.
+- The existing numeric-value widget is listed as "Number" in the palette, separately from "Red Number", and can now be found by searching for "number" or the former name "Zahlenwert". Existing saved numeric widgets keep their type and settings.
 
 ## 0.1.75
 

@@ -522,7 +522,7 @@ function renderPalette() {
   }
   for (const set of widgetSets) {
     const widgets = search ? set.widgets.filter(definition =>
-      [definition.label, definition.type, set.label].some(value => String(value || "").toLocaleLowerCase().includes(search))) : set.widgets;
+      [definition.label, definition.type, set.label, ...(definition.searchTerms || [])].some(value => String(value || "").toLocaleLowerCase().includes(search))) : set.widgets;
     if (!widgets.length) continue;
     const group = document.createElement("details");
     group.className = "widget-group";

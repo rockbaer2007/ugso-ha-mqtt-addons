@@ -199,7 +199,7 @@ registerWidgetSet({
       ] },
       geometry(), ...cssGroups(),
     ] },
-    { type: "sensor", label: "Number", icon: "⌁", defaults: { title: "Number", entityId: "", state: "--", unit: "", digits: 1, factor: 1, decimalComma: true }, propertyGroups: [
+    { type: "sensor", label: "Number", searchTerms: ["Zahlenwert"], icon: "⌁", defaults: { title: "Number", entityId: "", state: "--", unit: "", digits: 1, factor: 1, decimalComma: true }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
         { label: "Home-Assistant-Entität", key: "entityId" },
