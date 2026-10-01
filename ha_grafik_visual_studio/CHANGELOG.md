@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.63
+
+- Replaces the layer arrow glyphs with matching stacked-layer SVG icons.
+- Uses a plus badge for moving the selected widget forward and a minus badge for moving it backward.
+- Keeps disabled layer actions visually subdued while retaining their accessible labels and tooltips.
+
 ## 0.1.62
 
 - Rebuilds the editor header as one VIS-2-inspired toolbar with icons or controls above their labels.
