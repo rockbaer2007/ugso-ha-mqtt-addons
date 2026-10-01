@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.66
+
+- Fixes SVG connection lines with active non-pulse animations so selecting or dragging them no longer interrupts rendering before the properties panel updates.
+
 ## 0.1.65
 
 - Replaces the single-widget finder with a VIS-2-style multi-widget dropdown supporting all, apply and clear actions with widget previews.
