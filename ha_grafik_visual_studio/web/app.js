@@ -1649,6 +1649,12 @@ function addWidget(definition) {
   page.widgets.push(widget);
   setSingleWidgetSelection(id);
   render();
+  $("#status").textContent = `${widget.name} hinzugefügt`;
+  requestAnimationFrame(() => {
+    const element = document.getElementById(id);
+    const target = definition.type === "svg-connection" ? element?.querySelector(".connection-endpoint.is-start") : element;
+    target?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  });
 }
 
 function renderStage() {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.67
+
+- Keeps newly inserted palette widgets in the visible editor area and confirms the insertion in the status line.
+- Removes the grab cursor from the full-page SVG connection container while retaining it on the draggable line.
+
 ## 0.1.66
 
 - Fixes SVG connection lines with active non-pulse animations so selecting or dragging them no longer interrupts rendering before the properties panel updates.
