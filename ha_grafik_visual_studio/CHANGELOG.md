@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.88
+
+- Narrowed page-width and page-height inputs and the Save button in the editor toolbar.
+
 ## 0.1.87
 
 - Editor and Runtime share one compact two-row toolbar column; Runtime is green. Widget packages continue to accept 1–30 widgets, while tool packages now require exactly one tool.
