@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.73
+
+- A Switch widget bound to a `switch`, `light` or `input_boolean` entity now sends `turn_on`/`turn_off` through the authenticated Home Assistant WebSocket service API. Its displayed state follows HA confirmation instead of changing only a local test value.
+- Missing, unavailable or unsupported bound states disable the Switch control. Service errors are reported in the runtime; arbitrary service calls are not exposed through the app endpoint.
+
 ## 0.1.72
 
 - The runtime reads only the Home Assistant states needed by the current page every five seconds, and refreshes on returning to the tab. Sensor, String, Red Number, Bar, Gauge and Bool HTML display widgets use these values without changing saved preview data.

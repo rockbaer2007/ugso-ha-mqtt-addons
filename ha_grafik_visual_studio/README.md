@@ -40,7 +40,7 @@ Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sow
 - Der Seitenhintergrund unterstützt eine Farbe oder ein Bild mit Kachel-, Zentriert- und Stretch-Darstellung.
 - Der rechte Eigenschaftenbereich orientiert sich an VIS2s Reitern für Ansicht, Widget, CSS und Skripte; Widget-Metadaten, Sichtbarkeit, Inhalt und CSS sind getrennt gruppiert.
 - Der CSS-Reiter enthält projektweite CSS-Regeln für alle Widgets; CSS-Felder für das aktuell ausgewählte Widget stehen in dessen Widget-Eigenschaften.
-- Zahlenwerte bieten erste Formatoptionen wie Nachkommastellen, Multiplikator, Dezimalkomma sowie Vor- und Nachsilbe. Entitätsfelder im Widget-Editor lassen sich über die Entitätenauswahl befüllen. In der Runtime lesen Sensor, String, Red Number, Bar, Gauge und Bool HTML gebundene HA-Zustände alle fünf Sekunden; Schreibaktionen und die übrigen Widget-Typen sind noch nicht angebunden.
+- Zahlenwerte bieten erste Formatoptionen wie Nachkommastellen, Multiplikator, Dezimalkomma sowie Vor- und Nachsilbe. Entitätsfelder im Widget-Editor lassen sich über die Entitätenauswahl befüllen. In der Runtime lesen Sensor, String, Red Number, Bar, Gauge und Bool HTML gebundene HA-Zustände alle fünf Sekunden. Ein Switch-Widget mit `switch`, `light` oder `input_boolean` sendet Schaltbefehle über den HA-Dienst; andere Steuer-Widgets und Datenbindungen folgen später.
 - CSS-Eigenschaften umfassen Schrift, Farbe, Hintergrund, Rahmen, Eckenradius, Schatten, Abstand und Deckkraft.
 
 ## Geplante nächste Bausteine

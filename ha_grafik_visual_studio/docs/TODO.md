@@ -7,7 +7,7 @@
 
 ## Home-Assistant-Anbindung
 
-Stand 0.1.72: Die Runtime liest gebundene Zustände für Sensor, String, Red Number, Bar, Gauge und Bool HTML alle fünf Sekunden; Sichtbarkeitsregeln reagieren ebenfalls auf die gelesenen Werte. Editor-Liveanzeige, weitere Widget-Typen und Schreibaktionen bleiben offen.
+Stand 0.1.73: Die Runtime liest gebundene Zustände für Sensor, String, Red Number, Bar, Gauge und Bool HTML alle fünf Sekunden; Sichtbarkeitsregeln reagieren ebenfalls auf die gelesenen Werte. Das Switch-Widget steuert `switch`, `light` und `input_boolean` über HA-Dienste. Editor-Liveanzeige, weitere Widget-Typen und Schreibaktionen bleiben offen.
 
 - [ ] Zustände gebundener Entitäten in Editor und Runtime live lesen und bei Änderungen aktualisieren. Der Entitätenbrowser liest derzeit nur beim Öffnen oder manuellen Aktualisieren; eine ausgewählte Entity-ID allein bindet noch kein Widget.
 - [ ] Bedienbare Widgets über passende Home-Assistant-Dienste tatsächlich steuern. Schalter, Buttons, Slider und andere Eingaben dürfen nicht nur lokale Testwerte ändern; Erfolg, Fehler und der bestätigte neue HA-Zustand müssen sichtbar sein.

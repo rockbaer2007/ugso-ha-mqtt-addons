@@ -57,6 +57,26 @@ class StatesTests(unittest.TestCase):
         self.assertEqual(len(connection.sent), 2)
         self.assertTrue(connection.closed)
 
+    def test_switch_uses_targeted_service_call(self):
+        connection = FakeConnection()
+        websocket = types.SimpleNamespace(
+            create_connection=lambda *_args, **_kwargs: connection,
+            WebSocketException=Exception,
+        )
+        with patch.dict(sys.modules, {"websocket": websocket}), patch.dict(os.environ, {"SUPERVISOR_TOKEN": "test-token"}):
+            APP.set_home_assistant_switch("switch.garden", True)
+
+        self.assertEqual(connection.sent[1], {
+            "id": 1, "type": "call_service", "domain": "switch",
+            "service": "turn_on", "target": {"entity_id": "switch.garden"},
+        })
+
+    def test_switch_rejects_unsupported_entity_and_non_boolean_state(self):
+        with self.assertRaises(ValueError):
+            APP.set_home_assistant_switch("sensor.temperature", True)
+        with self.assertRaises(ValueError):
+            APP.set_home_assistant_switch("switch.garden", "on")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -49,11 +49,11 @@ DEFAULT_PROJECT = {
 
 
 class HomeAssistantAPIError(RuntimeError):
-    """Raised when the Home Assistant WebSocket API cannot provide entities."""
+    """Raised when a Home Assistant WebSocket request fails."""
 
 
-def home_assistant_commands(command_types):
-    """Run read-only Home Assistant WebSocket commands via Supervisor."""
+def home_assistant_commands(commands):
+    """Run Home Assistant WebSocket commands via Supervisor."""
     try:
         import websocket
     except ImportError as error:
@@ -83,8 +83,9 @@ def home_assistant_commands(command_types):
         if authentication.get("type") != "auth_ok":
             raise HomeAssistantAPIError("Home-Assistant-API-Authentifizierung fehlgeschlagen.")
 
-        def command(identifier, command_type):
-            connection.send(json.dumps({"id": identifier, "type": command_type}))
+        def command(identifier, specification):
+            payload = {"id": identifier, "type": specification} if isinstance(specification, str) else {"id": identifier, **specification}
+            connection.send(json.dumps(payload))
             while True:
                 response = json.loads(connection.recv())
                 if response.get("id") != identifier:
@@ -94,7 +95,7 @@ def home_assistant_commands(command_types):
                     raise HomeAssistantAPIError(f"Home Assistant: {message}")
                 return response.get("result")
 
-        return [command(index, command_type) for index, command_type in enumerate(command_types, 1)]
+        return [command(index, specification) for index, specification in enumerate(commands, 1)]
     except HomeAssistantAPIError:
         raise
     except (websocket.WebSocketException, OSError, ValueError, TypeError) as error:
@@ -139,6 +140,20 @@ def load_home_assistant_states(entity_ids):
         for entry in (state_entries or []) if isinstance(entry, dict) and entry.get("entity_id") in requested
     ]
 
+
+def set_home_assistant_switch(entity_id, enabled):
+    """Control one explicitly selected switch-like entity, never arbitrary services."""
+    if not isinstance(entity_id, str) or not ENTITY_ID_PATTERN.fullmatch(entity_id) or entity_id.split(".", 1)[0] not in {"switch", "light", "input_boolean"}:
+        raise ValueError("Diese Entität unterstützt die Schaltersteuerung nicht.")
+    if not isinstance(enabled, bool):
+        raise ValueError("Ungültiger Schaltzustand.")
+    domain = entity_id.split(".", 1)[0]
+    home_assistant_commands([{
+        "type": "call_service", "domain": domain,
+        "service": "turn_on" if enabled else "turn_off",
+        "target": {"entity_id": entity_id},
+    }])
+
 MIME_TYPES = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml"}
 FILE_MIME_TYPES = {
     ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml", ".gif": "image/gif", ".bmp": "image/bmp", ".ico": "image/x-icon",
@@ -151,7 +166,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.72"
+    server_version = "HAGrafikVisualStudio/0.1.73"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -173,7 +188,7 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.72"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.73"})
             return
         if path == "/api/entities":
             try:
@@ -243,6 +258,24 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/switch":
+            request = self.read_request_json()
+            if request is None:
+                return
+            if not isinstance(request, dict):
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Ungültiger Schaltbefehl."})
+                return
+            try:
+                set_home_assistant_switch(request.get("entity_id"), request.get("enabled"))
+            except ValueError as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+                return
+            except HomeAssistantAPIError as error:
+                LOG.warning("Home-Assistant-Schaltaktion fehlgeschlagen: %s", error)
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})
+                return
+            self.send_json(HTTPStatus.OK, {"accepted": True})
+            return
         if parsed.path == "/api/files/folder":
             self.create_object_folder(parse_qs(parsed.query).get("path", [""])[0])
             return

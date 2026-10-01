@@ -69,7 +69,9 @@ const fileTypes = {
   video: ["mp4", "webm", "mov", "mkv"],
 };
 const state = { project: null, projectId: params.get("project") || "main", selectedId: null, selectedIds: [], nextId: 1, propertyTab: "widget", collapsedWidgetSets: new Set(), expandedPropertySections: new Set(), objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null, widgetClipboard: [], editorWidgetFilter: null, undoStack: [], redoStack: [] };
-const LIVE_DISPLAY_TYPES = new Set(["sensor", "string", "red-number", "bar", "gauge", "bool-display"]);
+const LIVE_DISPLAY_TYPES = new Set(["sensor", "string", "red-number", "bar", "gauge", "bool-display", "toggle"]);
+const WRITABLE_SWITCH_ENTITY = /^(switch|light|input_boolean)\.[a-z0-9_]+$/;
+const pendingSwitches = new Set();
 let runtimeStateRequestPending = false;
 let runtimeStateError = false;
 let mdiIcons = null;
@@ -466,6 +468,29 @@ async function refreshRuntimeStates() {
   } finally {
     runtimeStateRequestPending = false;
     if (currentPage().id !== pageId) void refreshRuntimeStates();
+  }
+}
+
+async function writeRuntimeSwitch(widget, enabled) {
+  const entityId = widget.entityId;
+  if (!WRITABLE_SWITCH_ENTITY.test(entityId || "") || pendingSwitches.has(entityId)) return;
+  pendingSwitches.add(entityId);
+  try {
+    const response = await fetch("api/switch", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entity_id: entityId, enabled }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(uiText(payload.error || `HTTP ${response.status}`));
+    }
+    $("#status").textContent = "Schaltbefehl gesendet; warte auf Home Assistant";
+    await refreshRuntimeStates();
+  } catch (error) {
+    $("#status").textContent = `${uiText("Schalten fehlgeschlagen")}: ${error.message}`;
+  } finally {
+    pendingSwitches.delete(entityId);
+    renderStage();
   }
 }
 
@@ -1959,11 +1984,25 @@ function renderStage() {
       }
     } else if (widget.type === "toggle") {
       const label = document.createElement("label"); label.className = "widget-toggle";
-      const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true" || widget.state === "on";
+      const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = isOn(displayedWidgetState(widget));
       checkbox.tabIndex = runtimeMode ? 0 : -1;
       checkbox.autofocus = runtimeMode && widget.autofocus === true;
       checkbox.setAttribute("aria-label", widget.title || "Schalter"); checkbox.dataset.state = checkbox.checked ? "on" : "off";
-      checkbox.addEventListener("change", (event) => { event.stopPropagation(); widget.state = checkbox.checked ? "on" : "off"; checkbox.dataset.state = widget.state; });
+      const bound = runtimeMode && Boolean(widget.entityId);
+      checkbox.disabled = bound && (!WRITABLE_SWITCH_ENTITY.test(widget.entityId) || !["on", "off"].includes(state.entityStates[widget.entityId]?.state) || pendingSwitches.has(widget.entityId));
+      if (bound && checkbox.disabled) label.title = "Keine schaltbare Home-Assistant-Entität mit verfügbarem Zustand";
+      checkbox.addEventListener("change", (event) => {
+        event.stopPropagation();
+        if (bound) {
+          const enabled = checkbox.checked;
+          checkbox.checked = !enabled;
+          checkbox.disabled = true;
+          void writeRuntimeSwitch(widget, enabled);
+        } else {
+          widget.state = checkbox.checked ? "on" : "off";
+          checkbox.dataset.state = widget.state;
+        }
+      });
       const track = document.createElement("span"); track.className = "switch-track"; track.setAttribute("aria-hidden", "true");
       label.append(checkbox, track);
       if (widget.title) { const caption = document.createElement("span"); caption.textContent = widget.title; label.append(caption); }
