@@ -1303,9 +1303,67 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
       });
     }
   }
+  let lineDrag = null;
+  let suppressLineClick = false;
+  hit.addEventListener("pointerdown", event => {
+    if (runtimeMode || event.button !== 0) return;
+    event.preventDefault(); event.stopPropagation();
+    lineDrag = {
+      clientX: event.clientX,
+      clientY: event.clientY,
+      start: connectionEndpoint(widget, "start", widgets),
+      end: connectionEndpoint(widget, "end", widgets),
+      points: points.map(point => ({ point, x: Number(point.x) || 0, y: Number(point.y) || 0 })),
+      moved: false,
+    };
+    hit.setPointerCapture(event.pointerId);
+  });
+  hit.addEventListener("pointermove", event => {
+    if (!lineDrag) return;
+    const bounds = stage.getBoundingClientRect();
+    const dx = Math.round((event.clientX - lineDrag.clientX) * width / bounds.width);
+    const dy = Math.round((event.clientY - lineDrag.clientY) * height / bounds.height);
+    if (!lineDrag.moved && Math.abs(dx) <= 2 && Math.abs(dy) <= 2) return;
+    if (!lineDrag.moved) {
+      lineDrag.moved = true;
+      setSingleWidgetSelection(widget.id);
+      widget.startWidgetId = ""; widget.startCollector = "";
+      widget.endWidgetId = ""; widget.endCollector = "";
+      for (const handle of svg.querySelectorAll(".connection-endpoint")) {
+        handle.classList.remove("is-attached");
+        const name = handle.classList.contains("is-start") ? "Anfangspunkt" : "Endpunkt";
+        handle.setAttribute("aria-label", `${name} verschieben`);
+        handle.setAttribute("title", "Ziehen zum Verschieben");
+      }
+      hit.classList.add("is-dragging");
+    }
+    widget.startX = lineDrag.start.x + dx; widget.startY = lineDrag.start.y + dy;
+    widget.endX = lineDrag.end.x + dx; widget.endY = lineDrag.end.y + dy;
+    for (const origin of lineDrag.points) {
+      origin.point.x = origin.x + dx; origin.point.y = origin.y + dy;
+      const marker = [...svg.querySelectorAll(".connection-junction")].find(item => item.dataset.pointId === origin.point.id);
+      if (marker) { marker.setAttribute("cx", String(origin.point.x)); marker.setAttribute("cy", String(origin.point.y)); }
+    }
+    const startHandle = svg.querySelector(".connection-endpoint.is-start");
+    const endHandle = svg.querySelector(".connection-endpoint.is-end");
+    if (startHandle) { startHandle.setAttribute("cx", String(widget.startX)); startHandle.setAttribute("cy", String(widget.startY)); }
+    if (endHandle) { endHandle.setAttribute("cx", String(widget.endX)); endHandle.setAttribute("cy", String(widget.endY)); }
+    update();
+  });
+  const finishLineDrag = () => {
+    if (!lineDrag) return;
+    const moved = lineDrag.moved; lineDrag = null; hit.classList.remove("is-dragging");
+    if (!moved) return;
+    suppressLineClick = true;
+    $("#status").textContent = "Verbindungslinie vollständig verschoben";
+    render();
+  };
+  hit.addEventListener("pointerup", finishLineDrag);
+  hit.addEventListener("pointercancel", finishLineDrag);
   hit.addEventListener("click", event => {
     if (runtimeMode) return;
     event.stopPropagation();
+    if (suppressLineClick) { suppressLineClick = false; return; }
     const coveredWidget = document.elementsFromPoint(event.clientX, event.clientY).map(element => element.closest?.(".widget")).find(element => element && !element.classList.contains("widget-svg-connection"));
     if (coveredWidget) { setSingleWidgetSelection(coveredWidget.dataset.widgetId); render(); return; }
     setSingleWidgetSelection(widget.id);

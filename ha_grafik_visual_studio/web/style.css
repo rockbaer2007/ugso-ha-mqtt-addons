@@ -180,7 +180,8 @@ button { cursor: pointer; }
 .widget-svg-connection.selected { outline: 0; }
 .widget-svg-connection .widget-content { overflow: visible; pointer-events: none; }
 .svg-connection-canvas { display: block; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.connection-hit-target { pointer-events: stroke; cursor: pointer; }
+.connection-hit-target { pointer-events: stroke; cursor: grab; touch-action: none; }
+.connection-hit-target.is-dragging { cursor: grabbing; }
 .widget-svg-connection.selected .connection-hit-target { pointer-events: stroke; }
 .svg-connection-canvas.is-click-through .connection-hit-target { pointer-events: none; }
 .connection-crossing-gap { fill: none; stroke: var(--stage-background, #242729); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.58
+
+- Moves an entire SVG connection by holding the primary mouse button on the line and dragging it.
+- Translates both endpoints, every intermediate point and every collector together while preserving the line geometry.
+- Detaches endpoint bindings only after an actual line movement and keeps a short click available for the point-type dialog.
+
 ## 0.1.57
 
 - Changes ordered widget multi-selection to Ctrl + Shift + click so an ordinary Shift-click no longer modifies the selection.
