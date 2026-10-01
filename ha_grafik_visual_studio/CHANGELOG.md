@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.65
+
+- Replaces the single-widget finder with a VIS-2-style multi-widget dropdown supporting all, apply and clear actions with widget previews.
+- Adds editor filtering from the selected widgets' enabled filter words, plus multi-widget cut, copy, paste, duplicate and delete actions.
+- Adds a 50-step widget undo/redo history with toolbar counters and keyboard shortcuts.
+- Gives every widget common Generell and Sichtbarkeit sections which are disabled by default; entity conditions work in runtime once Home Assistant states are available, while locked widgets cannot be moved or resized.
+
 ## 0.1.64
 
 - Adds dedicated SVG icons for widget import and export based on the supplied artwork.

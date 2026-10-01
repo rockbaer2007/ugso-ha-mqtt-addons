@@ -66,7 +66,7 @@ const fileTypes = {
   audio: ["mp3", "wav", "ogg", "m4a", "flac"],
   video: ["mp4", "webm", "mov", "mkv"],
 };
-const state = { project: null, projectId: params.get("project") || "main", selectedId: null, selectedIds: [], nextId: 1, propertyTab: "widget", collapsedWidgetSets: new Set(), expandedPropertySections: new Set(), objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null };
+const state = { project: null, projectId: params.get("project") || "main", selectedId: null, selectedIds: [], nextId: 1, propertyTab: "widget", collapsedWidgetSets: new Set(), expandedPropertySections: new Set(), objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null, widgetClipboard: [], editorWidgetFilter: null, undoStack: [], redoStack: [] };
 let mdiIcons = null;
 let mdiIconsPromise = null;
 let activeIconInput = null;
@@ -97,9 +97,24 @@ const connectionAnchorGroup = { id: "dock-points", label: "Andockpunkte", master
   { label: "Andockpunkte dauerhaft anzeigen", key: "dockAlwaysVisible", type: "checkbox", default: false },
 ] };
 
+const commonWidgetGroups = [
+  { id: "general", label: "Generell", masterKey: "generalEnabled", defaultEnabled: false, hint: "Gemeinsame Angaben für Auswahl, Suche, Filterung und Darstellung dieses Widgets.", fields: [
+    { label: "Name", key: "name" }, { label: "Kommentar", key: "comment" }, { label: "CSS-Klasse", key: "cssClass" },
+    { label: "Filterwort", key: "filterWord" }, { label: "multi-views", key: "multiViews" },
+    { label: "Inaktiv (gesperrt)", key: "locked", type: "checkbox", default: false },
+  ] },
+  { id: "visibility", label: "Sichtbarkeit", masterKey: "visibilityEnabled", defaultEnabled: false, hint: "Steuert die Sichtbarkeit anhand eines Home-Assistant-Zustands und optionaler Benutzergruppen.", fields: [
+    { label: "Object ID", key: "visibilityEntityId" },
+    { label: "Bedingung", key: "visibilityCondition", type: "select", options: ["==", "!=", ">", ">=", "<", "<="] },
+    { label: "Wert für die Bedingung", key: "visibilityValue" },
+    { label: "Nur für Gruppen", key: "visibilityGroups" },
+    { label: "Falls Anwender nicht in der Gruppe", key: "visibilityFallback", type: "select", options: ["ausblenden", "deaktivieren"] },
+  ] },
+];
+
 function widgetPropertyGroups(widget) {
-  const groups = getWidgetDefinition(widget.type).propertyGroups;
-  return widget.type === "svg-connection" ? groups : [...groups, connectionAnchorGroup];
+  const groups = getWidgetDefinition(widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
+  return widget.type === "svg-connection" ? [...commonWidgetGroups, ...groups] : [...commonWidgetGroups, ...groups, connectionAnchorGroup];
 }
 
 async function loadMdiIcons() {
@@ -317,6 +332,47 @@ let observedProjectSnapshot = "";
 let projectChangedAt = 0;
 let projectSavePending = false;
 
+function rawProjectSnapshot() { return state.project ? JSON.stringify(state.project) : ""; }
+
+function updateHistoryButtons() {
+  const undo = $("#widget-undo"); const redo = $("#widget-redo");
+  if (!undo || !redo) return;
+  undo.disabled = state.undoStack.length === 0; redo.disabled = state.redoStack.length === 0;
+  $("#widget-undo-count").textContent = `${state.undoStack.length} / 50`;
+  $("#widget-redo-count").textContent = `${state.redoStack.length} / 50`;
+}
+
+function recordHistorySnapshot() {
+  const snapshot = rawProjectSnapshot();
+  if (!snapshot || state.undoStack.at(-1) === snapshot) return;
+  state.undoStack.push(snapshot);
+  if (state.undoStack.length > 50) state.undoStack.shift();
+  state.redoStack = [];
+  updateHistoryButtons();
+}
+
+function restoreHistorySnapshot(snapshot) {
+  state.project = ensureProjectPages(JSON.parse(snapshot));
+  const page = currentPage(); const available = new Set(page.widgets.map(widget => widget.id));
+  state.selectedIds = state.selectedIds.filter(id => available.has(id));
+  state.selectedId = state.selectedIds[0] || (available.has(state.selectedId) ? state.selectedId : null);
+  state.nextId = Math.max(0, ...state.project.pages.flatMap(item => item.widgets).map(widget => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
+  observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
+  render();
+}
+
+function undoWidgetChange() {
+  const snapshot = state.undoStack.pop(); if (!snapshot) return;
+  state.redoStack.push(rawProjectSnapshot()); if (state.redoStack.length > 50) state.redoStack.shift();
+  restoreHistorySnapshot(snapshot); $("#status").textContent = "Letzte Widget-Änderung rückgängig gemacht";
+}
+
+function redoWidgetChange() {
+  const snapshot = state.redoStack.pop(); if (!snapshot) return;
+  state.undoStack.push(rawProjectSnapshot()); if (state.undoStack.length > 50) state.undoStack.shift();
+  restoreHistorySnapshot(snapshot); $("#status").textContent = "Widget-Änderung wiederholt";
+}
+
 async function saveProject(automatic = false) {
   if (projectSavePending) return false;
   projectSavePending = true;
@@ -359,9 +415,11 @@ async function loadProject() {
   if (params.get("embedded") === "1") document.body.classList.add("embedded-runtime");
   state.project.settings ??= {};
   state.selectedId = null; state.selectedIds = [];
+  state.undoStack = []; state.redoStack = [];
   state.nextId = Math.max(0, ...state.project.pages.flatMap((page) => page.widgets).map((widget) => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   render();
   savedProjectSnapshot = observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
+  if (runtimeMode) void loadEntities();
 }
 
 if (!runtimeMode) setInterval(() => {
@@ -465,27 +523,88 @@ function renderPageMenu() {
 }
 
 function renderWidgetFinder() {
-  const select = $("#widget-finder");
   const page = currentPage();
-  select.replaceChildren();
-  const placeholder = document.createElement("option"); placeholder.value = "";
-  placeholder.textContent = page.widgets.length ? "Widget suchen …" : "Keine Widgets auf dieser Seite";
-  select.append(placeholder);
+  const selected = new Set(state.selectedIds.length ? state.selectedIds : state.selectedId ? [state.selectedId] : []);
+  $("#widget-selection-count").textContent = String(page.widgets.length);
+  const toggle = $("#widget-finder-toggle");
+  toggle.disabled = page.widgets.length === 0;
+  toggle.firstChild.textContent = selected.size === 1 ? `${widgetDisplayName(page.widgets.find(widget => selected.has(widget.id)))} ` : selected.size ? `${selected.size} Widgets ausgewählt ` : page.widgets.length ? "Widgets auswählen " : "Keine Widgets ";
+  const list = $("#widget-selector-list");
+  list.replaceChildren();
+  const draft = state.widgetSelectionDraft || selected;
   for (const widget of page.widgets) {
-    const option = document.createElement("option"); option.value = widget.id;
     const definition = getWidgetDefinition(widget.type);
-    option.textContent = `${widgetDisplayName(widget)} — ${definition.label} · ${widget.id}`;
-    option.selected = widget.id === state.selectedId;
-    select.append(option);
+    const row = document.createElement("label"); row.className = "widget-selector-row";
+    const check = document.createElement("input"); check.type = "checkbox"; check.checked = draft.has(widget.id); check.dataset.widgetId = widget.id;
+    check.addEventListener("change", () => {
+      state.widgetSelectionDraft ??= new Set(selected);
+      if (check.checked) state.widgetSelectionDraft.add(widget.id); else state.widgetSelectionDraft.delete(widget.id);
+      updateWidgetSelectorAllState();
+    });
+    const preview = document.createElement("span"); preview.className = "widget-choice-preview widget-selector-preview"; preview.dataset.kind = definition.preview?.kind || "symbol";
+    for (const lineText of definition.preview?.lines || [definition.icon || "□"]) { const line = document.createElement("span"); line.textContent = lineText; preview.append(line); }
+    const name = document.createElement("span"); name.className = "widget-selector-name"; name.textContent = widgetDisplayName(widget);
+    const meta = document.createElement("small"); meta.textContent = `${definition.label} · ${widget.id}`; name.append(meta);
+    row.append(check, preview, name); list.append(row);
   }
-  select.disabled = page.widgets.length === 0;
-  $("#widget-duplicate").disabled = !state.selectedId;
-  $("#widget-delete").disabled = !state.selectedId;
+  updateWidgetSelectorAllState();
+  const selectionCount = selected.size;
+  $("#widget-duplicate").disabled = selectionCount === 0;
+  $("#widget-delete").disabled = selectionCount === 0;
+  $("#widget-cut").disabled = selectionCount === 0;
+  $("#widget-copy").disabled = selectionCount === 0;
+  $("#widget-paste").disabled = state.widgetClipboard.length === 0;
   $("#widget-layer-up").disabled = !state.selectedId;
   $("#widget-layer-down").disabled = !state.selectedId || Number(page.widgets.find((widget) => widget.id === state.selectedId)?.layer || 0) <= 0;
   $("#widget-export").disabled = !state.selectedId;
   const alignmentCount = selectedNormalWidgets().length;
   for (const button of document.querySelectorAll(".alignment-toolbar button")) button.disabled = alignmentCount < 2;
+  updateHistoryButtons();
+}
+
+function updateWidgetSelectorAllState() {
+  const check = $("#widget-selector-all");
+  if (!check || !state.project) return;
+  const total = currentPage().widgets.length; const count = (state.widgetSelectionDraft || new Set()).size;
+  check.checked = total > 0 && count === total; check.indeterminate = count > 0 && count < total;
+}
+
+function applyWidgetSelection(ids) {
+  const ordered = currentPage().widgets.map(widget => widget.id).filter(id => ids.has(id));
+  state.selectedIds = ordered; state.selectedId = ordered[0] || null;
+  renderStage(); renderProperties(); renderWidgetFinder();
+}
+
+function toggleWidgetSelector(open = $("#widget-selector-menu").hidden) {
+  const menu = $("#widget-selector-menu"); const button = $("#widget-finder-toggle");
+  if (open) {
+    state.widgetSelectionDraft = new Set(state.selectedIds.length ? state.selectedIds : state.selectedId ? [state.selectedId] : []);
+    renderWidgetFinder();
+    const rect = button.getBoundingClientRect(); menu.style.left = `${Math.max(8, Math.min(rect.left, innerWidth - Math.min(470, innerWidth - 16) - 8))}px`; menu.style.minWidth = `${Math.max(260, rect.width)}px`;
+  } else state.widgetSelectionDraft = null;
+  menu.hidden = !open; button.setAttribute("aria-expanded", String(open));
+}
+
+function selectedWidgetFilterWords() {
+  return [...new Set(selectedWidgets().filter(widget => widget.generalEnabled === true).flatMap(widget => String(widget.filterWord || "").split(/[;,]/)).map(word => word.trim()).filter(Boolean))];
+}
+
+function openWidgetFilterDialog() {
+  const words = selectedWidgetFilterWords(); const dialog = $("#widget-filter-dialog");
+  $("#widget-filter-summary").textContent = words.length ? `Verwendete Filterschlüssel: ${words.join(", ")}` : "Die ausgewählten Widgets besitzen keinen aktivierten Filterschlüssel.";
+  $("#widget-filter-apply").disabled = words.length === 0;
+  const mode = state.editorWidgetFilter?.mode || "hide";
+  const radio = document.querySelector(`input[name="widget-filter-mode"][value="${mode}"]`); if (radio) radio.checked = true;
+  dialog.dataset.words = JSON.stringify(words); dialog.showModal();
+}
+
+function applyWidgetEditorFilter() {
+  const words = JSON.parse($("#widget-filter-dialog").dataset.words || "[]");
+  const mode = document.querySelector('input[name="widget-filter-mode"]:checked')?.value || "hide";
+  state.editorWidgetFilter = words.length ? { words, mode } : null;
+  $("#widget-filter-open").setAttribute("aria-pressed", String(Boolean(state.editorWidgetFilter)));
+  renderStage();
+  $("#status").textContent = state.editorWidgetFilter ? `Widget-Filter aktiv: ${words.join(", ")}` : "Widget-Filter aufgehoben";
 }
 
 function openObjects(path = "") {
@@ -563,6 +682,7 @@ function receiveEntities(message) {
   if (!entities.some((entity) => entity.entity_id === state.selectedEntityId)) state.selectedEntityId = "";
   $("#entities-status").textContent = summary;
   renderEntities();
+  if (runtimeMode) renderStage();
 }
 
 function entityName(entity) {
@@ -814,6 +934,11 @@ function selectedNormalWidgets() {
   return ids.map(id => currentPage().widgets.find(widget => widget.id === id)).filter(widget => widget && widget.type !== "svg-connection");
 }
 
+function selectedWidgets() {
+  const ids = new Set(state.selectedIds.length ? state.selectedIds : state.selectedId ? [state.selectedId] : []);
+  return currentPage().widgets.filter(widget => ids.has(widget.id));
+}
+
 function selectWidget(widgetId, additive = false) {
   if (!additive) { setSingleWidgetSelection(widgetId); return; }
   const selected = state.selectedIds.length ? [...state.selectedIds] : state.selectedId ? [state.selectedId] : [];
@@ -844,43 +969,69 @@ function focusWidget(widgetId) {
 
 function duplicateSelectedWidget() {
   const page = currentPage();
-  const source = page.widgets.find((widget) => widget.id === state.selectedId);
-  if (!source) return;
-  const copy = structuredClone(source);
-  copy.id = `widget-${state.nextId++}`;
-  copy.name = uniqueWidgetName(page, `${widgetDisplayName(source)} Kopie`);
-  if (copy.type === "svg-connection") {
-    copy.connectionPoints = (copy.connectionPoints || []).map(point => ({ ...point, id: createRandomId() }));
-    copy.startCollector = ""; copy.endCollector = ""; copy.flowParentId = "";
-    const connectionLayers = page.widgets.filter(item => item.type === "svg-connection").map(item => Math.max(0, Number(item.layer) || 0));
-    copy.layer = (connectionLayers.length ? Math.max(...connectionLayers) : 0) + 1;
-    for (const point of copy.connectionPoints) { point.x = (Number(point.x) || 0) + 20; point.y = (Number(point.y) || 0) + 20; }
-    copy.startX = (Number(copy.startX) || 0) + 20; copy.startY = (Number(copy.startY) || 0) + 20;
-    copy.endX = (Number(copy.endX) || 0) + 20; copy.endY = (Number(copy.endY) || 0) + 20;
-  }
-  copy.x = Math.min(Math.max(0, currentPage().page.width - (copy.width || 140)), (copy.x || 0) + 20);
-  copy.y = Math.min(Math.max(0, currentPage().page.height - (copy.height || 62)), (copy.y || 0) + 20);
-  page.widgets.push(copy); setSingleWidgetSelection(copy.id); render();
+  const sources = selectedWidgets(); if (!sources.length) return;
+  recordHistorySnapshot();
+  const idMap = new Map(sources.map(source => [source.id, `widget-${state.nextId++}`]));
+  const copies = sources.map(source => cloneWidgetForInsert(source, page, idMap));
+  page.widgets.push(...copies); state.selectedIds = copies.map(widget => widget.id); state.selectedId = state.selectedIds[0]; render();
 }
 
 function deleteSelectedWidget() {
   const page = currentPage();
-  if (!state.selectedId) return;
-  const removedId = state.selectedId;
-  page.widgets = page.widgets.filter((widget) => widget.id !== state.selectedId);
+  const removedIds = new Set(selectedWidgets().map(widget => widget.id));
+  if (!removedIds.size) return;
+  recordHistorySnapshot();
+  page.widgets = page.widgets.filter((widget) => !removedIds.has(widget.id));
   for (const widget of page.widgets.filter(item => item.type === "svg-connection")) {
-    if (widget.startWidgetId === removedId) widget.startWidgetId = "";
-    if (widget.endWidgetId === removedId) widget.endWidgetId = "";
-    if (widget.flowParentId === removedId) widget.flowParentId = "";
-    if (String(widget.startCollector || "").startsWith(`${removedId}:`)) widget.startCollector = "";
-    if (String(widget.endCollector || "").startsWith(`${removedId}:`)) widget.endCollector = "";
+    if (removedIds.has(widget.startWidgetId)) widget.startWidgetId = "";
+    if (removedIds.has(widget.endWidgetId)) widget.endWidgetId = "";
+    if (removedIds.has(widget.flowParentId)) widget.flowParentId = "";
+    if ([...removedIds].some(id => String(widget.startCollector || "").startsWith(`${id}:`))) widget.startCollector = "";
+    if ([...removedIds].some(id => String(widget.endCollector || "").startsWith(`${id}:`))) widget.endCollector = "";
   }
   setSingleWidgetSelection(null); render();
+}
+
+function cloneWidgetForInsert(source, page, idMap) {
+  const copy = structuredClone(source); const oldId = source.id;
+  copy.id = idMap.get(oldId) || `widget-${state.nextId++}`;
+  copy.name = uniqueWidgetName(page, `${widgetDisplayName(source)} Kopie`);
+  for (const key of ["startWidgetId", "endWidgetId", "flowParentId"]) if (copy[key]) copy[key] = idMap.get(copy[key]) || "";
+  for (const key of ["startCollector", "endCollector"]) {
+    const [widgetId, pointId] = String(copy[key] || "").split(":");
+    copy[key] = idMap.has(widgetId) ? `${idMap.get(widgetId)}:${pointId}` : "";
+  }
+  if (copy.type === "svg-connection") {
+    copy.connectionPoints = (copy.connectionPoints || []).map(point => ({ ...point, id: createRandomId(), x: (Number(point.x) || 0) + 20, y: (Number(point.y) || 0) + 20 }));
+    copy.startX = (Number(copy.startX) || 0) + 20; copy.startY = (Number(copy.startY) || 0) + 20;
+    copy.endX = (Number(copy.endX) || 0) + 20; copy.endY = (Number(copy.endY) || 0) + 20;
+  } else {
+    copy.x = Math.min(Math.max(0, page.page.width - (copy.width || 140)), (copy.x || 0) + 20);
+    copy.y = Math.min(Math.max(0, page.page.height - (copy.height || 62)), (copy.y || 0) + 20);
+  }
+  return copy;
+}
+
+function copySelectedWidgets(cut = false) {
+  const widgets = selectedWidgets(); if (!widgets.length) return;
+  state.widgetClipboard = structuredClone(widgets);
+  $("#status").textContent = `${widgets.length} Widget(s) ${cut ? "ausgeschnitten" : "kopiert"}`;
+  if (cut) deleteSelectedWidget(); else renderWidgetFinder();
+}
+
+function pasteWidgets() {
+  if (!state.widgetClipboard.length) return;
+  recordHistorySnapshot();
+  const page = currentPage(); const idMap = new Map(state.widgetClipboard.map(source => [source.id, `widget-${state.nextId++}`]));
+  const copies = state.widgetClipboard.map(source => cloneWidgetForInsert(source, page, idMap));
+  page.widgets.push(...copies); state.selectedIds = copies.map(widget => widget.id); state.selectedId = state.selectedIds[0];
+  render(); $("#status").textContent = `${copies.length} Widget(s) eingefügt`;
 }
 
 function alignSelectedWidgets(action, explicitSize = null) {
   const widgets = selectedNormalWidgets();
   if (widgets.length < 2) return;
+  recordHistorySnapshot();
   const reference = widgets[0];
   const number = value => Number(value) || 0;
   if (action === "left") for (const widget of widgets.slice(1)) widget.x = number(reference.x);
@@ -923,6 +1074,7 @@ function openAlignmentSizeDialog(action) {
 function changeSelectedWidgetLayer(direction) {
   const widget = currentPage().widgets.find((item) => item.id === state.selectedId);
   if (!widget) return;
+  recordHistorySnapshot();
   const current = Math.max(0, Math.trunc(Number(widget.layer) || 0));
   widget.layer = Math.min(9999, Math.max(0, current + direction));
   widget.cssZIndex = "";
@@ -947,6 +1099,7 @@ async function importWidgets(file) {
     const knownTypes = new Set(getWidgetSets().flatMap((set) => set.widgets.map((definition) => definition.type)));
     const widgets = incoming.filter((widget) => widget && typeof widget === "object" && knownTypes.has(widget.type));
     if (!widgets.length) throw new Error("Die Datei enthält keine unterstützten Widgets.");
+    recordHistorySnapshot();
     for (const source of widgets) {
       const widget = structuredClone(source);
       widget.id = `widget-${state.nextId++}`;
@@ -956,6 +1109,7 @@ async function importWidgets(file) {
       widget.width = Math.max(16, Number(widget.width) || 140);
       widget.height = Math.max(16, Number(widget.height) || 62);
       widget.layer = Math.max(0, Math.min(9999, Math.trunc(Number(widget.layer) || 0)));
+      widget.generalEnabled ??= false; widget.visibilityEnabled ??= false; widget.locked ??= false;
       currentPage().widgets.push(widget);
     }
     setSingleWidgetSelection(currentPage().widgets.at(-widgets.length).id);
@@ -1260,6 +1414,7 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
   }
   const points = widget.connectionPoints || [];
   const update = () => {
+    recordHistorySnapshot();
     const d = connectionPathData(widget, widgets); base.setAttribute("d", d);
     for (const path of svg.querySelectorAll(".connection-flow, .connection-crossing-gap, .connection-hit-target")) path.setAttribute("d", d);
     for (const motion of svg.querySelectorAll("animateMotion")) motion.setAttribute("path", connectionPathData(widget, widgets, style.animationDirection === "reverse"));
@@ -1471,11 +1626,12 @@ function matchesCondition(actual, condition, expected) {
 }
 
 function addWidget(definition) {
+  recordHistorySnapshot();
   const id = `widget-${state.nextId++}`;
   const page = currentPage();
   const index = page.widgets.length;
   const widget = {
-    id, type: definition.type,
+    id, type: definition.type, generalEnabled: false, visibilityEnabled: false, locked: false,
     x: 24 + (index % 4) * 150, y: 24 + Math.floor(index / 4) * 90, width: 140, height: 62, radius: 8, visible: true, layer: 0,
     fontSize: 13, fontWeight: "400", textAlign: "left", textColor: "#e7ecee", backgroundColor: "",
     borderColor: "#626c70", borderWidth: 0, borderStyle: "none", padding: 0, shadow: false, opacity: 1,
@@ -1556,6 +1712,18 @@ function renderStage() {
   const selectedFilters = Array.isArray(activeFilter) ? activeFilter : activeFilter ? [activeFilter] : [];
   for (const widget of activePage.widgets) {
     if (widget.visible === false) continue;
+    const editorFilterWords = String(widget.generalEnabled === true ? widget.filterWord || "" : "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
+    const editorFilterMatches = state.editorWidgetFilter?.words?.some((word) => editorFilterWords.includes(word));
+    if (!runtimeMode && state.editorWidgetFilter?.mode === "hide" && editorFilterMatches) continue;
+    if (!runtimeMode && state.editorWidgetFilter?.mode === "only" && !editorFilterMatches) continue;
+    let visibilityDisabled = false;
+    if (runtimeMode && widget.visibilityEnabled === true && widget.visibilityEntityId) {
+      const stateEntry = state.entityStates[widget.visibilityEntityId];
+      if (stateEntry && !matchesCondition(stateEntry.state, widget.visibilityCondition || "==", widget.visibilityValue)) {
+        if ((widget.visibilityFallback || "ausblenden") === "ausblenden") continue;
+        visibilityDisabled = true;
+      }
+    }
     const filterTags = String(widget.filterWord || "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
     if (widget.type !== "filter-dropdown" && selectedFilters.length && filterTags.length && !selectedFilters.some(value => filterTags.includes(value))) continue;
     const element = document.createElement("div");
@@ -1564,8 +1732,9 @@ function renderStage() {
     const selected = !runtimeMode && (state.selectedIds.length ? state.selectedIds.includes(widget.id) : widget.id === state.selectedId);
     const primarySelected = !runtimeMode && widget.id === state.selectedId;
     const isConnection = widget.type === "svg-connection";
-    element.className = `widget widget-${widget.type}${selected ? " selected" : ""}${primarySelected ? " selection-primary" : ""}`;
-    if (widget.cssClass) {
+    const widgetLocked = widget.generalEnabled === true && widget.locked === true;
+    element.className = `widget widget-${widget.type}${selected ? " selected" : ""}${primarySelected ? " selection-primary" : ""}${widgetLocked ? " is-locked" : ""}${visibilityDisabled ? " is-visibility-disabled" : ""}`;
+    if (widget.generalEnabled === true && widget.cssClass) {
       const safeClasses = String(widget.cssClass).split(/\s+/).filter((name) => /^[A-Za-z_][\w-]*$/.test(name));
       element.classList.add(...safeClasses);
     }
@@ -1932,7 +2101,7 @@ function renderStage() {
       }
       element.append(overlay);
     }
-    if (primarySelected && !isConnection) {
+    if (primarySelected && !isConnection && !widgetLocked) {
       const flag = document.createElement("span"); flag.className = "widget-id-flag"; flag.textContent = widget.id;
       element.append(flag);
       for (const direction of ["n", "ne", "e", "se", "s", "sw", "w", "nw"]) {
@@ -1944,7 +2113,7 @@ function renderStage() {
       }
     }
     if (!isConnection) element.addEventListener("click", event => { if (!runtimeMode) { selectWidget(widget.id, event.ctrlKey && event.shiftKey); render(); } }, { capture: true });
-    if (!runtimeMode && !isConnection) makeDraggable(element, widget);
+    if (!runtimeMode && !isConnection && !widgetLocked) makeDraggable(element, widget);
     stage.append(element);
   }
 }
@@ -1954,13 +2123,14 @@ function makeDraggable(element, widget) {
   element.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     if (event.target.closest(".resize-handle")) return;
-    origin = { x: event.clientX, y: event.clientY, left: widget.x, top: widget.y, moved: false };
+    origin = { x: event.clientX, y: event.clientY, left: widget.x, top: widget.y, moved: false, historyCaptured: false };
     element.setPointerCapture(event.pointerId);
   });
   element.addEventListener("pointermove", (event) => {
     if (!origin || !(event.buttons & 1)) return;
     if (Math.abs(event.clientX - origin.x) > 1 || Math.abs(event.clientY - origin.y) > 1) origin.moved = true;
     if (!origin.moved) return;
+    if (!origin.historyCaptured) { recordHistorySnapshot(); origin.historyCaptured = true; }
     const scale = stage.clientWidth / Number.parseFloat(stage.style.width);
     widget.x = Math.max(0, Math.round(origin.left + (event.clientX - origin.x) / scale));
     widget.y = Math.max(0, Math.round(origin.top + (event.clientY - origin.y) / scale));
@@ -1982,11 +2152,12 @@ function makeResizable(element, handle, widget) {
   handle.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     event.preventDefault(); event.stopPropagation();
-    origin = { x: event.clientX, y: event.clientY, left: widget.x, top: widget.y, width: widget.width, height: widget.height };
+    origin = { x: event.clientX, y: event.clientY, left: widget.x, top: widget.y, width: widget.width, height: widget.height, historyCaptured: false };
     handle.setPointerCapture(event.pointerId);
   });
   handle.addEventListener("pointermove", (event) => {
     if (!origin || !(event.buttons & 1)) return;
+    if (!origin.historyCaptured) { recordHistorySnapshot(); origin.historyCaptured = true; }
     const scale = stage.clientWidth / Number.parseFloat(stage.style.width);
     const direction = handle.dataset.direction;
     const dx = (event.clientX - origin.x) / scale; const dy = (event.clientY - origin.y) / scale;
@@ -2189,7 +2360,11 @@ function field(descriptor, widget) {
     void updatePreview();
     renderStage();
     if (descriptor.refreshProperties && !["number", "range"].includes(input.type)) renderProperties();
-    if (["name", "title"].includes(descriptor.key) && widget.id) renderWidgetFinder();
+    if (["name", "title"].includes(descriptor.key) && widget.id) {
+      renderWidgetFinder();
+      const heading = document.querySelector(".selected-widget-heading");
+      if (heading) heading.textContent = `${widgetDisplayName(widget)} — ${getWidgetDefinition(widget.type).label} · ${widget.id}`;
+    }
   };
   input.addEventListener(input.tagName === "SELECT" ? "change" : "input", update);
   if (descriptor.refreshProperties && ["number", "range"].includes(input.type)) input.addEventListener("change", renderProperties);
@@ -2268,24 +2443,6 @@ function renderProperties() {
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
   const updateHeading = () => { heading.textContent = `${widgetDisplayName(widget)} — ${getWidgetDefinition(widget.type).label} · ${widget.id}`; };
   updateHeading(); panel.append(heading);
-  const identity = document.createElement("details"); identity.className = "property-section widget-identity";
-  const identityClosedKey = `widget:${widget.id}:identity:closed`;
-  identity.open = !state.expandedPropertySections.has(identityClosedKey);
-  identity.addEventListener("toggle", () => { if (identity.open) state.expandedPropertySections.delete(identityClosedKey); else state.expandedPropertySections.add(identityClosedKey); });
-  const identitySummary = document.createElement("summary");
-  const identityTitle = document.createElement("span"); identityTitle.className = "property-section-title"; identityTitle.textContent = "Widgetname"; identitySummary.append(identityTitle);
-  const identityBody = document.createElement("div"); identityBody.className = "property-fields";
-  const nameField = field({ label: "Name", key: "name" }, widget);
-  const nameInput = nameField.querySelector("input");
-  nameInput?.addEventListener("input", updateHeading);
-  nameInput?.addEventListener("change", () => {
-    widget.name = String(widget.name || "").trim() || getWidgetDefinition(widget.type).label;
-    const duplicate = page.widgets.some(item => item.id !== widget.id && String(item.name || "").trim().toLocaleLowerCase("de") === widget.name.toLocaleLowerCase("de"));
-    $("#status").textContent = duplicate ? `Hinweis: Der Widgetname „${widget.name}“ wird mehrfach verwendet` : `Widgetname geändert: ${widget.name}`;
-    renderProperties(); renderWidgetFinder();
-  });
-  identityBody.append(nameField, field({ label: "Technische ID", key: "id", disabled: true }, widget));
-  identity.append(identitySummary, identityBody); panel.append(identity);
   for (const [index, group] of groups.entries()) {
     const details = document.createElement("details"); details.className = "property-section";
     const sectionKey = `widget:${widget.id}:${group.label}:${index}`;
@@ -2306,13 +2463,14 @@ function renderProperties() {
       }
     }
     const enabled = document.createElement("input"); enabled.type = "checkbox"; enabled.className = "property-section-enabled";
-    enabled.checked = group.masterKey ? widget[group.masterKey] !== false : propertyGroupEnabled(widget, group, index);
+    enabled.checked = group.masterKey ? (widget[group.masterKey] ?? group.defaultEnabled ?? true) : propertyGroupEnabled(widget, group, index);
     enabled.setAttribute("aria-label", group.masterKey ? `${group.label} aktivieren` : `${group.label}: Optionen im Projekt speichern`);
     enabled.title = group.masterKey ? `${group.label} vollständig aktivieren oder deaktivieren` : "Optionen dieser Gruppe im gespeicherten Projekt übernehmen";
     enabled.addEventListener("click", (event) => event.stopPropagation());
     enabled.addEventListener("change", (event) => {
       event.stopPropagation();
       if (group.masterKey) {
+        recordHistorySnapshot();
         if (group.masterKey === "dockPointsEnabled" && !enabled.checked) {
           for (const connection of page.widgets.filter(item => item.type === "svg-connection")) {
             for (const prefix of ["start", "end"]) {
@@ -2431,14 +2589,35 @@ function render() {
   renderPalette(); renderPageMenu(); renderStage(); renderProperties(); renderWidgetFinder();
 }
 
-$("#widget-finder").addEventListener("change", (event) => focusWidget(event.target.value));
+$("#widget-finder-toggle").addEventListener("click", (event) => { event.stopPropagation(); toggleWidgetSelector(); });
+$("#widget-selector-menu").addEventListener("click", (event) => event.stopPropagation());
+$("#widget-selector-all").addEventListener("change", (event) => {
+  state.widgetSelectionDraft = event.target.checked ? new Set(currentPage().widgets.map(widget => widget.id)) : new Set();
+  for (const check of document.querySelectorAll("#widget-selector-list input[type=checkbox]")) check.checked = event.target.checked;
+  updateWidgetSelectorAllState();
+});
+$("#widget-selector-select").addEventListener("click", () => { applyWidgetSelection(state.widgetSelectionDraft || new Set()); toggleWidgetSelector(false); });
+$("#widget-selector-clear").addEventListener("click", () => { applyWidgetSelection(new Set()); toggleWidgetSelector(false); });
 $("#widget-duplicate").addEventListener("click", duplicateSelectedWidget);
 $("#widget-delete").addEventListener("click", deleteSelectedWidget);
+$("#widget-cut").addEventListener("click", () => copySelectedWidgets(true));
+$("#widget-copy").addEventListener("click", () => copySelectedWidgets(false));
+$("#widget-paste").addEventListener("click", pasteWidgets);
+$("#widget-undo").addEventListener("click", undoWidgetChange);
+$("#widget-redo").addEventListener("click", redoWidgetChange);
+$("#widget-filter-open").addEventListener("click", openWidgetFilterDialog);
+$("#widget-filter-apply").addEventListener("click", applyWidgetEditorFilter);
+$("#widget-filter-reset").addEventListener("click", () => { state.editorWidgetFilter = null; $("#widget-filter-open").setAttribute("aria-pressed", "false"); $("#widget-filter-dialog").close(); renderStage(); $("#status").textContent = "Widget-Filter aufgehoben"; });
 $("#widget-layer-up").addEventListener("click", () => changeSelectedWidgetLayer(1));
 $("#widget-layer-down").addEventListener("click", () => changeSelectedWidgetLayer(-1));
 $("#widget-export").addEventListener("click", exportSelectedWidget);
 $("#widget-import").addEventListener("click", () => $("#widget-import-file").click());
 $("#widget-import-file").addEventListener("change", (event) => { if (event.target.files[0]) void importWidgets(event.target.files[0]); });
+document.addEventListener("keydown", (event) => {
+  if (!(event.ctrlKey || event.metaKey) || event.altKey || ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
+  if (event.key.toLowerCase() === "z") { event.preventDefault(); if (event.shiftKey) redoWidgetChange(); else undoWidgetChange(); }
+  if (event.key.toLowerCase() === "y") { event.preventDefault(); redoWidgetChange(); }
+});
 for (const button of document.querySelectorAll(".alignment-toolbar button")) {
   const action = button.dataset.align;
   if (!["width", "height"].includes(action)) { button.addEventListener("click", () => alignSelectedWidgets(action)); continue; }
