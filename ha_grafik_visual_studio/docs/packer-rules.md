@@ -1,6 +1,6 @@
 # Packer-Regeln für HA Grafik Visual Studio
 
-Stand: 01.10.2026. Dieses Dokument hält den vereinbarten Entwurf für ein eigenständiges Programm zum Erstellen von Widget- und Tool-Paketen fest. Die Packer-Entwicklung liegt in einem separaten privaten Repository. Eine erste Qt-Oberfläche kann Quellordner prüfen und `.wg`-/`.tp`-Dateien exportieren. Dateityp-Registrierung und eigenständige Programmdateien sind noch nicht implementiert. Die App installiert lokale `*.wg`- und `*.tp`-Dateien sowie die bisherigen `*.wg.zip`- und `*.tp.zip`-Dateien nach den Verträgen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
+Stand: 01.10.2026. Dieses Dokument hält den vereinbarten Entwurf für ein eigenständiges Programm zum Erstellen von Widget- und Tool-Paketen fest. Die Packer-Entwicklung liegt in einem separaten privaten Repository. Eine erste Qt-Oberfläche kann Quellordner prüfen und `.wg`-/`.tp`-Dateien exportieren. Die benutzerspezifische Dateityp-Registrierung mit Vorschau ist umgesetzt; eigenständige Programmdateien sind noch nicht implementiert. Die App installiert lokale `*.wg`- und `*.tp`-Dateien sowie die bisherigen `*.wg.zip`- und `*.tp.zip`-Dateien nach den Verträgen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
 
 ## Ziel und Paketformat
 
@@ -21,7 +21,7 @@ Stand: 01.10.2026. Dieses Dokument hält den vereinbarten Entwurf für ein eigen
 ## Dateitypen registrieren
 
 - `.wg` erhält ein Widget-Paket-Icon und `.tp` ein Tool-Paket-Icon. Die Icons sind Teil der Packer-Auslieferung; sie stammen nicht aus einem beliebigen Paket.
-- Der Button prüft, welche Archivprogramme vorhanden sind. Unter Windows kommen der integrierte ZIP-Zugriff, 7-Zip und WinRAR infrage; unter Linux verfügbare Archivprogramme wie 7-Zip, unzip oder unrar. Er zeigt die gefundenen Programme und die geplanten Zuordnungen **vor** dem Registrieren an.
+- Der Button prüft, welche Archivprogramme vorhanden sind. Der Packer nutzt den integrierten ZIP-Zugriff zur sicheren Paketprüfung. Unter Windows werden 7-Zip und WinRAR als grafische Öffnungsoptionen erkannt; unter Linux Archive Manager, Ark, Engrampa oder Xarchiver. Kommandozeilenprogramme wie `7z`, `unzip` und `unrar` werden nur angezeigt. Die geplanten Zuordnungen erscheinen **vor** dem Registrieren.
 - Unter Windows registriert der Packer beide Dateitypen samt Icons und passenden **Öffnen mit**-Einträgen. Die Standard-App wählt der Benutzer über die Windows-Oberfläche; der Packer überschreibt diese Wahl nicht heimlich.
 - Unter Linux registriert der Packer eigene MIME-Typen und Icons für beide Endungen und bietet verfügbare Archivprogramme als Öffnungsoptionen an. Eine bestehende Standard-App wird nur auf ausdrückliche Auswahl geändert.
 - Nach dem Klick zeigt der Packer für `.wg` und `.tp` getrennt Erfolg oder einen konkreten Fehler. Ein erneuter Klick ist sicher; eine spätere Deinstallation entfernt nur die vom Packer angelegten Zuordnungen und Icons.
