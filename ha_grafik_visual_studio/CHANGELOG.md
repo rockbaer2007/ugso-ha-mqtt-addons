@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.55
+
+- Wraps the editor page in a horizontally and vertically scrollable workspace with usable space on every side of the page.
+- Expands the surrounding workspace automatically for widgets, connection endpoints and intermediate points outside the configured page bounds.
+- Keeps the page visually stable when the surrounding workspace grows and clips out-of-page content again in runtime mode.
+
 ## 0.1.54
 
 - Adds ordered multi-selection with Ctrl, Cmd or Shift so the first selected widget remains the alignment reference and property target.

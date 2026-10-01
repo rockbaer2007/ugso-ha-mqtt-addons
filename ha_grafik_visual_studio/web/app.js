@@ -58,6 +58,7 @@ const params = new URLSearchParams(location.search);
 const runtimeMode = location.pathname.endsWith("/runtime") || params.get("mode") === "runtime";
 const workspace = $("#workspace");
 const stage = $("#stage");
+const stageCanvas = $("#stage-canvas");
 const fileTypes = {
   image: ["png", "jpg", "jpeg", "webp", "svg", "gif", "bmp", "ico"],
   code: ["json", "js", "css", "xml", "yaml", "yml"],
@@ -1385,6 +1386,25 @@ function renderStage() {
   mediaRefreshers.clear();
   const activePage = currentPage();
   const page = activePage.page;
+  if (!runtimeMode) {
+    let minX = 0; let minY = 0; let maxX = Number(page.width) || 0; let maxY = Number(page.height) || 0;
+    for (const widget of activePage.widgets) {
+      const points = widget.type === "svg-connection" ? connectionRoute(widget, activePage.widgets) : [
+        { x: Number(widget.x) || 0, y: Number(widget.y) || 0 },
+        { x: (Number(widget.x) || 0) + (Number(widget.width) || 0), y: (Number(widget.y) || 0) + (Number(widget.height) || 0) },
+      ];
+      for (const point of points) { minX = Math.min(minX, point.x); minY = Math.min(minY, point.y); maxX = Math.max(maxX, point.x); maxY = Math.max(maxY, point.y); }
+    }
+    const margin = 160;
+    const spaces = { left: Math.ceil(Math.max(margin, margin - minX)), top: Math.ceil(Math.max(margin, margin - minY)), right: Math.ceil(Math.max(margin, margin + maxX - page.width)), bottom: Math.ceil(Math.max(margin, margin + maxY - page.height)) };
+    const scroller = stageCanvas.parentElement; const previousLeft = Number(stageCanvas.dataset.workspaceLeft || spaces.left); const previousTop = Number(stageCanvas.dataset.workspaceTop || spaces.top); const initialized = stageCanvas.dataset.workspaceReady === "true" && stageCanvas.dataset.workspacePage === activePage.id;
+    for (const [side, value] of Object.entries(spaces)) stageCanvas.style.setProperty(`--workspace-${side}`, `${value}px`);
+    stageCanvas.dataset.workspaceLeft = String(spaces.left); stageCanvas.dataset.workspaceTop = String(spaces.top); stageCanvas.dataset.workspaceReady = "true"; stageCanvas.dataset.workspacePage = activePage.id;
+    requestAnimationFrame(() => {
+      scroller.scrollLeft = initialized ? scroller.scrollLeft + spaces.left - previousLeft : Math.max(0, spaces.left - 16);
+      scroller.scrollTop = initialized ? scroller.scrollTop + spaces.top - previousTop : Math.max(0, spaces.top - 16);
+    });
+  }
   stage.style.width = `${page.width}px`;
   stage.style.height = `${page.height}px`;
   stage.style.backgroundColor = page.background || "#242729";

@@ -69,7 +69,8 @@ button { cursor: pointer; }
 .embedded-runtime .toolbar, .embedded-runtime .runtime-page-menu-toggle { display: none; }
 .embedded-runtime .workspace { height: 100vh; }
 .embedded-runtime .stage-scroll { padding: 0; }
-.embedded-runtime .stage { min-width: 0; min-height: 0; margin: 0; border: 0; }
+.embedded-runtime .stage-canvas { width: 100%; min-width: 0; min-height: 0; padding: 0; }
+.embedded-runtime .stage { min-width: 0; min-height: 0; margin: 0; overflow: hidden; border: 0; }
 .properties input[type="range"] { appearance: none; width: 100%; height: 20px; min-height: 0; margin: 0; padding: 0; border: 0; background: transparent; cursor: pointer; }
 .properties input[type="range"]::-webkit-slider-runnable-track { height: 3px; border-radius: 2px; background: #536063; }
 .properties input[type="range"]::-webkit-slider-thumb { appearance: none; width: 12px; height: 12px; margin-top: -4.5px; border: 0; border-radius: 50%; background: var(--accent); }
@@ -121,8 +122,9 @@ button { cursor: pointer; }
 .alignment-toolbar button:hover:not(:disabled), .alignment-toolbar button:focus-visible { color: var(--text); border-color: var(--line); background: #344143; }
 .alignment-toolbar button:disabled { cursor: default; opacity: .28; }
 .alignment-toolbar button.is-long-press { color: var(--orange); background: #344143; }
-.stage-scroll { flex: 1; min-height: 0; overflow: auto; padding: 16px; }
-.stage { position: relative; min-width: 390px; min-height: 420px; margin: 0 auto; overflow: hidden; border: 1px dashed #536063; background-color: #242729; background-repeat: no-repeat; background-position: 0 0; background-size: auto; }
+.stage-scroll { flex: 1; min-height: 0; overflow: auto; padding: 0; scrollbar-gutter: stable both-edges; }
+.stage-canvas { width: max-content; min-width: 100%; min-height: 100%; padding: var(--workspace-top, 160px) var(--workspace-right, 160px) var(--workspace-bottom, 160px) var(--workspace-left, 160px); }
+.stage { position: relative; min-width: 390px; min-height: 420px; margin: 0; overflow: visible; border: 1px dashed #536063; background-color: #242729; background-repeat: no-repeat; background-position: 0 0; background-size: auto; }
 .stage::before { position: absolute; z-index: 1; inset: 0; background-image: linear-gradient(#ffffff09 1px, transparent 1px), linear-gradient(90deg, #ffffff09 1px, transparent 1px); background-size: 20px 20px; content: ""; pointer-events: none; }
 .stage.no-grid::before { display: none; }
 .widget { position: absolute; min-width: 16px; min-height: 16px; overflow: visible; cursor: grab; user-select: none; touch-action: none; }
@@ -379,7 +381,8 @@ body.runtime-mode { overflow: auto; background: #111; }
 body.runtime-mode .toolbar { display: none; }
 body.runtime-mode .workspace { height: 100vh; }
 body.runtime-mode .stage-scroll { display: grid; place-items: center; padding: 0; }
-body.runtime-mode .stage { border: 0; }
+body.runtime-mode .stage-canvas { width: auto; min-width: 0; min-height: 0; padding: 0; }
+body.runtime-mode .stage { overflow: hidden; border: 0; }
 body.runtime-mode .stage::before { display: none; }
 body.runtime-mode .stage.runtime-grid::before { display: block; }
 body.runtime-mode .runtime-page-menu-toggle { position: fixed; z-index: 10; top: 10px; left: 10px; display: block; width: 38px; height: 38px; padding: 0; border-radius: 50%; background: #202426cc; }
