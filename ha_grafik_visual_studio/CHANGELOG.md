@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.41
+
+- Macht Slider im Attributbereich kompakter: 3 px Schiene, 12 px Griff und 20 px Bedienhöhe; Tastaturbedienung und Zahlenfelder bleiben verfügbar.
+
 ## 0.1.40
 
 - Ergänzt an HTML-Feldern einen Code-Editor mit Zeilennummern, Speichern und Abbrechen; mehrzeiliger Code bleibt erhalten.
