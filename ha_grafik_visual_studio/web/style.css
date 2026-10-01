@@ -40,6 +40,7 @@ button { cursor: pointer; }
 .widget-actions #widget-delete { grid-column: 3; grid-row: 2; }
 .widget-edit-actions { display: grid; flex: none; grid-template-columns: repeat(2, 30px); grid-template-rows: repeat(2, 25px) 18px; align-content: center; gap: 2px; padding: 3px 8px; border-right: 1px solid var(--line); }
 .widget-edit-actions::after { grid-column: 1 / -1; align-self: end; color: var(--muted); font-size: 10px; text-align: center; content: "Bearbeiten"; }
+html[lang="en"] .widget-edit-actions::after { content: "Edit"; }
 .widget-edit-actions button { width: 30px; height: 25px; padding: 0; border-color: transparent; background: transparent; font-size: 18px; }
 .widget-edit-actions button:disabled, .widget-history-actions button:disabled { cursor: default; opacity: .3; }
 .widget-history-actions { display: flex; flex: none; align-items: stretch; gap: 2px; padding: 3px 8px; border-right: 1px solid var(--line); }
@@ -152,6 +153,7 @@ button { cursor: pointer; }
 .stage-meta strong { color: var(--text); }
 .alignment-toolbar { display: grid; grid-template-columns: repeat(5, 26px); grid-template-rows: repeat(2, 25px) 18px; flex: none; align-content: center; gap: 2px; padding: 3px 8px; border-right: 1px solid var(--line); }
 .alignment-toolbar::after { grid-column: 1 / -1; align-self: end; color: var(--muted); font-size: 10px; text-align: center; content: "Ausrichten"; }
+html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .alignment-toolbar button { display: grid; width: 26px; height: 25px; place-items: center; padding: 0; border-color: transparent; border-radius: 2px; color: var(--muted); background: transparent; font: 15px/1 monospace; user-select: none; touch-action: none; }
 .alignment-toolbar button:hover:not(:disabled), .alignment-toolbar button:focus-visible { color: var(--text); border-color: var(--line); background: #344143; }
 .alignment-toolbar button:disabled { cursor: default; opacity: .28; }

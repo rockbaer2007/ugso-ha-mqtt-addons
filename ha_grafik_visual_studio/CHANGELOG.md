@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.71
+
+- The editor and settings now use German when Home Assistant is set to German and English otherwise. Settings offer an Auto / German / English override stored in the local browser, independently of the shared project.
+- Toolbar, dialogs, widget palette and property labels receive English translations; widget content and user-defined project names are preserved.
+
 ## 0.1.70
 
 - Dragged line endpoints now snap to enabled collector points on other SVG lines; inactive points do not couple.

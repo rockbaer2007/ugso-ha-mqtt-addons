@@ -24,6 +24,7 @@ Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sow
 - Erste eigene, HA-orientierte Widget-Definitionen sind nach Kategorien registriert.
 - Das Widget-Register ist separat; weitere eigene Widget-Sets können später unabhängig ergänzt werden.
 - Auto-Save speichert Editoränderungen standardmäßig fünf Sekunden nach der letzten Änderung. Unter Einstellungen lässt es sich abschalten und die Wartezeit auf 1 bis 300 Sekunden setzen. Manuelles Speichern bleibt verfügbar; die Runtime speichert nicht automatisch.
+- Die Oberfläche folgt automatisch der Home-Assistant-Sprache: Deutsch bei `de`, sonst Englisch. Unter **Einstellungen → Sprache** lässt sich **Automatisch**, **Deutsch** oder **English** für den eigenen Browser wählen; Projektdaten und Widget-Inhalte werden dabei nicht übersetzt.
 - Seitengrößen Desktop, Tablet und Telefon können im Editor gewählt werden.
 - Das Text-Widget ist ein freies Textfeld ohne Entitätsbindung oder Entitäts-Fehlermeldung.
 - Widgets sind frei platzierte HTML-Elemente; Auswahl zeigt ihre Widget-ID und einen blauen Rahmen mit Resize-Griff. Jedes Element hat standardmäßig z-index 0; z-index lässt sich je Widget einstellen.

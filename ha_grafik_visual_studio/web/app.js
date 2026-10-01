@@ -1,4 +1,5 @@
 import { getWidgetSets, getWidgetDefinition } from "./widget-registry.js";
+import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
@@ -59,6 +60,7 @@ const runtimeMode = location.pathname.endsWith("/runtime") || params.get("mode")
 const workspace = $("#workspace");
 const stage = $("#stage");
 const stageCanvas = $("#stage-canvas");
+startLocalization();
 const fileTypes = {
   image: ["png", "jpg", "jpeg", "webp", "svg", "gif", "bmp", "ico"],
   code: ["json", "js", "css", "xml", "yaml", "yml"],
@@ -507,7 +509,7 @@ function renderPageMenu() {
       }); row.append(visibility);
       const rename = document.createElement("button"); rename.type = "button"; rename.textContent = "✎"; rename.title = "Seitennamen bearbeiten"; rename.setAttribute("aria-label", `Name von ${page.name} bearbeiten`);
       rename.addEventListener("click", () => {
-        const name = window.prompt("Name der Seite", page.name);
+        const name = window.prompt(uiText("Name der Seite"), page.name);
         if (name !== null && name.trim()) { page.name = name.trim(); render(); }
       });
       row.append(rename);
@@ -515,7 +517,7 @@ function renderPageMenu() {
       duplicate.addEventListener("click", () => duplicatePage(page)); row.append(duplicate);
       if (state.project.pages.length > 1) {
         const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "▤"; remove.title = "Seite löschen"; remove.setAttribute("aria-label", `${page.name} löschen`);
-        remove.addEventListener("click", () => { if (window.confirm(`Seite „${page.name}“ löschen?`)) deletePage(page); }); row.append(remove);
+        remove.addEventListener("click", () => { if (window.confirm(uiText("Seite „{name}“ löschen?", { name: page.name }))) deletePage(page); }); row.append(remove);
       }
     }
     list.append(row);
@@ -876,7 +878,7 @@ async function renderObjects() {
     const deleteIcon = document.createElement("img"); deleteIcon.src = "icons/delete.svg"; deleteIcon.alt = ""; remove.append(deleteIcon);
     remove.title = `Datei ${file.name} löschen`; remove.setAttribute("aria-label", `Datei ${file.name} löschen`);
     remove.addEventListener("click", async () => {
-      if (!window.confirm(`Datei „${file.name}“ dauerhaft löschen?`)) return;
+      if (!window.confirm(uiText("Datei „{name}“ dauerhaft löschen?", { name: file.name }))) return;
       const response = await fetch(`api/files?path=${encodeURIComponent(file.path)}`, { method: "DELETE" });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) { $("#status").textContent = result.error || "Datei konnte nicht gelöscht werden"; return; }
@@ -907,15 +909,15 @@ async function renderProjects() {
     const edit = document.createElement("button"); edit.type = "button"; edit.textContent = "Editor"; edit.addEventListener("click", () => { location.href = `?mode=editor&project=${encodeURIComponent(project.id)}`; }); row.append(edit);
     const runtime = document.createElement("button"); runtime.type = "button"; runtime.textContent = "Runtime"; runtime.addEventListener("click", () => { window.open(`?mode=runtime&project=${encodeURIComponent(project.id)}`, "_blank", "noopener"); }); row.append(runtime);
     const rename = document.createElement("button"); rename.type = "button"; rename.textContent = "✎"; rename.title = "Projekt umbenennen"; rename.addEventListener("click", async () => {
-      const newName = window.prompt("Projektname", project.name); if (!newName?.trim()) return;
+      const newName = window.prompt(uiText("Projektname"), project.name); if (!newName?.trim()) return;
       await fetch(`api/projects/${encodeURIComponent(project.id)}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newName.trim() }) }); void renderProjects();
     }); row.append(rename);
     const duplicate = document.createElement("button"); duplicate.type = "button"; duplicate.textContent = "▣"; duplicate.title = "Projekt duplizieren"; duplicate.addEventListener("click", async () => {
-      const newName = window.prompt("Name für die Projektkopie", `${project.name} (Kopie)`); if (!newName?.trim()) return;
+      const newName = window.prompt(uiText("Name für die Projektkopie"), `${project.name} ${uiText("(Kopie)")}`); if (!newName?.trim()) return;
       await fetch("api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newName.trim(), source: project.id }) }); void renderProjects();
     }); row.append(duplicate);
     if (projects.length > 1) { const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "🗑"; remove.title = "Projekt löschen"; remove.addEventListener("click", async () => {
-      if (!window.confirm(`Projekt „${project.name}“ löschen?`)) return;
+      if (!window.confirm(uiText("Projekt „{name}“ löschen?", { name: project.name }))) return;
       const result = await fetch(`api/projects/${encodeURIComponent(project.id)}`, { method: "DELETE" });
       if (result.ok && project.id === state.projectId) location.href = `?mode=editor&project=${encodeURIComponent(projects.find((item) => item.id !== project.id).id)}`;
       else void renderProjects();
@@ -2765,6 +2767,7 @@ function openSettingsDialog() {
   $("#settings-auto-save").checked = settings.autoSave !== false;
   $("#settings-auto-save-delay").value = settings.autoSaveDelaySeconds ?? 5;
   $("#settings-auto-save-delay").disabled = settings.autoSave === false;
+  $("#settings-language").value = getLanguagePreference();
   $("#settings-dock-color").value = /^#[0-9a-f]{6}$/i.test(settings.dockColor || "") ? settings.dockColor : "#ffd54f";
   $("#settings-reload").value = settings.reloadMode || "reload";
   $("#settings-dark-reconnect").checked = Boolean(settings.darkReconnect);
@@ -2804,7 +2807,7 @@ $("#settings-save").addEventListener("click", async (event) => {
   });
   state.project.settings.title = $("#project-title").value.trim();
   state.project.settings.favicon = $("#project-favicon").value.trim();
-  if (await saveProject()) { $("#settings-dialog").close(); render(); $("#status").textContent = "Projekteinstellungen gespeichert"; }
+  if (await saveProject()) { setLanguagePreference($("#settings-language").value); $("#settings-dialog").close(); render(); $("#status").textContent = "Projekteinstellungen gespeichert"; }
 });
 $("#files-menu").addEventListener("click", () => openObjects());
 $("#entities-menu").addEventListener("click", () => openEntities());
@@ -2849,7 +2852,7 @@ $("#files-view-toggle").addEventListener("click", () => {
   void renderObjects();
 });
 $("#files-folder").addEventListener("click", async () => {
-  const name = window.prompt("Name des neuen Ordners");
+  const name = window.prompt(uiText("Name des neuen Ordners"));
   if (!name?.trim()) return;
   const path = [state.objectPath, name.trim()].filter(Boolean).join("/");
   const response = await fetch("api/files/folder?path=" + encodeURIComponent(path), { method: "POST" });
@@ -2878,7 +2881,7 @@ $("#files-apply").addEventListener("click", () => {
 $("#projects-menu").addEventListener("click", () => { $("#projects-dialog").showModal(); void renderProjects(); });
 $("#projects-close").addEventListener("click", () => $("#projects-dialog").close());
 $("#project-create").addEventListener("click", async () => {
-  const name = window.prompt("Name des neuen Projekts", "Neues Projekt"); if (!name?.trim()) return;
+  const name = window.prompt(uiText("Name des neuen Projekts"), uiText("Neues Projekt")); if (!name?.trim()) return;
   const response = await fetch("api/projects", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: name.trim() }) });
   if (response.ok) { const project = await response.json(); location.href = `?mode=editor&project=${encodeURIComponent(project.id)}`; }
 });
