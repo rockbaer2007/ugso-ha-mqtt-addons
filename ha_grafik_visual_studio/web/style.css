@@ -14,11 +14,17 @@ button { cursor: pointer; }
 .studio-menu button:hover, .studio-menu button[aria-pressed="true"] { border-color: var(--line); background: #344143; }
 .widget-finder { display: grid; width: clamp(190px, 20vw, 330px); min-width: 190px; flex: 1 1 260px; grid-template-rows: auto 32px; align-content: center; gap: 4px; padding: 4px 10px; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .widget-finder select { width: 100%; min-width: 0; overflow: hidden; padding: 5px 7px; text-overflow: ellipsis; }
-.widget-actions { display: grid; flex: none; grid-template-columns: repeat(6, 30px); grid-template-rows: 48px 18px; align-content: center; gap: 2px; padding: 3px 8px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+.widget-actions { display: grid; flex: none; grid-template-columns: repeat(3, 30px); grid-template-rows: repeat(2, 25px) 18px; align-content: center; gap: 2px; padding: 3px 8px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
 .widget-actions::after { grid-column: 1 / -1; align-self: end; color: var(--muted); font-size: 10px; text-align: center; content: "Widgets"; }
-.widget-actions button { width: 30px; height: 36px; align-self: center; padding: 2px; border-color: transparent; background: transparent; font-size: 17px; }
-.widget-actions button img { display: block; width: 22px; height: 22px; margin: auto; }
+.widget-actions button { width: 30px; height: 25px; align-self: center; padding: 1px; border-color: transparent; background: transparent; font-size: 17px; }
+.widget-actions button img { display: block; width: 20px; height: 20px; margin: auto; }
 .widget-actions button:disabled img { opacity: .35; }
+.widget-actions #widget-layer-up { grid-column: 1; grid-row: 1; }
+.widget-actions #widget-layer-down { grid-column: 1; grid-row: 2; }
+.widget-actions #widget-import { grid-column: 2; grid-row: 1; }
+.widget-actions #widget-export { grid-column: 2; grid-row: 2; }
+.widget-actions #widget-duplicate { grid-column: 3; grid-row: 1; }
+.widget-actions #widget-delete { grid-column: 3; grid-row: 2; }
 .brand { display: flex; flex: none; align-items: center; gap: 8px; padding: 0 10px 0 4px; font-weight: 650; white-space: nowrap; }
 .brand-mark { display: block; width: 27px; height: 27px; flex: none; }
 .mode-switch { display: flex; flex: none; align-items: stretch; gap: 2px; padding: 0 7px; border-right: 1px solid var(--line); }
@@ -119,12 +125,13 @@ button { cursor: pointer; }
 .widget-choice-preview[data-kind="bulb"] { border: 0; background: transparent; font-size: 25px; filter: saturate(.9); }
 @media (prefers-color-scheme: dark) { .widget-choice-preview { background: #102b38; } }
 .stage-wrap { min-width: 0; min-height: 0; display: flex; overflow: hidden; flex-direction: column; background: #101314; }
-.stage-meta { min-height: 48px; display: flex; align-items: center; gap: 12px; padding: 4px 10px; color: var(--muted); border-bottom: 1px solid var(--line); font-size: 12px; }
+.stage-meta { min-height: 36px; display: flex; align-items: center; gap: 12px; padding: 4px 10px; color: var(--muted); border-bottom: 1px solid var(--line); font-size: 12px; }
 .stage-meta-text { display: flex; min-width: 0; flex: 1; align-items: center; gap: 12px; overflow: hidden; }
 .stage-meta-text #status { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .stage-meta strong { color: var(--text); }
-.alignment-toolbar { display: grid; grid-template-columns: repeat(5, 24px); grid-template-rows: repeat(2, 18px); flex: none; gap: 2px; margin-left: auto; }
-.alignment-toolbar button { display: grid; width: 24px; height: 18px; place-items: center; padding: 0; border-color: transparent; border-radius: 2px; color: var(--muted); background: transparent; font: 15px/1 monospace; user-select: none; touch-action: none; }
+.alignment-toolbar { display: grid; grid-template-columns: repeat(5, 26px); grid-template-rows: repeat(2, 25px) 18px; flex: none; align-content: center; gap: 2px; padding: 3px 8px; border-right: 1px solid var(--line); }
+.alignment-toolbar::after { grid-column: 1 / -1; align-self: end; color: var(--muted); font-size: 10px; text-align: center; content: "Ausrichten"; }
+.alignment-toolbar button { display: grid; width: 26px; height: 25px; place-items: center; padding: 0; border-color: transparent; border-radius: 2px; color: var(--muted); background: transparent; font: 15px/1 monospace; user-select: none; touch-action: none; }
 .alignment-toolbar button:hover:not(:disabled), .alignment-toolbar button:focus-visible { color: var(--text); border-color: var(--line); background: #344143; }
 .alignment-toolbar button:disabled { cursor: default; opacity: .28; }
 .alignment-toolbar button.is-long-press { color: var(--orange); background: #344143; }

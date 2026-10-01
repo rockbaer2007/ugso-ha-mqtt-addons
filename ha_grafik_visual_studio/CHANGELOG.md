@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.64
+
+- Adds dedicated SVG icons for widget import and export based on the supplied artwork.
+- Arranges layer, import/export and duplicate/delete actions as three paired columns with two rows.
+- Moves all ten alignment actions into the top toolbar as two rows of five and frees the corresponding space above the editor canvas.
+
 ## 0.1.63
 
 - Replaces the layer arrow glyphs with matching stacked-layer SVG icons.
