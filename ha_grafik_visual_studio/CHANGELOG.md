@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.48
+
+- Opens project settings reliably in HTTP Home Assistant ingress by providing a UUID fallback when `crypto.randomUUID()` is unavailable.
+- Keeps every normal widget above SVG connection interaction layers in the editor regardless of its configured z-index; runtime z-index output remains unchanged.
+
 ## 0.1.47
 
 - Keeps normal widgets selectable after inserting another widget by preserving click events through the drag lifecycle and placing them above SVG connection editing layers.

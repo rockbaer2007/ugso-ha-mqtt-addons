@@ -71,6 +71,17 @@ let mdiIconsPromise = null;
 let activeIconInput = null;
 let activeEntityInput = null;
 
+function createRandomId() {
+  if (typeof window.crypto?.randomUUID === "function") return window.crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  if (typeof window.crypto?.getRandomValues === "function") window.crypto.getRandomValues(bytes);
+  else for (let index = 0; index < bytes.length; index += 1) bytes[index] = Math.floor(Math.random() * 256);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = [...bytes].map(value => value.toString(16).padStart(2, "0"));
+  return `${hex.slice(0, 4).join("")}-${hex.slice(4, 6).join("")}-${hex.slice(6, 8).join("")}-${hex.slice(8, 10).join("")}-${hex.slice(10).join("")}`;
+}
+
 const CONNECTION_ANCHORS = [
   ["left-top", "Links oben", 0, 0], ["left-center", "Links Mitte", 0, 0.5], ["left-bottom", "Links unten", 0, 1],
   ["right-top", "Rechts oben", 1, 0], ["right-center", "Rechts Mitte", 1, 0.5], ["right-bottom", "Rechts unten", 1, 1],
@@ -774,7 +785,7 @@ function duplicateSelectedWidget() {
   const copy = structuredClone(source);
   copy.id = `widget-${state.nextId++}`;
   if (copy.type === "svg-connection") {
-    copy.connectionPoints = (copy.connectionPoints || []).map(point => ({ ...point, id: crypto.randomUUID() }));
+    copy.connectionPoints = (copy.connectionPoints || []).map(point => ({ ...point, id: createRandomId() }));
     copy.startCollector = ""; copy.endCollector = ""; copy.flowParentId = "";
     const connectionLayers = page.widgets.filter(item => item.type === "svg-connection").map(item => Math.max(0, Number(item.layer) || 0));
     copy.layer = (connectionLayers.length ? Math.max(...connectionLayers) : 0) + 1;
@@ -1224,9 +1235,13 @@ function renderStage() {
       position: widget.cssPosition || "absolute", display: widget.cssDisplay || "",
       left: isConnection ? "0" : widget.cssLeft || `${widget.x}px`, top: isConnection ? "0" : widget.cssTop || `${widget.y}px`,
       width: isConnection ? `${page.width}px` : widget.cssWidth || `${widget.width}px`, height: isConnection ? `${page.height}px` : widget.cssHeight || `${widget.height}px`,
-      zIndex: widget.cssZIndex === undefined || widget.cssZIndex === ""
-        ? String(isConnection ? connectionZIndex(widget, activePage.widgets) + 2 : Math.max(0, Number(widget.layer) || 0) + (runtimeMode ? 2 : 10002))
-        : String(widget.cssZIndex),
+      zIndex: (() => {
+        const hasExplicitZIndex = widget.cssZIndex !== undefined && widget.cssZIndex !== "";
+        const requestedZIndex = hasExplicitZIndex ? Number(widget.cssZIndex) || 0 : Math.max(0, Number(widget.layer) || 0);
+        if (runtimeMode) return String(hasExplicitZIndex ? widget.cssZIndex : requestedZIndex + 2);
+        if (isConnection) return String(Math.min(9999, Math.max(0, hasExplicitZIndex ? requestedZIndex : connectionZIndex(widget, activePage.widgets))) + 2);
+        return String(10002 + Math.max(0, requestedZIndex));
+      })(),
       overflowX: widget.cssOverflowX || "visible", overflowY: widget.cssOverflowY || "visible",
       cursor: widget.cssCursor || "", transform: widget.cssTransform || "",
       marginLeft: widget.marginLeft || "", marginTop: widget.marginTop || "", marginRight: widget.marginRight || "", marginBottom: widget.marginBottom || "",
@@ -1726,7 +1741,7 @@ function openConnectionPointsEditor(widget) {
     });
   };
   const add = document.createElement("button"); add.type = "button"; add.textContent = "+ Zwischenpunkt";
-  add.addEventListener("click", () => { const count = draft.length + 1; draft.push({ id: crypto.randomUUID(), name: `Punkt ${count}`, x: Number(widget.startX || 100) + count * 60, y: Number(widget.startY || 100), collectorEnabled: false, display: "point" }); draw(); });
+  add.addEventListener("click", () => { const count = draft.length + 1; draft.push({ id: createRandomId(), name: `Punkt ${count}`, x: Number(widget.startX || 100) + count * 60, y: Number(widget.startY || 100), collectorEnabled: false, display: "point" }); draw(); });
   const actions = document.createElement("div"); actions.className = "dialog-actions";
   for (const [label, apply] of [["Übernehmen", true], ["Abbrechen", false]]) { const button = document.createElement("button"); button.type = "button"; button.textContent = label; button.addEventListener("click", () => { if (apply) { widget.connectionPoints = draft; renderStage(); renderProperties(); } dialog.close(); }); actions.append(button); }
   draw(); dialog.append(heading, hint, add, list, actions); document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); dialog.showModal();
@@ -2075,7 +2090,7 @@ function openSettingsDialog() {
   $("#settings-reload").value = settings.reloadMode || "reload";
   $("#settings-dark-reconnect").checked = Boolean(settings.darkReconnect);
   $("#settings-debounce").value = settings.debounceMs ?? 200;
-  $("#settings-instance").value = settings.browserInstanceId || crypto.randomUUID().slice(0, 8);
+  $("#settings-instance").value = settings.browserInstanceId || createRandomId().slice(0, 8);
   $("#settings-public").checked = Boolean(settings.public);
   $("#project-title").value = settings.title || state.project.name || "";
   $("#project-favicon").value = settings.favicon || "";
@@ -2089,7 +2104,7 @@ $("#project-favicon-browse").addEventListener("click", () => {
   activeIconInput = $("#project-favicon");
   openObjects();
 });
-$("#settings-instance-new").addEventListener("click", () => { $("#settings-instance").value = crypto.randomUUID().slice(0, 8); });
+$("#settings-instance-new").addEventListener("click", () => { $("#settings-instance").value = createRandomId().slice(0, 8); });
 $("#settings-auto-save").addEventListener("change", () => {
   $("#settings-auto-save-delay").disabled = !$("#settings-auto-save").checked;
 });
