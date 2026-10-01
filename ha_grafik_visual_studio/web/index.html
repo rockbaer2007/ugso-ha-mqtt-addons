@@ -66,7 +66,21 @@
       <div class="panel-content" id="palette"></div>
     </aside>
     <section class="stage-wrap">
-      <div class="stage-meta"><strong id="active-page-name">main</strong><span id="status">Grundgerüst – Widgets sind eigene HA-Elemente</span></div>
+      <div class="stage-meta">
+        <div class="stage-meta-text"><strong id="active-page-name">main</strong><span id="status">Grundgerüst – Widgets sind eigene HA-Elemente</span></div>
+        <div class="alignment-toolbar" aria-label="Ausgewählte Widgets ausrichten">
+          <button type="button" data-align="left" title="Linksbündig am ersten Widget ausrichten" aria-label="Linksbündig ausrichten">┃≡</button>
+          <button type="button" data-align="top" title="Oben am ersten Widget ausrichten" aria-label="Oben ausrichten">┳</button>
+          <button type="button" data-align="center-x" title="Horizontal mittig am ersten Widget ausrichten" aria-label="Horizontal mittig ausrichten">┼</button>
+          <button type="button" data-align="distribute-x" title="Horizontal gleichmäßig verteilen" aria-label="Horizontal gleichmäßig verteilen">↔</button>
+          <button type="button" data-align="width" title="Breite des ersten Widgets übernehmen; lange drücken für Wunschbreite" aria-label="Breite ausrichten">↹</button>
+          <button type="button" data-align="right" title="Rechtsbündig am ersten Widget ausrichten" aria-label="Rechtsbündig ausrichten">≡┃</button>
+          <button type="button" data-align="bottom" title="Unten am ersten Widget ausrichten" aria-label="Unten ausrichten">┻</button>
+          <button type="button" data-align="center-y" title="Vertikal mittig am ersten Widget ausrichten" aria-label="Vertikal mittig ausrichten">╂</button>
+          <button type="button" data-align="distribute-y" title="Vertikal gleichmäßig verteilen" aria-label="Vertikal gleichmäßig verteilen">↕</button>
+          <button type="button" data-align="height" title="Höhe des ersten Widgets übernehmen; lange drücken für Wunschhöhe" aria-label="Höhe ausrichten">↕</button>
+        </div>
+      </div>
       <div class="stage-scroll"><div class="stage" id="stage" aria-label="Visualisierungsfläche"></div></div>
     </section>
     <aside class="side properties" id="properties-panel">

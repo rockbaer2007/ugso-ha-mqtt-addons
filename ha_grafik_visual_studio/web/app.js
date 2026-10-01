@@ -65,7 +65,7 @@ const fileTypes = {
   audio: ["mp3", "wav", "ogg", "m4a", "flac"],
   video: ["mp4", "webm", "mov", "mkv"],
 };
-const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", collapsedWidgetSets: new Set(), expandedPropertySections: new Set(), objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null };
+const state = { project: null, projectId: params.get("project") || "main", selectedId: null, selectedIds: [], nextId: 1, propertyTab: "widget", collapsedWidgetSets: new Set(), expandedPropertySections: new Set(), objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null };
 let mdiIcons = null;
 let mdiIconsPromise = null;
 let activeIconInput = null;
@@ -327,6 +327,7 @@ async function loadProject() {
   }
   if (params.get("embedded") === "1") document.body.classList.add("embedded-runtime");
   state.project.settings ??= {};
+  state.selectedId = null; state.selectedIds = [];
   state.nextId = Math.max(0, ...state.project.pages.flatMap((page) => page.widgets).map((widget) => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   render();
   savedProjectSnapshot = observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
@@ -394,7 +395,7 @@ function renderPageMenu() {
     const select = document.createElement("button"); select.type = "button"; select.className = "page-select";
     select.textContent = `${page.visible ? "◉" : "◌"}  ${page.name}`;
     select.setAttribute("aria-current", String(page.id === state.project.currentPageId));
-    select.addEventListener("click", () => { state.project.currentPageId = page.id; state.selectedId = null; render(); });
+    select.addEventListener("click", () => { state.project.currentPageId = page.id; state.selectedId = null; state.selectedIds = []; render(); });
     row.append(select);
     if (!runtimeMode) {
       const visibility = document.createElement("button"); visibility.type = "button"; visibility.textContent = page.visible ? "◉" : "◌"; visibility.title = page.visible ? "In Runtime sichtbar" : "In Runtime ausgeblendet"; visibility.setAttribute("aria-label", `${page.visible ? "Ausblenden" : "Einblenden"}: ${page.name}`);
@@ -440,6 +441,8 @@ function renderWidgetFinder() {
   $("#widget-layer-up").disabled = !state.selectedId;
   $("#widget-layer-down").disabled = !state.selectedId || Number(page.widgets.find((widget) => widget.id === state.selectedId)?.layer || 0) <= 0;
   $("#widget-export").disabled = !state.selectedId;
+  const alignmentCount = selectedNormalWidgets().length;
+  for (const button of document.querySelectorAll(".alignment-toolbar button")) button.disabled = alignmentCount < 2;
 }
 
 function openObjects(path = "") {
@@ -758,10 +761,29 @@ async function renderProjects() {
   }
 }
 
+function setSingleWidgetSelection(widgetId) {
+  state.selectedId = widgetId || null;
+  state.selectedIds = widgetId ? [widgetId] : [];
+}
+
+function selectedNormalWidgets() {
+  const ids = state.selectedIds.length ? state.selectedIds : state.selectedId ? [state.selectedId] : [];
+  return ids.map(id => currentPage().widgets.find(widget => widget.id === id)).filter(widget => widget && widget.type !== "svg-connection");
+}
+
+function selectWidget(widgetId, additive = false) {
+  if (!additive) { setSingleWidgetSelection(widgetId); return; }
+  const selected = state.selectedIds.length ? [...state.selectedIds] : state.selectedId ? [state.selectedId] : [];
+  const index = selected.indexOf(widgetId);
+  if (index >= 0) selected.splice(index, 1); else selected.push(widgetId);
+  state.selectedIds = selected;
+  state.selectedId = selected[0] || null;
+}
+
 function focusWidget(widgetId) {
   const widget = currentPage().widgets.find((item) => item.id === widgetId);
   if (!widget) return;
-  state.selectedId = widget.id;
+  setSingleWidgetSelection(widget.id);
   renderStage(); renderProperties(); renderWidgetFinder();
   requestAnimationFrame(() => {
     const element = document.getElementById(widget.id);
@@ -794,7 +816,7 @@ function duplicateSelectedWidget() {
   }
   copy.x = Math.min(Math.max(0, currentPage().page.width - (copy.width || 140)), (copy.x || 0) + 20);
   copy.y = Math.min(Math.max(0, currentPage().page.height - (copy.height || 62)), (copy.y || 0) + 20);
-  page.widgets.push(copy); state.selectedId = copy.id; render();
+  page.widgets.push(copy); setSingleWidgetSelection(copy.id); render();
 }
 
 function deleteSelectedWidget() {
@@ -809,7 +831,49 @@ function deleteSelectedWidget() {
     if (String(widget.startCollector || "").startsWith(`${removedId}:`)) widget.startCollector = "";
     if (String(widget.endCollector || "").startsWith(`${removedId}:`)) widget.endCollector = "";
   }
-  state.selectedId = null; render();
+  setSingleWidgetSelection(null); render();
+}
+
+function alignSelectedWidgets(action, explicitSize = null) {
+  const widgets = selectedNormalWidgets();
+  if (widgets.length < 2) return;
+  const reference = widgets[0];
+  const number = value => Number(value) || 0;
+  if (action === "left") for (const widget of widgets.slice(1)) widget.x = number(reference.x);
+  if (action === "right") for (const widget of widgets.slice(1)) widget.x = number(reference.x) + number(reference.width) - number(widget.width);
+  if (action === "top") for (const widget of widgets.slice(1)) widget.y = number(reference.y);
+  if (action === "bottom") for (const widget of widgets.slice(1)) widget.y = number(reference.y) + number(reference.height) - number(widget.height);
+  if (action === "center-x") for (const widget of widgets.slice(1)) widget.x = Math.round(number(reference.x) + (number(reference.width) - number(widget.width)) / 2);
+  if (action === "center-y") for (const widget of widgets.slice(1)) widget.y = Math.round(number(reference.y) + (number(reference.height) - number(widget.height)) / 2);
+  if (action === "width") for (const widget of widgets) widget.width = Math.max(16, Math.round(explicitSize ?? number(reference.width)));
+  if (action === "height") for (const widget of widgets) widget.height = Math.max(16, Math.round(explicitSize ?? number(reference.height)));
+  if (action === "distribute-x") {
+    const sorted = [...widgets].sort((a, b) => number(a.x) + number(a.width) / 2 - number(b.x) - number(b.width) / 2);
+    const firstCenter = number(sorted[0].x) + number(sorted[0].width) / 2; const lastCenter = number(sorted.at(-1).x) + number(sorted.at(-1).width) / 2;
+    sorted.slice(1, -1).forEach((widget, index) => { const center = firstCenter + (lastCenter - firstCenter) * (index + 1) / (sorted.length - 1); widget.x = Math.round(center - number(widget.width) / 2); });
+  }
+  if (action === "distribute-y") {
+    const sorted = [...widgets].sort((a, b) => number(a.y) + number(a.height) / 2 - number(b.y) - number(b.height) / 2);
+    const firstCenter = number(sorted[0].y) + number(sorted[0].height) / 2; const lastCenter = number(sorted.at(-1).y) + number(sorted.at(-1).height) / 2;
+    sorted.slice(1, -1).forEach((widget, index) => { const center = firstCenter + (lastCenter - firstCenter) * (index + 1) / (sorted.length - 1); widget.y = Math.round(center - number(widget.height) / 2); });
+  }
+  $("#status").textContent = `${widgets.length} Widgets ausgerichtet · Referenz: ${reference.title || reference.id}`;
+  renderStage(); renderProperties(); renderWidgetFinder();
+}
+
+function openAlignmentSizeDialog(action) {
+  const widgets = selectedNormalWidgets(); if (widgets.length < 2) return;
+  const dimension = action === "width" ? "Breite" : "Höhe"; const key = action === "width" ? "width" : "height";
+  const dialog = document.createElement("dialog"); dialog.className = "studio-dialog alignment-size-dialog";
+  const heading = document.createElement("h2"); heading.textContent = `Gewünschte ${dimension}`;
+  const label = document.createElement("label"); label.textContent = `${dimension} in Pixel`;
+  const input = document.createElement("input"); input.type = "number"; input.min = "16"; input.max = action === "width" ? "7680" : "4320"; input.step = "1"; input.value = String(Math.round(Number(widgets[0][key]) || 16)); label.append(input);
+  const actions = document.createElement("div"); actions.className = "dialog-actions";
+  const apply = document.createElement("button"); apply.type = "button"; apply.textContent = "Übernehmen";
+  const cancel = document.createElement("button"); cancel.type = "button"; cancel.textContent = "Abbrechen";
+  apply.addEventListener("click", () => { alignSelectedWidgets(action, Math.max(16, Number(input.value) || 16)); dialog.close(); });
+  cancel.addEventListener("click", () => dialog.close()); actions.append(apply, cancel); dialog.append(heading, label, actions); document.body.append(dialog);
+  dialog.addEventListener("close", () => dialog.remove()); dialog.showModal(); input.select();
 }
 
 function changeSelectedWidgetLayer(direction) {
@@ -849,7 +913,7 @@ async function importWidgets(file) {
       widget.layer = Math.max(0, Math.min(9999, Math.trunc(Number(widget.layer) || 0)));
       currentPage().widgets.push(widget);
     }
-    state.selectedId = currentPage().widgets.at(-widgets.length).id;
+    setSingleWidgetSelection(currentPage().widgets.at(-widgets.length).id);
     render();
     $("#status").textContent = `${widgets.length} Widget(s) importiert`;
   } catch (error) {
@@ -865,19 +929,19 @@ function addPage() {
   const name = state.project.pages.some((page) => page.name === "Neue Seite") ? `Seite ${state.project.pages.length + 1}` : "Neue Seite";
   const page = currentPage();
   const created = { id: makePageId(), name, visible: true, page: structuredClone(page.page), widgets: [] };
-  state.project.pages.push(created); state.project.currentPageId = created.id; state.selectedId = null; render();
+  state.project.pages.push(created); state.project.currentPageId = created.id; setSingleWidgetSelection(null); render();
 }
 
 function duplicatePage(page) {
   const copy = structuredClone(page); copy.id = makePageId(); copy.name = `${page.name} (Kopie)`;
   for (const widget of copy.widgets) widget.id = `widget-${state.nextId++}`;
-  state.project.pages.push(copy); state.project.currentPageId = copy.id; state.selectedId = null; render();
+  state.project.pages.push(copy); state.project.currentPageId = copy.id; setSingleWidgetSelection(null); render();
 }
 
 function deletePage(page) {
   state.project.pages = state.project.pages.filter((item) => item.id !== page.id);
   if (state.project.currentPageId === page.id) state.project.currentPageId = state.project.pages[0].id;
-  state.selectedId = null; render();
+  setSingleWidgetSelection(null); render();
 }
 
 function togglePagesMenu(open = $("#pages-panel").hidden) {
@@ -1231,8 +1295,8 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
     if (runtimeMode) return;
     event.stopPropagation();
     const coveredWidget = document.elementsFromPoint(event.clientX, event.clientY).map(element => element.closest?.(".widget")).find(element => element && !element.classList.contains("widget-svg-connection"));
-    if (coveredWidget) { state.selectedId = coveredWidget.dataset.widgetId; render(); return; }
-    state.selectedId = widget.id;
+    if (coveredWidget) { setSingleWidgetSelection(coveredWidget.dataset.widgetId); render(); return; }
+    setSingleWidgetSelection(widget.id);
     const bounds = stage.getBoundingClientRect();
     openConnectionPointDialog(widget, widgets, {
       x: Math.max(0, Math.min(width, Math.round((event.clientX - bounds.left) * width / bounds.width))),
@@ -1312,7 +1376,7 @@ function addWidget(definition) {
     widget.endY = widget.startY;
   }
   page.widgets.push(widget);
-  state.selectedId = id;
+  setSingleWidgetSelection(id);
   render();
 }
 
@@ -1363,9 +1427,10 @@ function renderStage() {
     const element = document.createElement("div");
     element.id = widget.id;
     element.dataset.widgetId = widget.id;
-    const selected = !runtimeMode && widget.id === state.selectedId;
+    const selected = !runtimeMode && (state.selectedIds.length ? state.selectedIds.includes(widget.id) : widget.id === state.selectedId);
+    const primarySelected = !runtimeMode && widget.id === state.selectedId;
     const isConnection = widget.type === "svg-connection";
-    element.className = `widget widget-${widget.type}${selected ? " selected" : ""}`;
+    element.className = `widget widget-${widget.type}${selected ? " selected" : ""}${primarySelected ? " selection-primary" : ""}`;
     if (widget.cssClass) {
       const safeClasses = String(widget.cssClass).split(/\s+/).filter((name) => /^[A-Za-z_][\w-]*$/.test(name));
       element.classList.add(...safeClasses);
@@ -1658,7 +1723,7 @@ function renderStage() {
       const href = safeUrl(widget.navUrl);
       if (widget.targetPage) {
         const button = document.createElement("button"); button.type = "button"; appendSafeHtml(button, widget.navHtml ?? widget.navLabel ?? "Öffnen");
-        button.addEventListener("click", event => { event.stopPropagation(); if (!runtimeMode) return; const page = state.project.pages.find(page => page.id === widget.targetPage); if (page) { state.project.currentPageId = page.id; state.selectedId = null; render(); } }); content.append(button);
+        button.addEventListener("click", event => { event.stopPropagation(); if (!runtimeMode) return; const page = state.project.pages.find(page => page.id === widget.targetPage); if (page) { state.project.currentPageId = page.id; setSingleWidgetSelection(null); render(); } }); content.append(button);
       } else if (href) { const link = document.createElement("a"); link.className = "widget-navigation"; link.href = href; appendSafeHtml(link, widget.navHtml ?? widget.navLabel ?? "Öffnen"); content.append(link); }
       else content.textContent = widget.navLabel || "Ziel-URL fehlt";
     } else if (widget.type === "filter-dropdown") {
@@ -1733,7 +1798,7 @@ function renderStage() {
       }
       element.append(overlay);
     }
-    if (selected && !isConnection) {
+    if (primarySelected && !isConnection) {
       const flag = document.createElement("span"); flag.className = "widget-id-flag"; flag.textContent = widget.id;
       element.append(flag);
       for (const direction of ["n", "ne", "e", "se", "s", "sw", "w", "nw"]) {
@@ -1744,7 +1809,7 @@ function renderStage() {
         makeResizable(element, handle, widget);
       }
     }
-    if (!isConnection) element.addEventListener("click", () => { if (!runtimeMode) { state.selectedId = widget.id; render(); } }, { capture: true });
+    if (!isConnection) element.addEventListener("click", event => { if (!runtimeMode) { selectWidget(widget.id, event.ctrlKey || event.metaKey || event.shiftKey); render(); } }, { capture: true });
     if (!runtimeMode && !isConnection) makeDraggable(element, widget);
     stage.append(element);
   }
@@ -1772,7 +1837,7 @@ function makeDraggable(element, widget) {
     const moved = origin.moved;
     origin = null;
     if (moved) {
-      state.selectedId = widget.id;
+      if (!state.selectedIds.includes(widget.id)) setSingleWidgetSelection(widget.id);
       render();
     }
   });
@@ -2221,6 +2286,22 @@ $("#widget-layer-down").addEventListener("click", () => changeSelectedWidgetLaye
 $("#widget-export").addEventListener("click", exportSelectedWidget);
 $("#widget-import").addEventListener("click", () => $("#widget-import-file").click());
 $("#widget-import-file").addEventListener("change", (event) => { if (event.target.files[0]) void importWidgets(event.target.files[0]); });
+for (const button of document.querySelectorAll(".alignment-toolbar button")) {
+  const action = button.dataset.align;
+  if (!["width", "height"].includes(action)) { button.addEventListener("click", () => alignSelectedWidgets(action)); continue; }
+  let longPressTimer = null; let longPressTriggered = false;
+  const cancelTimer = () => { if (longPressTimer) clearTimeout(longPressTimer); longPressTimer = null; button.classList.remove("is-long-press"); };
+  button.addEventListener("pointerdown", event => {
+    if (event.button !== 0 || button.disabled) return;
+    longPressTriggered = false;
+    longPressTimer = setTimeout(() => { longPressTriggered = true; button.classList.add("is-long-press"); openAlignmentSizeDialog(action); }, 600);
+  });
+  button.addEventListener("pointerup", cancelTimer); button.addEventListener("pointercancel", cancelTimer); button.addEventListener("pointerleave", cancelTimer);
+  button.addEventListener("click", event => {
+    if (longPressTriggered) { event.preventDefault(); longPressTriggered = false; return; }
+    alignSelectedWidgets(action);
+  });
+}
 
 $("#preset").addEventListener("change", (event) => {
   const preset = event.target.value;

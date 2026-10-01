@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.54
+
+- Adds ordered multi-selection with Ctrl, Cmd or Shift so the first selected widget remains the alignment reference and property target.
+- Adds the compact ten-button alignment toolbar for left, right, top, bottom, horizontal/vertical center, horizontal/vertical distribution and matching width/height.
+- Supports a long press on the width or height buttons to enter an explicit pixel size for every selected widget.
+
 ## 0.1.53
 
 - Opens a centered point-type dialog when an SVG connection line is clicked in the editor, with `Klick` selected by default and `Sammelpunkt` as the explicit coupling option.
