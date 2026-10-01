@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.51
+
+- Turns the `Andockpunkte` section checkbox into a master switch that disables every anchor and marker on the widget.
+- Preserves the current visual endpoint positions while anchors are disabled and restores attachment behavior when they are enabled again.
+
 ## 0.1.50
 
 - Adds draggable start and end handles to the selected SVG connection widget.

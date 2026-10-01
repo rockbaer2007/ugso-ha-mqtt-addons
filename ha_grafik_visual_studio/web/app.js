@@ -88,8 +88,7 @@ const CONNECTION_ANCHORS = [
   ["top-quarter", "Oben 1/4", 0.25, 0], ["top-center", "Oben Mitte", 0.5, 0], ["top-three-quarter", "Oben 3/4", 0.75, 0],
   ["bottom-quarter", "Unten 1/4", 0.25, 1], ["bottom-center", "Unten Mitte", 0.5, 1], ["bottom-three-quarter", "Unten 3/4", 0.75, 1],
 ];
-const connectionAnchorGroup = { label: "Andockpunkte", hint: "Aktive Punkte können von SVG-Verbindungslinien gewählt und mehrfach belegt werden.", fields: [
-  { label: "Andockpunkte aktivieren", key: "dockPointsEnabled", type: "checkbox", default: true },
+const connectionAnchorGroup = { id: "dock-points", label: "Andockpunkte", masterKey: "dockPointsEnabled", hint: "Der Haken in der Überschrift aktiviert oder deaktiviert alle Andockpunkte dieses Widgets.", fields: [
   ...CONNECTION_ANCHORS.map(([id, label]) => ({ label, key: `dock_${id.replaceAll("-", "_")}`, type: "checkbox", default: true })),
   { label: "Mehrfachbelegung erlauben", key: "dockMultiple", type: "checkbox", default: true },
   { label: "Maximale Verbindungen (0 = unbegrenzt)", key: "dockMaxConnections", type: "number", min: 0, max: 99, default: 0 },
@@ -235,7 +234,7 @@ function projectForSave(project) {
       const groups = [...widgetPropertyGroups(widget), ...indexedWidgetGroups(widget)];
       widget.enabledPropertyGroups ??= {};
       for (const [index, group] of groups.entries()) {
-        if (propertyGroupEnabled(widget, group, index)) continue;
+        if (group.masterKey || propertyGroupEnabled(widget, group, index)) continue;
         for (const descriptor of group.fields) delete widget[descriptor.key];
         if (group.signalImages) {
           delete widget.signalCount;
@@ -1989,14 +1988,30 @@ function renderProperties() {
       }
     }
     const enabled = document.createElement("input"); enabled.type = "checkbox"; enabled.className = "property-section-enabled";
-    enabled.checked = propertyGroupEnabled(widget, group, index);
-    enabled.setAttribute("aria-label", `${group.label}: Optionen im Projekt speichern`);
-    enabled.title = "Optionen dieser Gruppe im gespeicherten Projekt übernehmen";
+    enabled.checked = group.masterKey ? widget[group.masterKey] !== false : propertyGroupEnabled(widget, group, index);
+    enabled.setAttribute("aria-label", group.masterKey ? `${group.label} aktivieren` : `${group.label}: Optionen im Projekt speichern`);
+    enabled.title = group.masterKey ? `${group.label} vollständig aktivieren oder deaktivieren` : "Optionen dieser Gruppe im gespeicherten Projekt übernehmen";
     enabled.addEventListener("click", (event) => event.stopPropagation());
     enabled.addEventListener("change", (event) => {
       event.stopPropagation();
-      widget.enabledPropertyGroups ??= {};
-      widget.enabledPropertyGroups[propertyGroupKey(group, index)] = enabled.checked;
+      if (group.masterKey) {
+        if (group.masterKey === "dockPointsEnabled" && !enabled.checked) {
+          for (const connection of page.widgets.filter(item => item.type === "svg-connection")) {
+            for (const prefix of ["start", "end"]) {
+              if (connection[`${prefix}WidgetId`] !== widget.id) continue;
+              const position = connectionEndpoint(connection, prefix, page.widgets);
+              connection[`${prefix}X`] = position.x; connection[`${prefix}Y`] = position.y;
+            }
+          }
+        }
+        widget[group.masterKey] = enabled.checked;
+        details.classList.toggle("is-disabled", !enabled.checked);
+        for (const control of body.querySelectorAll("input, select, textarea, button")) control.disabled = !enabled.checked;
+        renderStage();
+      } else {
+        widget.enabledPropertyGroups ??= {};
+        widget.enabledPropertyGroups[propertyGroupKey(group, index)] = enabled.checked;
+      }
     });
     summary.append(enabled);
     const body = document.createElement("div"); body.className = "property-fields";
@@ -2060,6 +2075,10 @@ function renderProperties() {
         details.append(fields); body.append(details);
       }
       widget.signalImages.length = count;
+    }
+    if (group.masterKey && !enabled.checked) {
+      details.classList.add("is-disabled");
+      for (const control of body.querySelectorAll("input, select, textarea, button")) control.disabled = true;
     }
     details.append(summary, body); panel.append(details);
   }

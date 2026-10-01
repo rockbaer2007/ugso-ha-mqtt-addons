@@ -212,6 +212,7 @@ button { cursor: pointer; }
 .property-section-title { min-width: 0; }
 .property-section-enabled { margin-left: auto !important; }
 .property-section-enabled { width: 15px; height: 15px; flex: none; margin: 0; accent-color: var(--accent); }
+.property-section.is-disabled > .property-fields { opacity: .5; }
 .signal-section { border: 1px solid var(--line); border-radius: 4px; }
 .signal-section > summary { display: flex; align-items: center; gap: 5px; padding: 5px 7px; cursor: pointer; color: var(--accent); list-style: none; }
 .signal-section > summary::before { width: 9px; flex: none; content: "▸"; }
