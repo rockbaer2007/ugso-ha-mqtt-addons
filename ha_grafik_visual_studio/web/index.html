@@ -161,13 +161,25 @@
         </div>
       </section>
       <section id="settings-panel-tools" class="settings-tab-panel" role="tabpanel" aria-labelledby="settings-tab-tools" hidden>
-        <p class="property-hint">Installierte Tool-Pakete werden hier angezeigt. Integrierte Editor-Werkzeuge sind Teil der App.</p>
-        <div class="settings-package-list" role="list" aria-label="Installierte Tool-Pakete">
+        <p class="property-hint">Tool-Schnittstelle 0.1: Aktionen werden erst nach Vorschau und Bestätigung ausgeführt.</p>
+        <div class="settings-package-install"><button id="tool-package-local" type="button">Lokales .tp.zip installieren</button><input id="tool-package-file" type="file" accept=".zip" hidden></div>
+        <p id="tool-package-message" class="property-hint" role="status" aria-live="polite"></p>
+        <div id="tool-package-list" class="settings-package-list" role="list" aria-label="Installierte Tool-Pakete">
           <p class="settings-package-empty" role="listitem">Keine zusätzlichen Tool-Pakete installiert.</p>
         </div>
       </section>
       <div id="settings-general-actions" class="dialog-actions"><button value="cancel">Abbrechen</button><button id="settings-save" value="default" class="primary">Speichern</button></div>
       <div id="settings-extension-actions" class="dialog-actions" hidden><button type="button" id="settings-close">Schließen</button></div>
+    </form>
+  </dialog>
+  <dialog id="tool-preview-dialog" class="studio-dialog">
+    <form method="dialog">
+      <strong id="tool-preview-title"></strong>
+      <p id="tool-preview-description" class="property-hint"></p>
+      <label>Neue Hintergrundfarbe <input id="tool-preview-color" type="color"></label>
+      <p id="tool-preview-change" class="property-hint"></p>
+      <p class="property-hint">Die Änderung betrifft nur die aktuelle Seite und kann mit Rückgängig zurückgenommen werden.</p>
+      <div class="dialog-actions"><button value="cancel">Abbrechen</button><button id="tool-preview-apply" type="button" class="primary">Anwenden</button></div>
     </form>
   </dialog>
   <dialog id="widget-filter-dialog" class="studio-dialog widget-filter-dialog">

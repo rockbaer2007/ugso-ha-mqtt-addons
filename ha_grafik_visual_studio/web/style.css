@@ -346,6 +346,13 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .settings-package-meta { color: var(--muted); font-size: 11px; }
 .settings-package-row button { width: 29px; height: 29px; flex: none; padding: 4px; }
 .settings-package-row button img { display: block; width: 16px; height: 16px; margin: auto; }
+.settings-package-entry + .settings-package-entry { border-top: 1px solid var(--line); }
+.settings-package-entry .settings-package-row { border-bottom: 0; }
+.settings-tool-list { display: grid; gap: 3px; padding: 0 10px 8px; }
+.settings-tool-row { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
+.settings-tool-row span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.settings-tool-row button { width: 29px; height: 29px; flex: none; padding: 4px; }
+.settings-tool-row button img { display: block; width: 16px; height: 16px; margin: auto; }
 .settings-group { display: grid; gap: 9px; min-width: 0; margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: 6px; }
 .settings-group legend { padding: 0 5px; color: var(--text); font-weight: 650; }
 .settings-group > label { display: grid; gap: 5px; color: var(--muted); }

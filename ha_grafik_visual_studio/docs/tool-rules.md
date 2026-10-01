@@ -1,6 +1,6 @@
 # Tool-Regeln für HA Grafik Visual Studio
 
-Stand: 01.10.2026. Diese Datei beschreibt vorhandene Editor-Werkzeuge und Vorschläge für eine eigene Schnittstelle für spätere Tool-Erweiterungen. Die vorgeschlagenen Regeln sind noch nicht als technischer Vertrag beschlossen. Extern installierbare Tools, ein Tool-Paketformat und der geplante Einstellungen-Tab **Tools** sind noch nicht implementiert.
+Stand: 01.10.2026. Diese Datei beschreibt die vorhandenen Editor-Werkzeuge, den ersten externen Tool-Vertrag 0.1 und spätere Erweiterungspunkte.
 
 ## Bereits vorhanden
 
@@ -19,7 +19,37 @@ Stand: 01.10.2026. Diese Datei beschreibt vorhandene Editor-Werkzeuge und Vorsch
 7. **Fehler bleiben lokal und verständlich.** Ein Tool-Fehler darf Editor, Runtime und gespeicherte Projekte nicht beschädigen. Eine laufende Aktion muss abbrechbar sein; beim Schließen werden Ereignisse und temporäre Ressourcen freigegeben.
 8. **Editor und Runtime bleiben getrennt.** Ein reines Bearbeitungswerkzeug wird nicht in die Runtime geladen. Runtime-Funktionen benötigen später eine eigene, ausdrücklich deklarierte Fähigkeit und einen klaren Anwendungsfall.
 
-## Entwurf der Tool-Schnittstelle
+## Tool-Paket-Schnittstelle 0.1
+
+Unter **Einstellungen → Tools** kann ein lokales `*.tp.zip` installiert, angezeigt und entfernt werden. Das ZIP enthält ausschließlich `manifest.json` in UTF-8; es ist auf 2 MB begrenzt, das Manifest auf 200 KB. Der Server prüft die Paketart und die Felder und speichert das Manifest unter `/data/tool_packages/`. Die Installation führt keine Aktion aus und gewährt keinen Zugriff. Der Tab zeigt Paket-ID, Version, Lizenz und jedes Tool. **Ausführen** öffnet eine Vorschau. Erst **Anwenden** löst eine kontrollierte Editor-Aktion aus; sie wird in die normale Rückgängig-Historie aufgenommen und über den normalen Projektweg gespeichert. Die Runtime lädt keine Tools.
+
+Pflichtfelder: `format: "ha-grafik-tool-package"`, `apiVersion: "0.1"`, punktgetrennte Paket-`id`, `name`, Paket-`version` (`x.y.z`), `license` und `tools`. Ein Tool hat eine stabile `id` im Namensraum `paket.id/tool-name`, `definitionVersion: "0.1"`, `label`, `description`, `context: "page"`, `capabilities: ["project.read", "project.write"]` und eine deklarative `action`. In 0.1 ist nur `set-page-background` mit einer sechsstelligen `defaultColor` erlaubt. Die Farbe kann in der Vorschau angepasst werden. Diese Fähigkeiten erlauben ausschließlich die konkrete, bestätigte Änderung an der aktuellen Seite; sie sind keine allgemeine Schreibberechtigung für Paket-Code.
+
+Beispiel für `manifest.json`:
+
+```json
+{
+  "format": "ha-grafik-tool-package",
+  "apiVersion": "0.1",
+  "id": "beispiel.tools",
+  "name": "Beispiel Tools",
+  "version": "1.0.0",
+  "license": "MIT",
+  "tools": [{
+    "id": "beispiel.tools/background",
+    "definitionVersion": "0.1",
+    "label": "Seitenfarbe",
+    "description": "Setzt die Farbe der aktuellen Seite.",
+    "context": "page",
+    "capabilities": ["project.read", "project.write"],
+    "action": {"kind": "set-page-background", "defaultColor": "#224466"}
+  }]
+}
+```
+
+Ein `.tp.zip` mit diesem Manifest lässt sich im Tool-Tab installieren. Eigene Skripte, Dateien, Home-Assistant-Dienste, externe URLs, GitHub-Installation und Updates sind noch nicht Teil von 0.1. Erweiterungen brauchen einen neuen geprüften Vertrag oder optionale Fähigkeiten; bestehende Tool-Aktionen dürfen nicht stillschweigend umgedeutet werden.
+
+## Erweiterungsentwurf
 
 Die genauen Feldnamen und das innere Paketformat werden bei der Implementierung festgelegt. Der Generator soll Tool-Pakete als `*.tp.zip` ausgeben, zum Beispiel `importhilfe.tp.zip`; `tp` steht für Tool-Paket. Die Endung kennzeichnet die Paketart; beim Import muss zusätzlich das Manifest geprüft werden. Voraussichtlich werden diese Angaben benötigt:
 
@@ -37,6 +67,6 @@ Die genauen Feldnamen und das innere Paketformat werden bei der Implementierung 
 
 Die erste Version sollte nur klar begrenzte Editor-Tools mit Menüeintrag, Kontextprüfung, Dialog und einer kontrollierten, rückgängig machbaren Projektänderung unterstützen. Eigene Skripte, Hintergrundaufgaben, externe Downloads und Tool-zu-Tool-Aufrufe sind spätere Erweiterungspunkte. Für sie müssen Ausführungsgrenzen, Paketprüfung und Berechtigungen zuerst konkret definiert werden.
 
-## Geplante Darstellung in den Einstellungen
+## Darstellung in den Einstellungen
 
-Die geplanten Tabs **Allgemein**, **Widget-Pakete** und **Tools** trennen App-Einstellungen, Widget-Erweiterungen und Editor-Werkzeuge. Im Tab **Tools** sollen später installierte Pakete, Version, Kompatibilität, Status, angeforderte Fähigkeiten und Fehler sichtbar sein. Aktivieren, Deaktivieren und Aktualisieren darf die Grundfunktion vorhandener Widgets nicht verändern.
+Die Tabs **Allgemein**, **Widget-Pakete** und **Tools** trennen App-Einstellungen, Widget-Erweiterungen und Editor-Werkzeuge. Der Tool-Tab zeigt installierte Pakete und ihre Aktionen. Kompatibilitätsstatus, Update-Suche und weitergehende Fähigkeiten folgen später. Aktivieren, Deaktivieren und Aktualisieren darf die Grundfunktion vorhandener Widgets nicht verändern.

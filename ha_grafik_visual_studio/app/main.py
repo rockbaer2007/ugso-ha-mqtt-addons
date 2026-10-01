@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, quote, unquote, urlparse
 from uuid import uuid4
 
 from widget_packages import MAX_ZIP_BYTES, list_packages, read_package_zip
+from tool_packages import list_tool_packages, read_tool_package_zip
 
 LOG = logging.getLogger("ha-grafik-visual-studio")
 PORT = int(os.environ.get("HA_GRAFIK_INGRESS_PORT", "8098"))
@@ -22,6 +23,7 @@ if not WEB_DIR.is_dir():
 PROJECT_FILE = DATA_DIR / "project.json"
 PROJECTS_DIR = DATA_DIR / "projects"
 WIDGET_PACKAGES_DIR = DATA_DIR / "widget_packages"
+TOOL_PACKAGES_DIR = DATA_DIR / "tool_packages"
 WWW_CANDIDATES = (
     Path("/homeassistant/www"),
     Path("/homeassistant_config/www"),
@@ -169,7 +171,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.81"
+    server_version = "HAGrafikVisualStudio/0.1.82"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -191,7 +193,7 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.81"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.82"})
             return
         if path == "/api/entities":
             try:
@@ -216,6 +218,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/widget-packages":
             self.send_json(HTTPStatus.OK, {"packages": list_packages(WIDGET_PACKAGES_DIR)})
+            return
+        if path == "/api/tool-packages":
+            self.send_json(HTTPStatus.OK, {"packages": list_tool_packages(TOOL_PACKAGES_DIR)})
             return
         if path == "/api/objects":
             self.send_json(HTTPStatus.OK, self.list_objects(query.get("path", [""])[0]))
@@ -266,6 +271,9 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/api/widget-packages":
             self.install_widget_package()
+            return
+        if parsed.path == "/api/tool-packages":
+            self.install_tool_package()
             return
         if parsed.path == "/api/switch":
             if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
@@ -392,6 +400,9 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path.startswith("/api/widget-packages/"):
             self.delete_widget_package(unquote(parsed.path.removeprefix("/api/widget-packages/")))
             return
+        if parsed.path.startswith("/api/tool-packages/"):
+            self.delete_tool_package(unquote(parsed.path.removeprefix("/api/tool-packages/")))
+            return
         if parsed.path == "/api/files":
             self.delete_object_file(parse_qs(parsed.query).get("path", [""])[0])
             return
@@ -456,6 +467,45 @@ class Handler(BaseHTTPRequestHandler):
             (WIDGET_PACKAGES_DIR / (package_id + ".json")).unlink()
         except OSError:
             self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Widget-Paket konnte nicht entfernt werden."})
+            return
+        self.send_json(HTTPStatus.OK, {"deleted": package_id})
+
+    def install_tool_package(self):
+        if not self.headers.get("X-Package-Name", "").lower().endswith(".tp.zip"):
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Tool-Paket muss auf .tp.zip enden."})
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = 0
+        if not 0 < length <= MAX_ZIP_BYTES:
+            self.send_json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"error": "Tool-Paket ist leer oder größer als 2 MB."})
+            return
+        try:
+            manifest = read_tool_package_zip(self.rfile.read(length))
+        except ValueError as error:
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+            return
+        TOOL_PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
+        target = TOOL_PACKAGES_DIR / (manifest["id"] + ".json")
+        if target.exists():
+            self.send_json(HTTPStatus.CONFLICT, {"error": "Tool-Paket ist bereits installiert. Updates folgen später."})
+            return
+        try:
+            target.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+        except OSError:
+            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Tool-Paket konnte nicht gespeichert werden."})
+            return
+        self.send_json(HTTPStatus.CREATED, {"installed": manifest["id"]})
+
+    def delete_tool_package(self, package_id):
+        if not any(item["id"] == package_id for item in list_tool_packages(TOOL_PACKAGES_DIR)):
+            self.send_json(HTTPStatus.NOT_FOUND, {"error": "Tool-Paket wurde nicht gefunden."})
+            return
+        try:
+            (TOOL_PACKAGES_DIR / (package_id + ".json")).unlink()
+        except OSError:
+            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Tool-Paket konnte nicht entfernt werden."})
             return
         self.send_json(HTTPStatus.OK, {"deleted": package_id})
 

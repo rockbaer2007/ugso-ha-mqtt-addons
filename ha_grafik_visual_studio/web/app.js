@@ -2926,6 +2926,86 @@ async function renderWidgetPackageList() {
   } catch (error) { $("#widget-package-message").textContent = error.message; }
 }
 
+async function fetchToolPackages() {
+  const response = await fetch("api/tool-packages", { cache: "no-store" });
+  if (!response.ok) throw new Error(uiText("Tool-Pakete konnten nicht geladen werden."));
+  return (await response.json()).packages;
+}
+
+let pendingTool = null;
+function previewTool(tool) {
+  if (runtimeMode || !state.project || tool.context !== "page" || tool.action?.kind !== "set-page-background") return;
+  pendingTool = tool;
+  $("#settings-dialog").close();
+  $("#tool-preview-title").textContent = tool.label;
+  $("#tool-preview-description").textContent = tool.description;
+  $("#tool-preview-color").value = tool.action.defaultColor;
+  const updatePreview = () => {
+    $("#tool-preview-change").textContent = `${uiText("Aktuelle Seite")}: ${currentPage().name} · ${currentPage().page.background || "#242729"} → ${$("#tool-preview-color").value}`;
+  };
+  updatePreview();
+  $("#tool-preview-color").oninput = updatePreview;
+  $("#tool-preview-dialog").showModal();
+}
+
+$("#tool-preview-apply").addEventListener("click", () => {
+  if (!pendingTool || runtimeMode || !state.project) return;
+  const color = $("#tool-preview-color").value;
+  if (!/^#[0-9a-f]{6}$/i.test(color)) return;
+  if (currentPage().page.background !== color) {
+    recordHistorySnapshot();
+    currentPage().page.background = color;
+    render();
+    $("#status").textContent = uiText("Seitenhintergrund geändert. Rückgängig ist möglich.");
+  }
+  $("#tool-preview-dialog").close();
+  pendingTool = null;
+});
+$("#tool-preview-dialog").addEventListener("close", () => { pendingTool = null; });
+
+async function renderToolPackageList() {
+  const list = $("#tool-package-list");
+  try {
+    const packages = await fetchToolPackages();
+    list.replaceChildren();
+    if (!packages.length) {
+      const empty = document.createElement("p"); empty.className = "settings-package-empty";
+      empty.setAttribute("role", "listitem"); empty.textContent = uiText("Keine zusätzlichen Tool-Pakete installiert."); list.append(empty);
+    }
+    for (const manifest of packages) {
+      const row = document.createElement("div"); row.className = "settings-package-row"; row.setAttribute("role", "listitem");
+      const info = document.createElement("div"); info.className = "settings-package-info";
+      const name = document.createElement("div"); name.textContent = manifest.name;
+      const meta = document.createElement("div"); meta.className = "settings-package-meta";
+      meta.textContent = `${manifest.id} · ${manifest.version} · API ${manifest.apiVersion} · ${manifest.license}`;
+      info.append(name, meta);
+      const reload = document.createElement("button"); reload.type = "button"; reload.title = uiText("Paketliste neu laden"); reload.setAttribute("aria-label", reload.title);
+      const reloadIcon = document.createElement("img"); reloadIcon.src = "icons/refresh.svg"; reloadIcon.alt = ""; reload.append(reloadIcon);
+      reload.addEventListener("click", () => void renderToolPackageList());
+      const remove = document.createElement("button"); remove.type = "button"; remove.title = uiText("Paket entfernen"); remove.setAttribute("aria-label", `${remove.title}: ${manifest.name}`);
+      const deleteIcon = document.createElement("img"); deleteIcon.src = "icons/delete.svg"; deleteIcon.alt = ""; remove.append(deleteIcon);
+      remove.addEventListener("click", async () => {
+        if (!window.confirm(uiText("Tool-Paket wirklich entfernen?"))) return;
+        const response = await fetch(`api/tool-packages/${encodeURIComponent(manifest.id)}`, { method: "DELETE" });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) { $("#tool-package-message").textContent = result.error || uiText("Tool-Paket konnte nicht entfernt werden."); return; }
+        void renderToolPackageList();
+      });
+      const tools = document.createElement("div"); tools.className = "settings-tool-list";
+      for (const tool of manifest.tools) {
+        const item = document.createElement("div"); item.className = "settings-tool-row";
+        const description = document.createElement("span"); description.textContent = `${tool.label} · ${tool.description}`;
+        const run = document.createElement("button"); run.type = "button"; run.title = uiText("Tool ausführen"); run.setAttribute("aria-label", `${run.title}: ${tool.label}`);
+        const icon = document.createElement("img"); icon.src = "icons/check.svg"; icon.alt = ""; run.append(icon);
+        run.addEventListener("click", () => previewTool(tool));
+        item.append(description, run); tools.append(item);
+      }
+      const entry = document.createElement("div"); entry.className = "settings-package-entry"; entry.setAttribute("role", "listitem");
+      row.removeAttribute("role"); row.append(info, reload, remove); entry.append(row, tools); list.append(entry);
+    }
+  } catch (error) { $("#tool-package-message").textContent = error.message; }
+}
+
 function showSettingsTab(tabId) {
   const selected = SETTINGS_TABS.includes(tabId) ? tabId : "general";
   for (const id of SETTINGS_TABS) {
@@ -2938,6 +3018,8 @@ function showSettingsTab(tabId) {
   $("#settings-dialog").classList.toggle("settings-extension-view", selected !== "general");
   $("#settings-general-actions").hidden = selected !== "general";
   $("#settings-extension-actions").hidden = selected === "general";
+  if (selected === "widgets") void renderWidgetPackageList();
+  if (selected === "tools") void renderToolPackageList();
 }
 
 function openSettingsDialog() {
@@ -2977,10 +3059,26 @@ $("#widget-package-file").addEventListener("change", async (event) => {
   } catch { message.textContent = uiText("Widget-Paket konnte nicht installiert werden."); }
   finally { event.target.value = ""; }
 });
+$("#tool-package-local").addEventListener("click", () => $("#tool-package-file").click());
+$("#tool-package-file").addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const message = $("#tool-package-message");
+  if (!file.name.toLowerCase().endsWith(".tp.zip")) { message.textContent = uiText("Tool-Paket muss auf .tp.zip enden."); return; }
+  message.textContent = uiText("Tool-Paket wird geprüft …");
+  try {
+    const response = await fetch("api/tool-packages", { method: "POST", headers: { "Content-Type": "application/zip", "X-Package-Name": file.name }, body: file });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) { message.textContent = result.error || uiText("Tool-Paket konnte nicht installiert werden."); return; }
+    message.textContent = uiText("Tool-Paket installiert.");
+    await renderToolPackageList();
+  } catch { message.textContent = uiText("Tool-Paket konnte nicht installiert werden."); }
+  finally { event.target.value = ""; }
+});
 $("#settings-close").addEventListener("click", () => $("#settings-dialog").close());
 $("#settings-form .settings-tabs").addEventListener("click", (event) => {
   const tab = event.target.closest("[data-settings-tab]");
-  if (tab) { showSettingsTab(tab.dataset.settingsTab); if (tab.dataset.settingsTab === "widgets") void renderWidgetPackageList(); }
+  if (tab) showSettingsTab(tab.dataset.settingsTab);
 });
 $("#settings-form .settings-tabs").addEventListener("keydown", (event) => {
   const index = SETTINGS_TABS.indexOf(event.target.dataset.settingsTab);

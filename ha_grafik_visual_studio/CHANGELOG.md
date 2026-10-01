@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.82
+
+- Added data-only tool package API 0.1 and local `.tp.zip` installation in Settings → Tools. The first tool action previews and changes the current page background after confirmation; it uses the editor's undo history. Packages contain no executable code or Home Assistant access.
+
 ## 0.1.81
 
 - Widget packages may include referenced SVG palette icons. Only restricted SVG geometry is accepted; other icon formats and active SVG content are rejected. Packages without icons use the built-in SVG text icon.
