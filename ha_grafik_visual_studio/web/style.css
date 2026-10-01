@@ -324,6 +324,18 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .studio-dialog::backdrop { background: #0009; }
 .studio-dialog form { display: grid; gap: 12px; }
 .studio-dialog form > label { display: grid; gap: 5px; color: var(--muted); }
+#settings-dialog { height: min(700px, calc(100vh - 24px)); overflow: hidden; }
+#settings-dialog.settings-extension-view { height: min(420px, calc(100vh - 24px)); }
+#settings-form { height: 100%; grid-template-rows: auto auto minmax(0, 1fr) auto; }
+.settings-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.settings-tabs button { min-width: 0; min-height: 34px; padding: 6px 4px; font-size: 12px; font-weight: 400; }
+.settings-tabs button[aria-selected="true"] { border-color: var(--accent); color: var(--text); background: #27403e; }
+.settings-tab-panel { display: grid; min-height: 0; align-content: start; gap: 10px; overflow-y: auto; scrollbar-gutter: stable; padding: 2px 4px 4px 0; }
+.settings-tab-panel[hidden], #settings-extension-actions[hidden], #settings-general-actions[hidden] { display: none; }
+.settings-tab-panel > label { display: grid; gap: 5px; color: var(--muted); }
+.settings-tab-panel > .settings-check { display: flex; align-items: center; gap: 7px; }
+.settings-package-list { min-height: 54px; max-height: min(320px, 42vh); overflow-y: auto; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-weight: 400; }
+.settings-package-empty { margin: 0; padding: 14px 12px; color: var(--muted); font-weight: 400; }
 .settings-group { display: grid; gap: 9px; min-width: 0; margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: 6px; }
 .settings-group legend { padding: 0 5px; color: var(--text); font-weight: 650; }
 .settings-group > label { display: grid; gap: 5px; color: var(--muted); }

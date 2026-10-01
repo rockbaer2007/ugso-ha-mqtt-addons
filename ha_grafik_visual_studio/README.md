@@ -4,6 +4,8 @@
 
 Regeln und Entwürfe für spätere Erweiterungen stehen in [docs/widget-rules.md](docs/widget-rules.md) und [docs/tool-rules.md](docs/tool-rules.md).
 
+Der Einstellungen-Dialog hat die Tabs **Allgemein**, **Widget-Pakete** und **Tools**. Die Paket-Tabs zeigen derzeit noch leere Listen; Installation und Verwaltung externer ZIP-Pakete folgen später.
+
 Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mit getrenntem Editor und Runtime. Das Paket ist ein frühes Grundgerüst, keine fertige VIS2-Alternative.
 
 Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sowie daraus gerenderte PNG-Dateien für den Home-Assistant-App-Store.

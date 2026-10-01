@@ -92,6 +92,11 @@ const ENGLISH = {
 Object.assign(ENGLISH, {
   "Abstand": "Spacing", "Addiere nichts zu URL": "Add nothing to URL", "Aktive Farbe": "Active color",
   "Akzentfarbe": "Accent color", "Allgemein": "General", "Alternativtext": "Alternative text",
+  "Einstellungsbereiche": "Settings sections", "Widget-Pakete": "Widget packages", "Installierte Widget-Pakete": "Installed widget packages",
+  "Installierte Tool-Pakete": "Installed tool packages", "Keine zusätzlichen Widget-Pakete installiert.": "No additional widget packages installed.",
+  "Keine zusätzlichen Tool-Pakete installiert.": "No additional tool packages installed.",
+  "Zusätzliche Widget-Pakete werden hier angezeigt. Integrierte Widgets sind Teil der App.": "Additional widget packages appear here. Built-in widgets are part of the app.",
+  "Installierte Tool-Pakete werden hier angezeigt. Integrierte Editor-Werkzeuge sind Teil der App.": "Installed tool packages appear here. Built-in editor tools are part of the app.",
   "Am Anfang": "At start", "Am Ende": "At end", "Am Sammelpunkt synchron ankommen": "Arrive together at collector",
   "Andockpunkt": "Docking point", "Andockpunkte": "Docking points", "Andockpunkte dauerhaft anzeigen": "Always show docking points",
   "Anfang → Ende": "Start → End", "Anfangsfilter": "Initial filter", "Animation": "Animation",

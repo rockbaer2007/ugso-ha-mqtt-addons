@@ -119,7 +119,13 @@
   </dialog>
   <dialog id="settings-dialog" class="studio-dialog">
     <form method="dialog" id="settings-form">
-      <header class="icon-picker-heading"><strong>Projekteinstellungen</strong><button value="cancel" aria-label="Schließen">×</button></header>
+      <header class="icon-picker-heading"><strong>Einstellungen</strong><button value="cancel" aria-label="Schließen">×</button></header>
+      <nav class="settings-tabs" role="tablist" aria-label="Einstellungsbereiche">
+        <button id="settings-tab-general" type="button" role="tab" aria-controls="settings-panel-general" aria-selected="true" data-settings-tab="general">Allgemein</button>
+        <button id="settings-tab-widgets" type="button" role="tab" aria-controls="settings-panel-widgets" aria-selected="false" tabindex="-1" data-settings-tab="widgets">Widget-Pakete</button>
+        <button id="settings-tab-tools" type="button" role="tab" aria-controls="settings-panel-tools" aria-selected="false" tabindex="-1" data-settings-tab="tools">Tools</button>
+      </nav>
+      <section id="settings-panel-general" class="settings-tab-panel" role="tabpanel" aria-labelledby="settings-tab-general">
       <fieldset class="settings-group">
         <legend>Automatisches Speichern</legend>
         <label class="settings-check"><input id="settings-auto-save" type="checkbox"> Änderungen automatisch speichern</label>
@@ -145,7 +151,21 @@
       <label>Favicon / Bildpfad <span class="settings-path-row"><input id="project-favicon" placeholder="/local/icons/dashboard.png"><button id="project-favicon-browse" type="button" title="Datei auswählen">📁</button></span></label>
       <label class="settings-check"><input id="settings-ignore-unloaded" type="checkbox"> Nicht geladene Widgets ignorieren</label>
       <label>Body overflow <select id="settings-overflow"><option>auto</option><option>hidden</option><option>scroll</option><option>visible</option></select></label>
-      <div class="dialog-actions"><button value="cancel">Abbrechen</button><button id="settings-save" value="default" class="primary">Speichern</button></div>
+      </section>
+      <section id="settings-panel-widgets" class="settings-tab-panel" role="tabpanel" aria-labelledby="settings-tab-widgets" hidden>
+        <p class="property-hint">Zusätzliche Widget-Pakete werden hier angezeigt. Integrierte Widgets sind Teil der App.</p>
+        <div class="settings-package-list" role="list" aria-label="Installierte Widget-Pakete">
+          <p class="settings-package-empty" role="listitem">Keine zusätzlichen Widget-Pakete installiert.</p>
+        </div>
+      </section>
+      <section id="settings-panel-tools" class="settings-tab-panel" role="tabpanel" aria-labelledby="settings-tab-tools" hidden>
+        <p class="property-hint">Installierte Tool-Pakete werden hier angezeigt. Integrierte Editor-Werkzeuge sind Teil der App.</p>
+        <div class="settings-package-list" role="list" aria-label="Installierte Tool-Pakete">
+          <p class="settings-package-empty" role="listitem">Keine zusätzlichen Tool-Pakete installiert.</p>
+        </div>
+      </section>
+      <div id="settings-general-actions" class="dialog-actions"><button value="cancel">Abbrechen</button><button id="settings-save" value="default" class="primary">Speichern</button></div>
+      <div id="settings-extension-actions" class="dialog-actions" hidden><button type="button" id="settings-close">Schließen</button></div>
     </form>
   </dialog>
   <dialog id="widget-filter-dialog" class="studio-dialog widget-filter-dialog">

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.79
+
+- The settings dialog now has General, Widget packages and Tools tabs. Existing settings stay under General; the other tabs show compact empty package lists until package installation is implemented.
+
 ## 0.1.78
 
 - The SVG connection line dialog calls its default option "Zwischenpunkt" (intermediate point) instead of "Klick". Newly created points receive a matching name in the selected UI language; existing saved point names remain unchanged.

@@ -2863,6 +2863,22 @@ $("#widgets-menu").addEventListener("click", () => {
   const panel = $("#palette-panel"); panel.hidden = !panel.hidden;
   $("#widgets-menu").setAttribute("aria-pressed", String(!panel.hidden));
 });
+const SETTINGS_TABS = ["general", "widgets", "tools"];
+
+function showSettingsTab(tabId) {
+  const selected = SETTINGS_TABS.includes(tabId) ? tabId : "general";
+  for (const id of SETTINGS_TABS) {
+    const active = id === selected;
+    const tab = $(`#settings-tab-${id}`);
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+    $(`#settings-panel-${id}`).hidden = !active;
+  }
+  $("#settings-dialog").classList.toggle("settings-extension-view", selected !== "general");
+  $("#settings-general-actions").hidden = selected !== "general";
+  $("#settings-extension-actions").hidden = selected === "general";
+}
+
 function openSettingsDialog() {
   if (!state.project) { $("#status").textContent = "Projekt wird noch geladen …"; return; }
   const settings = state.project.settings ??= {};
@@ -2880,10 +2896,25 @@ function openSettingsDialog() {
   $("#project-favicon").value = settings.favicon || "";
   $("#settings-ignore-unloaded").checked = settings.ignoreUnloaded !== false;
   $("#settings-overflow").value = settings.bodyOverflow || "auto";
+  showSettingsTab("general");
   const dialog = $("#settings-dialog");
   if (!dialog.open) dialog.showModal();
 }
 $("#settings-menu").addEventListener("click", openSettingsDialog);
+$("#settings-close").addEventListener("click", () => $("#settings-dialog").close());
+$("#settings-form .settings-tabs").addEventListener("click", (event) => {
+  const tab = event.target.closest("[data-settings-tab]");
+  if (tab) showSettingsTab(tab.dataset.settingsTab);
+});
+$("#settings-form .settings-tabs").addEventListener("keydown", (event) => {
+  const index = SETTINGS_TABS.indexOf(event.target.dataset.settingsTab);
+  if (index < 0 || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  const next = event.key === "Home" ? 0 : event.key === "End" ? SETTINGS_TABS.length - 1
+    : (index + (event.key === "ArrowRight" ? 1 : -1) + SETTINGS_TABS.length) % SETTINGS_TABS.length;
+  showSettingsTab(SETTINGS_TABS[next]);
+  $(`#settings-tab-${SETTINGS_TABS[next]}`).focus();
+});
 $("#project-favicon-browse").addEventListener("click", () => {
   activeIconInput = $("#project-favicon");
   openObjects();
