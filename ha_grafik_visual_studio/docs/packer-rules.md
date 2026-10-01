@@ -1,6 +1,6 @@
 # Packer-Regeln für HA Grafik Visual Studio
 
-Stand: 01.10.2026. Dieses Dokument hält den vereinbarten Entwurf für ein eigenständiges Programm zum Erstellen von Widget- und Tool-Paketen fest. Die Packer-Entwicklung liegt in einem separaten privaten Repository. Die Qt-Oberfläche kann Quellordner prüfen und `.wg`-/`.tp`-Dateien exportieren. Die benutzerspezifische Dateityp-Registrierung mit Vorschau ist umgesetzt. Eigenständige, unsignierte Windows- und Linux-Testprogramme werden im privaten CI gebaut und geprüft; offizielle Downloads stehen noch aus. Die App installiert lokale `*.wg`- und `*.tp`-Dateien sowie die bisherigen `*.wg.zip`- und `*.tp.zip`-Dateien nach den Verträgen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
+Stand: 01.10.2026. Dieses Dokument hält den vereinbarten Entwurf für ein eigenständiges Programm zum Erstellen von Widget- und Tool-Paketen fest. Die Packer-Entwicklung liegt in einem separaten privaten Repository. Die Qt-Oberfläche kann Quellordner prüfen und `.wg`-/`.tp`-Dateien exportieren. Die benutzerspezifische Dateityp-Registrierung mit Vorschau ist umgesetzt. Der erste öffentliche Test-Release 0.2.0 enthält geprüfte Windows- und Linux-Archive mit signierten Prüfsummen. Die App installiert lokale `*.wg`- und `*.tp`-Dateien sowie die bisherigen `*.wg.zip`- und `*.tp.zip`-Dateien nach den Verträgen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
 
 ## Ziel und Paketformat
 
@@ -49,10 +49,10 @@ Die Prüfergebnisse erscheinen als Liste mit **grünem Haken** bei Erfolg oder *
 
 ## Veröffentlichung und Downloads
 
-- Fertige Windows- und Linux-Versionen können später als versionierte Downloads veröffentlicht werden. Der Release nennt unterstützte Systeme, Packer-Version, Änderungen und Prüfsummen der Downloads.
-- Die **UGSo Open-Source-Dokumentation** erhält eine Packer-Seite mit je einem klar beschrifteten Downloadlink für Windows und Linux. Diese Links zeigen auf dieselben GitHub-Release-Dateien; angezeigte Version und Prüfsummen müssen mit dem Release übereinstimmen.
+- [Packer-Release 0.2.0](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/grafik-packer-v0.2.0) enthält Windows- und Linux-Archive für x86_64, Versionshinweise, `SHA256SUMS` und `SHA256SUMS.sig`.
+- Die **UGSo Open-Source-Dokumentation** bietet auf der Packer-Seite je einen Downloadlink für Windows und Linux. Angezeigte Version und Prüfsummen entsprechen den GitHub-Release-Dateien.
 - Der Packer-Quellcode bleibt im privaten Entwicklungs-Repository; öffentliche Downloads können unabhängig davon bereitgestellt werden. Für eine neue Version werden Programm, Dokumentation und Downloadlinks zusammen aktualisiert.
-- Downloadbuttons und konkrete Dateilinks werden erst veröffentlicht, wenn die Programmdateien auf beiden Zielsystemen geprüft und als vertrauenswürdiger Release signiert wurden. Die bisherigen unsignierten CI-Artefakte sind interne Testbuilds.
+- Die Release-Archive wurden auf beiden Zielsystemen geprüft; der Linux-Build zusätzlich in einem frischen Ubuntu-24.04-Docker-Container. Unsignierte CI-Artefakte bleiben interne Testbuilds.
 - Öffentliche Programm-Downloads enthalten eine signierte `SHA256SUMS`-Datei. Der [öffentliche Release-Schlüssel](packer-release.pub) hat den Fingerabdruck `SHA256:W3iUvKedcI4FWS1kMoBrLlrAF2GbsB4sELphG0uITLE`; der private Schlüssel liegt außerhalb aller Repositorys und Release-Dateien. Eine reine Prüfsumme belegt die Herkunft eines Downloads nicht. Die Release-Archive enthalten getrennt austauschbare Qt-Bibliotheken sowie LGPLv3-/GPLv3-Lizenztexte.
 
 ## Spätere Ausbauschritte
