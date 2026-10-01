@@ -37,6 +37,13 @@ Die Prüfergebnisse erscheinen als Liste mit **grünem Haken** bei Erfolg oder *
 
 **Exportieren** bleibt deaktiviert, solange auch nur eine Prüfung rot ist. Nach Änderungen im Quellordner, am Modus oder am Exportziel wird erneut geprüft. Direkt vor dem Schreiben wird dieselbe Validierung nochmals ausgeführt; ein währenddessen verändertes Paket darf nicht auf Basis eines veralteten grünen Ergebnisses exportiert werden. Der Packer schreibt zunächst eine temporäre Datei und stellt nur ein vollständig geprüftes Paket als Ergebnis bereit.
 
+## Veröffentlichung und Downloads
+
+- Fertige Windows- und Linux-Versionen werden als versionierte Dateien in den **GitHub Releases** des Grafikstudio-Projekts veröffentlicht. Der Release nennt unterstützte Systeme, Packer-Version, Änderungen und Prüfsummen der Downloads.
+- Die **UGSo Open-Source-Dokumentation** erhält eine Packer-Seite mit je einem klar beschrifteten Downloadlink für Windows und Linux. Diese Links zeigen auf dieselben GitHub-Release-Dateien; angezeigte Version und Prüfsummen müssen mit dem Release übereinstimmen.
+- Quellcode und Bauanleitung bleiben auf GitHub verfügbar. Für eine neue Version werden Programm, Dokumentation und Downloadlinks zusammen aktualisiert.
+- Downloadbuttons und konkrete Dateilinks werden erst veröffentlicht, wenn die jeweiligen Programmdateien gebaut und auf beiden Zielsystemen geprüft wurden. Bis dahin beschreibt die Dokumentation nur den geplanten Packer.
+
 ## Spätere Ausbauschritte
 
 - Beispielprojekte und Vorlagen für Widget- und Tool-Pakete.
