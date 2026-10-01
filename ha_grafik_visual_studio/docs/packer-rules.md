@@ -1,6 +1,6 @@
 # Packer-Regeln für HA Grafik Visual Studio
 
-Stand: 01.10.2026. Dieses Dokument hält den vereinbarten Entwurf für ein eigenständiges Programm zum Erstellen von Widget- und Tool-Paketen fest. Die Packer-Entwicklung liegt in einem separaten privaten Repository. Eine erste Qt-Oberfläche kann Quellordner prüfen und `.wg`-/`.tp`-Dateien exportieren. Die benutzerspezifische Dateityp-Registrierung mit Vorschau ist umgesetzt; eigenständige Programmdateien sind noch nicht implementiert. Die App installiert lokale `*.wg`- und `*.tp`-Dateien sowie die bisherigen `*.wg.zip`- und `*.tp.zip`-Dateien nach den Verträgen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
+Stand: 01.10.2026. Dieses Dokument hält den vereinbarten Entwurf für ein eigenständiges Programm zum Erstellen von Widget- und Tool-Paketen fest. Die Packer-Entwicklung liegt in einem separaten privaten Repository. Die Qt-Oberfläche kann Quellordner prüfen und `.wg`-/`.tp`-Dateien exportieren. Die benutzerspezifische Dateityp-Registrierung mit Vorschau ist umgesetzt. Eigenständige, unsignierte Windows- und Linux-Testprogramme werden im privaten CI gebaut und geprüft; offizielle Downloads stehen noch aus. Die App installiert lokale `*.wg`- und `*.tp`-Dateien sowie die bisherigen `*.wg.zip`- und `*.tp.zip`-Dateien nach den Verträgen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
 
 ## Ziel und Paketformat
 
@@ -52,7 +52,7 @@ Die Prüfergebnisse erscheinen als Liste mit **grünem Haken** bei Erfolg oder *
 - Fertige Windows- und Linux-Versionen können später als versionierte Downloads veröffentlicht werden. Der Release nennt unterstützte Systeme, Packer-Version, Änderungen und Prüfsummen der Downloads.
 - Die **UGSo Open-Source-Dokumentation** erhält eine Packer-Seite mit je einem klar beschrifteten Downloadlink für Windows und Linux. Diese Links zeigen auf dieselben GitHub-Release-Dateien; angezeigte Version und Prüfsummen müssen mit dem Release übereinstimmen.
 - Der Packer-Quellcode bleibt im privaten Entwicklungs-Repository; öffentliche Downloads können unabhängig davon bereitgestellt werden. Für eine neue Version werden Programm, Dokumentation und Downloadlinks zusammen aktualisiert.
-- Downloadbuttons und konkrete Dateilinks werden erst veröffentlicht, wenn die jeweiligen Programmdateien gebaut und auf beiden Zielsystemen geprüft wurden. Bis dahin beschreibt die Dokumentation nur den geplanten Packer.
+- Downloadbuttons und konkrete Dateilinks werden erst veröffentlicht, wenn die Programmdateien auf beiden Zielsystemen geprüft und als vertrauenswürdiger Release signiert wurden. Die bisherigen unsignierten CI-Artefakte sind interne Testbuilds.
 - Für öffentliche Programm-Downloads sind eine signierte `SHA256SUMS`-Datei und ein unabhängig über die offizielle Dokumentation bereitgestellter öffentlicher Schlüssel vorgesehen. Eine reine Prüfsumme belegt die Herkunft eines Downloads nicht. Aktuell gibt es weder einen freigegebenen Signaturschlüssel noch signierte Programm-Downloads.
 
 ## Spätere Ausbauschritte
