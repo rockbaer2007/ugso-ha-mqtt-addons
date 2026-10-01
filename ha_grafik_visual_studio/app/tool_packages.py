@@ -6,15 +6,17 @@ from io import BytesIO
 from pathlib import Path
 from zipfile import BadZipFile, ZipFile
 
-from widget_packages import MAX_MANIFEST_BYTES, MAX_ZIP_BYTES, PACKAGE_ID, SLUG, VERSION
+from widget_packages import ICON_PATH, MAX_MANIFEST_BYTES, MAX_ZIP_BYTES, PACKAGE_ID, SLUG, VERSION, embed_icons
 
 COLOR = re.compile(r"^#[0-9a-fA-F]{6}$")
 CAPABILITIES = ["project.read", "project.write"]
 
 
 def validate_tool_manifest(manifest):
-    if not isinstance(manifest, dict) or set(manifest) != {"format", "apiVersion", "id", "name", "version", "license", "tools"}:
+    if not isinstance(manifest, dict) or not {"format", "apiVersion", "id", "name", "version", "license", "tools"} <= set(manifest) or set(manifest) - {"format", "apiVersion", "id", "name", "version", "license", "tools", "icon"}:
         raise ValueError("Tool-Paketmanifest hat ungültige oder fehlende Felder.")
+    if "icon" in manifest and (not isinstance(manifest["icon"], str) or not ICON_PATH.fullmatch(manifest["icon"])):
+        raise ValueError("Tool-Paketbild muss eine SVG- oder PNG-Datei unter icons/ sein.")
     if manifest["format"] != "ha-grafik-tool-package" or manifest["apiVersion"] != "0.1":
         raise ValueError("Tool-Paketformat oder Schnittstellenversion wird nicht unterstützt.")
     package_id = manifest["id"]
@@ -31,8 +33,10 @@ def validate_tool_manifest(manifest):
         raise ValueError("Ein Tool-Paket benötigt 1 bis 20 Tools.")
     seen = set()
     for tool in tools:
-        if not isinstance(tool, dict) or set(tool) != {"id", "definitionVersion", "label", "description", "context", "capabilities", "action"}:
+        if not isinstance(tool, dict) or not {"id", "definitionVersion", "label", "description", "context", "capabilities", "action"} <= set(tool) or set(tool) - {"id", "definitionVersion", "label", "description", "context", "capabilities", "action", "icon"}:
             raise ValueError("Ungültige Tool-Definition.")
+        if "icon" in tool and (not isinstance(tool["icon"], str) or not ICON_PATH.fullmatch(tool["icon"])):
+            raise ValueError("Tool-Bild muss eine SVG- oder PNG-Datei unter icons/ sein.")
         tool_id = tool["id"]
         prefix, _, slug = tool_id.partition("/") if isinstance(tool_id, str) else ("", "", "")
         if prefix != package_id or not SLUG.fullmatch(slug) or tool_id in seen:
@@ -56,23 +60,41 @@ def read_tool_package_zip(body):
     try:
         with ZipFile(BytesIO(body)) as archive:
             entries = archive.infolist()
-            if len(entries) != 1 or entries[0].filename != "manifest.json" or entries[0].file_size > MAX_MANIFEST_BYTES:
-                raise ValueError("Tool-Paket darf nur manifest.json (maximal 200 KB) enthalten.")
-            with archive.open(entries[0]) as source:
+            names = [entry.filename for entry in entries]
+            if not entries or names.count("manifest.json") != 1 or len(set(names)) != len(names) or any(name != "manifest.json" and not ICON_PATH.fullmatch(name) for name in names):
+                raise ValueError("Tool-Paket darf nur manifest.json und referenzierte SVG-/PNG-Bilder enthalten.")
+            manifest_info = archive.getinfo("manifest.json")
+            if manifest_info.file_size > MAX_MANIFEST_BYTES:
+                raise ValueError("Tool-Paketmanifest ist größer als 200 KB.")
+            with archive.open(manifest_info) as source:
                 data = source.read(MAX_MANIFEST_BYTES + 1)
             if len(data) > MAX_MANIFEST_BYTES:
                 raise ValueError("Tool-Paketmanifest ist größer als 200 KB.")
             manifest = json.loads(data.decode("utf-8"), parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
+            validate_tool_manifest(manifest)
+            icon_names = {tool["icon"] for tool in manifest["tools"] if "icon" in tool}
+            if "icon" in manifest:
+                icon_names.add(manifest["icon"])
+            if set(names) != {"manifest.json", *icon_names}:
+                raise ValueError("Tool-Paketbild fehlt oder wird im Manifest nicht verwendet.")
+            icons = embed_icons(archive, icon_names)
+            if "icon" in manifest:
+                manifest["iconData"] = icons[manifest["icon"]]
+            for tool in manifest["tools"]:
+                if "icon" in tool:
+                    tool["iconData"] = icons[tool["icon"]]
     except (BadZipFile, UnicodeDecodeError, json.JSONDecodeError, RuntimeError) as error:
         raise ValueError("Tool-Paket ist kein gültiges ZIP mit UTF-8-Manifest.") from error
-    return validate_tool_manifest(manifest)
+    return manifest
 
 
 def list_tool_packages(directory):
     result = []
     for path in sorted(Path(directory).glob("*.json")):
         try:
-            result.append(validate_tool_manifest(json.loads(path.read_text(encoding="utf-8"))))
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            validate_tool_manifest({**{key: value for key, value in manifest.items() if key != "iconData"}, "tools": [{key: value for key, value in tool.items() if key != "iconData"} for tool in manifest["tools"]]})
+            result.append(manifest)
         except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError):
             continue
     return result

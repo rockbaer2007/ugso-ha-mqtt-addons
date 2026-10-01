@@ -341,6 +341,7 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .settings-package-install { display: flex; gap: 6px; align-items: center; }
 .settings-package-install button { min-height: 30px; padding: 4px 9px; font-size: 12px; font-weight: 400; }
 .settings-package-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+.settings-package-image { width: 30px; height: 30px; flex: none; object-fit: contain; }
 .settings-package-row:last-child { border-bottom: 0; }
 .settings-package-info { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .settings-package-meta { color: var(--muted); font-size: 11px; }
@@ -350,6 +351,7 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .settings-package-entry .settings-package-row { border-bottom: 0; }
 .settings-tool-list { display: grid; gap: 3px; padding: 0 10px 8px; }
 .settings-tool-row { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
+.settings-tool-image { width: 20px; height: 20px; flex: none; object-fit: contain; }
 .settings-tool-row span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .settings-tool-row button { width: 29px; height: 29px; flex: none; padding: 4px; }
 .settings-tool-row button img { display: block; width: 16px; height: 16px; margin: auto; }

@@ -1,7 +1,9 @@
-"""Version 0.1 declarative widget-package contract with restricted SVG icons."""
+"""Version 0.1 declarative widget-package contract with inert image assets."""
 
 import json
 import re
+import struct
+import zlib
 from base64 import b64encode
 from io import BytesIO
 from pathlib import Path
@@ -17,7 +19,8 @@ SLUG = re.compile(r"^[a-z][a-z0-9-]*$")
 VERSION = re.compile(r"^\d+\.\d+\.\d+$")
 KEY = re.compile(r"^[a-z][a-zA-Z0-9]*$")
 FIELD_TYPES = {"text", "number", "checkbox", "color", "range", "select"}
-ICON_PATH = re.compile(r"^icons/[a-z][a-z0-9-]*\.svg$")
+ICON_PATH = re.compile(r"^icons/[a-z][a-z0-9-]*\.(?:svg|png)$")
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 SVG_NS = "http://www.w3.org/2000/svg"
 SVG_TAGS = {"svg", "g", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon", "title"}
 SVG_ATTRIBUTES = {"viewBox", "width", "height", "fill", "stroke", "stroke-width", "stroke-linecap", "stroke-linejoin", "stroke-dasharray", "opacity", "transform", "d", "cx", "cy", "r", "x", "y", "x1", "y1", "x2", "y2", "rx", "ry", "points"}
@@ -31,8 +34,10 @@ def _short_text(value, limit=120):
 
 def validate_manifest(manifest):
     """Reject unknown executable features and malformed widget definitions."""
-    if not isinstance(manifest, dict) or set(manifest) != {"format", "apiVersion", "id", "name", "version", "license", "widgets"}:
+    if not isinstance(manifest, dict) or not {"format", "apiVersion", "id", "name", "version", "license", "widgets"} <= set(manifest) or set(manifest) - {"format", "apiVersion", "id", "name", "version", "license", "widgets", "icon"}:
         raise ValueError("Das Paketmanifest hat ungültige oder fehlende Felder.")
+    if "icon" in manifest and (not isinstance(manifest["icon"], str) or not ICON_PATH.fullmatch(manifest["icon"])):
+        raise ValueError("Paketbild muss eine SVG- oder PNG-Datei unter icons/ sein.")
     package_id = manifest["id"]
     if manifest["format"] != "ha-grafik-widget-package" or manifest["apiVersion"] != API_VERSION:
         raise ValueError("Paketformat oder Widget-Schnittstellenversion wird nicht unterstützt.")
@@ -50,7 +55,7 @@ def validate_manifest(manifest):
         if not isinstance(widget, dict) or not {"type", "label", "defaults", "propertyGroups", "render"} <= set(widget) or set(widget) - {"type", "label", "defaults", "propertyGroups", "render", "icon"}:
             raise ValueError("Ungültige Widget-Definition.")
         if "icon" in widget and (not isinstance(widget["icon"], str) or not ICON_PATH.fullmatch(widget["icon"])):
-            raise ValueError("Widget-Icon muss eine SVG-Datei unter icons/ sein.")
+            raise ValueError("Widget-Bild muss eine SVG- oder PNG-Datei unter icons/ sein.")
         widget_type = widget["type"]
         prefix, _, slug = widget_type.partition("/") if isinstance(widget_type, str) else ("", "", "")
         if prefix != package_id or not SLUG.fullmatch(slug) or widget_type in seen:
@@ -128,6 +133,63 @@ def sanitize_svg(body):
     return ElementTree.tostring(root, encoding="utf-8")
 
 
+def validate_png(body):
+    """Check PNG framing, CRCs and image bounds before embedding raster data."""
+    if not 0 < len(body) <= MAX_ICON_BYTES or not body.startswith(PNG_SIGNATURE):
+        raise ValueError("PNG-Bild ist leer, zu groß oder hat keine PNG-Signatur.")
+    position = len(PNG_SIGNATURE)
+    chunks = []
+    width = height = None
+    while position + 12 <= len(body):
+        size = struct.unpack_from(">I", body, position)[0]
+        if size > MAX_ICON_BYTES or position + 12 + size > len(body):
+            raise ValueError("PNG-Bild enthält einen ungültigen Datenblock.")
+        chunk_type = body[position + 4:position + 8]
+        payload = body[position + 8:position + 8 + size]
+        crc = struct.unpack_from(">I", body, position + 8 + size)[0]
+        if zlib.crc32(chunk_type + payload) != crc:
+            raise ValueError("PNG-Bild enthält einen fehlerhaften Datenblock.")
+        position += size + 12
+        chunks.append(chunk_type)
+        if len(chunks) == 1:
+            if chunk_type != b"IHDR" or size != 13:
+                raise ValueError("PNG-Bild benötigt einen gültigen Bildkopf.")
+            width, height = struct.unpack_from(">II", payload)
+            if not 1 <= width <= 1024 or not 1 <= height <= 1024:
+                raise ValueError("PNG-Bild darf höchstens 1024 × 1024 Pixel groß sein.")
+            depth, color_type, compression, filter_method, interlace = payload[8:]
+            valid_depths = {0: {1, 2, 4, 8, 16}, 2: {8, 16}, 3: {1, 2, 4, 8}, 4: {8, 16}, 6: {8, 16}}
+            if depth not in valid_depths.get(color_type, set()) or compression or filter_method or interlace not in {0, 1}:
+                raise ValueError("PNG-Bild hat ein ungültiges Pixelformat.")
+        elif chunk_type == b"IHDR":
+            raise ValueError("PNG-Bild enthält mehrere Bildköpfe.")
+        if chunk_type == b"IEND":
+            if size or position != len(body) or b"IDAT" not in chunks:
+                raise ValueError("PNG-Bild hat keinen gültigen Abschluss.")
+            return body
+        if chunk_type not in {b"IHDR", b"PLTE", b"IDAT"} and not (len(chunk_type) == 4 and 97 <= chunk_type[0] <= 122 and all(65 <= letter <= 90 or 97 <= letter <= 122 for letter in chunk_type)):
+            raise ValueError("PNG-Bild enthält nicht unterstützte Datenblöcke.")
+    raise ValueError("PNG-Bild ist unvollständig.")
+
+
+def embed_icons(archive, icon_names):
+    icons = {}
+    for name in icon_names:
+        info = archive.getinfo(name)
+        if info.file_size > MAX_ICON_BYTES:
+            raise ValueError("Paketbild ist größer als 50 KB.")
+        with archive.open(info) as source:
+            body = source.read(MAX_ICON_BYTES + 1)
+        if name.endswith(".svg"):
+            body = sanitize_svg(body)
+            mime = "image/svg+xml"
+        else:
+            body = validate_png(body)
+            mime = "image/png"
+        icons[name] = f"data:{mime};base64," + b64encode(body).decode("ascii")
+    return icons
+
+
 def read_package_zip(body):
     if not 0 < len(body) <= MAX_ZIP_BYTES:
         raise ValueError("Widget-Paket ist leer oder größer als 2 MB.")
@@ -136,7 +198,7 @@ def read_package_zip(body):
             entries = archive.infolist()
             names = [entry.filename for entry in entries]
             if not entries or names.count("manifest.json") != 1 or any(name != "manifest.json" and not ICON_PATH.fullmatch(name) for name in names) or len(set(names)) != len(names):
-                raise ValueError("Paket darf nur manifest.json und referenzierte SVG-Icons enthalten.")
+                raise ValueError("Paket darf nur manifest.json und referenzierte SVG-/PNG-Bilder enthalten.")
             manifest_info = archive.getinfo("manifest.json")
             if manifest_info.file_size > MAX_MANIFEST_BYTES:
                 raise ValueError("Manifest ist größer als 200 KB.")
@@ -147,18 +209,16 @@ def read_package_zip(body):
             manifest = json.loads(manifest_bytes.decode("utf-8"), parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)))
             validate_manifest(manifest)
             icon_names = {widget["icon"] for widget in manifest["widgets"] if "icon" in widget}
+            if "icon" in manifest:
+                icon_names.add(manifest["icon"])
             if set(names) != {"manifest.json", *icon_names}:
-                raise ValueError("SVG-Icon fehlt oder wird im Manifest nicht verwendet.")
-            icons = {}
-            for name in icon_names:
-                info = archive.getinfo(name)
-                if info.file_size > MAX_ICON_BYTES:
-                    raise ValueError("SVG-Icon ist größer als 50 KB.")
-                with archive.open(info) as source:
-                    icons[name] = b64encode(sanitize_svg(source.read(MAX_ICON_BYTES + 1))).decode("ascii")
+                raise ValueError("Paketbild fehlt oder wird im Manifest nicht verwendet.")
+            icons = embed_icons(archive, icon_names)
+            if "icon" in manifest:
+                manifest["iconData"] = icons[manifest["icon"]]
             for widget in manifest["widgets"]:
                 if "icon" in widget:
-                    widget["iconData"] = "data:image/svg+xml;base64," + icons[widget["icon"]]
+                    widget["iconData"] = icons[widget["icon"]]
     except (BadZipFile, UnicodeDecodeError, json.JSONDecodeError, RuntimeError) as error:
         raise ValueError("Widget-Paket ist kein gültiges ZIP mit UTF-8-Manifest.") from error
     return manifest
@@ -169,7 +229,7 @@ def list_packages(directory):
     for path in sorted(Path(directory).glob("*.json")):
         try:
             manifest = json.loads(path.read_text(encoding="utf-8"))
-            validate_manifest({**manifest, "widgets": [{key: value for key, value in widget.items() if key != "iconData"} for widget in manifest["widgets"]]})
+            validate_manifest({**{key: value for key, value in manifest.items() if key != "iconData"}, "widgets": [{key: value for key, value in widget.items() if key != "iconData"} for widget in manifest["widgets"]]})
             result.append(manifest)
         except (OSError, ValueError, json.JSONDecodeError):
             continue

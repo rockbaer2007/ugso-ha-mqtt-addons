@@ -9,8 +9,8 @@
 
 - [ ] Den versionierten Vertrag für Widget-Pakete und Tool-Erweiterungen festlegen: Paketformat, stabile IDs, Eigenschaften, Einstiegspunkte, Fähigkeiten, Berechtigungen, Migrationen und Kompatibilität mit bestehenden Projekten. Die Entwürfe stehen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
 - [x] Widget-Schnittstelle 0.1 für lokale deklarative Textpakete mit Manifestprüfung, Palette, Eigenschaften, Runtime, Paketliste und Nutzungssperre beim Entfernen. Erledigt in 0.1.80; weitergehende Fähigkeiten und Tool-Vertrag bleiben offen.
-- [x] Paket-Widget-Icons ausschließlich als geprüfte SVG-Dateien zulassen; ohne eigenes Icon das integrierte SVG-Symbol verwenden. Erledigt in 0.1.81.
-- [ ] Widget-Paketbilder zusätzlich als PNG zulassen. Die Standard-Icons der Studio-Buttons bleiben SVG; die bisherige SVG-only-Regel für Paket-Icons wird damit erweitert.
+- [x] Paket-Widget-Icons zunächst als geprüfte SVG-Dateien zulassen; ohne eigenes Icon das integrierte SVG-Symbol verwenden. Erledigt in 0.1.81.
+- [x] Widget-, Tool- und Paketbilder zusätzlich als geprüftes PNG zulassen. Die Standard-Icons der Studio-Buttons bleiben SVG. Erledigt in 0.1.83.
 - [x] Tool-Schnittstelle 0.1 mit lokaler `.tp.zip`-Installation, geprüftem Manifest, Tool-Liste, Vorschau, bestätigter Seitenaktion und Rückgängig. Erledigt in 0.1.82; weitere Tool-Aktionen und Berechtigungen folgen später.
 - [x] Den Einstellungen-Dialog in **Allgemein**, **Widget-Pakete** und **Tools** aufteilen; die Paket-Tabs zeigen kompakte, scrollbar begrenzte Leerlisten. Erledigt in 0.1.79.
 - [ ] Die Paketverwaltung erweitern: GitHub-Installation, Update-Suche/-Prüfung, Kompatibilitätsstatus und angeforderte Fähigkeiten. Lokale Widget-ZIP-Installation ist seit 0.1.80, lokale Tool-ZIP-Installation seit 0.1.82 vorhanden.

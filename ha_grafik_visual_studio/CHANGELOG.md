@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.83
+
+- Widget, tool and package images in local extension ZIPs may use validated SVG or PNG files. PNG framing, checksums, size and dimensions are checked before embedding. Studio action buttons retain SVG icons.
+
 ## 0.1.82
 
 - Added data-only tool package API 0.1 and local `.tp.zip` installation in Settings → Tools. The first tool action previews and changes the current page background after confirmation; it uses the editor's undo history. Packages contain no executable code or Home Assistant access.

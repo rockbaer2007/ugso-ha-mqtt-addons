@@ -2904,6 +2904,7 @@ async function renderWidgetPackageList() {
     }
     for (const manifest of packages) {
       const row = document.createElement("div"); row.className = "settings-package-row"; row.setAttribute("role", "listitem");
+      if (manifest.iconData) { const image = document.createElement("img"); image.className = "settings-package-image"; image.src = manifest.iconData; image.alt = ""; row.append(image); }
       const info = document.createElement("div"); info.className = "settings-package-info";
       const name = document.createElement("div"); name.textContent = manifest.name;
       const meta = document.createElement("div"); meta.className = "settings-package-meta";
@@ -2974,6 +2975,7 @@ async function renderToolPackageList() {
     }
     for (const manifest of packages) {
       const row = document.createElement("div"); row.className = "settings-package-row"; row.setAttribute("role", "listitem");
+      if (manifest.iconData) { const image = document.createElement("img"); image.className = "settings-package-image"; image.src = manifest.iconData; image.alt = ""; row.append(image); }
       const info = document.createElement("div"); info.className = "settings-package-info";
       const name = document.createElement("div"); name.textContent = manifest.name;
       const meta = document.createElement("div"); meta.className = "settings-package-meta";
@@ -2994,6 +2996,7 @@ async function renderToolPackageList() {
       const tools = document.createElement("div"); tools.className = "settings-tool-list";
       for (const tool of manifest.tools) {
         const item = document.createElement("div"); item.className = "settings-tool-row";
+        if (tool.iconData) { const image = document.createElement("img"); image.className = "settings-tool-image"; image.src = tool.iconData; image.alt = ""; item.append(image); }
         const description = document.createElement("span"); description.textContent = `${tool.label} · ${tool.description}`;
         const run = document.createElement("button"); run.type = "button"; run.title = uiText("Tool ausführen"); run.setAttribute("aria-label", `${run.title}: ${tool.label}`);
         const icon = document.createElement("img"); icon.src = "icons/check.svg"; icon.alt = ""; run.append(icon);

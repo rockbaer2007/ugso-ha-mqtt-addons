@@ -7,6 +7,8 @@ from pathlib import Path
 from zipfile import ZipFile
 import json
 import tempfile
+import struct
+import zlib
 from threading import Thread
 from http.server import ThreadingHTTPServer
 from urllib.request import Request, urlopen
@@ -41,12 +43,19 @@ def package_bytes(data, extra=None):
     return stream.getvalue()
 
 
+def tiny_png():
+    def chunk(kind, payload):
+        return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload))
+    header = struct.pack(">IIBBBBB", 1, 1, 8, 6, 0, 0, 0)
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(b"\x00\xff\x00\x00\xff")) + chunk(b"IEND", b"")
+
+
 class WidgetPackageTests(unittest.TestCase):
     def test_valid_declarative_widget(self):
         self.assertEqual(read_package_zip(package_bytes(manifest()))["widgets"][0]["type"], "demo.widgets/label")
 
     def test_executable_archive_content_is_rejected(self):
-        with self.assertRaisesRegex(ValueError, "SVG-Icons"):
+        with self.assertRaisesRegex(ValueError, "SVG-/PNG-Bilder"):
             read_package_zip(package_bytes(manifest(), "widget.js"))
 
     def test_svg_icon_is_embedded_as_image_data(self):
@@ -55,6 +64,26 @@ class WidgetPackageTests(unittest.TestCase):
         svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#29c8b5" d="M2 2h20v20H2z"/></svg>'
         result = read_package_zip(package_bytes(data, ("icons/label.svg", svg)))
         self.assertTrue(result["widgets"][0]["iconData"].startswith("data:image/svg+xml;base64,"))
+
+    def test_png_widget_and_package_images_are_embedded(self):
+        data = manifest()
+        data["icon"] = "icons/package.png"
+        data["widgets"][0]["icon"] = "icons/label.png"
+        stream = BytesIO()
+        with ZipFile(stream, "w") as archive:
+            archive.writestr("manifest.json", json.dumps(data))
+            archive.writestr("icons/package.png", tiny_png())
+            archive.writestr("icons/label.png", tiny_png())
+        result = read_package_zip(stream.getvalue())
+        self.assertTrue(result["iconData"].startswith("data:image/png;base64,"))
+        self.assertTrue(result["widgets"][0]["iconData"].startswith("data:image/png;base64,"))
+
+    def test_false_png_and_bad_crc_are_rejected(self):
+        data = manifest()
+        data["widgets"][0]["icon"] = "icons/label.png"
+        for body in (b"not a png", tiny_png()[:-1] + b"x"):
+            with self.subTest(body=body), self.assertRaises(ValueError):
+                read_package_zip(package_bytes(data, ("icons/label.png", body)))
 
     def test_svg_script_and_external_references_are_rejected(self):
         data = manifest()

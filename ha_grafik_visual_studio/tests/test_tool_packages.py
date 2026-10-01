@@ -1,9 +1,11 @@
 """Tool package contract and HTTP lifecycle checks."""
 
 import json
+import struct
 import sys
 import tempfile
 import unittest
+import zlib
 from http.server import ThreadingHTTPServer
 from io import BytesIO
 from pathlib import Path
@@ -36,8 +38,15 @@ def package_bytes(data, extra=None):
     with ZipFile(stream, "w") as archive:
         archive.writestr("manifest.json", json.dumps(data))
         if extra:
-            archive.writestr(extra, "not allowed")
+            name, content = extra if isinstance(extra, tuple) else (extra, "not allowed")
+            archive.writestr(name, content)
     return stream.getvalue()
+
+
+def tiny_png():
+    def chunk(kind, payload):
+        return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload))
+    return b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 6, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(b"\x00\xff\x00\x00\xff")) + chunk(b"IEND", b"")
 
 
 class ToolPackageTests(unittest.TestCase):
@@ -45,12 +54,25 @@ class ToolPackageTests(unittest.TestCase):
         self.assertEqual(read_tool_package_zip(package_bytes(manifest()))["tools"][0]["id"], "demo.tools/background")
 
     def test_scripts_and_undeclared_capabilities_are_rejected(self):
-        with self.assertRaisesRegex(ValueError, "nur manifest.json"):
+        with self.assertRaisesRegex(ValueError, "referenzierte SVG-/PNG-Bilder"):
             read_tool_package_zip(package_bytes(manifest(), "tool.js"))
         data = manifest()
         data["tools"][0]["capabilities"].append("homeassistant.call_service")
         with self.assertRaisesRegex(ValueError, "Fähigkeiten"):
             read_tool_package_zip(package_bytes(data))
+
+    def test_png_tool_and_package_images_are_embedded(self):
+        data = manifest()
+        data["icon"] = "icons/package.png"
+        data["tools"][0]["icon"] = "icons/tool.png"
+        stream = BytesIO()
+        with ZipFile(stream, "w") as archive:
+            archive.writestr("manifest.json", json.dumps(data))
+            archive.writestr("icons/package.png", tiny_png())
+            archive.writestr("icons/tool.png", tiny_png())
+        result = read_tool_package_zip(stream.getvalue())
+        self.assertTrue(result["iconData"].startswith("data:image/png;base64,"))
+        self.assertTrue(result["tools"][0]["iconData"].startswith("data:image/png;base64,"))
 
     def test_install_list_and_delete(self):
         with tempfile.TemporaryDirectory() as directory:
