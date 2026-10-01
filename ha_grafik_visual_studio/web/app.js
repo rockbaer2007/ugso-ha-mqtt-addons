@@ -1,6 +1,7 @@
 import { getWidgetSets, getWidgetDefinition } from "./widget-registry.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
+import "./widget-sets/special.js";
 
 const PRESETS = {
   desktop: { width: 1920, height: 1080 },
@@ -69,6 +70,26 @@ let mdiIcons = null;
 let mdiIconsPromise = null;
 let activeIconInput = null;
 let activeEntityInput = null;
+
+const CONNECTION_ANCHORS = [
+  ["left-top", "Links oben", 0, 0], ["left-center", "Links Mitte", 0, 0.5], ["left-bottom", "Links unten", 0, 1],
+  ["right-top", "Rechts oben", 1, 0], ["right-center", "Rechts Mitte", 1, 0.5], ["right-bottom", "Rechts unten", 1, 1],
+  ["top-quarter", "Oben 1/4", 0.25, 0], ["top-center", "Oben Mitte", 0.5, 0], ["top-three-quarter", "Oben 3/4", 0.75, 0],
+  ["bottom-quarter", "Unten 1/4", 0.25, 1], ["bottom-center", "Unten Mitte", 0.5, 1], ["bottom-three-quarter", "Unten 3/4", 0.75, 1],
+];
+const connectionAnchorGroup = { label: "Andockpunkte", hint: "Aktive Punkte können von SVG-Verbindungslinien gewählt und mehrfach belegt werden.", fields: [
+  { label: "Andockpunkte aktivieren", key: "dockPointsEnabled", type: "checkbox", default: true },
+  ...CONNECTION_ANCHORS.map(([id, label]) => ({ label, key: `dock_${id.replaceAll("-", "_")}`, type: "checkbox", default: true })),
+  { label: "Mehrfachbelegung erlauben", key: "dockMultiple", type: "checkbox", default: true },
+  { label: "Maximale Verbindungen (0 = unbegrenzt)", key: "dockMaxConnections", type: "number", min: 0, max: 99, default: 0 },
+  { label: "Spurabstand (px)", key: "dockLaneSpacing", type: "number", min: 0, max: 40, default: 6 },
+  { label: "Andockpunkte dauerhaft anzeigen", key: "dockAlwaysVisible", type: "checkbox", default: false },
+] };
+
+function widgetPropertyGroups(widget) {
+  const groups = getWidgetDefinition(widget.type).propertyGroups;
+  return widget.type === "svg-connection" ? groups : [...groups, connectionAnchorGroup];
+}
 
 async function loadMdiIcons() {
   if (mdiIcons) return mdiIcons;
@@ -200,7 +221,7 @@ function projectForSave(project) {
       for (const descriptor of group.fields) delete page.page[descriptor.key];
     }
     for (const widget of page.widgets || []) {
-      const groups = [...getWidgetDefinition(widget.type).propertyGroups, ...indexedWidgetGroups(widget)];
+      const groups = [...widgetPropertyGroups(widget), ...indexedWidgetGroups(widget)];
       widget.enabledPropertyGroups ??= {};
       for (const [index, group] of groups.entries()) {
         if (propertyGroupEnabled(widget, group, index)) continue;
@@ -752,6 +773,15 @@ function duplicateSelectedWidget() {
   if (!source) return;
   const copy = structuredClone(source);
   copy.id = `widget-${state.nextId++}`;
+  if (copy.type === "svg-connection") {
+    copy.connectionPoints = (copy.connectionPoints || []).map(point => ({ ...point, id: crypto.randomUUID() }));
+    copy.startCollector = ""; copy.endCollector = ""; copy.flowParentId = "";
+    const connectionLayers = page.widgets.filter(item => item.type === "svg-connection").map(item => Math.max(0, Number(item.layer) || 0));
+    copy.layer = (connectionLayers.length ? Math.max(...connectionLayers) : 0) + 1;
+    for (const point of copy.connectionPoints) { point.x = (Number(point.x) || 0) + 20; point.y = (Number(point.y) || 0) + 20; }
+    copy.startX = (Number(copy.startX) || 0) + 20; copy.startY = (Number(copy.startY) || 0) + 20;
+    copy.endX = (Number(copy.endX) || 0) + 20; copy.endY = (Number(copy.endY) || 0) + 20;
+  }
   copy.x = Math.min(Math.max(0, currentPage().page.width - (copy.width || 140)), (copy.x || 0) + 20);
   copy.y = Math.min(Math.max(0, currentPage().page.height - (copy.height || 62)), (copy.y || 0) + 20);
   page.widgets.push(copy); state.selectedId = copy.id; render();
@@ -760,7 +790,15 @@ function duplicateSelectedWidget() {
 function deleteSelectedWidget() {
   const page = currentPage();
   if (!state.selectedId) return;
+  const removedId = state.selectedId;
   page.widgets = page.widgets.filter((widget) => widget.id !== state.selectedId);
+  for (const widget of page.widgets.filter(item => item.type === "svg-connection")) {
+    if (widget.startWidgetId === removedId) widget.startWidgetId = "";
+    if (widget.endWidgetId === removedId) widget.endWidgetId = "";
+    if (widget.flowParentId === removedId) widget.flowParentId = "";
+    if (String(widget.startCollector || "").startsWith(`${removedId}:`)) widget.startCollector = "";
+    if (String(widget.endCollector || "").startsWith(`${removedId}:`)) widget.endCollector = "";
+  }
   state.selectedId = null; render();
 }
 
@@ -903,6 +941,157 @@ function renderSvgShape(widget) {
   shape.setAttribute("transform", `translate(50 50) rotate(${Number(widget.rotation) || 0}) scale(${Number(widget.scaleX ?? 1)} ${Number(widget.scaleY ?? 1)}) translate(-50 -50)`); svg.append(shape); return svg;
 }
 
+function connectionAnchorPosition(widget, anchorId) {
+  const anchor = CONNECTION_ANCHORS.find(([id]) => id === anchorId) || CONNECTION_ANCHORS.find(([id]) => id === "right-center");
+  return { x: Number(widget.x) + Number(widget.width) * anchor[2], y: Number(widget.y) + Number(widget.height) * anchor[3] };
+}
+
+function connectionCollectorPosition(reference, widgets) {
+  if (!reference) return null;
+  const separator = reference.indexOf(":");
+  if (separator < 1) return null;
+  const connection = widgets.find(item => item.id === reference.slice(0, separator) && item.type === "svg-connection");
+  const point = connection?.connectionPoints?.find(item => item.id === reference.slice(separator + 1) && item.collectorEnabled);
+  return point ? { x: Number(point.x) || 0, y: Number(point.y) || 0 } : null;
+}
+
+function connectionEndpoint(widget, prefix, widgets) {
+  const collector = connectionCollectorPosition(widget[`${prefix}Collector`], widgets);
+  if (collector) return collector;
+  const target = widgets.find(item => item.id === widget[`${prefix}WidgetId`] && item.type !== "svg-connection");
+  const anchorId = widget[`${prefix}Anchor`] || (prefix === "start" ? "right-center" : "left-center");
+  const anchorEnabled = target?.dockPointsEnabled !== false && target?.[`dock_${anchorId.replaceAll("-", "_")}`] !== false;
+  if (target && anchorEnabled) {
+    const connections = widgets.filter(item => item.type === "svg-connection").flatMap(item => ["start", "end"].map(side => ({
+      id: `${item.id}:${side}`, widget: item, side,
+    }))).filter(item => item.widget[`${item.side}WidgetId`] === target.id && (item.widget[`${item.side}Anchor`] || (item.side === "start" ? "right-center" : "left-center")) === anchorId && !item.widget[`${item.side}Collector`]).sort((a, b) => a.id.localeCompare(b.id));
+    const currentIndex = connections.findIndex(item => item.widget.id === widget.id && item.side === prefix);
+    const limit = Math.max(1, Number(target.dockMaxConnections) || 99);
+    if (currentIndex > 0 && target.dockMultiple === false || currentIndex >= limit) return { x: Number(widget[`${prefix}X`]) || 0, y: Number(widget[`${prefix}Y`]) || 0 };
+    const position = connectionAnchorPosition(target, anchorId);
+    if (connections.length > 1 && currentIndex >= 0) {
+      const offset = (currentIndex - (Math.min(connections.length, limit) - 1) / 2) * (Number(target.dockLaneSpacing) || 6);
+      if (anchorId.startsWith("left-") || anchorId.startsWith("right-")) position.y += offset;
+      else position.x += offset;
+    }
+    return position;
+  }
+  return { x: Number(widget[`${prefix}X`]) || 0, y: Number(widget[`${prefix}Y`]) || 0 };
+}
+
+function connectionRoute(widget, widgets, reverse = false) {
+  const start = connectionEndpoint(widget, "start", widgets); const end = connectionEndpoint(widget, "end", widgets);
+  const intermediate = Array.isArray(widget.connectionPoints) ? widget.connectionPoints.map(point => ({ x: Number(point.x) || 0, y: Number(point.y) || 0, point })) : [];
+  let points;
+  if (widget.pathMode === "orthogonal" && !intermediate.length) {
+    const middleX = start.x + (end.x - start.x) / 2;
+    points = [start, { x: middleX, y: start.y }, { x: middleX, y: end.y }, end];
+  } else points = [start, ...intermediate, end];
+  if (reverse) points.reverse();
+  return points;
+}
+
+function connectionPathData(widget, widgets, reverse = false) {
+  const points = connectionRoute(widget, widgets, reverse);
+  if (points.length < 2) return "";
+  if (widget.pathMode === "curve" && points.length === 2) {
+    const [start, end] = points; const middleX = start.x + (end.x - start.x) / 2;
+    return `M ${start.x} ${start.y} C ${middleX} ${start.y}, ${middleX} ${end.y}, ${end.x} ${end.y}`;
+  }
+  const radius = Math.max(0, Number(widget.cornerRadius) || 0);
+  let path = `M ${points[0].x} ${points[0].y}`;
+  for (let index = 1; index < points.length; index += 1) {
+    const current = points[index];
+    if (!radius || index === points.length - 1) { path += ` L ${current.x} ${current.y}`; continue; }
+    const previous = points[index - 1]; const next = points[index + 1];
+    const beforeDistance = Math.hypot(current.x - previous.x, current.y - previous.y); const afterDistance = Math.hypot(next.x - current.x, next.y - current.y);
+    const corner = Math.min(radius, beforeDistance / 2, afterDistance / 2);
+    const before = { x: current.x + (previous.x - current.x) * corner / Math.max(beforeDistance, 1), y: current.y + (previous.y - current.y) * corner / Math.max(beforeDistance, 1) };
+    const after = { x: current.x + (next.x - current.x) * corner / Math.max(afterDistance, 1), y: current.y + (next.y - current.y) * corner / Math.max(afterDistance, 1) };
+    path += ` L ${before.x} ${before.y} Q ${current.x} ${current.y} ${after.x} ${after.y}`;
+  }
+  return path;
+}
+
+function effectiveConnectionStyle(widget, widgets, visited = new Set()) {
+  let result = { ...widget };
+  if (widget.inheritFlow && widget.flowParentId && !visited.has(widget.id)) {
+    visited.add(widget.id);
+    const parent = widgets.find(item => item.id === widget.flowParentId && item.type === "svg-connection");
+    if (parent) {
+      const source = effectiveConnectionStyle(parent, widgets, visited);
+      const inherited = ["baseColor", "flowColor", "lineWidth", "lineOpacity", "lineStyle", "dashLength", "gapLength", "lineCap", "animationEnabled", "animationStyle", "animationDirection", "animationDuration", "markerColor"];
+      result = Object.assign(result, Object.fromEntries(inherited.map(key => [key, source[key]])));
+    }
+  }
+  if (widget.endCollector) result.animationDirection = "forward";
+  else if (widget.startCollector) result.animationDirection = "reverse";
+  return result;
+}
+
+function appendConnectionMarker(defs, id, type, color, size) {
+  if (!type || type === "none") return "";
+  const ns = "http://www.w3.org/2000/svg"; const marker = document.createElementNS(ns, "marker");
+  marker.id = id; marker.setAttribute("viewBox", "0 0 10 10"); marker.setAttribute("refX", "5"); marker.setAttribute("refY", "5"); marker.setAttribute("markerWidth", String(size)); marker.setAttribute("markerHeight", String(size)); marker.setAttribute("orient", "auto-start-reverse"); marker.setAttribute("markerUnits", "userSpaceOnUse");
+  const shape = document.createElementNS(ns, type === "circle" ? "circle" : "path");
+  if (type === "circle") { shape.setAttribute("cx", "5"); shape.setAttribute("cy", "5"); shape.setAttribute("r", "3.5"); shape.setAttribute("fill", color); }
+  else { shape.setAttribute("d", type === "open" ? "M 1 1 L 8 5 L 1 9" : "M 1 1 L 9 5 L 1 9 Z"); shape.setAttribute("fill", type === "open" ? "none" : color); shape.setAttribute("stroke", color); shape.setAttribute("stroke-width", "1.5"); }
+  marker.append(shape); defs.append(marker); return `url(#${id})`;
+}
+
+function connectionZIndex(widget, widgets) {
+  const otherValues = widgets.filter(item => item.type === "svg-connection" && item.id !== widget.id).map(item => Math.max(0, Number(item.layer) || 0));
+  if (widget.connectionZMode === "above") return (otherValues.length ? Math.max(...otherValues) : 0) + 1;
+  if (widget.connectionZMode === "below") return Math.max(0, (otherValues.length ? Math.min(...otherValues) : 1) - 1);
+  return Math.max(0, Number(widget.layer) || 0);
+}
+
+function renderSvgConnection(widget, widgets, width, height, selected) {
+  const ns = "http://www.w3.org/2000/svg"; const svg = document.createElementNS(ns, "svg");
+  svg.classList.add("svg-connection-canvas"); if (runtimeMode && widget.clickThrough !== false) svg.classList.add("is-click-through"); svg.setAttribute("viewBox", `0 0 ${width} ${height}`); svg.setAttribute("aria-label", widget.title || "SVG-Verbindungslinie");
+  const defs = document.createElementNS(ns, "defs"); svg.append(defs);
+  const style = effectiveConnectionStyle(widget, widgets); const pathData = connectionPathData(widget, widgets);
+  const markerStart = appendConnectionMarker(defs, `${widget.id}-start-marker`, widget.markerStart, widget.markerColor || style.flowColor, Number(widget.markerSize) || 8);
+  const markerEnd = appendConnectionMarker(defs, `${widget.id}-end-marker`, widget.markerEnd, widget.markerColor || style.flowColor, Number(widget.markerSize) || 8);
+  if (["gap", "bridge"].includes(widget.crossingStyle)) {
+    const gap = document.createElementNS(ns, "path"); gap.classList.add("connection-crossing-gap"); gap.setAttribute("d", pathData); gap.setAttribute("stroke-width", String((Number(style.lineWidth) || 4) + 6)); svg.append(gap);
+  }
+  const base = document.createElementNS(ns, "path"); base.classList.add("connection-base"); base.setAttribute("d", pathData); base.setAttribute("fill", "none"); base.setAttribute("stroke", style.baseColor || "#607d8b"); base.setAttribute("stroke-width", String(Number(style.lineWidth) || 4)); base.setAttribute("stroke-opacity", String(style.lineOpacity ?? 1)); base.setAttribute("stroke-linecap", style.lineCap || "round"); base.setAttribute("stroke-linejoin", "round");
+  if (style.lineStyle === "dashed") base.setAttribute("stroke-dasharray", `${Number(style.dashLength) || 12} ${Number(style.gapLength) || 8}`);
+  if (style.lineStyle === "dotted") base.setAttribute("stroke-dasharray", `1 ${Number(style.gapLength) || 8}`);
+  if (markerStart) base.setAttribute("marker-start", markerStart); if (markerEnd) base.setAttribute("marker-end", markerEnd); svg.append(base);
+  const hit = document.createElementNS(ns, "path"); hit.classList.add("connection-hit-target"); hit.setAttribute("d", pathData); hit.setAttribute("fill", "none"); hit.setAttribute("stroke", "transparent"); hit.setAttribute("stroke-width", String(Math.max(14, (Number(style.lineWidth) || 4) + 8))); svg.append(hit);
+  if (style.animationEnabled) {
+    if (style.animationStyle === "light") {
+      const light = document.createElementNS(ns, "circle"); light.setAttribute("r", String(Math.max(2, Number(style.lineWidth) || 4))); light.setAttribute("fill", style.flowColor || "#29c8b5");
+      const motion = document.createElementNS(ns, "animateMotion"); motion.setAttribute("path", connectionPathData(widget, widgets, style.animationDirection === "reverse")); motion.setAttribute("dur", `${Math.max(0.2, Number(style.animationDuration) || 2)}s`); motion.setAttribute("repeatCount", "indefinite"); light.append(motion); svg.append(light);
+    } else {
+      const flow = document.createElementNS(ns, "path"); flow.classList.add("connection-flow", style.animationStyle === "pulse" ? "is-pulse" : ""); flow.setAttribute("d", pathData); flow.setAttribute("fill", "none"); flow.setAttribute("stroke", style.flowColor || "#29c8b5"); flow.setAttribute("stroke-width", String(Number(style.lineWidth) || 4)); flow.setAttribute("stroke-linecap", style.lineCap || "round");
+      const dash = Math.max(1, Number(style.dashLength) || 12); const gap = Math.max(1, Number(style.gapLength) || 8); flow.setAttribute("stroke-dasharray", style.animationStyle === "pulse" ? "none" : `${dash} ${gap}`); flow.style.setProperty("--connection-shift", `${-(dash + gap)}px`); flow.style.animationDuration = `${Math.max(0.2, Number(style.animationDuration) || 2)}s`; flow.style.animationDirection = style.animationDirection === "reverse" ? "reverse" : "normal";
+      if (widget.synchronization === "arrival") requestAnimationFrame(() => { try { const cycle = dash + gap; const offset = flow.getTotalLength() % cycle; flow.style.animationDelay = `${-offset / cycle * Math.max(0.2, Number(style.animationDuration) || 2)}s`; } catch { /* SVG path length is optional in older webviews. */ } });
+      svg.append(flow);
+    }
+  }
+  const points = widget.connectionPoints || [];
+  const update = () => {
+    const d = connectionPathData(widget, widgets); base.setAttribute("d", d);
+    for (const path of svg.querySelectorAll(".connection-flow, .connection-crossing-gap, .connection-hit-target")) path.setAttribute("d", d);
+  };
+  for (const point of points) {
+    if (!selected && (!point.collectorEnabled || point.display === "hidden")) continue;
+    const marker = document.createElementNS(ns, "circle"); marker.classList.add("connection-junction", `is-${point.display || "point"}`); if (point.collectorEnabled) marker.classList.add("is-collector");
+    marker.setAttribute("cx", String(Number(point.x) || 0)); marker.setAttribute("cy", String(Number(point.y) || 0)); marker.setAttribute("r", point.display === "distributor" ? "7" : "5"); marker.dataset.pointId = point.id; marker.setAttribute("aria-label", `${point.name || "Zwischenpunkt"}${point.collectorEnabled ? ", Sammelpunkt aktiv" : ""}`); svg.append(marker);
+    if (selected) {
+      marker.classList.add("is-editable"); let dragging = false;
+      marker.addEventListener("pointerdown", event => { event.preventDefault(); event.stopPropagation(); dragging = true; marker.setPointerCapture(event.pointerId); });
+      marker.addEventListener("pointermove", event => { if (!dragging) return; const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height; point.x = Math.round((event.clientX - bounds.left) * scaleX); point.y = Math.round((event.clientY - bounds.top) * scaleY); marker.setAttribute("cx", point.x); marker.setAttribute("cy", point.y); update(); });
+      marker.addEventListener("pointerup", () => { dragging = false; renderProperties(); });
+    }
+  }
+  hit.addEventListener("click", event => { if (!runtimeMode) { event.stopPropagation(); state.selectedId = widget.id; render(); } });
+  return svg;
+}
+
 function formatDate(value, format, relative) {
   let date = value instanceof Date ? value : new Date(value);
   if (typeof value === "number" || /^\d{10,13}$/.test(String(value))) {
@@ -957,13 +1146,22 @@ function addWidget(definition) {
   const id = `widget-${state.nextId++}`;
   const page = currentPage();
   const index = page.widgets.length;
-  page.widgets.push({
+  const widget = {
     id, type: definition.type,
     x: 24 + (index % 4) * 150, y: 24 + Math.floor(index / 4) * 90, width: 140, height: 62, radius: 8, visible: true, layer: 0,
     fontSize: 13, fontWeight: "400", textAlign: "left", textColor: "#e7ecee", backgroundColor: "",
     borderColor: "#626c70", borderWidth: 0, borderStyle: "none", padding: 0, shadow: false, opacity: 1,
     ...structuredClone(definition.defaults),
-  });
+  };
+  if (definition.type === "svg-connection") {
+    const connectionLayers = page.widgets.filter(item => item.type === "svg-connection").map(item => Math.max(0, Number(item.layer) || 0));
+    widget.layer = (connectionLayers.length ? Math.max(...connectionLayers) : 0) + 1;
+    widget.startX = Math.min(page.page.width - 40, 100 + (index % 4) * 30);
+    widget.startY = Math.min(page.page.height - 40, 100 + (index % 4) * 30);
+    widget.endX = Math.min(page.page.width - 40, widget.startX + 260);
+    widget.endY = widget.startY;
+  }
+  page.widgets.push(widget);
   state.selectedId = id;
   render();
 }
@@ -976,6 +1174,7 @@ function renderStage() {
   stage.style.width = `${page.width}px`;
   stage.style.height = `${page.height}px`;
   stage.style.backgroundColor = page.background || "#242729";
+  stage.style.setProperty("--stage-background", page.background || "#242729");
   const backgroundImage = safeUrl(page.backgroundAsset || page.backgroundImage, true);
   stage.style.backgroundImage = backgroundImage ? `url(${JSON.stringify(backgroundImage)})` : "none";
   stage.style.backgroundRepeat = page.backgroundRepeat || (page.backgroundMode === "tile" ? "repeat" : "no-repeat");
@@ -1014,6 +1213,7 @@ function renderStage() {
     element.id = widget.id;
     element.dataset.widgetId = widget.id;
     const selected = !runtimeMode && widget.id === state.selectedId;
+    const isConnection = widget.type === "svg-connection";
     element.className = `widget widget-${widget.type}${selected ? " selected" : ""}`;
     if (widget.cssClass) {
       const safeClasses = String(widget.cssClass).split(/\s+/).filter((name) => /^[A-Za-z_][\w-]*$/.test(name));
@@ -1021,9 +1221,9 @@ function renderStage() {
     }
     Object.assign(element.style, {
       position: widget.cssPosition || "absolute", display: widget.cssDisplay || "",
-      left: widget.cssLeft || `${widget.x}px`, top: widget.cssTop || `${widget.y}px`,
-      width: widget.cssWidth || `${widget.width}px`, height: widget.cssHeight || `${widget.height}px`,
-      zIndex: widget.cssZIndex === undefined || widget.cssZIndex === "" ? String(Math.max(0, Number(widget.layer) || 0) + 2) : String(widget.cssZIndex),
+      left: isConnection ? "0" : widget.cssLeft || `${widget.x}px`, top: isConnection ? "0" : widget.cssTop || `${widget.y}px`,
+      width: isConnection ? `${page.width}px` : widget.cssWidth || `${widget.width}px`, height: isConnection ? `${page.height}px` : widget.cssHeight || `${widget.height}px`,
+      zIndex: widget.cssZIndex === undefined || widget.cssZIndex === "" ? String((isConnection ? connectionZIndex(widget, activePage.widgets) : Math.max(0, Number(widget.layer) || 0)) + 2) : String(widget.cssZIndex),
       overflowX: widget.cssOverflowX || "visible", overflowY: widget.cssOverflowY || "visible",
       cursor: widget.cssCursor || "", transform: widget.cssTransform || "",
       marginLeft: widget.marginLeft || "", marginTop: widget.marginTop || "", marginRight: widget.marginRight || "", marginBottom: widget.marginBottom || "",
@@ -1047,7 +1247,10 @@ function renderStage() {
     });
     const widgetBackgroundImage = safeUrl(widget.backgroundImage);
     content.style.backgroundImage = widgetBackgroundImage ? `url(${JSON.stringify(widgetBackgroundImage)})` : "";
-    if (widget.type === "universal-button") {
+    if (isConnection) {
+      content.style.background = "none"; content.style.border = "0"; content.style.padding = "0"; content.style.overflow = "visible";
+      content.append(renderSvgConnection(widget, activePage.widgets, page.width, page.height, selected));
+    } else if (widget.type === "universal-button") {
       const visualStates = widget.visualStates || [];
       const matchingIndex = visualStates.findIndex((item) => matchesCondition(widget.state, item.condition || "==", item.value));
       const visualIndex = matchingIndex >= 0 ? matchingIndex : 0;
@@ -1337,7 +1540,16 @@ function renderStage() {
       appendSafeHtml(content, widget.suffix ?? (Number(widget.state) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""));
     }
     element.append(content);
-    const signalCount = Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
+    const showDockPoints = !runtimeMode && !isConnection && widget.dockPointsEnabled !== false && (selected || widget.dockAlwaysVisible || activePage.widgets.find(item => item.id === state.selectedId)?.type === "svg-connection");
+    if (showDockPoints) {
+      for (const [anchorId, label, x, y] of CONNECTION_ANCHORS) {
+        if (widget[`dock_${anchorId.replaceAll("-", "_")}`] === false) continue;
+        const marker = document.createElement("span"); marker.className = "widget-dock-point"; marker.style.left = `${x * 100}%`; marker.style.top = `${y * 100}%`;
+        const occupied = activePage.widgets.filter(item => item.type === "svg-connection" && [[item.startWidgetId, item.startAnchor], [item.endWidgetId, item.endAnchor]].some(([id, anchor]) => id === widget.id && (anchor || "right-center") === anchorId)).length;
+        marker.dataset.count = String(occupied); marker.title = `${label}${occupied ? ` · ${occupied} Verbindung${occupied === 1 ? "" : "en"}` : ""}`; element.append(marker);
+      }
+    }
+    const signalCount = isConnection ? 0 : Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
     for (const [signalIndex, signal] of (widget.signalImages || []).slice(0, signalCount).entries()) {
       if (!signal || (!runtimeMode && signal.hideInEditor)) continue;
       const actual = widget.state ?? widget.value ?? "";
@@ -1362,7 +1574,7 @@ function renderStage() {
       }
       element.append(overlay);
     }
-    if (selected) {
+    if (selected && !isConnection) {
       const flag = document.createElement("span"); flag.className = "widget-id-flag"; flag.textContent = widget.id;
       element.append(flag);
       for (const direction of ["n", "ne", "e", "se", "s", "sw", "w", "nw"]) {
@@ -1373,8 +1585,8 @@ function renderStage() {
         makeResizable(element, handle, widget);
       }
     }
-    element.addEventListener("click", () => { if (!runtimeMode) { state.selectedId = widget.id; render(); } });
-    if (!runtimeMode) makeDraggable(element, widget);
+    if (!isConnection) element.addEventListener("click", () => { if (!runtimeMode) { state.selectedId = widget.id; render(); } });
+    if (!runtimeMode && !isConnection) makeDraggable(element, widget);
     stage.append(element);
   }
 }
@@ -1394,7 +1606,7 @@ function makeDraggable(element, widget) {
     widget.y = Math.max(0, Math.round(origin.top + (event.clientY - origin.y) / scale));
     element.style.left = `${widget.x}px`; element.style.top = `${widget.y}px`;
   });
-  element.addEventListener("pointerup", () => { origin = null; });
+  element.addEventListener("pointerup", () => { if (origin) { origin = null; renderStage(); } });
 }
 
 function makeResizable(element, handle, widget) {
@@ -1417,7 +1629,7 @@ function makeResizable(element, handle, widget) {
     element.style.left = `${widget.x}px`; element.style.top = `${widget.y}px`;
     element.style.width = `${widget.width}px`; element.style.height = `${widget.height}px`;
   });
-  handle.addEventListener("pointerup", () => { origin = null; });
+  handle.addEventListener("pointerup", () => { if (origin) { origin = null; renderStage(); } });
 }
 
 function openPageSelector(input, multiple = true) {
@@ -1466,15 +1678,60 @@ function openFilterEditor(widget) {
   draw(); dialog.append(heading, add, list, actions); document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); dialog.showModal();
 }
 
+function openConnectionPointsEditor(widget) {
+  const draft = Array.isArray(widget.connectionPoints) ? structuredClone(widget.connectionPoints) : [];
+  const dialog = document.createElement("dialog"); dialog.className = "studio-dialog connection-points-editor";
+  const heading = document.createElement("h2"); heading.textContent = "Zwischen- und Sammelpunkte";
+  const hint = document.createElement("p"); hint.className = "property-hint";
+  hint.textContent = "Nur ausdrücklich aktivierte Sammelpunkte können von anderen Linien gewählt werden. Kreuzungen koppeln sich nie automatisch.";
+  const list = document.createElement("div"); list.className = "connection-points-list";
+  const draw = () => {
+    list.replaceChildren();
+    draft.forEach((point, index) => {
+      const row = document.createElement("div"); row.className = "connection-point-row";
+      const makeInput = (label, key, type = "text") => {
+        const wrapper = document.createElement("label"); wrapper.textContent = label;
+        const input = document.createElement("input"); input.type = type;
+        if (type === "checkbox") input.checked = point[key] === true;
+        else input.value = point[key] ?? "";
+        input.addEventListener("input", () => { point[key] = type === "checkbox" ? input.checked : type === "number" ? Number(input.value) : input.value; });
+        wrapper.append(input); return wrapper;
+      };
+      row.append(makeInput("Name", "name"), makeInput("X", "x", "number"), makeInput("Y", "y", "number"), makeInput("Als Sammelpunkt aktivieren", "collectorEnabled", "checkbox"));
+      const display = document.createElement("label"); display.textContent = "Darstellung";
+      const select = document.createElement("select");
+      for (const [value, label] of [["hidden", "Unsichtbar"], ["point", "Punkt"], ["ring", "Ring"], ["distributor", "Verteiler"]]) { const option = document.createElement("option"); option.value = value; option.textContent = label; select.append(option); }
+      select.value = point.display || "point"; select.addEventListener("change", () => { point.display = select.value; }); display.append(select); row.append(display);
+      const actions = document.createElement("span"); actions.className = "connection-point-actions";
+      for (const [label, disabled, action] of [
+        ["↑", index === 0, () => { [draft[index - 1], draft[index]] = [draft[index], draft[index - 1]]; }],
+        ["↓", index === draft.length - 1, () => { [draft[index + 1], draft[index]] = [draft[index], draft[index + 1]]; }],
+        ["×", false, () => draft.splice(index, 1)],
+      ]) { const button = document.createElement("button"); button.type = "button"; button.textContent = label; button.disabled = disabled; button.addEventListener("click", () => { action(); draw(); }); actions.append(button); }
+      row.append(actions); list.append(row);
+    });
+  };
+  const add = document.createElement("button"); add.type = "button"; add.textContent = "+ Zwischenpunkt";
+  add.addEventListener("click", () => { const count = draft.length + 1; draft.push({ id: crypto.randomUUID(), name: `Punkt ${count}`, x: Number(widget.startX || 100) + count * 60, y: Number(widget.startY || 100), collectorEnabled: false, display: "point" }); draw(); });
+  const actions = document.createElement("div"); actions.className = "dialog-actions";
+  for (const [label, apply] of [["Übernehmen", true], ["Abbrechen", false]]) { const button = document.createElement("button"); button.type = "button"; button.textContent = label; button.addEventListener("click", () => { if (apply) { widget.connectionPoints = draft; renderStage(); renderProperties(); } dialog.close(); }); actions.append(button); }
+  draw(); dialog.append(heading, hint, add, list, actions); document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); dialog.showModal();
+}
+
 function field(descriptor, widget) {
   const htmlField = descriptor.html === true || descriptor.type === "html" || /HTML/i.test(descriptor.label) || (descriptor.key === "state" && ["string", "string-raw"].includes(widget.type));
   const wrapper = document.createElement("label"); wrapper.textContent = descriptor.label;
   if (descriptor.type === "filter-editor") { const button = document.createElement("button"); button.type = "button"; button.textContent = "Bearbeiten"; button.setAttribute("aria-label", "Filter bearbeiten"); button.addEventListener("click", () => openFilterEditor(widget)); wrapper.append(button); return wrapper; }
+  if (descriptor.type === "connection-points") { const button = document.createElement("button"); button.type = "button"; button.textContent = `${Array.isArray(widget.connectionPoints) ? widget.connectionPoints.length : 0} Punkte bearbeiten`; button.addEventListener("click", () => openConnectionPointsEditor(widget)); wrapper.append(button); return wrapper; }
   let input;
   if (descriptor.type === "textarea" || htmlField) input = document.createElement("textarea");
-  else if (["select", "page", "widget"].includes(descriptor.type)) {
+  else if (["select", "page", "widget", "collector", "connection"].includes(descriptor.type)) {
     input = document.createElement("select");
-    const choices = descriptor.type === "page" ? [{ value: "", label: "Keine Seite" }, ...state.project.pages.map(page => ({ value: page.id, label: page.name }))] : descriptor.type === "widget" ? [{ value: "", label: "Kein Widget" }, ...currentPage().widgets.filter(item => item.id !== widget.id).map(item => ({ value: item.id, label: item.title || item.id }))] : descriptor.options || [];
+    const choices = descriptor.type === "page" ? [{ value: "", label: "Keine Seite" }, ...state.project.pages.map(page => ({ value: page.id, label: page.name }))]
+      : descriptor.type === "widget" ? [{ value: "", label: "Kein Widget / freier Punkt" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type !== "svg-connection").map(item => ({ value: item.id, label: item.title || item.id }))]
+      : descriptor.type === "connection" ? [{ value: "", label: "Keine Hauptlinie" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").map(item => ({ value: item.id, label: item.title || item.id }))]
+      : descriptor.type === "collector" ? [{ value: "", label: "Kein Sammelpunkt" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").flatMap(item => (item.connectionPoints || []).filter(point => point.collectorEnabled).map(point => ({ value: `${item.id}:${point.id}`, label: `${item.title || item.id} · ${point.name || point.id}` })))]
+      : descriptor.options || [];
     for (const item of choices) {
       const option = document.createElement("option"); option.value = typeof item === "string" ? item : item.value;
       option.textContent = typeof item === "string" ? item : item.label; input.append(option);
@@ -1625,7 +1882,7 @@ function renderProperties() {
   }
   if (state.propertyTab === "scripts") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Widget-Skripte werden in einem späteren Ausbauschritt ergänzt."; panel.append(empty); return; }
   if (widget.type === "toggle" && typeof widget.state === "boolean") widget.state = widget.state ? "on" : "off";
-  let groups = getWidgetDefinition(widget.type).propertyGroups;
+  let groups = widgetPropertyGroups(widget);
   groups = [...groups, ...indexedWidgetGroups(widget)];
   if (widget.type === "value-list-html-style") {
     const count = Math.max(1, Math.min(50, Math.trunc(Number(widget.count) || 2)));

@@ -166,6 +166,31 @@ button { cursor: pointer; }
 .widget-gauge { justify-content: center; border-radius: 50%; }
 .image-placeholder { display: grid; place-items: center; border: 1px dashed currentColor; }
 .widget.selected { outline: 1px dashed #1688e7; outline-offset: 0; }
+.widget-svg-connection { min-width: 0; min-height: 0; pointer-events: none; }
+.widget-svg-connection.selected { outline: 0; }
+.widget-svg-connection .widget-content { overflow: visible; pointer-events: none; }
+.svg-connection-canvas { display: block; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.connection-hit-target { pointer-events: stroke; cursor: pointer; }
+.svg-connection-canvas.is-click-through .connection-hit-target { pointer-events: none; }
+.connection-crossing-gap { fill: none; stroke: var(--stage-background, #242729); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.connection-flow { pointer-events: none; animation: connection-flow 2s linear infinite; }
+.connection-flow.is-pulse { animation-name: connection-pulse; }
+@keyframes connection-flow { to { stroke-dashoffset: var(--connection-shift, -20px); } }
+@keyframes connection-pulse { 0%, 100% { opacity: .18; } 50% { opacity: 1; } }
+.connection-junction { fill: var(--accent); stroke: #fff; stroke-width: 1.5; pointer-events: none; }
+.connection-junction.is-ring { fill: #242729; stroke: var(--accent); stroke-width: 3; }
+.connection-junction.is-distributor { fill: var(--accent); stroke-width: 2; }
+.connection-junction.is-collector { stroke: #ffd54f; }
+.connection-junction.is-editable { pointer-events: all; cursor: move; }
+.widget-dock-point { position: absolute; z-index: 40; width: 9px; height: 9px; border: 1px solid #fff; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px #101314aa; transform: translate(-50%, -50%); pointer-events: none; }
+.widget-dock-point[data-count]:not([data-count="0"])::after { position: absolute; left: 7px; top: -8px; min-width: 13px; padding: 0 2px; border-radius: 7px; color: #111; background: #ffd54f; content: attr(data-count); font-size: 8px; line-height: 12px; text-align: center; }
+.connection-points-list { display: grid; gap: 7px; max-height: 55vh; overflow: auto; }
+.connection-point-row { display: grid; grid-template-columns: minmax(110px, 1.4fr) 75px 75px minmax(145px, 1.5fr) minmax(110px, 1fr) auto; align-items: end; gap: 6px; padding: 7px; border: 1px solid var(--line); border-radius: 5px; }
+.connection-point-row label { display: grid; gap: 3px; min-width: 0; color: var(--muted); font-size: 10px; }
+.connection-point-row input, .connection-point-row select { min-width: 0; width: 100%; }
+.connection-point-row input[type="checkbox"] { width: auto; }
+.connection-point-actions { display: flex; gap: 3px; }
+.connection-point-actions button { width: 28px; height: 30px; padding: 0; }
 .widget-id-flag { position: absolute; left: 0; top: -18px; max-width: 100%; overflow: hidden; padding: 1px 5px; border-radius: 3px 3px 0 0; color: #fff; background: #0878c9; font-size: 10px; line-height: 16px; white-space: nowrap; }
 .resize-handle { position: absolute; width: 8px; height: 8px; border: 1px solid #fff; background: #1688e7; touch-action: none; }
 .resize-n, .resize-s { left: calc(50% - 4px); cursor: ns-resize; }

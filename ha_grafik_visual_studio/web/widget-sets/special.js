@@ -1,0 +1,105 @@
+import { registerWidgetSet } from "../widget-registry.js";
+
+const anchorOptions = [
+  ["left-top", "Links oben"], ["left-center", "Links Mitte"], ["left-bottom", "Links unten"],
+  ["right-top", "Rechts oben"], ["right-center", "Rechts Mitte"], ["right-bottom", "Rechts unten"],
+  ["top-quarter", "Oben 1/4"], ["top-center", "Oben Mitte"], ["top-three-quarter", "Oben 3/4"],
+  ["bottom-quarter", "Unten 1/4"], ["bottom-center", "Unten Mitte"], ["bottom-three-quarter", "Unten 3/4"],
+].map(([value, label]) => ({ value, label }));
+
+registerWidgetSet({
+  id: "ha-grafik-special",
+  label: "HA Grafik – Spezial",
+  widgets: [{
+    type: "svg-connection",
+    label: "SVG-Verbindungslinie",
+    icon: "↝",
+    preview: { kind: "plain", lines: ["↝"] },
+    defaults: {
+      title: "Verbindung", comment: "", visible: true,
+      startWidgetId: "", startAnchor: "right-center", startCollector: "", startX: 100, startY: 120,
+      endWidgetId: "", endAnchor: "left-center", endCollector: "", endX: 420, endY: 120,
+      pathMode: "orthogonal", cornerRadius: 8, connectionPoints: [],
+      baseColor: "#607d8b", flowColor: "#29c8b5", lineWidth: 4, lineOpacity: 1,
+      lineStyle: "solid", dashLength: 12, gapLength: 8, lineCap: "round",
+      markerStart: "none", markerEnd: "arrow", markerSize: 8, markerColor: "#29c8b5",
+      animationEnabled: false, animationStyle: "two-color", animationDirection: "forward", animationDuration: 2,
+      flowParentId: "", inheritFlow: true, synchronization: "same-phase",
+      crossingStyle: "overlay", connectionZMode: "auto", layer: 0, clickThrough: true,
+    },
+    propertyGroups: [
+      { label: "Allgemein", fields: [
+        { label: "Name", key: "title" }, { label: "Kommentar", key: "comment" },
+        { label: "Sichtbar", key: "visible", type: "checkbox", default: true },
+        { label: "CSS Klasse", key: "cssClass" }, { label: "Filterwort", key: "filterWord" },
+      ] },
+      { label: "Start", fields: [
+        { label: "Startwidget", key: "startWidgetId", type: "widget" },
+        { label: "Andockpunkt", key: "startAnchor", type: "select", options: anchorOptions },
+        { label: "Oder aktiver Sammelpunkt", key: "startCollector", type: "collector" },
+        { label: "Freies X", key: "startX", type: "number", min: 0, max: 7680 },
+        { label: "Freies Y", key: "startY", type: "number", min: 0, max: 4320 },
+      ] },
+      { label: "Ziel", fields: [
+        { label: "Zielwidget", key: "endWidgetId", type: "widget" },
+        { label: "Andockpunkt", key: "endAnchor", type: "select", options: anchorOptions },
+        { label: "Oder aktiver Sammelpunkt", key: "endCollector", type: "collector" },
+        { label: "Freies X", key: "endX", type: "number", min: 0, max: 7680 },
+        { label: "Freies Y", key: "endY", type: "number", min: 0, max: 4320 },
+      ] },
+      { label: "Pfad und Sammelpunkte", fields: [
+        { label: "Pfadart", key: "pathMode", type: "select", refreshProperties: true, options: [
+          { value: "straight", label: "Gerade" }, { value: "orthogonal", label: "Automatisch rechtwinklig" },
+          { value: "curve", label: "Kurve" }, { value: "zigzag", label: "Manueller Zickzack-/Mehrpunktpfad" },
+        ] },
+        { label: "Eckenradius", key: "cornerRadius", type: "range", min: 0, max: 80, step: 1 },
+        { label: "Zwischenpunkte und Sammelpunkte", key: "connectionPoints", type: "connection-points" },
+      ] },
+      { label: "Linie", fields: [
+        { label: "Grundfarbe", key: "baseColor", type: "color" },
+        { label: "Animationsfarbe", key: "flowColor", type: "color" },
+        { label: "Dicke", key: "lineWidth", type: "range", min: 1, max: 40, step: 1 },
+        { label: "Deckkraft", key: "lineOpacity", type: "range", min: 0, max: 1, step: 0.05 },
+        { label: "Linienart", key: "lineStyle", type: "select", options: [
+          { value: "solid", label: "Durchgezogen" }, { value: "dashed", label: "Gestrichelt" }, { value: "dotted", label: "Gepunktet" },
+        ] },
+        { label: "Strichlänge", key: "dashLength", type: "range", min: 1, max: 100, step: 1 },
+        { label: "Abstand", key: "gapLength", type: "range", min: 1, max: 100, step: 1 },
+        { label: "Linienenden", key: "lineCap", type: "select", options: ["round", "butt", "square"] },
+      ] },
+      { label: "Pfeilspitzen", fields: [
+        { label: "Am Anfang", key: "markerStart", type: "select", options: ["none", "arrow", "open", "circle"] },
+        { label: "Am Ende", key: "markerEnd", type: "select", options: ["none", "arrow", "open", "circle"] },
+        { label: "Größe", key: "markerSize", type: "range", min: 2, max: 30, step: 1 },
+        { label: "Farbe", key: "markerColor", type: "color" },
+      ] },
+      { label: "Animation", fields: [
+        { label: "Animation aktivieren", key: "animationEnabled", type: "checkbox", default: false },
+        { label: "Animationsart", key: "animationStyle", type: "select", options: [
+          { value: "two-color", label: "Zweifarbenfluss" }, { value: "dash", label: "Laufende Striche" },
+          { value: "pulse", label: "Puls" }, { value: "light", label: "Lichtpunkt" },
+        ] },
+        { label: "Richtung", key: "animationDirection", type: "select", options: [
+          { value: "forward", label: "Anfang → Ende" }, { value: "reverse", label: "Ende → Anfang" },
+        ] },
+        { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1 },
+        { label: "Hauptlinie / Flussgruppe", key: "flowParentId", type: "connection" },
+        { label: "Animation der Hauptlinie übernehmen", key: "inheritFlow", type: "checkbox", default: true },
+        { label: "Synchronisierung", key: "synchronization", type: "select", options: [
+          { value: "same-phase", label: "Gleicher Takt" }, { value: "arrival", label: "Am Sammelpunkt synchron ankommen" },
+        ] },
+      ] },
+      { label: "Kreuzung und z-index", fields: [
+        { label: "Kreuzungsdarstellung", key: "crossingStyle", type: "select", options: [
+          { value: "overlay", label: "Überlagerung" }, { value: "gap", label: "Lücke" }, { value: "bridge", label: "Brücke / Bogen" },
+        ] },
+        { label: "z-index-Modus", key: "connectionZMode", type: "select", options: [
+          { value: "auto", label: "Automatisch" }, { value: "above", label: "Darüber" },
+          { value: "below", label: "Darunter" }, { value: "manual", label: "Manuell" },
+        ] },
+        { label: "z-index", key: "layer", type: "number", min: 0, max: 9999 },
+        { label: "Klicks durchlassen", key: "clickThrough", type: "checkbox", default: true },
+      ] },
+    ],
+  }],
+});

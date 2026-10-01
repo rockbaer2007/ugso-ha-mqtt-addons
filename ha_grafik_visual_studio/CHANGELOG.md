@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.45
+
+- Added the `HA Grafik – Spezial` widget group with the new `SVG-Verbindungslinie` widget.
+- Added widget-relative anchor points, multiple connection lanes, free endpoints, intermediate points and opt-in collector points.
+- Added straight, orthogonal, curved and multipoint routes with line, arrow, animation, flow inheritance, crossing and z-index controls.
+- Added safe connector cleanup on widget deletion and stable point IDs when duplicating connections.
+
 ## 0.1.44
 
 - Behält eingeklappte Widget-Bereiche der Palette beim Einfügen oder Wechseln eines Widgets geschlossen.
