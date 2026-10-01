@@ -96,7 +96,7 @@ const CONNECTION_ANCHORS = [
   ["top-quarter", "Oben 1/4", 0.25, 0], ["top-center", "Oben Mitte", 0.5, 0], ["top-three-quarter", "Oben 3/4", 0.75, 0],
   ["bottom-quarter", "Unten 1/4", 0.25, 1], ["bottom-center", "Unten Mitte", 0.5, 1], ["bottom-three-quarter", "Unten 3/4", 0.75, 1],
 ];
-const connectionAnchorGroup = { id: "dock-points", label: "Andockpunkte", masterKey: "dockPointsEnabled", hint: "Der Haken in der Überschrift aktiviert oder deaktiviert alle Andockpunkte dieses Widgets.", fields: [
+const connectionAnchorGroup = { id: "dock-points", label: "Andockpunkte", masterKey: "dockPointsEnabled", defaultEnabled: false, hint: "Der Haken in der Überschrift aktiviert oder deaktiviert alle Andockpunkte dieses Widgets.", fields: [
   ...CONNECTION_ANCHORS.map(([id, label]) => ({ label, key: `dock_${id.replaceAll("-", "_")}`, type: "checkbox", default: true })),
   { label: "Mehrfachbelegung erlauben", key: "dockMultiple", type: "checkbox", default: true },
   { label: "Maximale Verbindungen (0 = unbegrenzt)", key: "dockMaxConnections", type: "number", min: 0, max: 99, default: 0 },
@@ -1311,7 +1311,7 @@ function connectionAnchorPosition(widget, anchorId) {
 
 function closestConnectionAnchor(clientX, clientY, connection, prefix, widgets, bounds, width, height) {
   let closest = null;
-  for (const target of widgets.filter(item => item.type !== "svg-connection" && item.visible !== false && item.dockPointsEnabled !== false)) {
+  for (const target of widgets.filter(item => item.type !== "svg-connection" && item.visible !== false && item.dockPointsEnabled === true)) {
     for (const [anchorId] of CONNECTION_ANCHORS) {
       if (target[`dock_${anchorId.replaceAll("-", "_")}`] === false) continue;
       const occupied = widgets.filter(item => item.type === "svg-connection").flatMap(item => ["start", "end"].map(side => ({ item, side }))).filter(({ item, side }) => {
@@ -1357,7 +1357,7 @@ function connectionEndpoint(widget, prefix, widgets) {
   if (collector) return collector;
   const target = widgets.find(item => item.id === widget[`${prefix}WidgetId`] && item.type !== "svg-connection");
   const anchorId = widget[`${prefix}Anchor`] || (prefix === "start" ? "right-center" : "left-center");
-  const anchorEnabled = target?.dockPointsEnabled !== false && target?.[`dock_${anchorId.replaceAll("-", "_")}`] !== false;
+  const anchorEnabled = target?.dockPointsEnabled === true && target?.[`dock_${anchorId.replaceAll("-", "_")}`] !== false;
   if (target && anchorEnabled) {
     const connections = widgets.filter(item => item.type === "svg-connection").flatMap(item => ["start", "end"].map(side => ({
       id: `${item.id}:${side}`, widget: item, side,
@@ -1761,7 +1761,7 @@ function addWidget(definition) {
   const page = currentPage();
   const index = page.widgets.length;
   const widget = {
-    id, type: definition.type, generalEnabled: false, visibilityEnabled: false, locked: false,
+    id, type: definition.type, generalEnabled: false, visibilityEnabled: false, dockPointsEnabled: false, locked: false,
     x: 24 + (index % 4) * 150, y: 24 + Math.floor(index / 4) * 90, width: 140, height: 62, radius: 8, visible: true, layer: 0,
     fontSize: 13, fontWeight: "400", textAlign: "left", textColor: "#e7ecee", backgroundColor: "",
     borderColor: "#626c70", borderWidth: 0, borderStyle: "none", padding: 0, shadow: false, opacity: 1,
@@ -2273,7 +2273,7 @@ function renderStage() {
       tab.append(select, edit); element.append(tab);
     }
     const hasConnections = activePage.widgets.some(item => item.type === "svg-connection" && item.visible !== false);
-    const showDockPoints = !runtimeMode && !isConnection && widget.dockPointsEnabled !== false && (selected || widget.dockAlwaysVisible || hasConnections);
+    const showDockPoints = !runtimeMode && !isConnection && widget.dockPointsEnabled === true && (selected || widget.dockAlwaysVisible || hasConnections);
     if (showDockPoints) {
       for (const [anchorId, label, x, y] of CONNECTION_ANCHORS) {
         if (widget[`dock_${anchorId.replaceAll("-", "_")}`] === false) continue;

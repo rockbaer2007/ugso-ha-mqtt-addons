@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.85
+
+- Docking points start disabled on widgets. Their handles and snap targets appear only after the widget's docking-point group is explicitly enabled.
+
 ## 0.1.84
 
 - The Settings dialog keeps the same size when switching between General, Widget packages and Tools; each tab scrolls within the fixed dialog area.
