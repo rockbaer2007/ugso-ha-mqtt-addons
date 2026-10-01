@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.70
+
+- Dragged line endpoints now snap to enabled collector points on other SVG lines; inactive points do not couple.
+- A line coupled to a non-animated main line stops animating and displays that line's base color, including its arrowheads. Its own settings remain stored for when the coupling is removed.
+
 ## 0.1.69
 
 - SVG connection lines now show a compact name tab near their start point in the editor. Selecting the tab opens the line properties; its edit button renames the line directly.

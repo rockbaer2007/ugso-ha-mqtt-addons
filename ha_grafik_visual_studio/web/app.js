@@ -1240,6 +1240,19 @@ function closestConnectionAnchor(clientX, clientY, connection, prefix, widgets, 
   return closest;
 }
 
+function closestConnectionCollector(clientX, clientY, connection, widgets, bounds, width, height) {
+  let closest = null;
+  for (const target of widgets.filter(item => item.type === "svg-connection" && item.id !== connection.id && item.visible !== false)) {
+    for (const point of target.connectionPoints || []) {
+      if (!point.collectorEnabled) continue;
+      const position = { x: Number(point.x) || 0, y: Number(point.y) || 0 };
+      const distance = Math.hypot(clientX - (bounds.left + position.x / width * bounds.width), clientY - (bounds.top + position.y / height * bounds.height));
+      if (distance <= 24 && (!closest || distance < closest.distance)) closest = { collectorReference: `${target.id}:${point.id}`, position, distance };
+    }
+  }
+  return closest;
+}
+
 function connectionCollectorPosition(reference, widgets) {
   if (!reference) return null;
   const separator = reference.indexOf(":");
@@ -1357,14 +1370,22 @@ function effectiveConnectionStyle(widget, widgets, visited = new Set()) {
   let result = { ...widget };
   const collectorReference = [widget.endCollector, widget.startCollector].find(reference => connectionCollectorPosition(reference, widgets));
   const collectorParentId = String(collectorReference || "").split(":", 1)[0];
-  const parentId = widget.flowParentId || collectorParentId;
-  if (widget.inheritFlow && parentId && !visited.has(widget.id)) {
+  const parentId = collectorParentId || widget.flowParentId;
+  if (parentId && !visited.has(widget.id)) {
     visited.add(widget.id);
     const parent = widgets.find(item => item.id === parentId && item.type === "svg-connection");
-    if (parent) {
+    if (parent && !visited.has(parent.id)) {
       const source = effectiveConnectionStyle(parent, widgets, visited);
-      const inherited = ["dashLength", "gapLength", "animationEnabled", "animationStyle", "animationDirection", "animationDuration"];
-      result = Object.assign(result, Object.fromEntries(inherited.map(key => [key, source[key]])));
+      if (widget.inheritFlow) {
+        const inherited = ["dashLength", "gapLength", "animationEnabled", "animationStyle", "animationDirection", "animationDuration"];
+        result = Object.assign(result, Object.fromEntries(inherited.map(key => [key, source[key]])));
+      }
+      if (collectorParentId && !source.animationEnabled) {
+        result.animationEnabled = false;
+        result.baseColor = source.baseColor;
+        result.flowColor = source.baseColor;
+        result.markerColor = source.baseColor;
+      }
     }
   }
   if (widget.endCollector) result.animationDirection = "forward";
@@ -1394,8 +1415,8 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
   svg.classList.add("svg-connection-canvas"); if (runtimeMode && widget.clickThrough !== false) svg.classList.add("is-click-through"); svg.setAttribute("viewBox", `0 0 ${width} ${height}`); svg.setAttribute("aria-label", widgetDisplayName(widget));
   const defs = document.createElementNS(ns, "defs"); svg.append(defs);
   const style = effectiveConnectionStyle(widget, widgets); const pathData = connectionPathData(widget, widgets);
-  const markerStart = appendConnectionMarker(defs, `${widget.id}-start-marker`, widget.markerStart, widget.markerColor || style.flowColor, Number(widget.markerSize) || 8);
-  const markerEnd = appendConnectionMarker(defs, `${widget.id}-end-marker`, widget.markerEnd, widget.markerColor || style.flowColor, Number(widget.markerSize) || 8);
+  const markerStart = appendConnectionMarker(defs, `${widget.id}-start-marker`, widget.markerStart, style.markerColor || style.flowColor, Number(widget.markerSize) || 8);
+  const markerEnd = appendConnectionMarker(defs, `${widget.id}-end-marker`, widget.markerEnd, style.markerColor || style.flowColor, Number(widget.markerSize) || 8);
   if (["gap", "bridge"].includes(widget.crossingStyle)) {
     const gap = document.createElementNS(ns, "path"); gap.classList.add("connection-crossing-gap"); gap.setAttribute("d", pathData); gap.setAttribute("stroke-width", String((Number(style.lineWidth) || 4) + 6)); svg.append(gap);
   }
@@ -1466,9 +1487,16 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
           dragOrigin.detached = true;
         }
         const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height;
-        const snapTarget = closestConnectionAnchor(event.clientX, event.clientY, widget, prefix, widgets, bounds, width, height);
+        const anchorTarget = closestConnectionAnchor(event.clientX, event.clientY, widget, prefix, widgets, bounds, width, height);
+        const collectorTarget = closestConnectionCollector(event.clientX, event.clientY, widget, widgets, bounds, width, height);
+        const snapTarget = collectorTarget && (!anchorTarget || collectorTarget.distance <= anchorTarget.distance) ? collectorTarget : anchorTarget;
         for (const marker of document.querySelectorAll(".widget-dock-point.is-snap-target")) marker.classList.remove("is-snap-target");
-        if (snapTarget) document.getElementById(snapTarget.widgetId)?.querySelector(`[data-anchor-id="${snapTarget.anchorId}"]`)?.classList.add("is-snap-target");
+        for (const marker of document.querySelectorAll(".connection-junction.is-snap-target")) marker.classList.remove("is-snap-target");
+        if (snapTarget?.widgetId) document.getElementById(snapTarget.widgetId)?.querySelector(`[data-anchor-id="${snapTarget.anchorId}"]`)?.classList.add("is-snap-target");
+        if (snapTarget?.collectorReference) {
+          const [targetId, pointId] = snapTarget.collectorReference.split(":");
+          [...(document.getElementById(targetId)?.querySelectorAll(".connection-junction") || [])].find(marker => marker.dataset.pointId === pointId)?.classList.add("is-snap-target");
+        }
         dragOrigin.snapTarget = snapTarget;
         dragOrigin.changed = true;
         const x = snapTarget ? snapTarget.position.x : Math.max(0, Math.min(width, Math.round((event.clientX - bounds.left) * scaleX)));
@@ -1480,10 +1508,11 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
         if (!dragOrigin) return;
         const { changed, snapTarget } = dragOrigin; dragOrigin = null;
         for (const marker of document.querySelectorAll(".widget-dock-point.is-snap-target")) marker.classList.remove("is-snap-target");
+        for (const marker of document.querySelectorAll(".connection-junction.is-snap-target")) marker.classList.remove("is-snap-target");
         if (attach && snapTarget) {
-          widget[`${prefix}WidgetId`] = snapTarget.widgetId;
-          widget[`${prefix}Anchor`] = snapTarget.anchorId;
-          widget[`${prefix}Collector`] = "";
+          widget[`${prefix}WidgetId`] = snapTarget.widgetId || "";
+          widget[`${prefix}Collector`] = snapTarget.collectorReference || "";
+          if (snapTarget.anchorId) widget[`${prefix}Anchor`] = snapTarget.anchorId;
         }
         if (changed) render(); else renderProperties();
       };

@@ -235,6 +235,7 @@ button { cursor: pointer; }
 .connection-junction.is-ring { fill: #242729; stroke: var(--accent); stroke-width: 3; }
 .connection-junction.is-distributor { fill: var(--accent); stroke-width: 2; }
 .connection-junction.is-collector { stroke: #ffd54f; }
+.connection-junction.is-snap-target { stroke: #fff; stroke-width: 4; filter: drop-shadow(0 0 6px #ffd54f); }
 .connection-junction.is-editable { pointer-events: all; cursor: move; }
 .connection-endpoint { fill: #1688e7; stroke: #fff; stroke-width: 2; pointer-events: all; cursor: move; touch-action: none; }
 .connection-endpoint.is-end { fill: #ff9800; }
