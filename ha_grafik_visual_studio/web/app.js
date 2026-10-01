@@ -689,7 +689,7 @@ function changeSelectedWidgetLayer(direction) {
   widget.layer = Math.min(9999, Math.max(0, current + direction));
   widget.cssZIndex = "";
   renderStage(); renderProperties(); renderWidgetFinder();
-  $("#status").textContent = `Widget ${widget.id}: Ebene ${widget.layer}`;
+  $("#status").textContent = `Widget ${widget.id}: z-index ${widget.layer}`;
 }
 
 function exportSelectedWidget() {

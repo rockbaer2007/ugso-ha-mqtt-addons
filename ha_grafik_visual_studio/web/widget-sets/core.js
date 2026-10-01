@@ -2,7 +2,7 @@ import { registerWidgetSet } from "../widget-registry.js";
 
 const fields = (items) => ({ label: "Größe und Position", fields: items });
 const geometry = () => fields([
-  { label: "Ebene (ab 0)", key: "layer", type: "number", min: 0, max: 9999 },
+  { label: "z-index", key: "layer", type: "number", min: 0, max: 9999 },
   { label: "Breite (px)", key: "width", type: "number", min: 16, max: 7680 },
   { label: "Höhe (px)", key: "height", type: "number", min: 16, max: 4320 },
   { label: "X (px)", key: "x", type: "number", min: 0 },

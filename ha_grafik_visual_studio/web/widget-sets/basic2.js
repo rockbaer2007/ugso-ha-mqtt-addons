@@ -1,7 +1,7 @@
 import { registerWidgetSet } from "../widget-registry.js";
 
 const layout = () => ({ label: "Größe und Position", fields: [
-  { label: "Ebene (ab 0)", key: "layer", type: "number", min: 0, max: 9999 },
+  { label: "z-index", key: "layer", type: "number", min: 0, max: 9999 },
   { label: "Breite (px)", key: "width", type: "number", min: 24, max: 7680 },
   { label: "Höhe (px)", key: "height", type: "number", min: 24, max: 4320 },
   { label: "X (px)", key: "x", type: "number", min: 0 }, { label: "Y (px)", key: "y", type: "number", min: 0 },

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.38
+
+- Benennt die gemeinsame Widget-Einstellung „Ebene“ in allen Widget-Sets und der Statusanzeige in „z-index“ um.
+
 ## 0.1.37
 
 - Zeigt die Entitätenauswahl konsequent als Gerätebaum mit Ordnersymbolen; ein Klick auf ein Gerät klappt dessen Entitäten auf.

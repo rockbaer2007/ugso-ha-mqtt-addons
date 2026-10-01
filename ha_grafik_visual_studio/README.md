@@ -25,7 +25,7 @@ Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sow
 - Das Widget-Register ist separat; weitere eigene Widget-Sets können später unabhängig ergänzt werden.
 - Seitengrößen Desktop, Tablet und Telefon können im Editor gewählt werden.
 - Das Text-Widget ist ein freies Textfeld ohne Entitätsbindung oder Entitäts-Fehlermeldung.
-- Widgets sind frei platzierte HTML-Elemente; Auswahl zeigt ihre Widget-ID und einen blauen Rahmen mit Resize-Griff. Jedes Element liegt standardmäßig auf Ebene 0; die Ebene lässt sich je Widget einstellen.
+- Widgets sind frei platzierte HTML-Elemente; Auswahl zeigt ihre Widget-ID und einen blauen Rahmen mit Resize-Griff. Jedes Element hat standardmäßig z-index 0; z-index lässt sich je Widget einstellen.
 - Widget-Namen sind optional. Ein grafischer Schalter kann ohne eigene Beschriftung angezeigt und bei Bedarf mit einem separaten Text-Widget beschriftet werden.
 - Icon- und Bildfelder bieten eine kleine Vorschau und eine MDI-Auswahl. Andere Home-Assistant-Iconset-Namen wie `atlas:home` oder `custom:home` sowie Grafikpfade wie `/local/icons/home.png` können direkt eingetragen werden; die jeweilige Iconset-Integration muss in Home Assistant installiert sein.
 - Zustandsgebundene Widgets können bis zu neun Signalbild-Overlays mit Bedingung, Bild, kleinem Symbol, Größe, Position, Blinkverhalten, CSS-Stil und optionalem Text konfigurieren.
