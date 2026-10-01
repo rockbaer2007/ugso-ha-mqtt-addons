@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.57
+
+- Changes ordered widget multi-selection to Ctrl + Shift + click so an ordinary Shift-click no longer modifies the selection.
+- Keeps normal clicks as single selection and uses the combined shortcut to add or remove individual widgets.
+
 ## 0.1.56
 
 - Uses Shift-click to add or remove widgets from the ordered multi-selection while keeping the first selected widget as the reference.

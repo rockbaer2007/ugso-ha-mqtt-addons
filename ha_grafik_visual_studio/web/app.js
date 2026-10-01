@@ -1840,7 +1840,7 @@ function renderStage() {
         makeResizable(element, handle, widget);
       }
     }
-    if (!isConnection) element.addEventListener("click", event => { if (!runtimeMode) { selectWidget(widget.id, event.shiftKey); render(); } }, { capture: true });
+    if (!isConnection) element.addEventListener("click", event => { if (!runtimeMode) { selectWidget(widget.id, event.ctrlKey && event.shiftKey); render(); } }, { capture: true });
     if (!runtimeMode && !isConnection) makeDraggable(element, widget);
     stage.append(element);
   }
