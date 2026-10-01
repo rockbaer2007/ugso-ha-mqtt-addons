@@ -21,9 +21,9 @@ Stand: 01.10.2026. Dieses Dokument hält die vereinbarten Regeln und den ersten 
 
 ## Widget-Paket-Schnittstelle 0.1
 
-Version 0.1 ist ein bewusst kleiner, datenbasierter Vertrag. Im Tab **Einstellungen → Widget-Pakete** kann ein lokales `*.wg.zip` installiert werden. Das ZIP enthält genau eine UTF-8-Datei `manifest.json` und höchstens 2 MB komprimierte Daten; das Manifest ist auf 200 KB begrenzt. Der Server validiert es und speichert ausschließlich die geprüften Daten unter `/data/widget_packages/`. Paket-Code wird nicht ausgeführt. Installierte Widgets erscheinen nach dem Neuladen als eigenes Set in der Palette; ihre Text-Darstellung funktioniert im Editor und in der Runtime. In der Paketliste sind ID, Version, API-Version, Widget-Anzahl und Lizenz sichtbar. Neuladen lädt die App erneut. Entfernen wird verweigert, sobald ein Widget-Typ aus dem Paket in irgendeinem Projekt benutzt wird. Ein bereits installiertes Paket wird nicht überschrieben.
+Version 0.1 ist ein bewusst kleiner, datenbasierter Vertrag. Im Tab **Einstellungen → Widget-Pakete** kann ein lokales `*.wg.zip` installiert werden. Das ZIP enthält `manifest.json` in UTF-8 und optional die darin referenzierten SVG-Icons unter `icons/`; andere Dateien sind unzulässig. Die ZIP-Größe ist auf 2 MB, das Manifest auf 200 KB und jedes SVG auf 50 KB begrenzt. Der Server validiert das Manifest und die SVG-Elemente und speichert ausschließlich die geprüften Daten unter `/data/widget_packages/`. Paket-Code wird nicht ausgeführt. Installierte Widgets erscheinen nach dem Neuladen als eigenes Set in der Palette; ihre Text-Darstellung funktioniert im Editor und in der Runtime. In der Paketliste sind ID, Version, API-Version, Widget-Anzahl und Lizenz sichtbar. Neuladen lädt die App erneut. Entfernen wird verweigert, sobald ein Widget-Typ aus dem Paket in irgendeinem Projekt benutzt wird. Ein bereits installiertes Paket wird nicht überschrieben.
 
-Pflichtfelder des Manifests: `format: "ha-grafik-widget-package"`, `apiVersion: "0.1"`, eine punktgetrennte Paket-`id`, `name`, semantische `version` (`x.y.z`), `license` und `widgets`. Jedes Widget besitzt `type` im Namensraum `paket.id/widget-name`, `label`, `defaults`, `propertyGroups` und `render: {"kind":"text","valueKey":"text"}`. Eigenschaftsfelder besitzen `key`, `label`, `type` und einen Standardwert gleichen Schlüssels. Unterstützte Feldtypen sind `text`, `number`, `checkbox`, `color`, `range` und `select`. `valueKey` muss ein bearbeitbares Text- oder Zahlenfeld sein. Die App ergänzt weiterhin die gemeinsamen Bereiche **Generell** und **Sichtbarkeit**. Neue Instanzen speichern `packageId` und `definitionVersion: "0.1"`.
+Pflichtfelder des Manifests: `format: "ha-grafik-widget-package"`, `apiVersion: "0.1"`, eine punktgetrennte Paket-`id`, `name`, semantische `version` (`x.y.z`), `license` und `widgets`. Jedes Widget besitzt `type` im Namensraum `paket.id/widget-name`, `label`, `defaults`, `propertyGroups` und `render: {"kind":"text","valueKey":"text"}`. Optional zeigt `icon: "icons/label.svg"` auf eine SVG-Datei im ZIP; ohne eigenes Icon wird das integrierte SVG-Textsymbol verwendet. Andere Icon-Formate, Skripte, externe Referenzen und eingebettete Styles werden abgewiesen. Eigenschaftsfelder besitzen `key`, `label`, `type` und einen Standardwert gleichen Schlüssels. Unterstützte Feldtypen sind `text`, `number`, `checkbox`, `color`, `range` und `select`. `valueKey` muss ein bearbeitbares Text- oder Zahlenfeld sein. Die App ergänzt weiterhin die gemeinsamen Bereiche **Generell** und **Sichtbarkeit**. Neue Instanzen speichern `packageId` und `definitionVersion: "0.1"`.
 
 Beispiel für `manifest.json`:
 
@@ -38,6 +38,7 @@ Beispiel für `manifest.json`:
   "widgets": [{
     "type": "beispiel.widgets/label",
     "label": "Label",
+    "icon": "icons/label.svg",
     "defaults": {"text": "Hallo"},
     "propertyGroups": [{"label": "Inhalt", "fields": [{"key": "text", "label": "Text", "type": "text"}]}],
     "render": {"kind": "text", "valueKey": "text"}
@@ -45,7 +46,9 @@ Beispiel für `manifest.json`:
 }
 ```
 
-GitHub-Installation, Updates, Bilder/Icons aus Paketen, eigene Skripte, HA-Zustandsbindung und Schreibaktionen sind noch nicht Bestandteil von 0.1. Diese Fähigkeiten benötigen eigene geprüfte Vertragsversionen oder optionale Erweiterungspunkte, damit bestehende Widgets unverändert bleiben.
+Das ZIP muss zu diesem Beispiel zusätzlich `icons/label.svg` enthalten. Die SVG-Datei darf nur grundlegende Formen wie `path`, `rect`, `circle`, `line` und `polygon` mit einfachen Zeichenattributen enthalten.
+
+GitHub-Installation, Updates, sonstige Bilder aus Paketen, eigene Skripte, HA-Zustandsbindung und Schreibaktionen sind noch nicht Bestandteil von 0.1. Diese Fähigkeiten benötigen eigene geprüfte Vertragsversionen oder optionale Erweiterungspunkte, damit bestehende Widgets unverändert bleiben.
 
 ## Erweiterungsentwurf
 

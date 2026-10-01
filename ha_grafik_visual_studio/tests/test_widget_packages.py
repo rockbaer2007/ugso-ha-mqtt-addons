@@ -36,7 +36,8 @@ def package_bytes(data, extra=None):
     with ZipFile(stream, "w") as archive:
         archive.writestr("manifest.json", json.dumps(data))
         if extra is not None:
-            archive.writestr(extra, "untrusted")
+            name, content = extra if isinstance(extra, tuple) else (extra, "untrusted")
+            archive.writestr(name, content)
     return stream.getvalue()
 
 
@@ -45,8 +46,26 @@ class WidgetPackageTests(unittest.TestCase):
         self.assertEqual(read_package_zip(package_bytes(manifest()))["widgets"][0]["type"], "demo.widgets/label")
 
     def test_executable_archive_content_is_rejected(self):
-        with self.assertRaisesRegex(ValueError, "nur manifest.json"):
+        with self.assertRaisesRegex(ValueError, "SVG-Icons"):
             read_package_zip(package_bytes(manifest(), "widget.js"))
+
+    def test_svg_icon_is_embedded_as_image_data(self):
+        data = manifest()
+        data["widgets"][0]["icon"] = "icons/label.svg"
+        svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#29c8b5" d="M2 2h20v20H2z"/></svg>'
+        result = read_package_zip(package_bytes(data, ("icons/label.svg", svg)))
+        self.assertTrue(result["widgets"][0]["iconData"].startswith("data:image/svg+xml;base64,"))
+
+    def test_svg_script_and_external_references_are_rejected(self):
+        data = manifest()
+        data["widgets"][0]["icon"] = "icons/label.svg"
+        for svg in (
+            '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg"><path fill="url(https://example.com/x)"/></svg>',
+            '<svg xmlns="http://www.w3.org/2000/svg"><image href="https://example.com/x"/></svg>',
+        ):
+            with self.subTest(svg=svg), self.assertRaises(ValueError):
+                read_package_zip(package_bytes(data, ("icons/label.svg", svg)))
 
     def test_widget_cannot_escape_its_namespace(self):
         data = manifest()

@@ -9,6 +9,7 @@
 
 - [ ] Den versionierten Vertrag für Widget-Pakete und Tool-Erweiterungen festlegen: Paketformat, stabile IDs, Eigenschaften, Einstiegspunkte, Fähigkeiten, Berechtigungen, Migrationen und Kompatibilität mit bestehenden Projekten. Die Entwürfe stehen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
 - [x] Widget-Schnittstelle 0.1 für lokale deklarative Textpakete mit Manifestprüfung, Palette, Eigenschaften, Runtime, Paketliste und Nutzungssperre beim Entfernen. Erledigt in 0.1.80; weitergehende Fähigkeiten und Tool-Vertrag bleiben offen.
+- [x] Paket-Widget-Icons ausschließlich als geprüfte SVG-Dateien zulassen; ohne eigenes Icon das integrierte SVG-Symbol verwenden. Erledigt in 0.1.81.
 - [x] Den Einstellungen-Dialog in **Allgemein**, **Widget-Pakete** und **Tools** aufteilen; die Paket-Tabs zeigen kompakte, scrollbar begrenzte Leerlisten. Erledigt in 0.1.79.
 - [ ] Die Paketverwaltung erweitern: GitHub-Installation, Update-Suche/-Prüfung, Kompatibilitätsstatus und angeforderte Fähigkeiten; später Tool-Pakete. Lokale Widget-ZIP-Installation, Paketliste und geschütztes Entfernen sind in 0.1.80 vorhanden.
 - [ ] Ein vollständiges Demo-Widget-Paket mit Quellcode, Paketdatei, Tests und DE/EN-Dokumentation einschließlich Ordnerstruktur und Einstiegspunkten bereitstellen.

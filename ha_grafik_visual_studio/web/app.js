@@ -553,7 +553,9 @@ function renderPalette() {
       preview.className = "widget-choice-preview";
       preview.dataset.kind = definition.preview?.kind || "symbol";
       preview.setAttribute("aria-hidden", "true");
-      for (const lineText of definition.preview?.lines || [definition.icon]) {
+      if (definition.iconSvg) {
+        const icon = document.createElement("img"); icon.src = definition.iconSvg; icon.alt = ""; preview.append(icon);
+      } else for (const lineText of definition.preview?.lines || [definition.icon]) {
         const line = document.createElement("span");
         line.textContent = lineText;
         preview.append(line);
@@ -2884,7 +2886,7 @@ async function loadWidgetPackages() {
       registerWidgetSet({
         id: manifest.id, label: manifest.name,
         widgets: manifest.widgets.map(widget => ({
-          ...widget, packageId: manifest.id, icon: "▣", preview: { kind: "plain", lines: ["▣"] },
+          ...widget, packageId: manifest.id, iconSvg: widget.iconData || "icons/text.svg", preview: { kind: "svg", lines: [] },
         })),
       });
     }
