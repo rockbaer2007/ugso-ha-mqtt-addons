@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.84
+
+- The Settings dialog keeps the same size when switching between General, Widget packages and Tools; each tab scrolls within the fixed dialog area.
+
 ## 0.1.83
 
 - Widget, tool and package images in local extension ZIPs may use validated SVG or PNG files. PNG framing, checksums, size and dimensions are checked before embedding. Studio action buttons retain SVG icons.

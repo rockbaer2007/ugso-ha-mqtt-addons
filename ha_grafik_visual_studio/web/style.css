@@ -327,7 +327,6 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .studio-dialog form { display: grid; gap: 12px; }
 .studio-dialog form > label { display: grid; gap: 5px; color: var(--muted); }
 #settings-dialog { height: min(700px, calc(100vh - 24px)); overflow: hidden; }
-#settings-dialog.settings-extension-view { height: min(420px, calc(100vh - 24px)); }
 #settings-form { height: 100%; grid-template-rows: auto auto minmax(0, 1fr) auto; }
 .settings-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
 .settings-tabs button { min-width: 0; min-height: 34px; padding: 6px 4px; font-size: 12px; font-weight: 400; }

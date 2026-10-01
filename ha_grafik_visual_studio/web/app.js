@@ -3018,7 +3018,6 @@ function showSettingsTab(tabId) {
     tab.tabIndex = active ? 0 : -1;
     $(`#settings-panel-${id}`).hidden = !active;
   }
-  $("#settings-dialog").classList.toggle("settings-extension-view", selected !== "general");
   $("#settings-general-actions").hidden = selected !== "general";
   $("#settings-extension-actions").hidden = selected === "general";
   if (selected === "widgets") void renderWidgetPackageList();
