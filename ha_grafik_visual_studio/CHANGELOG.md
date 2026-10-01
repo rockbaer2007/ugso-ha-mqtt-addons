@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.61
+
+- Reorganizes the editor toolbar into two compact, stable rows instead of squeezing every control into one line.
+- Makes the workspace consume the actual remaining viewport height so its lower edge is no longer clipped by the toolbar.
+- Keeps horizontal and vertical editor scrollbars permanently available and reserves their layout space on both axes.
+
 ## 0.1.60
 
 - Changes the widget palette to an accordion so opening one widget group closes the other groups.
