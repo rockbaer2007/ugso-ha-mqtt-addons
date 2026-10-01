@@ -3071,7 +3071,7 @@ $("#widget-package-file").addEventListener("change", async (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
   const message = $("#widget-package-message");
-  if (!file.name.toLowerCase().endsWith(".wg.zip")) { message.textContent = uiText("Widget-Paket muss auf .wg.zip enden."); return; }
+  if (![".wg", ".wg.zip"].some(suffix => file.name.toLowerCase().endsWith(suffix))) { message.textContent = uiText("Widget-Paket muss auf .wg oder .wg.zip enden."); return; }
   message.textContent = uiText("Widget-Paket wird geprüft …");
   try {
     const response = await fetch("api/widget-packages", { method: "POST", headers: { "Content-Type": "application/zip", "X-Package-Name": file.name }, body: file });
@@ -3086,7 +3086,7 @@ $("#tool-package-file").addEventListener("change", async (event) => {
   const file = event.target.files?.[0];
   if (!file) return;
   const message = $("#tool-package-message");
-  if (!file.name.toLowerCase().endsWith(".tp.zip")) { message.textContent = uiText("Tool-Paket muss auf .tp.zip enden."); return; }
+  if (![".tp", ".tp.zip"].some(suffix => file.name.toLowerCase().endsWith(suffix))) { message.textContent = uiText("Tool-Paket muss auf .tp oder .tp.zip enden."); return; }
   message.textContent = uiText("Tool-Paket wird geprüft …");
   try {
     const response = await fetch("api/tool-packages", { method: "POST", headers: { "Content-Type": "application/zip", "X-Package-Name": file.name }, body: file });

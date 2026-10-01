@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.89
+
+- Local widget and tool package import accepts ZIP archives named `.wg` and `.tp` while retaining `.wg.zip` and `.tp.zip` compatibility. The first Packer core validates source folders and exports both new formats.
+
 ## 0.1.88
 
 - Narrowed page-width and page-height inputs and the Save button in the editor toolbar.

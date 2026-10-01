@@ -8,6 +8,8 @@ Der Einstellungen-Dialog hat die Tabs **Allgemein**, **Widget-Pakete** und **Too
 
 Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mit getrenntem Editor und Runtime. Das Paket ist ein frühes Grundgerüst, keine fertige VIS2-Alternative.
 
+Seit 0.1.89 akzeptiert der lokale Paket-Import zusätzlich `.wg` und `.tp`. Beide Endungen enthalten weiterhin ein geprüftes ZIP-Archiv; `.wg.zip` und `.tp.zip` bleiben kompatibel.
+
 Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sowie daraus gerenderte PNG-Dateien für den Home-Assistant-App-Store.
 
 ## Aktueller Stand

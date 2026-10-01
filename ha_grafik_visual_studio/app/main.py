@@ -171,7 +171,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.88"
+    server_version = "HAGrafikVisualStudio/0.1.89"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -193,7 +193,7 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.88"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.89"})
             return
         if path == "/api/entities":
             try:
@@ -423,8 +423,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(HTTPStatus.OK, {"deleted": True})
 
     def install_widget_package(self):
-        if not self.headers.get("X-Package-Name", "").lower().endswith(".wg.zip"):
-            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Widget-Paket muss auf .wg.zip enden."})
+        if not self.headers.get("X-Package-Name", "").lower().endswith((".wg", ".wg.zip")):
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Widget-Paket muss auf .wg oder .wg.zip enden."})
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -471,8 +471,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_json(HTTPStatus.OK, {"deleted": package_id})
 
     def install_tool_package(self):
-        if not self.headers.get("X-Package-Name", "").lower().endswith(".tp.zip"):
-            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Tool-Paket muss auf .tp.zip enden."})
+        if not self.headers.get("X-Package-Name", "").lower().endswith((".tp", ".tp.zip")):
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Tool-Paket muss auf .tp oder .tp.zip enden."})
             return
         try:
             length = int(self.headers.get("Content-Length", "0"))

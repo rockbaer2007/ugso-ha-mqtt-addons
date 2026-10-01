@@ -21,7 +21,7 @@ Stand: 01.10.2026. Diese Datei beschreibt die vorhandenen Editor-Werkzeuge, den 
 
 ## Tool-Paket-Schnittstelle 0.1
 
-Unter **Einstellungen → Tools** kann ein lokales `*.tp.zip` installiert, angezeigt und entfernt werden. Ein Tool-Paket enthält **genau ein Tool**. Das ZIP enthält `manifest.json` in UTF-8 und optional darin referenzierte SVG- oder PNG-Bilder unter `icons/`; andere Dateien sind unzulässig. Es ist auf 2 MB begrenzt, das Manifest auf 200 KB und jedes Bild auf 50 KB. PNG-Bilder dürfen höchstens 1024 × 1024 Pixel groß sein. Der Server prüft Paketart, Felder und Bilder und speichert das geprüfte Manifest unter `/data/tool_packages/`. Die Installation führt keine Aktion aus und gewährt keinen Zugriff. Der Tab zeigt Paket-ID, Version, Lizenz und das Tool. **Ausführen** öffnet eine Vorschau. Erst **Anwenden** löst eine kontrollierte Editor-Aktion aus; sie wird in die normale Rückgängig-Historie aufgenommen und über den normalen Projektweg gespeichert. Die Runtime lädt keine Tools.
+Unter **Einstellungen → Tools** kann ein lokales `*.tp` oder bisheriges `*.tp.zip` installiert, angezeigt und entfernt werden. Ein Tool-Paket enthält **genau ein Tool**. Beide Endungen enthalten ein ZIP mit `manifest.json` in UTF-8 und optional darin referenzierten SVG- oder PNG-Bildern unter `icons/`; andere Dateien sind unzulässig. Es ist auf 2 MB begrenzt, das Manifest auf 200 KB und jedes Bild auf 50 KB. PNG-Bilder dürfen höchstens 1024 × 1024 Pixel groß sein. Der Server prüft Paketart, Felder und Bilder und speichert das geprüfte Manifest unter `/data/tool_packages/`. Die Installation führt keine Aktion aus und gewährt keinen Zugriff. Der Tab zeigt Paket-ID, Version, Lizenz und das Tool. **Ausführen** öffnet eine Vorschau. Erst **Anwenden** löst eine kontrollierte Editor-Aktion aus; sie wird in die normale Rückgängig-Historie aufgenommen und über den normalen Projektweg gespeichert. Die Runtime lädt keine Tools.
 
 Pflichtfelder: `format: "ha-grafik-tool-package"`, `apiVersion: "0.1"`, punktgetrennte Paket-`id`, `name`, Paket-`version` (`x.y.z`), `license` und `tools`. Paket und Tools können optional `icon: "icons/name.svg"` oder `icon: "icons/name.png"` verwenden. Ein Tool hat eine stabile `id` im Namensraum `paket.id/tool-name`, `definitionVersion: "0.1"`, `label`, `description`, `context: "page"`, `capabilities: ["project.read", "project.write"]` und eine deklarative `action`. In 0.1 ist nur `set-page-background` mit einer sechsstelligen `defaultColor` erlaubt. Die Farbe kann in der Vorschau angepasst werden. Diese Fähigkeiten erlauben ausschließlich die konkrete, bestätigte Änderung an der aktuellen Seite; sie sind keine allgemeine Schreibberechtigung für Paket-Code.
 
@@ -47,11 +47,11 @@ Beispiel für `manifest.json`:
 }
 ```
 
-Ein `.tp.zip` mit diesem Manifest lässt sich im Tool-Tab installieren. Optionale SVG-/PNG-Bilder werden geprüft und im Tab angezeigt; die Aktionsbuttons verwenden weiter die SVG-Symbole des Studios. Eigene Skripte, andere Dateien, Home-Assistant-Dienste, externe URLs, GitHub-Installation und Updates sind noch nicht Teil von 0.1. Erweiterungen brauchen einen neuen geprüften Vertrag oder optionale Fähigkeiten; bestehende Tool-Aktionen dürfen nicht stillschweigend umgedeutet werden.
+Ein `.tp` oder `.tp.zip` mit diesem Manifest lässt sich im Tool-Tab installieren. Optionale SVG-/PNG-Bilder werden geprüft und im Tab angezeigt; die Aktionsbuttons verwenden weiter die SVG-Symbole des Studios. Eigene Skripte, andere Dateien, Home-Assistant-Dienste, externe URLs, GitHub-Installation und Updates sind noch nicht Teil von 0.1. Erweiterungen brauchen einen neuen geprüften Vertrag oder optionale Fähigkeiten; bestehende Tool-Aktionen dürfen nicht stillschweigend umgedeutet werden.
 
 ## Erweiterungsentwurf
 
-Die genauen Feldnamen und das innere Paketformat werden bei der Implementierung festgelegt. Der Generator soll Tool-Pakete als `*.tp.zip` ausgeben, zum Beispiel `importhilfe.tp.zip`; `tp` steht für Tool-Paket. Die Endung kennzeichnet die Paketart; beim Import muss zusätzlich das Manifest geprüft werden. Voraussichtlich werden diese Angaben benötigt:
+Der geplante Packer soll Tool-Pakete als ZIP-Datei mit der Endung `*.tp` ausgeben, zum Beispiel `importhilfe.tp`; `tp` steht für Tool-Paket. Bisherige `*.tp.zip` bleiben importierbar. Die Endung kennzeichnet die Paketart; beim Import wird zusätzlich das Manifest geprüft. Voraussichtlich werden diese Angaben benötigt:
 
 | Bereich | Angaben |
 | --- | --- |

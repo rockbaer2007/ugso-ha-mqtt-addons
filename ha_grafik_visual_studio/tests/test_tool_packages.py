@@ -82,6 +82,24 @@ class ToolPackageTests(unittest.TestCase):
         self.assertTrue(result["iconData"].startswith("data:image/png;base64,"))
         self.assertTrue(result["tools"][0]["iconData"].startswith("data:image/png;base64,"))
 
+    def test_tp_extension_installs_tool(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(main, "TOOL_PACKAGES_DIR", Path(directory) / "tools"):
+                server = ThreadingHTTPServer(("127.0.0.1", 0), main.Handler)
+                thread = Thread(target=server.serve_forever, daemon=True)
+                thread.start()
+                url = f"http://127.0.0.1:{server.server_port}/api/tool-packages"
+                try:
+                    install = Request(url, data=package_bytes(manifest()), method="POST", headers={"X-Package-Name": "demo.tp"})
+                    with urlopen(install) as response:
+                        self.assertEqual(response.status, 201)
+                    with urlopen(url) as response:
+                        self.assertEqual(json.load(response)["packages"][0]["tools"][0]["id"], "demo.tools/background")
+                finally:
+                    server.shutdown()
+                    server.server_close()
+                    thread.join(timeout=2)
+
     def test_install_list_and_delete(self):
         with tempfile.TemporaryDirectory() as directory:
             with patch.object(main, "TOOL_PACKAGES_DIR", Path(directory) / "tools"):

@@ -116,6 +116,28 @@ class WidgetPackageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Text-Darstellung"):
             read_package_zip(package_bytes(data))
 
+    def test_wg_extension_installs_multiple_widgets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(main, "WIDGET_PACKAGES_DIR", Path(directory) / "packages"):
+                server = ThreadingHTTPServer(("127.0.0.1", 0), main.Handler)
+                thread = Thread(target=server.serve_forever, daemon=True)
+                thread.start()
+                url = f"http://127.0.0.1:{server.server_port}/api/widget-packages"
+                try:
+                    data = manifest()
+                    second = json.loads(json.dumps(data["widgets"][0]))
+                    second["type"] = "demo.widgets/second"
+                    data["widgets"].append(second)
+                    install = Request(url, data=package_bytes(data), method="POST", headers={"X-Package-Name": "demo.wg"})
+                    with urlopen(install) as response:
+                        self.assertEqual(response.status, 201)
+                    with urlopen(url) as response:
+                        self.assertEqual(len(json.load(response)["packages"][0]["widgets"]), 2)
+                finally:
+                    server.shutdown()
+                    server.server_close()
+                    thread.join(timeout=2)
+
     def test_install_list_and_block_removal_while_used(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
