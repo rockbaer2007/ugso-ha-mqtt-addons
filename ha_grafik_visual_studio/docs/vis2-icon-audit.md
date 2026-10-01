@@ -45,4 +45,3 @@ Eine spätere Ausnahmeentscheidung für ein VIS-2-Asset müsste Urheber, Copyrig
 - VIS-2: `ioBroker/ioBroker.vis-2`, geprüfter Commit `659e584f90a69b395df40e343d419a493995ffaf`
 - Technic Widgets: `Sefina-DS/ioBroker.vis-2-widgets-technic`, geprüfter Commit `8c9a329994a998178fa3cec680a5854163721a34`
 - Material Design Icons: eingebetteter Katalog `@mdi/svg` 7.4.47
-
