@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.56
+
+- Uses Shift-click to add or remove widgets from the ordered multi-selection while keeping the first selected widget as the reference.
+- Requires Ctrl plus mouse drag to detach an attached SVG connection endpoint from a widget anchor or collector, preventing accidental disconnects.
+- Keeps free endpoints directly draggable and provides the equivalent Ctrl plus arrow-key action with visible usage hints.
+
 ## 0.1.55
 
 - Wraps the editor page in a horizontally and vertically scrollable workspace with usable space on every side of the page.

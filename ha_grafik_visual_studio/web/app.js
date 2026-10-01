@@ -1236,14 +1236,19 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
       const position = connectionEndpoint(widget, prefix, widgets);
       const handle = document.createElementNS(ns, "circle");
       handle.classList.add("connection-endpoint", `is-${prefix}`);
-      if (widget[`${prefix}WidgetId`] || widget[`${prefix}Collector`]) handle.classList.add("is-attached");
+      let attached = Boolean(widget[`${prefix}WidgetId`] || widget[`${prefix}Collector`]);
+      if (attached) handle.classList.add("is-attached");
       handle.setAttribute("cx", String(position.x)); handle.setAttribute("cy", String(position.y)); handle.setAttribute("r", "7");
-      handle.setAttribute("tabindex", "0"); handle.setAttribute("aria-label", prefix === "start" ? "Anfangspunkt verschieben" : "Endpunkt verschieben");
+      handle.setAttribute("tabindex", "0");
+      const endpointName = prefix === "start" ? "Anfangspunkt" : "Endpunkt";
+      handle.setAttribute("aria-label", attached ? `${endpointName} mit Strg und Ziehen lösen` : `${endpointName} verschieben`);
+      handle.setAttribute("title", attached ? "Strg halten und ziehen, um die Verbindung zu lösen" : "Ziehen zum Verschieben");
       svg.append(handle);
       let dragOrigin = null;
       handle.addEventListener("pointerdown", event => {
         event.preventDefault(); event.stopPropagation();
-        dragOrigin = { x: event.clientX, y: event.clientY, detached: false, changed: false, snapTarget: null };
+        if (attached && !event.ctrlKey) { $("#status").textContent = "Angedockten Linienpunkt mit Strg + Maustaste ziehen"; return; }
+        dragOrigin = { x: event.clientX, y: event.clientY, detached: !attached, changed: false, snapTarget: null };
         handle.setPointerCapture(event.pointerId);
       });
       handle.addEventListener("pointermove", event => {
@@ -1253,6 +1258,9 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
           widget[`${prefix}WidgetId`] = "";
           widget[`${prefix}Collector`] = "";
           handle.classList.remove("is-attached");
+          handle.setAttribute("aria-label", `${endpointName} verschieben`);
+          handle.setAttribute("title", "Ziehen zum Verschieben");
+          attached = false;
           dragOrigin.detached = true;
         }
         const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height;
@@ -1282,9 +1290,12 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
       handle.addEventListener("keydown", event => {
         const directions = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
         if (!directions[event.key]) return;
+        if ((widget[`${prefix}WidgetId`] || widget[`${prefix}Collector`]) && !event.ctrlKey) { $("#status").textContent = "Angedockten Linienpunkt mit Strg + Pfeiltaste lösen"; return; }
         event.preventDefault(); event.stopPropagation();
-        widget[`${prefix}WidgetId`] = ""; widget[`${prefix}Collector`] = ""; handle.classList.remove("is-attached");
-        const step = event.shiftKey ? 10 : 1; const current = connectionEndpoint(widget, prefix, widgets);
+        const current = connectionEndpoint(widget, prefix, widgets);
+        widget[`${prefix}WidgetId`] = ""; widget[`${prefix}Collector`] = ""; handle.classList.remove("is-attached"); attached = false;
+        handle.setAttribute("aria-label", `${endpointName} verschieben`); handle.setAttribute("title", "Ziehen zum Verschieben");
+        const step = event.shiftKey ? 10 : 1;
         const x = Math.max(0, Math.min(width, current.x + directions[event.key][0] * step));
         const y = Math.max(0, Math.min(height, current.y + directions[event.key][1] * step));
         widget[`${prefix}X`] = x; widget[`${prefix}Y`] = y;
@@ -1829,7 +1840,7 @@ function renderStage() {
         makeResizable(element, handle, widget);
       }
     }
-    if (!isConnection) element.addEventListener("click", event => { if (!runtimeMode) { selectWidget(widget.id, event.ctrlKey || event.metaKey || event.shiftKey); render(); } }, { capture: true });
+    if (!isConnection) element.addEventListener("click", event => { if (!runtimeMode) { selectWidget(widget.id, event.shiftKey); render(); } }, { capture: true });
     if (!runtimeMode && !isConnection) makeDraggable(element, widget);
     stage.append(element);
   }
