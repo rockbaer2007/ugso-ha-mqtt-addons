@@ -32,6 +32,7 @@ const ENGLISH = {
   "Benutzerdefiniert": "Custom", "Breite": "Width", "Höhe": "Height", "Speichern": "Save",
   "Alle": "All", "Auswählen": "Select", "Aufheben": "Clear selection", "Widget-Auswahl": "Widget selection",
   "Seitenmenü schließen": "Close pages menu", "Neue Seite": "New page", "Widget-Palette": "Widget palette",
+  "Widgets suchen": "Search widgets", "Widget-Palette durchsuchen": "Search widget palette", "Keine Widgets gefunden": "No widgets found",
   "Palette einklappen": "Collapse palette", "Eigenschaften einklappen": "Collapse properties",
   "Grundgerüst – Widgets sind eigene HA-Elemente": "Basic editor – widgets are individual HA elements",
   "Visualisierungsfläche": "Visualization canvas", "Eigenschaften": "Properties",

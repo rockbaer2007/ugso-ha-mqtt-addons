@@ -514,17 +514,22 @@ if (!runtimeMode) setInterval(() => {
 function renderPalette() {
   const palette = $("#palette");
   palette.replaceChildren();
+  const search = $("#palette-search").value.trim().toLocaleLowerCase();
   const widgetSets = getWidgetSets();
   if (!state.paletteAccordionReady) {
     state.collapsedWidgetSets = new Set(widgetSets.slice(1).map(set => set.id));
     state.paletteAccordionReady = true;
   }
   for (const set of widgetSets) {
+    const widgets = search ? set.widgets.filter(definition =>
+      [definition.label, definition.type, set.label].some(value => String(value || "").toLocaleLowerCase().includes(search))) : set.widgets;
+    if (!widgets.length) continue;
     const group = document.createElement("details");
     group.className = "widget-group";
     group.dataset.widgetSetId = set.id;
-    group.open = !state.collapsedWidgetSets.has(set.id);
+    group.open = Boolean(search) || !state.collapsedWidgetSets.has(set.id);
     group.addEventListener("toggle", () => {
+      if (search) return;
       if (group.open) {
         state.collapsedWidgetSets.delete(set.id);
         for (const other of palette.querySelectorAll(".widget-group")) {
@@ -538,7 +543,7 @@ function renderPalette() {
     summary.textContent = set.label;
     const list = document.createElement("div");
     list.className = "widget-list";
-    for (const definition of set.widgets) {
+    for (const definition of widgets) {
       const button = document.createElement("button");
       button.className = "widget-choice";
       const label = document.createElement("span");
@@ -559,6 +564,12 @@ function renderPalette() {
     }
     group.append(summary, list);
     palette.append(group);
+  }
+  if (search && !palette.childElementCount) {
+    const empty = document.createElement("p");
+    empty.className = "palette-empty";
+    empty.textContent = uiText("Keine Widgets gefunden");
+    palette.append(empty);
   }
 }
 
@@ -2847,6 +2858,7 @@ $("#pages-menu-toggle").addEventListener("click", () => togglePagesMenu());
 $("#runtime-pages-menu-toggle").addEventListener("click", () => togglePagesMenu());
 $("#pages-close").addEventListener("click", () => togglePagesMenu(false));
 $("#page-add").addEventListener("click", addPage);
+$("#palette-search").addEventListener("input", renderPalette);
 $("#widgets-menu").addEventListener("click", () => {
   const panel = $("#palette-panel"); panel.hidden = !panel.hidden;
   $("#widgets-menu").setAttribute("aria-pressed", String(!panel.hidden));

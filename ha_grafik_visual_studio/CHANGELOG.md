@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.75
+
+- The widget palette now has a search field that filters widgets by name or type. Matching groups expand temporarily, while the previous accordion state returns when the search is cleared.
+
 ## 0.1.74
 
 - The switch-control endpoint accepts only JSON requests, preventing cross-origin browser forms from submitting service actions.

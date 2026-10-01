@@ -78,6 +78,13 @@ html[lang="en"] .widget-edit-actions::after { content: "Edit"; }
 .page-row.hidden-page .page-select { opacity: .62; }
 .runtime-page-menu-toggle { display: none; }
 .palette { border-right: 1px solid var(--line); }
+.palette-search { display: flex; align-items: center; gap: 8px; margin: 8px 8px 0; padding: 0 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); }
+.palette-search:focus-within { border-color: var(--accent); }
+.palette-search svg { flex: none; width: 16px; height: 16px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; }
+.palette-search input { width: 100%; min-width: 0; height: 34px; padding: 0; border: 0; outline: 0; background: transparent; }
+.palette-search input::-webkit-search-cancel-button { cursor: pointer; }
+.palette.collapsed .palette-search { display: none; }
+.palette-empty { margin: 8px 3px; color: var(--muted); }
 .properties { border-left: 1px solid var(--line); min-height: 0; overflow-y: auto; scrollbar-gutter: stable; }
 .filter-editor { width: min(1100px, 95vw); }
 .filter-editor-list { max-height: 60vh; overflow: auto; }
