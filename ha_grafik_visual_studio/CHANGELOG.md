@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.42
+
+- Ergänzt HTML voranstellen/anhängen für sämtliche Zeit- und ValueList-Widgets.
+- Ergänzt einzelne HTML-/Stilfelder, Werteanzahl und Testwert-Auswahl für ValueList HTML Style; bestehende Listen bleiben lesbar.
+
 ## 0.1.41
 
 - Macht Slider im Attributbereich kompakter: 3 px Schiene, 12 px Griff und 20 px Bedienhöhe; Tastaturbedienung und Zahlenfelder bleiben verfügbar.

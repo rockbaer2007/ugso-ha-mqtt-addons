@@ -197,6 +197,13 @@ function projectForSave(project) {
           delete widget.signalImages;
         }
       }
+      if (widget.type === "value-list-html-style") {
+        const count = Math.max(1, Math.min(50, Math.trunc(Number(widget.count) || 2)));
+        for (let index = 0; index <= count; index++) {
+          if (propertyGroupEnabled(widget, { label: `Wert [${index}]` }, groups.length + index)) continue;
+          delete widget[`listValue${index}`]; delete widget[`listStyle${index}`];
+        }
+      }
     }
   }
   return saved;
@@ -845,10 +852,10 @@ function formatDate(value, format, relative) {
 }
 
 function listEntry(widget) {
-  const values = String(widget.valueList || "").split(/\r?\n|;/);
+  const values = String(widget.valueList || "").split(/\r?\n|;/).map((value, index) => widget[`listValue${index}`] ?? value);
   const raw = Number(widget.state ?? widget.testIndex ?? 0);
   const index = Number.isFinite(raw) ? Math.trunc(raw) : 0;
-  return { values, index, value: values[index] ?? "" };
+  return { values, index, value: widget[`listValue${index}`] ?? values[index] ?? "" };
 }
 
 function applySafeStyle(element, cssText) {
@@ -1113,7 +1120,7 @@ function renderStage() {
       if (widget.type === "value-list-text") content.textContent = value;
       else {
         appendSafeHtml(content, value);
-        if (widget.type === "value-list-html-style") applySafeStyle(content, String(widget.styleList || "").split(/\r?\n/)[index] || "");
+        if (widget.type === "value-list-html-style") applySafeStyle(content, widget[`listStyle${index}`] ?? String(widget.styleList || "").split(/\r?\n/)[index] ?? "");
       }
     } else if (widget.type === "bool-display" || widget.type === "bool-html-control") {
       const current = isOn(widget.state);
@@ -1188,6 +1195,10 @@ function renderStage() {
       if (widget.title) { const title = document.createElement("span"); title.className = "widget-title"; title.textContent = widget.title; content.append(title); }
       content.append(value);
       if (widget.type === "gauge") content.classList.add("widget-gauge");
+    }
+    if (["time-value", "timestamp-value", "timestamp", "last-changed", "value-list-text", "value-list-html", "value-list-html-style"].includes(widget.type)) {
+      const prefix = document.createElement("span"); appendSafeHtml(prefix, widget.prefix || ""); content.prepend(prefix);
+      appendSafeHtml(content, widget.suffix || "");
     }
     if (["checkbox", "button", "image"].includes(widget.type)) {
       const prefix = document.createElement("span"); appendSafeHtml(prefix, widget.prefix || ""); content.prepend(prefix);
@@ -1401,6 +1412,7 @@ function field(descriptor, widget) {
   }
   const update = () => {
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    if (descriptor.key === "testIndex" && widget.type?.startsWith("value-list-")) widget.state = input.value;
     void updatePreview();
     renderStage();
     if (descriptor.refreshProperties) renderProperties();
@@ -1464,7 +1476,17 @@ function renderProperties() {
   }
   if (state.propertyTab === "scripts") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Widget-Skripte werden in einem späteren Ausbauschritt ergänzt."; panel.append(empty); return; }
   if (widget.type === "toggle" && typeof widget.state === "boolean") widget.state = widget.state ? "on" : "off";
-  const groups = getWidgetDefinition(widget.type).propertyGroups;
+  let groups = getWidgetDefinition(widget.type).propertyGroups;
+  if (widget.type === "value-list-html-style") {
+    const count = Math.max(1, Math.min(50, Math.trunc(Number(widget.count) || 2)));
+    const values = String(widget.valueList || "").split(/\r?\n|;/); const styles = String(widget.styleList || "").split(/\r?\n/);
+    const options = Array.from({ length: count + 1 }, (_, index) => ({ value: String(index), label: `${index}: ${widget[`listValue${index}`] ?? values[index] ?? ""}` }));
+    groups = groups.map(group => ({ ...group, fields: group.fields.map(descriptor => descriptor.key === "state" || descriptor.key === "testIndex" ? { ...descriptor, type: "select", options } : descriptor) }));
+    groups = [...groups, ...Array.from({ length: count + 1 }, (_, index) => ({ label: `Wert [${index}]`, fields: [
+      { label: `HTML Wert [${index}]`, key: `listValue${index}`, default: values[index] || "", refreshProperties: false },
+      { label: `Stil für [${index}]`, key: `listStyle${index}`, default: styles[index] || "", type: "textarea" },
+    ] }))];
+  }
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
   heading.textContent = `${getWidgetDefinition(widget.type).label} · ${widget.id}`; panel.append(heading);
   for (const [index, group] of groups.entries()) {

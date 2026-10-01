@@ -98,6 +98,7 @@ const basicDataWidget = (type, label, icon, defaults, dataFields, hint = "Entity
   ],
 });
 const dateFormats = ["YYYY-MM-DD HH:mm:ss", "DD.MM.YYYY HH:mm:ss", "DD.MM.YYYY HH:mm", "YYYY-MM-DD", "HH:mm:ss"];
+const htmlAdditions = () => [{ label: "HTML voranstellen", key: "prefix" }, { label: "HTML anhängen", key: "suffix" }];
 
 registerWidgetSet({
   id: "ha-grafik-core",
@@ -183,6 +184,7 @@ registerWidgetSet({
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testwert / Zeitstempel", key: sourceKey },
       { label: "Datumsformat", key: "dateFormat", type: "select", options: dateFormats },
       { label: "Relative Zeit anzeigen", key: "showInterval", type: "checkbox" },
+      ...htmlAdditions(),
     ])),
     ...[
       ["value-list-text", "ValueList Text"], ["value-list-html", "ValueList HTML"], ["value-list-html-style", "ValueList HTML Style"],
@@ -191,8 +193,9 @@ registerWidgetSet({
     }, [
       { label: "Home-Assistant-Entity (Indexwert)", key: "entityId" }, { label: "Test-Index / Zustand", key: "state" },
       { label: "Werteliste (ein Eintrag pro Zeile oder mit Semikolon)", key: "valueList", type: "textarea" },
-      ...(type === "value-list-html-style" ? [{ label: "CSS-Stil je Zeile", key: "styleList", type: "textarea" }] : []),
+      ...(type === "value-list-html-style" ? [{ label: "CSS-Stil je Zeile (Bestandsdaten)", key: "styleList", type: "textarea" }, { label: "Werteanzahl bis", key: "count", type: "number", min: 1, max: 50, default: 2, refreshProperties: true }] : []),
       { label: "Vorschau-Index", key: "testIndex", type: "number", min: 0 },
+      ...htmlAdditions(),
     ])),
     basicDataWidget("bool-display", "Bool HTML", "⇄", { title: "Bool HTML", entityId: "", state: false, htmlTrue: "<strong>Ein</strong>", htmlFalse: "Aus" }, [
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testzustand", key: "state", type: "select", options: [{ value: "false", label: "Aus" }, { value: "true", label: "Ein" }] },
