@@ -12,13 +12,13 @@
 <body>
   <header class="toolbar">
     <div class="brand"><img class="brand-mark" src="studio-icon.svg" alt=""><span>Grafik Visual Studio</span></div>
-    <button class="page-menu-toggle" id="pages-menu-toggle" type="button" aria-expanded="false">☰ Seiten</button>
+    <button class="page-menu-toggle toolbar-tile" id="pages-menu-toggle" type="button" aria-expanded="false"><span class="toolbar-icon" aria-hidden="true">☰</span><span>Seiten</span></button>
     <nav class="studio-menu" aria-label="Visual Studio">
-      <button id="widgets-menu" type="button" aria-pressed="true">Widgets</button>
-      <button id="settings-menu" type="button">Einstellungen</button>
-      <button id="entities-menu" type="button">Entitäten</button>
-      <button id="files-menu" type="button">Dateien</button>
-      <button id="projects-menu" type="button">Projekte</button>
+      <button id="widgets-menu" class="toolbar-tile" type="button" aria-pressed="true"><span class="toolbar-icon" aria-hidden="true">▼</span><span>Widgets</span></button>
+      <button id="settings-menu" class="toolbar-tile" type="button"><span class="toolbar-icon" aria-hidden="true">⚙</span><span>Einstellungen</span></button>
+      <button id="entities-menu" class="toolbar-tile" type="button"><span class="toolbar-icon" aria-hidden="true">☷</span><span>Entitäten</span></button>
+      <button id="files-menu" class="toolbar-tile" type="button"><span class="toolbar-icon" aria-hidden="true">▤</span><span>Dateien</span></button>
+      <button id="projects-menu" class="toolbar-tile" type="button"><span class="toolbar-icon" aria-hidden="true">☰</span><span>Projekte</span></button>
     </nav>
     <label class="widget-finder" aria-label="Widget suchen">
       <span>Widget finden</span>
@@ -36,8 +36,8 @@
       <input id="widget-import-file" type="file" accept="application/json,.json" hidden>
     </div>
     <nav class="mode-switch" aria-label="Modus">
-      <a href="?mode=editor" id="editor-link">Editor</a>
-      <a href="?mode=runtime" id="runtime-link">Runtime</a>
+      <a href="?mode=editor" id="editor-link" class="toolbar-tile"><span class="toolbar-icon" aria-hidden="true">▣</span><span>Editor</span></a>
+      <a href="?mode=runtime" id="runtime-link" class="toolbar-tile"><span class="toolbar-icon" aria-hidden="true">▶</span><span>Runtime</span></a>
     </nav>
     <div class="toolbar-actions">
       <label class="page-size">Seitengröße
@@ -52,7 +52,7 @@
         <label>Breite <input id="page-width" type="number" min="240" max="7680" step="1"></label>
         <label>Höhe <input id="page-height" type="number" min="240" max="4320" step="1"></label>
       </div>
-      <button id="save" class="primary">Speichern</button>
+      <button id="save" class="primary toolbar-tile"><span class="toolbar-icon" aria-hidden="true">⇩</span><span>Speichern</span></button>
     </div>
   </header>
   <main class="workspace" id="workspace">

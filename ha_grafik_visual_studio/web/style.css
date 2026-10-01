@@ -1,29 +1,31 @@
-:root { color-scheme: dark light; font: 13px/1.4 system-ui, sans-serif; --bg: #171a1c; --panel: #202426; --line: #3b4548; --text: #e7ecee; --muted: #aab6ba; --accent: #29c8b5; --orange: #ff9f16; --toolbar-height: 82px; }
+:root { color-scheme: dark light; font: 13px/1.4 system-ui, sans-serif; --bg: #171a1c; --panel: #202426; --line: #3b4548; --text: #e7ecee; --muted: #aab6ba; --accent: #29c8b5; --orange: #ff9f16; --toolbar-height: 92px; }
 * { box-sizing: border-box; }
 html, body { width: 100%; height: 100%; min-height: 0; }
 body { display: flex; margin: 0; overflow: hidden; flex-direction: column; color: var(--text); background: var(--bg); }
 button, select, input { color: inherit; font: inherit; }
 button, select { border: 1px solid var(--line); border-radius: 5px; background: var(--panel); padding: 6px 9px; }
 button { cursor: pointer; }
-.toolbar { display: grid; min-height: var(--toolbar-height); flex: 0 0 auto; grid-template-columns: auto auto minmax(0, 1fr) auto; grid-template-rows: repeat(2, 36px); grid-template-areas: "brand pages studio mode" "finder finder widget-actions toolbar-actions"; column-gap: 12px; row-gap: 2px; align-items: center; padding: 4px 12px; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid var(--line); background: var(--panel); }
-.page-menu-toggle { flex: none; padding: 5px 9px; color: var(--text); }
-.page-menu-toggle { grid-area: pages; }
-.studio-menu { grid-area: studio; display: flex; align-items: center; gap: 3px; }
-.studio-menu button { border-color: transparent; background: transparent; padding: 6px 8px; white-space: nowrap; }
+.toolbar { display: flex; min-height: var(--toolbar-height); flex: 0 0 auto; align-items: stretch; gap: 0; padding: 4px 8px; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid var(--line); background: var(--panel); }
+.toolbar-tile { display: flex; min-width: 54px; min-height: 72px; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 5px 8px; white-space: nowrap; }
+.toolbar-icon { display: grid; min-height: 25px; place-items: center; font-size: 20px; line-height: 1; }
+.page-menu-toggle { flex: none; color: var(--text); border-color: transparent; background: transparent; }
+.studio-menu { display: flex; flex: none; align-items: stretch; gap: 2px; padding: 0 7px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+.studio-menu button { border-color: transparent; background: transparent; }
 .studio-menu button:hover, .studio-menu button[aria-pressed="true"] { border-color: var(--line); background: #344143; }
-.widget-finder { grid-area: finder; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px; min-width: 220px; max-width: 500px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.widget-finder { display: grid; width: clamp(190px, 20vw, 330px); min-width: 190px; flex: 1 1 260px; grid-template-rows: auto 32px; align-content: center; gap: 4px; padding: 4px 10px; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .widget-finder select { width: 100%; min-width: 0; overflow: hidden; padding: 5px 7px; text-overflow: ellipsis; }
-.widget-actions { grid-area: widget-actions; display: flex; justify-self: end; gap: 3px; }
-.widget-actions button { width: 30px; height: 30px; padding: 2px; }
-.brand { grid-area: brand; display: flex; align-items: center; gap: 8px; font-weight: 650; white-space: nowrap; }
+.widget-actions { display: grid; flex: none; grid-template-columns: repeat(6, 30px); grid-template-rows: 48px 18px; align-content: center; gap: 2px; padding: 3px 8px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
+.widget-actions::after { grid-column: 1 / -1; align-self: end; color: var(--muted); font-size: 10px; text-align: center; content: "Widgets"; }
+.widget-actions button { width: 30px; height: 36px; align-self: center; padding: 2px; border-color: transparent; background: transparent; font-size: 17px; }
+.brand { display: flex; flex: none; align-items: center; gap: 8px; padding: 0 10px 0 4px; font-weight: 650; white-space: nowrap; }
 .brand-mark { display: block; width: 27px; height: 27px; flex: none; }
-.mode-switch { grid-area: mode; display: flex; justify-self: end; gap: 3px; }
-.mode-switch a { padding: 5px 10px; border-radius: 4px; color: var(--muted); text-decoration: none; }
+.mode-switch { display: flex; flex: none; align-items: stretch; gap: 2px; padding: 0 7px; border-right: 1px solid var(--line); }
+.mode-switch a { border-radius: 4px; color: var(--muted); text-decoration: none; }
 .mode-switch a.active { color: var(--text); background: #344143; box-shadow: inset 0 -2px var(--orange); }
-.toolbar-actions { grid-area: toolbar-actions; display: flex; align-items: center; justify-self: end; gap: 8px; }
-.page-size { display: flex; align-items: center; gap: 7px; color: var(--muted); }
-.custom-size { display: flex; gap: 5px; }
-.custom-size label { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 11px; }
+.toolbar-actions { display: flex; min-width: max-content; flex: none; align-items: stretch; gap: 8px; padding-left: 8px; }
+.page-size { display: flex; min-width: 190px; flex-direction: column; justify-content: center; gap: 4px; color: var(--muted); font-size: 11px; }
+.custom-size { display: flex; align-items: stretch; gap: 5px; }
+.custom-size label { display: flex; flex-direction: column; justify-content: center; gap: 4px; color: var(--muted); font-size: 11px; }
 .custom-size input { width: 65px; min-width: 0; border: 1px solid var(--line); border-radius: 4px; padding: 5px; background: var(--bg); }
 .primary { background: var(--accent); color: #092322; border-color: var(--accent); font-weight: 650; }
 .workspace { display: grid; width: 100%; min-height: 0; flex: 1 1 auto; grid-template-columns: var(--left-panel-width, 225px) minmax(0, 1fr) var(--right-panel-width, 260px); overflow: hidden; }

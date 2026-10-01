@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.62
+
+- Rebuilds the editor header as one VIS-2-inspired toolbar with icons or controls above their labels.
+- Separates pages, widget operations, modes and project controls into compact visual groups without wrapping the toolbar into multiple rows.
+- Preserves the corrected remaining-height workspace and its permanently accessible horizontal and vertical scrollbars.
+
 ## 0.1.61
 
 - Reorganizes the editor toolbar into two compact, stable rows instead of squeezing every control into one line.
