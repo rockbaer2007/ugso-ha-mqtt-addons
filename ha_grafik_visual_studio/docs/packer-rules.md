@@ -32,7 +32,7 @@ Die Prüfergebnisse erscheinen als Liste mit **grünem Haken** bei Erfolg oder *
 2. `format`, `apiVersion`, Paket-ID, Name, Version und Lizenz entsprechen dem gewählten Pakettyp und dem jeweiligen Vertrag 0.1. Widget- und Tool-IDs sind eindeutig und liegen im Paket-Namensraum.
 3. Alle Pflichtfelder der Widget-Definitionen beziehungsweise Tool-Aktionen sind vorhanden und zulässig. Für 0.1 gelten nur die deklarative Text-Darstellung beziehungsweise `set-page-background`.
 4. Jeder referenzierte Bildpfad zeigt auf eine vorhandene Datei unter `icons/`. Es gibt keine nicht referenzierten oder unzulässigen Paketdateien; SVG-/PNG-Inhalte bestehen die bestehende Bildprüfung.
-5. Die Grenzen des aktuellen Importers werden eingehalten: ZIP höchstens 2 MB, Manifest höchstens 200 KB, Bild höchstens 50 KB, PNG höchstens 1024 × 1024 Pixel sowie 1–30 Widgets oder 1–20 Tools.
+5. Die Grenzen des aktuellen Importers werden eingehalten: ZIP höchstens 2 MB, Manifest höchstens 200 KB, Bild höchstens 50 KB, PNG höchstens 1024 × 1024 Pixel sowie 1–30 Widgets pro Widget-Paket oder genau ein Tool pro Tool-Paket.
 6. Der Exportordner ist beschreibbar; Ausgabename und Endung passen zum Modus. Ein bereits vorhandenes Ziel wird vor dem Überschreiben ausdrücklich behandelt.
 
 **Exportieren** bleibt deaktiviert, solange auch nur eine Prüfung rot ist. Nach Änderungen im Quellordner, am Modus oder am Exportziel wird erneut geprüft. Direkt vor dem Schreiben wird dieselbe Validierung nochmals ausgeführt; ein währenddessen verändertes Paket darf nicht auf Basis eines veralteten grünen Ergebnisses exportiert werden. Der Packer schreibt zunächst eine temporäre Datei und stellt nur ein vollständig geprüftes Paket als Ergebnis bereit.

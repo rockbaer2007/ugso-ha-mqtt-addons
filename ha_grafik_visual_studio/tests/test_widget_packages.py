@@ -54,6 +54,14 @@ class WidgetPackageTests(unittest.TestCase):
     def test_valid_declarative_widget(self):
         self.assertEqual(read_package_zip(package_bytes(manifest()))["widgets"][0]["type"], "demo.widgets/label")
 
+    def test_package_accepts_multiple_widgets(self):
+        data = manifest()
+        second = json.loads(json.dumps(data["widgets"][0]))
+        second["type"] = "demo.widgets/second"
+        second["label"] = "Zweites Widget"
+        data["widgets"].append(second)
+        self.assertEqual(len(read_package_zip(package_bytes(data))["widgets"]), 2)
+
     def test_executable_archive_content_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "SVG-/PNG-Bilder"):
             read_package_zip(package_bytes(manifest(), "widget.js"))

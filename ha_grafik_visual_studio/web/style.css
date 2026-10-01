@@ -49,9 +49,13 @@ html[lang="en"] .widget-edit-actions::after { content: "Edit"; }
 .widget-history-actions button small { color: var(--muted); font-size: 9px; }
 .brand { display: flex; flex: none; align-items: center; gap: 8px; padding: 0 10px 0 4px; font-weight: 650; white-space: nowrap; }
 .brand-mark { display: block; width: 27px; height: 27px; flex: none; }
-.mode-switch { display: flex; flex: none; align-items: stretch; gap: 2px; padding: 0 7px; border-right: 1px solid var(--line); }
-.mode-switch a { border-radius: 4px; color: var(--muted); text-decoration: none; }
+.mode-switch { display: grid; flex: none; grid-template-rows: repeat(2, 32px); align-content: center; gap: 4px; padding: 0 7px; border-right: 1px solid var(--line); }
+.mode-switch a { min-width: 83px; min-height: 0; flex-direction: row; gap: 6px; padding: 3px 7px; border-radius: 4px; color: var(--muted); font-size: 11px; text-decoration: none; }
+.mode-switch .toolbar-icon { min-height: 0; font-size: 15px; }
 .mode-switch a.active { color: var(--text); background: #344143; box-shadow: inset 0 -2px var(--orange); }
+.mode-switch #runtime-link { color: #e5ffef; background: #20583e; }
+.mode-switch #runtime-link:hover, .mode-switch #runtime-link:focus-visible { background: #286d4d; }
+.mode-switch #runtime-link.active { background: #287e55; box-shadow: inset 0 -2px #7fe2a9; }
 .editor-tools { display: grid; flex: none; grid-template-rows: 54px 18px; align-content: center; padding: 3px 7px; border-right: 1px solid var(--line); }
 .editor-tool-list { display: grid; max-width: 160px; grid-auto-flow: column; grid-auto-columns: 30px; grid-template-rows: repeat(2, 25px); gap: 3px 2px; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
 .editor-tool-list button { display: grid; width: 30px; height: 25px; place-items: center; padding: 2px; border-color: transparent; border-radius: 3px; background: transparent; }

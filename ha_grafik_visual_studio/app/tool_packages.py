@@ -29,8 +29,8 @@ def validate_tool_manifest(manifest):
     if not isinstance(manifest["version"], str) or not VERSION.fullmatch(manifest["version"]):
         raise ValueError("Ungültige Tool-Paketversion.")
     tools = manifest["tools"]
-    if not isinstance(tools, list) or not 1 <= len(tools) <= 20:
-        raise ValueError("Ein Tool-Paket benötigt 1 bis 20 Tools.")
+    if not isinstance(tools, list) or len(tools) != 1:
+        raise ValueError("Ein Tool-Paket muss genau ein Tool enthalten.")
     seen = set()
     for tool in tools:
         if not isinstance(tool, dict) or not {"id", "definitionVersion", "label", "description", "context", "capabilities", "action"} <= set(tool) or set(tool) - {"id", "definitionVersion", "label", "description", "context", "capabilities", "action", "icon"}:

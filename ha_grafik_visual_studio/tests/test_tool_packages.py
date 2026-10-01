@@ -53,6 +53,14 @@ class ToolPackageTests(unittest.TestCase):
     def test_valid_data_only_tool(self):
         self.assertEqual(read_tool_package_zip(package_bytes(manifest()))["tools"][0]["id"], "demo.tools/background")
 
+    def test_package_requires_exactly_one_tool(self):
+        base = manifest()["tools"][0]
+        for tools in ([], [base, {**base, "id": "demo.tools/second"}]):
+            data = manifest()
+            data["tools"] = tools
+            with self.subTest(count=len(tools)), self.assertRaisesRegex(ValueError, "genau ein Tool"):
+                read_tool_package_zip(package_bytes(data))
+
     def test_scripts_and_undeclared_capabilities_are_rejected(self):
         with self.assertRaisesRegex(ValueError, "referenzierte SVG-/PNG-Bilder"):
             read_tool_package_zip(package_bytes(manifest(), "tool.js"))

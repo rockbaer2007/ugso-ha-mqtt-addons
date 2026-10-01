@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.87
+
+- Editor and Runtime share one compact two-row toolbar column; Runtime is green. Widget packages continue to accept 1–30 widgets, while tool packages now require exactly one tool.
+
 ## 0.1.86
 
 - Installed tools now appear as two-row icon actions in the editor toolbar and open their existing preview directly. The page-size preset and width/height controls are stacked in two compact rows to make room.
