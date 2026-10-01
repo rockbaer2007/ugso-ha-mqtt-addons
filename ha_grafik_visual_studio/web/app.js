@@ -1224,7 +1224,9 @@ function renderStage() {
       position: widget.cssPosition || "absolute", display: widget.cssDisplay || "",
       left: isConnection ? "0" : widget.cssLeft || `${widget.x}px`, top: isConnection ? "0" : widget.cssTop || `${widget.y}px`,
       width: isConnection ? `${page.width}px` : widget.cssWidth || `${widget.width}px`, height: isConnection ? `${page.height}px` : widget.cssHeight || `${widget.height}px`,
-      zIndex: widget.cssZIndex === undefined || widget.cssZIndex === "" ? String((isConnection ? connectionZIndex(widget, activePage.widgets) : Math.max(0, Number(widget.layer) || 0)) + 2) : String(widget.cssZIndex),
+      zIndex: widget.cssZIndex === undefined || widget.cssZIndex === ""
+        ? String(isConnection ? connectionZIndex(widget, activePage.widgets) + 2 : Math.max(0, Number(widget.layer) || 0) + (runtimeMode ? 2 : 10002))
+        : String(widget.cssZIndex),
       overflowX: widget.cssOverflowX || "visible", overflowY: widget.cssOverflowY || "visible",
       cursor: widget.cssCursor || "", transform: widget.cssTransform || "",
       marginLeft: widget.marginLeft || "", marginTop: widget.marginTop || "", marginRight: widget.marginRight || "", marginBottom: widget.marginBottom || "",
@@ -1541,7 +1543,8 @@ function renderStage() {
       appendSafeHtml(content, widget.suffix ?? (Number(widget.state) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""));
     }
     element.append(content);
-    const showDockPoints = !runtimeMode && !isConnection && widget.dockPointsEnabled !== false && (selected || widget.dockAlwaysVisible || activePage.widgets.find(item => item.id === state.selectedId)?.type === "svg-connection");
+    const hasConnections = activePage.widgets.some(item => item.type === "svg-connection" && item.visible !== false);
+    const showDockPoints = !runtimeMode && !isConnection && widget.dockPointsEnabled !== false && (selected || widget.dockAlwaysVisible || hasConnections);
     if (showDockPoints) {
       for (const [anchorId, label, x, y] of CONNECTION_ANCHORS) {
         if (widget[`dock_${anchorId.replaceAll("-", "_")}`] === false) continue;
@@ -1597,17 +1600,27 @@ function makeDraggable(element, widget) {
   element.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     if (event.target.closest(".resize-handle")) return;
-    origin = { x: event.clientX, y: event.clientY, left: widget.x, top: widget.y };
+    origin = { x: event.clientX, y: event.clientY, left: widget.x, top: widget.y, moved: false };
     element.setPointerCapture(event.pointerId);
   });
   element.addEventListener("pointermove", (event) => {
     if (!origin || !(event.buttons & 1)) return;
+    if (Math.abs(event.clientX - origin.x) > 1 || Math.abs(event.clientY - origin.y) > 1) origin.moved = true;
+    if (!origin.moved) return;
     const scale = stage.clientWidth / Number.parseFloat(stage.style.width);
     widget.x = Math.max(0, Math.round(origin.left + (event.clientX - origin.x) / scale));
     widget.y = Math.max(0, Math.round(origin.top + (event.clientY - origin.y) / scale));
     element.style.left = `${widget.x}px`; element.style.top = `${widget.y}px`;
   });
-  element.addEventListener("pointerup", () => { if (origin) { origin = null; renderStage(); } });
+  element.addEventListener("pointerup", () => {
+    if (!origin) return;
+    const moved = origin.moved;
+    origin = null;
+    if (moved) {
+      state.selectedId = widget.id;
+      render();
+    }
+  });
 }
 
 function makeResizable(element, handle, widget) {

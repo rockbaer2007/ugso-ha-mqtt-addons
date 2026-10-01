@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.47
+
+- Keeps normal widgets selectable after inserting another widget by preserving click events through the drag lifecycle and placing them above SVG connection editing layers.
+- Keeps anchor markers visible after another widget is inserted while connections exist on the page.
+
 ## 0.1.46
 
 - Repairs and structures the project settings dialog with an explicit Auto-Save section.
