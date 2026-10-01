@@ -1,6 +1,6 @@
 # Packer-Regeln für HA Grafik Visual Studio
 
-Stand: 01.10.2026. Dieses Dokument hält den vereinbarten Entwurf für ein eigenständiges Programm zum Erstellen von Widget- und Tool-Paketen fest. Die Packer-Entwicklung liegt in einem separaten privaten Repository. Ein erster Kern kann Quellordner prüfen und `.wg`-/`.tp`-Dateien exportieren. Die grafische Oberfläche und Dateityp-Registrierung sind noch nicht implementiert. Die App installiert lokale `*.wg`- und `*.tp`-Dateien sowie die bisherigen `*.wg.zip`- und `*.tp.zip`-Dateien nach den Verträgen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
+Stand: 01.10.2026. Dieses Dokument hält den vereinbarten Entwurf für ein eigenständiges Programm zum Erstellen von Widget- und Tool-Paketen fest. Die Packer-Entwicklung liegt in einem separaten privaten Repository. Eine erste Qt-Oberfläche kann Quellordner prüfen und `.wg`-/`.tp`-Dateien exportieren. Dateityp-Registrierung und eigenständige Programmdateien sind noch nicht implementiert. Die App installiert lokale `*.wg`- und `*.tp`-Dateien sowie die bisherigen `*.wg.zip`- und `*.tp.zip`-Dateien nach den Verträgen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
 
 ## Ziel und Paketformat
 
