@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.76
+
+- The existing numeric-value widget is listed as "Number" in the palette, separately from "Red Number", and can now be found by searching for "number". Existing saved numeric widgets keep their type and settings.
+
 ## 0.1.75
 
 - The widget palette now has a search field that filters widgets by name or type. Matching groups expand temporarily, while the previous accordion state returns when the search is cleared.
