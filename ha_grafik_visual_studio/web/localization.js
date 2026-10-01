@@ -50,6 +50,7 @@ const ENGLISH = {
   "Diese Entität unterstützt die Schaltersteuerung nicht.": "This entity does not support switch control.",
   "Ungültiger Schaltzustand.": "Invalid switch state.",
   "Ungültiger Schaltbefehl.": "Invalid switch command.",
+  "JSON-Anfrage erforderlich.": "A JSON request is required.",
   "Bei Automatisch wird Deutsch nur bei deutscher Home-Assistant-Sprache angezeigt, sonst Englisch. Diese Auswahl gilt nur für diesen Browser.": "Automatic uses German only when Home Assistant is set to German; otherwise it uses English. This choice applies only to this browser.",
   "Editor und Andockpunkte": "Editor and docking points", "Farbe der Andockpunkte": "Docking point color",
   "Diese Farbe gilt für alle Andockpunkte und ihre Belegungszähler. Standard: Gelb.": "This color applies to all docking points and their occupancy counters. Default: yellow.",

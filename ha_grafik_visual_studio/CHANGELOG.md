@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.74
+
+- The switch-control endpoint accepts only JSON requests, preventing cross-origin browser forms from submitting service actions.
+
 ## 0.1.73
 
 - A Switch widget bound to a `switch`, `light` or `input_boolean` entity now sends `turn_on`/`turn_off` through the authenticated Home Assistant WebSocket service API. Its displayed state follows HA confirmation instead of changing only a local test value.
