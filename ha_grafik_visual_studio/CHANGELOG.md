@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.78
+
+- The SVG connection line dialog calls its default option "Zwischenpunkt" (intermediate point) instead of "Klick". Newly created points receive a matching name in the selected UI language; existing saved point names remain unchanged.
+
 ## 0.1.77
 
 - VIS2-inspired widget names in the palette now use the original English labels, including Bool SVG, Input val, Bool Checkbox, Bulb on/off, Border and Image. The interface language does not translate palette widget names; former labels remain searchable.

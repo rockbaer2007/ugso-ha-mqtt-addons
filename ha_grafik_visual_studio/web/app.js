@@ -1405,10 +1405,10 @@ function openConnectionPointDialog(widget, widgets, point) {
   const dialog = document.createElement("dialog"); dialog.className = "studio-dialog connection-point-type-dialog";
   const heading = document.createElement("h2"); heading.textContent = "Punkt auf der Linie erstellen";
   const hint = document.createElement("p"); hint.className = "property-hint";
-  hint.textContent = "Ein Klickpunkt teilt den Pfad in weitere Segmente. Nur ein Sammelpunkt kann von anderen Linien gezielt verwendet werden.";
+  hint.textContent = "Ein Zwischenpunkt teilt den Pfad in weitere Segmente. Nur ein Sammelpunkt kann von anderen Linien gezielt verwendet werden.";
   const choices = document.createElement("fieldset"); const legend = document.createElement("legend"); legend.textContent = "Punkttyp"; choices.append(legend);
   const name = `connection-point-type-${createRandomId()}`;
-  for (const [value, label, checked] of [["click", "Klick", true], ["collector", "Sammelpunkt", false]]) {
+  for (const [value, label, checked] of [["click", "Zwischenpunkt", true], ["collector", "Sammelpunkt", false]]) {
     const row = document.createElement("label"); const radio = document.createElement("input"); radio.type = "radio"; radio.name = name; radio.value = value; radio.checked = checked;
     row.append(radio, document.createTextNode(label)); choices.append(row);
   }
@@ -1421,7 +1421,7 @@ function openConnectionPointDialog(widget, widgets, point) {
     const count = points.length + 1;
     const insertAt = Math.min(points.length, closestConnectionSegmentIndex(widget, widgets, point));
     points.splice(insertAt, 0, {
-      id: createRandomId(), name: `${collectorEnabled ? "Sammelpunkt" : "Klickpunkt"} ${count}`,
+      id: createRandomId(), name: `${uiText(collectorEnabled ? "Sammelpunkt" : "Zwischenpunkt")} ${count}`,
       x: point.x, y: point.y, collectorEnabled, display: collectorEnabled ? "distributor" : "point",
     });
     widget.pathMode = "zigzag";
