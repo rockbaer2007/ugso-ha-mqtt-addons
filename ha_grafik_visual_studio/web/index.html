@@ -89,6 +89,8 @@
   <dialog id="settings-dialog" class="studio-dialog">
     <form method="dialog" id="settings-form">
       <header class="icon-picker-heading"><strong>Projekteinstellungen</strong><button value="cancel" aria-label="Schließen">×</button></header>
+      <label class="settings-check"><input id="settings-auto-save" type="checkbox"> Änderungen automatisch speichern</label>
+      <label>Auto-Save nach letzter Änderung (Sekunden) <input id="settings-auto-save-delay" type="number" min="1" max="300" step="1"></label>
       <label>Bei Projektänderungen laden <select id="settings-reload"><option value="reload">Alle Browser neu laden</option><option value="manual">Nicht automatisch neu laden</option></select></label>
       <label class="settings-check"><input id="settings-dark-reconnect" type="checkbox"> Dunkler Bildschirm zum erneuten Verbinden</label>
       <label>Zustands-Entprellzeit (Millisekunden) <input id="settings-debounce" type="number" min="0" max="10000" step="10"></label>

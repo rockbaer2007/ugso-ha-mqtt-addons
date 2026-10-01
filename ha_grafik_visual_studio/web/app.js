@@ -230,6 +230,32 @@ function currentPage() {
   return selected || state.project.pages[0];
 }
 
+let savedProjectSnapshot = "";
+let observedProjectSnapshot = "";
+let projectChangedAt = 0;
+let projectSavePending = false;
+
+async function saveProject(automatic = false) {
+  if (projectSavePending) return false;
+  projectSavePending = true;
+  const projectId = state.projectId;
+  try {
+    const snapshot = JSON.stringify(projectForSave(state.project));
+    const response = await fetch(`api/project?project=${encodeURIComponent(projectId)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: snapshot });
+    if (!response.ok) throw new Error("Speichern fehlgeschlagen");
+    if (state.projectId === projectId) savedProjectSnapshot = snapshot;
+    $("#status").textContent = automatic ? "Projekt automatisch gespeichert" : "Projekt lokal gespeichert";
+    return true;
+  } catch {
+    $("#status").textContent = "Speichern fehlgeschlagen – bitte erneut speichern";
+    // Retry only after another change or a manual save.
+    if (automatic) projectChangedAt = Infinity;
+    return false;
+  } finally {
+    projectSavePending = false;
+  }
+}
+
 async function loadProject() {
   try {
     const projectsResponse = await fetch("api/projects");
@@ -245,7 +271,20 @@ async function loadProject() {
   state.project.settings ??= {};
   state.nextId = Math.max(0, ...state.project.pages.flatMap((page) => page.widgets).map((widget) => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   render();
+  savedProjectSnapshot = observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
 }
+
+if (!runtimeMode) setInterval(() => {
+  if (!savedProjectSnapshot || !state.project) return;
+  const snapshot = JSON.stringify(projectForSave(state.project));
+  if (snapshot !== observedProjectSnapshot) {
+    observedProjectSnapshot = snapshot;
+    projectChangedAt = Date.now();
+  }
+  const settings = state.project.settings || {};
+  const delay = Math.max(1, Math.min(300, Number(settings.autoSaveDelaySeconds) || 5)) * 1000;
+  if (settings.autoSave !== false && snapshot !== savedProjectSnapshot && Date.now() - projectChangedAt >= delay) void saveProject(true);
+}, 250);
 
 function renderPalette() {
   const palette = $("#palette");
@@ -1529,12 +1568,7 @@ for (const [id, key, max] of [["page-width", "width", 7680], ["page-height", "he
   });
 }
 $("#save").addEventListener("click", async () => {
-  const response = await fetch(`api/project?project=${encodeURIComponent(state.projectId)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(projectForSave(state.project)) });
-  if (response.ok) {
-    state.project = projectForSave(state.project);
-    render();
-  }
-  $("#status").textContent = response.ok ? "Projekt lokal gespeichert" : "Speichern fehlgeschlagen";
+  await saveProject();
 });
 $("#pages-menu-toggle").addEventListener("click", () => togglePagesMenu());
 $("#runtime-pages-menu-toggle").addEventListener("click", () => togglePagesMenu());
@@ -1546,6 +1580,9 @@ $("#widgets-menu").addEventListener("click", () => {
 });
 $("#settings-menu").addEventListener("click", () => {
   const settings = state.project.settings ??= {};
+  $("#settings-auto-save").checked = settings.autoSave !== false;
+  $("#settings-auto-save-delay").value = settings.autoSaveDelaySeconds ?? 5;
+  $("#settings-auto-save-delay").disabled = settings.autoSave === false;
   $("#settings-reload").value = settings.reloadMode || "reload";
   $("#settings-dark-reconnect").checked = Boolean(settings.darkReconnect);
   $("#settings-debounce").value = settings.debounceMs ?? 200;
@@ -1562,10 +1599,15 @@ $("#project-favicon-browse").addEventListener("click", () => {
   openObjects();
 });
 $("#settings-instance-new").addEventListener("click", () => { $("#settings-instance").value = crypto.randomUUID().slice(0, 8); });
+$("#settings-auto-save").addEventListener("change", () => {
+  $("#settings-auto-save-delay").disabled = !$("#settings-auto-save").checked;
+});
 $("#settings-save").addEventListener("click", async (event) => {
   event.preventDefault();
   state.project.settings ??= {};
   Object.assign(state.project.settings, {
+    autoSave: $("#settings-auto-save").checked,
+    autoSaveDelaySeconds: Math.max(1, Math.min(300, Math.round(Number($("#settings-auto-save-delay").value) || 5))),
     reloadMode: $("#settings-reload").value,
     darkReconnect: $("#settings-dark-reconnect").checked,
     debounceMs: Math.max(0, Math.min(10000, Number($("#settings-debounce").value) || 0)),
@@ -1576,8 +1618,7 @@ $("#settings-save").addEventListener("click", async (event) => {
   });
   state.project.settings.title = $("#project-title").value.trim();
   state.project.settings.favicon = $("#project-favicon").value.trim();
-  const response = await fetch(`api/project?project=${encodeURIComponent(state.projectId)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(projectForSave(state.project)) });
-  if (response.ok) { $("#settings-dialog").close(); render(); $("#status").textContent = "Projekteinstellungen gespeichert"; }
+  if (await saveProject()) { $("#settings-dialog").close(); render(); $("#status").textContent = "Projekteinstellungen gespeichert"; }
 });
 $("#files-menu").addEventListener("click", () => openObjects());
 $("#entities-menu").addEventListener("click", () => openEntities());

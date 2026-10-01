@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.39
+
+- Speichert Editoränderungen standardmäßig fünf Sekunden nach der letzten Änderung automatisch.
+- Ergänzt in den Projekteinstellungen einen Auto-Save-Schalter und eine Wartezeit von 1 bis 300 Sekunden.
+- Zeigt Speicherfehler an und verhindert parallele Speicheranfragen; die Runtime speichert nicht automatisch.
+
 ## 0.1.38
 
 - Benennt die gemeinsame Widget-Einstellung „Ebene“ in allen Widget-Sets und der Statusanzeige in „z-index“ um.
