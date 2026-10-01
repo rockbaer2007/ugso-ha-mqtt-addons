@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.86
+
+- Installed tools now appear as two-row icon actions in the editor toolbar and open their existing preview directly. The page-size preset and width/height controls are stacked in two compact rows to make room.
+
 ## 0.1.85
 
 - Docking points start disabled on widgets. Their handles and snap targets appear only after the widget's docking-point group is explicitly enabled.

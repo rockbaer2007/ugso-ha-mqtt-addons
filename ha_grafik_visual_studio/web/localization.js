@@ -93,7 +93,7 @@ Object.assign(ENGLISH, {
   "Abstand": "Spacing", "Addiere nichts zu URL": "Add nothing to URL", "Aktive Farbe": "Active color",
   "Akzentfarbe": "Accent color", "Allgemein": "General", "Alternativtext": "Alternative text",
   "Einstellungsbereiche": "Settings sections", "Widget-Pakete": "Widget packages", "Installierte Widget-Pakete": "Installed widget packages",
-  "Installierte Tool-Pakete": "Installed tool packages", "Keine zusätzlichen Widget-Pakete installiert.": "No additional widget packages installed.",
+  "Installierte Tool-Pakete": "Installed tool packages", "Installierte Tools": "Installed tools", "Tool-Pakete verwalten": "Manage tool packages", "Keine zusätzlichen Widget-Pakete installiert.": "No additional widget packages installed.",
   "Keine zusätzlichen Tool-Pakete installiert.": "No additional tool packages installed.",
   "Zusätzliche Widget-Pakete werden hier angezeigt. Integrierte Widgets sind Teil der App.": "Additional widget packages appear here. Built-in widgets are part of the app.",
   "Zusätzliche Widget-Pakete mit Schnittstelle 0.1. Integrierte Widgets bleiben Teil der App.": "Additional widget packages using API 0.1. Built-in widgets remain part of the app.",

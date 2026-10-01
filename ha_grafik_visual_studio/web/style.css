@@ -52,11 +52,19 @@ html[lang="en"] .widget-edit-actions::after { content: "Edit"; }
 .mode-switch { display: flex; flex: none; align-items: stretch; gap: 2px; padding: 0 7px; border-right: 1px solid var(--line); }
 .mode-switch a { border-radius: 4px; color: var(--muted); text-decoration: none; }
 .mode-switch a.active { color: var(--text); background: #344143; box-shadow: inset 0 -2px var(--orange); }
-.toolbar-actions { display: flex; min-width: max-content; flex: none; align-items: stretch; gap: 8px; padding-left: 8px; }
-.page-size { display: flex; min-width: 190px; flex-direction: column; justify-content: center; gap: 4px; color: var(--muted); font-size: 11px; }
-.custom-size { display: flex; align-items: stretch; gap: 5px; }
-.custom-size label { display: flex; flex-direction: column; justify-content: center; gap: 4px; color: var(--muted); font-size: 11px; }
-.custom-size input { width: 65px; min-width: 0; border: 1px solid var(--line); border-radius: 4px; padding: 5px; background: var(--bg); }
+.editor-tools { display: grid; flex: none; grid-template-rows: 54px 18px; align-content: center; padding: 3px 7px; border-right: 1px solid var(--line); }
+.editor-tool-list { display: grid; max-width: 160px; grid-auto-flow: column; grid-auto-columns: 30px; grid-template-rows: repeat(2, 25px); gap: 3px 2px; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+.editor-tool-list button { display: grid; width: 30px; height: 25px; place-items: center; padding: 2px; border-color: transparent; border-radius: 3px; background: transparent; }
+.editor-tool-list button:hover, .editor-tool-list button:focus-visible { border-color: var(--line); background: #344143; }
+.editor-tool-list img { display: block; width: 20px; height: 20px; object-fit: contain; }
+.editor-tools-label { align-self: end; color: var(--muted); font-size: 10px; text-align: center; }
+.toolbar-actions { display: flex; min-width: max-content; flex: none; align-items: stretch; gap: 6px; padding-left: 8px; }
+.page-size-controls { display: grid; width: 235px; flex: none; grid-template-rows: repeat(2, 32px); align-content: center; gap: 4px; }
+.page-size { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: center; gap: 4px; color: var(--muted); font-size: 11px; }
+.page-size select { width: 100%; min-width: 0; padding: 5px 20px 5px 6px; }
+.custom-size { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+.custom-size label { display: grid; min-width: 0; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px; color: var(--muted); font-size: 11px; }
+.custom-size input { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 4px; padding: 5px; background: var(--bg); }
 .primary { background: var(--accent); color: #092322; border-color: var(--accent); font-weight: 650; }
 .workspace { display: grid; width: 100%; min-height: 0; flex: 1 1 auto; grid-template-columns: var(--left-panel-width, 225px) minmax(0, 1fr) var(--right-panel-width, 260px); overflow: hidden; }
 .workspace.runtime { grid-template-columns: minmax(0, 1fr); }
@@ -473,4 +481,4 @@ body.runtime-mode .stage::before { display: none; }
 body.runtime-mode .stage.runtime-grid::before { display: block; }
 body.runtime-mode .runtime-page-menu-toggle { position: fixed; z-index: 10; top: 10px; left: 10px; display: block; width: 38px; height: 38px; padding: 0; border-radius: 50%; background: #202426cc; }
 @media (max-width: 900px) { .toolbar { gap: 5px; padding: 0 6px; } .brand span:last-child { display: none; } .studio-menu button { padding: 5px; font-size: 11px; } .widget-finder { grid-template-columns: minmax(0, 1fr); min-width: 90px; gap: 0; } .widget-finder > span { display: none; } .page-size { font-size: 11px; } }
-@media (max-width: 650px) { .brand, .mode-switch, .page-size, #save { display: none; } .toolbar { overflow-x: auto; } .studio-menu { flex: none; } .widget-finder { min-width: 95px; } .custom-size { display: none; } .project-row { grid-template-columns: minmax(0, 1fr) auto auto; } .project-row strong { grid-column: 1 / -1; } }
+@media (max-width: 650px) { .brand, .mode-switch, .page-size-controls, #save { display: none; } .toolbar { overflow-x: auto; } .studio-menu { flex: none; } .widget-finder { min-width: 95px; } .project-row { grid-template-columns: minmax(0, 1fr) auto auto; } .project-row strong { grid-column: 1 / -1; } }

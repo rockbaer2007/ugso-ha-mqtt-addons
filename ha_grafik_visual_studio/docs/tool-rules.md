@@ -69,4 +69,4 @@ Die erste Version sollte nur klar begrenzte Editor-Tools mit Menüeintrag, Konte
 
 ## Darstellung in den Einstellungen
 
-Die Tabs **Allgemein**, **Widget-Pakete** und **Tools** trennen App-Einstellungen, Widget-Erweiterungen und Editor-Werkzeuge. Der Tool-Tab zeigt installierte Pakete und ihre Aktionen. Kompatibilitätsstatus, Update-Suche und weitergehende Fähigkeiten folgen später. Aktivieren, Deaktivieren und Aktualisieren darf die Grundfunktion vorhandener Widgets nicht verändern.
+Die Tabs **Allgemein**, **Widget-Pakete** und **Tools** trennen App-Einstellungen, Widget-Erweiterungen und Editor-Werkzeuge. Der Tool-Tab zeigt installierte Pakete und ihre Aktionen. Installierte Tools erscheinen zusätzlich als Symbolaktionen in zwei Reihen der Editor-Werkzeugleiste; ein Klick öffnet dieselbe Vorschau vor der bestätigten Änderung. Ein Verwaltungssymbol öffnet direkt den Tool-Tab. Kompatibilitätsstatus, Update-Suche und weitergehende Fähigkeiten folgen später. Aktivieren, Deaktivieren und Aktualisieren darf die Grundfunktion vorhandener Widgets nicht verändern.

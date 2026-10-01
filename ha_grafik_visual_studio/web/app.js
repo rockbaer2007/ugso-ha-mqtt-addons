@@ -425,6 +425,7 @@ async function loadProject() {
   state.undoStack = []; state.redoStack = [];
   state.nextId = Math.max(0, ...state.project.pages.flatMap((page) => page.widgets).map((widget) => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   render();
+  if (!runtimeMode) void renderEditorToolActions();
   savedProjectSnapshot = observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
   if (runtimeMode) void refreshRuntimeStates();
 }
@@ -2789,7 +2790,6 @@ function render() {
   document.body.style.overflow = runtimeMode ? (state.project.settings?.bodyOverflow || "auto") : "hidden";
   $("#active-page-name").textContent = page.name;
   $("#preset").value = page.page.preset || "custom";
-  $("#custom-size").hidden = page.page.preset !== "custom";
   $("#page-width").value = page.page.width;
   $("#page-height").value = page.page.height;
   renderPalette(); renderPageMenu(); renderStage(); renderProperties(); renderWidgetFinder();
@@ -2845,7 +2845,6 @@ $("#preset").addEventListener("change", (event) => {
   const preset = event.target.value;
   const page = currentPage().page;
   Object.assign(page, { ...page, preset, ...(PRESETS[preset] || {}) });
-  $("#custom-size").hidden = preset !== "custom";
   $("#page-width").value = page.width;
   $("#page-height").value = page.height;
   renderStage();
@@ -2856,7 +2855,6 @@ for (const [id, key, max] of [["page-width", "width", 7680], ["page-height", "he
     page.preset = "custom";
     page[key] = Math.max(240, Math.min(max, Number(event.target.value) || 240));
     $("#preset").value = "custom";
-    $("#custom-size").hidden = false;
     renderStage();
   });
 }
@@ -2933,6 +2931,26 @@ async function fetchToolPackages() {
   return (await response.json()).packages;
 }
 
+async function renderEditorToolActions(packages = null) {
+  if (runtimeMode) return;
+  const list = $("#editor-tool-list");
+  try {
+    const installed = packages ?? await fetchToolPackages();
+    for (const button of list.querySelectorAll(".editor-tool-button")) button.remove();
+    for (const manifest of installed) {
+      for (const tool of manifest.tools) {
+        const button = document.createElement("button"); button.type = "button"; button.className = "editor-tool-button";
+        button.title = `${manifest.name}: ${tool.label}`;
+        button.setAttribute("aria-label", `${uiText("Tool ausführen")}: ${tool.label}`);
+        const icon = document.createElement("img"); icon.src = tool.iconData || manifest.iconData || "icons/check.svg"; icon.alt = "";
+        button.append(icon);
+        button.addEventListener("click", () => previewTool(tool));
+        list.append(button);
+      }
+    }
+  } catch (error) { console.warn("Tool-Pakete:", error); }
+}
+
 let pendingTool = null;
 function previewTool(tool) {
   if (runtimeMode || !state.project || tool.context !== "page" || tool.action?.kind !== "set-page-background") return;
@@ -2968,6 +2986,7 @@ async function renderToolPackageList() {
   const list = $("#tool-package-list");
   try {
     const packages = await fetchToolPackages();
+    void renderEditorToolActions(packages);
     list.replaceChildren();
     if (!packages.length) {
       const empty = document.createElement("p"); empty.className = "settings-package-empty";
@@ -3046,6 +3065,7 @@ function openSettingsDialog() {
   if (!dialog.open) dialog.showModal();
 }
 $("#settings-menu").addEventListener("click", openSettingsDialog);
+$("#editor-tools-manage").addEventListener("click", () => { openSettingsDialog(); showSettingsTab("tools"); });
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
   const file = event.target.files?.[0];

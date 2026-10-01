@@ -72,6 +72,6 @@ Der Editor und die Runtime brauchen jeweils einen klaren Einstiegspunkt. Ein Wid
 
 - **Widget-Pakete** ergänzen Paletteneinträge, Eigenschaften und deren Editor-/Runtime-Verhalten.
 - **Tool-Erweiterungen** ergänzen Editor-Werkzeuge, zum Beispiel Import, Prüfung oder Bearbeitungshilfen. Sie dürfen bestehende Widget-Grundfunktionen nicht heimlich verändern.
-- Die Einstellungen haben die Bereiche **Allgemein**, **Widget-Pakete** und **Tools**. Der Tool-Tab wartet noch auf eine eigene Schnittstelle.
+- Die Einstellungen haben die Bereiche **Allgemein**, **Widget-Pakete** und **Tools**. Der Tool-Tab verwaltet lokale Tool-Pakete nach der [Tool-Schnittstelle 0.1](tool-rules.md#tool-paket-schnittstelle-01).
 
 Die erste Umsetzung sollte mit einem kleinen, versionierten Vertrag für Registrierung, Eigenschaften, Standardwerte, Vorschau und Runtime beginnen. Weitere Fähigkeiten werden nur als optionale Erweiterungspunkte ergänzt.
