@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.49
+
+- Selects widgets during the capture phase so nested links, buttons, selectors and other interactive content cannot suppress the editor selection or its property panel.
+
 ## 0.1.48
 
 - Opens project settings reliably in HTTP Home Assistant ingress by providing a UUID fallback when `crypto.randomUUID()` is unavailable.

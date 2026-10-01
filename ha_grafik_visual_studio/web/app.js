@@ -1604,7 +1604,7 @@ function renderStage() {
         makeResizable(element, handle, widget);
       }
     }
-    if (!isConnection) element.addEventListener("click", () => { if (!runtimeMode) { state.selectedId = widget.id; render(); } });
+    if (!isConnection) element.addEventListener("click", () => { if (!runtimeMode) { state.selectedId = widget.id; render(); } }, { capture: true });
     if (!runtimeMode && !isConnection) makeDraggable(element, widget);
     stage.append(element);
   }
