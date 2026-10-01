@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.68
+
+- Selecting an SVG connection now shows its editable properties on the first click; clicking the selected line again opens the point dialog.
+- Connected lines can inherit the animation rhythm from their main line or an enabled collector while keeping their own colors and line styling.
+
 ## 0.1.67
 
 - Keeps newly inserted palette widgets in the visible editor area and confirms the insertion in the status line.

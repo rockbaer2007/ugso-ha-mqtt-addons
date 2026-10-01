@@ -1355,12 +1355,15 @@ function connectionPathData(widget, widgets, reverse = false) {
 
 function effectiveConnectionStyle(widget, widgets, visited = new Set()) {
   let result = { ...widget };
-  if (widget.inheritFlow && widget.flowParentId && !visited.has(widget.id)) {
+  const collectorReference = [widget.endCollector, widget.startCollector].find(reference => connectionCollectorPosition(reference, widgets));
+  const collectorParentId = String(collectorReference || "").split(":", 1)[0];
+  const parentId = widget.flowParentId || collectorParentId;
+  if (widget.inheritFlow && parentId && !visited.has(widget.id)) {
     visited.add(widget.id);
-    const parent = widgets.find(item => item.id === widget.flowParentId && item.type === "svg-connection");
+    const parent = widgets.find(item => item.id === parentId && item.type === "svg-connection");
     if (parent) {
       const source = effectiveConnectionStyle(parent, widgets, visited);
-      const inherited = ["baseColor", "flowColor", "lineWidth", "lineOpacity", "lineStyle", "dashLength", "gapLength", "lineCap", "animationEnabled", "animationStyle", "animationDirection", "animationDuration", "markerColor"];
+      const inherited = ["dashLength", "gapLength", "animationEnabled", "animationStyle", "animationDirection", "animationDuration"];
       result = Object.assign(result, Object.fromEntries(inherited.map(key => [key, source[key]])));
     }
   }
@@ -1565,7 +1568,15 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
     if (suppressLineClick) { suppressLineClick = false; return; }
     const coveredWidget = document.elementsFromPoint(event.clientX, event.clientY).map(element => element.closest?.(".widget")).find(element => element && !element.classList.contains("widget-svg-connection"));
     if (coveredWidget) { setSingleWidgetSelection(coveredWidget.dataset.widgetId); render(); return; }
+    const wasSelected = state.selectedId === widget.id;
     setSingleWidgetSelection(widget.id);
+    state.propertyTab = "widget";
+    if (!wasSelected) {
+      renderStage(); renderProperties(); renderWidgetFinder();
+      $("#status").textContent = `${widgetDisplayName(widget)} ausgewählt · erneut klicken für einen Punkt`;
+      return;
+    }
+    renderProperties(); renderWidgetFinder();
     const bounds = stage.getBoundingClientRect();
     openConnectionPointDialog(widget, widgets, {
       x: Math.max(0, Math.min(width, Math.round((event.clientX - bounds.left) * width / bounds.width))),

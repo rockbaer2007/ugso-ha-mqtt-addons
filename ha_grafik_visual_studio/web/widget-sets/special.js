@@ -84,7 +84,7 @@ registerWidgetSet({
         ] },
         { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1 },
         { label: "Hauptlinie / Flussgruppe", key: "flowParentId", type: "connection" },
-        { label: "Animation der Hauptlinie übernehmen", key: "inheritFlow", type: "checkbox", default: true },
+        { label: "Animationstakt der Hauptlinie übernehmen (eigene Farben behalten)", key: "inheritFlow", type: "checkbox", default: true },
         { label: "Synchronisierung", key: "synchronization", type: "select", options: [
           { value: "same-phase", label: "Gleicher Takt" }, { value: "arrival", label: "Am Sammelpunkt synchron ankommen" },
         ] },
