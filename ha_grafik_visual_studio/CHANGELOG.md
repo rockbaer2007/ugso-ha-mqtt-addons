@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.59
+
+- Adds an editable, persistent widget name to every widget type while keeping the technical widget ID unchanged.
+- Uses widget names in the finder, property heading, alignment feedback and widget, connection and collector selectors.
+- Migrates existing widgets to useful names, assigns unique names to new, duplicated and imported widgets and warns when a manually entered name is already used.
+
 ## 0.1.58
 
 - Moves an entire SVG connection by holding the primary mouse button on the line and dragging it.

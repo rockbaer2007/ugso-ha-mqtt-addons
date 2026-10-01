@@ -29,7 +29,7 @@ registerWidgetSet({
     },
     propertyGroups: [
       { label: "Allgemein", fields: [
-        { label: "Name", key: "title" }, { label: "Kommentar", key: "comment" },
+        { label: "Kommentar", key: "comment" },
         { label: "Sichtbar", key: "visible", type: "checkbox", default: true },
         { label: "CSS Klasse", key: "cssClass" }, { label: "Filterwort", key: "filterWord" },
       ] },

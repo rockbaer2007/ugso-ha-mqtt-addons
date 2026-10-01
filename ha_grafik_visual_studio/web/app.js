@@ -265,6 +265,7 @@ function ensureProjectPages(project) {
     page.visible ??= true;
     page.page ||= { preset: "desktop", ...PRESETS.desktop, background: "#242729", backgroundMode: "tile" };
     page.widgets = Array.isArray(page.widgets) ? page.widgets : [];
+    ensureWidgetNames(page);
   });
   project.currentPageId = project.pages.some((page) => page.id === project.currentPageId) ? project.currentPageId : project.pages[0].id;
   project.schemaVersion = 2;
@@ -280,6 +281,35 @@ function currentPage() {
     if (visible) { state.project.currentPageId = visible.id; return visible; }
   }
   return selected || state.project.pages[0];
+}
+
+function widgetDisplayName(widget) {
+  const explicitName = String(widget?.name || "").trim();
+  if (explicitName) return explicitName;
+  const legacyTitle = String(widget?.title || "").trim();
+  if (legacyTitle) return legacyTitle;
+  try { return getWidgetDefinition(widget.type).label; } catch { return widget?.id || "Widget"; }
+}
+
+function uniqueWidgetName(page, requested, excludeId = "") {
+  const base = String(requested || "Widget").trim() || "Widget";
+  const used = new Set(page.widgets.filter(widget => widget.id !== excludeId).map(widget => String(widget.name || "").trim().toLocaleLowerCase("de")).filter(Boolean));
+  if (!used.has(base.toLocaleLowerCase("de"))) return base;
+  let suffix = 2;
+  while (used.has(`${base} ${suffix}`.toLocaleLowerCase("de"))) suffix += 1;
+  return `${base} ${suffix}`;
+}
+
+function ensureWidgetNames(page) {
+  const used = new Set(page.widgets.map(widget => String(widget.name || "").trim().toLocaleLowerCase("de")).filter(Boolean));
+  for (const widget of page.widgets) {
+    if (String(widget.name || "").trim()) continue;
+    let base = String(widget.title || "").trim();
+    if (!base) { try { base = getWidgetDefinition(widget.type).label; } catch { base = "Widget"; } }
+    let candidate = base || "Widget"; let suffix = 2;
+    while (used.has(candidate.toLocaleLowerCase("de"))) candidate = `${base} ${suffix++}`;
+    widget.name = candidate; used.add(candidate.toLocaleLowerCase("de"));
+  }
 }
 
 let savedProjectSnapshot = "";
@@ -432,7 +462,7 @@ function renderWidgetFinder() {
   for (const widget of page.widgets) {
     const option = document.createElement("option"); option.value = widget.id;
     const definition = getWidgetDefinition(widget.type);
-    option.textContent = `${widget.title?.trim() || "Ohne Namen"} — ${definition.label} · ${widget.id}`;
+    option.textContent = `${widgetDisplayName(widget)} — ${definition.label} · ${widget.id}`;
     option.selected = widget.id === state.selectedId;
     select.append(option);
   }
@@ -806,6 +836,7 @@ function duplicateSelectedWidget() {
   if (!source) return;
   const copy = structuredClone(source);
   copy.id = `widget-${state.nextId++}`;
+  copy.name = uniqueWidgetName(page, `${widgetDisplayName(source)} Kopie`);
   if (copy.type === "svg-connection") {
     copy.connectionPoints = (copy.connectionPoints || []).map(point => ({ ...point, id: createRandomId() }));
     copy.startCollector = ""; copy.endCollector = ""; copy.flowParentId = "";
@@ -858,7 +889,7 @@ function alignSelectedWidgets(action, explicitSize = null) {
     const firstCenter = number(sorted[0].y) + number(sorted[0].height) / 2; const lastCenter = number(sorted.at(-1).y) + number(sorted.at(-1).height) / 2;
     sorted.slice(1, -1).forEach((widget, index) => { const center = firstCenter + (lastCenter - firstCenter) * (index + 1) / (sorted.length - 1); widget.y = Math.round(center - number(widget.height) / 2); });
   }
-  $("#status").textContent = `${widgets.length} Widgets ausgerichtet · Referenz: ${reference.title || reference.id}`;
+  $("#status").textContent = `${widgets.length} Widgets ausgerichtet · Referenz: ${widgetDisplayName(reference)}`;
   renderStage(); renderProperties(); renderWidgetFinder();
 }
 
@@ -907,6 +938,7 @@ async function importWidgets(file) {
     for (const source of widgets) {
       const widget = structuredClone(source);
       widget.id = `widget-${state.nextId++}`;
+      widget.name = uniqueWidgetName(currentPage(), widget.name || widget.title || getWidgetDefinition(widget.type).label);
       widget.x = Math.max(0, Number(widget.x) || 0);
       widget.y = Math.max(0, Number(widget.y) || 0);
       widget.width = Math.max(16, Number(widget.width) || 140);
@@ -1190,7 +1222,7 @@ function connectionZIndex(widget, widgets) {
 
 function renderSvgConnection(widget, widgets, width, height, selected) {
   const ns = "http://www.w3.org/2000/svg"; const svg = document.createElementNS(ns, "svg");
-  svg.classList.add("svg-connection-canvas"); if (runtimeMode && widget.clickThrough !== false) svg.classList.add("is-click-through"); svg.setAttribute("viewBox", `0 0 ${width} ${height}`); svg.setAttribute("aria-label", widget.title || "SVG-Verbindungslinie");
+  svg.classList.add("svg-connection-canvas"); if (runtimeMode && widget.clickThrough !== false) svg.classList.add("is-click-through"); svg.setAttribute("viewBox", `0 0 ${width} ${height}`); svg.setAttribute("aria-label", widgetDisplayName(widget));
   const defs = document.createElementNS(ns, "defs"); svg.append(defs);
   const style = effectiveConnectionStyle(widget, widgets); const pathData = connectionPathData(widget, widgets);
   const markerStart = appendConnectionMarker(defs, `${widget.id}-start-marker`, widget.markerStart, widget.markerColor || style.flowColor, Number(widget.markerSize) || 8);
@@ -1437,6 +1469,7 @@ function addWidget(definition) {
     borderColor: "#626c70", borderWidth: 0, borderStyle: "none", padding: 0, shadow: false, opacity: 1,
     ...structuredClone(definition.defaults),
   };
+  widget.name = uniqueWidgetName(page, widget.name || widget.title || definition.label);
   if (definition.type === "svg-connection") {
     const connectionLayers = page.widgets.filter(item => item.type === "svg-connection").map(item => Math.max(0, Number(item.layer) || 0));
     widget.layer = (connectionLayers.length ? Math.max(...connectionLayers) : 0) + 1;
@@ -2051,9 +2084,9 @@ function field(descriptor, widget) {
   else if (["select", "page", "widget", "collector", "connection"].includes(descriptor.type)) {
     input = document.createElement("select");
     const choices = descriptor.type === "page" ? [{ value: "", label: "Keine Seite" }, ...state.project.pages.map(page => ({ value: page.id, label: page.name }))]
-      : descriptor.type === "widget" ? [{ value: "", label: "Kein Widget / freier Punkt" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type !== "svg-connection").map(item => ({ value: item.id, label: item.title || item.id }))]
-      : descriptor.type === "connection" ? [{ value: "", label: "Keine Hauptlinie" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").map(item => ({ value: item.id, label: item.title || item.id }))]
-      : descriptor.type === "collector" ? [{ value: "", label: "Kein Sammelpunkt" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").flatMap(item => (item.connectionPoints || []).filter(point => point.collectorEnabled).map(point => ({ value: `${item.id}:${point.id}`, label: `${item.title || item.id} · ${point.name || point.id}` })))]
+      : descriptor.type === "widget" ? [{ value: "", label: "Kein Widget / freier Punkt" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type !== "svg-connection").map(item => ({ value: item.id, label: `${widgetDisplayName(item)} · ${item.id}` }))]
+      : descriptor.type === "connection" ? [{ value: "", label: "Keine Hauptlinie" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").map(item => ({ value: item.id, label: `${widgetDisplayName(item)} · ${item.id}` }))]
+      : descriptor.type === "collector" ? [{ value: "", label: "Kein Sammelpunkt" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").flatMap(item => (item.connectionPoints || []).filter(point => point.collectorEnabled).map(point => ({ value: `${item.id}:${point.id}`, label: `${widgetDisplayName(item)} · ${point.name || point.id}` })))]
       : descriptor.options || [];
     for (const item of choices) {
       const option = document.createElement("option"); option.value = typeof item === "string" ? item : item.value;
@@ -2144,7 +2177,7 @@ function field(descriptor, widget) {
     void updatePreview();
     renderStage();
     if (descriptor.refreshProperties && !["number", "range"].includes(input.type)) renderProperties();
-    if (descriptor.key === "title" && widget.id) renderWidgetFinder();
+    if (["name", "title"].includes(descriptor.key) && widget.id) renderWidgetFinder();
   };
   input.addEventListener(input.tagName === "SELECT" ? "change" : "input", update);
   if (descriptor.refreshProperties && ["number", "range"].includes(input.type)) input.addEventListener("change", renderProperties);
@@ -2221,7 +2254,26 @@ function renderProperties() {
     ] }))];
   }
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
-  heading.textContent = `${getWidgetDefinition(widget.type).label} · ${widget.id}`; panel.append(heading);
+  const updateHeading = () => { heading.textContent = `${widgetDisplayName(widget)} — ${getWidgetDefinition(widget.type).label} · ${widget.id}`; };
+  updateHeading(); panel.append(heading);
+  const identity = document.createElement("details"); identity.className = "property-section widget-identity";
+  const identityClosedKey = `widget:${widget.id}:identity:closed`;
+  identity.open = !state.expandedPropertySections.has(identityClosedKey);
+  identity.addEventListener("toggle", () => { if (identity.open) state.expandedPropertySections.delete(identityClosedKey); else state.expandedPropertySections.add(identityClosedKey); });
+  const identitySummary = document.createElement("summary");
+  const identityTitle = document.createElement("span"); identityTitle.className = "property-section-title"; identityTitle.textContent = "Widgetname"; identitySummary.append(identityTitle);
+  const identityBody = document.createElement("div"); identityBody.className = "property-fields";
+  const nameField = field({ label: "Name", key: "name" }, widget);
+  const nameInput = nameField.querySelector("input");
+  nameInput?.addEventListener("input", updateHeading);
+  nameInput?.addEventListener("change", () => {
+    widget.name = String(widget.name || "").trim() || getWidgetDefinition(widget.type).label;
+    const duplicate = page.widgets.some(item => item.id !== widget.id && String(item.name || "").trim().toLocaleLowerCase("de") === widget.name.toLocaleLowerCase("de"));
+    $("#status").textContent = duplicate ? `Hinweis: Der Widgetname „${widget.name}“ wird mehrfach verwendet` : `Widgetname geändert: ${widget.name}`;
+    renderProperties(); renderWidgetFinder();
+  });
+  identityBody.append(nameField, field({ label: "Technische ID", key: "id", disabled: true }, widget));
+  identity.append(identitySummary, identityBody); panel.append(identity);
   for (const [index, group] of groups.entries()) {
     const details = document.createElement("details"); details.className = "property-section";
     const sectionKey = `widget:${widget.id}:${group.label}:${index}`;
