@@ -4,7 +4,7 @@
 
 Regeln und Entwürfe für spätere Erweiterungen stehen in [docs/widget-rules.md](docs/widget-rules.md) und [docs/tool-rules.md](docs/tool-rules.md).
 
-Der Einstellungen-Dialog hat die Tabs **Allgemein**, **Widget-Pakete** und **Tools**. Die Paket-Tabs zeigen derzeit noch leere Listen; Installation und Verwaltung externer ZIP-Pakete folgen später.
+Der Einstellungen-Dialog hat die Tabs **Allgemein**, **Widget-Pakete** und **Tools**. Unter **Widget-Pakete** lassen sich ab 0.1.80 lokale, deklarative `*.wg.zip`-Pakete installieren, anzeigen und bei Nichtverwendung entfernen. [Widget-Schnittstelle 0.1](docs/widget-rules.md#widget-paket-schnittstelle-01) beschreibt das geprüfte Manifest und den derzeit auf Textdarstellung begrenzten Vertrag. GitHub-Installation, Updates und Tool-Pakete folgen später.
 
 Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mit getrenntem Editor und Runtime. Das Paket ist ein frühes Grundgerüst, keine fertige VIS2-Alternative.
 

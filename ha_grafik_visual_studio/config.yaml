@@ -1,5 +1,5 @@
 name: HA Grafik Visual Studio
-version: "0.1.79"
+version: "0.1.80"
 slug: ha_grafik_visual_studio
 description: Experimentelles Grundgerüst für grafische Home-Assistant-Visualisierungen
 stage: experimental

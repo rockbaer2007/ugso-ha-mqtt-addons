@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 
 SOURCE = Path(__file__).resolve().parents[1] / "app" / "main.py"
+sys.path.insert(0, str(SOURCE.parent))
 SPEC = importlib.util.spec_from_file_location("ha_grafik_main", SOURCE)
 APP = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(APP)

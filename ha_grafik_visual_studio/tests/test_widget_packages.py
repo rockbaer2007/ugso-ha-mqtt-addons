@@ -1,0 +1,95 @@
+"""Contract checks for data-only widget ZIP packages."""
+
+import sys
+import unittest
+from io import BytesIO
+from pathlib import Path
+from zipfile import ZipFile
+import json
+import tempfile
+from threading import Thread
+from http.server import ThreadingHTTPServer
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError
+from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
+from widget_packages import read_package_zip  # noqa: E402
+import main  # noqa: E402
+
+
+def manifest():
+    return {
+        "format": "ha-grafik-widget-package", "apiVersion": "0.1",
+        "id": "demo.widgets", "name": "Demo Widgets", "version": "1.0.0", "license": "MIT",
+        "widgets": [{
+            "type": "demo.widgets/label", "label": "Label",
+            "defaults": {"text": "Hallo"},
+            "propertyGroups": [{"label": "Inhalt", "fields": [{"key": "text", "label": "Text", "type": "text"}]}],
+            "render": {"kind": "text", "valueKey": "text"},
+        }],
+    }
+
+
+def package_bytes(data, extra=None):
+    stream = BytesIO()
+    with ZipFile(stream, "w") as archive:
+        archive.writestr("manifest.json", json.dumps(data))
+        if extra is not None:
+            archive.writestr(extra, "untrusted")
+    return stream.getvalue()
+
+
+class WidgetPackageTests(unittest.TestCase):
+    def test_valid_declarative_widget(self):
+        self.assertEqual(read_package_zip(package_bytes(manifest()))["widgets"][0]["type"], "demo.widgets/label")
+
+    def test_executable_archive_content_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "nur manifest.json"):
+            read_package_zip(package_bytes(manifest(), "widget.js"))
+
+    def test_widget_cannot_escape_its_namespace(self):
+        data = manifest()
+        data["widgets"][0]["type"] = "other/label"
+        with self.assertRaisesRegex(ValueError, "Namensraum"):
+            read_package_zip(package_bytes(data))
+
+    def test_unknown_runtime_is_rejected(self):
+        data = manifest()
+        data["widgets"][0]["render"]["kind"] = "script"
+        with self.assertRaisesRegex(ValueError, "Text-Darstellung"):
+            read_package_zip(package_bytes(data))
+
+    def test_install_list_and_block_removal_while_used(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(main, "PROJECTS_DIR", root / "projects"), patch.object(main, "WIDGET_PACKAGES_DIR", root / "packages"):
+                server = ThreadingHTTPServer(("127.0.0.1", 0), main.Handler)
+                thread = Thread(target=server.serve_forever, daemon=True)
+                thread.start()
+                url = f"http://127.0.0.1:{server.server_port}/api/widget-packages"
+                try:
+                    install = Request(url, data=package_bytes(manifest()), method="POST", headers={"X-Package-Name": "demo.wg.zip"})
+                    with urlopen(install) as response:
+                        self.assertEqual(response.status, 201)
+                    with urlopen(url) as response:
+                        self.assertEqual(json.load(response)["packages"][0]["id"], "demo.widgets")
+                    project = json.loads(json.dumps(main.DEFAULT_PROJECT))
+                    project["pages"][0]["widgets"] = [{"id": "widget-1", "type": "demo.widgets/label"}]
+                    main.Handler.write_project("main", project)
+                    remove = Request(url + "/demo.widgets", method="DELETE")
+                    with self.assertRaises(HTTPError) as blocked:
+                        urlopen(remove)
+                    self.assertEqual(blocked.exception.code, 409)
+                    project["pages"][0]["widgets"] = []
+                    main.Handler.write_project("main", project)
+                    with urlopen(remove) as response:
+                        self.assertEqual(response.status, 200)
+                finally:
+                    server.shutdown()
+                    server.server_close()
+                    thread.join(timeout=2)
+
+
+if __name__ == "__main__":
+    unittest.main()

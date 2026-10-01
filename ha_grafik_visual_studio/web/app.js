@@ -1,4 +1,4 @@
-import { getWidgetSets, getWidgetDefinition } from "./widget-registry.js";
+import { getWidgetSets, getWidgetDefinition, registerWidgetSet } from "./widget-registry.js";
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
@@ -1765,6 +1765,7 @@ function addWidget(definition) {
     borderColor: "#626c70", borderWidth: 0, borderStyle: "none", padding: 0, shadow: false, opacity: 1,
     ...structuredClone(definition.defaults),
   };
+  if (definition.packageId) { widget.packageId = definition.packageId; widget.definitionVersion = "0.1"; }
   widget.name = uniqueWidgetName(page, widget.name || definition.label);
   if (definition.type === "svg-connection") {
     const connectionLayers = page.widgets.filter(item => item.type === "svg-connection").map(item => Math.max(0, Number(item.layer) || 0));
@@ -2190,6 +2191,12 @@ function renderStage() {
         const buttons = document.createElement("div"); buttons.className = `widget-filter-buttons ${widget.filterType}`;
         for (const entry of values) { const button = document.createElement("button"); button.type = "button"; const selected = entry.value ? selectedFilters.includes(String(entry.value)) : !selectedFilters.length; button.setAttribute("aria-pressed", selected); button.className = widget.variant || "outlined"; button.style.color = entry.textColor || ""; button.style.backgroundColor = selected ? entry.activeColor || "" : ""; const icon = entry.image || entry.icon; if (icon) { const image = document.createElement("img"); image.alt = ""; image.width = 18; image.height = 18; setIconImageSource(image, icon); button.append(image); } button.append(document.createTextNode(entry.title || entry.value)); button.addEventListener("click", event => { event.stopPropagation(); choose(String(entry.value)); }); buttons.append(button); } content.append(buttons);
       }
+    } else if (getWidgetDefinition(widget.type).render?.kind === "text") {
+      const definition = getWidgetDefinition(widget.type);
+      const value = document.createElement("span");
+      value.className = "value";
+      value.textContent = String(widget[definition.render.valueKey] ?? definition.defaults[definition.render.valueKey] ?? "");
+      content.append(value);
     } else {
       const value = document.createElement("span"); value.className = "value";
     let displayValue = displayedWidgetState(widget) ?? "--";
@@ -2865,6 +2872,58 @@ $("#widgets-menu").addEventListener("click", () => {
 });
 const SETTINGS_TABS = ["general", "widgets", "tools"];
 
+async function fetchWidgetPackages() {
+  const response = await fetch("api/widget-packages", { cache: "no-store" });
+  if (!response.ok) throw new Error("Widget-Pakete konnten nicht geladen werden.");
+  return (await response.json()).packages;
+}
+
+async function loadWidgetPackages() {
+  try {
+    for (const manifest of await fetchWidgetPackages()) {
+      registerWidgetSet({
+        id: manifest.id, label: manifest.name,
+        widgets: manifest.widgets.map(widget => ({
+          ...widget, packageId: manifest.id, icon: "▣", preview: { kind: "plain", lines: ["▣"] },
+        })),
+      });
+    }
+  } catch (error) { console.warn("Widget-Pakete:", error); }
+}
+
+async function renderWidgetPackageList() {
+  const list = $("#widget-package-list");
+  try {
+    const packages = await fetchWidgetPackages();
+    list.replaceChildren();
+    if (!packages.length) {
+      const empty = document.createElement("p"); empty.className = "settings-package-empty";
+      empty.setAttribute("role", "listitem"); empty.textContent = uiText("Keine zusätzlichen Widget-Pakete installiert."); list.append(empty);
+    }
+    for (const manifest of packages) {
+      const row = document.createElement("div"); row.className = "settings-package-row"; row.setAttribute("role", "listitem");
+      const info = document.createElement("div"); info.className = "settings-package-info";
+      const name = document.createElement("div"); name.textContent = manifest.name;
+      const meta = document.createElement("div"); meta.className = "settings-package-meta";
+      meta.textContent = `${manifest.id} · ${manifest.version} · API ${manifest.apiVersion} · ${manifest.widgets.length} Widget(s) · ${manifest.license}`;
+      info.append(name, meta);
+      const reload = document.createElement("button"); reload.type = "button"; reload.title = uiText("Paketliste neu laden"); reload.setAttribute("aria-label", reload.title);
+      const reloadIcon = document.createElement("img"); reloadIcon.src = "icons/refresh.svg"; reloadIcon.alt = ""; reload.append(reloadIcon);
+      reload.addEventListener("click", () => { location.reload(); });
+      const remove = document.createElement("button"); remove.type = "button"; remove.title = uiText("Paket entfernen"); remove.setAttribute("aria-label", `${remove.title}: ${manifest.name}`);
+      const deleteIcon = document.createElement("img"); deleteIcon.src = "icons/delete.svg"; deleteIcon.alt = ""; remove.append(deleteIcon);
+      remove.addEventListener("click", async () => {
+        if (!window.confirm(uiText("Widget-Paket wirklich entfernen?"))) return;
+        const response = await fetch(`api/widget-packages/${encodeURIComponent(manifest.id)}`, { method: "DELETE" });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) { $("#widget-package-message").textContent = result.error || uiText("Paket konnte nicht entfernt werden."); return; }
+        location.reload();
+      });
+      row.append(info, reload, remove); list.append(row);
+    }
+  } catch (error) { $("#widget-package-message").textContent = error.message; }
+}
+
 function showSettingsTab(tabId) {
   const selected = SETTINGS_TABS.includes(tabId) ? tabId : "general";
   for (const id of SETTINGS_TABS) {
@@ -2901,10 +2960,25 @@ function openSettingsDialog() {
   if (!dialog.open) dialog.showModal();
 }
 $("#settings-menu").addEventListener("click", openSettingsDialog);
+$("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
+$("#widget-package-file").addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  const message = $("#widget-package-message");
+  if (!file.name.toLowerCase().endsWith(".wg.zip")) { message.textContent = uiText("Widget-Paket muss auf .wg.zip enden."); return; }
+  message.textContent = uiText("Widget-Paket wird geprüft …");
+  try {
+    const response = await fetch("api/widget-packages", { method: "POST", headers: { "Content-Type": "application/zip", "X-Package-Name": file.name }, body: file });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) { message.textContent = result.error || uiText("Widget-Paket konnte nicht installiert werden."); return; }
+    location.reload();
+  } catch { message.textContent = uiText("Widget-Paket konnte nicht installiert werden."); }
+  finally { event.target.value = ""; }
+});
 $("#settings-close").addEventListener("click", () => $("#settings-dialog").close());
 $("#settings-form .settings-tabs").addEventListener("click", (event) => {
   const tab = event.target.closest("[data-settings-tab]");
-  if (tab) showSettingsTab(tab.dataset.settingsTab);
+  if (tab) { showSettingsTab(tab.dataset.settingsTab); if (tab.dataset.settingsTab === "widgets") void renderWidgetPackageList(); }
 });
 $("#settings-form .settings-tabs").addEventListener("keydown", (event) => {
   const index = SETTINGS_TABS.indexOf(event.target.dataset.settingsTab);
@@ -3028,4 +3102,4 @@ document.querySelectorAll(".collapse").forEach((button) => button.addEventListen
   button.textContent = collapsed ? (isPalette ? "›" : "‹") : (isPalette ? "‹" : "›");
 }));
 
-loadProject();
+loadWidgetPackages().finally(loadProject);

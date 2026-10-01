@@ -1,6 +1,6 @@
 # Widget-Regeln für HA Grafik Visual Studio
 
-Stand: 01.10.2026. Dieses Dokument hält die bisher vereinbarten Regeln und den Entwurf für spätere Erweiterungsschnittstellen fest. Ein externes Paketformat und eine installierbare Erweiterungsschnittstelle sind noch nicht implementiert.
+Stand: 01.10.2026. Dieses Dokument hält die vereinbarten Regeln und den ersten Widget-Paketvertrag fest. Die Tool-Schnittstelle und zusätzliche Widget-Fähigkeiten folgen später.
 
 ## Bereits vorhanden
 
@@ -19,7 +19,35 @@ Stand: 01.10.2026. Dieses Dokument hält die bisher vereinbarten Regeln und den 
 6. **Paketversion und Widget-Definitionsversion sind getrennt.** Ein Paket kann neue Widgets erhalten, ohne die Definition bereits veröffentlichter Widgets zu ändern. Gespeicherte Instanzen sollen ihre Typ-ID und Definitionsversion behalten.
 7. **Kompatibilität wird getestet.** Referenzprojekte mit Widgets der ersten Vertragsversion müssen nach jedem Paket-Update im Editor und in der Runtime gleich funktionieren, solange keine optionale Erweiterung aktiviert wurde.
 
-## Entwurf der Widget-Paket-Schnittstelle
+## Widget-Paket-Schnittstelle 0.1
+
+Version 0.1 ist ein bewusst kleiner, datenbasierter Vertrag. Im Tab **Einstellungen → Widget-Pakete** kann ein lokales `*.wg.zip` installiert werden. Das ZIP enthält genau eine UTF-8-Datei `manifest.json` und höchstens 2 MB komprimierte Daten; das Manifest ist auf 200 KB begrenzt. Der Server validiert es und speichert ausschließlich die geprüften Daten unter `/data/widget_packages/`. Paket-Code wird nicht ausgeführt. Installierte Widgets erscheinen nach dem Neuladen als eigenes Set in der Palette; ihre Text-Darstellung funktioniert im Editor und in der Runtime. In der Paketliste sind ID, Version, API-Version, Widget-Anzahl und Lizenz sichtbar. Neuladen lädt die App erneut. Entfernen wird verweigert, sobald ein Widget-Typ aus dem Paket in irgendeinem Projekt benutzt wird. Ein bereits installiertes Paket wird nicht überschrieben.
+
+Pflichtfelder des Manifests: `format: "ha-grafik-widget-package"`, `apiVersion: "0.1"`, eine punktgetrennte Paket-`id`, `name`, semantische `version` (`x.y.z`), `license` und `widgets`. Jedes Widget besitzt `type` im Namensraum `paket.id/widget-name`, `label`, `defaults`, `propertyGroups` und `render: {"kind":"text","valueKey":"text"}`. Eigenschaftsfelder besitzen `key`, `label`, `type` und einen Standardwert gleichen Schlüssels. Unterstützte Feldtypen sind `text`, `number`, `checkbox`, `color`, `range` und `select`. `valueKey` muss ein bearbeitbares Text- oder Zahlenfeld sein. Die App ergänzt weiterhin die gemeinsamen Bereiche **Generell** und **Sichtbarkeit**. Neue Instanzen speichern `packageId` und `definitionVersion: "0.1"`.
+
+Beispiel für `manifest.json`:
+
+```json
+{
+  "format": "ha-grafik-widget-package",
+  "apiVersion": "0.1",
+  "id": "beispiel.widgets",
+  "name": "Beispiel Widgets",
+  "version": "1.0.0",
+  "license": "MIT",
+  "widgets": [{
+    "type": "beispiel.widgets/label",
+    "label": "Label",
+    "defaults": {"text": "Hallo"},
+    "propertyGroups": [{"label": "Inhalt", "fields": [{"key": "text", "label": "Text", "type": "text"}]}],
+    "render": {"kind": "text", "valueKey": "text"}
+  }]
+}
+```
+
+GitHub-Installation, Updates, Bilder/Icons aus Paketen, eigene Skripte, HA-Zustandsbindung und Schreibaktionen sind noch nicht Bestandteil von 0.1. Diese Fähigkeiten benötigen eigene geprüfte Vertragsversionen oder optionale Erweiterungspunkte, damit bestehende Widgets unverändert bleiben.
+
+## Erweiterungsentwurf
 
 Die genauen Feldnamen und das innere Dateiformat werden bei der Implementierung festgelegt. Der Generator soll Widget-Pakete als `*.wg.zip` ausgeben, zum Beispiel `solar.wg.zip`. Die Endung kennzeichnet die Paketart; beim Import muss zusätzlich das Manifest geprüft werden. Folgende Angaben sollen die Schnittstelle abdecken:
 
@@ -41,6 +69,6 @@ Der Editor und die Runtime brauchen jeweils einen klaren Einstiegspunkt. Ein Wid
 
 - **Widget-Pakete** ergänzen Paletteneinträge, Eigenschaften und deren Editor-/Runtime-Verhalten.
 - **Tool-Erweiterungen** ergänzen Editor-Werkzeuge, zum Beispiel Import, Prüfung oder Bearbeitungshilfen. Sie dürfen bestehende Widget-Grundfunktionen nicht heimlich verändern.
-- Für die Einstellungen sind die Bereiche **Allgemein**, **Widget-Pakete** und **Tools** vorgesehen. Das sind geplante Oberflächenbereiche, noch keine vorhandenen Tabs.
+- Die Einstellungen haben die Bereiche **Allgemein**, **Widget-Pakete** und **Tools**. Der Tool-Tab wartet noch auf eine eigene Schnittstelle.
 
 Die erste Umsetzung sollte mit einem kleinen, versionierten Vertrag für Registrierung, Eigenschaften, Standardwerte, Vorschau und Runtime beginnen. Weitere Fähigkeiten werden nur als optionale Erweiterungspunkte ergänzt.

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.80
+
+- Added widget package API 0.1: install local manifest-only `.wg.zip` files in Settings → Widget packages. Validated text widgets appear in the palette, editor properties and runtime. The package list shows version and license; removal is blocked while any project uses a package widget. GitHub installs, updates and executable extensions are not part of this initial contract.
+
 ## 0.1.79
 
 - The settings dialog now has General, Widget packages and Tools tabs. Existing settings stay under General; the other tabs show compact empty package lists until package installation is implemented.

@@ -8,8 +8,9 @@
 ## Erweiterungen: Widget-Pakete und Tools
 
 - [ ] Den versionierten Vertrag für Widget-Pakete und Tool-Erweiterungen festlegen: Paketformat, stabile IDs, Eigenschaften, Einstiegspunkte, Fähigkeiten, Berechtigungen, Migrationen und Kompatibilität mit bestehenden Projekten. Die Entwürfe stehen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
+- [x] Widget-Schnittstelle 0.1 für lokale deklarative Textpakete mit Manifestprüfung, Palette, Eigenschaften, Runtime, Paketliste und Nutzungssperre beim Entfernen. Erledigt in 0.1.80; weitergehende Fähigkeiten und Tool-Vertrag bleiben offen.
 - [x] Den Einstellungen-Dialog in **Allgemein**, **Widget-Pakete** und **Tools** aufteilen; die Paket-Tabs zeigen kompakte, scrollbar begrenzte Leerlisten. Erledigt in 0.1.79.
-- [ ] Installierte Widget- und Tool-Pakete in den Listen mit Version, Kompatibilität, Status und angeforderten Fähigkeiten anzeigen; lokale ZIP- und GitHub-Installation sowie Update-Suche und Entfernen ergänzen.
+- [ ] Die Paketverwaltung erweitern: GitHub-Installation, Update-Suche/-Prüfung, Kompatibilitätsstatus und angeforderte Fähigkeiten; später Tool-Pakete. Lokale Widget-ZIP-Installation, Paketliste und geschütztes Entfernen sind in 0.1.80 vorhanden.
 - [ ] Ein vollständiges Demo-Widget-Paket mit Quellcode, Paketdatei, Tests und DE/EN-Dokumentation einschließlich Ordnerstruktur und Einstiegspunkten bereitstellen.
 - [ ] Ein vollständiges Demo-Tool-Paket mit Quellcode, Paketdatei, Tests, Ergebnisvorschau, Rückgängig-Funktion und derselben DE/EN-Strukturdokumentation bereitstellen.
 - [ ] Einen webbasierten Grundgerüst-Generator für Widget- oder Tool-Pakete bauen. Eingaben sollen unter anderem Name, Paket-ID, Icon, Beschreibung, Sprache, Kompatibilitätsversion sowie passende Widget-Eigenschaften oder Tool-Kontexte und Rechte umfassen.

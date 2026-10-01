@@ -10,6 +10,8 @@ from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlparse
 from uuid import uuid4
 
+from widget_packages import MAX_ZIP_BYTES, list_packages, read_package_zip
+
 LOG = logging.getLogger("ha-grafik-visual-studio")
 PORT = int(os.environ.get("HA_GRAFIK_INGRESS_PORT", "8098"))
 DATA_DIR = Path(os.environ.get("HA_GRAFIK_DATA", "/data"))
@@ -19,6 +21,7 @@ if not WEB_DIR.is_dir():
     WEB_DIR = APP_DIR.parent / "web"
 PROJECT_FILE = DATA_DIR / "project.json"
 PROJECTS_DIR = DATA_DIR / "projects"
+WIDGET_PACKAGES_DIR = DATA_DIR / "widget_packages"
 WWW_CANDIDATES = (
     Path("/homeassistant/www"),
     Path("/homeassistant_config/www"),
@@ -166,7 +169,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.79"
+    server_version = "HAGrafikVisualStudio/0.1.80"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -188,7 +191,7 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.79"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.80"})
             return
         if path == "/api/entities":
             try:
@@ -210,6 +213,9 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/projects":
             self.send_json(HTTPStatus.OK, self.list_projects())
+            return
+        if path == "/api/widget-packages":
+            self.send_json(HTTPStatus.OK, {"packages": list_packages(WIDGET_PACKAGES_DIR)})
             return
         if path == "/api/objects":
             self.send_json(HTTPStatus.OK, self.list_objects(query.get("path", [""])[0]))
@@ -258,6 +264,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/widget-packages":
+            self.install_widget_package()
+            return
         if parsed.path == "/api/switch":
             if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
                 self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "JSON-Anfrage erforderlich."})
@@ -380,6 +389,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_DELETE(self):
         parsed = urlparse(self.path)
+        if parsed.path.startswith("/api/widget-packages/"):
+            self.delete_widget_package(unquote(parsed.path.removeprefix("/api/widget-packages/")))
+            return
         if parsed.path == "/api/files":
             self.delete_object_file(parse_qs(parsed.query).get("path", [""])[0])
             return
@@ -398,6 +410,54 @@ class Handler(BaseHTTPRequestHandler):
             return
         project_file.unlink()
         self.send_json(HTTPStatus.OK, {"deleted": True})
+
+    def install_widget_package(self):
+        if not self.headers.get("X-Package-Name", "").lower().endswith(".wg.zip"):
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Widget-Paket muss auf .wg.zip enden."})
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+        except ValueError:
+            length = 0
+        if not 0 < length <= MAX_ZIP_BYTES:
+            self.send_json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"error": "Widget-Paket ist leer oder größer als 2 MB."})
+            return
+        try:
+            manifest = read_package_zip(self.rfile.read(length))
+        except ValueError as error:
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+            return
+        WIDGET_PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
+        target = WIDGET_PACKAGES_DIR / (manifest["id"] + ".json")
+        if target.exists():
+            self.send_json(HTTPStatus.CONFLICT, {"error": "Paket ist bereits installiert. Updates folgen später."})
+            return
+        try:
+            target.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+        except OSError:
+            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Widget-Paket konnte nicht gespeichert werden."})
+            return
+        self.send_json(HTTPStatus.CREATED, {"installed": manifest["id"]})
+
+    def delete_widget_package(self, package_id):
+        installed = next((item for item in list_packages(WIDGET_PACKAGES_DIR) if item["id"] == package_id), None)
+        if installed is None:
+            self.send_json(HTTPStatus.NOT_FOUND, {"error": "Widget-Paket wurde nicht gefunden."})
+            return
+        used_types = {widget["type"] for widget in installed["widgets"]}
+        self.ensure_projects()
+        for project_file in PROJECTS_DIR.glob("*.json"):
+            project = self.read_project_file(project_file)
+            pages = project.get("pages", []) if project and project.get("schemaVersion") == 2 else [{"widgets": project.get("widgets", [])}] if project else []
+            if any(widget.get("type") in used_types for page in pages for widget in page.get("widgets", [])):
+                self.send_json(HTTPStatus.CONFLICT, {"error": "Paket wird in einem Projekt verwendet und kann nicht entfernt werden."})
+                return
+        try:
+            (WIDGET_PACKAGES_DIR / (package_id + ".json")).unlink()
+        except OSError:
+            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Widget-Paket konnte nicht entfernt werden."})
+            return
+        self.send_json(HTTPStatus.OK, {"deleted": package_id})
 
     @staticmethod
     def valid_project_id(project_id):
