@@ -2,6 +2,8 @@
 
 > **Status: Experimentell.** Das Projekt befindet sich in einer frühen Entwicklungsphase. Funktionen, Projektformat und Bedienung können sich ändern; noch nicht für produktive Dashboards einplanen.
 
+Die vereinbarten Regeln für bestehende und spätere Widget-Pakete stehen in [docs/widget-rules.md](docs/widget-rules.md).
+
 Eigenständiges Home-Assistant-App-Projekt für eine grafische Visualisierung mit getrenntem Editor und Runtime. Das Paket ist ein frühes Grundgerüst, keine fertige VIS2-Alternative.
 
 Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sowie daraus gerenderte PNG-Dateien für den Home-Assistant-App-Store.
