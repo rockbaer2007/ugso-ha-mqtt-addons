@@ -64,7 +64,7 @@ const fileTypes = {
   audio: ["mp3", "wav", "ogg", "m4a", "flac"],
   video: ["mp4", "webm", "mov", "mkv"],
 };
-const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null };
+const state = { project: null, projectId: params.get("project") || "main", selectedId: null, nextId: 1, propertyTab: "widget", collapsedWidgetSets: new Set(), objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null };
 let mdiIcons = null;
 let mdiIconsPromise = null;
 let activeIconInput = null;
@@ -319,7 +319,11 @@ function renderPalette() {
   for (const set of getWidgetSets()) {
     const group = document.createElement("details");
     group.className = "widget-group";
-    group.open = true;
+    group.open = !state.collapsedWidgetSets.has(set.id);
+    group.addEventListener("toggle", () => {
+      if (group.open) state.collapsedWidgetSets.delete(set.id);
+      else state.collapsedWidgetSets.add(set.id);
+    });
     const summary = document.createElement("summary");
     summary.textContent = set.label;
     const list = document.createElement("div");

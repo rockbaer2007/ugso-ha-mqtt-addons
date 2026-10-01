@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.44
+
+- Behält eingeklappte Widget-Bereiche der Palette beim Einfügen oder Wechseln eines Widgets geschlossen.
+
 ## 0.1.43
 
 - Zeigt in der Widget-Palette rechts eine kompakte, typbezogene Vorschau für Werte, HTML, Listen, Tabellen, Bilder und Bedienelemente.
