@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.50
+
+- Adds draggable start and end handles to the selected SVG connection widget.
+- Dragging an attached endpoint deliberately detaches it from its widget or collector and converts it into a free endpoint at the new position.
+- Supports precise endpoint movement with the arrow keys and ten-pixel steps with Shift.
+- Keeps light-point animation paths synchronized while endpoints or intermediate points are dragged.
+
 ## 0.1.49
 
 - Selects widgets during the capture phase so nested links, buttons, selectors and other interactive content cannot suppress the editor selection or its property panel.

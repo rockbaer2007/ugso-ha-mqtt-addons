@@ -1087,6 +1087,7 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
   const update = () => {
     const d = connectionPathData(widget, widgets); base.setAttribute("d", d);
     for (const path of svg.querySelectorAll(".connection-flow, .connection-crossing-gap, .connection-hit-target")) path.setAttribute("d", d);
+    for (const motion of svg.querySelectorAll("animateMotion")) motion.setAttribute("path", connectionPathData(widget, widgets, style.animationDirection === "reverse"));
   };
   for (const point of points) {
     if (!selected && (!point.collectorEnabled || point.display === "hidden")) continue;
@@ -1097,6 +1098,52 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
       marker.addEventListener("pointerdown", event => { event.preventDefault(); event.stopPropagation(); dragging = true; marker.setPointerCapture(event.pointerId); });
       marker.addEventListener("pointermove", event => { if (!dragging) return; const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height; point.x = Math.round((event.clientX - bounds.left) * scaleX); point.y = Math.round((event.clientY - bounds.top) * scaleY); marker.setAttribute("cx", point.x); marker.setAttribute("cy", point.y); update(); });
       marker.addEventListener("pointerup", () => { dragging = false; renderProperties(); });
+    }
+  }
+  if (selected) {
+    for (const prefix of ["start", "end"]) {
+      const position = connectionEndpoint(widget, prefix, widgets);
+      const handle = document.createElementNS(ns, "circle");
+      handle.classList.add("connection-endpoint", `is-${prefix}`);
+      if (widget[`${prefix}WidgetId`] || widget[`${prefix}Collector`]) handle.classList.add("is-attached");
+      handle.setAttribute("cx", String(position.x)); handle.setAttribute("cy", String(position.y)); handle.setAttribute("r", "7");
+      handle.setAttribute("tabindex", "0"); handle.setAttribute("aria-label", prefix === "start" ? "Anfangspunkt verschieben" : "Endpunkt verschieben");
+      svg.append(handle);
+      let dragOrigin = null;
+      handle.addEventListener("pointerdown", event => {
+        event.preventDefault(); event.stopPropagation();
+        dragOrigin = { x: event.clientX, y: event.clientY, detached: false };
+        handle.setPointerCapture(event.pointerId);
+      });
+      handle.addEventListener("pointermove", event => {
+        if (!dragOrigin) return;
+        if (!dragOrigin.detached && Math.abs(event.clientX - dragOrigin.x) <= 1 && Math.abs(event.clientY - dragOrigin.y) <= 1) return;
+        if (!dragOrigin.detached) {
+          widget[`${prefix}WidgetId`] = "";
+          widget[`${prefix}Collector`] = "";
+          handle.classList.remove("is-attached");
+          dragOrigin.detached = true;
+        }
+        const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height;
+        const x = Math.max(0, Math.min(width, Math.round((event.clientX - bounds.left) * scaleX)));
+        const y = Math.max(0, Math.min(height, Math.round((event.clientY - bounds.top) * scaleY)));
+        widget[`${prefix}X`] = x; widget[`${prefix}Y`] = y;
+        handle.setAttribute("cx", String(x)); handle.setAttribute("cy", String(y)); update();
+      });
+      const finish = () => { if (!dragOrigin) return; dragOrigin = null; renderProperties(); };
+      handle.addEventListener("pointerup", finish);
+      handle.addEventListener("pointercancel", finish);
+      handle.addEventListener("keydown", event => {
+        const directions = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+        if (!directions[event.key]) return;
+        event.preventDefault(); event.stopPropagation();
+        widget[`${prefix}WidgetId`] = ""; widget[`${prefix}Collector`] = ""; handle.classList.remove("is-attached");
+        const step = event.shiftKey ? 10 : 1; const current = connectionEndpoint(widget, prefix, widgets);
+        const x = Math.max(0, Math.min(width, current.x + directions[event.key][0] * step));
+        const y = Math.max(0, Math.min(height, current.y + directions[event.key][1] * step));
+        widget[`${prefix}X`] = x; widget[`${prefix}Y`] = y;
+        handle.setAttribute("cx", String(x)); handle.setAttribute("cy", String(y)); update(); renderProperties();
+      });
     }
   }
   hit.addEventListener("click", event => { if (!runtimeMode) { event.stopPropagation(); state.selectedId = widget.id; render(); } });
