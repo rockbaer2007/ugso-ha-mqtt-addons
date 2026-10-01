@@ -1175,6 +1175,7 @@ function renderStage() {
   stage.style.height = `${page.height}px`;
   stage.style.backgroundColor = page.background || "#242729";
   stage.style.setProperty("--stage-background", page.background || "#242729");
+  stage.style.setProperty("--dock-color", state.project.settings?.dockColor || "#ffd54f");
   const backgroundImage = safeUrl(page.backgroundAsset || page.backgroundImage, true);
   stage.style.backgroundImage = backgroundImage ? `url(${JSON.stringify(backgroundImage)})` : "none";
   stage.style.backgroundRepeat = page.backgroundRepeat || (page.backgroundMode === "tile" ? "repeat" : "no-repeat");
@@ -2051,11 +2052,13 @@ $("#widgets-menu").addEventListener("click", () => {
   const panel = $("#palette-panel"); panel.hidden = !panel.hidden;
   $("#widgets-menu").setAttribute("aria-pressed", String(!panel.hidden));
 });
-$("#settings-menu").addEventListener("click", () => {
+function openSettingsDialog() {
+  if (!state.project) { $("#status").textContent = "Projekt wird noch geladen …"; return; }
   const settings = state.project.settings ??= {};
   $("#settings-auto-save").checked = settings.autoSave !== false;
   $("#settings-auto-save-delay").value = settings.autoSaveDelaySeconds ?? 5;
   $("#settings-auto-save-delay").disabled = settings.autoSave === false;
+  $("#settings-dock-color").value = /^#[0-9a-f]{6}$/i.test(settings.dockColor || "") ? settings.dockColor : "#ffd54f";
   $("#settings-reload").value = settings.reloadMode || "reload";
   $("#settings-dark-reconnect").checked = Boolean(settings.darkReconnect);
   $("#settings-debounce").value = settings.debounceMs ?? 200;
@@ -2065,8 +2068,10 @@ $("#settings-menu").addEventListener("click", () => {
   $("#project-favicon").value = settings.favicon || "";
   $("#settings-ignore-unloaded").checked = settings.ignoreUnloaded !== false;
   $("#settings-overflow").value = settings.bodyOverflow || "auto";
-  $("#settings-dialog").showModal();
-});
+  const dialog = $("#settings-dialog");
+  if (!dialog.open) dialog.showModal();
+}
+$("#settings-menu").addEventListener("click", openSettingsDialog);
 $("#project-favicon-browse").addEventListener("click", () => {
   activeIconInput = $("#project-favicon");
   openObjects();
@@ -2081,6 +2086,7 @@ $("#settings-save").addEventListener("click", async (event) => {
   Object.assign(state.project.settings, {
     autoSave: $("#settings-auto-save").checked,
     autoSaveDelaySeconds: Math.max(1, Math.min(300, Math.round(Number($("#settings-auto-save-delay").value) || 5))),
+    dockColor: /^#[0-9a-f]{6}$/i.test($("#settings-dock-color").value) ? $("#settings-dock-color").value : "#ffd54f",
     reloadMode: $("#settings-reload").value,
     darkReconnect: $("#settings-dark-reconnect").checked,
     debounceMs: Math.max(0, Math.min(10000, Number($("#settings-debounce").value) || 0)),

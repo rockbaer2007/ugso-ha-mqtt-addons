@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.46
+
+- Repairs and structures the project settings dialog with an explicit Auto-Save section.
+- Adds a project-wide anchor-point color setting with yellow as the default.
+
 ## 0.1.45
 
 - Added the `HA Grafik – Spezial` widget group with the new `SVG-Verbindungslinie` widget.
