@@ -53,6 +53,7 @@ Die Prüfergebnisse erscheinen als Liste mit **grünem Haken** bei Erfolg oder *
 - Die **UGSo Open-Source-Dokumentation** erhält eine Packer-Seite mit je einem klar beschrifteten Downloadlink für Windows und Linux. Diese Links zeigen auf dieselben GitHub-Release-Dateien; angezeigte Version und Prüfsummen müssen mit dem Release übereinstimmen.
 - Der Packer-Quellcode bleibt im privaten Entwicklungs-Repository; öffentliche Downloads können unabhängig davon bereitgestellt werden. Für eine neue Version werden Programm, Dokumentation und Downloadlinks zusammen aktualisiert.
 - Downloadbuttons und konkrete Dateilinks werden erst veröffentlicht, wenn die jeweiligen Programmdateien gebaut und auf beiden Zielsystemen geprüft wurden. Bis dahin beschreibt die Dokumentation nur den geplanten Packer.
+- Für öffentliche Programm-Downloads sind eine signierte `SHA256SUMS`-Datei und ein unabhängig über die offizielle Dokumentation bereitgestellter öffentlicher Schlüssel vorgesehen. Eine reine Prüfsumme belegt die Herkunft eines Downloads nicht. Aktuell gibt es weder einen freigegebenen Signaturschlüssel noch signierte Programm-Downloads.
 
 ## Spätere Ausbauschritte
 
