@@ -171,6 +171,7 @@ button { cursor: pointer; }
 .widget-svg-connection .widget-content { overflow: visible; pointer-events: none; }
 .svg-connection-canvas { display: block; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .connection-hit-target { pointer-events: stroke; cursor: pointer; }
+.widget-svg-connection.selected .connection-hit-target { pointer-events: none; }
 .svg-connection-canvas.is-click-through .connection-hit-target { pointer-events: none; }
 .connection-crossing-gap { fill: none; stroke: var(--stage-background, #242729); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 .connection-flow { pointer-events: none; animation: connection-flow 2s linear infinite; }
@@ -187,6 +188,7 @@ button { cursor: pointer; }
 .connection-endpoint.is-attached { stroke: #ffd54f; stroke-width: 3; }
 .connection-endpoint:focus { outline: none; stroke: #fff; stroke-width: 4; }
 .widget-dock-point { position: absolute; z-index: 40; width: 9px; height: 9px; border: 1px solid #fff; border-radius: 50%; background: var(--dock-color, #ffd54f); box-shadow: 0 0 0 2px #101314aa; transform: translate(-50%, -50%); pointer-events: none; }
+.widget-dock-point.is-snap-target { z-index: 41; box-shadow: 0 0 0 4px #fff, 0 0 12px 6px var(--dock-color, #ffd54f); transform: translate(-50%, -50%) scale(1.45); }
 .widget-dock-point[data-count]:not([data-count="0"])::after { position: absolute; left: 7px; top: -8px; min-width: 13px; padding: 0 2px; border-radius: 7px; color: #111; background: var(--dock-color, #ffd54f); content: attr(data-count); font-size: 8px; line-height: 12px; text-align: center; }
 .connection-points-list { display: grid; gap: 7px; max-height: 55vh; overflow: auto; }
 .connection-point-row { display: grid; grid-template-columns: minmax(110px, 1.4fr) 75px 75px minmax(145px, 1.5fr) minmax(110px, 1fr) auto; align-items: end; gap: 6px; padding: 7px; border: 1px solid var(--line); border-radius: 5px; }

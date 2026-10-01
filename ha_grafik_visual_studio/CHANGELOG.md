@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.52
+
+- Snaps dragged SVG connection start and end handles to enabled widget anchors within a visible 24-pixel capture radius.
+- Highlights the current anchor target while dragging and writes the widget/anchor binding when the handle is released.
+- Respects disabled anchors, single-connection anchors and configured connection limits while snapping.
+- Renders the selected connection's endpoint controls above normal widgets while its line hit area remains click-through, keeping both the handles and other widgets accessible.
+
 ## 0.1.51
 
 - Turns the `Andockpunkte` section checkbox into a master switch that disables every anchor and marker on the widget.

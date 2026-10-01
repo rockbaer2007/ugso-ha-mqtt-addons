@@ -956,6 +956,27 @@ function connectionAnchorPosition(widget, anchorId) {
   return { x: Number(widget.x) + Number(widget.width) * anchor[2], y: Number(widget.y) + Number(widget.height) * anchor[3] };
 }
 
+function closestConnectionAnchor(clientX, clientY, connection, prefix, widgets, bounds, width, height) {
+  let closest = null;
+  for (const target of widgets.filter(item => item.type !== "svg-connection" && item.visible !== false && item.dockPointsEnabled !== false)) {
+    for (const [anchorId] of CONNECTION_ANCHORS) {
+      if (target[`dock_${anchorId.replaceAll("-", "_")}`] === false) continue;
+      const occupied = widgets.filter(item => item.type === "svg-connection").flatMap(item => ["start", "end"].map(side => ({ item, side }))).filter(({ item, side }) => {
+        if (item.id === connection.id && side === prefix) return false;
+        return item[`${side}WidgetId`] === target.id && (item[`${side}Anchor`] || (side === "start" ? "right-center" : "left-center")) === anchorId && !item[`${side}Collector`];
+      }).length;
+      const limit = Math.max(1, Number(target.dockMaxConnections) || 99);
+      if (occupied >= limit || target.dockMultiple === false && occupied > 0) continue;
+      const position = connectionAnchorPosition(target, anchorId);
+      const anchorClientX = bounds.left + position.x / width * bounds.width;
+      const anchorClientY = bounds.top + position.y / height * bounds.height;
+      const distance = Math.hypot(clientX - anchorClientX, clientY - anchorClientY);
+      if (distance <= 24 && (!closest || distance < closest.distance)) closest = { widgetId: target.id, anchorId, position, distance };
+    }
+  }
+  return closest;
+}
+
 function connectionCollectorPosition(reference, widgets) {
   if (!reference) return null;
   const separator = reference.indexOf(":");
@@ -1111,7 +1132,7 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
       let dragOrigin = null;
       handle.addEventListener("pointerdown", event => {
         event.preventDefault(); event.stopPropagation();
-        dragOrigin = { x: event.clientX, y: event.clientY, detached: false };
+        dragOrigin = { x: event.clientX, y: event.clientY, detached: false, changed: false, snapTarget: null };
         handle.setPointerCapture(event.pointerId);
       });
       handle.addEventListener("pointermove", event => {
@@ -1124,14 +1145,29 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
           dragOrigin.detached = true;
         }
         const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height;
-        const x = Math.max(0, Math.min(width, Math.round((event.clientX - bounds.left) * scaleX)));
-        const y = Math.max(0, Math.min(height, Math.round((event.clientY - bounds.top) * scaleY)));
+        const snapTarget = closestConnectionAnchor(event.clientX, event.clientY, widget, prefix, widgets, bounds, width, height);
+        for (const marker of document.querySelectorAll(".widget-dock-point.is-snap-target")) marker.classList.remove("is-snap-target");
+        if (snapTarget) document.getElementById(snapTarget.widgetId)?.querySelector(`[data-anchor-id="${snapTarget.anchorId}"]`)?.classList.add("is-snap-target");
+        dragOrigin.snapTarget = snapTarget;
+        dragOrigin.changed = true;
+        const x = snapTarget ? snapTarget.position.x : Math.max(0, Math.min(width, Math.round((event.clientX - bounds.left) * scaleX)));
+        const y = snapTarget ? snapTarget.position.y : Math.max(0, Math.min(height, Math.round((event.clientY - bounds.top) * scaleY)));
         widget[`${prefix}X`] = x; widget[`${prefix}Y`] = y;
         handle.setAttribute("cx", String(x)); handle.setAttribute("cy", String(y)); update();
       });
-      const finish = () => { if (!dragOrigin) return; dragOrigin = null; renderProperties(); };
-      handle.addEventListener("pointerup", finish);
-      handle.addEventListener("pointercancel", finish);
+      const finish = (attach) => {
+        if (!dragOrigin) return;
+        const { changed, snapTarget } = dragOrigin; dragOrigin = null;
+        for (const marker of document.querySelectorAll(".widget-dock-point.is-snap-target")) marker.classList.remove("is-snap-target");
+        if (attach && snapTarget) {
+          widget[`${prefix}WidgetId`] = snapTarget.widgetId;
+          widget[`${prefix}Anchor`] = snapTarget.anchorId;
+          widget[`${prefix}Collector`] = "";
+        }
+        if (changed) render(); else renderProperties();
+      };
+      handle.addEventListener("pointerup", () => finish(true));
+      handle.addEventListener("pointercancel", () => finish(false));
       handle.addEventListener("keydown", event => {
         const directions = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
         if (!directions[event.key]) return;
@@ -1285,6 +1321,7 @@ function renderStage() {
         const hasExplicitZIndex = widget.cssZIndex !== undefined && widget.cssZIndex !== "";
         const requestedZIndex = hasExplicitZIndex ? Number(widget.cssZIndex) || 0 : Math.max(0, Number(widget.layer) || 0);
         if (runtimeMode) return String(hasExplicitZIndex ? widget.cssZIndex : requestedZIndex + 2);
+        if (isConnection && selected) return "200000";
         if (isConnection) return String(Math.min(9999, Math.max(0, hasExplicitZIndex ? requestedZIndex : connectionZIndex(widget, activePage.widgets))) + 2);
         return String(10002 + Math.max(0, requestedZIndex));
       })(),
@@ -1609,7 +1646,7 @@ function renderStage() {
     if (showDockPoints) {
       for (const [anchorId, label, x, y] of CONNECTION_ANCHORS) {
         if (widget[`dock_${anchorId.replaceAll("-", "_")}`] === false) continue;
-        const marker = document.createElement("span"); marker.className = "widget-dock-point"; marker.style.left = `${x * 100}%`; marker.style.top = `${y * 100}%`;
+        const marker = document.createElement("span"); marker.className = "widget-dock-point"; marker.style.left = `${x * 100}%`; marker.style.top = `${y * 100}%`; marker.dataset.anchorId = anchorId; marker.dataset.widgetId = widget.id;
         const occupied = activePage.widgets.filter(item => item.type === "svg-connection" && [[item.startWidgetId, item.startAnchor], [item.endWidgetId, item.endAnchor]].some(([id, anchor]) => id === widget.id && (anchor || "right-center") === anchorId)).length;
         marker.dataset.count = String(occupied); marker.title = `${label}${occupied ? ` · ${occupied} Verbindung${occupied === 1 ? "" : "en"}` : ""}`; element.append(marker);
       }
