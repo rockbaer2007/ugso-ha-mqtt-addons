@@ -16,6 +16,16 @@ Stand: 01.10.2026. Dieses Dokument hält den vereinbarten Entwurf für ein eigen
 - Im Fenstertitel stehen Programmversion und Modus, beispielsweise `Packer 0.1.0 – Widget-Paket erstellen` oder `Packer 0.1.0 – Tool-Paket erstellen`. So sind beide Angaben bei Fehlermeldungen und Screenshots sichtbar.
 - Ein Moduswechsel löst eine neue Prüfung aus. Ein bereits gewählter Quellordner darf erst nach erfolgreicher Prüfung für den anderen Modus exportiert werden.
 - Die Oberfläche soll kompakt und verständlich bleiben. Fehlermeldungen nennen die betroffene Datei oder das betroffene Manifestfeld und die nötige Korrektur.
+- Im Packer gibt es einen eigenen Button **Endungen registrieren**. Er ist unabhängig vom Paket-Export und richtet die Dateitypen `.wg` und `.tp` für den aktuellen Benutzer ein.
+
+## Dateitypen registrieren
+
+- `.wg` erhält ein Widget-Paket-Icon und `.tp` ein Tool-Paket-Icon. Die Icons sind Teil der Packer-Auslieferung; sie stammen nicht aus einem beliebigen Paket.
+- Der Button prüft, welche Archivprogramme vorhanden sind. Unter Windows kommen der integrierte ZIP-Zugriff, 7-Zip und WinRAR infrage; unter Linux verfügbare Archivprogramme wie 7-Zip, unzip oder unrar. Er zeigt die gefundenen Programme und die geplanten Zuordnungen **vor** dem Registrieren an.
+- Unter Windows registriert der Packer beide Dateitypen samt Icons und passenden **Öffnen mit**-Einträgen. Die Standard-App wählt der Benutzer über die Windows-Oberfläche; der Packer überschreibt diese Wahl nicht heimlich.
+- Unter Linux registriert der Packer eigene MIME-Typen und Icons für beide Endungen und bietet verfügbare Archivprogramme als Öffnungsoptionen an. Eine bestehende Standard-App wird nur auf ausdrückliche Auswahl geändert.
+- Nach dem Klick zeigt der Packer für `.wg` und `.tp` getrennt Erfolg oder einen konkreten Fehler. Ein erneuter Klick ist sicher; eine spätere Deinstallation entfernt nur die vom Packer angelegten Zuordnungen und Icons.
+- Bestehende `*.wg.zip`- und `*.tp.zip`-Dateien behalten die normale ZIP-Zuordnung. Der Button registriert nur die neuen Endungen `.wg` und `.tp`.
 
 ## Eingaben und Einstellungen
 
