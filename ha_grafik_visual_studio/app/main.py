@@ -32,6 +32,7 @@ MAX_BODY = 1_000_000
 MAX_OBJECT_BYTES = 20_000_000
 DEFAULT_PROJECT_ID = "main"
 HOME_ASSISTANT_WS_URL = "ws://supervisor/core/websocket"
+ENTITY_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*\.[a-z0-9_]+$")
 
 DEFAULT_PROJECT = {
     "schemaVersion": 2,
@@ -51,8 +52,8 @@ class HomeAssistantAPIError(RuntimeError):
     """Raised when the Home Assistant WebSocket API cannot provide entities."""
 
 
-def load_home_assistant_entities():
-    """Read entity registry, device registry, and current states via Supervisor."""
+def home_assistant_commands(command_types):
+    """Run read-only Home Assistant WebSocket commands via Supervisor."""
     try:
         import websocket
     except ImportError as error:
@@ -93,26 +94,7 @@ def load_home_assistant_entities():
                     raise HomeAssistantAPIError(f"Home Assistant: {message}")
                 return response.get("result")
 
-        entity_entries = command(1, "config/entity_registry/list")
-        device_entries = command(2, "config/device_registry/list")
-        state_entries = command(3, "get_states")
-        entities = [
-            {key: entry[key] for key in ("entity_id", "name", "name_by_user", "original_name", "device_id", "disabled_by") if key in entry}
-            for entry in entity_entries if isinstance(entry, dict)
-        ]
-        devices = [
-            {key: entry[key] for key in ("id", "name", "name_by_user", "model", "manufacturer") if key in entry}
-            for entry in device_entries if isinstance(entry, dict)
-        ]
-        states = [
-            {
-                "entity_id": entry["entity_id"],
-                "state": entry.get("state"),
-                "attributes": {"friendly_name": entry.get("attributes", {}).get("friendly_name")},
-            }
-            for entry in state_entries if isinstance(entry, dict) and "entity_id" in entry
-        ]
-        return {"entities": entities, "devices": devices, "states": states}
+        return [command(index, command_type) for index, command_type in enumerate(command_types, 1)]
     except HomeAssistantAPIError:
         raise
     except (websocket.WebSocketException, OSError, ValueError, TypeError) as error:
@@ -126,6 +108,37 @@ def load_home_assistant_entities():
             except websocket.WebSocketException:
                 pass
 
+
+def load_home_assistant_entities():
+    """Read entity registry, device registry, and current states via Supervisor."""
+    entity_entries, device_entries, state_entries = home_assistant_commands(
+        ["config/entity_registry/list", "config/device_registry/list", "get_states"]
+    )
+    entities = [
+        {key: entry[key] for key in ("entity_id", "name", "name_by_user", "original_name", "device_id", "disabled_by") if key in entry}
+        for entry in entity_entries if isinstance(entry, dict)
+    ]
+    devices = [
+        {key: entry[key] for key in ("id", "name", "name_by_user", "model", "manufacturer") if key in entry}
+        for entry in device_entries if isinstance(entry, dict)
+    ]
+    states = [
+        {"entity_id": entry["entity_id"], "state": entry.get("state"),
+         "attributes": {"friendly_name": entry.get("attributes", {}).get("friendly_name")}}
+        for entry in state_entries if isinstance(entry, dict) and "entity_id" in entry
+    ]
+    return {"entities": entities, "devices": devices, "states": states}
+
+
+def load_home_assistant_states(entity_ids):
+    """Read only the requested states without fetching the registries."""
+    requested = set(entity_ids)
+    (state_entries,) = home_assistant_commands(["get_states"])
+    return [
+        {key: entry.get(key) for key in ("entity_id", "state", "last_changed", "last_updated")}
+        for entry in (state_entries or []) if isinstance(entry, dict) and entry.get("entity_id") in requested
+    ]
+
 MIME_TYPES = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml"}
 FILE_MIME_TYPES = {
     ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml", ".gif": "image/gif", ".bmp": "image/bmp", ".ico": "image/x-icon",
@@ -138,7 +151,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.71"
+    server_version = "HAGrafikVisualStudio/0.1.72"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -160,13 +173,24 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.71"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.72"})
             return
         if path == "/api/entities":
             try:
                 self.send_json(HTTPStatus.OK, load_home_assistant_entities())
             except HomeAssistantAPIError as error:
                 LOG.warning("Home-Assistant-Entitäten konnten nicht geladen werden: %s", error)
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})
+            return
+        if path == "/api/states":
+            entity_ids = query.get("entity_id", [])
+            if not entity_ids or len(entity_ids) > 100 or any(not ENTITY_ID_PATTERN.fullmatch(entity_id) for entity_id in entity_ids):
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Ungültige Entitätenauswahl."})
+                return
+            try:
+                self.send_json(HTTPStatus.OK, {"states": load_home_assistant_states(entity_ids)})
+            except HomeAssistantAPIError as error:
+                LOG.warning("Home-Assistant-Zustände konnten nicht geladen werden: %s", error)
                 self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})
             return
         if path == "/api/projects":

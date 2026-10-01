@@ -69,6 +69,9 @@ const fileTypes = {
   video: ["mp4", "webm", "mov", "mkv"],
 };
 const state = { project: null, projectId: params.get("project") || "main", selectedId: null, selectedIds: [], nextId: 1, propertyTab: "widget", collapsedWidgetSets: new Set(), expandedPropertySections: new Set(), objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null, widgetClipboard: [], editorWidgetFilter: null, undoStack: [], redoStack: [] };
+const LIVE_DISPLAY_TYPES = new Set(["sensor", "string", "red-number", "bar", "gauge", "bool-display"]);
+let runtimeStateRequestPending = false;
+let runtimeStateError = false;
 let mdiIcons = null;
 let mdiIconsPromise = null;
 let activeIconInput = null;
@@ -421,7 +424,54 @@ async function loadProject() {
   state.nextId = Math.max(0, ...state.project.pages.flatMap((page) => page.widgets).map((widget) => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   render();
   savedProjectSnapshot = observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
-  if (runtimeMode) void loadEntities();
+  if (runtimeMode) void refreshRuntimeStates();
+}
+
+function displayedWidgetState(widget) {
+  if (runtimeMode && LIVE_DISPLAY_TYPES.has(widget.type) && widget.entityId) {
+    return state.entityStates[widget.entityId]?.state ?? "--";
+  }
+  return widget.state;
+}
+
+async function refreshRuntimeStates() {
+  if (!runtimeMode || !state.project || document.hidden || runtimeStateRequestPending) return;
+  const pageId = currentPage().id;
+  const ids = [...new Set(currentPage().widgets.flatMap((widget) => [widget.entityId, widget.visibilityEnabled ? widget.visibilityEntityId : ""]))]
+    .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id));
+  if (!ids.length) return;
+  runtimeStateRequestPending = true;
+  try {
+    const states = [];
+    for (let offset = 0; offset < ids.length; offset += 100) {
+      const query = new URLSearchParams(ids.slice(offset, offset + 100).map((id) => ["entity_id", id]));
+      const response = await fetch(`api/states?${query}`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = await response.json();
+      states.push(...(payload.states || []));
+    }
+    if (currentPage().id !== pageId) return;
+    const next = Object.fromEntries(states.map((entry) => [entry.entity_id, entry]));
+    if (JSON.stringify(next) !== JSON.stringify(state.entityStates)) {
+      state.entityStates = next;
+      renderStage();
+    }
+    if (runtimeStateError) $("#status").textContent = "Home-Assistant-Zustände wieder verfügbar";
+    runtimeStateError = false;
+  } catch {
+    if (currentPage().id !== pageId) return;
+    if (Object.keys(state.entityStates).length) { state.entityStates = {}; renderStage(); }
+    $("#status").textContent = "Home-Assistant-Zustände konnten nicht geladen werden";
+    runtimeStateError = true;
+  } finally {
+    runtimeStateRequestPending = false;
+    if (currentPage().id !== pageId) void refreshRuntimeStates();
+  }
+}
+
+if (runtimeMode) {
+  window.setInterval(() => { void refreshRuntimeStates(); }, 5000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshRuntimeStates(); });
 }
 
 if (!runtimeMode) setInterval(() => {
@@ -498,7 +548,7 @@ function renderPageMenu() {
     const select = document.createElement("button"); select.type = "button"; select.className = "page-select";
     select.textContent = `${page.visible ? "◉" : "◌"}  ${page.name}`;
     select.setAttribute("aria-current", String(page.id === state.project.currentPageId));
-    select.addEventListener("click", () => { state.project.currentPageId = page.id; state.selectedId = null; state.selectedIds = []; render(); });
+    select.addEventListener("click", () => { state.project.currentPageId = page.id; state.selectedId = null; state.selectedIds = []; render(); if (runtimeMode) void refreshRuntimeStates(); });
     row.append(select);
     if (!runtimeMode) {
       const visibility = document.createElement("button"); visibility.type = "button"; visibility.textContent = page.visible ? "◉" : "◌"; visibility.title = page.visible ? "In Runtime sichtbar" : "In Runtime ausgeblendet"; visibility.setAttribute("aria-label", `${page.visible ? "Ausblenden" : "Einblenden"}: ${page.name}`);
@@ -1767,7 +1817,7 @@ function renderStage() {
     let visibilityDisabled = false;
     if (runtimeMode && widget.visibilityEnabled === true && widget.visibilityEntityId) {
       const stateEntry = state.entityStates[widget.visibilityEntityId];
-      if (stateEntry && !matchesCondition(stateEntry.state, widget.visibilityCondition || "==", widget.visibilityValue)) {
+      if (!stateEntry || !matchesCondition(stateEntry.state, widget.visibilityCondition || "==", widget.visibilityValue)) {
         if ((widget.visibilityFallback || "ausblenden") === "ausblenden") continue;
         visibilityDisabled = true;
       }
@@ -1964,9 +2014,10 @@ function renderStage() {
     } else if (widget.type === "note") {
       const note = document.createElement("div"); note.className = `note-content${widget.hideCorner ? " no-corner" : ""}`; appendSafeHtml(note, `${widget.prefix || ""}${widget.state ?? ""}${widget.suffix || ""}`); content.append(note);
     } else if (widget.type === "red-number") {
+      const liveValue = displayedWidgetState(widget);
       const badge = document.createElement("span"); badge.className = `widget-badge ${widget.badgeType === "pin" ? "pin" : "circle"}`; badge.style.background = widget.badgeBackground || "#c62828";
       badge.style.border = `1px solid ${widget.badgeBorder || "transparent"}`; badge.style.borderRadius = `${Number(widget.radius ?? 16)}px`;
-      appendSafeHtml(badge, widget.prefix || ""); badge.append(document.createTextNode(String(widget.state ?? ""))); appendSafeHtml(badge, Number(widget.state) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""); content.append(badge);
+      appendSafeHtml(badge, widget.prefix || ""); badge.append(document.createTextNode(String(liveValue ?? ""))); appendSafeHtml(badge, Number(liveValue) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""); content.append(badge);
     } else if (widget.type === "bool-svg") {
       const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.style.width = "100%"; svg.style.height = "100%"; svg.style.opacity = String(widget.svgOpacity ?? 1); svg.innerHTML = isOn(widget.state) ? widget.svgTrue || "" : widget.svgFalse || "";
       if (runtimeMode && !widget.readOnly) { svg.setAttribute("role", "button"); svg.tabIndex = 0; const toggle = event => { event.stopPropagation(); widget.state = !isOn(widget.state); renderStage(); }; svg.addEventListener("click", toggle); svg.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); toggle(event); } }); } content.append(svg);
@@ -1992,7 +2043,7 @@ function renderStage() {
       else { content.classList.add("image-placeholder"); content.setAttribute("aria-label", widget.title || "Bild"); }
     } else if (widget.type === "string") {
       if (widget.icon) { const image = document.createElement("img"); image.className = "button-icon"; setIconImageSource(image, widget.icon); image.alt = ""; content.append(image); }
-      const text = document.createElement("span"); text.className = "basic-string"; appendSafeHtml(text, widget.prefix || ""); text.append(document.createTextNode(String(widget.state ?? ""))); appendSafeHtml(text, widget.suffix || ""); content.append(text);
+      const text = document.createElement("span"); text.className = "basic-string"; appendSafeHtml(text, widget.prefix || ""); text.append(document.createTextNode(String(displayedWidgetState(widget) ?? ""))); appendSafeHtml(text, widget.suffix || ""); content.append(text);
     } else if (widget.type === "string-raw") {
       appendSafeHtml(content, `${widget.prefix || ""}${widget.state ?? ""}${widget.suffix || ""}`);
     } else if (widget.type === "image-source") {
@@ -2011,7 +2062,7 @@ function renderStage() {
         if (widget.type === "value-list-html-style") applySafeStyle(content, widget[`listStyle${index}`] ?? String(widget.styleList || "").split(/\r?\n/)[index] ?? "");
       }
     } else if (["bool-display", "bool-html-control", "ackflag-html"].includes(widget.type)) {
-      const current = isOn(widget.state);
+      const current = isOn(displayedWidgetState(widget));
       const output = document.createElement("span"); output.className = "bool-html";
       appendSafeHtml(output, current ? widget.htmlTrue : widget.htmlFalse); content.append(output);
       if (widget.type === "bool-html-control") {
@@ -2064,7 +2115,7 @@ function renderStage() {
         catch { button.textContent = "Vollbild nicht verfügbar"; }
       }); content.append(button);
     } else if (widget.type === "bar") {
-      const min = Number(widget.min ?? 0); const max = Number(widget.max ?? 100); const current = Number(widget.state);
+      const min = Number(widget.min ?? 0); const max = Number(widget.max ?? 100); const current = Number(displayedWidgetState(widget));
       const ratio = Number.isFinite(current) && max > min ? Math.max(0, Math.min(1, (current - min) / (max - min))) : 0;
       const track = document.createElement("div"); track.className = `bar-track ${widget.orientation === "vertical" ? "vertical" : "horizontal"}`;
       track.style.border = widget.barBorder || ""; track.style.opacity = String(widget.barOpacity ?? 1);
@@ -2074,7 +2125,7 @@ function renderStage() {
       const href = safeUrl(widget.navUrl);
       if (widget.targetPage) {
         const button = document.createElement("button"); button.type = "button"; appendSafeHtml(button, widget.navHtml ?? widget.navLabel ?? "Öffnen");
-        button.addEventListener("click", event => { event.stopPropagation(); if (!runtimeMode) return; const page = state.project.pages.find(page => page.id === widget.targetPage); if (page) { state.project.currentPageId = page.id; setSingleWidgetSelection(null); render(); } }); content.append(button);
+        button.addEventListener("click", event => { event.stopPropagation(); if (!runtimeMode) return; const page = state.project.pages.find(page => page.id === widget.targetPage); if (page) { state.project.currentPageId = page.id; setSingleWidgetSelection(null); render(); void refreshRuntimeStates(); } }); content.append(button);
       } else if (href) { const link = document.createElement("a"); link.className = "widget-navigation"; link.href = href; appendSafeHtml(link, widget.navHtml ?? widget.navLabel ?? "Öffnen"); content.append(link); }
       else content.textContent = widget.navLabel || "Ziel-URL fehlt";
     } else if (widget.type === "filter-dropdown") {
@@ -2091,7 +2142,7 @@ function renderStage() {
       }
     } else {
       const value = document.createElement("span"); value.className = "value";
-    let displayValue = widget.state ?? "--";
+    let displayValue = displayedWidgetState(widget) ?? "--";
     let suffix = widget.unit || "";
     if (widget.type === "sensor" && Number.isFinite(Number(displayValue))) {
       const scaled = Number(displayValue) * Number(widget.factor ?? 1);

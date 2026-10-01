@@ -42,6 +42,8 @@ const ENGLISH = {
   "Speichern nach letzter Änderung (Sekunden)": "Save after last change (seconds)",
   "Änderungen werden nach der eingestellten Ruhezeit im aktuellen Projekt gespeichert.": "Changes are saved in the current project after the selected idle time.",
   "Sprache": "Language", "App-Sprache": "App language", "Automatisch (Home Assistant)": "Automatic (Home Assistant)", "Deutsch": "German",
+  "Home-Assistant-Zustände konnten nicht geladen werden": "Home Assistant states could not be loaded",
+  "Home-Assistant-Zustände wieder verfügbar": "Home Assistant states are available again",
   "Bei Automatisch wird Deutsch nur bei deutscher Home-Assistant-Sprache angezeigt, sonst Englisch. Diese Auswahl gilt nur für diesen Browser.": "Automatic uses German only when Home Assistant is set to German; otherwise it uses English. This choice applies only to this browser.",
   "Editor und Andockpunkte": "Editor and docking points", "Farbe der Andockpunkte": "Docking point color",
   "Diese Farbe gilt für alle Andockpunkte und ihre Belegungszähler. Standard: Gelb.": "This color applies to all docking points and their occupancy counters. Default: yellow.",

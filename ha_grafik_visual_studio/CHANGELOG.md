@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.72
+
+- The runtime reads only the Home Assistant states needed by the current page every five seconds, and refreshes on returning to the tab. Sensor, String, Red Number, Bar, Gauge and Bool HTML display widgets use these values without changing saved preview data.
+- Visibility rules now fail closed while a bound state is missing. A state-read failure is shown in the runtime. Home Assistant write actions and the remaining widget types follow in separate increments.
+
 ## 0.1.71
 
 - The editor and settings now use German when Home Assistant is set to German and English otherwise. Settings offer an Auto / German / English override stored in the local browser, independently of the shared project.
