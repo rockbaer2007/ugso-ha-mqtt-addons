@@ -1765,7 +1765,7 @@ function addWidget(definition) {
     borderColor: "#626c70", borderWidth: 0, borderStyle: "none", padding: 0, shadow: false, opacity: 1,
     ...structuredClone(definition.defaults),
   };
-  widget.name = uniqueWidgetName(page, widget.name || widget.title || definition.label);
+  widget.name = uniqueWidgetName(page, widget.name || definition.label);
   if (definition.type === "svg-connection") {
     const connectionLayers = page.widgets.filter(item => item.type === "svg-connection").map(item => Math.max(0, Number(item.layer) || 0));
     widget.layer = (connectionLayers.length ? Math.max(...connectionLayers) : 0) + 1;

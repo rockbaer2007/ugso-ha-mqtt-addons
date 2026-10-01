@@ -369,6 +369,7 @@ export function uiText(source, values = {}) {
 function excluded(element) {
   if (element.id === "entity-selected-id") return false;
   if (element.classList.contains("empty") && element.closest("#objects-browser, #entities-tree")) return false;
+  if (element.closest(".widget-choice-label")) return true;
   return element.closest("#stage, #page-list, #projects-list, #widget-selector-list, #entities-tree, #objects-browser, #icon-picker-results, script, style, textarea, code, pre") !== null;
 }
 

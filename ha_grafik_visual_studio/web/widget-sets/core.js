@@ -137,22 +137,27 @@ const palettePreviews = {
   "svg-shape": { kind: "plain", lines: ["◯"] },
   "input-value": { kind: "control", lines: ["input", "⌨"] },
 };
+const previousWidgetLabels = {
+  "bool-svg": "Boolesches SVG", "input-value": "Eingegebener Wert", checkbox: "Checkbox",
+  bulb: "Lampe ein/aus", "bool-html-control": "Bool HTML-Steuerung",
+  "filter-dropdown": "Filter Dropdown", border: "Rahmen", image: "Bild / Kamera",
+};
 
 registerWidgetSet({
   id: "ha-grafik-core",
   label: "HA Grafik – Basis",
   widgets: [
-    basicDataWidget("link", "Link", "↗", { htmlContent: "Link", linkUrl: "" }, [{ label: "HTML", key: "htmlContent", type: "html" }, { label: "Link", key: "linkUrl" }], "HTML-Link mit frei formatiertem Inhalt."),
+    basicDataWidget("link", "link", "↗", { htmlContent: "Link", linkUrl: "" }, [{ label: "HTML", key: "htmlContent", type: "html" }, { label: "Link", key: "linkUrl" }], "HTML-Link mit frei formatiertem Inhalt."),
     basicDataWidget("note", "Note", "▤", { state: "Notiz", backgroundColor: "rgba(255,255,105,0.8)", hideCorner: false }, [...entityTest(), ...htmlAdditions(), { label: "Testtext (HTML)", key: "state", type: "html" }, { label: "Ecke ausblenden", key: "hideCorner", type: "checkbox", default: false }]),
     basicDataWidget("screen-resolution", "Screen Resolution", "▣", {}, [], "Reine Anzeige der aktuellen Fensterauflösung; aktualisiert sich bei Größenänderung."),
     basicDataWidget("red-number", "Red Number", "●", { state: 0, badgeType: "circle", radius: 16, badgeBackground: "#c62828", badgeBorder: "#c62828" }, [...entityTest(), { label: "type", key: "badgeType", type: "select", options: ["circle", "pin"], refreshProperties: true }, { label: "HTML voranstellen", key: "prefix" }, { label: "HTML anhängen (Singular)", key: "suffixSingular" }, { label: "HTML anhängen (Plural)", key: "suffixPlural" }, { label: "Hintergrund", key: "badgeBackground", type: "color" }, { label: "Randfarbe", key: "badgeBorder", type: "color", showWhen: { key: "badgeType", value: "circle" } }, { label: "Grenzradius", key: "radius", type: "range", min: 0, max: 100, step: 1, showWhen: { key: "badgeType", value: "circle" } }]),
-    basicDataWidget("bool-svg", "Boolesches SVG", "◇", { state: false, readOnly: false, svgFalse: "<circle cx='50' cy='50' r='40' fill='#777'/>", svgTrue: "<circle cx='50' cy='50' r='40' fill='#29c8b5'/>", svgOpacity: 1 }, [...entityTest(), { label: "Nur Anzeige", key: "readOnly", type: "checkbox", default: false }, { label: "SVG bei false", key: "svgFalse", type: "html" }, { label: "SVG bei true", key: "svgTrue", type: "html" }, { label: "Durchsichtigkeit", key: "svgOpacity", type: "range", min: 0, max: 1, step: 0.05 }]),
-    basicDataWidget("svg-shape", "SVG Shape", "◯", { shape: "circle", strokeColor: "#009cb3", fillColor: "#00b3ac", strokeWidth: 5, rotation: 0, scaleX: 1, scaleY: 1, pointCount: 3 }, [{ label: "Typ", key: "shape", type: "select", options: ["line", "triangle", "square", "pentagon", "hexagon", "octagon", "circle", "star", "arrow", "custom"], refreshProperties: true }, { label: "Linienfarbe", key: "strokeColor", type: "color" }, { label: "Füllfarbe", key: "fillColor", type: "color" }, { label: "Linienbreite", key: "strokeWidth", type: "range", min: 0, max: 20, step: 1 }, { label: "Drehen", key: "rotation", type: "range", min: 0, max: 360, step: 1 }, { label: "Breitenskala", key: "scaleX", type: "range", min: 0, max: 1, step: 0.01 }, { label: "Höhenskala", key: "scaleY", type: "range", min: 0, max: 1, step: 0.01 }, { label: "Punkteanzahl", key: "pointCount", type: "range", min: 3, max: 20, step: 1, showWhen: { key: "shape", value: "custom" } }], "Eigene SVG-Geometrie ohne externe Grafiken."),
-    basicDataWidget("input-value", "Eingegebener Wert", "⌨", { state: "", variant: "standard", withEnter: false }, [...entityTest(), ...htmlAdditions(), ...[["Nummer", "numeric"], ["Auto-setzen", "autoSet"], ["nur lesend", "readOnly"], ["Autofokus", "autofocus"], ["Kein Style", "noStyle"], ["withEnter", "withEnter"]].map(([label, key]) => ({ label, key, type: "checkbox", default: false })), { label: "variant", key: "variant", type: "select", options: ["standard", "filled", "outlined"] }], "Eingabe wird lokal übernommen; HA-Schreibzugriff gehört zur noch offenen Zustandsanbindung."),
-    basicDataWidget("view-in-widget", "View in Widget", "▣", {}, [{ label: "Seite", key: "targetPage", type: "page" }], "Bettet eine gespeicherte Projektseite ein; rekursive Einbettung wird verhindert."),
+    basicDataWidget("bool-svg", "Bool SVG", "◇", { state: false, readOnly: false, svgFalse: "<circle cx='50' cy='50' r='40' fill='#777'/>", svgTrue: "<circle cx='50' cy='50' r='40' fill='#29c8b5'/>", svgOpacity: 1 }, [...entityTest(), { label: "Nur Anzeige", key: "readOnly", type: "checkbox", default: false }, { label: "SVG bei false", key: "svgFalse", type: "html" }, { label: "SVG bei true", key: "svgTrue", type: "html" }, { label: "Durchsichtigkeit", key: "svgOpacity", type: "range", min: 0, max: 1, step: 0.05 }]),
+    basicDataWidget("svg-shape", "SVG shape", "◯", { shape: "circle", strokeColor: "#009cb3", fillColor: "#00b3ac", strokeWidth: 5, rotation: 0, scaleX: 1, scaleY: 1, pointCount: 3 }, [{ label: "Typ", key: "shape", type: "select", options: ["line", "triangle", "square", "pentagon", "hexagon", "octagon", "circle", "star", "arrow", "custom"], refreshProperties: true }, { label: "Linienfarbe", key: "strokeColor", type: "color" }, { label: "Füllfarbe", key: "fillColor", type: "color" }, { label: "Linienbreite", key: "strokeWidth", type: "range", min: 0, max: 20, step: 1 }, { label: "Drehen", key: "rotation", type: "range", min: 0, max: 360, step: 1 }, { label: "Breitenskala", key: "scaleX", type: "range", min: 0, max: 1, step: 0.01 }, { label: "Höhenskala", key: "scaleY", type: "range", min: 0, max: 1, step: 0.01 }, { label: "Punkteanzahl", key: "pointCount", type: "range", min: 3, max: 20, step: 1, showWhen: { key: "shape", value: "custom" } }], "Eigene SVG-Geometrie ohne externe Grafiken."),
+    basicDataWidget("input-value", "Input val", "⌨", { state: "", variant: "standard", withEnter: false }, [...entityTest(), ...htmlAdditions(), ...[["Nummer", "numeric"], ["Auto-setzen", "autoSet"], ["nur lesend", "readOnly"], ["Autofokus", "autofocus"], ["Kein Style", "noStyle"], ["withEnter", "withEnter"]].map(([label, key]) => ({ label, key, type: "checkbox", default: false })), { label: "variant", key: "variant", type: "select", options: ["standard", "filled", "outlined"] }], "Eingabe wird lokal übernommen; HA-Schreibzugriff gehört zur noch offenen Zustandsanbindung."),
+    basicDataWidget("view-in-widget", "View in widget", "▣", {}, [{ label: "Seite", key: "targetPage", type: "page" }], "Bettet eine gespeicherte Projektseite ein; rekursive Einbettung wird verhindert."),
     basicDataWidget("view-in-widget-8", "View in widget 8", "▣", { state: 0, count: 1 }, [...entityTest(), { label: "Werteanzahl bis", key: "count", type: "number", min: 1, max: 50, refreshProperties: true }]),
-    basicDataWidget("iframe", "iframe", "▣", { source: "", noFrame: true }, [{ label: "Quelle", key: "source" }, { label: "Kein Sandkasten", key: "noSandbox", type: "checkbox", default: false }, ...frameFields()], "Die Zielseite muss Einbettung erlauben."),
-    basicDataWidget("iframe-8", "iframe 8", "▣", { state: 0, count: 2, noFrame: true }, [...entityTest(), ...frameFields(), { label: "Werteanzahl bis", key: "count", type: "range", min: 1, max: 20, step: 1, refreshProperties: true }]),
+    basicDataWidget("iframe", "iFrame", "▣", { source: "", noFrame: true }, [{ label: "Quelle", key: "source" }, { label: "Kein Sandkasten", key: "noSandbox", type: "checkbox", default: false }, ...frameFields()], "Die Zielseite muss Einbettung erlauben."),
+    basicDataWidget("iframe-8", "iFrame 8", "▣", { state: 0, count: 2, noFrame: true }, [...entityTest(), ...frameFields(), { label: "Werteanzahl bis", key: "count", type: "range", min: 1, max: 20, step: 1, refreshProperties: true }]),
     basicDataWidget("image-8", "Image 8", "▧", { state: 0, count: 1 }, [...entityTest(), { label: "Werteanzahl bis", key: "count", type: "number", min: 1, max: 50, refreshProperties: true }, ...imageFields()]),
     basicDataWidget("ackflag-html", "AckFlag HTML", "✓", { state: false, htmlTrue: "Bestätigt", htmlFalse: "Ausstehend" }, [...entityTest(), ...htmlAdditions(), { label: "HTML bei false", key: "htmlFalse", type: "html" }, { label: "HTML bei true", key: "htmlTrue", type: "html" }], "Home Assistant hat kein ioBroker-ack-Flag. Als Zustand eine separate Bestätigungsentität verwenden; Live-Anbindung bleibt separat offen."),
     { type: "button", label: "Schaltfläche (Icon Ein/Aus)", icon: "◉", defaults: { title: "Schaltfläche", entityId: "", state: "off", icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
@@ -174,8 +179,8 @@ registerWidgetSet({
       ] },
       geometry(), ...cssGroups(),
     ] },
-    { type: "checkbox", label: "Checkbox", icon: "☑", defaults: { title: "Checkbox", entityId: "", state: false }, propertyGroups: entityWidget() },
-    { type: "bulb", label: "Lampe ein/aus", icon: "💡", defaults: { title: "Lampe", entityId: "", state: false, min: 0, max: 1, icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
+    { type: "checkbox", label: "Bool Checkbox", icon: "☑", defaults: { title: "Checkbox", entityId: "", state: false }, propertyGroups: entityWidget() },
+    { type: "bulb", label: "Bulb on/off", icon: "💡", defaults: { title: "Lampe", entityId: "", state: false, min: 0, max: 1, icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
         { label: "Home-Assistant-Entität", key: "entityId" },
@@ -256,7 +261,7 @@ registerWidgetSet({
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Zustand", key: "state", type: "select", options: [{ value: "off", label: "Aus" }, { value: "on", label: "Ein" }] },
       { label: "Text für Ein", key: "textOn" }, { label: "Text für Aus", key: "textOff" },
     ]),
-    basicDataWidget("bool-html-control", "Bool HTML-Steuerung", "⇆", { title: "HTML-Steuerung", entityId: "", state: false, htmlTrue: "Ein", htmlFalse: "Aus" }, [
+    basicDataWidget("bool-html-control", "Bool HTML (control)", "⇆", { title: "HTML-Steuerung", entityId: "", state: false, htmlTrue: "Ein", htmlFalse: "Aus" }, [
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testzustand", key: "state", type: "select", options: [{ value: "false", label: "Aus" }, { value: "true", label: "Ein" }] },
       { label: "HTML für Ein", key: "htmlTrue", type: "textarea" }, { label: "HTML für Aus", key: "htmlFalse", type: "textarea" },
     ]),
@@ -277,10 +282,10 @@ registerWidgetSet({
     basicDataWidget("html", "HTML", "<>…", { title: "HTML", htmlContent: "<h3>Überschrift</h3><p>Eigener HTML-Inhalt</p>" }, [
       { label: "HTML-Inhalt", key: "htmlContent", type: "textarea" },
     ], "HTML-Code wird mit seinen Elementen, Attributen und Formatierungen dargestellt."),
-    basicDataWidget("navigation", "HTML Navigation", "➜", { title: "Navigation", navLabel: "Öffnen", navUrl: "" }, [
+    basicDataWidget("navigation", "HTML navigation", "➜", { title: "Navigation", navLabel: "Öffnen", navUrl: "" }, [
       { label: "Linktext", key: "navLabel" }, { label: "Ziel-URL oder HA-Pfad", key: "navUrl" },
     ]),
-    basicDataWidget("filter-dropdown", "Filter Dropdown", "▽", { title: "Filter", filterOptions: "Licht;Heizung;Sicherheit", filterType: "horizontal", variant: "outlined" }, [
+    basicDataWidget("filter-dropdown", "filter - dropdown", "▽", { title: "Filter", filterOptions: "Licht;Heizung;Sicherheit", filterType: "horizontal", variant: "outlined" }, [
       { label: "Filteroptionen (durch Semikolon getrennt)", key: "filterOptions" },
     ], "Ordne Widgets über „Filterwort“ in Generell einer Filteroption zu."),
     { type: "text", label: "Text", icon: "T", defaults: { title: "Text", textContent: "Eigener Text", backgroundColor: "", borderWidth: 0, borderStyle: "none" }, propertyGroups: [
@@ -290,7 +295,7 @@ registerWidgetSet({
       ] },
       geometry(), ...cssGroups(),
     ] },
-    { type: "border", label: "Rahmen", icon: "▱", defaults: { title: "Titel", borderColor: "#1688e7", borderWidth: 1, borderStyle: "solid", backgroundColor: "", titleBackground: "", titleColor: "#e7ecee", titleTopOffset: -9, titleLeftOffset: 16, headerHeight: 0, headerColor: "" }, propertyGroups: [
+    { type: "border", label: "Border", icon: "▱", defaults: { title: "Titel", borderColor: "#1688e7", borderWidth: 1, borderStyle: "solid", backgroundColor: "", titleBackground: "", titleColor: "#e7ecee", titleTopOffset: -9, titleLeftOffset: 16, headerHeight: 0, headerColor: "" }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
         { label: "Titel", key: "title" },
@@ -304,8 +309,9 @@ registerWidgetSet({
       geometry(), ...cssGroups(),
     ] },
     { type: "gauge", label: "Messanzeige", icon: "◴", defaults: { title: "Messanzeige", entityId: "", state: "--", unit: "%" }, propertyGroups: entityWidget(true) },
-    { type: "image", label: "Bild / Kamera", icon: "▧", defaults: { title: "Kamera", entityId: "", state: "Bildfläche" }, propertyGroups: entityWidget() },
+    { type: "image", label: "Image", icon: "▧", defaults: { title: "Kamera", entityId: "", state: "Bildfläche" }, propertyGroups: entityWidget() },
   ].map((widget) => {
+    if (previousWidgetLabels[widget.type]) widget.searchTerms = [...(widget.searchTerms || []), previousWidgetLabels[widget.type]];
     widget.preview = palettePreviews[widget.type] || { kind: "plain", lines: [widget.icon] };
     if (widget.type === "note") widget.propertyGroups.find(group => group.label === "Daten").fields = widget.propertyGroups.find(group => group.label === "Daten").fields.filter(field => field.key !== "state" || field.type === "html");
     if (widget.type === "screen-resolution") widget.propertyGroups = widget.propertyGroups.filter(group => group.label !== "Daten");

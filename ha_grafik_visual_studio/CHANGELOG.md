@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.77
+
+- VIS2-inspired widget names in the palette now use the original English labels, including Bool SVG, Input val, Bool Checkbox, Bulb on/off, Border and Image. The interface language does not translate palette widget names; former labels remain searchable.
+- New widgets use their palette label as the initial editor name. Existing saved widget names and content are unchanged.
+
 ## 0.1.76
 
 - The existing numeric-value widget is listed as "Number" in the palette, separately from "Red Number", and can now be found by searching for "number" or the former name "Zahlenwert". Existing saved numeric widgets keep their type and settings.
