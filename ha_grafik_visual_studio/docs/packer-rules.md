@@ -1,6 +1,6 @@
 # Packer-Regeln für HA Grafik Visual Studio
 
-Stand: 01.10.2026. Dieses Dokument hält den vereinbarten Entwurf für ein eigenständiges Programm zum Erstellen von Widget- und Tool-Paketen fest. Der [Packer-Kern](../packer/README.md) kann Quellordner prüfen und `.wg`-/`.tp`-Dateien exportieren. Die grafische Oberfläche und Dateityp-Registrierung sind noch nicht implementiert. Die App installiert lokale `*.wg`- und `*.tp`-Dateien sowie die bisherigen `*.wg.zip`- und `*.tp.zip`-Dateien nach den Verträgen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
+Stand: 01.10.2026. Dieses Dokument hält den vereinbarten Entwurf für ein eigenständiges Programm zum Erstellen von Widget- und Tool-Paketen fest. Die Packer-Entwicklung liegt in einem separaten privaten Repository. Ein erster Kern kann Quellordner prüfen und `.wg`-/`.tp`-Dateien exportieren. Die grafische Oberfläche und Dateityp-Registrierung sind noch nicht implementiert. Die App installiert lokale `*.wg`- und `*.tp`-Dateien sowie die bisherigen `*.wg.zip`- und `*.tp.zip`-Dateien nach den Verträgen in [widget-rules.md](widget-rules.md) und [tool-rules.md](tool-rules.md).
 
 ## Ziel und Paketformat
 
@@ -49,9 +49,9 @@ Die Prüfergebnisse erscheinen als Liste mit **grünem Haken** bei Erfolg oder *
 
 ## Veröffentlichung und Downloads
 
-- Fertige Windows- und Linux-Versionen werden als versionierte Dateien in den **GitHub Releases** des Grafikstudio-Projekts veröffentlicht. Der Release nennt unterstützte Systeme, Packer-Version, Änderungen und Prüfsummen der Downloads.
+- Fertige Windows- und Linux-Versionen können später als versionierte Downloads veröffentlicht werden. Der Release nennt unterstützte Systeme, Packer-Version, Änderungen und Prüfsummen der Downloads.
 - Die **UGSo Open-Source-Dokumentation** erhält eine Packer-Seite mit je einem klar beschrifteten Downloadlink für Windows und Linux. Diese Links zeigen auf dieselben GitHub-Release-Dateien; angezeigte Version und Prüfsummen müssen mit dem Release übereinstimmen.
-- Quellcode und Bauanleitung bleiben auf GitHub verfügbar. Für eine neue Version werden Programm, Dokumentation und Downloadlinks zusammen aktualisiert.
+- Der Packer-Quellcode bleibt im privaten Entwicklungs-Repository; öffentliche Downloads können unabhängig davon bereitgestellt werden. Für eine neue Version werden Programm, Dokumentation und Downloadlinks zusammen aktualisiert.
 - Downloadbuttons und konkrete Dateilinks werden erst veröffentlicht, wenn die jeweiligen Programmdateien gebaut und auf beiden Zielsystemen geprüft wurden. Bis dahin beschreibt die Dokumentation nur den geplanten Packer.
 
 ## Spätere Ausbauschritte
