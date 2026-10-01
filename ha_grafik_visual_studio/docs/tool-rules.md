@@ -21,7 +21,7 @@ Stand: 01.10.2026. Diese Datei beschreibt vorhandene Editor-Werkzeuge und Vorsch
 
 ## Entwurf der Tool-Schnittstelle
 
-Die genauen Feldnamen und das Paketformat werden bei der Implementierung festgelegt. Voraussichtlich werden diese Angaben benötigt:
+Die genauen Feldnamen und das innere Paketformat werden bei der Implementierung festgelegt. Der Generator soll Tool-Pakete als `*.tp.zip` ausgeben, zum Beispiel `importhilfe.tp.zip`; `tp` steht für Tool-Paket. Die Endung kennzeichnet die Paketart; beim Import muss zusätzlich das Manifest geprüft werden. Voraussichtlich werden diese Angaben benötigt:
 
 | Bereich | Angaben |
 | --- | --- |

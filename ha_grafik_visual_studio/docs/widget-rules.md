@@ -21,7 +21,7 @@ Stand: 01.10.2026. Dieses Dokument hält die bisher vereinbarten Regeln und den 
 
 ## Entwurf der Widget-Paket-Schnittstelle
 
-Die genauen Feldnamen und das Dateiformat werden bei der Implementierung festgelegt. Folgende Angaben sollen die Schnittstelle abdecken:
+Die genauen Feldnamen und das innere Dateiformat werden bei der Implementierung festgelegt. Der Generator soll Widget-Pakete als `*.wg.zip` ausgeben, zum Beispiel `solar.wg.zip`. Die Endung kennzeichnet die Paketart; beim Import muss zusätzlich das Manifest geprüft werden. Folgende Angaben sollen die Schnittstelle abdecken:
 
 | Bereich | Angaben |
 | --- | --- |
