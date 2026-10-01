@@ -99,11 +99,62 @@ const basicDataWidget = (type, label, icon, defaults, dataFields, hint = "Entity
 });
 const dateFormats = ["YYYY-MM-DD HH:mm:ss", "DD.MM.YYYY HH:mm:ss", "DD.MM.YYYY HH:mm", "YYYY-MM-DD", "HH:mm:ss"];
 const htmlAdditions = () => [{ label: "HTML voranstellen", key: "prefix" }, { label: "HTML anhängen", key: "suffix" }];
+const entityTest = () => [{ label: "Home-Assistant-Entität", key: "entityId" }, { label: "Testwert", key: "state" }];
+const refreshFields = () => [{ label: "Updatezeit (ms)", key: "refreshInterval", type: "range", min: 0, max: 180000, step: 100, default: 0 }, { label: "Update bei Aufwachen", key: "refreshOnWake", type: "checkbox", default: false }, { label: "Update bei Viewwechsel", key: "refreshOnView", type: "checkbox", default: false }, { label: "Addiere nichts zu URL", key: "noCacheBuster", type: "checkbox", default: false }];
+const imageFields = () => [{ label: "Strecken", key: "stretch", type: "checkbox", default: false }, ...refreshFields(), { label: "allowUserInteractions", key: "allowUserInteractions", type: "checkbox", default: false }];
+const frameFields = () => [...refreshFields(), { label: "Scroll X", key: "scrollX", type: "checkbox", default: false }, { label: "Scroll Y", key: "scrollY", type: "checkbox", default: false }, { label: "Kein Rahmen", key: "noFrame", type: "checkbox", default: true }];
+const palettePreviews = {
+  sensor: { kind: "number", lines: ["VAL", "53.27 MB"] },
+  string: { kind: "code", lines: ["TEXT", "value"] },
+  "string-raw": { kind: "code", lines: ["<div>", "</div>"] },
+  "image-source": { kind: "image", lines: [] },
+  "time-value": { kind: "time", lines: ["20.06.31", "16:51:56"] },
+  "timestamp-value": { kind: "time", lines: ["20.06.31", "16:51:56"] },
+  timestamp: { kind: "time", lines: ["20.06.31", "16:51:56"] },
+  "last-changed": { kind: "time", lines: ["20.06.31", "16:51:56"] },
+  "value-list-text": { kind: "list", lines: ["TEXT3", "TEXT2", "TEXT1"] },
+  "value-list-html": { kind: "code", lines: ["<div>", "</div>"] },
+  "value-list-html-style": { kind: "code", lines: ["<div>", "style", "</div>"] },
+  "bool-display": { kind: "code", lines: ["TRUE", "FALSE"] },
+  "ackflag-html": { kind: "code", lines: ["ACK TRUE", "ACK FALSE"] },
+  checkbox: { kind: "control", lines: ["ctrl", "□"] },
+  "bool-select": { kind: "control", lines: ["ctrl", "▾"] },
+  "bool-html-control": { kind: "code", lines: ["TRUE", "FALSE"] },
+  "html-state": { kind: "control", lines: ["value", "▾"] },
+  table: { kind: "table", lines: ["TITLE", "VALUE", "ROW", "21°"] },
+  fullscreen: { kind: "fullscreen", lines: ["⛶"] },
+  bar: { kind: "bar", lines: ["35%"] },
+  bulb: { kind: "bulb", lines: ["💡"] },
+  image: { kind: "image", lines: [] },
+  "image-8": { kind: "image", lines: [] },
+  link: { kind: "plain", lines: ["↗"] },
+  navigation: { kind: "plain", lines: ["➜"] },
+  html: { kind: "code", lines: ["<html>", "</html>"] },
+  note: { kind: "plain", lines: ["▤"] },
+  "screen-resolution": { kind: "time", lines: ["1920", "1080"] },
+  "red-number": { kind: "plain", lines: ["●"] },
+  "bool-svg": { kind: "plain", lines: ["◇"] },
+  "svg-shape": { kind: "plain", lines: ["◯"] },
+  "input-value": { kind: "control", lines: ["input", "⌨"] },
+};
 
 registerWidgetSet({
   id: "ha-grafik-core",
   label: "HA Grafik – Basis",
   widgets: [
+    basicDataWidget("link", "Link", "↗", { htmlContent: "Link", linkUrl: "" }, [{ label: "HTML", key: "htmlContent", type: "html" }, { label: "Link", key: "linkUrl" }], "HTML-Link mit frei formatiertem Inhalt."),
+    basicDataWidget("note", "Note", "▤", { state: "Notiz", backgroundColor: "rgba(255,255,105,0.8)", hideCorner: false }, [...entityTest(), ...htmlAdditions(), { label: "Testtext (HTML)", key: "state", type: "html" }, { label: "Ecke ausblenden", key: "hideCorner", type: "checkbox", default: false }]),
+    basicDataWidget("screen-resolution", "Screen Resolution", "▣", {}, [], "Reine Anzeige der aktuellen Fensterauflösung; aktualisiert sich bei Größenänderung."),
+    basicDataWidget("red-number", "Red Number", "●", { state: 0, badgeType: "circle", radius: 16, badgeBackground: "#c62828", badgeBorder: "#c62828" }, [...entityTest(), { label: "type", key: "badgeType", type: "select", options: ["circle", "pin"], refreshProperties: true }, { label: "HTML voranstellen", key: "prefix" }, { label: "HTML anhängen (Singular)", key: "suffixSingular" }, { label: "HTML anhängen (Plural)", key: "suffixPlural" }, { label: "Hintergrund", key: "badgeBackground", type: "color" }, { label: "Randfarbe", key: "badgeBorder", type: "color", showWhen: { key: "badgeType", value: "circle" } }, { label: "Grenzradius", key: "radius", type: "range", min: 0, max: 100, step: 1, showWhen: { key: "badgeType", value: "circle" } }]),
+    basicDataWidget("bool-svg", "Boolesches SVG", "◇", { state: false, readOnly: false, svgFalse: "<circle cx='50' cy='50' r='40' fill='#777'/>", svgTrue: "<circle cx='50' cy='50' r='40' fill='#29c8b5'/>", svgOpacity: 1 }, [...entityTest(), { label: "Nur Anzeige", key: "readOnly", type: "checkbox", default: false }, { label: "SVG bei false", key: "svgFalse", type: "html" }, { label: "SVG bei true", key: "svgTrue", type: "html" }, { label: "Durchsichtigkeit", key: "svgOpacity", type: "range", min: 0, max: 1, step: 0.05 }]),
+    basicDataWidget("svg-shape", "SVG Shape", "◯", { shape: "circle", strokeColor: "#009cb3", fillColor: "#00b3ac", strokeWidth: 5, rotation: 0, scaleX: 1, scaleY: 1, pointCount: 3 }, [{ label: "Typ", key: "shape", type: "select", options: ["line", "triangle", "square", "pentagon", "hexagon", "octagon", "circle", "star", "arrow", "custom"], refreshProperties: true }, { label: "Linienfarbe", key: "strokeColor", type: "color" }, { label: "Füllfarbe", key: "fillColor", type: "color" }, { label: "Linienbreite", key: "strokeWidth", type: "range", min: 0, max: 20, step: 1 }, { label: "Drehen", key: "rotation", type: "range", min: 0, max: 360, step: 1 }, { label: "Breitenskala", key: "scaleX", type: "range", min: 0, max: 1, step: 0.01 }, { label: "Höhenskala", key: "scaleY", type: "range", min: 0, max: 1, step: 0.01 }, { label: "Punkteanzahl", key: "pointCount", type: "range", min: 3, max: 20, step: 1, showWhen: { key: "shape", value: "custom" } }], "Eigene SVG-Geometrie ohne externe Grafiken."),
+    basicDataWidget("input-value", "Eingegebener Wert", "⌨", { state: "", variant: "standard", withEnter: false }, [...entityTest(), ...htmlAdditions(), ...[["Nummer", "numeric"], ["Auto-setzen", "autoSet"], ["nur lesend", "readOnly"], ["Autofokus", "autofocus"], ["Kein Style", "noStyle"], ["withEnter", "withEnter"]].map(([label, key]) => ({ label, key, type: "checkbox", default: false })), { label: "variant", key: "variant", type: "select", options: ["standard", "filled", "outlined"] }], "Eingabe wird lokal übernommen; HA-Schreibzugriff gehört zur noch offenen Zustandsanbindung."),
+    basicDataWidget("view-in-widget", "View in Widget", "▣", {}, [{ label: "Seite", key: "targetPage", type: "page" }], "Bettet eine gespeicherte Projektseite ein; rekursive Einbettung wird verhindert."),
+    basicDataWidget("view-in-widget-8", "View in widget 8", "▣", { state: 0, count: 1 }, [...entityTest(), { label: "Werteanzahl bis", key: "count", type: "number", min: 1, max: 50, refreshProperties: true }]),
+    basicDataWidget("iframe", "iframe", "▣", { source: "", noFrame: true }, [{ label: "Quelle", key: "source" }, { label: "Kein Sandkasten", key: "noSandbox", type: "checkbox", default: false }, ...frameFields()], "Die Zielseite muss Einbettung erlauben."),
+    basicDataWidget("iframe-8", "iframe 8", "▣", { state: 0, count: 2, noFrame: true }, [...entityTest(), ...frameFields(), { label: "Werteanzahl bis", key: "count", type: "range", min: 1, max: 20, step: 1, refreshProperties: true }]),
+    basicDataWidget("image-8", "Image 8", "▧", { state: 0, count: 1 }, [...entityTest(), { label: "Werteanzahl bis", key: "count", type: "number", min: 1, max: 50, refreshProperties: true }, ...imageFields()]),
+    basicDataWidget("ackflag-html", "AckFlag HTML", "✓", { state: false, htmlTrue: "Bestätigt", htmlFalse: "Ausstehend" }, [...entityTest(), ...htmlAdditions(), { label: "HTML bei false", key: "htmlFalse", type: "html" }, { label: "HTML bei true", key: "htmlTrue", type: "html" }], "Home Assistant hat kein ioBroker-ack-Flag. Als Zustand eine separate Bestätigungsentität verwenden; Live-Anbindung bleibt separat offen."),
     { type: "button", label: "Schaltfläche (Icon Ein/Aus)", icon: "◉", defaults: { title: "Schaltfläche", entityId: "", state: "off", icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
@@ -229,7 +280,7 @@ registerWidgetSet({
     basicDataWidget("navigation", "HTML Navigation", "➜", { title: "Navigation", navLabel: "Öffnen", navUrl: "" }, [
       { label: "Linktext", key: "navLabel" }, { label: "Ziel-URL oder HA-Pfad", key: "navUrl" },
     ]),
-    basicDataWidget("filter-dropdown", "Filter Dropdown", "▽", { title: "Filter", filterOptions: "Licht;Heizung;Sicherheit" }, [
+    basicDataWidget("filter-dropdown", "Filter Dropdown", "▽", { title: "Filter", filterOptions: "Licht;Heizung;Sicherheit", filterType: "horizontal", variant: "outlined" }, [
       { label: "Filteroptionen (durch Semikolon getrennt)", key: "filterOptions" },
     ], "Ordne Widgets über „Filterwort“ in Generell einer Filteroption zu."),
     { type: "text", label: "Text", icon: "T", defaults: { title: "Text", textContent: "Eigener Text", backgroundColor: "", borderWidth: 0, borderStyle: "none" }, propertyGroups: [
@@ -255,6 +306,26 @@ registerWidgetSet({
     { type: "gauge", label: "Messanzeige", icon: "◴", defaults: { title: "Messanzeige", entityId: "", state: "--", unit: "%" }, propertyGroups: entityWidget(true) },
     { type: "image", label: "Bild / Kamera", icon: "▧", defaults: { title: "Kamera", entityId: "", state: "Bildfläche" }, propertyGroups: entityWidget() },
   ].map((widget) => {
+    widget.preview = palettePreviews[widget.type] || { kind: "plain", lines: [widget.icon] };
+    if (widget.type === "note") widget.propertyGroups.find(group => group.label === "Daten").fields = widget.propertyGroups.find(group => group.label === "Daten").fields.filter(field => field.key !== "state" || field.type === "html");
+    if (widget.type === "screen-resolution") widget.propertyGroups = widget.propertyGroups.filter(group => group.label !== "Daten");
+    const data = widget.propertyGroups.find(group => ["Daten", "Allgemein"].includes(group.label));
+    const add = (...fields) => data?.fields.push(...fields);
+    if (widget.type === "checkbox") {
+      data.fields = data.fields.filter(field => !["suffixSingular", "suffixPlural"].includes(field.key));
+      add({ label: "HTML anhängen", key: "suffix" }, { label: "Autofokus", key: "autofocus", type: "checkbox", default: false });
+    }
+    if (widget.type === "bool-select") add(...htmlAdditions(), { label: "Autofokus", key: "autofocus", type: "checkbox", default: false });
+    if (widget.type === "html-state") add({ label: "Home-Assistant-Entität", key: "entityId" }, { label: "Wert (Vorschau)", key: "state" });
+    if (widget.type === "string") add({ label: "Icon", key: "icon", previewImage: true });
+    if (widget.type === "bar") add({ label: "Wert umkehren", key: "invert", type: "checkbox", default: false }, { label: "Rand", key: "barBorder" }, { label: "Durchsichtigkeit", key: "barOpacity", type: "range", min: 0, max: 1, step: 0.05, default: 1 });
+    if (widget.type === "navigation") add({ label: "HTML", key: "navHtml", type: "html", default: "Öffnen" }, { label: "View zum Navigieren", key: "targetPage", type: "page" });
+    if (widget.type === "image") add({ label: "Quelle", key: "imageSrc", previewImage: true }, ...imageFields());
+    if (widget.type === "image-source") add(...htmlAdditions(), ...refreshFields());
+    if (widget.type === "html") add({ label: "Updatezeit (ms)", key: "refreshInterval", type: "range", min: 0, max: 180000, step: 100, default: 0 });
+    if (widget.type === "bulb") widget.propertyGroups.push({ label: "Extrasteuerung", hint: "URLs sind nutzbar; Zielentitäten und Schreibwerte werden erst mit der HA-Schreibanbindung aktiv.", fields: [{ label: "URL bei true", key: "extraUrlTrue" }, { label: "URL bei false", key: "extraUrlFalse" }, { label: "Objekt ID bei true", key: "extraTrueEntityId", disabled: true }, { label: "Objekt ID bei false", key: "extraFalseEntityId", disabled: true }, { label: "Wert für ID bei false", key: "extraValueFalse", disabled: true }, { label: "Wert für ID bei true", key: "extraValueTrue", disabled: true }] });
+    if (widget.type === "table") add({ label: "Ereignis ID", key: "eventEntityId", disabled: true }, { label: "Neues Ereignis am Anfang", key: "newEventFirst", type: "checkbox", default: false }, { label: "Bestätigung ID", key: "ackEntityId", disabled: true }, { label: "Ausgewählt ID", key: "selectedEntityId", disabled: true }, { label: "Kein Header", key: "noHeader", type: "checkbox", default: false }, { label: "Zeige Scrollbar", key: "showScrollbar", type: "checkbox", default: false }, { label: "Detailed widget", key: "detailWidget", type: "widget" }, { label: "Maximale Zeilenanzahl", key: "maxRows", type: "number", min: 0 }, { label: "Kolumnanzahl", key: "maxColumns", type: "number", min: 0 }, { label: "btn_print", key: "printText", default: "Drucken" }, { label: "view_for_print", key: "printPage", type: "page" });
+    if (widget.type === "filter-dropdown") add({ label: "editor", key: "filterEntries", type: "filter-editor" }, { label: "Typ", key: "filterType", type: "select", options: ["horizontal", "vertical", "dropdown"], default: "horizontal" }, { label: "Mehrfachauswahl", key: "multiple", type: "checkbox", default: false }, { label: "Keine Option Kein Filter", key: "hideNoFilter", type: "checkbox", default: false }, { label: "Etikett Kein Filter", key: "noFilterLabel", default: "Kein Filter" }, { label: "Variante", key: "variant", type: "select", options: ["outlined", "contained", "text"], default: "outlined" });
     if (["button", "toggle", "checkbox", "bulb", "slider", "sensor", "string", "string-raw", "image-source", "time-value", "timestamp-value", "timestamp", "last-changed", "value-list-text", "value-list-html", "value-list-html-style", "bool-display", "bool-select", "bool-html-control", "table", "bar", "gauge", "image"].includes(widget.type)) {
       widget.propertyGroups.push(signalImages());
     }

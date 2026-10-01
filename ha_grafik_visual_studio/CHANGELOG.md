@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.43
+
+- Zeigt in der Widget-Palette rechts eine kompakte, typbezogene Vorschau für Werte, HTML, Listen, Tabellen, Bilder und Bedienelemente.
+- Verwendet dafür eigene CSS-Miniaturen und Schriftzeichen statt lizenzbeschränkter VIS-2-Grafiken.
+
 ## 0.1.42
 
 - Ergänzt HTML voranstellen/anhängen für sämtliche Zeit- und ValueList-Widgets.

@@ -178,6 +178,19 @@ function propertyGroupEnabled(widget, group, index) {
   return widget.enabledPropertyGroups?.[propertyGroupKey(group, index)] !== false;
 }
 
+function indexedWidgetGroups(widget) {
+  const specs = { "iframe-8": ["frames", 20, [{ label: "URL falls Wert", key: "frameSource" }, { label: "Kein Sandkasten", key: "frameNoSandbox", type: "checkbox", default: false }]], "image-8": ["Bild", 50, [{ label: "Quelle", key: "imageSource", previewImage: true }]], "view-in-widget-8": ["Seite", 50, [{ label: "Seite", key: "page", type: "page" }]] };
+  const spec = specs[widget.type]; if (!spec) return [];
+  const [label, max, fields] = spec; const count = Math.max(1, Math.min(max, Math.trunc(Number(widget.count) || 1)));
+  return Array.from({ length: count + 1 }, (_, index) => ({ id: `indexed-${widget.type}-${index}`, label: `${label} [${index}]`, indexed: { index, count, max, fields }, fields: fields.map(field => ({ ...field, key: `${field.key}${index}`, label: `${field.label} [${index}]` })) }));
+}
+
+function widgetStateIndex(widget) {
+  const value = widget.state; const index = value === true || ["true", "on"].includes(value) ? 1 : value === false || ["false", "off"].includes(value) ? 0 : Number(value ?? 0);
+  const max = widget.type === "iframe-8" ? 20 : 50; const count = Math.max(1, Math.min(max, Math.trunc(Number(widget.count) || 1)));
+  return Number.isInteger(index) && index >= 0 && index <= count && widget.enabledPropertyGroups?.[`indexed-${widget.type}-${index}`] !== false ? index : -1;
+}
+
 function projectForSave(project) {
   const saved = structuredClone(project);
   for (const page of saved.pages || []) {
@@ -187,7 +200,7 @@ function projectForSave(project) {
       for (const descriptor of group.fields) delete page.page[descriptor.key];
     }
     for (const widget of page.widgets || []) {
-      const groups = getWidgetDefinition(widget.type).propertyGroups;
+      const groups = [...getWidgetDefinition(widget.type).propertyGroups, ...indexedWidgetGroups(widget)];
       widget.enabledPropertyGroups ??= {};
       for (const [index, group] of groups.entries()) {
         if (propertyGroupEnabled(widget, group, index)) continue;
@@ -230,7 +243,7 @@ function ensureProjectPages(project) {
 
 function currentPage() {
   const selected = state.project.pages.find((page) => page.id === state.project.currentPageId);
-  if (runtimeMode && selected && !selected.visible) {
+  if (runtimeMode && params.get("embedded") !== "1" && selected && !selected.visible) {
     const visible = state.project.pages.find((page) => page.visible);
     if (visible) { state.project.currentPageId = visible.id; return visible; }
   }
@@ -275,6 +288,13 @@ async function loadProject() {
     state.project = { schemaVersion: 2, name: "Mein Zuhause", pages: [{ id: "page-1", name: "main", visible: true, page: { preset: "desktop", ...PRESETS.desktop, background: "#242729", backgroundMode: "tile" }, widgets: [] }], currentPageId: "page-1" };
   }
   ensureProjectPages(state.project);
+  const requestedPage = params.get("page");
+  if (requestedPage && state.project.pages.some(page => page.id === requestedPage)) state.project.currentPageId = requestedPage;
+  if (runtimeMode && params.get("onlyWidget")) {
+    const page = state.project.pages.find(page => page.id === state.project.currentPageId); const widget = page.widgets.find(widget => widget.id === params.get("onlyWidget"));
+    page.widgets = widget ? [{ ...widget, x: 0, y: 0 }] : []; if (widget) { page.page.width = widget.width; page.page.height = widget.height; }
+  }
+  if (params.get("embedded") === "1") document.body.classList.add("embedded-runtime");
   state.project.settings ??= {};
   state.nextId = Math.max(0, ...state.project.pages.flatMap((page) => page.widgets).map((widget) => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   render();
@@ -307,7 +327,19 @@ function renderPalette() {
     for (const definition of set.widgets) {
       const button = document.createElement("button");
       button.className = "widget-choice";
-      button.textContent = `${definition.icon}  ${definition.label}`;
+      const label = document.createElement("span");
+      label.className = "widget-choice-label";
+      label.textContent = definition.label;
+      const preview = document.createElement("span");
+      preview.className = "widget-choice-preview";
+      preview.dataset.kind = definition.preview?.kind || "symbol";
+      preview.setAttribute("aria-hidden", "true");
+      for (const lineText of definition.preview?.lines || [definition.icon]) {
+        const line = document.createElement("span");
+        line.textContent = lineText;
+        preview.append(line);
+      }
+      button.append(label, preview);
       button.addEventListener("click", () => addWidget(definition));
       list.append(button);
     }
@@ -834,6 +866,39 @@ function appendSafeHtml(parent, markup) {
   parent.append(template.content);
 }
 
+const mediaRefreshers = new Set();
+function refreshableMedia(element, widget, source) {
+  const update = (refresh = true) => {
+    const url = safeUrl(source, element.tagName === "IMG");
+    if (!url) return;
+    if (refresh && !widget.noCacheBuster && !url.startsWith("data:")) {
+      const parsed = new URL(url, location.href); parsed.searchParams.set("_gvs", Date.now()); element.src = parsed.href;
+    } else element.src = url;
+  };
+  update(widget.refreshOnView === true);
+  const interval = Math.max(0, Number(widget.refreshInterval) || 0);
+  const entry = { widget, update, timer: interval > 0 ? setInterval(update, Math.max(100, interval)) : null };
+  mediaRefreshers.add(entry);
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) for (const entry of mediaRefreshers) if (entry.widget.refreshOnWake) entry.update(); });
+window.addEventListener("resize", () => { for (const element of document.querySelectorAll(".screen-resolution-value")) element.textContent = `${window.innerWidth} × ${window.innerHeight}`; });
+
+function renderSvgShape(widget) {
+  const ns = "http://www.w3.org/2000/svg"; const svg = document.createElementNS(ns, "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.style.width = "100%"; svg.style.height = "100%";
+  let shape;
+  if (widget.shape === "circle") { shape = document.createElementNS(ns, "circle"); shape.setAttribute("cx", "50"); shape.setAttribute("cy", "50"); shape.setAttribute("r", "40"); }
+  else if (widget.shape === "line") { shape = document.createElementNS(ns, "line"); for (const [key, value] of Object.entries({ x1: 10, y1: 50, x2: 90, y2: 50 })) shape.setAttribute(key, value); }
+  else {
+    shape = document.createElementNS(ns, "polygon");
+    const counts = { triangle: 3, square: 4, pentagon: 5, hexagon: 6, octagon: 8, star: 10 };
+    const count = counts[widget.shape] || Math.max(3, Math.min(20, Number(widget.pointCount) || 3));
+    const points = Array.from({ length: count }, (_, index) => { const angle = -Math.PI / 2 + index * 2 * Math.PI / count; const radius = widget.shape === "star" && index % 2 ? 18 : 40; return `${50 + Math.cos(angle) * radius},${50 + Math.sin(angle) * radius}`; });
+    shape.setAttribute("points", widget.shape === "arrow" ? "10,35 55,35 55,10 90,50 55,90 55,65 10,65" : points.join(" "));
+  }
+  shape.setAttribute("stroke", widget.strokeColor || "#009cb3"); shape.setAttribute("fill", widget.fillColor || "#00b3ac"); shape.setAttribute("stroke-width", widget.strokeWidth ?? 5);
+  shape.setAttribute("transform", `translate(50 50) rotate(${Number(widget.rotation) || 0}) scale(${Number(widget.scaleX ?? 1)} ${Number(widget.scaleY ?? 1)}) translate(-50 -50)`); svg.append(shape); return svg;
+}
+
 function formatDate(value, format, relative) {
   let date = value instanceof Date ? value : new Date(value);
   if (typeof value === "number" || /^\d{10,13}$/.test(String(value))) {
@@ -900,6 +965,8 @@ function addWidget(definition) {
 }
 
 function renderStage() {
+  for (const entry of mediaRefreshers) if (entry.timer) clearInterval(entry.timer);
+  mediaRefreshers.clear();
   const activePage = currentPage();
   const page = activePage.page;
   stage.style.width = `${page.width}px`;
@@ -930,11 +997,15 @@ function renderStage() {
   stage.className = `stage${runtimeGrid ? " runtime-grid" : ""}${hideEditorGrid ? " no-grid" : ""}${pageClasses.map((name) => ` ${name}`).join("")}`;
   $("#runtime-pages-menu-toggle").hidden = page.navigationVisible === false;
   stage.replaceChildren();
+  if (state.activeFilter === undefined) {
+    const filter = activePage.widgets.find(widget => widget.type === "filter-dropdown"); const defaults = (filter?.filterEntries || []).filter(entry => entry.isDefault).map(entry => String(entry.value)); state.activeFilter = filter?.multiple ? defaults : defaults.slice(0, 1);
+  }
   const activeFilter = state.activeFilter || "";
+  const selectedFilters = Array.isArray(activeFilter) ? activeFilter : activeFilter ? [activeFilter] : [];
   for (const widget of activePage.widgets) {
     if (widget.visible === false) continue;
     const filterTags = String(widget.filterWord || "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
-    if (widget.type !== "filter-dropdown" && activeFilter && filterTags.length && !filterTags.includes(activeFilter)) continue;
+    if (widget.type !== "filter-dropdown" && selectedFilters.length && filterTags.length && !selectedFilters.some(value => filterTags.includes(value))) continue;
     const element = document.createElement("div");
     element.id = widget.id;
     element.dataset.widgetId = widget.id;
@@ -1059,6 +1130,7 @@ function renderStage() {
       const label = document.createElement("label"); label.className = "widget-toggle";
       const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true" || widget.state === "on";
       checkbox.tabIndex = runtimeMode ? 0 : -1;
+      checkbox.autofocus = runtimeMode && widget.autofocus === true;
       checkbox.setAttribute("aria-label", widget.title || "Schalter"); checkbox.dataset.state = checkbox.checked ? "on" : "off";
       checkbox.addEventListener("change", (event) => { event.stopPropagation(); widget.state = checkbox.checked ? "on" : "off"; checkbox.dataset.state = widget.state; });
       const track = document.createElement("span"); track.className = "switch-track"; track.setAttribute("aria-hidden", "true");
@@ -1069,12 +1141,13 @@ function renderStage() {
       const label = document.createElement("label"); label.className = "widget-checkbox";
       const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true" || widget.state === "on";
       checkbox.tabIndex = runtimeMode ? 0 : -1;
+      checkbox.autofocus = runtimeMode && widget.autofocus === true;
       checkbox.addEventListener("change", (event) => { event.stopPropagation(); widget.state = checkbox.checked ? "on" : "off"; });
       label.append(checkbox);
       if (widget.title) { const caption = document.createElement("span"); caption.textContent = widget.title; label.append(caption); }
       content.append(label);
     } else if (widget.type === "bulb") {
-      const isOnState = isOn(widget.state);
+      const isOnState = typeof widget.state === "number" ? widget.state >= Number(widget.max ?? 1) : isOn(widget.state);
       const iconUrl = isOnState ? widget.icon_on : widget.icon_off;
       if (safeUrl(iconUrl, true) || /^mdi:[a-z0-9-]+$/i.test(iconUrl || "")) {
         const image = document.createElement("img"); image.className = "bulb-image"; setIconImageSource(image, iconUrl);
@@ -1091,8 +1164,9 @@ function renderStage() {
       if (widget.title) { const caption = document.createElement("span"); caption.className = "bulb-title"; caption.textContent = widget.title; content.append(caption); }
       if (runtimeMode && !widget.readOnly) {
         content.classList.add("is-interactive"); content.setAttribute("role", "button"); content.tabIndex = 0;
-        content.addEventListener("click", (event) => { event.stopPropagation(); widget.state = isOn(widget.state) ? "off" : "on"; renderStage(); });
-        content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); widget.state = isOn(widget.state) ? "off" : "on"; renderStage(); } });
+        const toggle = event => { event.stopPropagation(); widget.state = isOnState ? Number(widget.min ?? 0) : Number(widget.max ?? 1); const url = safeUrl(isOnState ? widget.extraUrlFalse : widget.extraUrlTrue); if (url) window.open(url, "_blank", "noopener,noreferrer"); renderStage(); };
+        content.addEventListener("click", toggle);
+        content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(event); } });
       }
     } else if (widget.type === "slider") {
       const range = document.createElement("input"); range.type = "range";
@@ -1100,16 +1174,49 @@ function renderStage() {
       range.step = String(widget.step ?? 1); range.disabled = !runtimeMode;
       range.setAttribute("aria-label", widget.title || "Regler");
       range.addEventListener("input", () => { widget.value = Number(range.value); }); content.append(range);
-    } else if (widget.type === "image") {
-      if (widget.imageSrc) { const image = document.createElement("img"); image.src = safeUrl(widget.imageSrc, true); image.alt = widget.title || "Bild"; content.append(image); }
+    } else if (widget.type === "svg-shape") {
+      content.append(renderSvgShape(widget));
+    } else if (widget.type === "screen-resolution") {
+      const value = document.createElement("span"); value.className = "screen-resolution-value"; value.textContent = `${window.innerWidth} × ${window.innerHeight}`; content.append(value);
+    } else if (widget.type === "link") {
+      const link = document.createElement("a"); link.href = safeUrl(widget.linkUrl) || "#"; link.rel = "noopener noreferrer"; appendSafeHtml(link, widget.htmlContent || ""); content.append(link);
+    } else if (widget.type === "note") {
+      const note = document.createElement("div"); note.className = `note-content${widget.hideCorner ? " no-corner" : ""}`; appendSafeHtml(note, `${widget.prefix || ""}${widget.state ?? ""}${widget.suffix || ""}`); content.append(note);
+    } else if (widget.type === "red-number") {
+      const badge = document.createElement("span"); badge.className = `widget-badge ${widget.badgeType === "pin" ? "pin" : "circle"}`; badge.style.background = widget.badgeBackground || "#c62828";
+      badge.style.border = `1px solid ${widget.badgeBorder || "transparent"}`; badge.style.borderRadius = `${Number(widget.radius ?? 16)}px`;
+      appendSafeHtml(badge, widget.prefix || ""); badge.append(document.createTextNode(String(widget.state ?? ""))); appendSafeHtml(badge, Number(widget.state) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""); content.append(badge);
+    } else if (widget.type === "bool-svg") {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.style.width = "100%"; svg.style.height = "100%"; svg.style.opacity = String(widget.svgOpacity ?? 1); svg.innerHTML = isOn(widget.state) ? widget.svgTrue || "" : widget.svgFalse || "";
+      if (runtimeMode && !widget.readOnly) { svg.setAttribute("role", "button"); svg.tabIndex = 0; const toggle = event => { event.stopPropagation(); widget.state = !isOn(widget.state); renderStage(); }; svg.addEventListener("click", toggle); svg.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); toggle(event); } }); } content.append(svg);
+    } else if (widget.type === "input-value") {
+      const input = document.createElement("input"); input.type = widget.numeric ? "number" : "text"; input.value = String(widget.state ?? ""); input.readOnly = !runtimeMode || widget.readOnly === true; input.autofocus = runtimeMode && widget.autofocus === true; input.className = widget.noStyle ? "" : `widget-input ${widget.variant || "standard"}`; input.setAttribute("aria-label", widget.title || "Eingegebener Wert");
+      const apply = () => { widget.state = widget.numeric && input.value !== "" ? Number(input.value) : input.value; };
+      input.addEventListener("input", () => { if (widget.autoSet && !input.readOnly) apply(); }); input.addEventListener("change", () => { if (!widget.withEnter && !input.readOnly) apply(); }); input.addEventListener("keydown", event => { event.stopPropagation(); if (event.key === "Enter" && !input.readOnly) apply(); });
+      appendSafeHtml(content, widget.prefix || ""); content.append(input); appendSafeHtml(content, widget.suffix || "");
+    } else if (["view-in-widget", "view-in-widget-8"].includes(widget.type)) {
+      const index = widgetStateIndex(widget);
+      const target = widget.type === "view-in-widget" ? widget.targetPage : widget[`page${index}`]; const chain = (params.get("chain") || "").split(",").filter(Boolean);
+      if (!target) content.textContent = "Seite auswählen";
+      else if (target === activePage.id || chain.includes(target) || chain.length >= 8) content.textContent = "Rekursive Einbettung verhindert";
+      else if (!runtimeMode) content.textContent = `Seite: ${state.project.pages.find(page => page.id === target)?.name || target}`;
+      else { const frame = document.createElement("iframe"); frame.title = widget.title || "Eingebettete Seite"; const url = new URL(location.href); url.searchParams.set("mode", "runtime"); url.searchParams.set("project", state.projectId); url.searchParams.set("page", target); url.searchParams.set("embedded", "1"); url.searchParams.set("chain", [...chain, activePage.id].join(",")); frame.src = url.href; frame.className = "widget-frame"; content.append(frame); }
+    } else if (["iframe", "iframe-8"].includes(widget.type)) {
+      const index = widgetStateIndex(widget); const source = widget.type === "iframe" ? widget.source : widget[`frameSource${index}`];
+      if (safeUrl(source)) { const frame = document.createElement("iframe"); frame.title = widget.title || "iframe"; frame.className = "widget-frame"; frame.style.border = widget.noFrame !== false ? "0" : "1px solid currentColor"; frame.setAttribute("scrolling", widget.scrollX || widget.scrollY ? "yes" : "no"); if (!(widget.type === "iframe" ? widget.noSandbox : widget[`frameNoSandbox${index}`])) frame.setAttribute("sandbox", "allow-scripts allow-forms"); refreshableMedia(frame, widget, source); content.append(frame); }
+      else content.textContent = "Quelle auswählen";
+    } else if (widget.type === "image" || widget.type === "image-8") {
+      const index = widgetStateIndex(widget); const source = widget.type === "image" ? widget.imageSrc : widget[`imageSource${index}`];
+      if (source) { const image = document.createElement("img"); refreshableMedia(image, widget, source); image.style.objectFit = widget.stretch ? "fill" : "contain"; image.style.pointerEvents = widget.allowUserInteractions ? "auto" : "none"; image.alt = widget.title || "Bild"; content.append(image); }
       else { content.classList.add("image-placeholder"); content.setAttribute("aria-label", widget.title || "Bild"); }
     } else if (widget.type === "string") {
+      if (widget.icon) { const image = document.createElement("img"); image.className = "button-icon"; setIconImageSource(image, widget.icon); image.alt = ""; content.append(image); }
       const text = document.createElement("span"); text.className = "basic-string"; appendSafeHtml(text, widget.prefix || ""); text.append(document.createTextNode(String(widget.state ?? ""))); appendSafeHtml(text, widget.suffix || ""); content.append(text);
     } else if (widget.type === "string-raw") {
       appendSafeHtml(content, `${widget.prefix || ""}${widget.state ?? ""}${widget.suffix || ""}`);
     } else if (widget.type === "image-source") {
       const src = safeUrl(widget.state, true);
-      if (src) { const image = document.createElement("img"); image.className = "source-image"; image.src = src; image.alt = widget.alt || widget.title || "Bild"; content.append(image); }
+      if (src) { const image = document.createElement("img"); image.className = "source-image"; refreshableMedia(image, widget, src); image.alt = widget.alt || widget.title || "Bild"; content.append(image); }
       else { content.textContent = widget.alt || "Bild-URL nicht gesetzt"; content.classList.add("image-placeholder"); }
     } else if (["time-value", "timestamp-value", "timestamp", "last-changed"].includes(widget.type)) {
       const sourceKey = widget.type === "timestamp" ? "lastUpdated" : widget.type === "last-changed" ? "lastChanged" : "state";
@@ -1122,7 +1229,7 @@ function renderStage() {
         appendSafeHtml(content, value);
         if (widget.type === "value-list-html-style") applySafeStyle(content, widget[`listStyle${index}`] ?? String(widget.styleList || "").split(/\r?\n/)[index] ?? "");
       }
-    } else if (widget.type === "bool-display" || widget.type === "bool-html-control") {
+    } else if (["bool-display", "bool-html-control", "ackflag-html"].includes(widget.type)) {
       const current = isOn(widget.state);
       const output = document.createElement("span"); output.className = "bool-html";
       appendSafeHtml(output, current ? widget.htmlTrue : widget.htmlFalse); content.append(output);
@@ -1136,10 +1243,12 @@ function renderStage() {
       const select = document.createElement("select"); select.className = "widget-control";
       for (const [value, label] of [["off", widget.textOff || "Aus"], ["on", widget.textOn || "Ein"]]) { const option = document.createElement("option"); option.value = value; option.textContent = label; select.append(option); }
       select.value = isOn(widget.state) ? "on" : "off"; select.disabled = !runtimeMode;
+      select.autofocus = runtimeMode && widget.autofocus === true;
       select.setAttribute("aria-label", widget.title || "Bool Select");
       select.addEventListener("change", (event) => { event.stopPropagation(); widget.state = select.value; }); content.append(select);
     } else if (widget.type === "html-state" || widget.type === "html") {
-      const output = document.createElement("div"); output.className = "safe-html"; appendSafeHtml(output, widget.htmlContent || "");
+      const output = document.createElement("div"); output.className = "safe-html"; appendSafeHtml(output, String(widget.htmlContent || "").replaceAll("{value}", String(widget.state ?? "")));
+      if (widget.type === "html" && Number(widget.refreshInterval) > 0) { const update = () => { output.replaceChildren(); appendSafeHtml(output, widget.htmlContent || ""); }; mediaRefreshers.add({ widget, update, timer: setInterval(update, Math.max(100, Number(widget.refreshInterval))) }); }
       const url = safeUrl(widget.clickUrl);
       if (widget.type === "html-state" && url) { const link = document.createElement("a"); link.href = url; link.rel = "noopener noreferrer"; link.append(output); content.append(link); }
       else content.append(output);
@@ -1147,17 +1256,25 @@ function renderStage() {
       const tableWrap = document.createElement("div"); tableWrap.className = "widget-table-wrap";
       try {
         const data = JSON.parse(widget.tableData || "[]");
-        const rows = Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : [];
+        let rows = Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : [];
+        if (widget.newEventFirst) rows = [...rows].reverse();
+        if (Number(widget.maxRows) > 0) rows = rows.slice(0, Math.trunc(Number(widget.maxRows)));
+        tableWrap.style.overflow = widget.showScrollbar ? "auto" : "hidden";
         if (rows.length) {
-          const columns = [...new Set(rows.flatMap((row) => row && typeof row === "object" ? Object.keys(row) : []))];
-          const table = document.createElement("table"); const head = table.createTHead().insertRow();
-          columns.forEach((column) => { const cell = document.createElement("th"); cell.textContent = column; head.append(cell); });
+          let columns = [...new Set(rows.flatMap((row) => row && typeof row === "object" ? Object.keys(row) : []))];
+          if (Number(widget.maxColumns) > 0) columns = columns.slice(0, Math.trunc(Number(widget.maxColumns)));
+          const table = document.createElement("table");
+          if (!widget.noHeader) { const head = table.createTHead().insertRow(); columns.forEach((column) => { const cell = document.createElement("th"); cell.textContent = column; head.append(cell); }); }
           const body = table.createTBody();
-          rows.forEach((row) => { const tr = body.insertRow(); columns.forEach((column) => { const cell = tr.insertCell(); cell.textContent = row?.[column] == null ? "" : String(row[column]); }); });
+          rows.forEach((row, index) => { const tr = body.insertRow(); columns.forEach((column) => { const cell = tr.insertCell(); cell.textContent = row?.[column] == null ? "" : String(row[column]); }); if (runtimeMode) { tr.tabIndex = 0; const select = event => { event.stopPropagation(); widget.selectedRow = index; for (const item of body.rows) item.classList.toggle("selected-row", item === tr); if (detail) detail.hidden = false; }; tr.addEventListener("click", select); tr.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); select(event); } }); } });
           tableWrap.append(table);
         } else tableWrap.textContent = "Keine Tabellendaten";
       } catch { tableWrap.textContent = "Ungültige JSON-Testdaten"; }
       content.append(tableWrap);
+      const detailTarget = activePage.widgets.find(item => item.id === widget.detailWidget && item.id !== widget.id);
+      const detail = detailTarget ? document.createElement("iframe") : null;
+      if (detail) { detail.title = "Tabellendetail"; detail.className = "widget-frame"; detail.hidden = true; const url = new URL(location.href); url.searchParams.set("mode", "runtime"); url.searchParams.set("project", state.projectId); url.searchParams.set("page", activePage.id); url.searchParams.set("onlyWidget", detailTarget.id); url.searchParams.set("embedded", "1"); detail.src = url.href; content.append(detail); }
+      if (widget.printText) { const button = document.createElement("button"); button.type = "button"; button.textContent = widget.printText; button.addEventListener("click", event => { event.stopPropagation(); if (widget.printPage) { const url = new URL(location.href); url.searchParams.set("page", widget.printPage); url.searchParams.set("mode", "runtime"); window.open(url.href, "_blank", "noopener,noreferrer"); } else window.print(); }); content.append(button); }
     } else if (widget.type === "fullscreen") {
       const button = document.createElement("button"); button.type = "button"; button.className = "fullscreen-button"; button.textContent = widget.buttonText || "Vollbild";
       button.addEventListener("click", async (event) => {
@@ -1169,17 +1286,28 @@ function renderStage() {
       const min = Number(widget.min ?? 0); const max = Number(widget.max ?? 100); const current = Number(widget.state);
       const ratio = Number.isFinite(current) && max > min ? Math.max(0, Math.min(1, (current - min) / (max - min))) : 0;
       const track = document.createElement("div"); track.className = `bar-track ${widget.orientation === "vertical" ? "vertical" : "horizontal"}`;
+      track.style.border = widget.barBorder || ""; track.style.opacity = String(widget.barOpacity ?? 1);
       const fill = document.createElement("span"); fill.className = "bar-fill"; fill.style.backgroundColor = widget.barColor || "var(--accent)";
-      fill.style[widget.orientation === "vertical" ? "height" : "width"] = `${ratio * 100}%`; track.append(fill); content.append(track);
+      fill.style[widget.orientation === "vertical" ? "height" : "width"] = `${(widget.invert ? 1 - ratio : ratio) * 100}%`; track.append(fill); content.append(track);
     } else if (widget.type === "navigation") {
       const href = safeUrl(widget.navUrl);
-      if (href) { const link = document.createElement("a"); link.className = "widget-navigation"; link.href = href; link.textContent = widget.navLabel || "Öffnen"; content.append(link); }
+      if (widget.targetPage) {
+        const button = document.createElement("button"); button.type = "button"; appendSafeHtml(button, widget.navHtml ?? widget.navLabel ?? "Öffnen");
+        button.addEventListener("click", event => { event.stopPropagation(); if (!runtimeMode) return; const page = state.project.pages.find(page => page.id === widget.targetPage); if (page) { state.project.currentPageId = page.id; state.selectedId = null; render(); } }); content.append(button);
+      } else if (href) { const link = document.createElement("a"); link.className = "widget-navigation"; link.href = href; appendSafeHtml(link, widget.navHtml ?? widget.navLabel ?? "Öffnen"); content.append(link); }
       else content.textContent = widget.navLabel || "Ziel-URL fehlt";
     } else if (widget.type === "filter-dropdown") {
-      const select = document.createElement("select"); select.className = "widget-control"; select.setAttribute("aria-label", widget.title || "Widget-Filter");
-      const all = document.createElement("option"); all.value = ""; all.textContent = "Alle Widgets"; select.append(all);
-      for (const value of String(widget.filterOptions || "").split(/[;,\n]/).map((item) => item.trim()).filter(Boolean)) { const option = document.createElement("option"); option.value = value; option.textContent = value; select.append(option); }
-      select.value = activeFilter; select.addEventListener("change", (event) => { event.stopPropagation(); state.activeFilter = select.value; renderStage(); }); content.append(select);
+      const entries = Array.isArray(widget.filterEntries) ? widget.filterEntries : String(widget.filterOptions || "").split(/[;,\n]/).map(value => ({ value: value.trim(), title: value.trim() })).filter(entry => entry.value);
+      const values = widget.hideNoFilter ? entries : [{ value: "", title: widget.noFilterLabel || "Kein Filter" }, ...entries];
+      const choose = value => { state.activeFilter = widget.multiple && value ? selectedFilters.includes(value) ? selectedFilters.filter(item => item !== value) : [...selectedFilters, value] : value ? [value] : []; renderStage(); };
+      if (!widget.filterType || widget.filterType === "dropdown") {
+        const select = document.createElement("select"); select.className = "widget-control"; select.multiple = widget.multiple === true; select.setAttribute("aria-label", widget.title || "Widget-Filter");
+        for (const entry of values) { const option = document.createElement("option"); option.value = String(entry.value); option.textContent = entry.title || entry.value; option.selected = selectedFilters.includes(String(entry.value)) || !selectedFilters.length && !entry.value; select.append(option); }
+        select.addEventListener("change", event => { event.stopPropagation(); state.activeFilter = [...select.selectedOptions].map(option => option.value).filter(Boolean); renderStage(); }); content.append(select);
+      } else {
+        const buttons = document.createElement("div"); buttons.className = `widget-filter-buttons ${widget.filterType}`;
+        for (const entry of values) { const button = document.createElement("button"); button.type = "button"; const selected = entry.value ? selectedFilters.includes(String(entry.value)) : !selectedFilters.length; button.setAttribute("aria-pressed", selected); button.className = widget.variant || "outlined"; button.style.color = entry.textColor || ""; button.style.backgroundColor = selected ? entry.activeColor || "" : ""; const icon = entry.image || entry.icon; if (icon) { const image = document.createElement("img"); image.alt = ""; image.width = 18; image.height = 18; setIconImageSource(image, icon); button.append(image); } button.append(document.createTextNode(entry.title || entry.value)); button.addEventListener("click", event => { event.stopPropagation(); choose(String(entry.value)); }); buttons.append(button); } content.append(buttons);
+      }
     } else {
       const value = document.createElement("span"); value.className = "value";
     let displayValue = widget.state ?? "--";
@@ -1196,13 +1324,13 @@ function renderStage() {
       content.append(value);
       if (widget.type === "gauge") content.classList.add("widget-gauge");
     }
-    if (["time-value", "timestamp-value", "timestamp", "last-changed", "value-list-text", "value-list-html", "value-list-html-style"].includes(widget.type)) {
+    if (["time-value", "timestamp-value", "timestamp", "last-changed", "value-list-text", "value-list-html", "value-list-html-style", "bool-select", "image-source", "ackflag-html"].includes(widget.type)) {
       const prefix = document.createElement("span"); appendSafeHtml(prefix, widget.prefix || ""); content.prepend(prefix);
       appendSafeHtml(content, widget.suffix || "");
     }
     if (["checkbox", "button", "image"].includes(widget.type)) {
       const prefix = document.createElement("span"); appendSafeHtml(prefix, widget.prefix || ""); content.prepend(prefix);
-      appendSafeHtml(content, Number(widget.state) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || "");
+      appendSafeHtml(content, widget.suffix ?? (Number(widget.state) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""));
     }
     element.append(content);
     const signalCount = Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
@@ -1288,19 +1416,19 @@ function makeResizable(element, handle, widget) {
   handle.addEventListener("pointerup", () => { origin = null; });
 }
 
-function openPageSelector(input) {
+function openPageSelector(input, multiple = true) {
   const dialog = document.createElement("dialog"); dialog.className = "studio-dialog";
   const heading = document.createElement("h2"); heading.textContent = "Seiten auswählen"; dialog.append(heading);
   const selected = new Set(input.value.split(/[;,]/).map(value => value.trim()));
   const options = [];
-  for (const page of state.project.pages) {
-    const label = document.createElement("label"); const check = document.createElement("input"); check.type = "checkbox"; check.checked = selected.has(page.id) || selected.has(page.name);
+  for (const page of multiple ? state.project.pages : [{ id: "", name: "Keine Seite" }, ...state.project.pages]) {
+    const label = document.createElement("label"); const check = document.createElement("input"); check.type = multiple ? "checkbox" : "radio"; check.name = "page-choice"; check.checked = selected.has(page.id) || selected.has(page.name);
     label.append(check, document.createTextNode(page.name)); dialog.append(label); options.push([page.id, check]);
   }
   const actions = document.createElement("div"); actions.className = "dialog-actions";
   for (const [label, apply] of [["Übernehmen", true], ["Abbrechen", false]]) {
     const button = document.createElement("button"); button.type = "button"; button.textContent = label;
-    button.addEventListener("click", () => { if (apply) { input.value = options.filter(([, check]) => check.checked).map(([id]) => id).join(";"); input.dispatchEvent(new Event("input", { bubbles: true })); } dialog.close(); }); actions.append(button);
+    button.addEventListener("click", () => { if (apply) { input.value = options.filter(([, check]) => check.checked).map(([id]) => id).join(";"); input.dispatchEvent(new Event(input.tagName === "SELECT" ? "change" : "input", { bubbles: true })); } dialog.close(); }); actions.append(button);
   }
   dialog.append(actions); document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); dialog.showModal();
 }
@@ -1322,14 +1450,28 @@ function openHtmlEditor(input) {
   dialog.addEventListener("close", () => { dialog.remove(); input.focus(); }); dialog.showModal(); editor.focus();
 }
 
+function openFilterEditor(widget) {
+  const draft = Array.isArray(widget.filterEntries) ? structuredClone(widget.filterEntries) : String(widget.filterOptions || "").split(/[;,\n]/).filter(Boolean).map(value => ({ value, title: value }));
+  const dialog = document.createElement("dialog"); dialog.className = "studio-dialog filter-editor";
+  const heading = document.createElement("h2"); heading.textContent = "Filter bearbeiten"; const list = document.createElement("div"); list.className = "filter-editor-list";
+  const fields = [{ label: "Wert", key: "value" }, { label: "Titel", key: "title" }, { label: "Symbol", key: "icon", previewImage: true }, { label: "Bild", key: "image", previewImage: true }, { label: "Textfarbe", key: "textColor", type: "color" }, { label: "Aktive Farbe", key: "activeColor", type: "color" }, { label: "Standard", key: "isDefault", type: "checkbox", default: false }];
+  const draw = () => { list.replaceChildren(); draft.forEach((entry, index) => { const row = document.createElement("div"); row.className = "filter-editor-row"; for (const descriptor of fields) row.append(field(descriptor, entry)); const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "×"; remove.setAttribute("aria-label", `Eintrag ${index + 1} löschen`); remove.addEventListener("click", () => { draft.splice(index, 1); draw(); }); row.append(remove); list.append(row); }); };
+  const add = document.createElement("button"); add.type = "button"; add.textContent = "+ Hinzufügen"; add.addEventListener("click", () => { draft.push({ value: "", title: "", isDefault: false }); draw(); });
+  const actions = document.createElement("div"); actions.className = "dialog-actions";
+  for (const [label, apply] of [["Anwenden", true], ["Abbrechen", false]]) { const button = document.createElement("button"); button.type = "button"; button.textContent = label; button.addEventListener("click", () => { if (apply) { widget.filterEntries = draft; const selected = draft.filter(entry => entry.isDefault).map(entry => String(entry.value)); state.activeFilter = widget.multiple ? selected : selected.slice(0, 1); renderStage(); } dialog.close(); }); actions.append(button); }
+  draw(); dialog.append(heading, add, list, actions); document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); dialog.showModal();
+}
+
 function field(descriptor, widget) {
   const htmlField = descriptor.html === true || descriptor.type === "html" || /HTML/i.test(descriptor.label) || (descriptor.key === "state" && ["string", "string-raw"].includes(widget.type));
   const wrapper = document.createElement("label"); wrapper.textContent = descriptor.label;
+  if (descriptor.type === "filter-editor") { const button = document.createElement("button"); button.type = "button"; button.textContent = "Bearbeiten"; button.setAttribute("aria-label", "Filter bearbeiten"); button.addEventListener("click", () => openFilterEditor(widget)); wrapper.append(button); return wrapper; }
   let input;
   if (descriptor.type === "textarea" || htmlField) input = document.createElement("textarea");
-  else if (descriptor.type === "select") {
+  else if (["select", "page", "widget"].includes(descriptor.type)) {
     input = document.createElement("select");
-    for (const item of descriptor.options || []) {
+    const choices = descriptor.type === "page" ? [{ value: "", label: "Keine Seite" }, ...state.project.pages.map(page => ({ value: page.id, label: page.name }))] : descriptor.type === "widget" ? [{ value: "", label: "Kein Widget" }, ...currentPage().widgets.filter(item => item.id !== widget.id).map(item => ({ value: item.id, label: item.title || item.id }))] : descriptor.options || [];
+    for (const item of choices) {
       const option = document.createElement("option"); option.value = typeof item === "string" ? item : item.value;
       option.textContent = typeof item === "string" ? item : item.label; input.append(option);
     }
@@ -1369,7 +1511,7 @@ function field(descriptor, widget) {
     aliasPreview.hidden = !showAlias;
     aliasPreview.textContent = alias ? alias.slice(0, 3) : "";
   };
-  if (descriptor.key === "entityId" || descriptor.key === "visibilityEntityId") {
+  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key)) {
     const row = document.createElement("span"); row.className = "property-entity-row";
     const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button";
     picker.textContent = "…";
@@ -1396,10 +1538,10 @@ function field(descriptor, widget) {
     picker.title = "Icon oder Bild auswählen"; picker.setAttribute("aria-label", "Icon oder Bild auswählen");
     picker.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); openIconPicker(input); });
     row.append(preview, aliasPreview, input, picker); wrapper.append(row); void updatePreview();
-  } else if (descriptor.key === "multiViews") {
+  } else if (descriptor.key === "multiViews" || descriptor.type === "page") {
     const row = document.createElement("span"); row.className = "property-input-row";
     const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button"; picker.textContent = "…"; picker.title = "Seiten auswählen"; picker.setAttribute("aria-label", picker.title);
-    picker.addEventListener("click", () => openPageSelector(input)); row.append(input, picker); wrapper.append(row);
+    picker.addEventListener("click", () => openPageSelector(input, descriptor.type !== "page")); row.append(input, picker); wrapper.append(row);
   } else if (htmlField) {
     const row = document.createElement("span"); row.className = "property-input-row";
     const button = document.createElement("button"); button.type = "button"; button.className = "property-icon-picker-button"; button.textContent = "✎"; button.title = "HTML bearbeiten"; button.setAttribute("aria-label", button.title);
@@ -1409,16 +1551,19 @@ function field(descriptor, widget) {
     const number = document.createElement("input"); number.type = "number"; number.min = input.min; number.max = input.max; number.step = input.step; number.value = input.value; number.setAttribute("aria-label", descriptor.label);
     input.addEventListener("input", () => { number.value = input.value; });
     number.addEventListener("input", () => { input.value = number.value; number.value = input.value; input.dispatchEvent(new Event("input", { bubbles: true })); }); wrapper.append(number);
+    number.addEventListener("change", () => input.dispatchEvent(new Event("change", { bubbles: true })));
   }
   const update = () => {
+    if (descriptor.key === "count" && input.type === "number") input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Math.trunc(Number(input.value) || 1))));
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (descriptor.key === "testIndex" && widget.type?.startsWith("value-list-")) widget.state = input.value;
     void updatePreview();
     renderStage();
-    if (descriptor.refreshProperties) renderProperties();
+    if (descriptor.refreshProperties && !["number", "range"].includes(input.type)) renderProperties();
     if (descriptor.key === "title" && widget.id) renderWidgetFinder();
   };
-  input.addEventListener(descriptor.type === "select" ? "change" : "input", update);
+  input.addEventListener(input.tagName === "SELECT" ? "change" : "input", update);
+  if (descriptor.refreshProperties && ["number", "range"].includes(input.type)) input.addEventListener("change", renderProperties);
   if (descriptor.key === "preset") input.addEventListener("change", () => {
     if (PRESETS[input.value]) Object.assign(widget, PRESETS[input.value]);
     render();
@@ -1477,6 +1622,7 @@ function renderProperties() {
   if (state.propertyTab === "scripts") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Widget-Skripte werden in einem späteren Ausbauschritt ergänzt."; panel.append(empty); return; }
   if (widget.type === "toggle" && typeof widget.state === "boolean") widget.state = widget.state ? "on" : "off";
   let groups = getWidgetDefinition(widget.type).propertyGroups;
+  groups = [...groups, ...indexedWidgetGroups(widget)];
   if (widget.type === "value-list-html-style") {
     const count = Math.max(1, Math.min(50, Math.trunc(Number(widget.count) || 2)));
     const values = String(widget.valueList || "").split(/\r?\n|;/); const styles = String(widget.styleList || "").split(/\r?\n/);
@@ -1493,6 +1639,18 @@ function renderProperties() {
     const details = document.createElement("details"); details.className = "property-section";
     const summary = document.createElement("summary");
     const title = document.createElement("span"); title.className = "property-section-title"; title.textContent = group.label;
+    summary.append(title);
+    if (group.indexed) {
+      const { index: entryIndex, count, max, fields } = group.indexed;
+      const swap = (a, b) => { for (const descriptor of fields) { const keyA = `${descriptor.key}${a}`; const keyB = `${descriptor.key}${b}`; [widget[keyA], widget[keyB]] = [widget[keyB], widget[keyA]]; } const enabled = widget.enabledPropertyGroups ??= {}; const aKey = `indexed-${widget.type}-${a}`; const bKey = `indexed-${widget.type}-${b}`; [enabled[aKey], enabled[bKey]] = [enabled[bKey], enabled[aKey]]; };
+      for (const [label, disabled, action] of [
+        ["Kopieren", count >= max, () => { for (let i = count + 1; i > entryIndex + 1; i--) swap(i, i - 1); for (const descriptor of fields) widget[`${descriptor.key}${entryIndex + 1}`] = widget[`${descriptor.key}${entryIndex}`]; widget.count = count + 1; }],
+        ["Löschen", count <= 1, () => { for (let i = entryIndex; i < count; i++) swap(i, i + 1); for (const descriptor of fields) delete widget[`${descriptor.key}${count}`]; delete widget.enabledPropertyGroups?.[`indexed-${widget.type}-${count}`]; widget.count = count - 1; }],
+        ["Nach oben", entryIndex === 0, () => swap(entryIndex, entryIndex - 1)], ["Nach unten", entryIndex === count, () => swap(entryIndex, entryIndex + 1)],
+      ]) {
+        const button = document.createElement("button"); button.type = "button"; button.textContent = { Kopieren: "⧉", Löschen: "×", "Nach oben": "↑", "Nach unten": "↓" }[label]; button.title = label; button.setAttribute("aria-label", `${label} ${group.label}`); button.disabled = disabled; button.addEventListener("click", event => { event.preventDefault(); event.stopPropagation(); action(); renderProperties(); renderStage(); }); summary.append(button);
+      }
+    }
     const enabled = document.createElement("input"); enabled.type = "checkbox"; enabled.className = "property-section-enabled";
     enabled.checked = propertyGroupEnabled(widget, group, index);
     enabled.setAttribute("aria-label", `${group.label}: Optionen im Projekt speichern`);
@@ -1503,7 +1661,7 @@ function renderProperties() {
       widget.enabledPropertyGroups ??= {};
       widget.enabledPropertyGroups[propertyGroupKey(group, index)] = enabled.checked;
     });
-    summary.append(title, enabled);
+    summary.append(enabled);
     const body = document.createElement("div"); body.className = "property-fields";
     if (group.hint) { const hint = document.createElement("p"); hint.className = "property-hint"; hint.textContent = group.hint; body.append(hint); }
     const visibleFields = (fields, model) => fields.filter((descriptor) => !descriptor.showWhen || model[descriptor.showWhen.key] === descriptor.showWhen.value).map((descriptor) => field(descriptor, model));
