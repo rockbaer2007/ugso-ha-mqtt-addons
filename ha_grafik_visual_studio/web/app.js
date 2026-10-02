@@ -7,7 +7,7 @@ import { numberDisplay } from "./number-display.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
-import { tabCount, ownTabSurface, allProjectWidgets, tabTarget, canEmbedTab, reidentifyTabWidgets } from "./tabs-widget.js";
+import { tabCount, ownTabSurface, allProjectWidgets, tabTarget, canEmbedTab, reidentifyTabWidgets, visibleTabSurfaces } from "./tabs-widget.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
@@ -65,6 +65,7 @@ const VIEW_PROPERTY_GROUPS = [
 const $ = (selector) => document.querySelector(selector);
 const params = new URLSearchParams(location.search);
 const runtimeMode = location.pathname.endsWith("/runtime") || params.get("mode") === "runtime";
+const rootRuntimeMode = runtimeMode;
 const workspace = $("#workspace");
 const stage = $("#stage");
 const stageCanvas = $("#stage-canvas");
@@ -508,7 +509,7 @@ async function fetchEntityStates(ids) {
 }
 
 function editorLiveEntityIds() {
-  return [...new Set(currentPage().widgets.flatMap((widget) => [
+  return [...new Set(visibleWidgets().flatMap((widget) => [
     ["sensor", "slider", "input-value"].includes(widget.type) ? widget.entityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
   ]))]
@@ -541,15 +542,19 @@ async function refreshEditorLiveStates() {
   }
 }
 
-async function refreshRuntimeStates() {
-  if (!runtimeMode || !state.project || document.hidden || runtimeStateRequestPending) return;
-  const pageId = currentPage().id;
-  const ids = [...new Set(currentPage().widgets.flatMap((widget) => [
+function runtimeLiveEntityIds() {
+  return [...new Set(visibleWidgets().flatMap((widget) => [
     widget.entityId, widget.visibilityEnabled ? widget.visibilityEntityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
     widget.type === "linebox" && widget.outputHelperEnabled ? widget.outputHelperEntityId : "",
   ]))]
     .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id));
+}
+
+async function refreshRuntimeStates() {
+  if (!runtimeMode || !state.project || document.hidden || runtimeStateRequestPending) return;
+  const pageId = currentPage().id;
+  const ids = runtimeLiveEntityIds();
   if (!ids.length) return;
   runtimeStateRequestPending = true;
   try {
@@ -574,7 +579,7 @@ async function refreshRuntimeStates() {
     runtimeStateError = true;
   } finally {
     runtimeStateRequestPending = false;
-    if (currentPage().id !== pageId) void refreshRuntimeStates();
+    if (currentPage().id !== pageId || ids.join("|") !== runtimeLiveEntityIds().join("|")) void refreshRuntimeStates();
   }
 }
 
@@ -586,7 +591,8 @@ function stageRuntimeEntityValue(entityId, value) {
   if (runtimeEffectsFrame) return;
   runtimeEffectsFrame = requestAnimationFrame(() => {
     runtimeEffectsFrame = 0;
-    const widgets = currentPage().widgets;
+    for (const surface of visibleTabSurfaces(state.project, currentPage(), activeTabIndex)) {
+    const widgets = surface.widgets;
     for (const widget of widgets) {
       if (widget.type === "svg-connection") {
         const content = document.getElementById(widget.id)?.querySelector(".widget-content");
@@ -603,13 +609,15 @@ function stageRuntimeEntityValue(entityId, value) {
         if (value) { value.textContent = lineboxValueText(widget, widgets); value.setAttribute("aria-label", `${uiText("Ausgabewert")}: ${value.textContent}`); }
       }
     }
+    }
   });
 }
 
 function scheduleLineboxHelperOutputs() {
   if (!runtimeMode || !state.project || document.hidden) return;
-  const page = currentPage();
+  const rootPageId = currentPage().id;
   const projectId = state.projectId;
+  for (const page of visibleTabSurfaces(state.project, currentPage(), activeTabIndex)) {
   const widgets = page.widgets;
   for (const box of widgets.filter(widget => widget.type === "linebox")) {
     const key = `${projectId}:${page.id}:${box.id}`;
@@ -627,12 +635,13 @@ function scheduleLineboxHelperOutputs() {
     }
     lineboxOutputTimers.set(key, window.setTimeout(() => {
       lineboxOutputTimers.delete(key);
-      if (state.projectId !== projectId || currentPage().id !== page.id) return;
-      const current = lineboxHelperOutput(box, currentPage().widgets, state.entityStates);
+      if (state.projectId !== projectId || currentPage().id !== rootPageId || !visibleTabSurfaces(state.project, currentPage(), activeTabIndex).includes(page)) return;
+      const current = lineboxHelperOutput(box, page.widgets, state.entityStates);
       if (!current || current.entityId !== output.entityId || current.value !== output.value) return;
       lineboxOutputValues.set(key, current);
       void writeRuntimeHelperValue(current.entityId, current.value);
     }, 350));
+  }
   }
 }
 
@@ -2269,10 +2278,15 @@ function renderLineboxJunction(box, widgets) {
   return overlay;
 }
 
-function renderStage() {
-  for (const entry of mediaRefreshers) if (entry.timer) clearInterval(entry.timer);
-  mediaRefreshers.clear();
-  const activePage = currentPage();
+function renderStage(surface = null, target = null, surfaceChain = []) {
+  const embedded = Boolean(surface);
+  const runtimeMode = rootRuntimeMode || embedded;
+  const stage = target || $("#stage");
+  if (!embedded) {
+    for (const entry of mediaRefreshers) if (entry.timer) clearInterval(entry.timer);
+    mediaRefreshers.clear();
+  }
+  const activePage = surface || currentPage();
   const page = activePage.page;
   if (!runtimeMode) {
     let minX = 0; let minY = 0; let maxX = Number(page.width) || 0; let maxY = Number(page.height) || 0;
@@ -2321,7 +2335,7 @@ function renderStage() {
   const runtimeGrid = runtimeMode && page.grid === "sichtbar";
   const hideEditorGrid = !runtimeMode && page.grid === "aus";
   stage.className = `stage${runtimeGrid ? " runtime-grid" : ""}${hideEditorGrid ? " no-grid" : ""}${pageClasses.map((name) => ` ${name}`).join("")}`;
-  $("#runtime-pages-menu-toggle").hidden = page.navigationVisible === false;
+  if (!embedded) $("#runtime-pages-menu-toggle").hidden = page.navigationVisible === false;
   stage.replaceChildren();
   if (state.activeFilter === undefined) {
     const filter = activePage.widgets.find(widget => widget.type === "filter-dropdown"); const defaults = (filter?.filterEntries || []).filter(entry => entry.isDefault).map(entry => String(entry.value)); state.activeFilter = filter?.multiple ? defaults : defaults.slice(0, 1);
@@ -2633,7 +2647,7 @@ function renderStage() {
       input.addEventListener("keydown", event => { event.stopPropagation(); if (event.key === "Enter") apply(); });
       appendSafeHtml(content, widget.prefix || ""); content.append(input); appendSafeHtml(content, widget.suffix || "");
     } else if (widget.type === "tabs") {
-      content.append(renderTabsWidget(widget, activePage));
+      content.append(renderTabsWidget(widget, activePage, surfaceChain));
     } else if (["view-in-widget", "view-in-widget-8"].includes(widget.type)) {
       const index = widgetStateIndex(widget);
       const target = widget.type === "view-in-widget" ? widget.targetPage : widget[`page${index}`]; const chain = (params.get("chain") || "").split(",").filter(Boolean);
@@ -2890,13 +2904,15 @@ function renderStage() {
 }
 
 const selectedTabs = new Map();
-window.addEventListener("message", event => {
-  if (event.origin !== location.origin || event.data?.type !== "gvs-surface-ready") return;
-  for (const frame of document.querySelectorAll("iframe.widget-tabs-frame")) {
-    if (frame.contentWindow === event.source) frame.style.visibility = "visible";
-  }
-});
-function renderTabsWidget(widget, parent) {
+function activeTabIndex(widget, page) {
+  const key = `gvs.tabs.${state.projectId}.${page.id}.${widget.id}`;
+  if (selectedTabs.has(key)) return selectedTabs.get(key);
+  try { return Number(localStorage.getItem(key)) || 0; } catch { return 0; }
+}
+function visibleWidgets() {
+  return visibleTabSurfaces(state.project, currentPage(), activeTabIndex).flatMap(page => page.widgets);
+}
+function renderTabsWidget(widget, parent, surfaceChain = []) {
   const root = document.createElement("div"); root.className = `widget-tabs ${widget.tabsVertical ? "is-vertical" : "is-horizontal"} variant-${widget.tabsVariant || "standard"}`;
   root.style.setProperty("--tabs-color", widget.tabsColor || "#9f99bb");
   const key = `gvs.tabs.${state.projectId}.${parent.id}.${widget.id}`;
@@ -2911,6 +2927,7 @@ function renderTabsWidget(widget, parent) {
     selectedTabs.set(key, index); try { localStorage.setItem(key, String(index)); } catch { /* Tab selection remains available for this session. */ }
     if (!runtimeMode) setSingleWidgetSelection(widget.id);
     renderStage(); if (!runtimeMode) { renderProperties(); renderWidgetFinder(); }
+    if (runtimeMode) void refreshRuntimeStates(); else void refreshEditorLiveStates();
     document.getElementById(`${widget.id}-tab-${index}`)?.focus();
   };
   for (let index = 0; index < tabCount(widget); index++) {
@@ -2948,22 +2965,29 @@ function renderTabsWidget(widget, parent) {
     const value = widget[`tabOverflow${axis}${active}`];
     panel.style[`overflow${axis}`] = value === "none" ? "" : ["visible", "hidden", "scroll", "auto", "initial", "inherit"].includes(value) ? value : "auto";
   }
-  const target = tabTarget(widget, active, parent.id), chain = (params.get("chain") || "").split(",").filter(Boolean);
+  const target = tabTarget(widget, active, parent.id), chain = [...(params.get("chain") || "").split(",").filter(Boolean), ...surfaceChain];
   const own = widget[`tabSource${active}`] !== "page";
   const targetPage = own ? ownTabSurface(widget, active) : state.project.pages.find(page => page.id === target);
   if (!targetPage) panel.textContent = uiText("Seite auswählen");
   else if (!canEmbedTab(target, parent.id, chain)) panel.textContent = uiText("Rekursive Einbettung verhindert");
   else {
-    const frame = document.createElement("iframe"); frame.className = "widget-tabs-frame"; frame.title = `${widget.title || "Tabs"}: ${targetPage.name}`;
-    frame.style.visibility = "hidden";
-    const url = new URL(location.href); url.searchParams.set("mode", "runtime"); url.searchParams.set("project", state.projectId);
-    url.searchParams.set("embedded", "1"); url.searchParams.set("chain", [...chain, parent.id].join(","));
-    url.searchParams.delete("tabsWidget"); url.searchParams.delete("tabsIndex");
-    url.searchParams.set("page", own ? state.project.currentPageId : target);
-    if (own) { url.searchParams.set("tabsWidget", widget.id); url.searchParams.set("tabsIndex", String(active)); }
-    frame.src = url.href; frame.style.width = `${targetPage.page.width}px`; frame.style.height = `${targetPage.page.height}px`;
-    frame.style.pointerEvents = runtimeMode ? "auto" : "none"; frame.tabIndex = runtimeMode ? 0 : -1;
-    panel.append(frame);
+    const surface = document.createElement("div");
+    surface.dataset.tabSurface = target;
+    panel.append(surface);
+    renderStage(targetPage, surface, [...surfaceChain, parent.id]);
+    surface.classList.add("widget-tabs-surface");
+    if (!runtimeMode) {
+      surface.inert = true;
+      panel.dataset.tabSwitch = "true";
+      panel.title = uiText("Tabfläche bearbeiten");
+      panel.onclick = event => {
+        event.preventDefault(); event.stopPropagation();
+        state.tabReturn = { ownerId: widget.id, pageId: state.project.currentPageId };
+        if (own) state.tabEditor = { ownerId: widget.id, index: active };
+        else { state.tabEditor = null; state.project.currentPageId = target; }
+        setSingleWidgetSelection(null); render();
+      };
+    }
   }
   root.append(nav, panel); return root;
 }

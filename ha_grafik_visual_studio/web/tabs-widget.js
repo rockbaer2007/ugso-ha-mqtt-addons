@@ -27,6 +27,19 @@ export function tabTarget(widget, index, parentId) {
 
 export function canEmbedTab(target, current, chain) { return Boolean(target) && target !== current && !chain.includes(target) && chain.length < 8; }
 
+export function visibleTabSurfaces(project, page, selection, chain = []) {
+  const surfaces = [page];
+  for (const widget of page.widgets || []) {
+    if (widget.type !== "tabs" || widget.visible === false) continue;
+    const index = Math.max(0, Math.min(tabCount(widget) - 1, selection(widget, page) || 0));
+    const target = tabTarget(widget, index, page.id);
+    if (!canEmbedTab(target, page.id, chain)) continue;
+    const child = widget[`tabSource${index}`] === "page" ? project.pages.find(item => item.id === target) : ownTabSurface(widget, index);
+    if (child) surfaces.push(...visibleTabSurfaces(project, child, selection, [...chain, page.id]));
+  }
+  return surfaces;
+}
+
 export function reidentifyTabWidgets(owner, widgetId, groupId) {
   for (const [index, surface] of (owner.tabSurfaces || []).entries()) {
     if (!surface) continue;

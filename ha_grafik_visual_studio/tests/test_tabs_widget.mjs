@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { tabCount, tabSize, ownTabSurface, allProjectWidgets, tabTarget, canEmbedTab, reidentifyTabWidgets } from "../web/tabs-widget.js";
+import { tabCount, tabSize, ownTabSurface, allProjectWidgets, tabTarget, canEmbedTab, reidentifyTabWidgets, visibleTabSurfaces } from "../web/tabs-widget.js";
 
 test("own tab surfaces keep separate contents and follow the owner size", () => {
   const widget = { id: "widget-1", width: 715, height: 284 };
@@ -25,6 +25,15 @@ test("page references and recursion guards prevent direct and indirect cycles", 
   assert.equal(canEmbedTab("p2", "p", ["p2"]), false);
   assert.equal(canEmbedTab("p2", "p", Array(8).fill("other")), false);
   assert.equal(canEmbedTab("p2", "p", []), true);
+});
+
+test("direct tab rendering collects only active surfaces and stops page cycles", () => {
+  const tabs = { id: "tabs", type: "tabs", tabCount: 2, tabSource1: "page", tabPage1: "second" };
+  const first = { id: "first", widgets: [tabs] };
+  const second = { id: "second", widgets: [{ id: "back", type: "tabs", tabSource0: "page", tabPage0: "first" }] };
+  const project = { pages: [first, second] };
+  assert.deepEqual(visibleTabSurfaces(project, first, widget => widget === tabs ? 1 : 0).map(page => page.id), ["first", "second"]);
+  assert.deepEqual(visibleTabSurfaces(project, first, () => 0).map(page => page.id), ["first", "tabs-tab-0"]);
 });
 
 test("tab copies preserve positions while remapping child ids groups and connections", () => {

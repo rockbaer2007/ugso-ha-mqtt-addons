@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.124
+
+- Renders active Tabs contents directly from the open project instead of loading a separate iframe document. Switching tabs and editor previews no longer wait for project/network reloads.
+- Clicking a tab's content area opens its editing surface; returning immediately shows unsaved edits. Existing project pages remain shared references with cycle guards.
+- Runtime state polling includes active tab contents and their LineBox helper outputs; switching tabs requests their entity states immediately.
+
 ## 0.1.123
 
 - Prevents the editor shell from flashing while embedded tab surfaces load. A tab frame stays hidden until its same-origin surface signals that project loading and initial rendering are complete.

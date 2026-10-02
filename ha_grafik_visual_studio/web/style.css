@@ -160,6 +160,8 @@ html[lang="en"] .widget-edit-actions::after { content: "Edit"; }
 .widget-tabs.variant-fullWidth:not(.is-vertical) .widget-tabs-nav button { flex: 1 1 0; }
 .widget-tabs-panel { flex: 1 1 auto; min-width: 0; min-height: 0; }
 .widget-tabs-frame { display: block; border: 0; max-width: none; max-height: none; }
+.stage.widget-tabs-surface { position: relative; flex: none; min-width: 0; min-height: 0; margin: 0; border: 0; overflow: hidden; }
+.stage.widget-tabs-surface::before { display: none; }
 .widget-tabs.is-vertical { flex-direction: row; }
 .widget-tabs.is-vertical .widget-tabs-nav { flex: 0 0 120px; width: 120px; max-width: 50%; flex-direction: column; overflow-x: hidden; overflow-y: auto; border-bottom: 0; border-right: 1px solid var(--line); }
 .widget-tabs.is-vertical .widget-tabs-nav button { border-bottom: 0; border-right: 2px solid transparent; }
