@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.98
+
+- Slider can optionally show its minimum and maximum. Bound slider changes immediately update Number and SVG-Line, including Linebox-driven flow, while the Home Assistant write completes.
+- Runtime widgets with entity bindings now use live states consistently. Boolean controls and State Element write only to supported switch-like entities or helpers; unsupported bindings remain read-only. Date, indexed, image URL, and JSON table displays also use live states where configured.
+
 ## 0.1.97
 
 - Slider writes its selected value to a bound Home Assistant `input_number` helper on release and reads the current helper state. Input val renders as a bordered input box and writes numeric or text entries to `input_number` or `input_text`, with its existing Auto-set and Enter options. Both remain local when unbound.

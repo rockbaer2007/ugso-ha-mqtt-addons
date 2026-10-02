@@ -56,7 +56,7 @@ const cssGroups = () => [
 ];
 const signalImages = () => ({ label: "Signalbilder", signalImages: true, fields: [
   { label: "Anzahl der Signale", key: "signalCount", type: "select", refreshProperties: true, options: Array.from({ length: 10 }, (_, index) => String(index)) },
-] , hint: "Zustandsabhängige Bild-Overlays, zum Beispiel für Warnungen oder Batteriestände. Die Vorschau vergleicht den konfigurierten Wert mit dem Widget-Testzustand." });
+] , hint: "Zustandsabhängige Bild-Overlays, zum Beispiel für Warnungen oder Batteriestände. In der Runtime gilt der Live-Zustand einer gebundenen Entität." });
 const metadata = () => ({ label: "Generell", hint: "Der Name ist optional. Lass ihn leer, wenn du das Widget zum Beispiel über ein separates Textfeld beschriftest.", fields: [
   { label: "Name", key: "title" },
   { label: "Kommentar", key: "comment" },
@@ -89,7 +89,7 @@ const entityWidget = (unit = false) => [
   ] },
   ...cssGroups(),
 ];
-const basicDataWidget = (type, label, icon, defaults, dataFields, hint = "Entity-Auswahl ist vorbereitet; die Vorschau nutzt derzeit den konfigurierten Testwert.") => ({
+const basicDataWidget = (type, label, icon, defaults, dataFields, hint = "Ohne Entität gilt der Vorschauwert; eine gebundene Entität liefert in der Runtime ihren aktuellen Zustand.") => ({
   type, label, icon, defaults,
   propertyGroups: [
     metadata(), visibility(),
@@ -159,7 +159,7 @@ registerWidgetSet({
     basicDataWidget("iframe", "iFrame", "▣", { source: "", noFrame: true }, [{ label: "Quelle", key: "source" }, { label: "Kein Sandkasten", key: "noSandbox", type: "checkbox", default: false }, ...frameFields()], "Die Zielseite muss Einbettung erlauben."),
     basicDataWidget("iframe-8", "iFrame 8", "▣", { state: 0, count: 2, noFrame: true }, [...entityTest(), ...frameFields(), { label: "Werteanzahl bis", key: "count", type: "range", min: 1, max: 20, step: 1, refreshProperties: true }]),
     basicDataWidget("image-8", "Image 8", "▧", { state: 0, count: 1 }, [...entityTest(), { label: "Werteanzahl bis", key: "count", type: "number", min: 1, max: 50, refreshProperties: true }, ...imageFields()]),
-    basicDataWidget("ackflag-html", "AckFlag HTML", "✓", { state: false, htmlTrue: "Bestätigt", htmlFalse: "Ausstehend" }, [...entityTest(), ...htmlAdditions(), { label: "HTML bei false", key: "htmlFalse", type: "html" }, { label: "HTML bei true", key: "htmlTrue", type: "html" }], "Home Assistant hat kein ioBroker-ack-Flag. Als Zustand eine separate Bestätigungsentität verwenden; Live-Anbindung bleibt separat offen."),
+    basicDataWidget("ackflag-html", "AckFlag HTML", "✓", { state: false, htmlTrue: "Bestätigt", htmlFalse: "Ausstehend" }, [...entityTest(), ...htmlAdditions(), { label: "HTML bei false", key: "htmlFalse", type: "html" }, { label: "HTML bei true", key: "htmlTrue", type: "html" }], "Home Assistant hat kein ioBroker-ack-Flag. Stattdessen kann eine eigene Bestätigungsentität als Live-Zustand dienen."),
     { type: "button", label: "Icon Toggle Button", searchTerms: ["Schaltfläche (Icon Ein/Aus)"], icon: "◉", defaults: { title: "Icon Toggle Button", entityId: "", state: "off", icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
@@ -193,13 +193,14 @@ registerWidgetSet({
       ] },
       geometry(), ...cssGroups(),
     ] },
-    { type: "slider", label: "Slider", icon: "◉", defaults: { title: "Regler", entityId: "", value: 50, min: 0, max: 100, step: 1 }, propertyGroups: [
+    { type: "slider", label: "Slider", icon: "◉", defaults: { title: "Regler", entityId: "", value: 50, min: 0, max: 100, step: 1, showMinMax: false }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
         { label: "Home-Assistant-Entität", key: "entityId" },
         { label: "Minimum", key: "min", type: "number" },
         { label: "Maximum", key: "max", type: "number" },
         { label: "Schrittweite", key: "step", type: "number", min: 0.01 },
+        { label: "Min-/Max-Werte anzeigen", key: "showMinMax", type: "checkbox", default: false },
         { label: "Vorschauwert", key: "value", type: "number" },
       ] },
       geometry(), ...cssGroups(),
@@ -223,7 +224,7 @@ registerWidgetSet({
     basicDataWidget("string", "String", "T", { title: "Textwert", entityId: "", state: "Beispieltext", prefix: "", suffix: "" }, [
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testwert", key: "state" },
       { label: "HTML voranstellen", key: "prefix" }, { label: "HTML anhängen", key: "suffix" },
-    ], "Der Zustandswert wird als Text ausgegeben, vorangestellter und angehängter HTML-Code als HTML. Eine Entity-Bindung folgt."),
+    ], "Der Zustand wird als Text ausgegeben, vorangestellter und angehängter HTML-Code als HTML. In der Runtime wird eine gebundene Entität gelesen."),
     basicDataWidget("string-raw", "String (unescaped)", "<>…", { title: "HTML-Wert", entityId: "", state: "<strong>Beispiel</strong>", prefix: "", suffix: "" }, [
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testwert (HTML)", key: "state", type: "textarea" },
       { label: "HTML voranstellen", key: "prefix", type: "textarea" }, { label: "HTML anhängen", key: "suffix", type: "textarea" },

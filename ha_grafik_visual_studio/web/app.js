@@ -73,15 +73,16 @@ const fileTypes = {
   video: ["mp4", "webm", "mov", "mkv"],
 };
 const state = { project: null, projectId: params.get("project") || "main", selectedId: null, selectedIds: [], nextId: 1, propertyTab: "widget", collapsedWidgetSets: new Set(), expandedPropertySections: new Set(), objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null, widgetClipboard: [], editorWidgetFilter: null, undoStack: [], redoStack: [] };
-const LIVE_DISPLAY_TYPES = new Set(["sensor", "string", "red-number", "bar", "gauge", "bool-display", "toggle"]);
 const WRITABLE_SWITCH_ENTITY = /^(switch|light|input_boolean)\.[a-z0-9_]+$/;
 const WRITABLE_NUMBER_HELPER = /^input_number\.[a-z0-9_]+$/;
 const WRITABLE_TEXT_HELPER = /^input_text\.[a-z0-9_]+$/;
 const pendingSwitches = new Set();
 const helperWriteQueue = new Map();
+const stagedEntityValues = new Map();
 let runtimeStateRequestPending = false;
 let runtimeStateError = false;
 let runtimeRenderDeferred = false;
+let runtimeEffectsFrame = 0;
 let editorNumberRequestPending = false;
 let mdiIcons = null;
 let mdiIconsPromise = null;
@@ -262,7 +263,7 @@ function indexedWidgetGroups(widget) {
 }
 
 function widgetStateIndex(widget) {
-  const value = widget.state; const index = value === true || ["true", "on"].includes(value) ? 1 : value === false || ["false", "off"].includes(value) ? 0 : Number(value ?? 0);
+  const value = displayedWidgetState(widget); const index = value === true || ["true", "on"].includes(value) ? 1 : value === false || ["false", "off"].includes(value) ? 0 : Number(value ?? 0);
   const max = widget.type === "iframe-8" ? 20 : 50; const count = Math.max(1, Math.min(max, Math.trunc(Number(widget.count) || 1)));
   return Number.isInteger(index) && index >= 0 && index <= count && widget.enabledPropertyGroups?.[`indexed-${widget.type}-${index}`] !== false ? index : -1;
 }
@@ -455,7 +456,7 @@ async function loadProject() {
 }
 
 function displayedWidgetState(widget) {
-  if (runtimeMode && LIVE_DISPLAY_TYPES.has(widget.type) && widget.entityId) {
+  if (runtimeMode && widget.entityId) {
     return state.entityStates[widget.entityId]?.state ?? "--";
   }
   return widget.state;
@@ -520,6 +521,12 @@ async function refreshRuntimeStates() {
   try {
     const next = await fetchEntityStates(ids);
     if (currentPage().id !== pageId) return;
+    for (const [entityId, staged] of stagedEntityValues) {
+      if (String(next[entityId]?.state) === staged.value) { stagedEntityValues.delete(entityId); continue; }
+      if (helperWriteQueue.has(entityId) || pendingSwitches.has(entityId) || Date.now() < staged.expiresAt) {
+        next[entityId] = { ...(next[entityId] || { entity_id: entityId }), state: staged.value };
+      } else stagedEntityValues.delete(entityId);
+    }
     const changed = JSON.stringify(next) !== JSON.stringify(state.entityStates);
     if (changed) state.entityStates = next;
     if (changed || runtimeRenderDeferred) renderRuntimeStageWhenReady();
@@ -536,6 +543,26 @@ async function refreshRuntimeStates() {
   }
 }
 
+function stageRuntimeEntityValue(entityId, value) {
+  const textValue = String(value);
+  stagedEntityValues.set(entityId, { value: textValue, expiresAt: Date.now() + 3000 });
+  state.entityStates[entityId] = { ...(state.entityStates[entityId] || { entity_id: entityId }), state: textValue };
+  if (runtimeEffectsFrame) return;
+  runtimeEffectsFrame = requestAnimationFrame(() => {
+    runtimeEffectsFrame = 0;
+    const widgets = currentPage().widgets;
+    for (const widget of widgets) {
+      if (widget.type === "svg-connection") {
+        const content = document.getElementById(widget.id)?.querySelector(".widget-content");
+        if (content) updateRuntimeConnectionVisual(widget, widgets, content);
+      } else if (widget.type === "sensor" && widget.entityId) {
+        const value = document.getElementById(widget.id)?.querySelector(".widget-content .value");
+        if (value) value.textContent = numberDisplay(widget, state.entityStates[widget.entityId]).value;
+      }
+    }
+  });
+}
+
 function renderRuntimeStageWhenReady() {
   if (helperWriteQueue.size || document.activeElement?.matches(".widget-input[data-editing='true'], input[type='range'][data-dragging='true']")) {
     runtimeRenderDeferred = true;
@@ -549,6 +576,8 @@ async function writeRuntimeSwitch(widget, enabled) {
   const entityId = widget.entityId;
   if (!WRITABLE_SWITCH_ENTITY.test(entityId || "") || pendingSwitches.has(entityId)) return;
   pendingSwitches.add(entityId);
+  stageRuntimeEntityValue(entityId, enabled ? "on" : "off");
+  renderRuntimeStageWhenReady();
   try {
     const response = await fetch("api/switch", {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -559,16 +588,52 @@ async function writeRuntimeSwitch(widget, enabled) {
       throw new Error(uiText(payload.error || `HTTP ${response.status}`));
     }
     $("#status").textContent = "Schaltbefehl gesendet; warte auf Home Assistant";
-    await refreshRuntimeStates();
   } catch (error) {
+    stagedEntityValues.delete(entityId);
     $("#status").textContent = `${uiText("Schalten fehlgeschlagen")}: ${error.message}`;
   } finally {
     pendingSwitches.delete(entityId);
+    renderRuntimeStageWhenReady();
+    void refreshRuntimeStates();
+  }
+}
+
+function switchWidgetReady(widget) {
+  return !widget.entityId || WRITABLE_SWITCH_ENTITY.test(widget.entityId) && ["on", "off"].includes(state.entityStates[widget.entityId]?.state) && !pendingSwitches.has(widget.entityId);
+}
+
+function setRuntimeBooleanWidget(widget, enabled) {
+  if (widget.entityId) {
+    if (switchWidgetReady(widget)) void writeRuntimeSwitch(widget, enabled);
+    else $("#status").textContent = uiText("Keine schaltbare Home-Assistant-Entität mit verfügbarem Zustand");
+  } else {
+    widget.state = enabled ? "on" : "off";
     renderStage();
   }
 }
 
+function stateElementReady(widget, nextValue) {
+  if (!widget.entityId) return true;
+  if (WRITABLE_SWITCH_ENTITY.test(widget.entityId)) return switchWidgetReady(widget) && ["on", "off", "true", "false", "1", "0"].includes(String(nextValue).toLowerCase());
+  if (WRITABLE_NUMBER_HELPER.test(widget.entityId)) return state.entityStates[widget.entityId] !== undefined && nextValue !== "" && Number.isFinite(Number(nextValue));
+  return WRITABLE_TEXT_HELPER.test(widget.entityId) && state.entityStates[widget.entityId] !== undefined;
+}
+
+function setRuntimeStateElement(widget, value) {
+  if (!widget.entityId) { widget.state = value; renderStage(); return; }
+  if (WRITABLE_SWITCH_ENTITY.test(widget.entityId)) {
+    const enabled = isOn(value);
+    if (["on", "off", "true", "false", "1", "0"].includes(String(value).toLowerCase())) setRuntimeBooleanWidget(widget, enabled);
+    else $("#status").textContent = uiText("Der Zustand passt nicht zur schaltbaren Entität");
+  } else if (WRITABLE_NUMBER_HELPER.test(widget.entityId)) {
+    const number = Number(value);
+    if (Number.isFinite(number)) void writeRuntimeHelperValue(widget.entityId, number);
+    else $("#status").textContent = uiText("Der Zustand muss eine Zahl sein");
+  } else if (WRITABLE_TEXT_HELPER.test(widget.entityId)) void writeRuntimeHelperValue(widget.entityId, String(value));
+}
+
 async function writeRuntimeHelperValue(entityId, value) {
+  stageRuntimeEntityValue(entityId, value);
   const previous = helperWriteQueue.get(entityId) || Promise.resolve();
   const request = previous.catch(() => {}).then(async () => {
     const response = await fetch("api/helper-value", {
@@ -586,6 +651,7 @@ async function writeRuntimeHelperValue(entityId, value) {
     $("#status").textContent = uiText("Wert an Home Assistant gesendet");
     return true;
   } catch (error) {
+    stagedEntityValues.delete(entityId);
     $("#status").textContent = `${uiText("Wert konnte nicht gesetzt werden")}: ${error.message}`;
     return false;
   } finally {
@@ -1638,6 +1704,8 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
   svg.classList.add("svg-connection-canvas"); if (runtimeMode && widget.clickThrough !== false) svg.classList.add("is-click-through"); svg.setAttribute("viewBox", `0 0 ${width} ${height}`); svg.setAttribute("aria-label", widgetDisplayName(widget));
   const defs = document.createElementNS(ns, "defs"); svg.append(defs);
   const style = effectiveConnectionStyle(widget, widgets); const pathData = connectionPathData(widget, widgets);
+  svg.dataset.animationEnabled = String(Boolean(style.animationEnabled));
+  svg.dataset.animationStyle = style.animationStyle || "";
   const markerStartType = style.animationDirection === "reverse" ? widget.markerEnd : widget.markerStart;
   const markerEndType = style.animationDirection === "reverse" ? widget.markerStart : widget.markerEnd;
   const markerStart = appendConnectionMarker(defs, `${widget.id}-start-marker`, markerStartType, style.markerColor || style.flowColor, Number(widget.markerSize) || 8);
@@ -1841,6 +1909,34 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
   return svg;
 }
 
+function updateRuntimeConnectionVisual(widget, widgets, content) {
+  const style = effectiveConnectionStyle(widget, widgets);
+  const svg = content.querySelector(".svg-connection-canvas");
+  if (!svg || svg.dataset.animationEnabled !== String(Boolean(style.animationEnabled)) || svg.dataset.animationStyle !== (style.animationStyle || "")) {
+    content.replaceChildren(renderSvgConnection(widget, widgets, Number(currentPage().page.width), Number(currentPage().page.height), false));
+    return;
+  }
+  svg.querySelector(".connection-base")?.setAttribute("stroke", style.baseColor || "#607d8b");
+  const flow = svg.querySelector(".connection-flow");
+  if (flow) {
+    flow.setAttribute("stroke", style.flowColor || "#29c8b5");
+    flow.style.animationDuration = `${Math.max(0.05, Number(style.animationDuration) || 2)}s`;
+    flow.style.animationDirection = style.animationDirection === "reverse" ? "reverse" : "normal";
+  }
+  const light = svg.querySelector("animateMotion")?.parentElement;
+  if (light) {
+    light.setAttribute("fill", style.flowColor || "#29c8b5");
+    const motion = light.querySelector("animateMotion");
+    motion.setAttribute("dur", `${Math.max(0.05, Number(style.animationDuration) || 2)}s`);
+    motion.setAttribute("path", connectionPathData(widget, widgets, style.animationDirection === "reverse"));
+  }
+  for (const marker of svg.querySelectorAll("defs marker path, defs marker circle")) {
+    const color = style.markerColor || style.flowColor || "#29c8b5";
+    if (marker.getAttribute("fill") !== "none") marker.setAttribute("fill", color);
+    marker.setAttribute("stroke", color);
+  }
+}
+
 function formatDate(value, format, relative) {
   let date = value instanceof Date ? value : new Date(value);
   if (typeof value === "number" || /^\d{10,13}$/.test(String(value))) {
@@ -1860,7 +1956,7 @@ function formatDate(value, format, relative) {
 
 function listEntry(widget) {
   const values = String(widget.valueList || "").split(/\r?\n|;/).map((value, index) => widget[`listValue${index}`] ?? value);
-  const raw = Number(widget.state ?? widget.testIndex ?? 0);
+  const raw = Number(displayedWidgetState(widget) ?? widget.testIndex ?? 0);
   const index = Number.isFinite(raw) ? Math.trunc(raw) : 0;
   return { values, index, value: widget[`listValue${index}`] ?? values[index] ?? "" };
 }
@@ -2066,16 +2162,17 @@ function renderStage() {
       content.append(title, value, ports);
     } else if (widget.type === "universal-button") {
       const visualStates = widget.visualStates || [];
-      const matchingIndex = visualStates.findIndex((item) => matchesCondition(widget.state, item.condition || "==", item.value));
+      const currentState = displayedWidgetState(widget);
+      const matchingIndex = visualStates.findIndex((item) => matchesCondition(currentState, item.condition || "==", item.value));
       const visualIndex = matchingIndex >= 0 ? matchingIndex : 0;
       const visual = visualStates[visualIndex] || {};
       content.classList.add("universal-widget-content");
-      content.dataset.state = String(widget.state ?? "");
+      content.dataset.state = String(currentState ?? "");
       content.style.display = "flex";
       content.style.flexDirection = widget.contentLayout === "horizontal" ? "row" : "column";
       content.style.justifyContent = widget.contentAlign === "start" ? "flex-start" : widget.contentAlign === "end" ? "flex-end" : "center";
       content.style.alignItems = widget.contentAlign === "start" ? "flex-start" : widget.contentAlign === "end" ? "flex-end" : "center";
-      content.setAttribute("aria-label", widget.title || `State Element: ${widget.state ?? ""}`);
+      content.setAttribute("aria-label", widget.title || `State Element: ${currentState ?? ""}`);
       if (visual.contentType === "icon") {
         const iconValue = String(visual.icon || "").trim();
         if (safeUrl(iconValue, true) || /^mdi:[a-z0-9-]+$/i.test(iconValue)) {
@@ -2100,21 +2197,22 @@ function renderStage() {
         const html = document.createElement("span"); html.className = "universal-widget-html"; appendSafeHtml(html, visual.html || ""); content.append(html);
       }
       if (runtimeMode && widget.interaction !== "read-only") {
-        content.classList.add("is-interactive"); content.tabIndex = 0;
+        const nextValue = widget.interaction === "switch" && WRITABLE_SWITCH_ENTITY.test(widget.entityId || "") ? !isOn(currentState) ? "on" : "off" : visualStates[(visualIndex + 1) % Math.max(visualStates.length, 1)]?.value ?? "on";
+        const ready = widget.interaction === "navigation" || stateElementReady(widget, nextValue);
+        content.classList.add("is-interactive"); content.tabIndex = ready ? 0 : -1; content.setAttribute("aria-disabled", String(!ready));
         if (widget.interaction === "navigation") content.setAttribute("role", "link");
         else content.setAttribute("role", "button");
         const activate = (event) => {
           event.stopPropagation();
+          if (!ready) return;
           if (widget.interaction === "navigation") {
             const target = safeUrl(widget.targetUrl);
             if (target) window.open(target, "_blank", "noopener,noreferrer");
           } else {
-            widget.state = visualStates[(visualIndex + 1) % Math.max(visualStates.length, 1)]?.value ?? "on";
-            renderStage();
+            setRuntimeStateElement(widget, nextValue);
           }
         };
-        content.addEventListener("click", activate);
-        content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); activate(event); } });
+        if (ready) { content.addEventListener("click", activate); content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); activate(event); } }); }
       }
     } else if (widget.type === "text") {
       content.textContent = widget.textContent ?? widget.state ?? "";
@@ -2129,7 +2227,7 @@ function renderStage() {
       heading.style.top = `${widget.titleTopOffset ?? -9}px`; heading.style.left = `${widget.titleLeftOffset ?? 16}px`;
       content.append(header, heading);
     } else if (widget.type === "button") {
-      const on = isOn(widget.state);
+      const on = isOn(displayedWidgetState(widget));
       const iconValue = on ? widget.icon_on : widget.icon_off;
       const iconUrl = safeUrl(iconValue, true);
       if (iconUrl || /^mdi:[a-z0-9-]+$/i.test(iconValue || "")) {
@@ -2142,10 +2240,13 @@ function renderStage() {
       if (widget.title) { const caption = document.createElement("span"); caption.className = "button-icon-title"; caption.textContent = widget.title; content.append(caption); }
       content.setAttribute("aria-label", `${widget.title || "Schaltfläche"}: ${on ? "ein" : "aus"}`);
       if (runtimeMode && !widget.readOnly) {
-        content.classList.add("is-interactive"); content.setAttribute("role", "button"); content.tabIndex = 0;
-        const toggle = (event) => { event.stopPropagation(); widget.state = on ? "off" : "on"; renderStage(); };
-        content.addEventListener("click", toggle);
-        content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(event); } });
+        const ready = switchWidgetReady(widget);
+        content.classList.add("is-interactive"); content.setAttribute("role", "button"); content.tabIndex = ready ? 0 : -1; content.setAttribute("aria-disabled", String(!ready));
+        if (ready) {
+          const toggle = (event) => { event.stopPropagation(); setRuntimeBooleanWidget(widget, !on); };
+          content.addEventListener("click", toggle);
+          content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(event); } });
+        }
       }
     } else if (widget.type === "toggle") {
       const label = document.createElement("label"); label.className = "widget-toggle";
@@ -2174,15 +2275,17 @@ function renderStage() {
       content.append(label);
     } else if (widget.type === "checkbox") {
       const label = document.createElement("label"); label.className = "widget-checkbox";
-      const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = widget.state === true || widget.state === "true" || widget.state === "on";
+      const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = isOn(displayedWidgetState(widget));
       checkbox.tabIndex = runtimeMode ? 0 : -1;
       checkbox.autofocus = runtimeMode && widget.autofocus === true;
-      checkbox.addEventListener("change", (event) => { event.stopPropagation(); widget.state = checkbox.checked ? "on" : "off"; });
+      checkbox.disabled = !runtimeMode || !switchWidgetReady(widget);
+      checkbox.addEventListener("change", (event) => { event.stopPropagation(); setRuntimeBooleanWidget(widget, checkbox.checked); });
       label.append(checkbox);
       if (widget.title) { const caption = document.createElement("span"); caption.textContent = widget.title; label.append(caption); }
       content.append(label);
     } else if (widget.type === "bulb") {
-      const isOnState = typeof widget.state === "number" ? widget.state >= Number(widget.max ?? 1) : isOn(widget.state);
+      const currentState = displayedWidgetState(widget);
+      const isOnState = WRITABLE_NUMBER_HELPER.test(widget.entityId || "") || typeof currentState === "number" ? Number(currentState) >= Number(widget.max ?? 1) : isOn(currentState);
       const iconUrl = isOnState ? widget.icon_on : widget.icon_off;
       if (safeUrl(iconUrl, true) || /^mdi:[a-z0-9-]+$/i.test(iconUrl || "")) {
         const image = document.createElement("img"); image.className = "bulb-image"; setIconImageSource(image, iconUrl);
@@ -2198,10 +2301,19 @@ function renderStage() {
       }
       if (widget.title) { const caption = document.createElement("span"); caption.className = "bulb-title"; caption.textContent = widget.title; content.append(caption); }
       if (runtimeMode && !widget.readOnly) {
-        content.classList.add("is-interactive"); content.setAttribute("role", "button"); content.tabIndex = 0;
-        const toggle = event => { event.stopPropagation(); widget.state = isOnState ? Number(widget.min ?? 0) : Number(widget.max ?? 1); const url = safeUrl(isOnState ? widget.extraUrlFalse : widget.extraUrlTrue); if (url) window.open(url, "_blank", "noopener,noreferrer"); renderStage(); };
-        content.addEventListener("click", toggle);
-        content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(event); } });
+        const numberHelper = WRITABLE_NUMBER_HELPER.test(widget.entityId || "");
+        const ready = numberHelper ? Number.isFinite(Number(currentState)) : switchWidgetReady(widget);
+        content.classList.add("is-interactive"); content.setAttribute("role", "button"); content.tabIndex = ready ? 0 : -1; content.setAttribute("aria-disabled", String(!ready));
+        if (ready) {
+          const toggle = event => {
+            event.stopPropagation();
+            if (numberHelper) void writeRuntimeHelperValue(widget.entityId, isOnState ? Number(widget.min ?? 0) : Number(widget.max ?? 1));
+            else setRuntimeBooleanWidget(widget, !isOnState);
+            const url = safeUrl(isOnState ? widget.extraUrlFalse : widget.extraUrlTrue); if (url) window.open(url, "_blank", "noopener,noreferrer");
+          };
+          content.addEventListener("click", toggle);
+          content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(event); } });
+        }
       }
     } else if (widget.type === "slider") {
       const range = document.createElement("input"); range.type = "range";
@@ -2214,9 +2326,14 @@ function renderStage() {
       range.addEventListener("pointerdown", () => { range.dataset.dragging = "true"; });
       range.addEventListener("pointerup", () => { delete range.dataset.dragging; });
       range.addEventListener("pointercancel", () => { delete range.dataset.dragging; });
-      range.addEventListener("input", () => { if (!bound) widget.value = Number(range.value); });
+      range.addEventListener("input", () => { if (bound) stageRuntimeEntityValue(widget.entityId, Number(range.value)); else widget.value = Number(range.value); });
       range.addEventListener("change", () => { delete range.dataset.dragging; if (bound && !range.disabled) void writeRuntimeHelperValue(widget.entityId, Number(range.value)); });
-      content.append(range);
+      if (widget.showMinMax) {
+        const values = document.createElement("div"); values.className = "widget-slider-values";
+        const min = document.createElement("span"); min.textContent = range.min;
+        const max = document.createElement("span"); max.textContent = range.max;
+        values.append(min, range, max); content.append(values);
+      } else content.append(range);
     } else if (widget.type === "svg-shape") {
       content.append(renderSvgShape(widget));
     } else if (widget.type === "screen-resolution") {
@@ -2224,15 +2341,15 @@ function renderStage() {
     } else if (widget.type === "link") {
       const link = document.createElement("a"); link.href = safeUrl(widget.linkUrl) || "#"; link.rel = "noopener noreferrer"; appendSafeHtml(link, widget.htmlContent || ""); content.append(link);
     } else if (widget.type === "note") {
-      const note = document.createElement("div"); note.className = `note-content${widget.hideCorner ? " no-corner" : ""}`; appendSafeHtml(note, `${widget.prefix || ""}${widget.state ?? ""}${widget.suffix || ""}`); content.append(note);
+      const note = document.createElement("div"); note.className = `note-content${widget.hideCorner ? " no-corner" : ""}`; appendSafeHtml(note, `${widget.prefix || ""}${displayedWidgetState(widget) ?? ""}${widget.suffix || ""}`); content.append(note);
     } else if (widget.type === "red-number") {
       const liveValue = displayedWidgetState(widget);
       const badge = document.createElement("span"); badge.className = `widget-badge ${widget.badgeType === "pin" ? "pin" : "circle"}`; badge.style.background = widget.badgeBackground || "#c62828";
       badge.style.border = `1px solid ${widget.badgeBorder || "transparent"}`; badge.style.borderRadius = `${Number(widget.radius ?? 16)}px`;
       appendSafeHtml(badge, widget.prefix || ""); badge.append(document.createTextNode(String(liveValue ?? ""))); appendSafeHtml(badge, Number(liveValue) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""); content.append(badge);
     } else if (widget.type === "bool-svg") {
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.style.width = "100%"; svg.style.height = "100%"; svg.style.opacity = String(widget.svgOpacity ?? 1); svg.innerHTML = isOn(widget.state) ? widget.svgTrue || "" : widget.svgFalse || "";
-      if (runtimeMode && !widget.readOnly) { svg.setAttribute("role", "button"); svg.tabIndex = 0; const toggle = event => { event.stopPropagation(); widget.state = !isOn(widget.state); renderStage(); }; svg.addEventListener("click", toggle); svg.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); toggle(event); } }); } content.append(svg);
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.style.width = "100%"; svg.style.height = "100%"; svg.style.opacity = String(widget.svgOpacity ?? 1); svg.innerHTML = isOn(displayedWidgetState(widget)) ? widget.svgTrue || "" : widget.svgFalse || "";
+      if (runtimeMode && !widget.readOnly) { const ready = switchWidgetReady(widget); svg.setAttribute("role", "button"); svg.setAttribute("aria-disabled", String(!ready)); svg.tabIndex = ready ? 0 : -1; if (ready) { const toggle = event => { event.stopPropagation(); setRuntimeBooleanWidget(widget, !isOn(displayedWidgetState(widget))); }; svg.addEventListener("click", toggle); svg.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); toggle(event); } }); } } content.append(svg);
     } else if (widget.type === "input-value") {
       const bound = Boolean(widget.entityId); const numberHelper = WRITABLE_NUMBER_HELPER.test(widget.entityId || ""); const textHelper = WRITABLE_TEXT_HELPER.test(widget.entityId || "");
       const live = state.entityStates[widget.entityId]?.state;
@@ -2267,21 +2384,25 @@ function renderStage() {
       if (safeUrl(source)) { const frame = document.createElement("iframe"); frame.title = widget.title || "iframe"; frame.className = "widget-frame"; frame.style.border = widget.noFrame !== false ? "0" : "1px solid currentColor"; frame.setAttribute("scrolling", widget.scrollX || widget.scrollY ? "yes" : "no"); if (!(widget.type === "iframe" ? widget.noSandbox : widget[`frameNoSandbox${index}`])) frame.setAttribute("sandbox", "allow-scripts allow-forms"); refreshableMedia(frame, widget, source); content.append(frame); }
       else content.textContent = "Quelle auswählen";
     } else if (widget.type === "image" || widget.type === "image-8") {
-      const index = widgetStateIndex(widget); const source = widget.type === "image" ? widget.imageSrc : widget[`imageSource${index}`];
+      const index = widgetStateIndex(widget);
+      const liveSource = widget.type === "image" && runtimeMode && widget.entityId ? safeUrl(displayedWidgetState(widget), true) : "";
+      const source = liveSource || (widget.type === "image" ? widget.imageSrc : widget[`imageSource${index}`]);
       if (source) { const image = document.createElement("img"); refreshableMedia(image, widget, source); image.style.objectFit = widget.stretch ? "fill" : "contain"; image.style.pointerEvents = widget.allowUserInteractions ? "auto" : "none"; image.alt = widget.title || "Bild"; content.append(image); }
       else { content.classList.add("image-placeholder"); content.setAttribute("aria-label", widget.title || "Bild"); }
     } else if (widget.type === "string") {
       if (widget.icon) { const image = document.createElement("img"); image.className = "button-icon"; setIconImageSource(image, widget.icon); image.alt = ""; content.append(image); }
       const text = document.createElement("span"); text.className = "basic-string"; appendSafeHtml(text, widget.prefix || ""); text.append(document.createTextNode(String(displayedWidgetState(widget) ?? ""))); appendSafeHtml(text, widget.suffix || ""); content.append(text);
     } else if (widget.type === "string-raw") {
-      appendSafeHtml(content, `${widget.prefix || ""}${widget.state ?? ""}${widget.suffix || ""}`);
+      appendSafeHtml(content, `${widget.prefix || ""}${displayedWidgetState(widget) ?? ""}${widget.suffix || ""}`);
     } else if (widget.type === "image-source") {
-      const src = safeUrl(widget.state, true);
+      const src = safeUrl(displayedWidgetState(widget), true);
       if (src) { const image = document.createElement("img"); image.className = "source-image"; refreshableMedia(image, widget, src); image.alt = widget.alt || widget.title || "Bild"; content.append(image); }
       else { content.textContent = widget.alt || "Bild-URL nicht gesetzt"; content.classList.add("image-placeholder"); }
     } else if (["time-value", "timestamp-value", "timestamp", "last-changed"].includes(widget.type)) {
       const sourceKey = widget.type === "timestamp" ? "lastUpdated" : widget.type === "last-changed" ? "lastChanged" : "state";
-      const value = formatDate(widget[sourceKey], widget.dateFormat, widget.showInterval);
+      const live = runtimeMode && widget.entityId ? state.entityStates[widget.entityId] : null;
+      const sourceValue = live ? sourceKey === "lastUpdated" ? live.last_updated : sourceKey === "lastChanged" ? live.last_changed : live.state : widget[sourceKey];
+      const value = formatDate(sourceValue, widget.dateFormat, widget.showInterval);
       const output = document.createElement("span"); output.className = "basic-date"; output.textContent = value; content.append(output);
     } else if (["value-list-text", "value-list-html", "value-list-html-style"].includes(widget.type)) {
       const { value, index } = listEntry(widget);
@@ -2295,20 +2416,19 @@ function renderStage() {
       const output = document.createElement("span"); output.className = "bool-html";
       appendSafeHtml(output, current ? widget.htmlTrue : widget.htmlFalse); content.append(output);
       if (widget.type === "bool-html-control") {
-        output.classList.add("is-interactive"); output.setAttribute("role", "button"); output.tabIndex = runtimeMode ? 0 : -1;
-        const toggle = (event) => { if (!runtimeMode) return; event.stopPropagation(); widget.state = current ? "off" : "on"; renderStage(); };
-        output.addEventListener("click", toggle);
-        output.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(event); } });
+        const ready = runtimeMode && switchWidgetReady(widget);
+        output.classList.add("is-interactive"); output.setAttribute("role", "button"); output.setAttribute("aria-disabled", String(!ready)); output.tabIndex = ready ? 0 : -1;
+        if (ready) { const toggle = (event) => { event.stopPropagation(); setRuntimeBooleanWidget(widget, !current); }; output.addEventListener("click", toggle); output.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(event); } }); }
       }
     } else if (widget.type === "bool-select") {
       const select = document.createElement("select"); select.className = "widget-control";
       for (const [value, label] of [["off", widget.textOff || "Aus"], ["on", widget.textOn || "Ein"]]) { const option = document.createElement("option"); option.value = value; option.textContent = label; select.append(option); }
-      select.value = isOn(widget.state) ? "on" : "off"; select.disabled = !runtimeMode;
+      select.value = isOn(displayedWidgetState(widget)) ? "on" : "off"; select.disabled = !runtimeMode || !switchWidgetReady(widget);
       select.autofocus = runtimeMode && widget.autofocus === true;
       select.setAttribute("aria-label", widget.title || "Bool Select");
-      select.addEventListener("change", (event) => { event.stopPropagation(); widget.state = select.value; }); content.append(select);
+      select.addEventListener("change", (event) => { event.stopPropagation(); setRuntimeBooleanWidget(widget, select.value === "on"); }); content.append(select);
     } else if (widget.type === "html-state" || widget.type === "html") {
-      const output = document.createElement("div"); output.className = "safe-html"; appendSafeHtml(output, String(widget.htmlContent || "").replaceAll("{value}", String(widget.state ?? "")));
+      const output = document.createElement("div"); output.className = "safe-html"; appendSafeHtml(output, String(widget.htmlContent || "").replaceAll("{value}", String(displayedWidgetState(widget) ?? "")));
       if (widget.type === "html" && Number(widget.refreshInterval) > 0) { const update = () => { output.replaceChildren(); appendSafeHtml(output, widget.htmlContent || ""); }; mediaRefreshers.add({ widget, update, timer: setInterval(update, Math.max(100, Number(widget.refreshInterval))) }); }
       const url = safeUrl(widget.clickUrl);
       if (widget.type === "html-state" && url) { const link = document.createElement("a"); link.href = url; link.rel = "noopener noreferrer"; link.append(output); content.append(link); }
@@ -2316,7 +2436,7 @@ function renderStage() {
     } else if (widget.type === "table") {
       const tableWrap = document.createElement("div"); tableWrap.className = "widget-table-wrap";
       try {
-        const data = JSON.parse(widget.tableData || "[]");
+        const data = JSON.parse(runtimeMode && widget.entityId ? String(displayedWidgetState(widget) || "[]") : widget.tableData || "[]");
         let rows = Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : [];
         if (widget.newEventFirst) rows = [...rows].reverse();
         if (Number(widget.maxRows) > 0) rows = rows.slice(0, Math.trunc(Number(widget.maxRows)));
@@ -2402,7 +2522,7 @@ function renderStage() {
     }
     if (["checkbox", "button", "image"].includes(widget.type)) {
       const prefix = document.createElement("span"); appendSafeHtml(prefix, widget.prefix || ""); content.prepend(prefix);
-      appendSafeHtml(content, widget.suffix ?? (Number(widget.state) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""));
+      appendSafeHtml(content, widget.suffix ?? (Number(displayedWidgetState(widget)) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""));
     }
     element.append(content);
     if (isConnection && !runtimeMode) {
@@ -2466,7 +2586,7 @@ function renderStage() {
     const signalCount = isConnection ? 0 : Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
     for (const [signalIndex, signal] of (widget.signalImages || []).slice(0, signalCount).entries()) {
       if (!signal || (!runtimeMode && signal.hideInEditor)) continue;
-      const actual = widget.state ?? widget.value ?? "";
+      const actual = widget.entityId ? displayedWidgetState(widget) : widget.state ?? widget.value ?? "";
       if (!matchesCondition(actual, signal.condition || "==", signal.value ?? "true")) continue;
       const imageSrc = safeUrl(signal.image, true);
       if (!imageSrc && !/^mdi:[a-z0-9-]+$/i.test(signal.image || "")) continue;

@@ -246,6 +246,9 @@ Object.assign(ENGLISH, {
   "Zwischenpunkte und Sammelpunkte": "Intermediate and collector points", "SVG-Verbindungslinie": "SVG connection line",
   "Boolesches SVG": "Boolean SVG", "Eingegebener Wert": "Input value", "Bool HTML-Steuerung": "Bool HTML control",
   "Nummer": "Number", "Auto-setzen": "Auto-set", "nur lesend": "read only", "Kein Style": "No style",
+  "Min-/Max-Werte anzeigen": "Show min/max values",
+  "Der Zustand passt nicht zur schaltbaren Entität": "The value does not match a switchable entity",
+  "Der Zustand muss eine Zahl sein": "The value must be a number",
   "Schreibt im Runtime-Modus in input_number oder input_text; ohne Entität bleibt die Eingabe lokal.": "Writes to input_number or input_text in runtime; without an entity the input remains local.",
   "beim Bearbeiten": "while editing", "sichtbar": "visible", "aus": "off", "deaktivieren": "disable", "ausblenden": "hide",
 });
