@@ -2,6 +2,11 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Widget-Aktionen": "Widget actions", "Auswählen": "Select", "Alle Widgets": "All widgets",
+  "Gruppe": "Group", "Gruppieren": "Group widgets", "Gruppierung aufheben": "Ungroup",
+  "Gruppe bearbeiten": "Edit group", "Gruppenbearbeitung beenden": "Finish editing group",
+  "Mehr": "More", "In den Vordergrund": "Bring to front", "In den Hintergrund": "Send to back",
+  "Sperren": "Lock", "Entsperren": "Unlock",
   "Slider-Schiene": "Slider track", "Slider-Regler": "Slider thumb",
   "Schienenfarbe": "Track color", "Aktive Schienenfarbe": "Active track color",
   "Spurtyp": "Track fill", "Umgekehrt": "Inverted", "Ohne aktive Spur": "No active fill",

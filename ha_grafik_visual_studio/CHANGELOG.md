@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.115
+
+- Editor context menus offer selection, grouping, ungrouping, group editing, clipboard actions and delete, with duplication, ordering, locking, history and import/export under More.
+- Flat widget groups persist in project data, move together without changing relative offsets and can be edited individually. SVG connections cannot be grouped.
+- Copies receive independent group identities; grouping and movement use the existing undo/redo history. Runtime does not show editor context menus or group outlines.
+
 ## 0.1.114
 
 - Slider track and thumb have separate colors, sizes, rounding and configurable shadows (offset, blur, spread and CSS/RGBA color).

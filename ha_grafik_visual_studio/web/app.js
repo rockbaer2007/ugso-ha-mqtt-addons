@@ -6,6 +6,7 @@ import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineb
 import { numberDisplay } from "./number-display.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
+import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
@@ -387,6 +388,7 @@ function recordHistorySnapshot() {
 }
 
 function restoreHistorySnapshot(snapshot) {
+  state.editingGroupId = null;
   state.project = ensureProjectPages(JSON.parse(snapshot));
   const page = currentPage(); const available = new Set(page.widgets.map(widget => widget.id));
   state.selectedIds = state.selectedIds.filter(id => available.has(id));
@@ -1231,25 +1233,29 @@ async function renderProjects() {
 }
 
 function setSingleWidgetSelection(widgetId) {
-  state.selectedId = widgetId || null;
-  state.selectedIds = widgetId ? [widgetId] : [];
+  const widget = currentPage().widgets.find(item => item.id === widgetId);
+  if (!widget || widget.editorGroupId !== state.editingGroupId) state.editingGroupId = null;
+  state.selectedIds = groupMembers(currentPage().widgets, widget, state.editingGroupId).map(item => item.id);
+  state.selectedId = state.selectedIds[0] || null;
 }
 
 function selectedNormalWidgets() {
-  const ids = state.selectedIds.length ? state.selectedIds : state.selectedId ? [state.selectedId] : [];
-  return ids.map(id => currentPage().widgets.find(widget => widget.id === id)).filter(widget => widget && widget.type !== "svg-connection");
+  return selectedWidgets().filter(widget => widget.type !== "svg-connection");
 }
 
 function selectedWidgets() {
   const ids = new Set(state.selectedIds.length ? state.selectedIds : state.selectedId ? [state.selectedId] : []);
+  for (const widget of currentPage().widgets.filter(item => ids.has(item.id))) groupMembers(currentPage().widgets, widget, state.editingGroupId).forEach(item => ids.add(item.id));
   return currentPage().widgets.filter(widget => ids.has(widget.id));
 }
 
 function selectWidget(widgetId, additive = false) {
   if (!additive) { setSingleWidgetSelection(widgetId); return; }
   const selected = state.selectedIds.length ? [...state.selectedIds] : state.selectedId ? [state.selectedId] : [];
-  const index = selected.indexOf(widgetId);
-  if (index >= 0) selected.splice(index, 1); else selected.push(widgetId);
+  const widget = currentPage().widgets.find(item => item.id === widgetId);
+  const members = groupMembers(currentPage().widgets, widget, state.editingGroupId).map(item => item.id);
+  if (members.every(id => selected.includes(id))) members.forEach(id => { selected.splice(selected.indexOf(id), 1); });
+  else members.forEach(id => { if (!selected.includes(id)) selected.push(id); });
   state.selectedIds = selected;
   state.selectedId = selected[0] || null;
 }
@@ -1273,11 +1279,126 @@ function focusWidget(widgetId) {
   });
 }
 
+function groupSelectedWidgets() {
+  const widgets = selectedWidgets();
+  if (widgets.length < 2 || widgets.some(widget => widget.type === "svg-connection" || (widget.generalEnabled && widget.locked))) return;
+  recordHistorySnapshot();
+  const groupId = `group-${createRandomId()}`;
+  widgets.forEach(widget => { widget.editorGroupId = groupId; });
+  state.editingGroupId = null; render();
+}
+
+function selectedEditorGroup() {
+  const widgets = selectedWidgets();
+  return widgets.length && widgets.every(widget => widget.editorGroupId === widgets[0].editorGroupId) ? widgets[0].editorGroupId : null;
+}
+
+function ungroupSelectedWidgets() {
+  const groupId = selectedEditorGroup(); if (!groupId) return;
+  recordHistorySnapshot();
+  currentPage().widgets.filter(widget => widget.editorGroupId === groupId).forEach(widget => { delete widget.editorGroupId; });
+  state.editingGroupId = null; render();
+}
+
+function renderEditorGroups() {
+  const widgets = currentPage().widgets;
+  for (const groupId of new Set(widgets.map(widget => widget.editorGroupId).filter(Boolean))) {
+    const members = widgets.filter(widget => widget.editorGroupId === groupId);
+    if (members.length < 2) continue;
+    const bounds = groupBounds(members), outline = document.createElement("div");
+    outline.className = "editor-group-outline";
+    outline.dataset.groupId = groupId;
+    outline.classList.toggle("is-selected", members.some(widget => state.selectedIds.includes(widget.id)));
+    Object.assign(outline.style, { left: `${bounds.x}px`, top: `${bounds.y}px`, width: `${bounds.width}px`, height: `${bounds.height}px` });
+    const flag = document.createElement("button"); flag.type = "button"; flag.className = "editor-group-flag";
+    flag.textContent = `${uiText(state.editingGroupId === groupId ? "Gruppe bearbeiten" : "Gruppe")} (${members.length})`;
+    flag.title = groupId;
+    flag.addEventListener("click", event => { event.stopPropagation(); state.editingGroupId = null; setSingleWidgetSelection(members[0].id); render(); });
+    flag.addEventListener("contextmenu", event => { state.editingGroupId = null; openWidgetContextMenu(event, members[0]); });
+    if (state.editingGroupId !== groupId) makeDraggable(flag, members[0]);
+    outline.append(flag); stage.append(outline);
+  }
+}
+
+let widgetContextMenu;
+function closeWidgetContextMenu() { widgetContextMenu?.remove(); widgetContextMenu = null; }
+
+function openWidgetContextMenu(event, widget = null) {
+  if (runtimeMode) return;
+  event.preventDefault(); event.stopPropagation(); closeWidgetContextMenu();
+  const overlapping = currentPage().widgets.filter(item => {
+    const rect = document.getElementById(item.id)?.getBoundingClientRect();
+    return rect && event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
+  }).reverse();
+  if (widget && !state.selectedIds.includes(widget.id)) { setSingleWidgetSelection(widget.id); render(); }
+  const chosen = selectedWidgets(), groupId = selectedEditorGroup();
+  const menu = document.createElement("div"); menu.className = "widget-context-menu"; menu.setAttribute("role", "menu");
+  menu.setAttribute("aria-label", uiText("Widget-Aktionen"));
+  const action = (parent, label, run, disabled = false, icon = "") => {
+    const button = document.createElement("button"); button.type = "button"; button.setAttribute("role", "menuitem"); button.disabled = disabled;
+    if (icon) { const image = document.createElement("img"); image.src = `icons/${icon}.svg`; image.alt = ""; button.append(image); }
+    button.append(document.createTextNode(uiText(label)));
+    button.onclick = () => { closeWidgetContextMenu(); run(); };
+    parent.append(button);
+  };
+  const submenu = label => {
+    const details = document.createElement("details"), summary = document.createElement("summary");
+    summary.textContent = `${uiText(label)} ▸`; details.append(summary); menu.append(details);
+    return details;
+  };
+  const selection = submenu("Auswählen");
+  action(selection, "Alle Widgets", () => { state.selectedIds = currentPage().widgets.map(item => item.id); state.selectedId = state.selectedIds[0] || null; render(); });
+  for (const item of overlapping) action(selection, widgetDisplayName(item), () => { setSingleWidgetSelection(item.id); render(); });
+  action(menu, "Gruppieren", groupSelectedWidgets, Boolean(groupId) || chosen.length < 2 || chosen.some(item => item.type === "svg-connection" || (item.generalEnabled && item.locked)));
+  if (groupId) {
+    action(menu, "Gruppierung aufheben", ungroupSelectedWidgets);
+    action(menu, "Gruppe bearbeiten", () => { state.editingGroupId = groupId; state.selectedIds = [chosen[0].id]; state.selectedId = chosen[0].id; render(); });
+  }
+  if (state.editingGroupId) action(menu, "Gruppenbearbeitung beenden", () => { state.editingGroupId = null; if (widget) setSingleWidgetSelection(widget.id); render(); });
+  action(menu, "Kopieren", () => copySelectedWidgets(), !chosen.length, "copy-clip");
+  action(menu, "Ausschneiden", () => copySelectedWidgets(true), !chosen.length);
+  action(menu, "Einfügen", pasteWidgets, !state.widgetClipboard.length, "clipboard");
+  action(menu, "Löschen", deleteSelectedWidget, !chosen.length, "trash");
+  const more = submenu("Mehr");
+  action(more, "Duplizieren", duplicateSelectedWidget, !chosen.length, "duplicat");
+  for (const [label, front] of [["In den Vordergrund", true], ["In den Hintergrund", false]]) action(more, label, () => {
+    recordHistorySnapshot();
+    const layer = front ? Math.min(9999, Math.max(0, ...currentPage().widgets.map(item => Number(item.layer) || 0)) + 1) : 0;
+    chosen.forEach(item => { item.layer = layer; item.cssZIndex = ""; }); render();
+  }, !chosen.length);
+  for (const [label, locked] of [["Sperren", true], ["Entsperren", false]]) action(more, label, () => { recordHistorySnapshot(); chosen.forEach(item => { item.generalEnabled = true; item.locked = locked; }); render(); }, !chosen.length);
+  action(more, "Rückgängig", undoWidgetChange, !state.undoStack.length);
+  action(more, "Wiederholen", redoWidgetChange, !state.redoStack.length);
+  action(more, "Widget importieren", () => $("#widget-import-file").click());
+  action(more, "Ausgewähltes Widget exportieren", exportSelectedWidget, !chosen.length);
+  document.body.append(menu); widgetContextMenu = menu;
+  const placeMenu = () => {
+    const rect = menu.getBoundingClientRect();
+    menu.style.left = `${Math.max(4, Math.min(event.clientX, window.innerWidth - rect.width - 4))}px`;
+    menu.style.top = `${Math.max(4, Math.min(event.clientY, window.innerHeight - rect.height - 4))}px`;
+  };
+  menu.addEventListener("toggle", placeMenu, true); placeMenu();
+  menu.querySelector("summary").focus();
+  menu.addEventListener("keydown", key => {
+    if (key.key === "Escape") { closeWidgetContextMenu(); return; }
+    if (!["ArrowDown", "ArrowUp", "Home", "End"].includes(key.key)) return;
+    const items = [...menu.querySelectorAll("button:not(:disabled), summary")].filter(item => item.getClientRects().length);
+    const index = items.indexOf(document.activeElement);
+    key.preventDefault();
+    items[key.key === "Home" ? 0 : key.key === "End" ? items.length - 1 : (index + (key.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus();
+  });
+}
+
+stage.addEventListener("contextmenu", event => { if (!event.target.closest(".widget, .editor-group-outline")) openWidgetContextMenu(event); });
+document.addEventListener("pointerdown", event => { if (widgetContextMenu && !widgetContextMenu.contains(event.target)) closeWidgetContextMenu(); });
+window.addEventListener("resize", closeWidgetContextMenu);
+
 function duplicateSelectedWidget() {
   const page = currentPage();
   const sources = selectedWidgets(); if (!sources.length) return;
   recordHistorySnapshot();
   const idMap = new Map(sources.map(source => [source.id, `widget-${state.nextId++}`]));
+  remapGroups(sources, idMap, () => `group-${createRandomId()}`);
   const copies = sources.map(source => cloneWidgetForInsert(source, page, idMap));
   page.widgets.push(...copies); state.selectedIds = copies.map(widget => widget.id); state.selectedId = state.selectedIds[0]; render();
 }
@@ -1300,6 +1421,7 @@ function deleteSelectedWidget() {
 
 function cloneWidgetForInsert(source, page, idMap) {
   const copy = structuredClone(source); const oldId = source.id;
+  if (copy.editorGroupId) { if (idMap.has(copy.editorGroupId)) copy.editorGroupId = idMap.get(copy.editorGroupId); else delete copy.editorGroupId; }
   copy.id = idMap.get(oldId) || `widget-${state.nextId++}`;
   copy.name = uniqueWidgetName(page, `${widgetDisplayName(source)} Kopie`);
   for (const key of ["startWidgetId", "endWidgetId", "flowParentId"]) if (copy[key]) copy[key] = idMap.get(copy[key]) || "";
@@ -1312,8 +1434,8 @@ function cloneWidgetForInsert(source, page, idMap) {
     copy.startX = (Number(copy.startX) || 0) + 20; copy.startY = (Number(copy.startY) || 0) + 20;
     copy.endX = (Number(copy.endX) || 0) + 20; copy.endY = (Number(copy.endY) || 0) + 20;
   } else {
-    copy.x = Math.min(Math.max(0, page.page.width - (copy.width || 140)), (copy.x || 0) + 20);
-    copy.y = Math.min(Math.max(0, page.page.height - (copy.height || 62)), (copy.y || 0) + 20);
+    copy.x = copy.editorGroupId ? (copy.x || 0) + 20 : Math.min(Math.max(0, page.page.width - (copy.width || 140)), (copy.x || 0) + 20);
+    copy.y = copy.editorGroupId ? (copy.y || 0) + 20 : Math.min(Math.max(0, page.page.height - (copy.height || 62)), (copy.y || 0) + 20);
   }
   return copy;
 }
@@ -1329,6 +1451,7 @@ function pasteWidgets() {
   if (!state.widgetClipboard.length) return;
   recordHistorySnapshot();
   const page = currentPage(); const idMap = new Map(state.widgetClipboard.map(source => [source.id, `widget-${state.nextId++}`]));
+  remapGroups(state.widgetClipboard, idMap, () => `group-${createRandomId()}`);
   const copies = state.widgetClipboard.map(source => cloneWidgetForInsert(source, page, idMap));
   page.widgets.push(...copies); state.selectedIds = copies.map(widget => widget.id); state.selectedId = state.selectedIds[0];
   render(); $("#status").textContent = `${copies.length} Widget(s) eingefügt`;
@@ -1391,9 +1514,10 @@ function changeSelectedWidgetLayer(direction) {
 function exportSelectedWidget() {
   const widget = currentPage().widgets.find((item) => item.id === state.selectedId);
   if (!widget) return;
-  const blob = new Blob([`${JSON.stringify({ schemaVersion: 1, widget }, null, 2)}\n`], { type: "application/json" });
+  const widgets = selectedWidgets();
+  const blob = new Blob([`${JSON.stringify(widgets.length > 1 ? { schemaVersion: 1, widgets } : { schemaVersion: 1, widget }, null, 2)}\n`], { type: "application/json" });
   const url = URL.createObjectURL(blob);
-  const link = document.createElement("a"); link.href = url; link.download = `${widget.type}-${widget.id}.json`; link.click();
+  const link = document.createElement("a"); link.href = url; link.download = `${widgets.length > 1 ? "widget-group" : widget.type}-${widget.id}.json`; link.click();
   URL.revokeObjectURL(url);
   $("#status").textContent = `Widget ${widget.id} exportiert`;
 }
@@ -1406,8 +1530,10 @@ async function importWidgets(file) {
     const widgets = incoming.filter((widget) => widget && typeof widget === "object" && knownTypes.has(widget.type));
     if (!widgets.length) throw new Error("Die Datei enthält keine unterstützten Widgets.");
     recordHistorySnapshot();
+    const importGroups = new Map(); remapGroups(widgets, importGroups, () => `group-${createRandomId()}`);
     for (const source of widgets) {
       const widget = structuredClone(source);
+      if (importGroups.has(widget.editorGroupId)) widget.editorGroupId = importGroups.get(widget.editorGroupId); else delete widget.editorGroupId;
       widget.id = `widget-${state.nextId++}`;
       widget.name = uniqueWidgetName(currentPage(), widget.name || widget.title || getWidgetDefinition(widget.type).label);
       widget.x = Math.max(0, Number(widget.x) || 0);
@@ -2710,7 +2836,7 @@ function renderStage() {
       }
       element.append(overlay);
     }
-    if (primarySelected && !isConnection && !widgetLocked) {
+    if (primarySelected && !isConnection && !widgetLocked && (!widget.editorGroupId || widget.editorGroupId === state.editingGroupId)) {
       const flag = document.createElement("span"); flag.className = "widget-id-flag"; flag.textContent = widget.id;
       element.append(flag);
       for (const direction of ["n", "ne", "e", "se", "s", "sw", "w", "nw"]) {
@@ -2721,10 +2847,12 @@ function renderStage() {
         makeResizable(element, handle, widget);
       }
     }
+    if (!runtimeMode) element.addEventListener("contextmenu", event => openWidgetContextMenu(event, widget));
     if (!isConnection) element.addEventListener("click", event => { if (!runtimeMode) { selectWidget(widget.id, event.ctrlKey && event.shiftKey); render(); } }, { capture: true });
     if (!runtimeMode && !isConnection && !widgetLocked) makeDraggable(element, widget);
     stage.append(element);
   }
+  if (!runtimeMode) renderEditorGroups();
 }
 
 function makeDraggable(element, widget) {
@@ -2732,7 +2860,9 @@ function makeDraggable(element, widget) {
   element.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     if (event.target.closest(".resize-handle")) return;
-    origin = { x: event.clientX, y: event.clientY, left: widget.x, top: widget.y, moved: false, historyCaptured: false };
+    const members = groupMembers(currentPage().widgets, widget, state.editingGroupId);
+    if (members.some(item => item.generalEnabled && item.locked)) return;
+    origin = { x: event.clientX, y: event.clientY, members: members.map(item => ({ id: item.id, x: Number(item.x) || 0, y: Number(item.y) || 0 })), moved: false, historyCaptured: false };
     element.setPointerCapture(event.pointerId);
   });
   element.addEventListener("pointermove", (event) => {
@@ -2741,9 +2871,16 @@ function makeDraggable(element, widget) {
     if (!origin.moved) return;
     if (!origin.historyCaptured) { recordHistorySnapshot(); origin.historyCaptured = true; }
     const scale = stage.clientWidth / Number.parseFloat(stage.style.width);
-    widget.x = Math.max(0, Math.round(origin.left + (event.clientX - origin.x) / scale));
-    widget.y = Math.max(0, Math.round(origin.top + (event.clientY - origin.y) / scale));
-    element.style.left = `${widget.x}px`; element.style.top = `${widget.y}px`;
+    for (const position of translateGroup(origin.members, (event.clientX - origin.x) / scale, (event.clientY - origin.y) / scale)) {
+      const member = currentPage().widgets.find(item => item.id === position.id);
+      member.x = position.x; member.y = position.y;
+      const target = document.getElementById(member.id);
+      if (target) { target.style.left = `${member.x}px`; target.style.top = `${member.y}px`; }
+    }
+    for (const outline of stage.querySelectorAll(".editor-group-outline")) {
+      const bounds = groupBounds(currentPage().widgets.filter(item => item.editorGroupId === outline.dataset.groupId));
+      if (bounds) Object.assign(outline.style, { left: `${bounds.x}px`, top: `${bounds.y}px`, width: `${bounds.width}px`, height: `${bounds.height}px` });
+    }
   });
   element.addEventListener("pointerup", () => {
     if (!origin) return;

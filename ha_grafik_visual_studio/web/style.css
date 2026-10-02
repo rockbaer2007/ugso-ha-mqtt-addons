@@ -1,4 +1,13 @@
 :root { color-scheme: dark light; font: 13px/1.4 system-ui, sans-serif; --bg: #171a1c; --panel: #202426; --line: #3b4548; --text: #e7ecee; --muted: #aab6ba; --accent: #29c8b5; --orange: #ff9f16; --toolbar-height: 92px; }
+.widget-context-menu { position: fixed; z-index: 10000; width: 230px; max-width: calc(100vw - 8px); max-height: calc(100vh - 8px); overflow: auto; padding: 5px; border: 1px solid var(--line); border-radius: 6px; background: #292f31; color: var(--text); box-shadow: 0 6px 24px #0009; }
+.widget-context-menu button, .widget-context-menu summary { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 32px; padding: 6px 9px; border: 0; border-radius: 3px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.widget-context-menu button:hover, .widget-context-menu button:focus-visible, .widget-context-menu summary:hover, .widget-context-menu summary:focus-visible { background: #3b4548; }
+.widget-context-menu button:disabled { opacity: .4; cursor: default; }
+.widget-context-menu img { width: 18px; height: 18px; }
+.widget-context-menu details[open] > button { padding-left: 22px; }
+.editor-group-outline { position: absolute; pointer-events: none; border: 1px dashed #607d8b; z-index: 9998; }
+.editor-group-outline.is-selected { border-color: #29c8b5; }
+.editor-group-flag { position: absolute; left: 0; top: -22px; height: 22px; padding: 2px 6px; font-size: 11px; white-space: nowrap; pointer-events: auto; background: #315779; border: 0; cursor: move; }
 .color-picker-dialog { width: min(580px, calc(100vw - 24px)); }
 .color-picker-body { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
 .color-picker-body canvas { display: block; max-width: 100%; touch-action: none; cursor: crosshair; }
