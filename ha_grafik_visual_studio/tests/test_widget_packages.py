@@ -159,6 +159,13 @@ class WidgetPackageTests(unittest.TestCase):
                     with self.assertRaises(HTTPError) as blocked:
                         urlopen(remove)
                     self.assertEqual(blocked.exception.code, 409)
+                    project["pages"][0]["widgets"] = [{"id": "tabs", "type": "tabs", "tabSurfaces": [None, {
+                        "widgets": [{"id": "inside", "type": "demo.widgets/label"}]
+                    }]}]
+                    main.Handler.write_project("main", project)
+                    with self.assertRaises(HTTPError) as nested_blocked:
+                        urlopen(remove)
+                    self.assertEqual(nested_blocked.exception.code, 409)
                     project["pages"][0]["widgets"] = []
                     main.Handler.write_project("main", project)
                     with urlopen(remove) as response:

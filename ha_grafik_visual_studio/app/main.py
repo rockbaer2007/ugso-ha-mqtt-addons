@@ -59,6 +59,21 @@ class HomeAssistantAPIError(RuntimeError):
     """Raised when a Home Assistant WebSocket request fails."""
 
 
+def project_widgets(project):
+    """Walk project widgets including owned tab surfaces."""
+    pending = list(project.get("widgets", []))
+    for page in project.get("pages", []):
+        pending.extend(page.get("widgets", []))
+    while pending:
+        widget = pending.pop()
+        if not isinstance(widget, dict):
+            continue
+        yield widget
+        for surface in widget.get("tabSurfaces", []) or []:
+            if isinstance(surface, dict):
+                pending.extend(surface.get("widgets", []))
+
+
 def home_assistant_commands(commands):
     """Run Home Assistant WebSocket commands via Supervisor."""
     try:
@@ -238,7 +253,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.115"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.116"})
             return
         if path == "/api/entities":
             try:
@@ -531,8 +546,7 @@ class Handler(BaseHTTPRequestHandler):
         self.ensure_projects()
         for project_file in PROJECTS_DIR.glob("*.json"):
             project = self.read_project_file(project_file)
-            pages = project.get("pages", []) if project and project.get("schemaVersion") == 2 else [{"widgets": project.get("widgets", [])}] if project else []
-            if any(widget.get("type") in used_types for page in pages for widget in page.get("widgets", [])):
+            if any(widget.get("type") in used_types for widget in project_widgets(project or {})):
                 self.send_json(HTTPStatus.CONFLICT, {"error": "Paket wird in einem Projekt verwendet und kann nicht entfernt werden."})
                 return
         try:

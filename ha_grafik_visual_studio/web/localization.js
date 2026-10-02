@@ -2,6 +2,13 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Anzahl der Tabs": "Number of tabs", "Vertikale Tabs": "Vertical tabs", "Tab-Variante": "Tab variant",
+  "Standard": "Standard", "zentriert": "Centered", "Gesamtbreite": "Full width", "Tab-Farbe": "Tab color",
+  "Tab-Titel": "Tab title", "Tab-Inhalt": "Tab content", "Eigene Widget-Fläche": "Own widget surface",
+  "Vorhandene Projektseite": "Existing project page", "Tabfläche bearbeiten": "Edit tab surface",
+  "Symbolgröße (px)": "Icon size (px)", "Symbolfarbe": "Icon color",
+  "Zurück zum Tabs-Widget": "Back to Tabs widget", "Überlauf X": "Overflow X", "Überlauf Y": "Overflow Y",
+  "Verschachtelte eigene Tabs sind noch nicht unterstützt.": "Nested own Tabs widgets are not supported yet.",
   "Widget-Aktionen": "Widget actions", "Auswählen": "Select", "Alle Widgets": "All widgets",
   "Gruppe": "Group", "Gruppieren": "Group widgets", "Gruppierung aufheben": "Ungroup",
   "Gruppe bearbeiten": "Edit group", "Gruppenbearbeitung beenden": "Finish editing group",

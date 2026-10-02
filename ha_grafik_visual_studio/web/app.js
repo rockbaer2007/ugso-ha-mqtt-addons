@@ -7,6 +7,7 @@ import { numberDisplay } from "./number-display.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
+import { tabCount, ownTabSurface, allProjectWidgets, tabTarget, canEmbedTab, reidentifyTabWidgets } from "./tabs-widget.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
@@ -261,6 +262,18 @@ function propertyGroupEnabled(widget, group, index) {
 }
 
 function indexedWidgetGroups(widget) {
+  if (widget.type === "tabs") return Array.from({ length: tabCount(widget) }, (_, index) => ({ id: `tab-${index}`, label: `Tab [${index + 1}]`, fields: [
+    { label: "Tab-Titel", key: `tabTitle${index}`, default: `Tab ${index + 1}` },
+    { label: "Tab-Inhalt", key: `tabSource${index}`, type: "select", default: "own", refreshProperties: true, options: [{ value: "own", label: "Eigene Widget-Fläche" }, { value: "page", label: "Vorhandene Projektseite" }] },
+    { label: "Seite", key: `tabPage${index}`, type: "page", showWhen: { key: `tabSource${index}`, value: "page" } },
+    { label: "Tabfläche bearbeiten", key: `tabEdit${index}`, type: "tab-edit", tabIndex: index },
+    { label: "Symbol", key: `tabIcon${index}`, previewImage: true },
+    { label: "Bild", key: `tabImage${index}`, previewImage: true },
+    { label: "Symbolgröße (px)", key: `tabIconSize${index}`, type: "number", min: 8, max: 100, default: 24 },
+    { label: "Symbolfarbe", key: `tabIconColor${index}`, type: "color", default: "#e7ecee" },
+    { label: "Überlauf X", key: `tabOverflowX${index}`, type: "select", default: "auto", options: ["auto", "hidden", "scroll", "visible"] },
+    { label: "Überlauf Y", key: `tabOverflowY${index}`, type: "select", default: "auto", options: ["auto", "hidden", "scroll", "visible"] },
+  ] }));
   const specs = { "iframe-8": ["frames", 20, [{ label: "URL falls Wert", key: "frameSource" }, { label: "Kein Sandkasten", key: "frameNoSandbox", type: "checkbox", default: false }]], "image-8": ["Bild", 50, [{ label: "Quelle", key: "imageSource", previewImage: true }]], "view-in-widget-8": ["Seite", 50, [{ label: "Seite", key: "page", type: "page" }]] };
   const spec = specs[widget.type]; if (!spec) return [];
   const [label, max, fields] = spec; const count = Math.max(1, Math.min(max, Math.trunc(Number(widget.count) || 1)));
@@ -275,7 +288,7 @@ function widgetStateIndex(widget) {
 
 function projectForSave(project) {
   const saved = structuredClone(project);
-  for (const page of saved.pages || []) {
+  for (const page of [...(saved.pages || []), ...allProjectWidgets(saved).flatMap(widget => (widget.tabSurfaces || []).filter(Boolean))]) {
     page.page.enabledPropertyGroups ??= {};
     for (const [index, group] of VIEW_PROPERTY_GROUPS.entries()) {
       if (propertyGroupEnabled(page.page, group, index)) continue;
@@ -327,6 +340,16 @@ function ensureProjectPages(project) {
 
 function currentPage() {
   const selected = state.project.pages.find((page) => page.id === state.project.currentPageId);
+  const tabContext = !runtimeMode ? state.tabEditor : params.get("tabsWidget") ? { ownerId: params.get("tabsWidget"), index: Number(params.get("tabsIndex")) || 0 } : null;
+  if (tabContext) {
+    const owner = selected?.widgets.find(widget => widget.id === tabContext.ownerId && widget.type === "tabs");
+    if (owner && tabContext.index >= 0 && tabContext.index < tabCount(owner)) {
+      const surface = ownTabSurface(owner, tabContext.index);
+      for (const widget of surface.widgets) if (widget.type !== "svg-connection") initializeDockPoints(widget, CONNECTION_ANCHOR_IDS);
+      ensureWidgetNames(surface); return surface;
+    }
+    if (!runtimeMode) state.tabEditor = null;
+  }
   if (runtimeMode && params.get("embedded") !== "1" && selected && !selected.visible) {
     const visible = state.project.pages.find((page) => page.visible);
     if (visible) { state.project.currentPageId = visible.id; return visible; }
@@ -393,7 +416,7 @@ function restoreHistorySnapshot(snapshot) {
   const page = currentPage(); const available = new Set(page.widgets.map(widget => widget.id));
   state.selectedIds = state.selectedIds.filter(id => available.has(id));
   state.selectedId = state.selectedIds[0] || (available.has(state.selectedId) ? state.selectedId : null);
-  state.nextId = Math.max(0, ...state.project.pages.flatMap(item => item.widgets).map(widget => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
+  state.nextId = Math.max(0, ...allProjectWidgets(state.project).map(widget => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
   render();
 }
@@ -451,9 +474,10 @@ async function loadProject() {
   }
   if (params.get("embedded") === "1") document.body.classList.add("embedded-runtime");
   state.project.settings ??= {};
+  state.tabEditor = null; state.tabReturn = null;
   state.selectedId = null; state.selectedIds = [];
   state.undoStack = []; state.redoStack = [];
-  state.nextId = Math.max(0, ...state.project.pages.flatMap((page) => page.widgets).map((widget) => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
+  state.nextId = Math.max(0, ...allProjectWidgets(state.project).map(widget => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   render();
   if (!runtimeMode) void renderEditorToolActions();
   savedProjectSnapshot = observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
@@ -804,7 +828,7 @@ function renderPageMenu() {
     const select = document.createElement("button"); select.type = "button"; select.className = "page-select";
     select.textContent = `${page.visible ? "◉" : "◌"}  ${page.name}`;
     select.setAttribute("aria-current", String(page.id === state.project.currentPageId));
-    select.addEventListener("click", () => { state.project.currentPageId = page.id; state.selectedId = null; state.selectedIds = []; render(); if (runtimeMode) void refreshRuntimeStates(); else void refreshEditorLiveStates(); });
+    select.addEventListener("click", () => { state.tabEditor = null; state.tabReturn = null; state.project.currentPageId = page.id; state.selectedId = null; state.selectedIds = []; render(); if (runtimeMode) void refreshRuntimeStates(); else void refreshEditorLiveStates(); });
     row.append(select);
     if (!runtimeMode) {
       const visibility = document.createElement("button"); visibility.type = "button"; visibility.textContent = page.visible ? "◉" : "◌"; visibility.title = page.visible ? "In Runtime sichtbar" : "In Runtime ausgeblendet"; visibility.setAttribute("aria-label", `${page.visible ? "Ausblenden" : "Einblenden"}: ${page.name}`);
@@ -1423,6 +1447,7 @@ function cloneWidgetForInsert(source, page, idMap) {
   const copy = structuredClone(source); const oldId = source.id;
   if (copy.editorGroupId) { if (idMap.has(copy.editorGroupId)) copy.editorGroupId = idMap.get(copy.editorGroupId); else delete copy.editorGroupId; }
   copy.id = idMap.get(oldId) || `widget-${state.nextId++}`;
+  reidentifyTabWidgets(copy, () => `widget-${state.nextId++}`, () => `group-${createRandomId()}`);
   copy.name = uniqueWidgetName(page, `${widgetDisplayName(source)} Kopie`);
   for (const key of ["startWidgetId", "endWidgetId", "flowParentId"]) if (copy[key]) copy[key] = idMap.get(copy[key]) || "";
   for (const key of ["startCollector", "endCollector"]) {
@@ -1449,6 +1474,7 @@ function copySelectedWidgets(cut = false) {
 
 function pasteWidgets() {
   if (!state.widgetClipboard.length) return;
+  if (state.tabEditor && state.widgetClipboard.some(widget => widget.type === "tabs")) { $("#status").textContent = uiText("Verschachtelte eigene Tabs sind noch nicht unterstützt."); return; }
   recordHistorySnapshot();
   const page = currentPage(); const idMap = new Map(state.widgetClipboard.map(source => [source.id, `widget-${state.nextId++}`]));
   remapGroups(state.widgetClipboard, idMap, () => `group-${createRandomId()}`);
@@ -1528,6 +1554,7 @@ async function importWidgets(file) {
     const incoming = Array.isArray(data) ? data : Array.isArray(data.widgets) ? data.widgets : [data.widget || data];
     const knownTypes = new Set(getWidgetSets().flatMap((set) => set.widgets.map((definition) => definition.type)));
     const widgets = incoming.filter((widget) => widget && typeof widget === "object" && knownTypes.has(widget.type));
+    if (state.tabEditor && widgets.some(widget => widget.type === "tabs")) throw Error(uiText("Verschachtelte eigene Tabs sind noch nicht unterstützt."));
     if (!widgets.length) throw new Error("Die Datei enthält keine unterstützten Widgets.");
     recordHistorySnapshot();
     const importGroups = new Map(); remapGroups(widgets, importGroups, () => `group-${createRandomId()}`);
@@ -1535,6 +1562,7 @@ async function importWidgets(file) {
       const widget = structuredClone(source);
       if (importGroups.has(widget.editorGroupId)) widget.editorGroupId = importGroups.get(widget.editorGroupId); else delete widget.editorGroupId;
       widget.id = `widget-${state.nextId++}`;
+      reidentifyTabWidgets(widget, () => `widget-${state.nextId++}`, () => `group-${createRandomId()}`);
       widget.name = uniqueWidgetName(currentPage(), widget.name || widget.title || getWidgetDefinition(widget.type).label);
       widget.x = Math.max(0, Number(widget.x) || 0);
       widget.y = Math.max(0, Number(widget.y) || 0);
@@ -1566,7 +1594,7 @@ function addPage() {
 
 function duplicatePage(page) {
   const copy = structuredClone(page); copy.id = makePageId(); copy.name = `${page.name} (Kopie)`;
-  for (const widget of copy.widgets) widget.id = `widget-${state.nextId++}`;
+  for (const widget of copy.widgets) { widget.id = `widget-${state.nextId++}`; reidentifyTabWidgets(widget, () => `widget-${state.nextId++}`, () => `group-${createRandomId()}`); }
   state.project.pages.push(copy); state.project.currentPageId = copy.id; setSingleWidgetSelection(null); render();
 }
 
@@ -2158,6 +2186,7 @@ function matchesCondition(actual, condition, expected) {
 }
 
 function addWidget(definition) {
+  if (state.tabEditor && definition.type === "tabs") { $("#status").textContent = uiText("Verschachtelte eigene Tabs sind noch nicht unterstützt."); return; }
   recordHistorySnapshot();
   const id = `widget-${state.nextId++}`;
   const page = currentPage();
@@ -2600,13 +2629,15 @@ function renderStage() {
       input.addEventListener("change", () => { if (!widget.withEnter) apply(); });
       input.addEventListener("keydown", event => { event.stopPropagation(); if (event.key === "Enter") apply(); });
       appendSafeHtml(content, widget.prefix || ""); content.append(input); appendSafeHtml(content, widget.suffix || "");
+    } else if (widget.type === "tabs") {
+      content.append(renderTabsWidget(widget, activePage));
     } else if (["view-in-widget", "view-in-widget-8"].includes(widget.type)) {
       const index = widgetStateIndex(widget);
       const target = widget.type === "view-in-widget" ? widget.targetPage : widget[`page${index}`]; const chain = (params.get("chain") || "").split(",").filter(Boolean);
       if (!target) content.textContent = "Seite auswählen";
       else if (target === activePage.id || chain.includes(target) || chain.length >= 8) content.textContent = "Rekursive Einbettung verhindert";
       else if (!runtimeMode) content.textContent = `Seite: ${state.project.pages.find(page => page.id === target)?.name || target}`;
-      else { const frame = document.createElement("iframe"); frame.title = widget.title || "Eingebettete Seite"; const url = new URL(location.href); url.searchParams.set("mode", "runtime"); url.searchParams.set("project", state.projectId); url.searchParams.set("page", target); url.searchParams.set("embedded", "1"); url.searchParams.set("chain", [...chain, activePage.id].join(",")); frame.src = url.href; frame.className = "widget-frame"; content.append(frame); }
+      else { const frame = document.createElement("iframe"); frame.title = widget.title || "Eingebettete Seite"; const url = new URL(location.href); url.searchParams.delete("tabsWidget"); url.searchParams.delete("tabsIndex"); url.searchParams.set("mode", "runtime"); url.searchParams.set("project", state.projectId); url.searchParams.set("page", target); url.searchParams.set("embedded", "1"); url.searchParams.set("chain", [...chain, activePage.id].join(",")); frame.src = url.href; frame.className = "widget-frame"; content.append(frame); }
     } else if (["iframe", "iframe-8"].includes(widget.type)) {
       const index = widgetStateIndex(widget); const source = widget.type === "iframe" ? widget.source : widget[`frameSource${index}`];
       if (safeUrl(source)) { const frame = document.createElement("iframe"); frame.title = widget.title || "iframe"; frame.className = "widget-frame"; frame.style.border = widget.noFrame !== false ? "0" : "1px solid currentColor"; frame.setAttribute("scrolling", widget.scrollX || widget.scrollY ? "yes" : "no"); if (!(widget.type === "iframe" ? widget.noSandbox : widget[`frameNoSandbox${index}`])) frame.setAttribute("sandbox", "allow-scripts allow-forms"); refreshableMedia(frame, widget, source); content.append(frame); }
@@ -2848,11 +2879,78 @@ function renderStage() {
       }
     }
     if (!runtimeMode) element.addEventListener("contextmenu", event => openWidgetContextMenu(event, widget));
-    if (!isConnection) element.addEventListener("click", event => { if (!runtimeMode) { selectWidget(widget.id, event.ctrlKey && event.shiftKey); render(); } }, { capture: true });
+    if (!isConnection) element.addEventListener("click", event => { if (!runtimeMode && !event.target.closest("[data-tab-switch]")) { selectWidget(widget.id, event.ctrlKey && event.shiftKey); render(); } }, { capture: true });
     if (!runtimeMode && !isConnection && !widgetLocked) makeDraggable(element, widget);
     stage.append(element);
   }
   if (!runtimeMode) renderEditorGroups();
+}
+
+const selectedTabs = new Map();
+function renderTabsWidget(widget, parent) {
+  const root = document.createElement("div"); root.className = `widget-tabs ${widget.tabsVertical ? "is-vertical" : "is-horizontal"} variant-${widget.tabsVariant || "standard"}`;
+  root.style.setProperty("--tabs-color", widget.tabsColor || "#9f99bb");
+  const key = `gvs.tabs.${state.projectId}.${parent.id}.${widget.id}`;
+  let active = selectedTabs.get(key);
+  if (active === undefined) { try { active = Number(localStorage.getItem(key)) || 0; } catch { active = 0; } }
+  active = Math.max(0, Math.min(tabCount(widget) - 1, active));
+  const nav = document.createElement("div"); nav.className = "widget-tabs-nav"; nav.setAttribute("role", "tablist");
+  nav.setAttribute("aria-label", widget.title || "Tabs"); nav.setAttribute("aria-orientation", widget.tabsVertical ? "vertical" : "horizontal");
+  const panel = document.createElement("div"); panel.className = "widget-tabs-panel"; panel.setAttribute("role", "tabpanel");
+  panel.id = `${widget.id}-tabpanel`; panel.setAttribute("aria-labelledby", `${widget.id}-tab-${active}`);
+  const select = index => {
+    selectedTabs.set(key, index); try { localStorage.setItem(key, String(index)); } catch { /* Tab selection remains available for this session. */ }
+    if (!runtimeMode) setSingleWidgetSelection(widget.id);
+    renderStage(); if (!runtimeMode) { renderProperties(); renderWidgetFinder(); }
+    document.getElementById(`${widget.id}-tab-${index}`)?.focus();
+  };
+  for (let index = 0; index < tabCount(widget); index++) {
+    const button = document.createElement("button"); button.type = "button"; button.dataset.tabSwitch = "true";
+    button.id = `${widget.id}-tab-${index}`; button.setAttribute("role", "tab"); button.setAttribute("aria-controls", panel.id);
+    button.setAttribute("aria-selected", String(index === active)); button.tabIndex = index === active ? 0 : -1;
+    const title = widget[`tabTitle${index}`] ?? `Tab ${index + 1}`;
+    const icon = widget[`tabImage${index}`] || widget[`tabIcon${index}`];
+    if (icon) {
+      const image = document.createElement("img"); image.alt = "";
+      const size = Math.max(8, Math.min(100, Number(widget[`tabIconSize${index}`]) || 24)); image.width = size; image.height = size;
+      setIconImageSource(image, icon, widget[`tabImage${index}`] ? "" : widget[`tabIconColor${index}`] || "#e7ecee");
+      const source = safeUrl(icon, true);
+      if (!widget[`tabImage${index}`] && source && (/^data:image\/svg\+xml/i.test(source) || /\.svg(?:[?#]|$)/i.test(source))) {
+        const symbol = document.createElement("span"); symbol.className = "widget-tab-symbol";
+        Object.assign(symbol.style, { width: `${size}px`, height: `${size}px`, backgroundColor: widget[`tabIconColor${index}`] || "#e7ecee", maskImage: `url(${JSON.stringify(source)})` });
+        button.append(symbol);
+      } else button.append(image);
+    }
+    const label = document.createElement("span"); label.textContent = title; button.append(label);
+    button.setAttribute("aria-label", title || `Tab ${index + 1}`);
+    button.onclick = event => { event.stopPropagation(); select(index); };
+    button.onkeydown = event => {
+      const keys = widget.tabsVertical ? ["ArrowUp", "ArrowDown"] : ["ArrowLeft", "ArrowRight"];
+      if (![...keys, "Home", "End"].includes(event.key)) return;
+      event.preventDefault(); event.stopPropagation();
+      select(event.key === "Home" ? 0 : event.key === "End" ? tabCount(widget) - 1 : (index + (event.key === keys[0] ? -1 : 1) + tabCount(widget)) % tabCount(widget));
+    };
+    nav.append(button);
+  }
+  panel.style.overflowX = ["auto", "hidden", "scroll", "visible"].includes(widget[`tabOverflowX${active}`]) ? widget[`tabOverflowX${active}`] : "auto";
+  panel.style.overflowY = ["auto", "hidden", "scroll", "visible"].includes(widget[`tabOverflowY${active}`]) ? widget[`tabOverflowY${active}`] : "auto";
+  const target = tabTarget(widget, active, parent.id), chain = (params.get("chain") || "").split(",").filter(Boolean);
+  const own = widget[`tabSource${active}`] !== "page";
+  const targetPage = own ? ownTabSurface(widget, active) : state.project.pages.find(page => page.id === target);
+  if (!targetPage) panel.textContent = uiText("Seite auswählen");
+  else if (!canEmbedTab(target, parent.id, chain)) panel.textContent = uiText("Rekursive Einbettung verhindert");
+  else {
+    const frame = document.createElement("iframe"); frame.className = "widget-tabs-frame"; frame.title = `${widget.title || "Tabs"}: ${targetPage.name}`;
+    const url = new URL(location.href); url.searchParams.set("mode", "runtime"); url.searchParams.set("project", state.projectId);
+    url.searchParams.set("embedded", "1"); url.searchParams.set("chain", [...chain, parent.id].join(","));
+    url.searchParams.delete("tabsWidget"); url.searchParams.delete("tabsIndex");
+    url.searchParams.set("page", own ? state.project.currentPageId : target);
+    if (own) { url.searchParams.set("tabsWidget", widget.id); url.searchParams.set("tabsIndex", String(active)); }
+    frame.src = url.href; frame.style.width = `${targetPage.page.width}px`; frame.style.height = `${targetPage.page.height}px`;
+    frame.style.pointerEvents = runtimeMode ? "auto" : "none"; frame.tabIndex = runtimeMode ? 0 : -1;
+    panel.append(frame);
+  }
+  root.append(nav, panel); return root;
 }
 
 function makeDraggable(element, widget) {
@@ -2860,6 +2958,7 @@ function makeDraggable(element, widget) {
   element.addEventListener("pointerdown", (event) => {
     if (event.button !== 0) return;
     if (event.target.closest(".resize-handle")) return;
+    if (event.target.closest("[data-tab-switch]")) return;
     const members = groupMembers(currentPage().widgets, widget, state.editingGroupId);
     if (members.some(item => item.generalEnabled && item.locked)) return;
     origin = { x: event.clientX, y: event.clientY, members: members.map(item => ({ id: item.id, x: Number(item.x) || 0, y: Number(item.y) || 0 })), moved: false, historyCaptured: false };
@@ -3004,6 +3103,22 @@ function openConnectionPointsEditor(widget) {
 }
 
 function field(descriptor, widget) {
+  if (descriptor.type === "tab-edit") {
+    const button = document.createElement("button"); button.type = "button"; button.textContent = uiText(descriptor.label);
+    button.onclick = () => {
+      state.tabReturn = { ownerId: widget.id, pageId: state.project.currentPageId };
+      if (widget[`tabSource${descriptor.tabIndex}`] === "page") {
+        const page = state.project.pages.find(item => item.id === widget[`tabPage${descriptor.tabIndex}`]);
+        if (!page) return;
+        state.project.currentPageId = page.id; state.tabEditor = null;
+      } else {
+        recordHistorySnapshot(); ownTabSurface(widget, descriptor.tabIndex);
+        state.tabEditor = { ownerId: widget.id, index: descriptor.tabIndex };
+      }
+      setSingleWidgetSelection(null); render();
+    };
+    return button;
+  }
   const htmlField = descriptor.html === true || descriptor.type === "html" || /HTML/i.test(descriptor.label) || (descriptor.key === "state" && ["string", "string-raw"].includes(widget.type));
   if (descriptor.type === "radio") {
     const choices = document.createElement("fieldset"); choices.className = "property-radio-field";
@@ -3355,6 +3470,15 @@ function renderProperties() {
 function render() {
   applyProjectCss();
   const page = currentPage();
+  let exitTabs = $("#exit-tab-editor");
+  if (!exitTabs) {
+    exitTabs = document.createElement("button"); exitTabs.id = "exit-tab-editor"; exitTabs.type = "button";
+    exitTabs.textContent = uiText("Zurück zum Tabs-Widget"); exitTabs.className = "toolbar-tile";
+    exitTabs.onclick = () => { const owner = state.tabReturn?.ownerId || state.tabEditor?.ownerId; if (state.tabReturn) state.project.currentPageId = state.tabReturn.pageId; state.tabEditor = null; state.tabReturn = null; setSingleWidgetSelection(owner); render(); };
+    $(".toolbar").prepend(exitTabs);
+  }
+  exitTabs.hidden = !(state.tabEditor || state.tabReturn) || runtimeMode;
+  for (const id of ["preset", "page-width", "page-height"]) $("#" + id).disabled = Boolean(state.tabEditor);
   workspace.classList.toggle("runtime", runtimeMode);
   document.body.classList.toggle("runtime-mode", runtimeMode);
   document.body.classList.toggle("editor-mode", !runtimeMode);
@@ -3362,9 +3486,11 @@ function render() {
   $("#runtime-link").classList.toggle("active", runtimeMode);
   const projectQuery = `project=${encodeURIComponent(state.projectId)}`;
   $("#editor-link").href = `?mode=editor&${projectQuery}`;
-  $("#runtime-link").href = `?mode=runtime&${projectQuery}`;
+  const tabQuery = state.tabEditor ? `&page=${encodeURIComponent(state.project.currentPageId)}&tabsWidget=${encodeURIComponent(state.tabEditor.ownerId)}&tabsIndex=${state.tabEditor.index}&embedded=1` : "";
+  $("#runtime-link").href = `?mode=runtime&${projectQuery}${tabQuery}`;
   const runtimeTabUrl = new URL("runtime", document.baseURI);
-  runtimeTabUrl.search = new URLSearchParams({ mode: "runtime", project: state.projectId, page: page.id }).toString();
+  runtimeTabUrl.search = new URLSearchParams({ mode: "runtime", project: state.projectId, page: state.tabEditor ? state.project.currentPageId : page.id,
+    ...(state.tabEditor ? { tabsWidget: state.tabEditor.ownerId, tabsIndex: state.tabEditor.index, embedded: "1" } : {}) }).toString();
   $("#runtime-tab-link").href = runtimeTabUrl.href;
   document.title = `${state.project.settings?.title || state.project.name} · HA Grafik Visual Studio`;
   const favicon = safeUrl(state.project.settings?.favicon || "", true);

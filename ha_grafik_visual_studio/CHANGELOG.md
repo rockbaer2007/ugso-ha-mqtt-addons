@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.116
+
+- Adds an original Tabs widget with 1-20 horizontal/vertical tabs, standard/centered/full-width variants, per-tab titles, icons/images, icon colors/sizes and overflow settings.
+- Each tab embeds an existing project page or an owned widget surface edited through Edit tab surface; owner dimensions define the common content size.
+- Runtime renders only the active tab, remembers selection locally, and blocks cyclic page embedding. Tabs support grouping and independent copies including owned contents.
+- Own surfaces do not support nested Tabs widgets yet. Existing pages are referenced and edited as shared pages.
+
 ## 0.1.115
 
 - Editor context menus offer selection, grouping, ungrouping, group editing, clipboard actions and delete, with duplication, ordering, locking, history and import/export under More.
