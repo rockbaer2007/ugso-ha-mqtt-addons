@@ -2,6 +2,11 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Lokale Favoriten übernehmen": "Import local favorites",
+  "Gemeinsame Favoriten benötigen einen HA-Admin und einen aktuellen Ingress-Aufruf.": "Shared favorites require an HA administrator and a current Ingress session.",
+  "Favoriten sind nur für HA-Admins verfügbar.": "Favorites are only available to HA administrators.",
+  "HA-Adminprüfung momentan nicht verfügbar.": "HA administrator verification is currently unavailable.",
+  "Ungültige Favoritendaten.": "Invalid favorites data.",
   "Favoriten": "Favorites", "Als Favorit speichern": "Save favorite", "Favoriten voll": "Favorites full",
   "Favorit löschen": "Delete favorite", "Favorit gelöscht": "Favorite deleted", "Favorit gespeichert": "Favorite saved",
   "Favoriten konnten nicht geladen werden.": "Favorites could not be loaded.",

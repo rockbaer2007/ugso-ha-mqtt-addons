@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.112
+
+- Colorpicker 1.2.0 stores a shared list of up to 15 favorites in add-on data, guarded by trusted Ingress identity and Home Assistant administrator membership.
+- Add and delete operations are atomic; local browser favorites can be explicitly merged without replacing the shared list.
+- Each favorite has matching SVG buttons for copying its HEX value and deleting it.
+
 ## 0.1.111
 
 - Colorpicker 1.1.0 adds a separate Favorites tab with 15 locally persisted colors, individual removal and automatic compaction.

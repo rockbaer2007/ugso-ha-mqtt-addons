@@ -13,6 +13,7 @@ from uuid import uuid4
 
 from widget_packages import MAX_ZIP_BYTES, list_packages, read_package_zip
 from tool_packages import list_tool_packages, read_tool_package_zip
+from color_favorites import favorites, is_admin
 
 LOG = logging.getLogger("ha-grafik-visual-studio")
 PORT = int(os.environ.get("HA_GRAFIK_INGRESS_PORT", "8098"))
@@ -208,12 +209,36 @@ class Handler(BaseHTTPRequestHandler):
     def send_json(self, status, value):
         self.send_bytes(status, json.dumps(value, ensure_ascii=False).encode("utf-8"), "application/json; charset=utf-8")
 
+    def color_favorites_request(self, write=False):
+        try:
+            user_id = self.headers.get("X-Remote-User-Id")
+            if self.client_address[0] != "172.30.32.2" or not user_id:
+                self.send_json(HTTPStatus.FORBIDDEN, {"error": "Gemeinsame Favoriten benötigen einen HA-Admin und einen aktuellen Ingress-Aufruf."})
+                return
+            users = home_assistant_commands(["config/auth/list"])[0]
+            if not is_admin(self.client_address[0], user_id, users):
+                self.send_json(HTTPStatus.FORBIDDEN, {"error": "Favoriten sind nur für HA-Admins verfügbar."})
+                return
+            request = self.read_request_json() if write else None
+            if write and request is None:
+                return
+            self.send_json(HTTPStatus.OK, {"favorites": favorites(DATA_DIR / "color-favorites.json", request)})
+        except HomeAssistantAPIError:
+            self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "HA-Adminprüfung momentan nicht verfügbar."})
+        except ValueError:
+            self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Ungültige Favoritendaten."})
+        except OSError:
+            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Favoriten konnten nicht gespeichert werden."})
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
+        if path == "/api/color-favorites":
+            self.color_favorites_request()
+            return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.101"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.112"})
             return
         if path == "/api/entities":
             try:
@@ -289,6 +314,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/color-favorites":
+            if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
+                self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "JSON-Anfrage erforderlich."})
+                return
+            self.color_favorites_request(write=True)
+            return
         if parsed.path == "/api/widget-packages":
             self.install_widget_package()
             return

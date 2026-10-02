@@ -14,7 +14,7 @@ Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sow
 
 ## Aktueller Stand
 
-- **UGSo Colorpicker 1.0.0** ist das erste praktische Zusatztool: lokaler Farbkreis mit Helligkeit, HEX, Farbnamen und Kopieren. Benötigt Studio 0.1.109 oder neuer. [Download und Installation](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/grafik-colorpicker-v1.0.0).
+- **UGSo Colorpicker 1.2.0** bietet Farbkreis, Helligkeit, HEX, Farbnamen, Kopieren und bis zu 15 gemeinsame HA-Admin-Favoriten. Pro Favorit gibt es HEX-Kopieren und Löschen als SVG-Buttons; bisherige lokale Favoriten können übernommen werden. Benötigt Studio 0.1.112 oder neuer. [Download und Installation](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/grafik-colorpicker-v1.2.0).
 
 - Slider können Min-/Max-Werte und Zwischenmarkierungen oberhalb oder unterhalb der Reglerenden anzeigen. Die Anzahl der Zwischenmarkierungen ist von 0 (aus) bis zur aufgerundeten Wertespanne minus 1 einstellbar; ihre Zahlenwerte sind optional. Bei 0–100 erzeugen 9 Zwischenmarkierungen die Werte 10 bis 90. Die Schrittweite des Reglers bleibt unabhängig davon.
 
