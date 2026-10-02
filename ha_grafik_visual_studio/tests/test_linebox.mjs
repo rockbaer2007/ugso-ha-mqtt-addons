@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition } from "../web/linebox.js";
+import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition } from "../web/linebox.js";
 import { getWidgetDefinition } from "../web/widget-registry.js";
 import "../web/widget-sets/core.js";
 import "../web/widget-sets/basic2.js";
@@ -45,6 +45,25 @@ test("output handoff is opt-in per port and missing values do not invent a sum",
   assert.equal(lineboxOutputForConnection(outgoing, [{ ...box, lineboxPass_right_center: undefined }, solar, battery, outgoing], states), null);
   assert.deepEqual(lineboxOutputForConnection(outgoing, widgets, {}), { boxId: "box", value: null });
   assert.equal(lineboxInputSum(box, widgets, { "sensor.solar": { state: "0" } }), 0);
+});
+
+test("optional helper output uses the signed sum without changing internal handoff", () => {
+  const helperBox = { ...box, outputHelperEnabled: true, outputHelperEntityId: "input_number.linebox_total" };
+  const layout = [helperBox, solar, battery, outgoing];
+  assert.deepEqual(lineboxHelperOutput(helperBox, layout, states), { entityId: "input_number.linebox_total", value: 700 });
+  assert.deepEqual(lineboxOutputForConnection(outgoing, layout, states), { boxId: "box", value: 700 });
+  assert.equal(lineboxHelperOutput(helperBox, layout, {}), null);
+  assert.equal(lineboxHelperOutput({ ...helperBox, outputHelperEnabled: false }, layout, states), null);
+});
+
+test("helper output refuses unsupported targets and direct feedback", () => {
+  const helperBox = { ...box, outputHelperEnabled: true, outputHelperEntityId: "sensor.total" };
+  assert.equal(lineboxHelperOutput(helperBox, [helperBox, solar], states), null);
+  helperBox.outputHelperEntityId = "sensor.solar";
+  assert.equal(lineboxHelperOutput(helperBox, [helperBox, solar], states), null);
+  helperBox.outputHelperEntityId = "input_number.solar";
+  const loop = { ...solar, animationNumberEntityId: "input_number.solar" };
+  assert.equal(lineboxHelperOutput(helperBox, [helperBox, loop], { "input_number.solar": { state: "1000" } }), null);
 });
 
 test("runtime routes active input and output ports to one invisible join", () => {

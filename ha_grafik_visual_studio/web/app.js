@@ -2,7 +2,7 @@ import { getWidgetSets, getWidgetDefinition, registerWidgetSet } from "./widget-
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation } from "./connection-animation.js";
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
-import { lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition } from "./linebox.js";
+import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
@@ -79,6 +79,8 @@ const WRITABLE_TEXT_HELPER = /^input_text\.[a-z0-9_]+$/;
 const pendingSwitches = new Set();
 const helperWriteQueue = new Map();
 const stagedEntityValues = new Map();
+const lineboxOutputTimers = new Map();
+const lineboxOutputValues = new Map();
 let runtimeStateRequestPending = false;
 let runtimeStateError = false;
 let runtimeRenderDeferred = false;
@@ -514,6 +516,7 @@ async function refreshRuntimeStates() {
   const ids = [...new Set(currentPage().widgets.flatMap((widget) => [
     widget.entityId, widget.visibilityEnabled ? widget.visibilityEntityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
+    widget.type === "linebox" && widget.outputHelperEnabled ? widget.outputHelperEntityId : "",
   ]))]
     .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id));
   if (!ids.length) return;
@@ -529,6 +532,7 @@ async function refreshRuntimeStates() {
     }
     const changed = JSON.stringify(next) !== JSON.stringify(state.entityStates);
     if (changed) state.entityStates = next;
+    scheduleLineboxHelperOutputs();
     if (changed || runtimeRenderDeferred) renderRuntimeStageWhenReady();
     if (runtimeStateError) $("#status").textContent = "Home-Assistant-Zustände wieder verfügbar";
     runtimeStateError = false;
@@ -547,6 +551,7 @@ function stageRuntimeEntityValue(entityId, value) {
   const textValue = String(value);
   stagedEntityValues.set(entityId, { value: textValue, expiresAt: Date.now() + 3000 });
   state.entityStates[entityId] = { ...(state.entityStates[entityId] || { entity_id: entityId }), state: textValue };
+  scheduleLineboxHelperOutputs();
   if (runtimeEffectsFrame) return;
   runtimeEffectsFrame = requestAnimationFrame(() => {
     runtimeEffectsFrame = 0;
@@ -561,6 +566,36 @@ function stageRuntimeEntityValue(entityId, value) {
       }
     }
   });
+}
+
+function scheduleLineboxHelperOutputs() {
+  if (!runtimeMode || !state.project || document.hidden) return;
+  const page = currentPage();
+  const projectId = state.projectId;
+  const widgets = page.widgets;
+  for (const box of widgets.filter(widget => widget.type === "linebox")) {
+    const key = `${projectId}:${page.id}:${box.id}`;
+    clearTimeout(lineboxOutputTimers.get(key));
+    lineboxOutputTimers.delete(key);
+    if (box.visible === false) continue;
+    const output = lineboxHelperOutput(box, widgets, state.entityStates);
+    if (!output) continue;
+    if (state.entityStates[output.entityId] === undefined) continue;
+    const last = lineboxOutputValues.get(key);
+    if (last?.entityId === output.entityId && last.value === output.value) continue;
+    if (state.entityStates[output.entityId]?.state !== undefined && Number(state.entityStates[output.entityId].state) === output.value) {
+      lineboxOutputValues.set(key, output);
+      continue;
+    }
+    lineboxOutputTimers.set(key, window.setTimeout(() => {
+      lineboxOutputTimers.delete(key);
+      if (state.projectId !== projectId || currentPage().id !== page.id) return;
+      const current = lineboxHelperOutput(box, currentPage().widgets, state.entityStates);
+      if (!current || current.entityId !== output.entityId || current.value !== output.value) return;
+      lineboxOutputValues.set(key, current);
+      void writeRuntimeHelperValue(current.entityId, current.value);
+    }, 350));
+  }
 }
 
 function renderRuntimeStageWhenReady() {
@@ -2024,6 +2059,28 @@ function addWidget(definition) {
   });
 }
 
+function renderLineboxJunction(box, widgets) {
+  if (box.junctionVisible === false) return null;
+  const connected = widgets.filter(line => line.type === "svg-connection" && line.visible !== false && ["start", "end"].some(side => line[`${side}WidgetId`] === box.id && lineboxPortRole(box, line[`${side}Anchor`] || (side === "start" ? "right-center" : "left-center")) !== "none"));
+  if (connected.length < 2) return null;
+  const position = lineboxRuntimeJoinPosition(box, connected[0].startWidgetId === box.id ? connected[0].startAnchor || "right-center" : connected[0].endAnchor || "left-center");
+  if (!position) return null;
+  const borderWidth = Math.max(0, Math.min(20, Number(box.junctionBorderWidth ?? 2) || 0));
+  const requestedDiameter = Math.max(4, Math.min(100, Number(box.junctionDiameter) || 16));
+  const diameter = Math.max(requestedDiameter, ...connected.map(line => Math.max(1, Number(line.lineWidth) || 4) + borderWidth * 2 + 2));
+  const zIndex = Math.max(...connected.map(line => line.cssZIndex !== undefined && line.cssZIndex !== "" ? Number(line.cssZIndex) || 0 : Math.max(0, Number(line.layer) || 0) + 2)) + 1;
+  const circle = document.createElement("span");
+  circle.className = "linebox-junction";
+  circle.setAttribute("aria-hidden", "true");
+  Object.assign(circle.style, {
+    left: `${position.x - diameter / 2}px`, top: `${position.y - diameter / 2}px`,
+    width: `${diameter}px`, height: `${diameter}px`, zIndex: String(zIndex),
+    backgroundColor: box.junctionColor || "#29c8b5",
+    borderColor: box.junctionBorderColor || "#d9f8f3", borderWidth: `${borderWidth}px`,
+  });
+  return circle;
+}
+
 function renderStage() {
   for (const entry of mediaRefreshers) if (entry.timer) clearInterval(entry.timer);
   mediaRefreshers.clear();
@@ -2085,7 +2142,6 @@ function renderStage() {
   const selectedFilters = Array.isArray(activeFilter) ? activeFilter : activeFilter ? [activeFilter] : [];
   for (const widget of activePage.widgets) {
     if (widget.visible === false) continue;
-    if (runtimeMode && widget.type === "linebox") continue;
     const editorFilterWords = String(widget.generalEnabled === true ? widget.filterWord || "" : "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
     const editorFilterMatches = state.editorWidgetFilter?.words?.some((word) => editorFilterWords.includes(word));
     if (!runtimeMode && state.editorWidgetFilter?.mode === "hide" && editorFilterMatches) continue;
@@ -2100,6 +2156,11 @@ function renderStage() {
     }
     const filterTags = String(widget.filterWord || "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
     if (widget.type !== "filter-dropdown" && selectedFilters.length && filterTags.length && !selectedFilters.some(value => filterTags.includes(value))) continue;
+    if (runtimeMode && widget.type === "linebox") {
+      const junction = renderLineboxJunction(widget, activePage.widgets);
+      if (junction) stage.append(junction);
+      continue;
+    }
     const element = document.createElement("div");
     element.id = widget.id;
     element.dataset.widgetId = widget.id;

@@ -118,7 +118,24 @@ registerWidgetSet({
     label: "Linebox",
     icon: "Σ",
     preview: { kind: "plain", lines: ["Σ"] },
-    defaults: { title: "Linebox", visible: true, dockPointsEnabled: false, width: 140, height: 76, backgroundColor: "#12383b", borderColor: "#29c8b5", borderWidth: 1, borderStyle: "dashed" },
-    propertyGroups: [],
+    defaults: {
+      title: "Linebox", visible: true, dockPointsEnabled: false, width: 140, height: 76,
+      backgroundColor: "#12383b", borderColor: "#29c8b5", borderWidth: 1, borderStyle: "dashed",
+      junctionVisible: true, junctionDiameter: 16, junctionColor: "#29c8b5", junctionBorderColor: "#d9f8f3", junctionBorderWidth: 2,
+      outputHelperEnabled: false, outputHelperEntityId: "",
+    },
+    propertyGroups: [
+      { label: "Verbindungspunkt", fields: [
+        { label: "Kreis anzeigen", key: "junctionVisible", type: "checkbox", default: true, refreshProperties: true },
+        { label: "Durchmesser (px)", key: "junctionDiameter", type: "range", min: 4, max: 100, step: 1, showWhen: { key: "junctionVisible", value: true, default: true } },
+        { label: "Füllfarbe", key: "junctionColor", type: "color", showWhen: { key: "junctionVisible", value: true, default: true } },
+        { label: "Randfarbe", key: "junctionBorderColor", type: "color", showWhen: { key: "junctionVisible", value: true, default: true } },
+        { label: "Randbreite (px)", key: "junctionBorderWidth", type: "range", min: 0, max: 20, step: 1, showWhen: { key: "junctionVisible", value: true, default: true } },
+      ] },
+      { label: "Zahlenhelfer-Ausgabe", hint: "Die interne Übergabe bleibt aktiv. Ein optionaler input_number-Helfer erhält die Summe nur bei einer Wertänderung.", fields: [
+        { label: "Zusätzlich an Zahlenhelfer schreiben", key: "outputHelperEnabled", type: "checkbox", default: false, refreshProperties: true },
+        { label: "Zahlenhelfer", key: "outputHelperEntityId", showWhen: { key: "outputHelperEnabled", value: true } },
+      ] },
+    ],
   }],
 });

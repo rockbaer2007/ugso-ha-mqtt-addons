@@ -22,7 +22,7 @@ export function lineboxInputSum(box, widgets, entityStates) {
   let sum = 0;
   let validInputs = 0;
   const seen = new Set();
-  for (const line of widgets.filter(item => item.type === "svg-connection" && item.animationSource === "number")) {
+  for (const line of widgets.filter(item => item.type === "svg-connection" && item.visible !== false && item.animationSource === "number")) {
     for (const side of ["start", "end"]) {
       if (line[`${side}WidgetId`] !== box.id || seen.has(line.id)) continue;
       const anchorId = line[`${side}Anchor`] || (side === "start" ? "right-center" : "left-center");
@@ -36,6 +36,16 @@ export function lineboxInputSum(box, widgets, entityStates) {
     }
   }
   return validInputs ? sum : null;
+}
+
+export function lineboxHelperOutput(box, widgets, entityStates) {
+  if (box?.type !== "linebox" || box.outputHelperEnabled !== true) return null;
+  const entityId = String(box.outputHelperEntityId || "").trim();
+  if (!/^input_number\.[a-z0-9_]+$/.test(entityId)) return null;
+  const inputs = widgets.filter(line => line.type === "svg-connection" && line.visible !== false && line.animationSource === "number" && ["start", "end"].some(side => line[`${side}WidgetId`] === box.id && lineboxPortRole(box, line[`${side}Anchor`] || (side === "start" ? "right-center" : "left-center")) === "input"));
+  if (inputs.some(line => line.animationNumberEntityId === entityId)) return null;
+  const sum = lineboxInputSum(box, widgets, entityStates);
+  return sum === null || !Number.isFinite(sum) ? null : { entityId, value: Number(sum.toFixed(6)) };
 }
 
 export function lineboxOutputForConnection(line, widgets, entityStates) {

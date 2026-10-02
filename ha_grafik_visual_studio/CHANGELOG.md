@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.99
+
+- Linebox now draws a configurable circle over joined SVG-Line ends at runtime, hiding the angular junction. Diameter, fill, border color, border width, and visibility can be set in Linebox properties.
+- Linebox can optionally write its signed input sum to an `input_number` helper when the sum changes, while continuing its internal handoff to outgoing lines. Direct helper feedback to the same Linebox is rejected.
+
 ## 0.1.98
 
 - Slider can optionally show its minimum and maximum. Bound slider changes immediately update Number and SVG-Line, including Linebox-driven flow, while the Home Assistant write completes.
