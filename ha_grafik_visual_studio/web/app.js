@@ -271,6 +271,7 @@ function indexedWidgetGroups(widget) {
     { label: "Bild", key: `tabImage${index}`, previewImage: true },
     { label: "Symbolgröße (px)", key: `tabIconSize${index}`, type: "number", min: 8, max: 100, default: 24 },
     { label: "Symbolfarbe", key: `tabIconColor${index}`, type: "color", default: "#e7ecee" },
+    { label: "Tab-Hintergrundfarbe", key: `tabBackground${index}`, type: "color", default: "transparent" },
     { label: "Überlauf X", key: `tabOverflowX${index}`, type: "select", default: "auto", options: ["auto", "hidden", "scroll", "visible"] },
     { label: "Überlauf Y", key: `tabOverflowY${index}`, type: "select", default: "auto", options: ["auto", "hidden", "scroll", "visible"] },
   ] }));
@@ -2908,6 +2909,7 @@ function renderTabsWidget(widget, parent) {
     const button = document.createElement("button"); button.type = "button"; button.dataset.tabSwitch = "true";
     button.id = `${widget.id}-tab-${index}`; button.setAttribute("role", "tab"); button.setAttribute("aria-controls", panel.id);
     button.setAttribute("aria-selected", String(index === active)); button.tabIndex = index === active ? 0 : -1;
+    button.style.backgroundColor = widget[`tabBackground${index}`] || "";
     const title = widget[`tabTitle${index}`] ?? `Tab ${index + 1}`;
     const icon = widget[`tabImage${index}`] || widget[`tabIcon${index}`];
     if (icon) {

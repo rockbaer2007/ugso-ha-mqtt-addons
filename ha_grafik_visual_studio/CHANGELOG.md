@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.119
+
+- Adds an independent background color for each tab header, available in horizontal and vertical layouts. Existing tabs retain their transparent background and active marker.
+
 ## 0.1.118
 
 - Shows the toolbar brand in three compact lines beside its logo, leaving more horizontal space for editor controls and Save.
