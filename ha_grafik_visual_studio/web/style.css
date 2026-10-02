@@ -81,6 +81,7 @@ html[lang="en"] .widget-edit-actions::after { content: "Edit"; }
 .widget-history-actions button small { color: var(--muted); font-size: 9px; }
 .brand { display: flex; flex: none; align-items: center; gap: 8px; padding: 0 10px 0 4px; font-weight: 650; white-space: nowrap; }
 .brand-mark { display: block; width: 27px; height: 27px; flex: none; }
+.brand > span { line-height: 1.2; }
 .mode-switch { display: grid; flex: none; grid-template-rows: repeat(3, 24px); align-content: center; gap: 3px; padding: 0 7px; border-right: 1px solid var(--line); }
 .mode-switch a { min-width: 83px; min-height: 0; flex-direction: row; gap: 6px; padding: 3px 7px; border-radius: 4px; color: var(--muted); font-size: 11px; text-decoration: none; }
 .mode-switch .toolbar-icon { min-height: 0; font-size: 15px; }

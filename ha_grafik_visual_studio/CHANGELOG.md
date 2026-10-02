@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.118
+
+- Shows the toolbar brand in three compact lines beside its logo, leaving more horizontal space for editor controls and Save.
+
 ## 0.1.117
 
 - Highlights the return-to-Tabs editor button in turquoise with a compact three-line German/English label that stays within its toolbar tile.
