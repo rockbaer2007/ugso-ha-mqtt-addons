@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.122
+
+- Adds a 0-90% inactive-tab dimming control in the main Tabs settings. It dims header backgrounds, text and icons while keeping the active header and tab content unchanged; existing widgets default to 0%.
+
 ## 0.1.121
 
 - Adds separate active/inactive tab text colors in the main Tabs settings. Empty values preserve the existing Tab color; per-tab icon colors remain independent.

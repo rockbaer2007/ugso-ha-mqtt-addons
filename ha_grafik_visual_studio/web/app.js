@@ -2911,6 +2911,7 @@ function renderTabsWidget(widget, parent) {
     button.setAttribute("aria-selected", String(index === active)); button.tabIndex = index === active ? 0 : -1;
     button.style.color = widget[index === active ? "tabsActiveTextColor" : "tabsInactiveTextColor"] || widget.tabsColor || "#9f99bb";
     button.style.backgroundColor = widget[`tabBackground${index}`] || "";
+    if (index !== active) button.style.filter = `brightness(${1 - Math.max(0, Math.min(90, Number(widget.tabsInactiveDim) || 0)) / 100})`;
     const title = widget[`tabTitle${index}`] ?? `Tab ${index + 1}`;
     const icon = widget[`tabImage${index}`] || widget[`tabIcon${index}`];
     if (icon) {

@@ -170,6 +170,7 @@ registerWidgetSet({
         { label: "Tab-Farbe", key: "tabsColor", type: "color", default: "#9f99bb" },
         { label: "Textfarbe aktiv", key: "tabsActiveTextColor", type: "color" },
         { label: "Textfarbe nicht aktiv", key: "tabsInactiveTextColor", type: "color" },
+        { label: "Inaktive Reiter abdunkeln (%)", key: "tabsInactiveDim", type: "range", min: 0, max: 90, step: 1, default: 0 },
       ] }, geometry(), ...cssGroups(),
     ] },
     basicDataWidget("view-in-widget", "View in widget", "▣", {}, [{ label: "Seite", key: "targetPage", type: "page" }], "Bettet eine gespeicherte Projektseite ein; rekursive Einbettung wird verhindert."),
