@@ -50,6 +50,15 @@ def tiny_png():
 
 
 class ToolPackageTests(unittest.TestCase):
+    def test_color_picker_needs_no_project_permissions(self):
+        data = manifest()
+        data["tools"][0]["action"]["kind"] = "color-picker"
+        data["tools"][0]["capabilities"] = []
+        self.assertEqual(read_tool_package_zip(package_bytes(data))["tools"][0]["action"]["kind"], "color-picker")
+        data["tools"][0]["capabilities"] = ["project.read", "project.write"]
+        with self.assertRaisesRegex(ValueError, "Fähigkeiten"):
+            read_tool_package_zip(package_bytes(data))
+
     def test_valid_data_only_tool(self):
         self.assertEqual(read_tool_package_zip(package_bytes(manifest()))["tools"][0]["id"], "demo.tools/background")
 

@@ -42,13 +42,14 @@ def validate_tool_manifest(manifest):
         if prefix != package_id or not SLUG.fullmatch(slug) or tool_id in seen:
             raise ValueError("Tool-ID muss eindeutig und im Paket-Namensraum liegen.")
         seen.add(tool_id)
-        if tool["definitionVersion"] != "0.1" or tool["context"] != "page" or tool["capabilities"] != CAPABILITIES:
+        action = tool["action"]
+        picker = isinstance(action, dict) and action.get("kind") == "color-picker"
+        if tool["definitionVersion"] != "0.1" or tool["context"] != "page" or tool["capabilities"] != ([] if picker else CAPABILITIES):
             raise ValueError("Tool-Vertragsversion, Kontext oder Fähigkeiten werden nicht unterstützt.")
         if any(not isinstance(tool[key], str) or not 0 < len(tool[key].strip()) <= 240 for key in ("label", "description")):
             raise ValueError("Tool-Name oder Beschreibung fehlt.")
-        action = tool["action"]
-        if not isinstance(action, dict) or set(action) != {"kind", "defaultColor"} or action["kind"] != "set-page-background":
-            raise ValueError("Nur die deklarative Aktion set-page-background ist unterstützt.")
+        if not isinstance(action, dict) or set(action) != {"kind", "defaultColor"} or action["kind"] not in {"set-page-background", "color-picker"}:
+            raise ValueError("Nur set-page-background und color-picker sind unterstützt.")
         if not isinstance(action["defaultColor"], str) or not COLOR.fullmatch(action["defaultColor"]):
             raise ValueError("Ungültige Standard-Hintergrundfarbe.")
     return manifest

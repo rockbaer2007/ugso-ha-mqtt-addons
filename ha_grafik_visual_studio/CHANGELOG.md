@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.109
+
+- Add the installable UGSo Colorpicker tool: keyboard-accessible color wheel, brightness, HEX input, local color names, and copy output.
+- Add the data-only color-picker action without project or Home Assistant capabilities; existing background tools retain their contract.
+
 ## 0.1.108
 
 - Compact the page size toolbar: use Seite, B: and H:, five-character numeric fields, and a shorter Save button.

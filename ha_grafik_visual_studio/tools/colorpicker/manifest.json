@@ -1,0 +1,19 @@
+{
+  "format": "ha-grafik-tool-package",
+  "apiVersion": "0.1",
+  "id": "ugso.colorpicker",
+  "name": "UGSo Colorpicker",
+  "version": "1.0.0",
+  "license": "MIT",
+  "icon": "icons/wheel.svg",
+  "tools": [{
+    "id": "ugso.colorpicker/color-picker",
+    "definitionVersion": "0.1",
+    "label": "Colorpicker",
+    "description": "Farbkreis mit Helligkeit, HEX, lokalem Farbnamen und Kopieren. Benötigt Studio 0.1.109 oder neuer.",
+    "context": "page",
+    "capabilities": [],
+    "icon": "icons/wheel.svg",
+    "action": { "kind": "color-picker", "defaultColor": "#29c8b5" }
+  }]
+}

@@ -3394,6 +3394,11 @@ async function renderEditorToolActions(packages = null) {
 
 let pendingTool = null;
 function previewTool(tool) {
+  if (!runtimeMode && tool.context === "page" && tool.action?.kind === "color-picker") {
+    $("#settings-dialog").close();
+    void import("./color-picker.js").then(module => module.openColorPicker(tool.action.defaultColor)).catch(error => { $("#status").textContent = String(error.message); });
+    return;
+  }
   if (runtimeMode || !state.project || tool.context !== "page" || tool.action?.kind !== "set-page-background") return;
   pendingTool = tool;
   $("#settings-dialog").close();

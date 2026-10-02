@@ -2,6 +2,12 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Colorpicker": "Color picker",
+  "Farbe wählen und HEX oder Farbnamen kopieren. Farbnamen sind keine CSS-Farbwerte.": "Choose a color and copy HEX or its name. Color names are not CSS color values.",
+  "Farbkreis": "Color wheel", "Helligkeit": "Brightness", "Ausgabe": "Output", "Farbname": "Color name",
+  "Exakter Farbname": "Exact color name", "Nächster Farbname": "Nearest color name",
+  "Kopieren nicht verfügbar. Ausgabe markieren und manuell kopieren.": "Copy unavailable. Select the output and copy manually.",
+  "Farbnamen konnten nicht geladen werden. HEX bleibt verfügbar.": "Color names could not be loaded. HEX remains available.",
   "Seite": "Page", "B:": "W:", "H:": "H:",
   "Skalenposition": "Scale position",
   "Zwischenmarkierungen (0 = aus)": "Intermediate marks (0 = off)",
