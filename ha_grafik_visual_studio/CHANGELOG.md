@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.123
+
+- Prevents the editor shell from flashing while embedded tab surfaces load. A tab frame stays hidden until its same-origin surface signals that project loading and initial rendering are complete.
+
 ## 0.1.122
 
 - Adds a 0-90% inactive-tab dimming control in the main Tabs settings. It dims header backgrounds, text and icons while keeping the active header and tab content unchanged; existing widgets default to 0%.

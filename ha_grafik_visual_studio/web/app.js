@@ -481,6 +481,8 @@ async function loadProject() {
   state.nextId = Math.max(0, ...allProjectWidgets(state.project).map(widget => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   render();
   if (!runtimeMode) void renderEditorToolActions();
+  document.documentElement.classList.remove("embedded-loading");
+  if (params.get("embedded") === "1") parent.postMessage({ type: "gvs-surface-ready" }, location.origin);
   savedProjectSnapshot = observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
   if (runtimeMode) void refreshRuntimeStates();
   else void refreshEditorLiveStates();
@@ -2888,6 +2890,12 @@ function renderStage() {
 }
 
 const selectedTabs = new Map();
+window.addEventListener("message", event => {
+  if (event.origin !== location.origin || event.data?.type !== "gvs-surface-ready") return;
+  for (const frame of document.querySelectorAll("iframe.widget-tabs-frame")) {
+    if (frame.contentWindow === event.source) frame.style.visibility = "visible";
+  }
+});
 function renderTabsWidget(widget, parent) {
   const root = document.createElement("div"); root.className = `widget-tabs ${widget.tabsVertical ? "is-vertical" : "is-horizontal"} variant-${widget.tabsVariant || "standard"}`;
   root.style.setProperty("--tabs-color", widget.tabsColor || "#9f99bb");
@@ -2947,6 +2955,7 @@ function renderTabsWidget(widget, parent) {
   else if (!canEmbedTab(target, parent.id, chain)) panel.textContent = uiText("Rekursive Einbettung verhindert");
   else {
     const frame = document.createElement("iframe"); frame.className = "widget-tabs-frame"; frame.title = `${widget.title || "Tabs"}: ${targetPage.name}`;
+    frame.style.visibility = "hidden";
     const url = new URL(location.href); url.searchParams.set("mode", "runtime"); url.searchParams.set("project", state.projectId);
     url.searchParams.set("embedded", "1"); url.searchParams.set("chain", [...chain, parent.id].join(","));
     url.searchParams.delete("tabsWidget"); url.searchParams.delete("tabsIndex");
