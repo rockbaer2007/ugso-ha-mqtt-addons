@@ -43,6 +43,7 @@ button { cursor: pointer; }
 .widget-edit-actions::after { grid-column: 1 / -1; align-self: end; color: var(--muted); font-size: 10px; text-align: center; content: "Bearbeiten"; }
 html[lang="en"] .widget-edit-actions::after { content: "Edit"; }
 .widget-edit-actions button { width: 30px; height: 25px; padding: 0; border-color: transparent; background: transparent; font-size: 18px; }
+.widget-edit-actions button img { display: block; width: 20px; height: 20px; margin: auto; }
 .widget-edit-actions button:disabled, .widget-history-actions button:disabled { cursor: default; opacity: .3; }
 .widget-history-actions { display: flex; flex: none; align-items: stretch; gap: 2px; padding: 3px 8px; border-right: 1px solid var(--line); }
 .widget-history-actions button { display: grid; min-width: 58px; grid-template-rows: 24px 18px 14px; place-items: center; padding: 1px 6px; border-color: transparent; background: transparent; font-size: 20px; line-height: 1; }

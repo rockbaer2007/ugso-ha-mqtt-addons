@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.103
+
+- Use the supplied trash, duplicate, and clipboard SVG icons for widget Delete, Duplicate, and Paste, matching the toolbar color and size.
+
 ## 0.1.102
 
 - Use the supplied diskette icon for Save.
