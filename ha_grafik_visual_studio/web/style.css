@@ -195,7 +195,11 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .widget-linebox .linebox-content { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 7px; color: #e4faf7; font-size: 12px; }
 .linebox-content strong, .linebox-content span, .linebox-content small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .linebox-content small { color: #9ddbd3; font-size: 10px; }
-.linebox-junction { position: absolute; box-sizing: border-box; display: block; border-style: solid; border-radius: 50%; pointer-events: none; }
+.linebox-junction-overlay { position: absolute; pointer-events: none; }
+.linebox-junction { position: absolute; inset: 0; box-sizing: border-box; display: block; border-style: solid; border-radius: 50%; }
+.linebox-output-value { position: absolute; left: 50%; transform: translateX(-50%); padding: 2px 5px; border: 1px solid #607d8b; border-radius: 4px; background: #1b2426eb; color: #e7ecee; font-size: 12px; font-variant-numeric: tabular-nums; line-height: 1.2; white-space: nowrap; }
+.linebox-output-value.is-above { bottom: calc(100% + 6px); }
+.linebox-output-value.is-below { top: calc(100% + 6px); }
 .border-header { position: absolute; top: 0; right: 0; left: 0; display: block; pointer-events: none; }
 .border-title { position: absolute; max-width: 90%; padding: 0 5px; transform: translateY(-50%); white-space: nowrap; }
 .widget-content > button { max-width: 100%; max-height: 100%; cursor: pointer; }

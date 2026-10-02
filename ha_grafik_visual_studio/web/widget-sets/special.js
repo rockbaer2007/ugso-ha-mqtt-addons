@@ -121,7 +121,7 @@ registerWidgetSet({
     defaults: {
       title: "Linebox", visible: true, dockPointsEnabled: false, width: 140, height: 76,
       backgroundColor: "#12383b", borderColor: "#29c8b5", borderWidth: 1, borderStyle: "dashed",
-      junctionVisible: true, junctionDiameter: 16, junctionColor: "#29c8b5", junctionBorderColor: "#d9f8f3", junctionBorderWidth: 2,
+      junctionVisible: true, junctionDiameter: 16, junctionColor: "#29c8b5", junctionBorderColor: "#d9f8f3", junctionBorderWidth: 2, junctionValuePosition: "off",
       outputHelperEnabled: false, outputHelperEntityId: "",
     },
     propertyGroups: [
@@ -131,6 +131,9 @@ registerWidgetSet({
         { label: "Füllfarbe", key: "junctionColor", type: "color", showWhen: { key: "junctionVisible", value: true, default: true } },
         { label: "Randfarbe", key: "junctionBorderColor", type: "color", showWhen: { key: "junctionVisible", value: true, default: true } },
         { label: "Randbreite (px)", key: "junctionBorderWidth", type: "range", min: 0, max: 20, step: 1, showWhen: { key: "junctionVisible", value: true, default: true } },
+        { label: "Ausgabewert anzeigen", key: "junctionValuePosition", type: "select", default: "off", options: [
+          { value: "off", label: "Aus" }, { value: "above", label: "Über dem Kreis" }, { value: "below", label: "Unter dem Kreis" },
+        ] },
       ] },
       { label: "Zahlenhelfer-Ausgabe", hint: "Die interne Übergabe bleibt aktiv. Ein optionaler input_number-Helfer erhält die Summe nur bei einer Wertänderung.", fields: [
         { label: "Zusätzlich an Zahlenhelfer schreiben", key: "outputHelperEnabled", type: "checkbox", default: false, refreshProperties: true },

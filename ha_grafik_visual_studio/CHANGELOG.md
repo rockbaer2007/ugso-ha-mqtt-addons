@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.100
+
+- Linebox can optionally show its signed output value above or below the junction circle. The label updates immediately with bound slider changes and can also be shown when the circle is hidden.
+
 ## 0.1.99
 
 - Linebox now draws a configurable circle over joined SVG-Line ends at runtime, hiding the angular junction. Diameter, fill, border color, border width, and visibility can be set in Linebox properties.

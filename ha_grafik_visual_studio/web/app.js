@@ -563,6 +563,9 @@ function stageRuntimeEntityValue(entityId, value) {
       } else if (widget.type === "sensor" && widget.entityId) {
         const value = document.getElementById(widget.id)?.querySelector(".widget-content .value");
         if (value) value.textContent = numberDisplay(widget, state.entityStates[widget.entityId]).value;
+      } else if (widget.type === "linebox") {
+        const value = document.getElementById(`linebox-junction-${widget.id}`)?.querySelector(".linebox-output-value");
+        if (value) { value.textContent = lineboxValueText(widget, widgets); value.setAttribute("aria-label", `${uiText("Ausgabewert")}: ${value.textContent}`); }
       }
     }
   });
@@ -2059,26 +2062,47 @@ function addWidget(definition) {
   });
 }
 
+function lineboxValueText(box, widgets) {
+  const sum = lineboxInputSum(box, widgets, state.entityStates);
+  return sum === null || !Number.isFinite(sum) ? "—" : String(Number(sum.toFixed(6)));
+}
+
 function renderLineboxJunction(box, widgets) {
-  if (box.junctionVisible === false) return null;
   const connected = widgets.filter(line => line.type === "svg-connection" && line.visible !== false && ["start", "end"].some(side => line[`${side}WidgetId`] === box.id && lineboxPortRole(box, line[`${side}Anchor`] || (side === "start" ? "right-center" : "left-center")) !== "none"));
-  if (connected.length < 2) return null;
+  const showCircle = box.junctionVisible !== false && connected.length >= 2;
+  const valuePosition = ["above", "below"].includes(box.junctionValuePosition) ? box.junctionValuePosition : "off";
+  if (!connected.length || (!showCircle && valuePosition === "off")) return null;
   const position = lineboxRuntimeJoinPosition(box, connected[0].startWidgetId === box.id ? connected[0].startAnchor || "right-center" : connected[0].endAnchor || "left-center");
   if (!position) return null;
   const borderWidth = Math.max(0, Math.min(20, Number(box.junctionBorderWidth ?? 2) || 0));
   const requestedDiameter = Math.max(4, Math.min(100, Number(box.junctionDiameter) || 16));
-  const diameter = Math.max(requestedDiameter, ...connected.map(line => Math.max(1, Number(line.lineWidth) || 4) + borderWidth * 2 + 2));
+  const diameter = showCircle ? Math.max(requestedDiameter, ...connected.map(line => Math.max(1, Number(line.lineWidth) || 4) + borderWidth * 2 + 2)) : requestedDiameter;
   const zIndex = Math.max(...connected.map(line => line.cssZIndex !== undefined && line.cssZIndex !== "" ? Number(line.cssZIndex) || 0 : Math.max(0, Number(line.layer) || 0) + 2)) + 1;
-  const circle = document.createElement("span");
-  circle.className = "linebox-junction";
-  circle.setAttribute("aria-hidden", "true");
-  Object.assign(circle.style, {
+  const overlay = document.createElement("span");
+  overlay.id = `linebox-junction-${box.id}`;
+  overlay.className = "linebox-junction-overlay";
+  Object.assign(overlay.style, {
     left: `${position.x - diameter / 2}px`, top: `${position.y - diameter / 2}px`,
     width: `${diameter}px`, height: `${diameter}px`, zIndex: String(zIndex),
-    backgroundColor: box.junctionColor || "#29c8b5",
-    borderColor: box.junctionBorderColor || "#d9f8f3", borderWidth: `${borderWidth}px`,
   });
-  return circle;
+  if (showCircle) {
+    const circle = document.createElement("span");
+    circle.className = "linebox-junction";
+    circle.setAttribute("aria-hidden", "true");
+    Object.assign(circle.style, {
+      backgroundColor: box.junctionColor || "#29c8b5",
+      borderColor: box.junctionBorderColor || "#d9f8f3", borderWidth: `${borderWidth}px`,
+    });
+    overlay.append(circle);
+  }
+  if (valuePosition !== "off") {
+    const value = document.createElement("span");
+    value.className = `linebox-output-value is-${valuePosition}`;
+    value.textContent = lineboxValueText(box, widgets);
+    value.setAttribute("aria-label", `${uiText("Ausgabewert")}: ${value.textContent}`);
+    overlay.append(value);
+  }
+  return overlay;
 }
 
 function renderStage() {

@@ -319,6 +319,8 @@ Object.assign(ENGLISH, {
   "Anschlüsse": "Ports", "Rolle": "Role", "Eingang": "Input", "Nullstellung": "Neutral", "Ausgang": "Output",
   "Berechneten Wert weitergeben": "Pass calculated value", "Linebox-Teiler (bei Übergabe)": "Linebox divisor (on handoff)",
   "Verbindungspunkt": "Junction", "Kreis anzeigen": "Show circle", "Durchmesser (px)": "Diameter (px)",
+  "Ausgabewert": "Output value", "Ausgabewert anzeigen": "Show output value",
+  "Über dem Kreis": "Above the circle", "Unter dem Kreis": "Below the circle",
   "Randbreite (px)": "Border width (px)", "Zahlenhelfer-Ausgabe": "Number helper output",
   "Zusätzlich an Zahlenhelfer schreiben": "Also write to a number helper", "Zahlenhelfer": "Number helper",
   "Die interne Übergabe bleibt aktiv. Ein optionaler input_number-Helfer erhält die Summe nur bei einer Wertänderung.": "Internal handoff remains active. An optional input_number helper receives the sum only when its value changes.",
