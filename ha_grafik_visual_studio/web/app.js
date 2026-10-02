@@ -75,9 +75,13 @@ const fileTypes = {
 const state = { project: null, projectId: params.get("project") || "main", selectedId: null, selectedIds: [], nextId: 1, propertyTab: "widget", collapsedWidgetSets: new Set(), expandedPropertySections: new Set(), objectPath: "", selectedFiles: [], fileView: "list", entities: [], devices: [], entityStates: {}, selectedEntityId: "", expandedDevices: new Set(), entitySnapshot: null, entityController: null, widgetClipboard: [], editorWidgetFilter: null, undoStack: [], redoStack: [] };
 const LIVE_DISPLAY_TYPES = new Set(["sensor", "string", "red-number", "bar", "gauge", "bool-display", "toggle"]);
 const WRITABLE_SWITCH_ENTITY = /^(switch|light|input_boolean)\.[a-z0-9_]+$/;
+const WRITABLE_NUMBER_HELPER = /^input_number\.[a-z0-9_]+$/;
+const WRITABLE_TEXT_HELPER = /^input_text\.[a-z0-9_]+$/;
 const pendingSwitches = new Set();
+const helperWriteQueue = new Map();
 let runtimeStateRequestPending = false;
 let runtimeStateError = false;
+let runtimeRenderDeferred = false;
 let editorNumberRequestPending = false;
 let mdiIcons = null;
 let mdiIconsPromise = null;
@@ -471,7 +475,7 @@ async function fetchEntityStates(ids) {
 
 function editorLiveEntityIds() {
   return [...new Set(currentPage().widgets.flatMap((widget) => [
-    widget.type === "sensor" ? widget.entityId : "",
+    ["sensor", "slider", "input-value"].includes(widget.type) ? widget.entityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
   ]))]
     .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id || ""));
@@ -516,21 +520,29 @@ async function refreshRuntimeStates() {
   try {
     const next = await fetchEntityStates(ids);
     if (currentPage().id !== pageId) return;
-    if (JSON.stringify(next) !== JSON.stringify(state.entityStates)) {
-      state.entityStates = next;
-      renderStage();
-    }
+    const changed = JSON.stringify(next) !== JSON.stringify(state.entityStates);
+    if (changed) state.entityStates = next;
+    if (changed || runtimeRenderDeferred) renderRuntimeStageWhenReady();
     if (runtimeStateError) $("#status").textContent = "Home-Assistant-Zustände wieder verfügbar";
     runtimeStateError = false;
   } catch {
     if (currentPage().id !== pageId) return;
-    if (Object.keys(state.entityStates).length) { state.entityStates = {}; renderStage(); }
+    if (Object.keys(state.entityStates).length) { state.entityStates = {}; renderRuntimeStageWhenReady(); }
     $("#status").textContent = "Home-Assistant-Zustände konnten nicht geladen werden";
     runtimeStateError = true;
   } finally {
     runtimeStateRequestPending = false;
     if (currentPage().id !== pageId) void refreshRuntimeStates();
   }
+}
+
+function renderRuntimeStageWhenReady() {
+  if (helperWriteQueue.size || document.activeElement?.matches(".widget-input[data-editing='true'], input[type='range'][data-dragging='true']")) {
+    runtimeRenderDeferred = true;
+    return;
+  }
+  runtimeRenderDeferred = false;
+  renderStage();
 }
 
 async function writeRuntimeSwitch(widget, enabled) {
@@ -553,6 +565,35 @@ async function writeRuntimeSwitch(widget, enabled) {
   } finally {
     pendingSwitches.delete(entityId);
     renderStage();
+  }
+}
+
+async function writeRuntimeHelperValue(entityId, value) {
+  const previous = helperWriteQueue.get(entityId) || Promise.resolve();
+  const request = previous.catch(() => {}).then(async () => {
+    const response = await fetch("api/helper-value", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entity_id: entityId, value }),
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(uiText(payload.error || `HTTP ${response.status}`));
+    }
+  });
+  helperWriteQueue.set(entityId, request);
+  try {
+    await request;
+    $("#status").textContent = uiText("Wert an Home Assistant gesendet");
+    return true;
+  } catch (error) {
+    $("#status").textContent = `${uiText("Wert konnte nicht gesetzt werden")}: ${error.message}`;
+    return false;
+  } finally {
+    if (helperWriteQueue.get(entityId) === request) {
+      helperWriteQueue.delete(entityId);
+      renderRuntimeStageWhenReady();
+      void refreshRuntimeStates();
+    }
   }
 }
 
@@ -2164,10 +2205,18 @@ function renderStage() {
       }
     } else if (widget.type === "slider") {
       const range = document.createElement("input"); range.type = "range";
-      range.min = String(widget.min ?? 0); range.max = String(widget.max ?? 100); range.value = String(widget.value ?? 50);
-      range.step = String(widget.step ?? 1); range.disabled = !runtimeMode;
+      const bound = Boolean(widget.entityId); const live = state.entityStates[widget.entityId]?.state;
+      const liveNumber = live === null || live === undefined || String(live).trim() === "" ? NaN : Number(live);
+      range.min = String(widget.min ?? 0); range.max = String(widget.max ?? 100);
+      range.value = String(bound && Number.isFinite(liveNumber) ? liveNumber : widget.value ?? 50);
+      range.step = String(widget.step ?? 1); range.disabled = !runtimeMode || (bound && (!WRITABLE_NUMBER_HELPER.test(widget.entityId) || !Number.isFinite(liveNumber)));
       range.setAttribute("aria-label", widget.title || "Regler");
-      range.addEventListener("input", () => { widget.value = Number(range.value); }); content.append(range);
+      range.addEventListener("pointerdown", () => { range.dataset.dragging = "true"; });
+      range.addEventListener("pointerup", () => { delete range.dataset.dragging; });
+      range.addEventListener("pointercancel", () => { delete range.dataset.dragging; });
+      range.addEventListener("input", () => { if (!bound) widget.value = Number(range.value); });
+      range.addEventListener("change", () => { delete range.dataset.dragging; if (bound && !range.disabled) void writeRuntimeHelperValue(widget.entityId, Number(range.value)); });
+      content.append(range);
     } else if (widget.type === "svg-shape") {
       content.append(renderSvgShape(widget));
     } else if (widget.type === "screen-resolution") {
@@ -2185,9 +2234,26 @@ function renderStage() {
       const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.style.width = "100%"; svg.style.height = "100%"; svg.style.opacity = String(widget.svgOpacity ?? 1); svg.innerHTML = isOn(widget.state) ? widget.svgTrue || "" : widget.svgFalse || "";
       if (runtimeMode && !widget.readOnly) { svg.setAttribute("role", "button"); svg.tabIndex = 0; const toggle = event => { event.stopPropagation(); widget.state = !isOn(widget.state); renderStage(); }; svg.addEventListener("click", toggle); svg.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); toggle(event); } }); } content.append(svg);
     } else if (widget.type === "input-value") {
-      const input = document.createElement("input"); input.type = widget.numeric ? "number" : "text"; input.value = String(widget.state ?? ""); input.readOnly = !runtimeMode || widget.readOnly === true; input.autofocus = runtimeMode && widget.autofocus === true; input.className = widget.noStyle ? "" : `widget-input ${widget.variant || "standard"}`; input.setAttribute("aria-label", widget.title || "Eingegebener Wert");
-      const apply = () => { widget.state = widget.numeric && input.value !== "" ? Number(input.value) : input.value; };
-      input.addEventListener("input", () => { if (widget.autoSet && !input.readOnly) apply(); }); input.addEventListener("change", () => { if (!widget.withEnter && !input.readOnly) apply(); }); input.addEventListener("keydown", event => { event.stopPropagation(); if (event.key === "Enter" && !input.readOnly) apply(); });
+      const bound = Boolean(widget.entityId); const numberHelper = WRITABLE_NUMBER_HELPER.test(widget.entityId || ""); const textHelper = WRITABLE_TEXT_HELPER.test(widget.entityId || "");
+      const live = state.entityStates[widget.entityId]?.state;
+      const input = document.createElement("input"); input.type = numberHelper || (!bound && widget.numeric) ? "number" : "text";
+      if (input.type === "number") input.step = "any";
+      input.value = String(bound ? live ?? "" : widget.state ?? "");
+      input.readOnly = !runtimeMode || widget.readOnly === true || (bound && ((!numberHelper && !textHelper) || live === undefined));
+      input.autofocus = runtimeMode && widget.autofocus === true; input.className = widget.noStyle ? "" : `widget-input ${widget.variant || "standard"}`; input.setAttribute("aria-label", widget.title || "Eingegebener Wert");
+      let timer = null; let lastSubmitted;
+      const apply = () => {
+        clearTimeout(timer);
+        if (input.readOnly || input.value === lastSubmitted || (numberHelper && input.value.trim() === "")) return;
+        lastSubmitted = input.value;
+        if (bound) void writeRuntimeHelperValue(widget.entityId, numberHelper ? Number(input.value) : input.value).then((ok) => { if (!ok && lastSubmitted === input.value) lastSubmitted = undefined; });
+        else widget.state = widget.numeric && input.value !== "" ? Number(input.value) : input.value;
+      };
+      input.addEventListener("focus", () => { input.dataset.editing = "true"; });
+      input.addEventListener("blur", () => { delete input.dataset.editing; if (bound) window.setTimeout(renderRuntimeStageWhenReady, 0); });
+      input.addEventListener("input", () => { if (widget.autoSet && !widget.withEnter && !input.readOnly) { clearTimeout(timer); timer = window.setTimeout(apply, 350); } });
+      input.addEventListener("change", () => { if (!widget.withEnter) apply(); });
+      input.addEventListener("keydown", event => { event.stopPropagation(); if (event.key === "Enter") apply(); });
       appendSafeHtml(content, widget.prefix || ""); content.append(input); appendSafeHtml(content, widget.suffix || "");
     } else if (["view-in-widget", "view-in-widget-8"].includes(widget.type)) {
       const index = widgetStateIndex(widget);
@@ -2691,7 +2757,7 @@ function field(descriptor, widget) {
   const update = () => {
     if (descriptor.key === "count" && input.type === "number") input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Math.trunc(Number(input.value) || 1))));
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
-    if ((widget.type === "sensor" && descriptor.key === "entityId") ||
+    if ((["sensor", "slider", "input-value"].includes(widget.type) && descriptor.key === "entityId") ||
         (widget.type === "svg-connection" && ["animationSource", "animationNumberEntityId", "animationBooleanEntityId"].includes(descriptor.key))) {
       void refreshEditorLiveStates();
     }

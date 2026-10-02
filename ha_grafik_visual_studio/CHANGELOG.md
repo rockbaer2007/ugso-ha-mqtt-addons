@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.97
+
+- Slider writes its selected value to a bound Home Assistant `input_number` helper on release and reads the current helper state. Input val renders as a bordered input box and writes numeric or text entries to `input_number` or `input_text`, with its existing Auto-set and Enter options. Both remain local when unbound.
+
 ## 0.1.96
 
 - The editor now refreshes Home Assistant states used by SVG-Line direction sources and Linebox inputs, so a numeric helper can drive and preview its connected lines before switching to runtime.

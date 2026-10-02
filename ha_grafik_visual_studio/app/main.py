@@ -2,6 +2,7 @@
 
 import json
 import logging
+import math
 import os
 import re
 from http import HTTPStatus
@@ -159,6 +160,25 @@ def set_home_assistant_switch(entity_id, enabled):
         "target": {"entity_id": entity_id},
     }])
 
+
+def set_home_assistant_helper_value(entity_id, value):
+    """Write only to an explicitly selected numeric or text helper."""
+    if not isinstance(entity_id, str) or not ENTITY_ID_PATTERN.fullmatch(entity_id):
+        raise ValueError("Ungültige Home-Assistant-Entität.")
+    domain = entity_id.split(".", 1)[0]
+    if domain == "input_number":
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            raise ValueError("Der Zahlenhelfer benötigt einen endlichen Zahlenwert.")
+    elif domain == "input_text":
+        if not isinstance(value, str) or len(value) > 255:
+            raise ValueError("Der Texthelfer benötigt höchstens 255 Zeichen.")
+    else:
+        raise ValueError("Nur input_number und input_text können hier beschrieben werden.")
+    home_assistant_commands([{
+        "type": "call_service", "domain": domain, "service": "set_value",
+        "target": {"entity_id": entity_id}, "service_data": {"value": value},
+    }])
+
 MIME_TYPES = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml"}
 FILE_MIME_TYPES = {
     ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml", ".gif": "image/gif", ".bmp": "image/bmp", ".ico": "image/x-icon",
@@ -171,7 +191,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.96"
+    server_version = "HAGrafikVisualStudio/0.1.97"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -193,7 +213,7 @@ class Handler(BaseHTTPRequestHandler):
         path = parsed.path.rstrip("/") or "/"
         query = parse_qs(parsed.query)
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.96"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.97"})
             return
         if path == "/api/entities":
             try:
@@ -292,6 +312,27 @@ class Handler(BaseHTTPRequestHandler):
                 return
             except HomeAssistantAPIError as error:
                 LOG.warning("Home-Assistant-Schaltaktion fehlgeschlagen: %s", error)
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})
+                return
+            self.send_json(HTTPStatus.OK, {"accepted": True})
+            return
+        if parsed.path == "/api/helper-value":
+            if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
+                self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "JSON-Anfrage erforderlich."})
+                return
+            request = self.read_request_json()
+            if request is None:
+                return
+            if not isinstance(request, dict):
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Ungültiger Wertbefehl."})
+                return
+            try:
+                set_home_assistant_helper_value(request.get("entity_id"), request.get("value"))
+            except ValueError as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+                return
+            except HomeAssistantAPIError as error:
+                LOG.warning("Home-Assistant-Helferwert konnte nicht gesetzt werden: %s", error)
                 self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})
                 return
             self.send_json(HTTPStatus.OK, {"accepted": True})

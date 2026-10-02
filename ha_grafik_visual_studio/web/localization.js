@@ -48,6 +48,13 @@ const ENGLISH = {
   "Schaltbefehl gesendet; warte auf Home Assistant": "Switch command sent; waiting for Home Assistant",
   "Keine schaltbare Home-Assistant-Entität mit verfügbarem Zustand": "No controllable Home Assistant entity with an available state",
   "Schalten fehlgeschlagen": "Switch failed",
+  "Wert an Home Assistant gesendet": "Value sent to Home Assistant",
+  "Wert konnte nicht gesetzt werden": "Could not set value",
+  "Ungültige Home-Assistant-Entität.": "Invalid Home Assistant entity.",
+  "Der Zahlenhelfer benötigt einen endlichen Zahlenwert.": "The number helper requires a finite numeric value.",
+  "Der Texthelfer benötigt höchstens 255 Zeichen.": "The text helper accepts at most 255 characters.",
+  "Nur input_number und input_text können hier beschrieben werden.": "Only input_number and input_text can be written here.",
+  "Ungültiger Wertbefehl.": "Invalid value command.",
   "Diese Entität unterstützt die Schaltersteuerung nicht.": "This entity does not support switch control.",
   "Ungültiger Schaltzustand.": "Invalid switch state.",
   "Ungültiger Schaltbefehl.": "Invalid switch command.",
@@ -239,6 +246,7 @@ Object.assign(ENGLISH, {
   "Zwischenpunkte und Sammelpunkte": "Intermediate and collector points", "SVG-Verbindungslinie": "SVG connection line",
   "Boolesches SVG": "Boolean SVG", "Eingegebener Wert": "Input value", "Bool HTML-Steuerung": "Bool HTML control",
   "Nummer": "Number", "Auto-setzen": "Auto-set", "nur lesend": "read only", "Kein Style": "No style",
+  "Schreibt im Runtime-Modus in input_number oder input_text; ohne Entität bleibt die Eingabe lokal.": "Writes to input_number or input_text in runtime; without an entity the input remains local.",
   "beim Bearbeiten": "while editing", "sichtbar": "visible", "aus": "off", "deaktivieren": "disable", "ausblenden": "hide",
 });
 

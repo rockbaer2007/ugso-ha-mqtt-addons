@@ -118,7 +118,7 @@ html[lang="en"] .widget-edit-actions::after { content: "Edit"; }
 .note-content:not(.no-corner)::after { position: absolute; right: 0; bottom: 0; width: 15px; height: 15px; background: linear-gradient(135deg, #0003 50%, #202426 50%); content: ""; }
 .widget-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; min-height: 32px; padding: 6px; color: white; }
 .widget-badge.pin { clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%); border: 0 !important; border-radius: 0 !important; }
-.widget-input { min-width: 0; width: 100%; color: inherit; background: transparent; border: 0; border-bottom: 1px solid currentColor; padding: 4px; }
+.widget-input { min-width: 0; width: 100%; color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 4px; padding: 4px; }
 .widget-input.filled { background: #ffffff15; }
 .widget-input.outlined { border: 1px solid currentColor; border-radius: 4px; }
 .embedded-runtime .toolbar, .embedded-runtime .runtime-page-menu-toggle { display: none; }
