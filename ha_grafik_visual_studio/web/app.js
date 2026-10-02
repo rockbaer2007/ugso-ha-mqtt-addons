@@ -603,7 +603,7 @@ function stageRuntimeEntityValue(entityId, value) {
         if (range && !range.dataset.dragging && value !== null) { range.value = String(value); updateSliderFill(range, widget); }
       } else if (widget.type === "sensor" && widget.entityId) {
         const value = document.getElementById(widget.id)?.querySelector(".widget-content .value");
-        if (value) value.textContent = numberDisplay(widget, state.entityStates[widget.entityId]).value;
+        if (value) renderNumberValue(value, widget, state.entityStates[widget.entityId]);
       } else if (widget.type === "linebox") {
         const value = document.getElementById(`linebox-junction-${widget.id}`)?.querySelector(".linebox-output-value");
         if (value) { value.textContent = lineboxValueText(widget, widgets); value.setAttribute("aria-label", `${uiText("Ausgabewert")}: ${value.textContent}`); }
@@ -2278,6 +2278,14 @@ function renderLineboxJunction(box, widgets) {
   return overlay;
 }
 
+function renderNumberValue(element, widget, entityState) {
+  const display = numberDisplay(widget, entityState);
+  element.replaceChildren();
+  appendSafeHtml(element, display.prefix);
+  element.append(document.createTextNode(display.value));
+  appendSafeHtml(element, display.suffix);
+}
+
 function renderStage(surface = null, target = null, surfaceChain = []) {
   const embedded = Boolean(surface);
   const runtimeMode = rootRuntimeMode || embedded;
@@ -2768,11 +2776,8 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (widget.type === "sensor") {
       const display = numberDisplay(widget, state.entityStates[widget.entityId]);
       const value = document.createElement("span"); value.className = "value";
-      if (display.bound) value.textContent = display.value;
-      else {
-        appendSafeHtml(value, display.prefix);
-        value.append(document.createTextNode(display.value));
-        appendSafeHtml(value, display.suffix);
+      renderNumberValue(value, widget, state.entityStates[widget.entityId]);
+      if (!display.bound) {
         if (widget.title) { const title = document.createElement("span"); title.className = "widget-title"; title.textContent = widget.title; content.append(title); }
       }
       content.append(value);
@@ -2785,7 +2790,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else {
       const value = document.createElement("span"); value.className = "value";
     let displayValue = displayedWidgetState(widget) ?? "--";
-    let suffix = widget.unit || "";
+    let suffix = Number(displayValue) === 1 ? widget.suffixSingular || widget.unit || "" : widget.suffixPlural || widget.unit || "";
     if (widget.entityId) value.append(document.createTextNode(`${widget.entityId} · `));
     appendSafeHtml(value, widget.prefix || ""); value.append(document.createTextNode(String(displayValue))); appendSafeHtml(value, suffix);
       if (widget.title) { const title = document.createElement("span"); title.className = "widget-title"; title.textContent = widget.title; content.append(title); }

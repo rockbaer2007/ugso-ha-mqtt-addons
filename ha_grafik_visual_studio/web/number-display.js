@@ -13,5 +13,5 @@ export function numberDisplay(widget, entityState) {
     if (widget.decimalComma) value = value.replace(".", ",");
   } else if (bound) value = "--";
   const suffix = scaledValue === 1 ? widget.suffixSingular || widget.unit || "" : widget.suffixPlural || widget.unit || "";
-  return { value, bound, prefix: bound ? "" : widget.prefix || "", suffix: bound ? "" : suffix };
+  return { value, bound, prefix: widget.prefix || "", suffix };
 }

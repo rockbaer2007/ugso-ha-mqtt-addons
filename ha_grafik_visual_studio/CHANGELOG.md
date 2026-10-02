@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.125
+
+- Fixes Number HTML prefix and singular/plural suffix rendering for bound entities, including immediate local state updates. Formatting, factor and missing-value placeholders remain intact.
+- Fixes Gauge singular/plural suffixes. Audits all 19 widget types exposing HTML additions in bound and unbound browser cases.
+
 ## 0.1.124
 
 - Renders active Tabs contents directly from the open project instead of loading a separate iframe document. Switching tabs and editor previews no longer wait for project/network reloads.

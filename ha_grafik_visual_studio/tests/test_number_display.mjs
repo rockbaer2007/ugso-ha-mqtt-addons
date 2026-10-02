@@ -7,12 +7,19 @@ const widget = {
   unit: "W", prefix: "<b>Input</b>", suffixPlural: " kW", digits: 1, factor: 1, decimalComma: true,
 };
 
-test("bound Number contains only the formatted current value", () => {
-  assert.deepEqual(numberDisplay(widget, { state: "12.5" }), { value: "12,5", bound: true, prefix: "", suffix: "" });
-  assert.deepEqual(numberDisplay({ ...widget, factor: 2, digits: 2 }, { state: "12.5" }), { value: "25,00", bound: true, prefix: "", suffix: "" });
-  assert.deepEqual(numberDisplay(widget, { state: "0" }), { value: "0,0", bound: true, prefix: "", suffix: "" });
-  assert.deepEqual(numberDisplay(widget, { state: "unavailable" }), { value: "--", bound: true, prefix: "", suffix: "" });
-  assert.deepEqual(numberDisplay(widget, undefined), { value: "--", bound: true, prefix: "", suffix: "" });
+test("bound Number keeps configured HTML around the live formatted value", () => {
+  for (const [config, state, value] of [
+    [widget, { state: "12.5" }, "12,5"],
+    [{ ...widget, factor: 2, digits: 2 }, { state: "12.5" }, "25,00"],
+    [widget, { state: "0" }, "0,0"], [widget, { state: "unavailable" }, "--"], [widget, undefined, "--"],
+  ]) assert.deepEqual(numberDisplay(config, state), { value, bound: true, prefix: "<b>Input</b>", suffix: " kW" });
+});
+
+test("Number chooses singular after scaling and switches back to plural", () => {
+  const config = { ...widget, suffixSingular: "<i>Watt</i>", suffixPlural: "<i>Watts</i>", factor: 0.5 };
+  assert.equal(numberDisplay(config, { state: "2" }).suffix, "<i>Watt</i>");
+  assert.equal(numberDisplay(config, { state: "4" }).suffix, "<i>Watts</i>");
+  assert.equal(numberDisplay({ ...widget, suffixPlural: "" }, { state: "4" }).suffix, "W");
 });
 
 test("unbound Number keeps its configured preview decorations", () => {
