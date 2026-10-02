@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.91
+
+- The docking-point properties now start with an "All points" checkbox that toggles all twelve anchors and shows a mixed state when only some are enabled. New widgets start with every anchor off, while previously active anchors in saved projects remain enabled.
+
 ## 0.1.90
 
 - SVG connection animation can use one exclusive direction source: manual, numeric Home Assistant entity, or boolean Home Assistant entity. Numeric magnitude divided by a configurable divisor controls cycles per second; its sign controls direction, and zero or unavailable values stop the flow. Boolean states choose direction, with optional inversion. Arrowheads follow the resolved direction. Existing lines remain in manual mode.

@@ -115,6 +115,8 @@ Object.assign(ENGLISH, {
   "Installierte Tool-Pakete werden hier angezeigt. Integrierte Editor-Werkzeuge sind Teil der App.": "Installed tool packages appear here. Built-in editor tools are part of the app.",
   "Am Anfang": "At start", "Am Ende": "At end", "Am Sammelpunkt synchron ankommen": "Arrive together at collector",
   "Andockpunkt": "Docking point", "Andockpunkte": "Docking points", "Andockpunkte dauerhaft anzeigen": "Always show docking points",
+  "Alle Punkte": "All points",
+  "Der Haken in der Überschrift aktiviert den Bereich. Alle Punkte sind zunächst aus und lassen sich gemeinsam oder einzeln einschalten.": "The heading checkbox enables this section. All docking points start off and can be enabled together or individually.",
   "Anfang → Ende": "Start → End", "Anfangsfilter": "Initial filter", "Animation": "Animation",
   "Animation aktivieren": "Enable animation", "Animationsart": "Animation type", "Animationsfarbe": "Animation color",
   "Richtungsquelle": "Direction source", "Manuell": "Manual", "Zahlen-Entität": "Numeric entity",

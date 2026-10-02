@@ -1,6 +1,7 @@
 import { getWidgetSets, getWidgetDefinition, registerWidgetSet } from "./widget-registry.js";
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation } from "./connection-animation.js";
+import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
@@ -97,8 +98,9 @@ const CONNECTION_ANCHORS = [
   ["top-quarter", "Oben 1/4", 0.25, 0], ["top-center", "Oben Mitte", 0.5, 0], ["top-three-quarter", "Oben 3/4", 0.75, 0],
   ["bottom-quarter", "Unten 1/4", 0.25, 1], ["bottom-center", "Unten Mitte", 0.5, 1], ["bottom-three-quarter", "Unten 3/4", 0.75, 1],
 ];
-const connectionAnchorGroup = { id: "dock-points", label: "Andockpunkte", masterKey: "dockPointsEnabled", defaultEnabled: false, hint: "Der Haken in der Überschrift aktiviert oder deaktiviert alle Andockpunkte dieses Widgets.", fields: [
-  ...CONNECTION_ANCHORS.map(([id, label]) => ({ label, key: `dock_${id.replaceAll("-", "_")}`, type: "checkbox", default: true })),
+const CONNECTION_ANCHOR_IDS = CONNECTION_ANCHORS.map(([id]) => id);
+const connectionAnchorGroup = { id: "dock-points", label: "Andockpunkte", masterKey: "dockPointsEnabled", defaultEnabled: false, hint: "Der Haken in der Überschrift aktiviert den Bereich. Alle Punkte sind zunächst aus und lassen sich gemeinsam oder einzeln einschalten.", fields: [
+  ...CONNECTION_ANCHORS.map(([id, label]) => ({ label, key: dockPointKey(id), type: "checkbox", default: false })),
   { label: "Mehrfachbelegung erlauben", key: "dockMultiple", type: "checkbox", default: true },
   { label: "Maximale Verbindungen (0 = unbegrenzt)", key: "dockMaxConnections", type: "number", min: 0, max: 99, default: 0 },
   { label: "Spurabstand (px)", key: "dockLaneSpacing", type: "number", min: 0, max: 40, default: 6 },
@@ -288,6 +290,7 @@ function ensureProjectPages(project) {
     page.visible ??= true;
     page.page ||= { preset: "desktop", ...PRESETS.desktop, background: "#242729", backgroundMode: "tile" };
     page.widgets = Array.isArray(page.widgets) ? page.widgets : [];
+    for (const widget of page.widgets) if (widget.type !== "svg-connection") initializeDockPoints(widget, CONNECTION_ANCHOR_IDS);
     ensureWidgetNames(page);
   });
   project.currentPageId = project.pages.some((page) => page.id === project.currentPageId) ? project.currentPageId : project.pages[0].id;
@@ -1205,6 +1208,7 @@ async function importWidgets(file) {
       widget.height = Math.max(16, Number(widget.height) || 62);
       widget.layer = Math.max(0, Math.min(9999, Math.trunc(Number(widget.layer) || 0)));
       widget.generalEnabled ??= false; widget.visibilityEnabled ??= false; widget.locked ??= false;
+      if (widget.type !== "svg-connection") initializeDockPoints(widget, CONNECTION_ANCHOR_IDS);
       currentPage().widgets.push(widget);
     }
     setSingleWidgetSelection(currentPage().widgets.at(-widgets.length).id);
@@ -1318,7 +1322,7 @@ function closestConnectionAnchor(clientX, clientY, connection, prefix, widgets, 
   let closest = null;
   for (const target of widgets.filter(item => item.type !== "svg-connection" && item.visible !== false && item.dockPointsEnabled === true)) {
     for (const [anchorId] of CONNECTION_ANCHORS) {
-      if (target[`dock_${anchorId.replaceAll("-", "_")}`] === false) continue;
+      if (target[dockPointKey(anchorId)] !== true) continue;
       const occupied = widgets.filter(item => item.type === "svg-connection").flatMap(item => ["start", "end"].map(side => ({ item, side }))).filter(({ item, side }) => {
         if (item.id === connection.id && side === prefix) return false;
         return item[`${side}WidgetId`] === target.id && (item[`${side}Anchor`] || (side === "start" ? "right-center" : "left-center")) === anchorId && !item[`${side}Collector`];
@@ -1362,7 +1366,7 @@ function connectionEndpoint(widget, prefix, widgets) {
   if (collector) return collector;
   const target = widgets.find(item => item.id === widget[`${prefix}WidgetId`] && item.type !== "svg-connection");
   const anchorId = widget[`${prefix}Anchor`] || (prefix === "start" ? "right-center" : "left-center");
-  const anchorEnabled = target?.dockPointsEnabled === true && target?.[`dock_${anchorId.replaceAll("-", "_")}`] !== false;
+  const anchorEnabled = target?.dockPointsEnabled === true && target?.[dockPointKey(anchorId)] === true;
   if (target && anchorEnabled) {
     const connections = widgets.filter(item => item.type === "svg-connection").flatMap(item => ["start", "end"].map(side => ({
       id: `${item.id}:${side}`, widget: item, side,
@@ -1379,6 +1383,17 @@ function connectionEndpoint(widget, prefix, widgets) {
     return position;
   }
   return { x: Number(widget[`${prefix}X`]) || 0, y: Number(widget[`${prefix}Y`]) || 0 };
+}
+
+function preserveDockedConnectionPositions(target, widgets) {
+  for (const connection of widgets.filter(item => item.type === "svg-connection")) {
+    for (const prefix of ["start", "end"]) {
+      if (connection[`${prefix}WidgetId`] !== target.id) continue;
+      const position = connectionEndpoint(connection, prefix, widgets);
+      connection[`${prefix}X`] = position.x;
+      connection[`${prefix}Y`] = position.y;
+    }
+  }
 }
 
 function connectionRoute(widget, widgets, reverse = false) {
@@ -1778,6 +1793,10 @@ function addWidget(definition) {
     borderColor: "#626c70", borderWidth: 0, borderStyle: "none", padding: 0, shadow: false, opacity: 1,
     ...structuredClone(definition.defaults),
   };
+  if (widget.type !== "svg-connection") {
+    widget.dockPointsEnabled = false;
+    setAllDockPoints(widget, CONNECTION_ANCHOR_IDS, false);
+  }
   if (definition.packageId) { widget.packageId = definition.packageId; widget.definitionVersion = "0.1"; }
   widget.name = uniqueWidgetName(page, widget.name || definition.label);
   if (definition.type === "svg-connection") {
@@ -2287,7 +2306,7 @@ function renderStage() {
     const showDockPoints = !runtimeMode && !isConnection && widget.dockPointsEnabled === true && (selected || widget.dockAlwaysVisible || hasConnections);
     if (showDockPoints) {
       for (const [anchorId, label, x, y] of CONNECTION_ANCHORS) {
-        if (widget[`dock_${anchorId.replaceAll("-", "_")}`] === false) continue;
+        if (widget[dockPointKey(anchorId)] !== true) continue;
         const marker = document.createElement("span"); marker.className = "widget-dock-point"; marker.style.left = `${x * 100}%`; marker.style.top = `${y * 100}%`; marker.dataset.anchorId = anchorId; marker.dataset.widgetId = widget.id;
         const occupied = activePage.widgets.filter(item => item.type === "svg-connection" && [[item.startWidgetId, item.startAnchor], [item.endWidgetId, item.endAnchor]].some(([id, anchor]) => id === widget.id && (anchor || "right-center") === anchorId)).length;
         marker.dataset.count = String(occupied); marker.title = `${label}${occupied ? ` · ${occupied} Verbindung${occupied === 1 ? "" : "en"}` : ""}`; element.append(marker);
@@ -2509,6 +2528,7 @@ function field(descriptor, widget) {
   if (descriptor.min !== undefined) input.min = descriptor.min;
   if (descriptor.max !== undefined) input.max = descriptor.max;
   if (descriptor.step !== undefined) input.step = descriptor.step;
+  if (input.type === "checkbox" && descriptor.key?.startsWith("dock_")) input.dataset.dockPoint = descriptor.key;
   if (input.type === "checkbox") input.checked = widget[descriptor.key] ?? descriptor.default ?? true;
   else input.value = widget[descriptor.key] ?? descriptor.default ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
   input.disabled = descriptor.disabled === true;
@@ -2702,13 +2722,7 @@ function renderProperties() {
       if (group.masterKey) {
         recordHistorySnapshot();
         if (group.masterKey === "dockPointsEnabled" && !enabled.checked) {
-          for (const connection of page.widgets.filter(item => item.type === "svg-connection")) {
-            for (const prefix of ["start", "end"]) {
-              if (connection[`${prefix}WidgetId`] !== widget.id) continue;
-              const position = connectionEndpoint(connection, prefix, page.widgets);
-              connection[`${prefix}X`] = position.x; connection[`${prefix}Y`] = position.y;
-            }
-          }
+          preserveDockedConnectionPositions(widget, page.widgets);
         }
         widget[group.masterKey] = enabled.checked;
         details.classList.toggle("is-disabled", !enabled.checked);
@@ -2721,9 +2735,31 @@ function renderProperties() {
     });
     summary.append(enabled);
     const body = document.createElement("div"); body.className = "property-fields";
+    let updateDockAll = null;
+    if (group.id === "dock-points") {
+      const allLabel = document.createElement("label"); allLabel.className = "dock-all-label";
+      const allCheckbox = document.createElement("input"); allCheckbox.type = "checkbox"; allCheckbox.setAttribute("aria-label", "Alle Punkte");
+      allLabel.append(allCheckbox, document.createTextNode("Alle Punkte")); body.append(allLabel);
+      updateDockAll = () => {
+        const selection = dockPointSelection(widget, CONNECTION_ANCHOR_IDS);
+        allCheckbox.checked = selection === "all";
+        allCheckbox.indeterminate = selection === "some";
+      };
+      allCheckbox.addEventListener("change", () => {
+        recordHistorySnapshot();
+        if (!allCheckbox.checked) preserveDockedConnectionPositions(widget, page.widgets);
+        setAllDockPoints(widget, CONNECTION_ANCHOR_IDS, allCheckbox.checked);
+        for (const input of body.querySelectorAll("input[data-dock-point]")) input.checked = allCheckbox.checked;
+        updateDockAll(); renderStage();
+      });
+    }
     if (group.hint) { const hint = document.createElement("p"); hint.className = "property-hint"; hint.textContent = group.hint; body.append(hint); }
     const visibleFields = (fields, model) => fields.filter((descriptor) => !descriptor.showWhen || (model[descriptor.showWhen.key] ?? descriptor.showWhen.default) === descriptor.showWhen.value).map((descriptor) => field(descriptor, model));
     body.append(...visibleFields(group.fields, widget));
+    if (updateDockAll) {
+      for (const input of body.querySelectorAll("input[data-dock-point]")) input.addEventListener("input", updateDockAll);
+      updateDockAll();
+    }
     if (group.universalStates) {
       const count = Math.max(1, Math.min(5, Number(widget.stateCount) || 2));
       widget.visualStates ??= [];
