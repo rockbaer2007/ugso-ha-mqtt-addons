@@ -1,6 +1,13 @@
 import { registerWidgetSet } from "../widget-registry.js";
 
 const fields = (items) => ({ label: "Größe und Position", fields: items });
+const sliderShadow = (label, prefix) => ({ label, fields: [
+  { label: "X-Versatz (px)", key: `${prefix}ShadowX`, type: "number", min: -100, max: 100, default: 0 },
+  { label: "Y-Versatz (px)", key: `${prefix}ShadowY`, type: "number", min: -100, max: 100, default: 0 },
+  { label: "Unschärfe (px)", key: `${prefix}ShadowBlur`, type: "number", min: 0, max: 100, default: 0 },
+  { label: "Ausdehnung (px)", key: `${prefix}ShadowSize`, type: "number", min: -100, max: 100, default: 0 },
+  { label: "Schattenfarbe (CSS / RGBA)", key: `${prefix}ShadowColor`, default: "rgba(0,0,0,0.5)" },
+] });
 const geometry = () => fields([
   { label: "z-index", key: "layer", type: "number", min: 0, max: 9999 },
   { label: "Breite (px)", key: "width", type: "number", min: 16, max: 7680 },
@@ -206,6 +213,20 @@ registerWidgetSet({
         { label: "Werte der Zwischenmarkierungen anzeigen", key: "showStepValues", type: "checkbox", default: false },
         { label: "Vorschauwert", key: "value", type: "number" },
       ] },
+      { label: "Slider-Schiene", fields: [
+        { label: "Schienenfarbe", key: "sliderRailColor", type: "color", default: "#6e6e6e" },
+        { label: "Aktive Schienenfarbe", key: "sliderRailActiveColor", type: "color", default: "#29c8b5" },
+        { label: "Spurtyp", key: "trackBarType", type: "select", default: "normal", options: [{ value: "normal", label: "Normal" }, { value: "inverted", label: "Umgekehrt" }, { value: "none", label: "Ohne aktive Spur" }] },
+        { label: "Schienenstärke (px)", key: "trackWidth", type: "number", min: 1, max: 64, default: 6 },
+        { label: "Schienenradius (%)", key: "trackBorderRadius", type: "number", min: 0, max: 100, default: 100 },
+      ] },
+      sliderShadow("Schienenschatten", "track"),
+      { label: "Slider-Regler", fields: [
+        { label: "Reglerfarbe", key: "sliderThumbColor", type: "color", default: "#29c8b5" },
+        { label: "Reglergröße (px)", key: "thumbSize", type: "number", min: 4, max: 64, default: 16 },
+        { label: "Reglerradius (%)", key: "thumbBorderRadius", type: "number", min: 0, max: 100, default: 100 },
+      ] },
+      sliderShadow("Reglerschatten", "thumb"),
       geometry(), ...cssGroups(),
     ] },
     { type: "sensor", label: "Number", searchTerms: ["Zahlenwert"], icon: "⌁", defaults: { title: "Number", entityId: "", state: "--", unit: "", digits: 1, factor: 1, decimalComma: true }, propertyGroups: [

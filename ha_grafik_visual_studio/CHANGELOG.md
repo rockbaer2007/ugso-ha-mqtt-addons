@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.114
+
+- Slider track and thumb have separate colors, sizes, rounding and configurable shadows (offset, blur, spread and CSS/RGBA color).
+- Track fill supports normal, inverted and no active fill; it follows pointer input and incoming Home Assistant state updates in Chromium and Firefox.
+- Existing slider scale and entity write behavior remain available; styling applies in editor and runtime.
+
 ## 0.1.113
 
 - Colorpicker tabs share one measured content area so switching to Favorites preserves the dialog size.

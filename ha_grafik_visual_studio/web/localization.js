@@ -2,6 +2,14 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Slider-Schiene": "Slider track", "Slider-Regler": "Slider thumb",
+  "Schienenfarbe": "Track color", "Aktive Schienenfarbe": "Active track color",
+  "Spurtyp": "Track fill", "Umgekehrt": "Inverted", "Ohne aktive Spur": "No active fill",
+  "Schienenstärke (px)": "Track thickness (px)", "Schienenradius (%)": "Track rounding (%)",
+  "Schienenschatten": "Track shadow", "Reglerschatten": "Thumb shadow",
+  "Reglerfarbe": "Thumb color", "Reglergröße (px)": "Thumb size (px)", "Reglerradius (%)": "Thumb rounding (%)",
+  "X-Versatz (px)": "X offset (px)", "Y-Versatz (px)": "Y offset (px)",
+  "Unschärfe (px)": "Blur (px)", "Ausdehnung (px)": "Spread (px)", "Schattenfarbe (CSS / RGBA)": "Shadow color (CSS / RGBA)",
   "Lokale Favoriten übernehmen": "Import local favorites",
   "Gemeinsame Favoriten benötigen einen HA-Admin und einen aktuellen Ingress-Aufruf.": "Shared favorites require an HA administrator and a current Ingress session.",
   "Favoriten sind nur für HA-Admins verfügbar.": "Favorites are only available to HA administrators.",

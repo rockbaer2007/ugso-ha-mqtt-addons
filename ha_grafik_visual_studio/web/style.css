@@ -229,10 +229,17 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .border-title { position: absolute; max-width: 90%; padding: 0 5px; transform: translateY(-50%); white-space: nowrap; }
 .widget-content > button { max-width: 100%; max-height: 100%; cursor: pointer; }
 .widget-content > input[type="range"] { width: 100%; }
+.widget-slider-input { appearance: none; background: transparent; height: max(var(--slider-track-size), var(--slider-thumb-size)); padding: 0; border: 0; cursor: pointer; }
+.widget-slider-input:disabled { cursor: default; }
+.widget-slider-input::-webkit-slider-runnable-track { height: var(--slider-track-size); border-radius: var(--slider-track-radius); background: var(--slider-fill); box-shadow: var(--slider-track-shadow); }
+.widget-slider-input::-webkit-slider-thumb { appearance: none; width: var(--slider-thumb-size); height: var(--slider-thumb-size); margin-top: calc((var(--slider-track-size) - var(--slider-thumb-size)) / 2); border: 0; border-radius: var(--slider-thumb-radius); background: var(--slider-thumb); box-shadow: var(--slider-thumb-shadow); }
+.widget-slider-input::-moz-range-track { height: var(--slider-track-size); border-radius: var(--slider-track-radius); background: var(--slider-fill); box-shadow: var(--slider-track-shadow); }
+.widget-slider-input::-moz-range-progress { background: transparent; }
+.widget-slider-input::-moz-range-thumb { width: var(--slider-thumb-size); height: var(--slider-thumb-size); border: 0; border-radius: var(--slider-thumb-radius); background: var(--slider-thumb); box-shadow: var(--slider-thumb-shadow); }
 .widget-slider-values { display: flex; flex-direction: column; width: 100%; min-width: 0; gap: 2px; padding: 0 12px; }
 .widget-slider-values input[type="range"] { width: 100%; min-width: 0; margin: 0; }
 .widget-slider-values.scale-above { flex-direction: column-reverse; }
-.widget-slider-scale { position: relative; height: 24px; margin: 0 8px; font-size: 11px; font-variant-numeric: tabular-nums; }
+.widget-slider-scale { position: relative; height: 24px; margin: 0 calc(var(--slider-thumb-size, 16px) / 2); font-size: 11px; font-variant-numeric: tabular-nums; }
 .widget-slider-mark { position: absolute; top: 0; display: flex; flex-direction: column; align-items: center; transform: translateX(-50%); white-space: nowrap; }
 .widget-slider-tick { display: block; width: 1px; height: 5px; background: currentColor; opacity: .65; }
 .scale-above .widget-slider-mark { top: auto; bottom: 0; flex-direction: column-reverse; }
