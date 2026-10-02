@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.126
+
+- Fixes LineBox inputs ignoring numeric widgets connected through lines without their own numeric animation entity. Explicit numeric line entities retain priority; otherwise connected numeric widgets provide values, including Number scaling.
+- Supports internal LineBox chains with cycle guards and keeps zero as a valid value. Output helper protection also checks numeric source widgets for direct feedback.
+- Adds entity/preview/docking-point value sources for Number, Red Number, Gauge and Bar. Enable the selected docking point to display the signed sum of valid connected line values without another HA helper; missing input displays --.
+
 ## 0.1.125
 
 - Fixes Number HTML prefix and singular/plural suffix rendering for bound entities, including immediate local state updates. Formatting, factor and missing-value placeholders remain intact.

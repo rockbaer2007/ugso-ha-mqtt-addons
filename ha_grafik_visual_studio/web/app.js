@@ -2,7 +2,7 @@ import { getWidgetSets, getWidgetDefinition, registerWidgetSet } from "./widget-
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation } from "./connection-animation.js";
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
-import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition } from "./linebox.js";
+import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
@@ -263,6 +263,10 @@ function propertyGroupEnabled(widget, group, index) {
 }
 
 function indexedWidgetGroups(widget) {
+  if (["sensor", "red-number", "gauge", "bar"].includes(widget.type)) return [{ id: "numeric-source", label: "Wertquelle", fields: [
+    { label: "Wertquelle", key: "numericSource", type: "select", default: "entity", refreshProperties: true, options: [{ value: "entity", label: "Home-Assistant-Entität / Vorschau" }, { value: "dock", label: "Wert vom Dockpunkt" }, { value: "preview", label: "Vorschauwert" }] },
+    { label: "Eingangs-Dockpunkt", key: "numericInputAnchor", type: "select", default: "left-center", showWhen: { key: "numericSource", value: "dock" }, options: CONNECTION_ANCHORS.map(([value, label]) => ({ value, label })) },
+  ], hint: "Den gewählten Andockpunkt aktivieren. Mehrere gültige Linienwerte werden mit Vorzeichen summiert. Ohne gültigen Eingang erscheint --; null ist ein gültiger Wert." }];
   if (widget.type === "tabs") return Array.from({ length: tabCount(widget) }, (_, index) => ({ id: `tab-${index}`, label: `Tab [${index + 1}]`, fields: [
     { label: "Tab-Titel", key: `tabTitle${index}`, default: `Tab ${index + 1}` },
     { label: "Tab-Inhalt", key: `tabSource${index}`, type: "select", default: "own", refreshProperties: true, options: [{ value: "own", label: "Eigene Widget-Fläche" }, { value: "page", label: "Vorhandene Projektseite" }] },
@@ -490,6 +494,10 @@ async function loadProject() {
 }
 
 function displayedWidgetState(widget) {
+  if (widget.numericSource) {
+    const surface = visibleTabSurfaces(state.project, currentPage(), activeTabIndex).find(page => page.widgets.includes(widget));
+    return numericWidgetInput(widget, surface?.widgets || currentPage().widgets, state.entityStates) ?? "--";
+  }
   if (runtimeMode && widget.entityId) {
     return state.entityStates[widget.entityId]?.state ?? "--";
   }
@@ -510,7 +518,7 @@ async function fetchEntityStates(ids) {
 
 function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
-    ["sensor", "slider", "input-value"].includes(widget.type) ? widget.entityId : "",
+    ["sensor", "red-number", "gauge", "bar", "slider", "input-value"].includes(widget.type) && !["dock", "preview"].includes(widget.numericSource) ? widget.entityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
   ]))]
     .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id || ""));
@@ -601,7 +609,7 @@ function stageRuntimeEntityValue(entityId, value) {
         const range = document.getElementById(widget.id)?.querySelector('input[type="range"]');
         const value = sliderLiveValue(widget, state.entityStates[widget.entityId]);
         if (range && !range.dataset.dragging && value !== null) { range.value = String(value); updateSliderFill(range, widget); }
-      } else if (widget.type === "sensor" && widget.entityId) {
+      } else if (widget.type === "sensor" && (widget.entityId || widget.numericSource === "dock")) {
         const value = document.getElementById(widget.id)?.querySelector(".widget-content .value");
         if (value) renderNumberValue(value, widget, state.entityStates[widget.entityId]);
       } else if (widget.type === "linebox") {
@@ -2279,7 +2287,9 @@ function renderLineboxJunction(box, widgets) {
 }
 
 function renderNumberValue(element, widget, entityState) {
-  const display = numberDisplay(widget, entityState);
+  const source = widget.numericSource;
+  const display = source === "dock" ? numberDisplay({ ...widget, entityId: "dock" }, { state: displayedWidgetState(widget) })
+    : source === "preview" ? numberDisplay({ ...widget, entityId: "" }) : numberDisplay(widget, entityState);
   element.replaceChildren();
   appendSafeHtml(element, display.prefix);
   element.append(document.createTextNode(display.value));
@@ -2754,6 +2764,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       track.style.border = widget.barBorder || ""; track.style.opacity = String(widget.barOpacity ?? 1);
       const fill = document.createElement("span"); fill.className = "bar-fill"; fill.style.backgroundColor = widget.barColor || "var(--accent)";
       fill.style[widget.orientation === "vertical" ? "height" : "width"] = `${(widget.invert ? 1 - ratio : ratio) * 100}%`; track.append(fill); content.append(track);
+      if (widget.numericSource === "dock" && !Number.isFinite(current)) { fill.style[widget.orientation === "vertical" ? "height" : "width"] = "0%"; const missing = document.createElement("span"); missing.textContent = "--"; content.append(missing); }
     } else if (widget.type === "navigation") {
       const href = safeUrl(widget.navUrl);
       if (widget.targetPage) {
@@ -2774,7 +2785,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
         for (const entry of values) { const button = document.createElement("button"); button.type = "button"; const selected = entry.value ? selectedFilters.includes(String(entry.value)) : !selectedFilters.length; button.setAttribute("aria-pressed", selected); button.className = widget.variant || "outlined"; button.style.color = entry.textColor || ""; button.style.backgroundColor = selected ? entry.activeColor || "" : ""; const icon = entry.image || entry.icon; if (icon) { const image = document.createElement("img"); image.alt = ""; image.width = 18; image.height = 18; setIconImageSource(image, icon); button.append(image); } button.append(document.createTextNode(entry.title || entry.value)); button.addEventListener("click", event => { event.stopPropagation(); choose(String(entry.value)); }); buttons.append(button); } content.append(buttons);
       }
     } else if (widget.type === "sensor") {
-      const display = numberDisplay(widget, state.entityStates[widget.entityId]);
+      const display = numberDisplay({ ...widget, entityId: widget.numericSource === "dock" ? "dock" : widget.numericSource === "preview" ? "" : widget.entityId }, state.entityStates[widget.entityId]);
       const value = document.createElement("span"); value.className = "value";
       renderNumberValue(value, widget, state.entityStates[widget.entityId]);
       if (!display.bound) {
@@ -2791,7 +2802,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       const value = document.createElement("span"); value.className = "value";
     let displayValue = displayedWidgetState(widget) ?? "--";
     let suffix = Number(displayValue) === 1 ? widget.suffixSingular || widget.unit || "" : widget.suffixPlural || widget.unit || "";
-    if (widget.entityId) value.append(document.createTextNode(`${widget.entityId} · `));
+    if (widget.entityId && !["dock", "preview"].includes(widget.numericSource)) value.append(document.createTextNode(`${widget.entityId} · `));
     appendSafeHtml(value, widget.prefix || ""); value.append(document.createTextNode(String(displayValue))); appendSafeHtml(value, suffix);
       if (widget.title) { const title = document.createElement("span"); title.className = "widget-title"; title.textContent = widget.title; content.append(title); }
       content.append(value);

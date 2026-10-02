@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition } from "../web/linebox.js";
+import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "../web/linebox.js";
 import { getWidgetDefinition } from "../web/widget-registry.js";
 import "../web/widget-sets/core.js";
 import "../web/widget-sets/basic2.js";
@@ -17,6 +17,41 @@ const battery = { id: "battery", type: "svg-connection", animationSource: "numbe
 const outgoing = { id: "outgoing", type: "svg-connection", startWidgetId: "box", startAnchor: "right-center" };
 const widgets = [box, solar, battery, outgoing];
 const states = { "sensor.solar": { state: "1000" }, "sensor.battery": { state: "-300" } };
+
+test("docked Number values supply manual lines and add 125 plus 79", () => {
+  const first = { id: "first", type: "sensor", entityId: "sensor.first", factor: 1 };
+  const second = { id: "second", type: "sensor", entityId: "sensor.second" };
+  const a = { ...solar, animationSource: "manual", animationNumberEntityId: "", startWidgetId: "first" };
+  const b = { ...battery, animationSource: "manual", animationNumberEntityId: "", startWidgetId: "second" };
+  const target = { id: "display", type: "sensor", numericSource: "dock", numericInputAnchor: "left-center", dockPointsEnabled: true, dock_left_center: true };
+  const out = { ...outgoing, endWidgetId: target.id, endAnchor: "left-center" };
+  const layout = [first, second, a, b, box, out, target];
+  const live = { "sensor.first": { state: "125" }, "sensor.second": { state: "79" } };
+  assert.equal(lineboxInputSum(box, layout, live), 204);
+  assert.equal(numericWidgetInput(target, layout, live), 204);
+  const reader = { ...target, id: "reader", type: "gauge" };
+  const onward = { id: "onward", type: "svg-connection", startWidgetId: target.id, endWidgetId: reader.id, endAnchor: "left-center" };
+  assert.equal(numericWidgetInput(reader, [...layout, reader, onward], live), 204);
+  first.factor = 2;
+  assert.equal(lineboxInputSum(box, layout, live), 329);
+  assert.equal(numericWidgetInput({ ...target, dock_left_center: false }, layout, live), null);
+});
+
+test("reversed wiring preserves source values and explicit line sources take precedence", () => {
+  const source = { id: "first", type: "sensor", state: 125 };
+  const reversed = { ...solar, animationSource: "manual", animationNumberEntityId: "", startWidgetId: box.id, startAnchor: "left-center", endWidgetId: source.id };
+  assert.equal(lineboxInputSum(box, [box, source, reversed], {}), 125);
+  assert.equal(lineboxInputSum(box, [box, source, { ...reversed, animationSource: "number", animationNumberEntityId: "sensor.missing" }], {}), null);
+});
+
+test("LineBox chains pass sums while cycles terminate and zero stays valid", () => {
+  const next = { ...box, id: "next" };
+  const link = { ...outgoing, endWidgetId: "next", endAnchor: "left-center" };
+  assert.equal(lineboxInputSum(next, [box, next, solar, battery, link], states), 700);
+  const loop = { ...outgoing, id: "loop", startWidgetId: "next", endWidgetId: "box", endAnchor: "top-center" };
+  assert.equal(lineboxInputSum(box, [box, next, link, loop], {}), null);
+  assert.equal(lineboxInputSum(box, [box, solar], { "sensor.solar": { state: "0" } }), 0);
+});
 
 test("SVG LineBox and SVG-Line keep their stored widget types", () => {
   assert.equal(getWidgetDefinition("svg-connection").label, "SVG-Line");

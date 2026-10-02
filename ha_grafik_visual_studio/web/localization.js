@@ -2,6 +2,9 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Wertquelle": "Value source", "Home-Assistant-Entität / Vorschau": "Home Assistant entity / preview",
+  "Wert vom Dockpunkt": "Value from docking point", "Vorschauwert": "Preview value", "Eingangs-Dockpunkt": "Input docking point",
+  "Den gewählten Andockpunkt aktivieren. Mehrere gültige Linienwerte werden mit Vorzeichen summiert. Ohne gültigen Eingang erscheint --; null ist ein gültiger Wert.": "Enable the selected docking point. Multiple valid line values are summed with signs. Missing input displays --; zero is a valid value.",
   "Inaktive Reiter abdunkeln (%)": "Dim inactive tabs (%)",
   "Textfarbe aktiv": "Active text color", "Textfarbe nicht aktiv": "Inactive text color",
   "Tab-Hintergrundfarbe": "Tab background color",
