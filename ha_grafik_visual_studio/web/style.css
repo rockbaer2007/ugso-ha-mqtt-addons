@@ -12,8 +12,12 @@
 .cp-tabs button[aria-selected="true"] { border-color: var(--accent); }
 .cp-full { color: #ffd54f; font-weight: 650; }
 .cp-save-favorite:disabled { opacity: .4; cursor: default; }
-.cp-favorites-list { display: grid; gap: 5px; max-height: 350px; overflow: auto; }
-.cp-favorite-row { display: flex; gap: 6px; }
+.cp-panels { display: grid; }
+.cp-panels > section { grid-area: 1 / 1; min-width: 0; }
+.cp-panels > section[hidden] { display: block; visibility: hidden; pointer-events: none; }
+.cp-favorites-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 6px; max-height: 350px; overflow: auto; }
+@media (max-width: 520px) { .cp-favorites-list { grid-template-columns: minmax(0, 1fr); } }
+.cp-favorite-row { display: flex; align-items: center; min-width: 0; gap: 6px; }
 .cp-favorite-choose { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; text-align: left; overflow-wrap: anywhere; }
 .cp-favorite-swatch { width: 24px; height: 24px; flex: none; border: 1px solid var(--line); border-radius: 4px; }
 * { box-sizing: border-box; }

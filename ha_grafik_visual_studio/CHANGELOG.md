@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.113
+
+- Colorpicker tabs share one measured content area so switching to Favorites preserves the dialog size.
+- Favorites use two columns on larger screens and one column on narrow screens, with scrolling for longer lists.
+
 ## 0.1.112
 
 - Colorpicker 1.2.0 stores a shared list of up to 15 favorites in add-on data, guarded by trusted Ingress identity and Home Assistant administrator membership.

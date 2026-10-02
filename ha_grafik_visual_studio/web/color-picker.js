@@ -37,7 +37,7 @@ export async function openColorPicker(initial = "#29c8b5") {
         <button id="cp-picker-tab" role="tab" aria-selected="true" aria-controls="cp-picker-panel" type="button">${uiText("Colorpicker")}</button>
         <button id="cp-favorites-tab" role="tab" aria-selected="false" aria-controls="cp-favorites-panel" type="button">${uiText("Favoriten")}</button>
       </div>
-      <section id="cp-picker-panel" role="tabpanel" aria-labelledby="cp-picker-tab"><div class="color-picker-body"><div>
+      <div class="cp-panels"><section id="cp-picker-panel" role="tabpanel" aria-labelledby="cp-picker-tab"><div class="color-picker-body"><div>
         <canvas width="256" height="256" tabindex="0" role="slider" aria-label="${uiText("Farbkreis")}" aria-valuemin="0" aria-valuemax="360"></canvas>
         <label>${uiText("Helligkeit")}<input class="cp-brightness" type="range" min="0" max="100" value="100"></label>
       </div><div class="color-picker-fields">
@@ -53,7 +53,7 @@ export async function openColorPicker(initial = "#29c8b5") {
       <section id="cp-favorites-panel" role="tabpanel" aria-labelledby="cp-favorites-tab" hidden>
         <p class="cp-count"></p><button class="cp-migrate" type="button" hidden>${uiText("Lokale Favoriten übernehmen")}</button><div class="cp-favorites-list"></div>
         <output class="cp-favorites-status" role="status" aria-live="polite"></output>
-      </section>
+      </section></div>
       <p class="property-hint">Color names: <a href="https://github.com/meodai/color-names" target="_blank" rel="noopener">David Aerne / meodai</a> (MIT).
       <a href="color-names-LICENSE.txt" target="_blank" rel="noopener">${uiText("Lizenz")}</a></p>
       <div class="dialog-actions"><button class="cp-close" type="button">${uiText("Schließen")}</button></div>`;
