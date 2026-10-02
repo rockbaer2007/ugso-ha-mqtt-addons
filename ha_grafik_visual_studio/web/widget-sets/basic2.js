@@ -12,7 +12,8 @@ registerWidgetSet({
   label: "HA Grafik – Interaktiv",
   widgets: [{
     type: "universal-button",
-    label: "Zustands-Element",
+    label: "State Element",
+    searchTerms: ["Zustands-Element"],
     icon: "◉",
     defaults: {
       title: "", entityId: "", state: "off", interaction: "switch", targetUrl: "", width: 144, height: 112,

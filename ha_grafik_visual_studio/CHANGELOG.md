@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.92
+
+- Added Linebox to HA Grafik – Spezial: enabled docking points can be inputs, neutral, or outputs. Numeric SVG-Line inputs are summed with their direction sign, and selected outputs can drive another line's animation while preserving its colors and style. Linebox is visible only in the editor.
+- Standardized the remaining German palette widget names to English: SVG-Line, Icon Toggle Button, Gauge and State Element. Stored widget types remain unchanged, and former German labels remain searchable.
+
 ## 0.1.91
 
 - The docking-point properties now start with an "All points" checkbox that toggles all twelve anchors and shows a mixed state when only some are enabled. New widgets start with every anchor off, while previously active anchors in saved projects remain enabled.

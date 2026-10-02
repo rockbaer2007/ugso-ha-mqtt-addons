@@ -7,7 +7,7 @@ Stand: 01.10.2026. Dieses Dokument hält die vereinbarten Regeln und den ersten 
 - Widgets werden in benannten Widget-Sets registriert. Ein Set hat derzeit `id`, `label` und `widgets`.
 - Eine Widget-Definition hat derzeit mindestens `type`, `label`, `defaults` und `propertyGroups`; Icon und Palettenvorschau können ergänzt werden. Doppelte Set-IDs und Widget-Typen werden abgewiesen.
 - Widgets haben im Editor eine Platzierung, einen Namen, Eigenschaften und eine Runtime-Darstellung. Gemeinsame Bereiche wie **Generell** und **Sichtbarkeit** sind für alle Widgets vorgesehen; weitere Felder hängen vom Typ ab.
-- Die SVG-Verbindungslinie nutzt Andockpunkte, Zwischenpunkte und ausdrücklich aktivierte Sammelpunkte. Diese Funktionen sind Eigenschaften des vorhandenen Widgets und noch kein allgemeines Paket-API.
+- SVG-Line (gespeicherter Typ `svg-connection`) nutzt Andockpunkte, Zwischenpunkte und ausdrücklich aktivierte Sammelpunkte. Die Linebox ist ein eigenes Spezial-Widget zur vorzeichenrichtigen Summierung von Zahlenwerten angeschlossener Linien. Diese Funktionen sind Eigenschaften der vorhandenen Widgets und noch kein allgemeines Paket-API.
 
 ## Verbindliche Kompatibilitätsregeln
 

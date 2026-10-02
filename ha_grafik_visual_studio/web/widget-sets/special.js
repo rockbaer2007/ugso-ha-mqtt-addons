@@ -12,7 +12,8 @@ registerWidgetSet({
   label: "HA Grafik – Spezial",
   widgets: [{
     type: "svg-connection",
-    label: "SVG-Verbindungslinie",
+    label: "SVG-Line",
+    searchTerms: ["SVG-Verbindungslinie"],
     icon: "↝",
     preview: { kind: "plain", lines: ["↝"] },
     defaults: {
@@ -24,7 +25,7 @@ registerWidgetSet({
       lineStyle: "solid", dashLength: 12, gapLength: 8, lineCap: "round",
       markerStart: "none", markerEnd: "arrow", markerSize: 8, markerColor: "#29c8b5",
       animationEnabled: false, animationStyle: "two-color", animationSource: "manual", animationDirection: "forward", animationDuration: 2,
-      animationNumberEntityId: "", animationBooleanEntityId: "", animationDivisor: 1, animationBooleanInvert: false,
+      animationNumberEntityId: "", animationBooleanEntityId: "", animationDivisor: 1, animationBooleanInvert: false, lineboxDivisor: 1,
       flowParentId: "", inheritFlow: true, synchronization: "same-phase",
       crossingStyle: "overlay", connectionZMode: "auto", layer: 0, clickThrough: true,
     },
@@ -74,7 +75,7 @@ registerWidgetSet({
         { label: "Größe", key: "markerSize", type: "range", min: 2, max: 30, step: 1 },
         { label: "Farbe", key: "markerColor", type: "color" },
       ] },
-      { label: "Animation", hint: "Nur eine Richtungsquelle ist aktiv. Zahlenwert / Teiler ergibt Zyklen pro Sekunde (0,05 bis 20); bei 0 stoppt die Animation.", fields: [
+      { label: "Animation", hint: "Zahlenwert / Teiler ergibt Zyklen pro Sekunde (0,05 bis 20). Ein aktiver Linebox-Ausgang hat Vorrang vor der gewählten Richtungsquelle; Farbe und Linienart bleiben erhalten.", fields: [
         { label: "Animation aktivieren", key: "animationEnabled", type: "checkbox", default: false },
         { label: "Animationsart", key: "animationStyle", type: "select", options: [
           { value: "two-color", label: "Zweifarbenfluss" }, { value: "dash", label: "Laufende Striche" },
@@ -93,6 +94,7 @@ registerWidgetSet({
         ] },
         { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1, showWhen: { key: "animationSource", value: "manual", default: "manual" } },
         { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1, showWhen: { key: "animationSource", value: "boolean" } },
+        { label: "Linebox-Teiler (bei Übergabe)", key: "lineboxDivisor", type: "number", min: 0.001, step: 0.001, default: 1 },
         { label: "Hauptlinie / Flussgruppe", key: "flowParentId", type: "connection" },
         { label: "Animationstakt der Hauptlinie übernehmen (eigene Farben behalten)", key: "inheritFlow", type: "checkbox", default: true },
         { label: "Synchronisierung", key: "synchronization", type: "select", options: [
@@ -111,5 +113,12 @@ registerWidgetSet({
         { label: "Klicks durchlassen", key: "clickThrough", type: "checkbox", default: true },
       ] },
     ],
+  }, {
+    type: "linebox",
+    label: "Linebox",
+    icon: "Σ",
+    preview: { kind: "plain", lines: ["Σ"] },
+    defaults: { title: "Linebox", visible: true, dockPointsEnabled: false, width: 140, height: 76, backgroundColor: "#12383b", borderColor: "#29c8b5", borderWidth: 1, borderStyle: "dashed" },
+    propertyGroups: [],
   }],
 });

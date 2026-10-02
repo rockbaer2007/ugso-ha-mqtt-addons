@@ -160,7 +160,7 @@ registerWidgetSet({
     basicDataWidget("iframe-8", "iFrame 8", "▣", { state: 0, count: 2, noFrame: true }, [...entityTest(), ...frameFields(), { label: "Werteanzahl bis", key: "count", type: "range", min: 1, max: 20, step: 1, refreshProperties: true }]),
     basicDataWidget("image-8", "Image 8", "▧", { state: 0, count: 1 }, [...entityTest(), { label: "Werteanzahl bis", key: "count", type: "number", min: 1, max: 50, refreshProperties: true }, ...imageFields()]),
     basicDataWidget("ackflag-html", "AckFlag HTML", "✓", { state: false, htmlTrue: "Bestätigt", htmlFalse: "Ausstehend" }, [...entityTest(), ...htmlAdditions(), { label: "HTML bei false", key: "htmlFalse", type: "html" }, { label: "HTML bei true", key: "htmlTrue", type: "html" }], "Home Assistant hat kein ioBroker-ack-Flag. Als Zustand eine separate Bestätigungsentität verwenden; Live-Anbindung bleibt separat offen."),
-    { type: "button", label: "Schaltfläche (Icon Ein/Aus)", icon: "◉", defaults: { title: "Schaltfläche", entityId: "", state: "off", icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
+    { type: "button", label: "Icon Toggle Button", searchTerms: ["Schaltfläche (Icon Ein/Aus)"], icon: "◉", defaults: { title: "Icon Toggle Button", entityId: "", state: "off", icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
         { label: "Home-Assistant-Entität", key: "entityId" },
@@ -308,7 +308,7 @@ registerWidgetSet({
       ] },
       geometry(), ...cssGroups(),
     ] },
-    { type: "gauge", label: "Messanzeige", icon: "◴", defaults: { title: "Messanzeige", entityId: "", state: "--", unit: "%" }, propertyGroups: entityWidget(true) },
+    { type: "gauge", label: "Gauge", searchTerms: ["Messanzeige"], icon: "◴", defaults: { title: "Gauge", entityId: "", state: "--", unit: "%" }, propertyGroups: entityWidget(true) },
     { type: "image", label: "Image", icon: "▧", defaults: { title: "Kamera", entityId: "", state: "Bildfläche" }, propertyGroups: entityWidget() },
   ].map((widget) => {
     if (previousWidgetLabels[widget.type]) widget.searchTerms = [...(widget.searchTerms || []), previousWidgetLabels[widget.type]];

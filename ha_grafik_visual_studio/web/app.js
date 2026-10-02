@@ -2,6 +2,7 @@ import { getWidgetSets, getWidgetDefinition, registerWidgetSet } from "./widget-
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation } from "./connection-animation.js";
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
+import { lineboxInputSum, lineboxOutputForConnection, lineboxPortRole } from "./linebox.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
@@ -124,6 +125,18 @@ const commonWidgetGroups = [
 
 function widgetPropertyGroups(widget) {
   const groups = getWidgetDefinition(widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
+  if (widget.type === "linebox") {
+    const dockGroup = { ...connectionAnchorGroup, fields: connectionAnchorGroup.fields.map(field => field.key.startsWith("dock_") ? { ...field, refreshProperties: true } : field) };
+    const portFields = CONNECTION_ANCHORS.flatMap(([anchorId, label]) => {
+      if (widget.dockPointsEnabled !== true || widget[dockPointKey(anchorId)] !== true) return [];
+      const suffix = anchorId.replaceAll("-", "_");
+      const role = { label: `${label}: Rolle`, key: `lineboxRole_${suffix}`, type: "radio", default: "none", options: [
+        { value: "input", label: "Eingang" }, { value: "none", label: "Nullstellung" }, { value: "output", label: "Ausgang" },
+      ] };
+      return widget[role.key] === "output" ? [role, { label: `${label}: Berechneten Wert weitergeben`, key: `lineboxPass_${suffix}`, type: "checkbox", default: false }] : [role];
+    });
+    return [...commonWidgetGroups, dockGroup, { id: "linebox-ports", label: "Anschlüsse", hint: "Nur aktive Andockpunkte erhalten eine Rolle. Eingänge werden mit Vorzeichen summiert; Ausgänge geben den Wert nur bei aktiviertem Haken weiter.", fields: portFields }, ...groups];
+  }
   return widget.type === "svg-connection" ? [...commonWidgetGroups, ...groups] : [...commonWidgetGroups, ...groups, connectionAnchorGroup];
 }
 
@@ -1503,6 +1516,14 @@ function effectiveConnectionStyle(widget, widgets, visited = new Set()) {
     if (widget.endCollector) result.animationDirection = "forward";
     else if (widget.startCollector) result.animationDirection = "reverse";
   }
+  const forwarded = lineboxOutputForConnection(widget, widgets, state.entityStates);
+  if (forwarded) {
+    for (const key of ["baseColor", "flowColor", "markerColor", "animationStyle", "lineStyle", "dashLength", "gapLength"]) result[key] = widget[key];
+    const source = { animationSource: "number", animationDivisor: widget.lineboxDivisor ?? 1 };
+    const entry = forwarded.value === null ? undefined : { state: String(forwarded.value) };
+    Object.assign(result, resolveConnectionAnimation(source, entry));
+    result.animationEnabled = widget.animationEnabled === true && forwarded.value !== null && forwarded.value !== 0;
+  }
   return result;
 }
 
@@ -1879,6 +1900,7 @@ function renderStage() {
   const selectedFilters = Array.isArray(activeFilter) ? activeFilter : activeFilter ? [activeFilter] : [];
   for (const widget of activePage.widgets) {
     if (widget.visible === false) continue;
+    if (runtimeMode && widget.type === "linebox") continue;
     const editorFilterWords = String(widget.generalEnabled === true ? widget.filterWord || "" : "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
     const editorFilterMatches = state.editorWidgetFilter?.words?.some((word) => editorFilterWords.includes(word));
     if (!runtimeMode && state.editorWidgetFilter?.mode === "hide" && editorFilterMatches) continue;
@@ -1943,6 +1965,16 @@ function renderStage() {
     if (isConnection) {
       content.style.background = "none"; content.style.border = "0"; content.style.padding = "0"; content.style.overflow = "visible";
       content.append(renderSvgConnection(widget, activePage.widgets, page.width, page.height, selected));
+    } else if (widget.type === "linebox") {
+      content.classList.add("linebox-content");
+      const title = document.createElement("strong"); title.textContent = widgetDisplayName(widget);
+      const sum = lineboxInputSum(widget, activePage.widgets, state.entityStates);
+      const value = document.createElement("span"); value.textContent = `Σ ${sum === null ? "—" : Number(sum.toFixed(3))}`;
+      const ports = document.createElement("small");
+      const inputs = CONNECTION_ANCHOR_IDS.filter(id => lineboxPortRole(widget, id) === "input").length;
+      const outputs = CONNECTION_ANCHOR_IDS.filter(id => lineboxPortRole(widget, id) === "output").length;
+      ports.textContent = `IN ${inputs} · OUT ${outputs}`;
+      content.append(title, value, ports);
     } else if (widget.type === "universal-button") {
       const visualStates = widget.visualStates || [];
       const matchingIndex = visualStates.findIndex((item) => matchesCondition(widget.state, item.condition || "==", item.value));
@@ -1954,7 +1986,7 @@ function renderStage() {
       content.style.flexDirection = widget.contentLayout === "horizontal" ? "row" : "column";
       content.style.justifyContent = widget.contentAlign === "start" ? "flex-start" : widget.contentAlign === "end" ? "flex-end" : "center";
       content.style.alignItems = widget.contentAlign === "start" ? "flex-start" : widget.contentAlign === "end" ? "flex-end" : "center";
-      content.setAttribute("aria-label", widget.title || `Zustands-Element: ${widget.state ?? ""}`);
+      content.setAttribute("aria-label", widget.title || `State Element: ${widget.state ?? ""}`);
       if (visual.contentType === "icon") {
         const iconValue = String(visual.icon || "").trim();
         if (safeUrl(iconValue, true) || /^mdi:[a-z0-9-]+$/i.test(iconValue)) {
@@ -2606,6 +2638,7 @@ function field(descriptor, widget) {
   const update = () => {
     if (descriptor.key === "count" && input.type === "number") input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Math.trunc(Number(input.value) || 1))));
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    if (widget.type === "linebox" && descriptor.key?.startsWith("dock_") && input.type === "checkbox" && !input.checked) widget[`lineboxRole_${descriptor.key.slice(5)}`] = "none";
     if (descriptor.key === "testIndex" && widget.type?.startsWith("value-list-")) widget.state = input.value;
     void updatePreview();
     renderStage();
@@ -2728,6 +2761,7 @@ function renderProperties() {
         details.classList.toggle("is-disabled", !enabled.checked);
         for (const control of body.querySelectorAll("input, select, textarea, button")) control.disabled = !enabled.checked;
         renderStage();
+        if (widget.type === "linebox" && group.masterKey === "dockPointsEnabled") renderProperties();
       } else {
         widget.enabledPropertyGroups ??= {};
         widget.enabledPropertyGroups[propertyGroupKey(group, index)] = enabled.checked;
@@ -2749,8 +2783,10 @@ function renderProperties() {
         recordHistorySnapshot();
         if (!allCheckbox.checked) preserveDockedConnectionPositions(widget, page.widgets);
         setAllDockPoints(widget, CONNECTION_ANCHOR_IDS, allCheckbox.checked);
+        if (widget.type === "linebox" && !allCheckbox.checked) for (const anchorId of CONNECTION_ANCHOR_IDS) widget[`lineboxRole_${anchorId.replaceAll("-", "_")}`] = "none";
         for (const input of body.querySelectorAll("input[data-dock-point]")) input.checked = allCheckbox.checked;
         updateDockAll(); renderStage();
+        if (widget.type === "linebox") renderProperties();
       });
     }
     if (group.hint) { const hint = document.createElement("p"); hint.className = "property-hint"; hint.textContent = group.hint; body.append(hint); }
