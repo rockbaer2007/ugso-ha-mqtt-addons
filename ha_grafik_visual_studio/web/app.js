@@ -4,7 +4,7 @@ import { connectionAnimationEntityId, resolveConnectionAnimation } from "./conne
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
-import { sliderScale } from "./slider-scale.js";
+import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
@@ -561,6 +561,10 @@ function stageRuntimeEntityValue(entityId, value) {
       if (widget.type === "svg-connection") {
         const content = document.getElementById(widget.id)?.querySelector(".widget-content");
         if (content) updateRuntimeConnectionVisual(widget, widgets, content);
+      } else if (widget.type === "slider" && widget.entityId) {
+        const range = document.getElementById(widget.id)?.querySelector('input[type="range"]');
+        const value = sliderLiveValue(widget, state.entityStates[widget.entityId]);
+        if (range && !range.dataset.dragging && value !== null) range.value = String(value);
       } else if (widget.type === "sensor" && widget.entityId) {
         const value = document.getElementById(widget.id)?.querySelector(".widget-content .value");
         if (value) value.textContent = numberDisplay(widget, state.entityStates[widget.entityId]).value;
@@ -2403,15 +2407,16 @@ function renderStage() {
       }
     } else if (widget.type === "slider") {
       const range = document.createElement("input"); range.type = "range";
-      const bound = Boolean(widget.entityId); const live = state.entityStates[widget.entityId]?.state;
-      const liveNumber = live === null || live === undefined || String(live).trim() === "" ? NaN : Number(live);
+      const bound = Boolean(widget.entityId);
+      const liveNumber = sliderLiveValue(widget, state.entityStates[widget.entityId]);
       range.min = String(widget.min ?? 0); range.max = String(widget.max ?? 100);
-      range.value = String(bound && Number.isFinite(liveNumber) ? liveNumber : widget.value ?? 50);
-      range.step = String(widget.step ?? 1); range.disabled = !runtimeMode || (bound && (!WRITABLE_NUMBER_HELPER.test(widget.entityId) || !Number.isFinite(liveNumber)));
+      range.value = String(liveNumber ?? widget.min ?? 0);
+      range.step = String(widget.step ?? 1); range.disabled = !runtimeMode || (bound && (!WRITABLE_NUMBER_HELPER.test(widget.entityId) || liveNumber === null));
       range.setAttribute("aria-label", widget.title || "Regler");
-      range.addEventListener("pointerdown", () => { range.dataset.dragging = "true"; });
+      range.addEventListener("pointerdown", event => { range.dataset.dragging = "true"; range.setPointerCapture(event.pointerId); });
       range.addEventListener("pointerup", () => { delete range.dataset.dragging; });
       range.addEventListener("pointercancel", () => { delete range.dataset.dragging; });
+      range.addEventListener("lostpointercapture", () => { delete range.dataset.dragging; if (runtimeRenderDeferred) renderRuntimeStageWhenReady(); });
       range.addEventListener("input", () => { if (bound) stageRuntimeEntityValue(widget.entityId, Number(range.value)); else widget.value = Number(range.value); });
       range.addEventListener("change", () => { delete range.dataset.dragging; if (bound && !range.disabled) void writeRuntimeHelperValue(widget.entityId, Number(range.value)); });
       const scale = sliderScale(widget);

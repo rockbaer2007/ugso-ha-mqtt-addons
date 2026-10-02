@@ -1,3 +1,11 @@
+export function sliderLiveValue(widget, entityState) {
+  if (!widget.entityId) return Number(widget.value ?? 50);
+  const raw = entityState?.state;
+  if (raw === null || raw === undefined || String(raw).trim() === "") return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
 export function sliderScale(widget) {
   const min = Number(widget.min ?? 0);
   const max = Number(widget.max ?? 100);

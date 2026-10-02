@@ -1,6 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { sliderScale } from "../web/slider-scale.js";
+import { sliderScale, sliderLiveValue } from "../web/slider-scale.js";
+
+test("bound sliders follow incoming values rather than saved preview values", () => {
+  const widget = { entityId: "input_number.level", value: 80 };
+  assert.equal(sliderLiveValue(widget, { state: "0" }), 0);
+  assert.equal(sliderLiveValue(widget, { state: "42.5" }), 42.5);
+  for (const state of ["unavailable", "unknown", "", null]) assert.equal(sliderLiveValue(widget, { state }), null);
+  assert.equal(sliderLiveValue(widget, undefined), null);
+  assert.equal(sliderLiveValue({ value: 80 }, undefined), 80);
+});
 
 test("legacy sliders retain optional endpoints and no intermediate marks", () => {
   assert.deepEqual(sliderScale({}).marks, []);

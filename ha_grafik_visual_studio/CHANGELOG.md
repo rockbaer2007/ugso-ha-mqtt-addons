@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.107
+
+- Immediately synchronize sliders sharing a helper with another input widget or local helper update.
+- Keep incoming Home Assistant values authoritative for bound sliders; unavailable values no longer fall back to a saved preview.
+- Capture slider pointer release outside the control so dragging cannot block subsequent runtime updates.
+
 ## 0.1.106
 
 - Place slider minimum/maximum labels above or below the track ends.
