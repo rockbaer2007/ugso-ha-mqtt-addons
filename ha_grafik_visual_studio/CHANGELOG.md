@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.96
+
+- The editor now refreshes Home Assistant states used by SVG-Line direction sources and Linebox inputs, so a numeric helper can drive and preview its connected lines before switching to runtime.
+
 ## 0.1.95
 
 - Runtime pages now center only when they fit the viewport. Larger pages begin at the reachable top-left edge and scroll in both directions, so widgets no longer disappear beyond the left or top side.

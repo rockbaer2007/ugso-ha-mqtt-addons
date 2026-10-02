@@ -447,7 +447,7 @@ async function loadProject() {
   if (!runtimeMode) void renderEditorToolActions();
   savedProjectSnapshot = observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
   if (runtimeMode) void refreshRuntimeStates();
-  else void refreshEditorNumberStates();
+  else void refreshEditorLiveStates();
 }
 
 function displayedWidgetState(widget) {
@@ -469,15 +469,18 @@ async function fetchEntityStates(ids) {
   return Object.fromEntries(states.map((entry) => [entry.entity_id, entry]));
 }
 
-function editorNumberEntityIds() {
-  return [...new Set(currentPage().widgets.filter((widget) => widget.type === "sensor").map((widget) => widget.entityId))]
+function editorLiveEntityIds() {
+  return [...new Set(currentPage().widgets.flatMap((widget) => [
+    widget.type === "sensor" ? widget.entityId : "",
+    widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
+  ]))]
     .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id || ""));
 }
 
-async function refreshEditorNumberStates() {
+async function refreshEditorLiveStates() {
   if (runtimeMode || !state.project || document.hidden || editorNumberRequestPending) return;
   const pageId = currentPage().id;
-  const ids = editorNumberEntityIds();
+  const ids = editorLiveEntityIds();
   if (!ids.length) return;
   editorNumberRequestPending = true;
   try {
@@ -496,7 +499,7 @@ async function refreshEditorNumberStates() {
     if (JSON.stringify(next) !== JSON.stringify(state.entityStates)) { state.entityStates = next; renderStage(); }
   } finally {
     editorNumberRequestPending = false;
-    if (currentPage().id !== pageId || editorNumberEntityIds().join("|") !== ids.join("|")) void refreshEditorNumberStates();
+    if (currentPage().id !== pageId || editorLiveEntityIds().join("|") !== ids.join("|")) void refreshEditorLiveStates();
   }
 }
 
@@ -557,8 +560,8 @@ if (runtimeMode) {
   window.setInterval(() => { void refreshRuntimeStates(); }, 5000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshRuntimeStates(); });
 } else {
-  window.setInterval(() => { void refreshEditorNumberStates(); }, 5000);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshEditorNumberStates(); });
+  window.setInterval(() => { void refreshEditorLiveStates(); }, 5000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshEditorLiveStates(); });
 }
 
 if (!runtimeMode) setInterval(() => {
@@ -648,7 +651,7 @@ function renderPageMenu() {
     const select = document.createElement("button"); select.type = "button"; select.className = "page-select";
     select.textContent = `${page.visible ? "◉" : "◌"}  ${page.name}`;
     select.setAttribute("aria-current", String(page.id === state.project.currentPageId));
-    select.addEventListener("click", () => { state.project.currentPageId = page.id; state.selectedId = null; state.selectedIds = []; render(); if (runtimeMode) void refreshRuntimeStates(); else void refreshEditorNumberStates(); });
+    select.addEventListener("click", () => { state.project.currentPageId = page.id; state.selectedId = null; state.selectedIds = []; render(); if (runtimeMode) void refreshRuntimeStates(); else void refreshEditorLiveStates(); });
     row.append(select);
     if (!runtimeMode) {
       const visibility = document.createElement("button"); visibility.type = "button"; visibility.textContent = page.visible ? "◉" : "◌"; visibility.title = page.visible ? "In Runtime sichtbar" : "In Runtime ausgeblendet"; visibility.setAttribute("aria-label", `${page.visible ? "Ausblenden" : "Einblenden"}: ${page.name}`);
@@ -2688,7 +2691,10 @@ function field(descriptor, widget) {
   const update = () => {
     if (descriptor.key === "count" && input.type === "number") input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Math.trunc(Number(input.value) || 1))));
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
-    if (widget.type === "sensor" && descriptor.key === "entityId") void refreshEditorNumberStates();
+    if ((widget.type === "sensor" && descriptor.key === "entityId") ||
+        (widget.type === "svg-connection" && ["animationSource", "animationNumberEntityId", "animationBooleanEntityId"].includes(descriptor.key))) {
+      void refreshEditorLiveStates();
+    }
     if (widget.type === "linebox" && descriptor.key?.startsWith("dock_") && input.type === "checkbox" && !input.checked) widget[`lineboxRole_${descriptor.key.slice(5)}`] = "none";
     if (descriptor.key === "testIndex" && widget.type?.startsWith("value-list-")) widget.state = input.value;
     void updatePreview();
