@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.117
+
+- Highlights the return-to-Tabs editor button in turquoise with a compact three-line German/English label that stays within its toolbar tile.
+
 ## 0.1.116
 
 - Adds an original Tabs widget with 1-20 horizontal/vertical tabs, standard/centered/full-width variants, per-tab titles, icons/images, icon colors/sizes and overflow settings.

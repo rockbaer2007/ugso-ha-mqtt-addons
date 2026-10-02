@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Zurück\nzum\nTabs-Widget": "Back\nto\nTabs widget",
   "Anzahl der Tabs": "Number of tabs", "Vertikale Tabs": "Vertical tabs", "Tab-Variante": "Tab variant",
   "Standard": "Standard", "zentriert": "Centered", "Gesamtbreite": "Full width", "Tab-Farbe": "Tab color",
   "Tab-Titel": "Tab title", "Tab-Inhalt": "Tab content", "Eigene Widget-Fläche": "Own widget surface",

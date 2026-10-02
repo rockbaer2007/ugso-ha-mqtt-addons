@@ -3473,7 +3473,8 @@ function render() {
   let exitTabs = $("#exit-tab-editor");
   if (!exitTabs) {
     exitTabs = document.createElement("button"); exitTabs.id = "exit-tab-editor"; exitTabs.type = "button";
-    exitTabs.textContent = uiText("Zurück zum Tabs-Widget"); exitTabs.className = "toolbar-tile";
+    exitTabs.textContent = uiText("Zurück\nzum\nTabs-Widget"); exitTabs.className = "toolbar-tile";
+    exitTabs.setAttribute("aria-label", uiText("Zurück zum Tabs-Widget"));
     exitTabs.onclick = () => { const owner = state.tabReturn?.ownerId || state.tabEditor?.ownerId; if (state.tabReturn) state.project.currentPageId = state.tabReturn.pageId; state.tabEditor = null; state.tabReturn = null; setSingleWidgetSelection(owner); render(); };
     $(".toolbar").prepend(exitTabs);
   }
