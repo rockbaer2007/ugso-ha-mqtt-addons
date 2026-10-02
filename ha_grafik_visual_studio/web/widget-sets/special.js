@@ -23,7 +23,8 @@ registerWidgetSet({
       baseColor: "#607d8b", flowColor: "#29c8b5", lineWidth: 4, lineOpacity: 1,
       lineStyle: "solid", dashLength: 12, gapLength: 8, lineCap: "round",
       markerStart: "none", markerEnd: "arrow", markerSize: 8, markerColor: "#29c8b5",
-      animationEnabled: false, animationStyle: "two-color", animationDirection: "forward", animationDuration: 2,
+      animationEnabled: false, animationStyle: "two-color", animationSource: "manual", animationDirection: "forward", animationDuration: 2,
+      animationNumberEntityId: "", animationBooleanEntityId: "", animationDivisor: 1, animationBooleanInvert: false,
       flowParentId: "", inheritFlow: true, synchronization: "same-phase",
       crossingStyle: "overlay", connectionZMode: "auto", layer: 0, clickThrough: true,
     },
@@ -73,16 +74,25 @@ registerWidgetSet({
         { label: "Größe", key: "markerSize", type: "range", min: 2, max: 30, step: 1 },
         { label: "Farbe", key: "markerColor", type: "color" },
       ] },
-      { label: "Animation", fields: [
+      { label: "Animation", hint: "Nur eine Richtungsquelle ist aktiv. Zahlenwert / Teiler ergibt Zyklen pro Sekunde (0,05 bis 20); bei 0 stoppt die Animation.", fields: [
         { label: "Animation aktivieren", key: "animationEnabled", type: "checkbox", default: false },
         { label: "Animationsart", key: "animationStyle", type: "select", options: [
           { value: "two-color", label: "Zweifarbenfluss" }, { value: "dash", label: "Laufende Striche" },
           { value: "pulse", label: "Puls" }, { value: "light", label: "Lichtpunkt" },
         ] },
-        { label: "Richtung", key: "animationDirection", type: "select", options: [
+        { label: "Richtungsquelle", key: "animationSource", type: "radio", default: "manual", options: [
+          { value: "manual", label: "Manuell" }, { value: "number", label: "Zahlen-Entität" },
+          { value: "boolean", label: "Bool-Entität" },
+        ] },
+        { label: "Zahlen-Entität", key: "animationNumberEntityId", showWhen: { key: "animationSource", value: "number" } },
+        { label: "Teiler", key: "animationDivisor", type: "number", min: 0.001, step: 0.001, default: 1, showWhen: { key: "animationSource", value: "number" } },
+        { label: "Bool-Entität", key: "animationBooleanEntityId", showWhen: { key: "animationSource", value: "boolean" } },
+        { label: "Bool-Richtung umkehren", key: "animationBooleanInvert", type: "checkbox", default: false, showWhen: { key: "animationSource", value: "boolean" } },
+        { label: "Richtung", key: "animationDirection", type: "select", showWhen: { key: "animationSource", value: "manual", default: "manual" }, options: [
           { value: "forward", label: "Anfang → Ende" }, { value: "reverse", label: "Ende → Anfang" },
         ] },
-        { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1 },
+        { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1, showWhen: { key: "animationSource", value: "manual", default: "manual" } },
+        { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1, showWhen: { key: "animationSource", value: "boolean" } },
         { label: "Hauptlinie / Flussgruppe", key: "flowParentId", type: "connection" },
         { label: "Animationstakt der Hauptlinie übernehmen (eigene Farben behalten)", key: "inheritFlow", type: "checkbox", default: true },
         { label: "Synchronisierung", key: "synchronization", type: "select", options: [

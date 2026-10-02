@@ -1,5 +1,6 @@
 import { getWidgetSets, getWidgetDefinition, registerWidgetSet } from "./widget-registry.js";
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
+import { connectionAnimationEntityId, resolveConnectionAnimation } from "./connection-animation.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
@@ -440,7 +441,10 @@ function displayedWidgetState(widget) {
 async function refreshRuntimeStates() {
   if (!runtimeMode || !state.project || document.hidden || runtimeStateRequestPending) return;
   const pageId = currentPage().id;
-  const ids = [...new Set(currentPage().widgets.flatMap((widget) => [widget.entityId, widget.visibilityEnabled ? widget.visibilityEntityId : ""]))]
+  const ids = [...new Set(currentPage().widgets.flatMap((widget) => [
+    widget.entityId, widget.visibilityEnabled ? widget.visibilityEntityId : "",
+    widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
+  ]))]
     .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id));
   if (!ids.length) return;
   runtimeStateRequestPending = true;
@@ -1458,7 +1462,8 @@ function connectionPathData(widget, widgets, reverse = false) {
 }
 
 function effectiveConnectionStyle(widget, widgets, visited = new Set()) {
-  let result = { ...widget };
+  const entityId = connectionAnimationEntityId(widget);
+  let result = { ...widget, ...resolveConnectionAnimation(widget, state.entityStates[entityId]) };
   const collectorReference = [widget.endCollector, widget.startCollector].find(reference => connectionCollectorPosition(reference, widgets));
   const collectorParentId = String(collectorReference || "").split(":", 1)[0];
   const parentId = collectorParentId || widget.flowParentId;
@@ -1479,8 +1484,10 @@ function effectiveConnectionStyle(widget, widgets, visited = new Set()) {
       }
     }
   }
-  if (widget.endCollector) result.animationDirection = "forward";
-  else if (widget.startCollector) result.animationDirection = "reverse";
+  if (!widget.animationSource || widget.animationSource === "manual") {
+    if (widget.endCollector) result.animationDirection = "forward";
+    else if (widget.startCollector) result.animationDirection = "reverse";
+  }
   return result;
 }
 
@@ -1506,8 +1513,10 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
   svg.classList.add("svg-connection-canvas"); if (runtimeMode && widget.clickThrough !== false) svg.classList.add("is-click-through"); svg.setAttribute("viewBox", `0 0 ${width} ${height}`); svg.setAttribute("aria-label", widgetDisplayName(widget));
   const defs = document.createElementNS(ns, "defs"); svg.append(defs);
   const style = effectiveConnectionStyle(widget, widgets); const pathData = connectionPathData(widget, widgets);
-  const markerStart = appendConnectionMarker(defs, `${widget.id}-start-marker`, widget.markerStart, style.markerColor || style.flowColor, Number(widget.markerSize) || 8);
-  const markerEnd = appendConnectionMarker(defs, `${widget.id}-end-marker`, widget.markerEnd, style.markerColor || style.flowColor, Number(widget.markerSize) || 8);
+  const markerStartType = style.animationDirection === "reverse" ? widget.markerEnd : widget.markerStart;
+  const markerEndType = style.animationDirection === "reverse" ? widget.markerStart : widget.markerEnd;
+  const markerStart = appendConnectionMarker(defs, `${widget.id}-start-marker`, markerStartType, style.markerColor || style.flowColor, Number(widget.markerSize) || 8);
+  const markerEnd = appendConnectionMarker(defs, `${widget.id}-end-marker`, markerEndType, style.markerColor || style.flowColor, Number(widget.markerSize) || 8);
   if (["gap", "bridge"].includes(widget.crossingStyle)) {
     const gap = document.createElementNS(ns, "path"); gap.classList.add("connection-crossing-gap"); gap.setAttribute("d", pathData); gap.setAttribute("stroke-width", String((Number(style.lineWidth) || 4) + 6)); svg.append(gap);
   }
@@ -1517,13 +1526,14 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
   if (markerStart) base.setAttribute("marker-start", markerStart); if (markerEnd) base.setAttribute("marker-end", markerEnd); svg.append(base);
   const hit = document.createElementNS(ns, "path"); hit.classList.add("connection-hit-target"); hit.setAttribute("d", pathData); hit.setAttribute("fill", "none"); hit.setAttribute("stroke", "transparent"); hit.setAttribute("stroke-width", String(Math.max(14, (Number(style.lineWidth) || 4) + 8))); svg.append(hit);
   if (style.animationEnabled) {
+    const animationDuration = Math.max(0.05, Number(style.animationDuration) || 2);
     if (style.animationStyle === "light") {
       const light = document.createElementNS(ns, "circle"); light.setAttribute("r", String(Math.max(2, Number(style.lineWidth) || 4))); light.setAttribute("fill", style.flowColor || "#29c8b5");
-      const motion = document.createElementNS(ns, "animateMotion"); motion.setAttribute("path", connectionPathData(widget, widgets, style.animationDirection === "reverse")); motion.setAttribute("dur", `${Math.max(0.2, Number(style.animationDuration) || 2)}s`); motion.setAttribute("repeatCount", "indefinite"); light.append(motion); svg.append(light);
+      const motion = document.createElementNS(ns, "animateMotion"); motion.setAttribute("path", connectionPathData(widget, widgets, style.animationDirection === "reverse")); motion.setAttribute("dur", `${animationDuration}s`); motion.setAttribute("repeatCount", "indefinite"); light.append(motion); svg.append(light);
     } else {
       const flow = document.createElementNS(ns, "path"); flow.classList.add("connection-flow"); if (style.animationStyle === "pulse") flow.classList.add("is-pulse"); flow.setAttribute("d", pathData); flow.setAttribute("fill", "none"); flow.setAttribute("stroke", style.flowColor || "#29c8b5"); flow.setAttribute("stroke-width", String(Number(style.lineWidth) || 4)); flow.setAttribute("stroke-linecap", style.lineCap || "round");
-      const dash = Math.max(1, Number(style.dashLength) || 12); const gap = Math.max(1, Number(style.gapLength) || 8); flow.setAttribute("stroke-dasharray", style.animationStyle === "pulse" ? "none" : `${dash} ${gap}`); flow.style.setProperty("--connection-shift", `${-(dash + gap)}px`); flow.style.animationDuration = `${Math.max(0.2, Number(style.animationDuration) || 2)}s`; flow.style.animationDirection = style.animationDirection === "reverse" ? "reverse" : "normal";
-      if (widget.synchronization === "arrival") requestAnimationFrame(() => { try { const cycle = dash + gap; const offset = flow.getTotalLength() % cycle; flow.style.animationDelay = `${-offset / cycle * Math.max(0.2, Number(style.animationDuration) || 2)}s`; } catch { /* SVG path length is optional in older webviews. */ } });
+      const dash = Math.max(1, Number(style.dashLength) || 12); const gap = Math.max(1, Number(style.gapLength) || 8); flow.setAttribute("stroke-dasharray", style.animationStyle === "pulse" ? "none" : `${dash} ${gap}`); flow.style.setProperty("--connection-shift", `${-(dash + gap)}px`); flow.style.animationDuration = `${animationDuration}s`; flow.style.animationDirection = style.animationDirection === "reverse" ? "reverse" : "normal";
+      if (widget.synchronization === "arrival") requestAnimationFrame(() => { try { const cycle = dash + gap; const offset = flow.getTotalLength() % cycle; flow.style.animationDelay = `${-offset / cycle * animationDuration}s`; } catch { /* SVG path length is optional in older webviews. */ } });
       svg.append(flow);
     }
   }
@@ -2466,6 +2476,19 @@ function openConnectionPointsEditor(widget) {
 
 function field(descriptor, widget) {
   const htmlField = descriptor.html === true || descriptor.type === "html" || /HTML/i.test(descriptor.label) || (descriptor.key === "state" && ["string", "string-raw"].includes(widget.type));
+  if (descriptor.type === "radio") {
+    const choices = document.createElement("fieldset"); choices.className = "property-radio-field";
+    const legend = document.createElement("legend"); legend.textContent = descriptor.label; choices.append(legend);
+    const selected = widget[descriptor.key] ?? descriptor.default ?? descriptor.options?.[0]?.value;
+    for (const option of descriptor.options || []) {
+      const label = document.createElement("label"); label.className = "property-radio-option";
+      const input = document.createElement("input"); input.type = "radio"; input.name = `${widget.id}-${descriptor.key}`;
+      input.value = option.value; input.checked = selected === option.value; input.disabled = descriptor.disabled === true;
+      input.addEventListener("change", () => { if (!input.checked) return; widget[descriptor.key] = input.value; renderStage(); renderProperties(); });
+      label.append(input, document.createTextNode(option.label)); choices.append(label);
+    }
+    return choices;
+  }
   const wrapper = document.createElement("label"); wrapper.textContent = descriptor.label;
   if (descriptor.type === "filter-editor") { const button = document.createElement("button"); button.type = "button"; button.textContent = "Bearbeiten"; button.setAttribute("aria-label", "Filter bearbeiten"); button.addEventListener("click", () => openFilterEditor(widget)); wrapper.append(button); return wrapper; }
   if (descriptor.type === "connection-points") { const button = document.createElement("button"); button.type = "button"; button.textContent = `${Array.isArray(widget.connectionPoints) ? widget.connectionPoints.length : 0} Punkte bearbeiten`; button.addEventListener("click", () => openConnectionPointsEditor(widget)); wrapper.append(button); return wrapper; }
@@ -2699,7 +2722,7 @@ function renderProperties() {
     summary.append(enabled);
     const body = document.createElement("div"); body.className = "property-fields";
     if (group.hint) { const hint = document.createElement("p"); hint.className = "property-hint"; hint.textContent = group.hint; body.append(hint); }
-    const visibleFields = (fields, model) => fields.filter((descriptor) => !descriptor.showWhen || model[descriptor.showWhen.key] === descriptor.showWhen.value).map((descriptor) => field(descriptor, model));
+    const visibleFields = (fields, model) => fields.filter((descriptor) => !descriptor.showWhen || (model[descriptor.showWhen.key] ?? descriptor.showWhen.default) === descriptor.showWhen.value).map((descriptor) => field(descriptor, model));
     body.append(...visibleFields(group.fields, widget));
     if (group.universalStates) {
       const count = Math.max(1, Math.min(5, Number(widget.stateCount) || 2));

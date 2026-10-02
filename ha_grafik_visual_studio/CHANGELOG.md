@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.90
+
+- SVG connection animation can use one exclusive direction source: manual, numeric Home Assistant entity, or boolean Home Assistant entity. Numeric magnitude divided by a configurable divisor controls cycles per second; its sign controls direction, and zero or unavailable values stop the flow. Boolean states choose direction, with optional inversion. Arrowheads follow the resolved direction. Existing lines remain in manual mode.
+
 ## 0.1.89
 
 - Local widget and tool package import accepts ZIP archives named `.wg` and `.tp` while retaining `.wg.zip` and `.tp.zip` compatibility. The first Packer core validates source folders and exports both new formats.
