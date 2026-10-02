@@ -1,5 +1,6 @@
 """Build and validate the installable data-only Colorpicker package."""
 import sys
+import json
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 
@@ -9,7 +10,8 @@ from tool_packages import read_tool_package_zip
 
 destination = Path(sys.argv[1]) if len(sys.argv) > 1 else source / "dist"
 destination.mkdir(parents=True, exist_ok=True)
-package = destination / "ugso-colorpicker-1.0.0.tp"
+version = json.loads((source / "manifest.json").read_text(encoding="utf-8"))["version"]
+package = destination / f"ugso-colorpicker-{version}.tp"
 with ZipFile(package, "w", compression=ZIP_DEFLATED) as archive:
     for relative in ["manifest.json", "icons/wheel.svg"]:
         archive.write(source / relative, relative)

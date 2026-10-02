@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.111
+
+- Colorpicker 1.1.0 adds a separate Favorites tab with 15 locally persisted colors, individual removal and automatic compaction.
+- Save favorite is separate from Copy, prevents duplicates and disables at capacity with a highlighted full-list message.
+
 ## 0.1.110
 
 - Copy Colorpicker HEX values and names through a modal-local clipboard fallback when the browser Clipboard API is missing or denied, including HTTP/Ingress contexts.

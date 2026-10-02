@@ -2,6 +2,10 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Favoriten": "Favorites", "Als Favorit speichern": "Save favorite", "Favoriten voll": "Favorites full",
+  "Favorit löschen": "Delete favorite", "Favorit gelöscht": "Favorite deleted", "Favorit gespeichert": "Favorite saved",
+  "Favoriten konnten nicht geladen werden.": "Favorites could not be loaded.",
+  "Favoriten konnten nicht gespeichert werden.": "Favorites could not be saved.",
   "Colorpicker": "Color picker",
   "Farbe wählen und HEX oder Farbnamen kopieren. Farbnamen sind keine CSS-Farbwerte.": "Choose a color and copy HEX or its name. Color names are not CSS color values.",
   "Farbkreis": "Color wheel", "Helligkeit": "Brightness", "Ausgabe": "Output", "Farbname": "Color name",

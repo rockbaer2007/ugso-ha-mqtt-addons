@@ -1,5 +1,6 @@
 import { uiText } from "./localization.js";
 import { copyText } from "./clipboard.js";
+import { favoritesKey, normalizeFavorites, addFavorite } from "./color-favorites.js";
 
 export function hsvHex(hue, saturation, value) {
   const h = ((hue % 360) + 360) % 360 / 60;
@@ -32,7 +33,11 @@ export async function openColorPicker(initial = "#29c8b5") {
     dialog = document.createElement("dialog"); dialog.className = "studio-dialog color-picker-dialog";
     dialog.innerHTML = `<h2>${uiText("Colorpicker")}</h2>
       <p>${uiText("Farbe wählen und HEX oder Farbnamen kopieren. Farbnamen sind keine CSS-Farbwerte.")}</p>
-      <div class="color-picker-body"><div>
+      <div class="cp-tabs" role="tablist">
+        <button id="cp-picker-tab" role="tab" aria-selected="true" aria-controls="cp-picker-panel" type="button">${uiText("Colorpicker")}</button>
+        <button id="cp-favorites-tab" role="tab" aria-selected="false" aria-controls="cp-favorites-panel" type="button">${uiText("Favoriten")}</button>
+      </div>
+      <section id="cp-picker-panel" role="tabpanel" aria-labelledby="cp-picker-tab"><div class="color-picker-body"><div>
         <canvas width="256" height="256" tabindex="0" role="slider" aria-label="${uiText("Farbkreis")}" aria-valuemin="0" aria-valuemax="360"></canvas>
         <label>${uiText("Helligkeit")}<input class="cp-brightness" type="range" min="0" max="100" value="100"></label>
       </div><div class="color-picker-fields">
@@ -41,8 +46,14 @@ export async function openColorPicker(initial = "#29c8b5") {
         <label>${uiText("Ausgabe")}<select class="cp-format"><option value="hex">HEX</option><option value="name">${uiText("Farbname")}</option></select></label>
         <output class="cp-name"></output><small class="cp-match"></small>
         <button class="cp-copy primary" type="button">${uiText("Kopieren")}</button>
+        <output class="cp-full" role="status"></output>
+        <button class="cp-save-favorite" type="button">${uiText("Als Favorit speichern")}</button>
         <output class="cp-status" role="status" aria-live="polite"></output>
-      </div></div>
+      </div></div></section>
+      <section id="cp-favorites-panel" role="tabpanel" aria-labelledby="cp-favorites-tab" hidden>
+        <p class="cp-count"></p><div class="cp-favorites-list"></div>
+        <output class="cp-favorites-status" role="status" aria-live="polite"></output>
+      </section>
       <p class="property-hint">Color names: <a href="https://github.com/meodai/color-names" target="_blank" rel="noopener">David Aerne / meodai</a> (MIT).
       <a href="color-names-LICENSE.txt" target="_blank" rel="noopener">${uiText("Lizenz")}</a></p>
       <div class="dialog-actions"><button class="cp-close" type="button">${uiText("Schließen")}</button></div>`;
@@ -53,6 +64,43 @@ export async function openColorPicker(initial = "#29c8b5") {
   const canvas = $("canvas"), ctx = canvas.getContext("2d");
   const hex = $(".cp-hex"), brightness = $(".cp-brightness"), copy = $(".cp-copy");
   let hsv = hexHsv(initial), color = initial, nearest = null, names = [];
+  let favorites = [];
+  try { favorites = normalizeFavorites(JSON.parse(localStorage.getItem(favoritesKey) || "[]")); }
+  catch { $(".cp-status").textContent = uiText("Favoriten konnten nicht geladen werden."); }
+  const selectTab = favoriteTab => {
+    $("#cp-picker-panel").hidden = favoriteTab;
+    $("#cp-favorites-panel").hidden = !favoriteTab;
+    $("#cp-picker-tab").setAttribute("aria-selected", String(!favoriteTab));
+    $("#cp-favorites-tab").setAttribute("aria-selected", String(favoriteTab));
+  };
+  $("#cp-picker-tab").onclick = () => selectTab(false);
+  $("#cp-favorites-tab").onclick = () => selectTab(true);
+  selectTab(false);
+  const favoriteState = () => {
+    $(".cp-full").textContent = favorites.length === 15 ? uiText("Favoriten voll") : "";
+    $(".cp-save-favorite").disabled = favorites.length === 15 || favorites.includes(color);
+  };
+  const saveFavorites = next => {
+    try { localStorage.setItem(favoritesKey, JSON.stringify(next)); favorites = next; renderFavorites(); favoriteState(); return true; }
+    catch { $(".cp-status").textContent = $(".cp-favorites-status").textContent = uiText("Favoriten konnten nicht gespeichert werden."); return false; }
+  };
+  const renderFavorites = () => {
+    $(".cp-count").textContent = `${favorites.length} / 15`;
+    const list = $(".cp-favorites-list"); list.replaceChildren();
+    favorites.forEach((hex, index) => {
+      const match = nearestColor(hex, names);
+      const row = document.createElement("div"); row.className = "cp-favorite-row";
+      const choose = document.createElement("button"); choose.type = "button"; choose.className = "cp-favorite-choose";
+      const swatch = document.createElement("span"); swatch.className = "cp-favorite-swatch"; swatch.style.background = hex;
+      const label = document.createElement("span"); label.textContent = `${index + 1}. ${hex}${match ? " · " + match.name : ""}`;
+      choose.append(swatch, label);
+      choose.onclick = () => { hsv = hexHsv(hex); update(); selectTab(false); };
+      const remove = document.createElement("button"); remove.type = "button"; remove.textContent = uiText("Löschen");
+      remove.setAttribute("aria-label", `${uiText("Favorit löschen")}: ${hex}`);
+      remove.onclick = () => { if (saveFavorites(favorites.filter((_, position) => position !== index))) $(".cp-favorites-status").textContent = uiText("Favorit gelöscht"); };
+      row.append(choose, remove); list.append(row);
+    });
+  };
   const draw = () => {
     const pixels = ctx.createImageData(256,256);
     for (let y=0;y<256;y++) for (let x=0;x<256;x++) {
@@ -77,6 +125,7 @@ export async function openColorPicker(initial = "#29c8b5") {
     $(".cp-name").textContent=nearest?.name || "";
     $(".cp-match").textContent=nearest ? uiText(nearest.exact ? "Exakter Farbname" : "Nächster Farbname") + " · " + nearest.hex : "";
     $(".cp-status").textContent="";
+    favoriteState();
     if (redraw) draw();
   };
   const pick = event => {
@@ -100,11 +149,14 @@ export async function openColorPicker(initial = "#29c8b5") {
     try { await copyText(output, dialog); $(".cp-status").textContent=uiText("Kopiert"); }
     catch { $(".cp-status").textContent=uiText("Kopieren nicht verfügbar. Ausgabe markieren und manuell kopieren."); }
   };
+  $(".cp-save-favorite").onclick = () => {
+    if (saveFavorites(addFavorite(favorites, color))) $(".cp-status").textContent = uiText("Favorit gespeichert");
+  };
   $(".cp-close").onclick=()=>dialog.close();
-  copy.disabled=true; update(); dialog.showModal();
+  copy.disabled=true; update(); renderFavorites(); dialog.showModal();
   try {
     namesPromise ??= fetch("color-names.json").then(response => { if (!response.ok) throw Error("Color names unavailable"); return response.json(); });
-    names=await namesPromise; copy.disabled=false; update(false);
+    names=await namesPromise; copy.disabled=false; update(false); renderFavorites();
   } catch {
     namesPromise=null; copy.disabled=false; $(".cp-format").value="hex";
     $(".cp-status").textContent=uiText("Farbnamen konnten nicht geladen werden. HEX bleibt verfügbar.");
