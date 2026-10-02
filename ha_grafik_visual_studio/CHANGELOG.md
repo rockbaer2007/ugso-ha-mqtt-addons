@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.101
+
+- Rename the visible Linebox widget to SVG LineBox to clarify its relationship with SVG-Line. Existing saved `linebox` widget types and project data remain compatible; the former name remains searchable in the palette.
+
 ## 0.1.100
 
 - Linebox can optionally show its signed output value above or below the junction circle. The label updates immediately with bound slider changes and can also be shown when the circle is hidden.

@@ -75,7 +75,7 @@ registerWidgetSet({
         { label: "Größe", key: "markerSize", type: "range", min: 2, max: 30, step: 1 },
         { label: "Farbe", key: "markerColor", type: "color" },
       ] },
-      { label: "Animation", hint: "Zahlenwert / Teiler ergibt Zyklen pro Sekunde (0,05 bis 20). Ein aktiver Linebox-Ausgang hat Vorrang vor der gewählten Richtungsquelle; Farbe und Linienart bleiben erhalten.", fields: [
+      { label: "Animation", hint: "Zahlenwert / Teiler ergibt Zyklen pro Sekunde (0,05 bis 20). Ein aktiver SVG LineBox-Ausgang hat Vorrang vor der gewählten Richtungsquelle; Farbe und Linienart bleiben erhalten.", fields: [
         { label: "Animation aktivieren", key: "animationEnabled", type: "checkbox", default: false },
         { label: "Animationsart", key: "animationStyle", type: "select", options: [
           { value: "two-color", label: "Zweifarbenfluss" }, { value: "dash", label: "Laufende Striche" },
@@ -94,7 +94,7 @@ registerWidgetSet({
         ] },
         { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1, showWhen: { key: "animationSource", value: "manual", default: "manual" } },
         { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1, showWhen: { key: "animationSource", value: "boolean" } },
-        { label: "Linebox-Teiler (bei Übergabe)", key: "lineboxDivisor", type: "number", min: 0.001, step: 0.001, default: 1 },
+        { label: "SVG LineBox-Teiler (bei Übergabe)", key: "lineboxDivisor", type: "number", min: 0.001, step: 0.001, default: 1 },
         { label: "Hauptlinie / Flussgruppe", key: "flowParentId", type: "connection" },
         { label: "Animationstakt der Hauptlinie übernehmen (eigene Farben behalten)", key: "inheritFlow", type: "checkbox", default: true },
         { label: "Synchronisierung", key: "synchronization", type: "select", options: [
@@ -115,11 +115,12 @@ registerWidgetSet({
     ],
   }, {
     type: "linebox",
-    label: "Linebox",
+    label: "SVG LineBox",
+    searchTerms: ["Linebox"],
     icon: "Σ",
     preview: { kind: "plain", lines: ["Σ"] },
     defaults: {
-      title: "Linebox", visible: true, dockPointsEnabled: false, width: 140, height: 76,
+      title: "SVG LineBox", visible: true, dockPointsEnabled: false, width: 140, height: 76,
       backgroundColor: "#12383b", borderColor: "#29c8b5", borderWidth: 1, borderStyle: "dashed",
       junctionVisible: true, junctionDiameter: 16, junctionColor: "#29c8b5", junctionBorderColor: "#d9f8f3", junctionBorderWidth: 2, junctionValuePosition: "off",
       outputHelperEnabled: false, outputHelperEntityId: "",

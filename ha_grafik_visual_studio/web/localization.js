@@ -317,7 +317,7 @@ Object.assign(ENGLISH, {
   "Home-Assistant-Entität auswählen": "Select Home Assistant entity", "Punkte bearbeiten": "Edit points",
   "Element hinzufügen": "Add item", "Eintrag löschen": "Delete item",
   "Anschlüsse": "Ports", "Rolle": "Role", "Eingang": "Input", "Nullstellung": "Neutral", "Ausgang": "Output",
-  "Berechneten Wert weitergeben": "Pass calculated value", "Linebox-Teiler (bei Übergabe)": "Linebox divisor (on handoff)",
+  "Berechneten Wert weitergeben": "Pass calculated value", "SVG LineBox-Teiler (bei Übergabe)": "SVG LineBox divisor (on handoff)",
   "Verbindungspunkt": "Junction", "Kreis anzeigen": "Show circle", "Durchmesser (px)": "Diameter (px)",
   "Ausgabewert": "Output value", "Ausgabewert anzeigen": "Show output value",
   "Über dem Kreis": "Above the circle", "Unter dem Kreis": "Below the circle",
@@ -329,7 +329,7 @@ Object.assign(ENGLISH, {
   "Oben 1/4": "Top 1/4", "Oben Mitte": "Top center", "Oben 3/4": "Top 3/4",
   "Unten 1/4": "Bottom 1/4", "Unten Mitte": "Bottom center", "Unten 3/4": "Bottom 3/4",
   "Nur aktive Andockpunkte erhalten eine Rolle. Eingänge werden mit Vorzeichen summiert; Ausgänge geben den Wert nur bei aktiviertem Haken weiter.": "Only enabled docking points have a role. Inputs are summed with their signs; outputs pass the value only when the checkbox is enabled.",
-  "Zahlenwert / Teiler ergibt Zyklen pro Sekunde (0,05 bis 20). Ein aktiver Linebox-Ausgang hat Vorrang vor der gewählten Richtungsquelle; Farbe und Linienart bleiben erhalten.": "Numeric value divided by divisor gives cycles per second (0.05 to 20). An active Linebox output takes priority over the selected direction source; color and line style remain unchanged.",
+  "Zahlenwert / Teiler ergibt Zyklen pro Sekunde (0,05 bis 20). Ein aktiver SVG LineBox-Ausgang hat Vorrang vor der gewählten Richtungsquelle; Farbe und Linienart bleiben erhalten.": "Numeric value divided by divisor gives cycles per second (0.05 to 20). An active SVG LineBox output takes priority over the selected direction source; color and line style remain unchanged.",
 });
 
 const trackedText = new WeakMap();

@@ -18,9 +18,9 @@ const outgoing = { id: "outgoing", type: "svg-connection", startWidgetId: "box",
 const widgets = [box, solar, battery, outgoing];
 const states = { "sensor.solar": { state: "1000" }, "sensor.battery": { state: "-300" } };
 
-test("Linebox and SVG-Line are registered without changing the stored line type", () => {
+test("SVG LineBox and SVG-Line keep their stored widget types", () => {
   assert.equal(getWidgetDefinition("svg-connection").label, "SVG-Line");
-  assert.equal(getWidgetDefinition("linebox").label, "Linebox");
+  assert.equal(getWidgetDefinition("linebox").label, "SVG LineBox");
   assert.equal(getWidgetDefinition("linebox").defaults.dockPointsEnabled, false);
   assert.equal(getWidgetDefinition("button").label, "Icon Toggle Button");
   assert.equal(getWidgetDefinition("gauge").label, "Gauge");
