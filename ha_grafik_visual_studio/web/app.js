@@ -2416,6 +2416,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       backgroundColor: widget.backgroundColor || "", borderColor: widget.borderColor || "",
       borderWidth: `${widget.borderWidth ?? 1}px`, fontSize: `${widget.fontSize ?? 13}px`,
       fontWeight: widget.fontWeight || "400", textAlign: widget.textAlign || "left",
+      justifyContent: ["sensor", "red-number"].includes(widget.type) ? ({ left: "flex-start", center: "center", right: "flex-end" }[widget.textAlign] || "flex-start") : "",
       padding: `${widget.padding ?? 0}px`, opacity: `${widget.opacity ?? 1}`,
       borderStyle: widget.borderStyle || "none",
       fontFamily: widget.fontFamily || "", fontStyle: widget.fontStyle || "", fontVariant: widget.fontVariant || "",

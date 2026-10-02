@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.127
+
+- Fixes left, center and right text alignment for Number and Red Number by aligning their flex content, including HTML additions, in editor and runtime views.
+
 ## 0.1.126
 
 - Fixes LineBox inputs ignoring numeric widgets connected through lines without their own numeric animation entity. Explicit numeric line entities retain priority; otherwise connected numeric widgets provide values, including Number scaling.
