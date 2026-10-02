@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.94
+
+- A Number widget bound to a Home Assistant entity now shows only the formatted current value, without its title, entity ID, unit or configured prefix/suffix. The editor refreshes bound Number states as well as the runtime; an unavailable value displays `--`. Unbound Number widgets retain their preview layout.
+
 ## 0.1.93
 
 - At runtime, SVG-Lines docked to enabled Linebox input and output ports now meet at one invisible junction in the center of the Linebox. Editor docking positions and port roles remain unchanged; neutral or disabled ports do not join.

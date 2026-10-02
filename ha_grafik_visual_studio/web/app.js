@@ -3,6 +3,7 @@ import { getLanguagePreference, setLanguagePreference, startLocalization, uiText
 import { connectionAnimationEntityId, resolveConnectionAnimation } from "./connection-animation.js";
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
 import { lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition } from "./linebox.js";
+import { numberDisplay } from "./number-display.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
@@ -77,6 +78,7 @@ const WRITABLE_SWITCH_ENTITY = /^(switch|light|input_boolean)\.[a-z0-9_]+$/;
 const pendingSwitches = new Set();
 let runtimeStateRequestPending = false;
 let runtimeStateError = false;
+let editorNumberRequestPending = false;
 let mdiIcons = null;
 let mdiIconsPromise = null;
 let activeIconInput = null;
@@ -445,6 +447,7 @@ async function loadProject() {
   if (!runtimeMode) void renderEditorToolActions();
   savedProjectSnapshot = observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
   if (runtimeMode) void refreshRuntimeStates();
+  else void refreshEditorNumberStates();
 }
 
 function displayedWidgetState(widget) {
@@ -452,6 +455,49 @@ function displayedWidgetState(widget) {
     return state.entityStates[widget.entityId]?.state ?? "--";
   }
   return widget.state;
+}
+
+async function fetchEntityStates(ids) {
+  const states = [];
+  for (let offset = 0; offset < ids.length; offset += 100) {
+    const query = new URLSearchParams(ids.slice(offset, offset + 100).map((id) => ["entity_id", id]));
+    const response = await fetch(`api/states?${query}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const payload = await response.json();
+    states.push(...(payload.states || []));
+  }
+  return Object.fromEntries(states.map((entry) => [entry.entity_id, entry]));
+}
+
+function editorNumberEntityIds() {
+  return [...new Set(currentPage().widgets.filter((widget) => widget.type === "sensor").map((widget) => widget.entityId))]
+    .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id || ""));
+}
+
+async function refreshEditorNumberStates() {
+  if (runtimeMode || !state.project || document.hidden || editorNumberRequestPending) return;
+  const pageId = currentPage().id;
+  const ids = editorNumberEntityIds();
+  if (!ids.length) return;
+  editorNumberRequestPending = true;
+  try {
+    const fresh = await fetchEntityStates(ids);
+    if (currentPage().id !== pageId) return;
+    const next = { ...state.entityStates };
+    for (const id of ids) {
+      if (fresh[id]) next[id] = fresh[id];
+      else delete next[id];
+    }
+    if (JSON.stringify(next) !== JSON.stringify(state.entityStates)) { state.entityStates = next; renderStage(); }
+  } catch {
+    if (currentPage().id !== pageId) return;
+    const next = { ...state.entityStates };
+    for (const id of ids) delete next[id];
+    if (JSON.stringify(next) !== JSON.stringify(state.entityStates)) { state.entityStates = next; renderStage(); }
+  } finally {
+    editorNumberRequestPending = false;
+    if (currentPage().id !== pageId || editorNumberEntityIds().join("|") !== ids.join("|")) void refreshEditorNumberStates();
+  }
 }
 
 async function refreshRuntimeStates() {
@@ -465,16 +511,8 @@ async function refreshRuntimeStates() {
   if (!ids.length) return;
   runtimeStateRequestPending = true;
   try {
-    const states = [];
-    for (let offset = 0; offset < ids.length; offset += 100) {
-      const query = new URLSearchParams(ids.slice(offset, offset + 100).map((id) => ["entity_id", id]));
-      const response = await fetch(`api/states?${query}`, { cache: "no-store" });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const payload = await response.json();
-      states.push(...(payload.states || []));
-    }
+    const next = await fetchEntityStates(ids);
     if (currentPage().id !== pageId) return;
-    const next = Object.fromEntries(states.map((entry) => [entry.entity_id, entry]));
     if (JSON.stringify(next) !== JSON.stringify(state.entityStates)) {
       state.entityStates = next;
       renderStage();
@@ -518,6 +556,9 @@ async function writeRuntimeSwitch(widget, enabled) {
 if (runtimeMode) {
   window.setInterval(() => { void refreshRuntimeStates(); }, 5000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshRuntimeStates(); });
+} else {
+  window.setInterval(() => { void refreshEditorNumberStates(); }, 5000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshEditorNumberStates(); });
 }
 
 if (!runtimeMode) setInterval(() => {
@@ -607,7 +648,7 @@ function renderPageMenu() {
     const select = document.createElement("button"); select.type = "button"; select.className = "page-select";
     select.textContent = `${page.visible ? "◉" : "◌"}  ${page.name}`;
     select.setAttribute("aria-current", String(page.id === state.project.currentPageId));
-    select.addEventListener("click", () => { state.project.currentPageId = page.id; state.selectedId = null; state.selectedIds = []; render(); if (runtimeMode) void refreshRuntimeStates(); });
+    select.addEventListener("click", () => { state.project.currentPageId = page.id; state.selectedId = null; state.selectedIds = []; render(); if (runtimeMode) void refreshRuntimeStates(); else void refreshEditorNumberStates(); });
     row.append(select);
     if (!runtimeMode) {
       const visibility = document.createElement("button"); visibility.type = "button"; visibility.textContent = page.visible ? "◉" : "◌"; visibility.title = page.visible ? "In Runtime sichtbar" : "In Runtime ausgeblendet"; visibility.setAttribute("aria-label", `${page.visible ? "Ausblenden" : "Einblenden"}: ${page.name}`);
@@ -793,7 +834,7 @@ function receiveEntities(message) {
   if (!entities.some((entity) => entity.entity_id === state.selectedEntityId)) state.selectedEntityId = "";
   $("#entities-status").textContent = summary;
   renderEntities();
-  if (runtimeMode) renderStage();
+  renderStage();
 }
 
 function entityName(entity) {
@@ -2259,6 +2300,17 @@ function renderStage() {
         const buttons = document.createElement("div"); buttons.className = `widget-filter-buttons ${widget.filterType}`;
         for (const entry of values) { const button = document.createElement("button"); button.type = "button"; const selected = entry.value ? selectedFilters.includes(String(entry.value)) : !selectedFilters.length; button.setAttribute("aria-pressed", selected); button.className = widget.variant || "outlined"; button.style.color = entry.textColor || ""; button.style.backgroundColor = selected ? entry.activeColor || "" : ""; const icon = entry.image || entry.icon; if (icon) { const image = document.createElement("img"); image.alt = ""; image.width = 18; image.height = 18; setIconImageSource(image, icon); button.append(image); } button.append(document.createTextNode(entry.title || entry.value)); button.addEventListener("click", event => { event.stopPropagation(); choose(String(entry.value)); }); buttons.append(button); } content.append(buttons);
       }
+    } else if (widget.type === "sensor") {
+      const display = numberDisplay(widget, state.entityStates[widget.entityId]);
+      const value = document.createElement("span"); value.className = "value";
+      if (display.bound) value.textContent = display.value;
+      else {
+        appendSafeHtml(value, display.prefix);
+        value.append(document.createTextNode(display.value));
+        appendSafeHtml(value, display.suffix);
+        if (widget.title) { const title = document.createElement("span"); title.className = "widget-title"; title.textContent = widget.title; content.append(title); }
+      }
+      content.append(value);
     } else if (getWidgetDefinition(widget.type).render?.kind === "text") {
       const definition = getWidgetDefinition(widget.type);
       const value = document.createElement("span");
@@ -2269,12 +2321,6 @@ function renderStage() {
       const value = document.createElement("span"); value.className = "value";
     let displayValue = displayedWidgetState(widget) ?? "--";
     let suffix = widget.unit || "";
-    if (widget.type === "sensor" && Number.isFinite(Number(displayValue))) {
-      const scaled = Number(displayValue) * Number(widget.factor ?? 1);
-      displayValue = scaled.toFixed(Number(widget.digits ?? 1));
-      if (widget.decimalComma) displayValue = displayValue.replace(".", ",");
-      suffix = Number(displayValue.replace(",", ".")) === 1 ? widget.suffixSingular || suffix : widget.suffixPlural || suffix;
-    }
     if (widget.entityId) value.append(document.createTextNode(`${widget.entityId} · `));
     appendSafeHtml(value, widget.prefix || ""); value.append(document.createTextNode(String(displayValue))); appendSafeHtml(value, suffix);
       if (widget.title) { const title = document.createElement("span"); title.className = "widget-title"; title.textContent = widget.title; content.append(title); }
@@ -2642,6 +2688,7 @@ function field(descriptor, widget) {
   const update = () => {
     if (descriptor.key === "count" && input.type === "number") input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Math.trunc(Number(input.value) || 1))));
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    if (widget.type === "sensor" && descriptor.key === "entityId") void refreshEditorNumberStates();
     if (widget.type === "linebox" && descriptor.key?.startsWith("dock_") && input.type === "checkbox" && !input.checked) widget[`lineboxRole_${descriptor.key.slice(5)}`] = "none";
     if (descriptor.key === "testIndex" && widget.type?.startsWith("value-list-")) widget.state = input.value;
     void updatePreview();
