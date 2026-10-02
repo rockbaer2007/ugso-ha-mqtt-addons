@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.120
+
+- Expands per-tab overflow X/Y choices to none, visible, hidden, scroll, auto, initial and inherit. None clears the explicit CSS override; existing tabs retain auto as their default.
+
 ## 0.1.119
 
 - Adds an independent background color for each tab header, available in horizontal and vertical layouts. Existing tabs retain their transparent background and active marker.

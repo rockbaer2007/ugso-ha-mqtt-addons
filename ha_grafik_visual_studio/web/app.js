@@ -272,8 +272,8 @@ function indexedWidgetGroups(widget) {
     { label: "Symbolgröße (px)", key: `tabIconSize${index}`, type: "number", min: 8, max: 100, default: 24 },
     { label: "Symbolfarbe", key: `tabIconColor${index}`, type: "color", default: "#e7ecee" },
     { label: "Tab-Hintergrundfarbe", key: `tabBackground${index}`, type: "color", default: "transparent" },
-    { label: "Überlauf X", key: `tabOverflowX${index}`, type: "select", default: "auto", options: ["auto", "hidden", "scroll", "visible"] },
-    { label: "Überlauf Y", key: `tabOverflowY${index}`, type: "select", default: "auto", options: ["auto", "hidden", "scroll", "visible"] },
+    { label: "Überlauf X", key: `tabOverflowX${index}`, type: "select", default: "auto", options: ["none", "visible", "hidden", "scroll", "auto", "initial", "inherit"] },
+    { label: "Überlauf Y", key: `tabOverflowY${index}`, type: "select", default: "auto", options: ["none", "visible", "hidden", "scroll", "auto", "initial", "inherit"] },
   ] }));
   const specs = { "iframe-8": ["frames", 20, [{ label: "URL falls Wert", key: "frameSource" }, { label: "Kein Sandkasten", key: "frameNoSandbox", type: "checkbox", default: false }]], "image-8": ["Bild", 50, [{ label: "Quelle", key: "imageSource", previewImage: true }]], "view-in-widget-8": ["Seite", 50, [{ label: "Seite", key: "page", type: "page" }]] };
   const spec = specs[widget.type]; if (!spec) return [];
@@ -2934,8 +2934,10 @@ function renderTabsWidget(widget, parent) {
     };
     nav.append(button);
   }
-  panel.style.overflowX = ["auto", "hidden", "scroll", "visible"].includes(widget[`tabOverflowX${active}`]) ? widget[`tabOverflowX${active}`] : "auto";
-  panel.style.overflowY = ["auto", "hidden", "scroll", "visible"].includes(widget[`tabOverflowY${active}`]) ? widget[`tabOverflowY${active}`] : "auto";
+  for (const axis of ["X", "Y"]) {
+    const value = widget[`tabOverflow${axis}${active}`];
+    panel.style[`overflow${axis}`] = value === "none" ? "" : ["visible", "hidden", "scroll", "auto", "initial", "inherit"].includes(value) ? value : "auto";
+  }
   const target = tabTarget(widget, active, parent.id), chain = (params.get("chain") || "").split(",").filter(Boolean);
   const own = widget[`tabSource${active}`] !== "page";
   const targetPage = own ? ownTabSurface(widget, active) : state.project.pages.find(page => page.id === target);
