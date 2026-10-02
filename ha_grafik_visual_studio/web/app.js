@@ -2,7 +2,7 @@ import { getWidgetSets, getWidgetDefinition, registerWidgetSet } from "./widget-
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation } from "./connection-animation.js";
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
-import { lineboxInputSum, lineboxOutputForConnection, lineboxPortRole } from "./linebox.js";
+import { lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition } from "./linebox.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
@@ -1387,6 +1387,10 @@ function connectionEndpoint(widget, prefix, widgets) {
     const currentIndex = connections.findIndex(item => item.widget.id === widget.id && item.side === prefix);
     const limit = Math.max(1, Number(target.dockMaxConnections) || 99);
     if (currentIndex > 0 && target.dockMultiple === false || currentIndex >= limit) return { x: Number(widget[`${prefix}X`]) || 0, y: Number(widget[`${prefix}Y`]) || 0 };
+    if (runtimeMode && target.type === "linebox") {
+      const join = lineboxRuntimeJoinPosition(target, anchorId);
+      if (join) return join;
+    }
     const position = connectionAnchorPosition(target, anchorId);
     if (connections.length > 1 && currentIndex >= 0) {
       const offset = (currentIndex - (Math.min(connections.length, limit) - 1) / 2) * (Number(target.dockLaneSpacing) || 6);

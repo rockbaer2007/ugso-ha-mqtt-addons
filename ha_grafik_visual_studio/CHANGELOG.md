@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.93
+
+- At runtime, SVG-Lines docked to enabled Linebox input and output ports now meet at one invisible junction in the center of the Linebox. Editor docking positions and port roles remain unchanged; neutral or disabled ports do not join.
+
 ## 0.1.92
 
 - Added Linebox to HA Grafik – Spezial: enabled docking points can be inputs, neutral, or outputs. Numeric SVG-Line inputs are summed with their direction sign, and selected outputs can drive another line's animation while preserving its colors and style. Linebox is visible only in the editor.

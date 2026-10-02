@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { lineboxInputSum, lineboxOutputForConnection, lineboxPortRole } from "../web/linebox.js";
+import { lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition } from "../web/linebox.js";
 import { getWidgetDefinition } from "../web/widget-registry.js";
 import "../web/widget-sets/core.js";
 import "../web/widget-sets/basic2.js";
@@ -45,4 +45,14 @@ test("output handoff is opt-in per port and missing values do not invent a sum",
   assert.equal(lineboxOutputForConnection(outgoing, [{ ...box, lineboxPass_right_center: undefined }, solar, battery, outgoing], states), null);
   assert.deepEqual(lineboxOutputForConnection(outgoing, widgets, {}), { boxId: "box", value: null });
   assert.equal(lineboxInputSum(box, widgets, { "sensor.solar": { state: "0" } }), 0);
+});
+
+test("runtime routes active input and output ports to one invisible join", () => {
+  const positioned = { ...box, x: 200, y: 80, width: 140, height: 76 };
+  assert.deepEqual(lineboxRuntimeJoinPosition(positioned, "left-center"), { x: 270, y: 118 });
+  assert.deepEqual(lineboxRuntimeJoinPosition(positioned, "right-center"), { x: 270, y: 118 });
+  assert.deepEqual(lineboxRuntimeJoinPosition({ ...positioned, lineboxPass_right_center: false }, "right-center"), { x: 270, y: 118 });
+  assert.deepEqual(lineboxRuntimeJoinPosition(positioned, "top-center"), { x: 270, y: 118 });
+  assert.equal(lineboxRuntimeJoinPosition({ ...positioned, lineboxRole_right_center: "none" }, "right-center"), null);
+  assert.equal(lineboxRuntimeJoinPosition({ ...positioned, dock_left_center: false }, "left-center"), null);
 });

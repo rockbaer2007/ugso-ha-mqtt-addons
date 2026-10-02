@@ -8,6 +8,16 @@ export function lineboxPortRole(box, anchorId) {
   return ["input", "output"].includes(box[roleKey(anchorId)]) ? box[roleKey(anchorId)] : "none";
 }
 
+export function lineboxRuntimeJoinPosition(box, anchorId) {
+  if (lineboxPortRole(box, anchorId) === "none") return null;
+  const x = Number(box.x);
+  const y = Number(box.y);
+  const width = Number(box.width);
+  const height = Number(box.height);
+  if (![x, y, width, height].every(Number.isFinite)) return null;
+  return { x: x + width / 2, y: y + height / 2 };
+}
+
 export function lineboxInputSum(box, widgets, entityStates) {
   let sum = 0;
   let validInputs = 0;
