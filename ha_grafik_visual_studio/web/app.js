@@ -3207,7 +3207,9 @@ function render() {
   const projectQuery = `project=${encodeURIComponent(state.projectId)}`;
   $("#editor-link").href = `?mode=editor&${projectQuery}`;
   $("#runtime-link").href = `?mode=runtime&${projectQuery}`;
-  $("#runtime-tab-link").href = `?mode=runtime&${projectQuery}&page=${encodeURIComponent(page.id)}`;
+  const runtimeTabUrl = new URL("runtime", document.baseURI);
+  runtimeTabUrl.search = new URLSearchParams({ mode: "runtime", project: state.projectId, page: page.id }).toString();
+  $("#runtime-tab-link").href = runtimeTabUrl.href;
   document.title = `${state.project.settings?.title || state.project.name} · HA Grafik Visual Studio`;
   const favicon = safeUrl(state.project.settings?.favicon || "", true);
   $("#project-favicon-link").href = favicon || "studio-icon.svg";

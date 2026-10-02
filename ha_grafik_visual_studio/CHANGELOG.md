@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.105
+
+- Open the new-tab action through an explicit runtime URL under the Studio base path, preserving the project and page.
+- Replace the new-tab arrow with a yellow play icon.
+
 ## 0.1.104
 
 - Use the supplied SVG icons for Files, Settings, Projects, Entities, Pages, and Tools, including the runtime page menu.
