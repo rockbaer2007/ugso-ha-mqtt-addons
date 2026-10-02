@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Seite": "Page", "B:": "W:", "H:": "H:",
   "Skalenposition": "Scale position",
   "Zwischenmarkierungen (0 = aus)": "Intermediate marks (0 = off)",
   "Werte der Zwischenmarkierungen anzeigen": "Show intermediate mark values",

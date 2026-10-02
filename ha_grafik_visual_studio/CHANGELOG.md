@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.108
+
+- Compact the page size toolbar: use Seite, B: and H:, five-character numeric fields, and a shorter Save button.
+
 ## 0.1.107
 
 - Immediately synchronize sliders sharing a helper with another input widget or local helper update.

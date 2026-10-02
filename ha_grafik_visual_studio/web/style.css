@@ -65,13 +65,14 @@ html[lang="en"] .widget-edit-actions::after { content: "Edit"; }
 .editor-tool-list img { display: block; width: 20px; height: 20px; object-fit: contain; }
 .editor-tools-label { align-self: end; color: var(--muted); font-size: 10px; text-align: center; }
 .toolbar-actions { display: flex; min-width: max-content; flex: none; align-items: stretch; gap: 4px; padding-left: 5px; }
-.page-size-controls { display: grid; width: 235px; flex: none; grid-template-rows: repeat(2, 32px); align-content: center; gap: 4px; }
-.page-size { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: center; gap: 4px; color: var(--muted); font-size: 11px; }
+.page-size-controls { display: grid; width: 210px; flex: none; grid-template-rows: repeat(2, 28px); align-content: center; gap: 4px; }
+.page-size { display: grid; grid-template-columns: 32px minmax(0, 1fr); align-items: center; gap: 4px; color: var(--muted); font-size: 11px; }
 .page-size select { width: 100%; min-width: 0; padding: 5px 20px 5px 6px; }
-.custom-size { display: grid; grid-template-columns: repeat(2, 104px); gap: 4px; }
+.custom-size { display: grid; grid-template-columns: repeat(2, max-content); gap: 8px; }
 .custom-size label { display: grid; min-width: 0; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 4px; color: var(--muted); font-size: 11px; }
-.custom-size input { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 4px; padding: 5px; background: var(--bg); }
-#save { width: 72px; min-width: 72px; padding: 4px; font-size: 11px; }
+.custom-size input { box-sizing: content-box; width: 5ch; min-width: 0; height: 20px; border: 1px solid var(--line); border-radius: 4px; padding: 3px 5px; background: var(--bg); font-variant-numeric: tabular-nums; appearance: textfield; -moz-appearance: textfield; }
+.custom-size input::-webkit-inner-spin-button, .custom-size input::-webkit-outer-spin-button { margin: 0; -webkit-appearance: none; }
+#save { width: 72px; min-width: 72px; height: 60px; min-height: 60px; align-self: center; padding: 4px; font-size: 11px; }
 #save .toolbar-icon { font-size: 18px; }
 .primary { background: var(--accent); color: #092322; border-color: var(--accent); font-weight: 650; }
 .workspace { display: grid; width: 100%; min-height: 0; flex: 1 1 auto; grid-template-columns: var(--left-panel-width, 225px) minmax(0, 1fr) var(--right-panel-width, 260px); overflow: hidden; }

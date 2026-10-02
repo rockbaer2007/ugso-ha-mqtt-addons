@@ -68,7 +68,7 @@
     </div>
     <div class="toolbar-actions">
       <div class="page-size-controls">
-        <label class="page-size">Seitengröße
+        <label class="page-size">Seite
           <select id="preset">
             <option value="desktop">Desktop 1920 × 1080</option>
             <option value="tablet">Tablet 1280 × 800</option>
@@ -77,8 +77,8 @@
           </select>
         </label>
         <div class="custom-size" id="custom-size">
-          <label>Breite <input id="page-width" type="number" min="240" max="7680" step="1"></label>
-          <label>Höhe <input id="page-height" type="number" min="240" max="4320" step="1"></label>
+          <label>B: <input id="page-width" type="number" min="240" max="7680" step="1" aria-label="Breite"></label>
+          <label>H: <input id="page-height" type="number" min="240" max="4320" step="1" aria-label="Höhe"></label>
         </div>
       </div>
       <button id="save" class="primary toolbar-tile"><span class="toolbar-icon" aria-hidden="true"><img src="icons/diskette.svg" alt=""></span><span>Speichern</span></button>
