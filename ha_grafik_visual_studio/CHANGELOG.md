@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.110
+
+- Copy Colorpicker HEX values and names through a modal-local clipboard fallback when the browser Clipboard API is missing or denied, including HTTP/Ingress contexts.
+
 ## 0.1.109
 
 - Add the installable UGSo Colorpicker tool: keyboard-accessible color wheel, brightness, HEX input, local color names, and copy output.

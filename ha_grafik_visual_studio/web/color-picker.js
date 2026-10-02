@@ -1,4 +1,5 @@
 import { uiText } from "./localization.js";
+import { copyText } from "./clipboard.js";
 
 export function hsvHex(hue, saturation, value) {
   const h = ((hue % 360) + 360) % 360 / 60;
@@ -96,7 +97,7 @@ export async function openColorPicker(initial = "#29c8b5") {
   copy.onclick=async()=> {
     const output=$(".cp-format").value==="name" ? nearest?.name : color;
     if (!output) return;
-    try { await navigator.clipboard.writeText(output); $(".cp-status").textContent=uiText("Kopiert"); }
+    try { await copyText(output, dialog); $(".cp-status").textContent=uiText("Kopiert"); }
     catch { $(".cp-status").textContent=uiText("Kopieren nicht verfügbar. Ausgabe markieren und manuell kopieren."); }
   };
   $(".cp-close").onclick=()=>dialog.close();
