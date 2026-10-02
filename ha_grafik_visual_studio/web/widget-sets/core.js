@@ -168,6 +168,8 @@ registerWidgetSet({
         { label: "Vertikale Tabs", key: "tabsVertical", type: "checkbox", default: false, refreshProperties: true },
         { label: "Tab-Variante", key: "tabsVariant", type: "select", default: "standard", showWhen: { key: "tabsVertical", value: false }, options: [{ value: "standard", label: "Standard" }, { value: "centered", label: "zentriert" }, { value: "fullWidth", label: "Gesamtbreite" }] },
         { label: "Tab-Farbe", key: "tabsColor", type: "color", default: "#9f99bb" },
+        { label: "Textfarbe aktiv", key: "tabsActiveTextColor", type: "color" },
+        { label: "Textfarbe nicht aktiv", key: "tabsInactiveTextColor", type: "color" },
       ] }, geometry(), ...cssGroups(),
     ] },
     basicDataWidget("view-in-widget", "View in widget", "▣", {}, [{ label: "Seite", key: "targetPage", type: "page" }], "Bettet eine gespeicherte Projektseite ein; rekursive Einbettung wird verhindert."),

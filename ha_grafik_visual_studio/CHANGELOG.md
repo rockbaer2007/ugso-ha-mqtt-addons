@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.121
+
+- Adds separate active/inactive tab text colors in the main Tabs settings. Empty values preserve the existing Tab color; per-tab icon colors remain independent.
+
 ## 0.1.120
 
 - Expands per-tab overflow X/Y choices to none, visible, hidden, scroll, auto, initial and inherit. None clears the explicit CSS override; existing tabs retain auto as their default.
