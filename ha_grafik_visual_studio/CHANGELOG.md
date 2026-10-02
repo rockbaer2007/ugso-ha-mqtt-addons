@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.104
+
+- Use the supplied SVG icons for Files, Settings, Projects, Entities, Pages, and Tools, including the runtime page menu.
+
 ## 0.1.103
 
 - Use the supplied trash, duplicate, and clipboard SVG icons for widget Delete, Duplicate, and Paste, matching the toolbar color and size.

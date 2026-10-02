@@ -93,6 +93,7 @@ html[lang="en"] .widget-edit-actions::after { content: "Edit"; }
 .page-row.active { border-radius: 4px; background: #2675a8; }
 .page-row.hidden-page .page-select { opacity: .62; }
 .runtime-page-menu-toggle { display: none; }
+.runtime-page-menu-toggle img { display: block; width: 22px; height: 22px; margin: auto; }
 .palette { border-right: 1px solid var(--line); }
 .palette-search { display: flex; align-items: center; gap: 8px; margin: 8px 8px 0; padding: 0 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); }
 .palette-search:focus-within { border-color: var(--accent); }
