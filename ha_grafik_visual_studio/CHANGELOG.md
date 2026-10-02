@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.106
+
+- Place slider minimum/maximum labels above or below the track ends.
+- Add evenly spaced intermediate scale marks (0 disables them), with optional numeric labels independent of the input step.
+
 ## 0.1.105
 
 - Open the new-tab action through an explicit runtime URL under the Studio base path, preserving the project and page.

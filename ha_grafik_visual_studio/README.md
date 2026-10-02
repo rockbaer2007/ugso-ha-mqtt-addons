@@ -14,6 +14,8 @@ Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sow
 
 ## Aktueller Stand
 
+- Slider können Min-/Max-Werte und Zwischenmarkierungen oberhalb oder unterhalb der Reglerenden anzeigen. Die Anzahl der Zwischenmarkierungen ist von 0 (aus) bis zur aufgerundeten Wertespanne minus 1 einstellbar; ihre Zahlenwerte sind optional. Bei 0–100 erzeugen 9 Zwischenmarkierungen die Werte 10 bis 90. Die Schrittweite des Reglers bleibt unabhängig davon.
+
 - **Neuer Tab** unter Runtime öffnet das aktuelle Projekt und die aktuelle Seite direkt in einem eigenen Browser-Tab ohne Home-Assistant-Kopf- und Seitenleiste. Beim Add-on wird die vorhandene authentifizierte Ingress-Sitzung verwendet.
 
 - Home Assistant App-Store-Paket für dieses gemeinsame App-Repository.

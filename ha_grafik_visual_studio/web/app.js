@@ -4,6 +4,7 @@ import { connectionAnimationEntityId, resolveConnectionAnimation } from "./conne
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
+import { sliderScale } from "./slider-scale.js";
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
@@ -2413,11 +2414,18 @@ function renderStage() {
       range.addEventListener("pointercancel", () => { delete range.dataset.dragging; });
       range.addEventListener("input", () => { if (bound) stageRuntimeEntityValue(widget.entityId, Number(range.value)); else widget.value = Number(range.value); });
       range.addEventListener("change", () => { delete range.dataset.dragging; if (bound && !range.disabled) void writeRuntimeHelperValue(widget.entityId, Number(range.value)); });
-      if (widget.showMinMax) {
-        const values = document.createElement("div"); values.className = "widget-slider-values";
-        const min = document.createElement("span"); min.textContent = range.min;
-        const max = document.createElement("span"); max.textContent = range.max;
-        values.append(min, range, max); content.append(values);
+      const scale = sliderScale(widget);
+      if (scale.marks.length) {
+        const values = document.createElement("div"); values.className = `widget-slider-values scale-${scale.position}`;
+        const labels = document.createElement("div"); labels.className = "widget-slider-scale";
+        for (const mark of scale.marks) {
+          const item = document.createElement("span"); item.className = `widget-slider-mark${mark.endpoint ? " is-endpoint" : ""}`;
+          item.style.left = `${mark.percent}%`;
+          if (!mark.endpoint) { const tick = document.createElement("i"); tick.className = "widget-slider-tick"; item.append(tick); }
+          if (mark.label) { const label = document.createElement("span"); label.textContent = mark.label; item.append(label); }
+          labels.append(item);
+        }
+        values.append(range, labels); content.append(values);
       } else content.append(range);
     } else if (widget.type === "svg-shape") {
       content.append(renderSvgShape(widget));
@@ -2883,6 +2891,7 @@ function field(descriptor, widget) {
   } else { input = document.createElement("input"); input.type = descriptor.type || "text"; }
   if (descriptor.min !== undefined) input.min = descriptor.min;
   if (descriptor.max !== undefined) input.max = descriptor.max;
+  if (widget.type === "slider" && descriptor.key === "scaleSteps") input.max = sliderScale(widget).limit;
   if (descriptor.step !== undefined) input.step = descriptor.step;
   if (input.type === "checkbox" && descriptor.key?.startsWith("dock_")) input.dataset.dockPoint = descriptor.key;
   if (input.type === "checkbox") input.checked = widget[descriptor.key] ?? descriptor.default ?? true;
@@ -2960,6 +2969,7 @@ function field(descriptor, widget) {
     number.addEventListener("change", () => input.dispatchEvent(new Event("change", { bubbles: true })));
   }
   const update = () => {
+    if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
     if (descriptor.key === "count" && input.type === "number") input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Math.trunc(Number(input.value) || 1))));
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if ((["sensor", "slider", "input-value"].includes(widget.type) && descriptor.key === "entityId") ||

@@ -2,6 +2,9 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Skalenposition": "Scale position",
+  "Zwischenmarkierungen (0 = aus)": "Intermediate marks (0 = off)",
+  "Werte der Zwischenmarkierungen anzeigen": "Show intermediate mark values",
   "Neuer Tab": "New tab",
   "Runtime in neuem Tab ohne Home-Assistant-Leisten öffnen": "Open runtime in a new tab without Home Assistant bars",
   "Seiten": "Pages", "Einstellungen": "Settings", "Entitäten": "Entities", "Dateien": "Files", "Projekte": "Projects",
