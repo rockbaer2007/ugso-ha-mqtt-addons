@@ -58,6 +58,7 @@
     <nav class="mode-switch" aria-label="Modus">
       <a href="?mode=editor" id="editor-link" class="toolbar-tile"><span class="toolbar-icon" aria-hidden="true">▣</span><span>Editor</span></a>
       <a href="?mode=runtime" id="runtime-link" class="toolbar-tile"><span class="toolbar-icon" aria-hidden="true">▶</span><span>Runtime</span></a>
+      <a href="?mode=runtime" id="runtime-tab-link" class="toolbar-tile" target="_blank" rel="noopener" title="Runtime in neuem Tab ohne Home-Assistant-Leisten öffnen"><span class="toolbar-icon" aria-hidden="true">↗</span><span>Neuer Tab</span></a>
     </nav>
     <div class="editor-tools" role="group" aria-label="Installierte Tools">
       <div id="editor-tool-list" class="editor-tool-list">
@@ -80,7 +81,7 @@
           <label>Höhe <input id="page-height" type="number" min="240" max="4320" step="1"></label>
         </div>
       </div>
-      <button id="save" class="primary toolbar-tile"><span class="toolbar-icon" aria-hidden="true">⇩</span><span>Speichern</span></button>
+      <button id="save" class="primary toolbar-tile"><span class="toolbar-icon" aria-hidden="true"><img src="icons/diskette.svg" alt=""></span><span>Speichern</span></button>
     </div>
   </header>
   <section id="widget-selector-menu" class="widget-selector-menu" hidden aria-label="Widget-Auswahl">

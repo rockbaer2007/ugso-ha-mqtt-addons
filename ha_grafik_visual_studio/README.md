@@ -14,6 +14,8 @@ Das Add-on enthält `icon.svg` und `logo.svg` als editierbare Markengrafiken sow
 
 ## Aktueller Stand
 
+- **Neuer Tab** unter Runtime öffnet das aktuelle Projekt und die aktuelle Seite direkt in einem eigenen Browser-Tab ohne Home-Assistant-Kopf- und Seitenleiste. Beim Add-on wird die vorhandene authentifizierte Ingress-Sitzung verwendet.
+
 - Home Assistant App-Store-Paket für dieses gemeinsame App-Repository.
 - Visualisierungsprojekte werden getrennt unter `/data/projects/` gespeichert; vorhandene Projekte aus `/data/project.json` werden beim ersten Start übernommen.
 - Jedes Projekt hat eigene Seiten, Einstellungen und getrennte Editor- sowie Runtime-Links.

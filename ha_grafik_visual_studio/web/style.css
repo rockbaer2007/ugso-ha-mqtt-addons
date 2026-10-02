@@ -8,6 +8,7 @@ button { cursor: pointer; }
 .toolbar { display: flex; min-height: var(--toolbar-height); flex: 0 0 auto; align-items: stretch; gap: 0; padding: 4px 8px; overflow-x: auto; overflow-y: hidden; border-bottom: 1px solid var(--line); background: var(--panel); }
 .toolbar-tile { display: flex; min-width: 54px; min-height: 72px; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 5px 8px; white-space: nowrap; }
 .toolbar-icon { display: grid; min-height: 25px; place-items: center; font-size: 20px; line-height: 1; }
+.toolbar-icon img { display: block; width: 22px; height: 22px; }
 .page-menu-toggle { flex: none; color: var(--text); border-color: transparent; background: transparent; }
 .studio-menu { display: flex; flex: none; align-items: stretch; gap: 2px; padding: 0 7px; border-left: 1px solid var(--line); border-right: 1px solid var(--line); }
 .studio-menu button { border-color: transparent; background: transparent; }
@@ -49,7 +50,7 @@ html[lang="en"] .widget-edit-actions::after { content: "Edit"; }
 .widget-history-actions button small { color: var(--muted); font-size: 9px; }
 .brand { display: flex; flex: none; align-items: center; gap: 8px; padding: 0 10px 0 4px; font-weight: 650; white-space: nowrap; }
 .brand-mark { display: block; width: 27px; height: 27px; flex: none; }
-.mode-switch { display: grid; flex: none; grid-template-rows: repeat(2, 32px); align-content: center; gap: 4px; padding: 0 7px; border-right: 1px solid var(--line); }
+.mode-switch { display: grid; flex: none; grid-template-rows: repeat(3, 24px); align-content: center; gap: 3px; padding: 0 7px; border-right: 1px solid var(--line); }
 .mode-switch a { min-width: 83px; min-height: 0; flex-direction: row; gap: 6px; padding: 3px 7px; border-radius: 4px; color: var(--muted); font-size: 11px; text-decoration: none; }
 .mode-switch .toolbar-icon { min-height: 0; font-size: 15px; }
 .mode-switch a.active { color: var(--text); background: #344143; box-shadow: inset 0 -2px var(--orange); }

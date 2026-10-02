@@ -2,6 +2,8 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Neuer Tab": "New tab",
+  "Runtime in neuem Tab ohne Home-Assistant-Leisten öffnen": "Open runtime in a new tab without Home Assistant bars",
   "Seiten": "Pages", "Einstellungen": "Settings", "Entitäten": "Entities", "Dateien": "Files", "Projekte": "Projects",
   "Widgets filtern": "Filter widgets", "Widgets": "Widgets", "filtern": "filter", "Widgets auswählen": "Select widgets",
   "Aktive(s) Widget(s) von": "Active widget(s) out of", "Ausgewähltes Widget": "Selected widget",

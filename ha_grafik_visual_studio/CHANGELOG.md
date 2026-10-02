@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.102
+
+- Use the supplied diskette icon for Save.
+- Add a new-tab runtime link for the current project and page, opening the Studio directly outside the Home Assistant panel frame.
+
 ## 0.1.101
 
 - Rename the visible Linebox widget to SVG LineBox to clarify its relationship with SVG-Line. Existing saved `linebox` widget types and project data remain compatible; the former name remains searchable in the palette.
