@@ -489,8 +489,8 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 body.runtime-mode { overflow: auto; background: #111; }
 body.runtime-mode .toolbar { display: none; }
 body.runtime-mode .workspace { height: 100vh; }
-body.runtime-mode .stage-scroll { display: grid; place-items: center; padding: 0; }
-body.runtime-mode .stage-canvas { width: auto; min-width: 0; min-height: 0; padding: 0; }
+body.runtime-mode .stage-scroll { display: flex; align-items: flex-start; justify-content: flex-start; overflow: auto; padding: 0; scrollbar-gutter: auto; }
+body.runtime-mode .stage-canvas { flex: none; width: auto; min-width: 0; min-height: 0; margin: auto; padding: 0; }
 body.runtime-mode .stage { overflow: hidden; border: 0; }
 body.runtime-mode .stage::before { display: none; }
 body.runtime-mode .stage.runtime-grid::before { display: block; }

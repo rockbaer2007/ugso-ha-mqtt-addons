@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.95
+
+- Runtime pages now center only when they fit the viewport. Larger pages begin at the reachable top-left edge and scroll in both directions, so widgets no longer disappear beyond the left or top side.
+
 ## 0.1.94
 
 - A Number widget bound to a Home Assistant entity now shows only the formatted current value, without its title, entity ID, unit or configured prefix/suffix. The editor refreshes bound Number states as well as the runtime; an unavailable value displays `--`. Unbound Number widgets retain their preview layout.
