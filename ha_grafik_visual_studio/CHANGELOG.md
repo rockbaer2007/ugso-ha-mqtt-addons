@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.201
+
+- Add Clock – Date to Technic 1.4.0 with local browser time, 12/24-hour display, optional seconds, six date languages and configurable date ordering, separators, month/year formats and weekday.
+- Support row/column layout, alignment, spacing, optional background, radius, padding and separate typography. A single host ticker updates text without redrawing other widgets; existing package definitions are preserved.
+
 ## 0.1.200
 
 - Add Room – Overlay to external Technic 1.3.0: room name, alignment, padding and up to ten live numeric/Boolean status rows with AND/OR inputs.

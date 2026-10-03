@@ -1,5 +1,7 @@
 # Widget-Regeln für HA Grafik Visual Studio
 
+Ab Studio 0.1.201 unterstützt API 0.2 `technic-clock`: Browserzeit ohne HA-Bindung, getrennte Zeit-/Datumsformatierung und sechs Datumssprachen über `Intl`. Ein Host-Ticker aktualisiert nur Text und hält keine entfernten Widgets fest. `separator=space` steht für ein Leerzeichen. Uhrzeit und Datum können unabhängig ausgeblendet werden; alle Optionen bleiben exportierbar.
+
 Ab Studio 0.1.200 unterstützt API 0.2 `technic-room`: bis zu zehn Statuszeilen mit `rowEntityId1` bis `rowEntityId10`, Zahlenformatierung und booleschen UND-/ODER-Eingängen. `targetPage` ist eine lokale Studio-Seiten-ID. Der feste Host öffnet sie als Runtime-Popup oder wechselt die Seite; rekursive Einbettungen werden verhindert. Popups bleiben beim Live-Polling bestehen und werden beim Seitenwechsel oder Entfernen des Widgets geschlossen. Kein Paket-JavaScript und keine HA-Schreibaktion sind dafür erforderlich.
 
 Ab Studio 0.1.199 unterstützt 0.2 `technic-light`: `powerEntityId`, `brightnessEntityId`, `linkPowerDimmer` und Anzeigeoptionen. Der feste Host liest brightness/supported_color_modes bei light oder min/max/step bei input_number. `/api/light-dimmer` prüft den vollständigen Plan vor dem Schreiben. Gleiche verknüpfte light-Bindungen ergeben einen Aufruf; getrennte Ziele sind sequenzielle Aktionen und können bei HA-Fehlern teilweise angewendet sein. Regler-Drag schreibt erst beim Loslassen, währenddessen werden Runtime-Neuzeichnungen verschoben.

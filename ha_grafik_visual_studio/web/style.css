@@ -896,6 +896,9 @@ body.runtime-mode .runtime-page-menu-toggle { position: fixed; z-index: 10; top:
 .technic-light-power:disabled { opacity: 1; cursor: default; }
 .technic-light > input { width: 90%; height: 14px; min-height: 14px; margin: 0; padding: 0; accent-color: #2ecfbf; }
 .technic-light > input:disabled { opacity: .5; }
+.technic-clock { width: 100%; height: 100%; min-width: 0; box-sizing: border-box; display: flex; overflow: auto; }
+.technic-clock > span { flex-shrink: 0; white-space: nowrap; line-height: 1.2; }
+.technic-clock > span[hidden] { display: none; }
 .technic-room { width: 100%; height: 100%; min-height: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; overflow: auto; }
 .technic-room[role="button"] { cursor: pointer; }
 .technic-room:focus-visible { outline: 2px solid #2ecfbf; outline-offset: -2px; }

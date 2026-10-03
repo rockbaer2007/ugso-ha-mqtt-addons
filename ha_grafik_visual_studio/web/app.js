@@ -9,6 +9,7 @@ import { technicBindings, renderTechnicWindow, syncTechnicControls } from "./tec
 import { TECHNIC_SWITCH_ICONS, renderTechnicSwitch } from "./technic-switch.js";
 import { technicLightBindings, renderTechnicLight } from "./technic-light.js";
 import { technicRoomBindings, technicRoomUrl, renderTechnicRoom, syncTechnicRoom } from "./technic-room.js";
+import { renderTechnicClock, updateTechnicClocks } from "./technic-clock.js";
 import { createMeteoredController } from "./meteored.js";
 const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
@@ -3408,6 +3409,10 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       element.classList.add("meteored-host");
       if (widget.noCard) content.style.background = "transparent";
       meteored.render(content, widget, document, runtimeMode, uiText, getWidgetDefinition(widget.type).render.valueKey);
+    } else if (getWidgetDefinition(widget.type).render?.kind === "technic-clock") {
+      content.style.background = widget.colorBg || "transparent";
+      content.style.borderRadius = `${Math.max(0, Number(widget.borderRadius) || 0)}px`;
+      content.append(renderTechnicClock(widget, document));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-room") {
       const target = state.project.pages.find(page => page.id === widget.targetPage);
       const chain = [...(params.get("chain") || "").split(",").filter(Boolean), ...surfaceChain];
@@ -4340,6 +4345,10 @@ function renderProperties() {
   if (state.propertyTab === "scripts") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Widget-Skripte werden in einem späteren Ausbauschritt ergänzt."; panel.append(empty); return; }
   if (widget.type === "toggle" && typeof widget.state === "boolean") widget.state = widget.state ? "on" : "off";
   let groups = widgetPropertyGroups(widget);
+  if (getWidgetDefinition(widget.type).render?.kind === "technic-clock") {
+    const labels = { row: "Nebeneinander", column: "Untereinander", left: "Links", center: "Mitte", right: "Rechts", "24h": "24 Stunden", "12h": "12 Stunden", de: "Deutsch", en: "English", fr: "Français", es: "Español", it: "Italiano", nl: "Nederlands", DMY: "Tag-Monat-Jahr", MDY: "Monat-Tag-Jahr", YMD: "Jahr-Monat-Tag", ".": "Punkt (.)", "-": "Bindestrich (-)", "/": "Schrägstrich (/)", space: "Leerzeichen", numeric: "Numerisch", short: "Kurz", long: "Lang", full: "4-stellig", off: "Aus" };
+    groups = groups.map(group => ({ ...group, fields: group.fields.map(descriptor => descriptor.key === "colorBg" ? { ...descriptor, optionalColor: true } : descriptor.type === "select" ? { ...descriptor, options: descriptor.options.map(value => ({ value, label: descriptor.key === "yearFormat" && value === "short" ? "2-stellig" : labels[value] || value })) } : descriptor) }));
+  }
   if (getWidgetDefinition(widget.type).render?.kind === "technic-room") {
     const labels = { left: "Links", center: "Mitte", right: "Rechts", top: "Oben", middle: "Mitte", bottom: "Unten", number: "Zahl", bool: "Wahr / Falsch", and: "UND", or: "ODER", popup: "Popup", switchView: "Seite wechseln" };
     // Keep saved group keys stable when changing the visible row count.
@@ -4994,3 +5003,4 @@ document.querySelectorAll(".collapse").forEach((button) => button.addEventListen
 }));
 
 loadWidgetPackages().finally(loadProject);
+window.setInterval(() => updateTechnicClocks(document), 1000);

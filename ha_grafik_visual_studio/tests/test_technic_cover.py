@@ -54,16 +54,19 @@ class TechnicTests(unittest.TestCase):
     def test_package_includes_license_and_rejects_active_or_oversized_docs(self):
         path = Path(__file__).resolve().parents[1] / "packages/technic/ugso.technic.wg"
         package = read_package_zip(path.read_bytes())
-        self.assertEqual(package["id"], "ugso.technic"); self.assertEqual(len(package["widgets"]), 4)
+        self.assertEqual(package["id"], "ugso.technic"); self.assertEqual(len(package["widgets"]), 5)
         from widget_packages import validate_additive_update
         import hashlib
         # Frozen Window – Wall definition from the published 1.0.0 package.
         self.assertEqual(hashlib.sha256(json.dumps(package["widgets"][0], sort_keys=True, ensure_ascii=True).encode()).hexdigest(), "57341c9e07a61b64335777d47019b286eb15b4787334a95c20a20662ade264c5")
         self.assertEqual(hashlib.sha256(json.dumps(package["widgets"][1], sort_keys=True, ensure_ascii=True).encode()).hexdigest(), "56b93e8b591824bd33948d6791e185c67789ea37962b0b295a6fcdefc459e1e8")
         self.assertEqual(hashlib.sha256(json.dumps(package["widgets"][2], sort_keys=True, ensure_ascii=True).encode()).hexdigest(), "69f4478203311ed200bf4d894373efe531a266a7058fb8d3c9deef5946cbc332")
+        self.assertEqual(hashlib.sha256(json.dumps(package["widgets"][3], sort_keys=True, ensure_ascii=True).encode()).hexdigest(), "cfe371d358763ee195f20f1a2aacfcff69639c1ec43014f3636853f5568d11fb")
         validate_additive_update({**package, "version": "1.0.0", "widgets": package["widgets"][:1]}, package)
         validate_additive_update({**package, "version": "1.1.0", "widgets": package["widgets"][:2]}, package)
         validate_additive_update({**package, "version": "1.2.0", "widgets": package["widgets"][:3]}, package)
+        validate_additive_update({**package, "version": "1.3.0", "widgets": package["widgets"][:4]}, package)
+        self.assertEqual(package["widgets"][4]["render"]["kind"], "technic-clock")
         room = package["widgets"][3]
         self.assertEqual(room["render"]["kind"], "technic-room")
         self.assertEqual(len([group for group in room["propertyGroups"] if group["label"].startswith("Statuszeile [")]), 10)
