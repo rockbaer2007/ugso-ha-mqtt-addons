@@ -27,14 +27,14 @@ PROJECTS_DIR = DATA_DIR / "projects"
 WIDGET_PACKAGES_DIR = DATA_DIR / "widget_packages"
 TOOL_PACKAGES_DIR = DATA_DIR / "tool_packages"
 WWW_CANDIDATES = (
-    Path("/homeassistant/www"),
-    Path("/homeassistant_config/www"),
-    Path("/config/www"),
+    Path("/homeassistant/www/studio"),
+    Path("/homeassistant_config/www/studio"),
+    Path("/config/www/studio"),
 )
 if os.environ.get("HA_GRAFIK_WWW_DIR"):
     WWW_DIR = Path(os.environ["HA_GRAFIK_WWW_DIR"])
 else:
-    WWW_DIR = next((candidate for candidate in WWW_CANDIDATES if candidate.is_dir()), WWW_CANDIDATES[0])
+    WWW_DIR = next((candidate for candidate in WWW_CANDIDATES if candidate.parent.parent.is_dir()), WWW_CANDIDATES[0])
 MAX_BODY = 1_000_000
 MAX_OBJECT_BYTES = 20_000_000
 DEFAULT_PROJECT_ID = "main"
@@ -253,7 +253,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.127"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.128"})
             return
         if path == "/api/entities":
             try:
@@ -707,6 +707,10 @@ class Handler(BaseHTTPRequestHandler):
 
     @classmethod
     def list_objects(cls, relative_path):
+        try:
+            WWW_DIR.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            return {"available": False, "checked": [str(WWW_DIR)], "path": relative_path or "", "folders": [], "files": [], "error": "Der Ordner /config/www/studio konnte nicht automatisch erstellt werden. Bitte den Ordner in Home Assistant erstellen und die Schreibrechte der Konfigurationseinbindung prüfen."}
         target = cls.resolve_object_path(relative_path)
         if target is None or not target.is_dir():
             return {"available": WWW_DIR.is_dir(), "checked": [str(path) for path in WWW_CANDIDATES], "path": relative_path or "", "folders": [], "files": []}

@@ -1175,7 +1175,7 @@ async function renderObjects() {
   browser.replaceChildren(); breadcrumb.replaceChildren();
   renderFileSelection();
   const parts = state.objectPath ? state.objectPath.split("/") : [];
-  const root = document.createElement("button"); root.type = "button"; root.textContent = "www"; root.addEventListener("click", () => openObjects("")); breadcrumb.append(root);
+  const root = document.createElement("button"); root.type = "button"; root.textContent = "studio"; root.title = "/config/www/studio"; root.addEventListener("click", () => openObjects("")); breadcrumb.append(root);
   let path = "";
   for (const part of parts) {
     path = path ? `${path}/${part}` : part;
@@ -1183,7 +1183,7 @@ async function renderObjects() {
   }
   const response = await fetch(`api/objects?path=${encodeURIComponent(state.objectPath)}`);
   const data = response.ok ? await response.json() : { available: false, folders: [], files: [] };
-  if (!data.available) { const hint = document.createElement("p"); hint.className = "empty"; hint.textContent = `Der HA-www-Ordner ist nicht verfügbar. Geprüfte Pfade: ${(data.checked || []).join(", ")}. Prüfe die schreibgeschützte Konfigurationseinbindung.`; browser.append(hint); return; }
+  if (!data.available) { const hint = document.createElement("p"); hint.className = "empty"; hint.textContent = data.error || `Der Ordner /config/www/studio ist nicht verfügbar. Bitte den Ordner erstellen und die Zugriffsrechte prüfen. Geprüfte Pfade: ${(data.checked || []).join(", ")}.`; browser.append(hint); return; }
   if (state.objectPath) {
     const up = document.createElement("button"); up.type = "button"; up.className = "object-folder object-folder-up";
     const upIcon = document.createElement("img"); upIcon.src = "icons/arrow-up.svg"; upIcon.alt = "";

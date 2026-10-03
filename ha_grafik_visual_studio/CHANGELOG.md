@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.128
+
+- Restricts the Files browser to Home Assistant's /config/www/studio directory, creates it automatically when opened and explains how to create it manually if permissions prevent creation.
+
 ## 0.1.127
 
 - Fixes left, center and right text alignment for Number and Red Number by aligning their flex content, including HTML additions, in editor and runtime views.
