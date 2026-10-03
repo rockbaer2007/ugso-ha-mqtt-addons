@@ -2,6 +2,10 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Dateien suchen": "Search files",
+  "Dateien in allen Unterordnern suchen": "Search files in all subfolders",
+  "Dateien · /config/www/studio": "Files · /config/www/studio",
+  "Keine passenden Dateien gefunden.": "No matching files found.",
   "Widgets löschen": "Delete widgets",
   "Die Widgets {names} wirklich löschen?": "Really delete widgets {names}?",
   "Frage für die nächsten 5 Minuten unterdrücken": "Suppress this question for the next 5 minutes",

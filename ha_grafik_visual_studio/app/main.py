@@ -253,7 +253,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.132"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.133"})
             return
         if path == "/api/entities":
             try:
@@ -283,7 +283,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(HTTPStatus.OK, {"packages": list_tool_packages(TOOL_PACKAGES_DIR)})
             return
         if path == "/api/objects":
-            self.send_json(HTTPStatus.OK, self.list_objects(query.get("path", [""])[0]))
+            self.send_json(HTTPStatus.OK, self.list_objects(query.get("path", [""])[0], query.get("search", [""])[0]))
             return
         if path == "/api/object-file":
             self.send_object_file(query.get("path", [""])[0])
@@ -706,23 +706,32 @@ class Handler(BaseHTTPRequestHandler):
         return target
 
     @classmethod
-    def list_objects(cls, relative_path):
+    def list_objects(cls, relative_path, search=""):
+        search = str(search).strip().casefold()
         try:
             WWW_DIR.mkdir(parents=True, exist_ok=True)
         except OSError:
             return {"available": False, "checked": [str(WWW_DIR)], "path": relative_path or "", "folders": [], "files": [], "error": "Der Ordner /config/www/studio konnte nicht automatisch erstellt werden. Bitte den Ordner in Home Assistant erstellen und die Schreibrechte der Konfigurationseinbindung prüfen."}
-        target = cls.resolve_object_path(relative_path)
+        target = cls.resolve_object_path("" if search else relative_path)
         if target is None or not target.is_dir():
             return {"available": WWW_DIR.is_dir(), "checked": [str(path) for path in WWW_CANDIDATES], "path": relative_path or "", "folders": [], "files": []}
         folders, files = [], []
         try:
-            for entry in target.iterdir():
+            def search_entries():
+                for directory, subdirs, names in os.walk(target, followlinks=False):
+                    subdirs[:] = [name for name in subdirs if not (Path(directory) / name).is_symlink()]
+                    for name in names:
+                        yield Path(directory) / name
+
+            for entry in search_entries() if search else target.iterdir():
                 resolved = entry.resolve()
                 try:
                     resolved.relative_to(WWW_DIR.resolve())
                 except ValueError:
                     continue
                 relative = resolved.relative_to(WWW_DIR.resolve()).as_posix()
+                if search and search not in relative.casefold():
+                    continue
                 if entry.is_dir():
                     folders.append({"name": entry.name, "path": relative})
                 elif entry.is_file() and entry.suffix.lower() in FILE_MIME_TYPES and entry.stat().st_size <= MAX_OBJECT_BYTES:

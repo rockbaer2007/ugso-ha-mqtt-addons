@@ -1191,8 +1191,11 @@ async function renderObjects() {
     path = path ? `${path}/${part}` : part;
     const current = path; const crumb = document.createElement("button"); crumb.type = "button"; crumb.textContent = part; crumb.addEventListener("click", () => openObjects(current)); breadcrumb.append(" / ", crumb);
   }
-  const response = await fetch(`api/objects?path=${encodeURIComponent(state.objectPath)}`);
+  const search = $("#files-search").value.trim();
+  const request = ++renderObjects.request;
+  const response = await fetch(`api/objects?path=${encodeURIComponent(state.objectPath)}&search=${encodeURIComponent(search)}`);
   const data = response.ok ? await response.json() : { available: false, folders: [], files: [] };
+  if (request !== renderObjects.request) return;
   if (!data.available) { const hint = document.createElement("p"); hint.className = "empty"; hint.textContent = data.error || `Der Ordner /config/www/studio ist nicht verfügbar. Bitte den Ordner erstellen und die Zugriffsrechte prüfen. Geprüfte Pfade: ${(data.checked || []).join(", ")}.`; browser.append(hint); return; }
   if (state.objectPath) {
     const up = document.createElement("button"); up.type = "button"; up.className = "object-folder object-folder-up";
@@ -1220,7 +1223,9 @@ async function renderObjects() {
       const typeIcon = document.createElement("img"); typeIcon.className = "object-type-icon";
       typeIcon.src = `icons/${fileCategory(file.path) === "other" ? "file" : fileCategory(file.path)}.svg`; typeIcon.alt = ""; select.append(typeIcon);
     }
-    const name = document.createElement("span"); name.textContent = file.name; select.append(name);
+    const name = document.createElement("span"); name.textContent = file.name;
+    if (search) { const path = document.createElement("small"); path.className = "object-search-path"; path.textContent = file.path; name.append(path); }
+    select.append(name);
     select.setAttribute("aria-pressed", String(state.selectedFiles.includes(file.path)));
     select.addEventListener("click", () => {
       state.selectedFiles = state.selectedFiles.includes(file.path)
@@ -1248,7 +1253,7 @@ async function renderObjects() {
     });
     actions.append(download, remove); row.append(select, size, actions); browser.append(row);
   }
-  if (!data.folders.length && !visibleFiles.length) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = category === "all" ? "Dieser Ordner enthält keine unterstützten Dateien." : "Keine Dateien dieses Typs in diesem Ordner."; browser.append(empty); }
+  if (!data.folders.length && !visibleFiles.length) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = search ? uiText("Keine passenden Dateien gefunden.") : category === "all" ? "Dieser Ordner enthält keine unterstützten Dateien." : "Keine Dateien dieses Typs in diesem Ordner."; browser.append(empty); }
   renderFileSelection();
 }
 
@@ -3998,6 +4003,13 @@ $("#files-upload").addEventListener("click", () => {
 });
 $("#files-upload-input").addEventListener("change", (event) => { void uploadFiles(event.target.files); });
 $("#files-type-filter").addEventListener("change", () => { state.selectedFiles = []; void renderObjects(); });
+renderObjects.request = 0;
+let fileSearchTimer;
+$("#files-search").addEventListener("input", () => {
+  clearTimeout(fileSearchTimer); ++renderObjects.request;
+  state.selectedFiles = []; renderFileSelection();
+  fileSearchTimer = setTimeout(() => void renderObjects(), 200);
+});
 $("#files-reload").addEventListener("click", () => { void renderObjects(); });
 $("#files-view-toggle").addEventListener("click", () => {
   state.fileView = state.fileView === "list" ? "grid" : "list";

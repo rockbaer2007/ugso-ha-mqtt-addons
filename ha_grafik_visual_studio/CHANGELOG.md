@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.133
+
+- Adds case-insensitive file search across all studio subfolders with image previews and relative paths. File-type filters, selection and image insertion also work with search results.
+
 ## 0.1.132
 
 - Moves all selected widgets together when dragging a selected widget, including pasted selections and selected connection lines with intermediate points. Relative spacing and existing attachments are retained; locked members block the move.

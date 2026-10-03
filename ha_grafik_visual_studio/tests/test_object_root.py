@@ -24,3 +24,14 @@ class ObjectRootTests(unittest.TestCase):
             result = APP.Handler.list_objects("")
             self.assertFalse(result["available"])
             self.assertIn("/config/www/studio", result["error"])
+
+    def test_search_finds_nested_files_case_insensitively(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "studio"
+            (root / "action" / "nested").mkdir(parents=True)
+            (root / "action" / "nested" / "Home.svg").write_text("<svg/>")
+            (root / "other.svg").write_text("<svg/>")
+            with patch.object(APP, "WWW_DIR", root):
+                found = APP.Handler.list_objects("missing", " HOME ")
+                self.assertEqual([f["path"] for f in found["files"]], ["action/nested/Home.svg"])
+                self.assertEqual(APP.Handler.list_objects("", "absent")["files"], [])
