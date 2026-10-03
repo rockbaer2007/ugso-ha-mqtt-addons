@@ -1,6 +1,6 @@
 import { getWidgetSets, getWidgetDefinition, registerWidgetSet, initializeWidgetCaption } from "./widget-registry.js";
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
-import { connectionAnimationEntityId, resolveConnectionAnimation } from "./connection-animation.js";
+import { connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings } from "./connection-animation.js";
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
@@ -1933,7 +1933,7 @@ function effectiveConnectionStyle(widget, widgets, visited = new Set()) {
   const forwarded = lineboxOutputForConnection(widget, widgets, state.entityStates);
   if (forwarded) {
     for (const key of ["baseColor", "flowColor", "markerColor", "animationStyle", "lineStyle", "dashLength", "gapLength"]) result[key] = widget[key];
-    const source = { animationSource: "number", animationDivisor: widget.lineboxDivisor ?? 1 };
+    const source = lineboxAnimationSettings(widget);
     const entry = forwarded.value === null ? undefined : { state: String(forwarded.value) };
     Object.assign(result, resolveConnectionAnimation(source, entry));
     result.animationEnabled = widget.animationEnabled === true && forwarded.value !== null && forwarded.value !== 0;

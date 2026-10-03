@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.136
+
+- Adds independent automatic animation divisors for numeric entities and LineBox outputs. Each has a target speed (default 1 cycle/s, adjustable 0.05–5); zero stops motion and negative values reverse it. Manual divisors remain stored.
+
 ## 0.1.135
 
 - Separates editor names from visible captions for all registered widget types, including future packages. New captions start empty; old stock captions are removed once while custom captions remain editable.

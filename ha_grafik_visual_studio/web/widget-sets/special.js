@@ -26,6 +26,7 @@ registerWidgetSet({
       markerStart: "none", markerEnd: "arrow", markerSize: 8, markerColor: "#29c8b5",
       animationEnabled: false, animationStyle: "two-color", animationSource: "manual", animationDirection: "forward", animationDuration: 2,
       animationNumberEntityId: "", animationBooleanEntityId: "", animationDivisor: 1, animationBooleanInvert: false, lineboxDivisor: 1,
+      animationAutoDivisor: false, animationTargetSpeed: 1, lineboxAutoDivisor: false, lineboxTargetSpeed: 1,
       flowParentId: "", inheritFlow: true, synchronization: "same-phase",
       crossingStyle: "overlay", connectionZMode: "auto", layer: 0, clickThrough: true,
     },
@@ -87,6 +88,8 @@ registerWidgetSet({
         ] },
         { label: "Zahlen-Entität", key: "animationNumberEntityId", showWhen: { key: "animationSource", value: "number" } },
         { label: "Teiler", key: "animationDivisor", type: "number", min: 0.001, step: 0.001, default: 1, showWhen: { key: "animationSource", value: "number" } },
+        { label: "Teiler automatisch anpassen (Zahlen-Entität)", key: "animationAutoDivisor", type: "checkbox", default: false, showWhen: { key: "animationSource", value: "number" } },
+        { label: "Zielgeschwindigkeit Zahlen-Entität (Zyklen/s)", key: "animationTargetSpeed", type: "number", min: 0.05, max: 5, step: 0.05, default: 1, showWhen: { key: "animationAutoDivisor", value: true } },
         { label: "Bool-Entität", key: "animationBooleanEntityId", showWhen: { key: "animationSource", value: "boolean" } },
         { label: "Bool-Richtung umkehren", key: "animationBooleanInvert", type: "checkbox", default: false, showWhen: { key: "animationSource", value: "boolean" } },
         { label: "Richtung", key: "animationDirection", type: "select", showWhen: { key: "animationSource", value: "manual", default: "manual" }, options: [
@@ -95,6 +98,8 @@ registerWidgetSet({
         { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1, showWhen: { key: "animationSource", value: "manual", default: "manual" } },
         { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1, showWhen: { key: "animationSource", value: "boolean" } },
         { label: "SVG LineBox-Teiler (bei Übergabe)", key: "lineboxDivisor", type: "number", min: 0.001, step: 0.001, default: 1 },
+        { label: "Teiler automatisch anpassen (SVG LineBox)", key: "lineboxAutoDivisor", type: "checkbox", default: false },
+        { label: "Zielgeschwindigkeit SVG LineBox (Zyklen/s)", key: "lineboxTargetSpeed", type: "number", min: 0.05, max: 5, step: 0.05, default: 1, showWhen: { key: "lineboxAutoDivisor", value: true } },
         { label: "Hauptlinie / Flussgruppe", key: "flowParentId", type: "connection" },
         { label: "Animationstakt der Hauptlinie übernehmen (eigene Farben behalten)", key: "inheritFlow", type: "checkbox", default: true },
         { label: "Synchronisierung", key: "synchronization", type: "select", options: [

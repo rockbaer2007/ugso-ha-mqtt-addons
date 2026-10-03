@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { connectionAnimationEntityId, resolveConnectionAnimation } from "../web/connection-animation.js";
+import { connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings } from "../web/connection-animation.js";
 import { getWidgetDefinition } from "../web/widget-registry.js";
 import "../web/widget-sets/special.js";
 
@@ -49,4 +49,29 @@ test("boolean state selects direction and can be inverted", () => {
   assert.deepEqual(resolveConnectionAnimation(widget, { state: "off" }), { animationDirection: "reverse" });
   assert.deepEqual(resolveConnectionAnimation({ ...widget, animationBooleanInvert: true }, { state: "on" }), { animationDirection: "reverse" });
   assert.deepEqual(resolveConnectionAnimation(widget, { state: "unavailable" }), { animationEnabled: false });
+});
+
+test("automatic divisors maintain the chosen speed across power ranges and signs", () => {
+  const widget = { animationSource: "number", animationAutoDivisor: true, animationTargetSpeed: 0.5, animationDivisor: 100 };
+  for (const value of [0.01, 10, 99, 100, 200, 500, 1000, 5000, 15000, 1000000]) {
+    for (const sign of [1, -1]) {
+      const result = resolveConnectionAnimation(widget, { state: String(value * sign) });
+      assert.equal(result.animationDuration, 2);
+      assert.equal(result.animationDirection, sign === 1 ? "forward" : "reverse");
+    }
+  }
+  assert.equal(widget.animationDivisor, 100);
+  assert.equal(resolveConnectionAnimation({ ...widget, animationAutoDivisor: false }, { state: "1000" }).animationDuration, 0.1);
+  for (const state of ["0", "unknown", "unavailable"]) assert.deepEqual(resolveConnectionAnimation(widget, { state }), { animationEnabled: false });
+});
+
+test("LineBox automation is independent and target speeds are validated", () => {
+  const widget = { animationAutoDivisor: true, animationTargetSpeed: 2, lineboxAutoDivisor: false, lineboxDivisor: 100, lineboxTargetSpeed: 0.5 };
+  assert.equal(resolveConnectionAnimation(lineboxAnimationSettings(widget), { state: "1000" }).animationDuration, 0.1);
+  assert.equal(resolveConnectionAnimation(lineboxAnimationSettings({ ...widget, lineboxAutoDivisor: true }), { state: "15000" }).animationDuration, 2);
+  for (const [target, duration] of [[undefined, 1], [0, 1], ["invalid", 1], [100, 0.2], [0.001, 20]]) {
+    assert.equal(resolveConnectionAnimation({ animationSource: "number", animationAutoDivisor: true, animationTargetSpeed: target }, { state: "15000" }).animationDuration, duration);
+  }
+  const fields = getWidgetDefinition("svg-connection").propertyGroups.find(group => group.label === "Animation").fields;
+  for (const key of ["animationAutoDivisor", "lineboxAutoDivisor"]) assert.equal(fields.find(field => field.key === key).default, false);
 });
