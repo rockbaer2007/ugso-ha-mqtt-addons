@@ -54,12 +54,14 @@ class TechnicTests(unittest.TestCase):
     def test_package_includes_license_and_rejects_active_or_oversized_docs(self):
         path = Path(__file__).resolve().parents[1] / "packages/technic/ugso.technic.wg"
         package = read_package_zip(path.read_bytes())
-        self.assertEqual(package["id"], "ugso.technic"); self.assertEqual(len(package["widgets"]), 2)
+        self.assertEqual(package["id"], "ugso.technic"); self.assertEqual(len(package["widgets"]), 3)
         from widget_packages import validate_additive_update
         import hashlib
         # Frozen Window – Wall definition from the published 1.0.0 package.
         self.assertEqual(hashlib.sha256(json.dumps(package["widgets"][0], sort_keys=True, ensure_ascii=True).encode()).hexdigest(), "57341c9e07a61b64335777d47019b286eb15b4787334a95c20a20662ade264c5")
+        self.assertEqual(hashlib.sha256(json.dumps(package["widgets"][1], sort_keys=True, ensure_ascii=True).encode()).hexdigest(), "56b93e8b591824bd33948d6791e185c67789ea37962b0b295a6fcdefc459e1e8")
         validate_additive_update({**package, "version": "1.0.0", "widgets": package["widgets"][:1]}, package)
+        validate_additive_update({**package, "version": "1.1.0", "widgets": package["widgets"][:2]}, package)
         with ZipFile(path) as source:
             entries = {name: source.read(name) for name in source.namelist()}
         self.assertIn(b"Copyright (c) 2026 Sefina-DS", entries["LICENSE.txt"])

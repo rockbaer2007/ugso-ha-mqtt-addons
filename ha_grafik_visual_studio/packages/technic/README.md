@@ -1,11 +1,21 @@
-# UGSo Technic 1.1.0
+# UGSo Technic 1.2.0
 
 Inspiriert von den ioBroker-Technic-Widgets von Sefina-DS:
 https://github.com/Sefina-DS/ioBroker.vis-2-widgets-technic
 
-Eigene Umsetzung für Home Assistant. Enthält Window – Wall und Switch – Boolean.
-Die weiteren fünf Widgets des Originalsets sind noch nicht enthalten.
-Requires Studio 0.1.198 or newer. Install ugso.technic.wg through Settings > Widget packages.
+Eigene Umsetzung für Home Assistant. Enthält Window – Wall, Switch – Boolean und Dimmer – Light.
+Die weiteren vier Widgets des Originalsets sind noch nicht enthalten.
+Requires Studio 0.1.199 or newer. Install ugso.technic.wg through Settings > Widget packages.
+
+Dimmer – Light: bind power to light/switch/input_boolean and brightness to a
+dimmable light (brightness 0–255 converted to %) or input_number (0–100).
+The same light may be bound to both fields. Link power and brightness means
+ON=100%, OFF=0%, dimming above zero=ON. With linking off, independent bindings
+stay independent; HA light.turn_on with brightness inherently turns the light on.
+Drag the radial arc or use the keyboard-accessible range. One write occurs on
+release. Unknown, unbound, unsupported and read-only controls never write.
+Separate HA targets are sequential; a provider failure may partially apply.
+Check the live state before retrying. The caption remains visible.
 
 Switch – Boolean: switch/light/input_boolean with bool mode; input_number with
 number mode (exact 0/1). Sensors are display-only. Sixteen original geometric

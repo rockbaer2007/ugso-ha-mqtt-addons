@@ -7,6 +7,7 @@ import { renderLandlordNotification } from "./landlord-notification.js";
 import { heatingParamsBindings, renderHeatingParams } from "./heating-params.js";
 import { technicBindings, renderTechnicWindow, syncTechnicControls } from "./technic-window.js";
 import { TECHNIC_SWITCH_ICONS, renderTechnicSwitch } from "./technic-switch.js";
+import { technicLightBindings, renderTechnicLight } from "./technic-light.js";
 import { createMeteoredController } from "./meteored.js";
 const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
@@ -625,6 +626,7 @@ async function fetchEntityStates(ids) {
     for (const widget of visibleWidgets()) if (widget.type === "interactive-table" && widget.entityAttribute && ids.slice(offset, offset + 100).includes(widget.entityId)) query.append("attribute", `${widget.entityId}|${widget.entityAttribute}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "room-table" && widget.tableAttribute && ids.slice(offset, offset + 100).includes(widget.entityId)) query.append("attribute", `${widget.entityId}|${widget.tableAttribute}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "technic-window" && ids.slice(offset, offset + 100).includes(widget.coverEntityId)) for (const name of ["current_position", "supported_features"]) query.append("attribute", `${widget.coverEntityId}|${name}`);
+    for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "technic-light" && ids.slice(offset, offset + 100).includes(widget.brightnessEntityId)) for (const name of ["brightness", "supported_color_modes", "min", "max", "step"]) query.append("attribute", `${widget.brightnessEntityId}|${name}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "window-overview") for (const [id, attribute] of [[widget.entityId, widget.tableAttribute], [widget.openCountEntityId, widget.openCountAttribute]]) if (attribute && ids.slice(offset, offset + 100).includes(id)) query.append("attribute", `${id}|${attribute}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "chart") for (const source of chartBindings(widget)) if (source.attribute && ids.slice(offset, offset + 100).includes(source.entityId)) query.append("attribute", `${source.entityId}|${source.attribute}`);
     const response = await fetch(`api/states?${query}`, { cache: "no-store" });
@@ -656,6 +658,7 @@ function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...gaugeEntityIds(widget),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
+    ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "heating-params" ? heatingParamsBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "window-overview" ? [widget.openCountEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "chart" ? chartBindings(widget).map(s => s.entityId) : []),
@@ -698,6 +701,7 @@ function runtimeLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...gaugeEntityIds(widget),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
+    ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "heating-params" ? heatingParamsBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "window-overview" ? [widget.openCountEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "chart" ? chartBindings(widget).map(s => s.entityId) : []),
@@ -753,7 +757,7 @@ function stageRuntimeEntityValue(entityId, value) {
   runtimeEffectsFrame = requestAnimationFrame(() => {
     runtimeEffectsFrame = 0;
     if (visibleWidgets().some(widget => widget.type === "value-converter" || widget.dataInputEnabled === true)) {
-      if (document.querySelector(".radial-slider[data-dragging='true'], .styled-dropdown.is-open")) { runtimeRenderDeferred = true; return; }
+      if (document.querySelector(".radial-slider[data-dragging='true'], .technic-light[data-dragging='true'], .styled-dropdown.is-open")) { runtimeRenderDeferred = true; return; }
       renderStage(); return;
     }
     for (const surface of visibleTabSurfaces(state.project, currentPage(), activeTabIndex)) {
@@ -820,7 +824,7 @@ function scheduleLineboxHelperOutputs() {
 }
 
 function renderRuntimeStageWhenReady() {
-  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true'], .radial-slider[data-dragging='true'], .styled-dropdown.is-open") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true']")) {
+  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true'], .radial-slider[data-dragging='true'], .technic-light[data-dragging='true'], .styled-dropdown.is-open") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true']")) {
     runtimeRenderDeferred = true;
     return;
   }
@@ -3401,6 +3405,13 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       element.classList.add("meteored-host");
       if (widget.noCard) content.style.background = "transparent";
       meteored.render(content, widget, document, runtimeMode, uiText, getWidgetDefinition(widget.type).render.valueKey);
+    } else if (getWidgetDefinition(widget.type).render?.kind === "technic-light") {
+      content.append(renderTechnicLight(widget, document, { runtime: runtimeMode, locale: document.documentElement.lang || "de", getStates: () => state.entityStates, onSettled: focusRange => { renderRuntimeStageWhenReady(); if (focusRange) document.getElementById(widget.id)?.querySelector(".technic-light > input")?.focus({ preventScroll: true }); }, write: async request => {
+        try {
+          const response = await fetch("api/light-dimmer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) });
+          if (!response.ok || (await response.json()).accepted !== true) throw new Error("Light action failed");
+        } finally { await refreshRuntimeStates(); }
+      } }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-switch") {
       content.append(renderTechnicSwitch(widget, document, { runtime: runtimeMode, locale: document.documentElement.lang || "de", getStates: () => state.entityStates, onSettled: () => renderStage(), write: async (entityId, value, numeric) => {
         const response = await fetch(numeric ? "api/helper-value" : "api/switch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(numeric ? { entity_id: entityId, value } : { entity_id: entityId, enabled: value }) });
@@ -4217,6 +4228,7 @@ function field(descriptor, widget) {
     if (getWidgetDefinition(widget.type).render?.kind === "heating-params" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "technic-window" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "technic-switch" && descriptor.key === "entityId") void refreshEditorLiveStates();
+    if (getWidgetDefinition(widget.type).render?.kind === "technic-light" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "room-table" && ["entityId", "tableAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "window-overview" && ["entityId", "tableAttribute", "openCountEntityId", "openCountAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "chart" && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || ["dataCount", "showWeekData", "weatherSource", "forecastType", "forecastAttribute"].includes(descriptor.key))) void refreshEditorLiveStates();
@@ -4608,7 +4620,7 @@ async function loadWidgetPackages() {
         id: manifest.id, label: manifest.name,
         widgets: manifest.widgets.map(widget => ({
           ...widget, packageId: manifest.id, definitionVersion: manifest.apiVersion, iconSvg: widget.iconData || "icons/text.svg", preview: { kind: "svg", lines: [] },
-          propertyGroups: widget.propertyGroups.map(group => ({ ...group, ...(widget.render.kind === "chart" && group.label.startsWith("CSS ") ? { css: true, defaultEnabled: true } : {}), fields: group.fields.map(field => ["technic-window", "technic-switch"].includes(widget.render.kind) && ["handle", "namePosition", "valueType", "iconKey"].includes(field.key) && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { left: "Links", right: "Rechts", top: "Oben", bottom: "Unten", bool: "Wahr / Falsch", number: "0 / 1", ...TECHNIC_SWITCH_ICONS }[value] || value })) } : field) })),
+          propertyGroups: widget.propertyGroups.map(group => ({ ...group, ...(widget.render.kind === "chart" && group.label.startsWith("CSS ") ? { css: true, defaultEnabled: true } : {}), fields: group.fields.map(field => ["technic-window", "technic-switch", "technic-light"].includes(widget.render.kind) && ["handle", "namePosition", "valueType", "iconKey"].includes(field.key) && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { left: "Links", right: "Rechts", top: "Oben", bottom: "Unten", bool: "Wahr / Falsch", number: "0 / 1", ...TECHNIC_SWITCH_ICONS }[value] || value })) } : field) })),
         })),
       });
     }

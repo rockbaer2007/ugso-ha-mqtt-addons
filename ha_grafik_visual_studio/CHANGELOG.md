@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.199
+
+- Add Dimmer – Light to external Technic 1.2.0 with radial pointer control, keyboard range, center power button, caption placement, size and three colors.
+- Bind HA light brightness (0–255 converted to percent) or a 0–100 input_number; support separate power bindings and optional power/brightness linking. Same-light linked actions use one fixed HA command.
+- Validate availability and dimming capability before any action, suppress duplicate pending requests, preserve caption/error feedback across live updates and defer redraws during dragging.
+- Preserve both prior widget definitions during package updates; extend DE/EN documentation.
+
 ## 0.1.198
 
 - Extend the optional Technic set to 1.1.0 with Switch – Boolean: persistent caption, top/bottom placement, 16 original geometric icons, scale and ON/OFF colors.

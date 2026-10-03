@@ -27,7 +27,15 @@ def manifest():
         {"label": "Vorschau", "fields": [field("previewOn", "EIN (Vorschau)", "checkbox")]},
         groups[-1],
     ]
-    return {"format": "ha-grafik-widget-package", "apiVersion": "0.2", "id": "ugso.technic", "name": "UGSo Technic", "version": "1.1.0", "license": "MIT", "icon": "icons/window.svg", "widgets": [{"type": "ugso.technic/window-wall", "label": "Window – Wall", "icon": "icons/window.svg", "defaults": defaults, "propertyGroups": groups, "render": {"kind": "technic-window", "valueKey": "heading"}}, {"type": "ugso.technic/switch-boolean", "label": "Switch – Boolean", "icon": "icons/switch.svg", "defaults": switch_defaults, "propertyGroups": switch_groups, "render": {"kind": "technic-switch", "valueKey": "heading"}}]}
+    light_defaults = {"heading": "Light", "showName": True, "namePosition": "bottom", "iconScale": 80, "powerEntityId": "", "brightnessEntityId": "", "linkPowerDimmer": True, "colorAN": "#2ecfbf", "colorAUS": "#5f8f8a", "colorBg": "#0d1820", "readOnly": False, "powerPreview": False, "brightnessPreview": 0, "width": 160, "height": 200, "backgroundColor": "#0d1820", "textColor": "#c8e6e3", "borderWidth": 0, "padding": 4}
+    light_groups = [
+        {"label": "Allgemein", "fields": [field("heading", "Bezeichnung"), field("showName", "Bezeichnung anzeigen", "checkbox"), field("namePosition", "Position der Bezeichnung", "select", options=["top", "bottom"]), field("iconScale", "Icon-Größe (%)", "number", min=10, max=100), field("readOnly", "Schreibgeschützt", "checkbox")]},
+        {"label": "Datenpunkte", "fields": [field("powerEntityId", "Ein/Aus: Entität"), field("brightnessEntityId", "Helligkeit: Entität (0–100)"), field("linkPowerDimmer", "Ein/Aus mit Helligkeit verknüpfen", "checkbox")]},
+        {"label": "Farben", "fields": [field("colorAN", "Farbe EIN", "color"), field("colorAUS", "Farbe AUS", "color"), field("colorBg", "Regler-Hintergrund", "color")]},
+        {"label": "Vorschau", "fields": [field("powerPreview", "EIN (Vorschau)", "checkbox"), field("brightnessPreview", "Helligkeit (Vorschau)", "number", min=0, max=100)]},
+        groups[-1],
+    ]
+    return {"format": "ha-grafik-widget-package", "apiVersion": "0.2", "id": "ugso.technic", "name": "UGSo Technic", "version": "1.2.0", "license": "MIT", "icon": "icons/window.svg", "widgets": [{"type": "ugso.technic/window-wall", "label": "Window – Wall", "icon": "icons/window.svg", "defaults": defaults, "propertyGroups": groups, "render": {"kind": "technic-window", "valueKey": "heading"}}, {"type": "ugso.technic/switch-boolean", "label": "Switch – Boolean", "icon": "icons/switch.svg", "defaults": switch_defaults, "propertyGroups": switch_groups, "render": {"kind": "technic-switch", "valueKey": "heading"}}, {"type": "ugso.technic/dimmer-light", "label": "Dimmer – Light", "icon": "icons/light.svg", "defaults": light_defaults, "propertyGroups": light_groups, "render": {"kind": "technic-light", "valueKey": "heading"}}]}
 
 
 def build():
@@ -35,6 +43,7 @@ def build():
     target = ROOT / "ugso.technic.wg"
     entries = {"manifest.json": json.dumps(data, ensure_ascii=False, indent=2), "icons/window.svg": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="1" fill="#0d1820" stroke="#2ecfbf"/><rect x="7" y="4" width="10" height="16" fill="none" stroke="#2ecfbf"/><path d="M9 11V14M7 7H17M7 10H17" fill="none" stroke="#2ecfbf"/></svg>', "README.md": (ROOT / "README.md").read_text(encoding="utf-8"), "LICENSE.txt": (ROOT / "LICENSE.txt").read_text(encoding="utf-8")}
     entries["icons/switch.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2dd4b0" stroke-width="2" stroke-linecap="round"><path d="M12 2V11M7 5A8 8 0 1 0 17 5"/></svg>'
+    entries["icons/light.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2ecfbf" stroke-width="2"><path d="M6 19A9 9 0 1 1 18 19M12 7V12"/><circle cx="12" cy="12" r="4"/></svg>'
     with ZipFile(target, "w") as archive:
         for name, body in entries.items():
             info = ZipInfo(name, (2026, 10, 3, 0, 0, 0)); info.compress_type = ZIP_DEFLATED

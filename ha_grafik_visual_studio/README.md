@@ -1,5 +1,7 @@
 # HA Grafik Visual Studio
 
+Studio 0.1.199 adds Dimmer – Light in external UGSo Technic 1.2.0, with HA brightness and optional power linking. See [Technic package](packages/technic/README.md).
+
 Studio 0.1.198 extends the external UGSo Technic set to 1.1.0 with Switch – Boolean alongside Window – Wall. See [Technic package](packages/technic/README.md).
 
 Ab **0.1.197** steht **UGSo Technic 1.0.0** als externes installierbares Set bereit. Das erste Widget **Window – Wall** zeigt Fensterkontakt, Rollo und optionalen Auto-/Manuell-Helfer. Ein Runtime-Dialog steuert verfügbare `cover`-Positionen und den Modus; alle Invertierungen und Anzeigeoptionen bleiben im Export erhalten. [Paket und Anleitung](packages/technic/README.md). Inspiriert von den [ioBroker-Technic-Widgets von Sefina-DS](https://github.com/Sefina-DS/ioBroker.vis-2-widgets-technic); eigene HA-Umsetzung mit MIT-Lizenz und Herkunftshinweisen im Paket. Die sechs weiteren Widgets folgen separat.
