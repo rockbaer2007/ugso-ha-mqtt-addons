@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.143
+
+- New Data flow widgets start with CSS groups disabled; Value calculation also starts with its Display group disabled. Calculation and conversion controls remain enabled, and existing widgets retain their saved choices.
+- New Value connections start without arrowheads at either end.
+
 ## 0.1.142
 
 - Adds an independently switchable value output for ordinary widgets with top/bottom/right/left radio buttons. Output points are editor-only and use the separate Output point color in Studio settings.

@@ -2299,6 +2299,12 @@ function addWidget(definition) {
     ...structuredClone(definition.defaults),
   };
   widget.type = definition.runtimeType || widget.type;
+  for (const [index, group] of widgetPropertyGroups(widget).entries()) {
+    if (!group.masterKey && group.defaultEnabled === false) {
+      widget.enabledPropertyGroups ??= {};
+      widget.enabledPropertyGroups[propertyGroupKey(group, index)] = false;
+    }
+  }
   if (hasSimpleOutput(widget)) { widget.dataOutputEnabled = false; widget.dataOutputAnchor = "right-center"; }
   if (widget.type !== "svg-connection") {
     widget.dockPointsEnabled = false;
