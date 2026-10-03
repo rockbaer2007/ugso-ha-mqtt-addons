@@ -1,4 +1,5 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "bool-svg" && key === "svgOpacity") return "Im Editor bleibt das SVG mindestens zu 20 % sichtbar. In der Runtime gilt die eingestellte Durchsichtigkeit vollständig.";
   if (widget.type === "view-in-widget-8" && key === "entityId") return "Die HA-Entität liefert den Seitenindex 0, 1, 2 …; false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen, kein zusätzlicher HA-Helfer benötigt. Ohne Entität wird Seite [0] verwendet.";
   if (widget.type === "view-in-widget-8" && key === "count") return "Höchster Index: 1 ergibt Seite [0] und Seite [1]. Eingebettet werden Studio-Projektseiten; alle benötigten Seiten müssen beim späteren Projekt-Export enthalten sein. Keine HA-Dashboards.";
   if (widget.type === "view-in-widget" && key === "targetPage") return "Bettet eine Studio-Projektseite ein; kein HA-Helfer nötig. Für HA-Dashboards gibt es Dashboard in widget unter Spezial. Rekursive Seiteneinbettung wird verhindert.";
@@ -32,6 +33,7 @@ export function migrationHint(widget, key) {
   if (widget.type === "input-value") return "Benötigt einen input_number-Helfer für Zahlen oder einen input_text-Helfer für Text.";
   if (widget.type === "html-state") return "Schreibt einen festen Wert an switch, light, input_boolean oder einen passenden input_number-/input_text-Helfer. Ein Sensor ist kein Schreibziel.";
   if (widget.type === "bool-select") return "Schaltet switch, light oder input_boolean; für 0/1 benötigt es einen passenden input_number- oder input_text-Helfer.";
+  if (widget.type === "bool-svg") return "Schaltet switch, light oder input_boolean; für 0/1 benötigt es einen passenden input_number- oder input_text-Helfer.";
   if (widget.type === "bulb") return "Schaltet switch, light oder input_boolean. Für numerische Min-/Max-Werte wird ein input_number-Helfer benötigt.";
   if (["button", "toggle", "checkbox", "bool-svg", "bool-html-control"].includes(widget.type)) return "Benötigt eine schaltbare HA-Entität: switch, light oder input_boolean. Ein Sensor ist kein Schreibziel.";
   if (widget.type === "universal-button" && ["switch", "button"].includes(widget.interaction)) return "Benötigt eine schaltbare HA-Entität oder einen passenden input_number-/input_text-Helfer für den gewählten Zustand.";

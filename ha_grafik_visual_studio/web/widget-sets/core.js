@@ -354,6 +354,14 @@ registerWidgetSet({
     if (widget.type === "screen-resolution") widget.propertyGroups = widget.propertyGroups.filter(group => group.label !== "Daten");
     const data = widget.propertyGroups.find(group => ["Daten", "Allgemein"].includes(group.label));
     const add = (...fields) => data?.fields.push(...fields);
+    if (widget.type === "bool-svg") {
+      const star = "<polygon points='100,10 40,198 190,78 10,78 160,198' style='fill:COLOR; stroke:STROKE; stroke-width:5; fill-rule:nonzero' transform='scale(0.4)' />";
+      Object.assign(widget.defaults, { width: 85, height: 85, svgFalse: star.replace("COLOR", "lime").replace("STROKE", "purple"), svgTrue: star.replace("COLOR", "yellow").replace("STROKE", "red") });
+      data.label = "Allgemein";
+      delete data.hint;
+      data.fields = data.fields.filter(field => field.key !== "state").map(field => field.key === "readOnly" ? { ...field, refreshProperties: true } : field);
+      widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
+    }
     if (widget.type === "view-in-widget") {
       Object.assign(widget.defaults, { width: 300, height: 200, targetPage: "" });
       widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);

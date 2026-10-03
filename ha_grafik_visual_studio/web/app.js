@@ -8,6 +8,7 @@ import { numberDisplay } from "./number-display.js";
 import { htmlListEntries, htmlListEntry, styledListCount } from "./value-list.js";
 import { tableRows, tableColumns, updateTableEvent } from "./table-data.js";
 import { boolSelectOn } from "./bool-select.js";
+import { boolSvgOn, boolSvgNext, boolSvgOpacity } from "./bool-svg.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
@@ -559,7 +560,7 @@ function displayedWidgetState(widget) {
     return numericWidgetInput(widget, surface?.widgets || currentPage().widgets, state.entityStates) ?? "--";
   }
   if (widget.type === "string") return stringDisplayValue(widget, state.entityStates[widget.entityId], runtimeMode);
-  if ((runtimeMode || widget.type === "view-in-widget-8") && widget.entityId) {
+  if ((runtimeMode || ["view-in-widget-8", "bool-svg"].includes(widget.type)) && widget.entityId) {
     return state.entityStates[widget.entityId]?.state ?? "--";
   }
   return widget.state;
@@ -2817,8 +2818,23 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       badge.style.border = `1px solid ${widget.badgeBorder || "transparent"}`; badge.style.borderRadius = `${Number(widget.radius ?? 16)}px`;
       appendSafeHtml(badge, widget.prefix || ""); badge.append(document.createTextNode(String(liveValue ?? ""))); appendSafeHtml(badge, Number(liveValue) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""); content.append(badge);
     } else if (widget.type === "bool-svg") {
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.style.width = "100%"; svg.style.height = "100%"; svg.style.opacity = String(widget.svgOpacity ?? 1); svg.innerHTML = isOn(displayedWidgetState(widget)) ? widget.svgTrue || "" : widget.svgFalse || "";
-      if (runtimeMode && !widget.readOnly) { const ready = switchWidgetReady(widget); svg.setAttribute("role", "button"); svg.setAttribute("aria-disabled", String(!ready)); svg.tabIndex = ready ? 0 : -1; if (ready) { const toggle = event => { event.stopPropagation(); setRuntimeBooleanWidget(widget, !isOn(displayedWidgetState(widget))); }; svg.addEventListener("click", toggle); svg.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); toggle(event); } }); } } content.append(svg);
+      const svgState = displayedWidgetState(widget);
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.style.width = "100%"; svg.style.height = "100%";
+      svg.style.opacity = String(boolSvgOpacity(widget.svgOpacity, runtimeMode));
+      svg.innerHTML = boolSvgOn(svgState) ? widget.svgTrue || "" : widget.svgFalse || "";
+      if (runtimeMode && !widget.readOnly) {
+        const nextValue = boolSvgNext(svgState);
+        const ready = stateElementReady(widget, nextValue);
+        svg.setAttribute("role", "button"); svg.setAttribute("aria-disabled", String(!ready));
+        svg.setAttribute("aria-pressed", String(boolSvgOn(svgState))); svg.tabIndex = ready ? 0 : -1;
+        if (ready) {
+          const toggle = event => { event.stopPropagation(); setRuntimeStateElement(widget, nextValue); };
+          svg.addEventListener("click", toggle);
+          svg.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); toggle(event); } });
+        }
+      }
+      content.append(svg);
     } else if (widget.type === "input-value") {
       const bound = Boolean(widget.entityId); const numberHelper = WRITABLE_NUMBER_HELPER.test(widget.entityId || ""); const textHelper = WRITABLE_TEXT_HELPER.test(widget.entityId || "");
       const live = state.entityStates[widget.entityId]?.state;

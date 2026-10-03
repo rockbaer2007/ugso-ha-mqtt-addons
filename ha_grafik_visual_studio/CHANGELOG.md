@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.161
+
+- Bool SVG follows VIS2 defaults: 85 × 85 pixels, two editable star snippets, native SVG coordinates, read-only mode and opacity with a 20% visibility floor in the editor.
+- Numeric SVG states and 0/1 switching support suitable Home Assistant helpers. Optional CSS groups start disabled; CSS General remains mandatory.
+
 ## 0.1.160
 
 - View in widget 8 uses the HA entity as a read-only Studio page index in editor and runtime. Highest index 0..50 includes index zero; 1 creates two page slots. Empty, unavailable, fractional and out-of-range states show no selected page.
