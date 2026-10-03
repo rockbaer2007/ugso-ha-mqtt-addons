@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.153
+
+- New HTML widgets start with empty HTML, refresh disabled, 200x130 size and disabled CSS groups. HTML is displayed literally and refreshed consistently without a custom value placeholder.
+- Optional migration hints explain sanitized markup, disabled embedded scripts/event handlers and the HTML rebuild interval versus HA state polling.
+
 ## 0.1.152
 
 - Bar reversal changes its origin instead of complementing the numeric fill percentage. Vertical bars start at the top normally and at the bottom when reversed.

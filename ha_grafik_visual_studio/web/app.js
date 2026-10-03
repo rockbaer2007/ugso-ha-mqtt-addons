@@ -2859,7 +2859,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       select.addEventListener("change", (event) => { event.stopPropagation(); if (runtimeMode && stateElementReady(widget, select.value)) setRuntimeStateElement(widget, select.value); }); content.append(select);
     } else if (widget.type === "html-state" || widget.type === "html") {
       const output = document.createElement("div"); output.className = "safe-html";
-      appendSafeHtml(output, widget.type === "html-state" ? widget.htmlContent || "" : String(widget.htmlContent || "").replaceAll("{value}", String(displayedWidgetState(widget) ?? "")));
+      appendSafeHtml(output, widget.htmlContent || "");
       if (widget.type === "html" && Number(widget.refreshInterval) > 0) { const update = () => { output.replaceChildren(); appendSafeHtml(output, widget.htmlContent || ""); }; mediaRefreshers.add({ widget, update, timer: setInterval(update, Math.max(100, Number(widget.refreshInterval))) }); }
       if (widget.type === "html-state" && runtimeMode) {
         const candidate = safeUrl(widget.clickUrl);

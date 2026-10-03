@@ -101,7 +101,7 @@ const basicDataWidget = (type, label, icon, defaults, dataFields, hint = "Ohne E
   propertyGroups: [
     metadata(), visibility(),
     { label: "Daten", ...(hint ? { hint } : {}), fields: dataFields },
-    geometry(), ...cssGroups().map(group => ["value-list-html", "value-list-html-style", "bool-display", "bool-select", "html-state", "bar", "table"].includes(type) ? { ...group, defaultEnabled: false } : group),
+    geometry(), ...cssGroups().map(group => ["value-list-html", "value-list-html-style", "bool-display", "bool-select", "html-state", "html", "bar", "table"].includes(type) ? { ...group, defaultEnabled: false } : group),
   ],
 });
 const dateFormats = ["YYYY-MM-DD HH:mm:ss", "DD.MM.YYYY HH:mm:ss", "DD.MM.YYYY HH:mm", "YYYY-MM-DD", "HH:mm:ss"];
@@ -316,8 +316,8 @@ registerWidgetSet({
       { label: "Minimum", key: "min", type: "number" }, { label: "Maximum", key: "max", type: "number" },
       { label: "Farbe", key: "barColor", type: "color" }, { label: "Ausrichtung", key: "orientation", type: "select", options: [{ value: "horizontal", label: "Horizontal" }, { value: "vertical", label: "Vertikal" }] },
     ]),
-    basicDataWidget("html", "HTML", "<>…", { title: "HTML", htmlContent: "<h3>Überschrift</h3><p>Eigener HTML-Inhalt</p>" }, [
-      { label: "HTML-Inhalt", key: "htmlContent", type: "textarea" },
+    basicDataWidget("html", "HTML", "<>…", { title: "HTML", htmlContent: "", refreshInterval: 0, width: 200, height: 130 }, [
+      { label: "HTML", key: "htmlContent", type: "html" },
     ], "HTML-Code wird mit seinen Elementen, Attributen und Formatierungen dargestellt."),
     basicDataWidget("navigation", "HTML navigation", "➜", { title: "Navigation", navLabel: "Öffnen", navUrl: "" }, [
       { label: "Linktext", key: "navLabel" }, { label: "Ziel-URL oder HA-Pfad", key: "navUrl" },

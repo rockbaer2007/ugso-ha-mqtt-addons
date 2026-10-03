@@ -1,4 +1,6 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "html" && key === "htmlContent") return "HTML wird bereinigt angezeigt. Eingebettete Skripte und Event-Handler werden nicht ausgeführt; keine HA-Schreibentität nötig.";
+  if (widget.type === "html" && key === "refreshInterval") return "0 oder leer deaktiviert die Aktualisierung. Millisekunden bauen den HTML-Inhalt neu auf; das ist keine HA-Abfragezeit.";
   if (widget.type === "bar" && key === "barBorder") return "CSS-Rand angeben, zum Beispiel 2px solid blue. Eine einzelne 2 ist keine vollständige CSS-Randangabe.";
   if (widget.type === "bar" && key === "barShadow") return "VIS2 nennt dieses Feld Durchsichtigkeit, speichert aber shadow: CSS-Schatten, zum Beispiel 2px 2px 4px #0008.";
   if (widget.type === "bar" && key === "invert") return "Ändert die Wachstumsrichtung, nicht den Füllstand: horizontal von rechts, vertikal von unten.";
