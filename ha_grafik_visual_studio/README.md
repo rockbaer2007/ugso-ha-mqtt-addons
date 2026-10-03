@@ -1,5 +1,7 @@
 # HA Grafik Visual Studio
 
+Ab 0.1.192 ergänzt **Wetter und Heizung 1.5.0** die **Fensterstatus-Übersicht**: JSON-Raumliste aus HA-Zustand oder Attribut, optionale Anzahl offener Räume, sieben Farbeinstellungen und **Ohne Karte**. Die Liste verwendet `room`, `sinceText`, `changed` und `isOpen`; ohne Bindung gibt es eine bearbeitbare Vorschau. Fehlende Live-Werte bleiben unbekannt. Die fünf bisherigen Widgets bleiben unverändert.
+
 Ab 0.1.191 ergänzt **Wetter und Heizung 1.4.0** das **METEORED-Wetter-Widget** mit Widget-ID, **Ohne Karte** und standardmäßig aktiviertem stündlichem Neuladen. Die Runtime lädt den offiziellen Meteored-Loader in einem separaten Frame mit `sandbox="allow-scripts"`; im Editor erscheint eine Konfigurationsvorschau. Eine gültige Widget-ID und die passende Domain-Freigabe bei Meteored sind erforderlich. Die vier bisherigen Paket-Widgets bleiben unverändert.
 
 Ab 0.1.190 ergänzt **Wetter und Heizung 1.3.0** die **Übersicht über Heizräume**: eine fertige HTML-Raumtabelle aus einem HA-Zustand oder Attribut, lesend und ohne Schreibaktionen. Ohne Entitätsbindung gibt es eine bearbeitbare Vorschau. Überschriftenfarbe und **Ohne Karte** sind einstellbar. Passive Tabellenelemente und ausgewählte Formatierungen werden übernommen; ausführbare Inhalte und externe Ressourcen werden entfernt.

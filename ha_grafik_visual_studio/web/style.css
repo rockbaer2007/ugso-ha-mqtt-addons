@@ -402,6 +402,13 @@ html.embedded-loading body { visibility: hidden; background: transparent; }
 .heating-rooms-table table { width: 100%; border-collapse: collapse; }
 .meteored-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; width: 100%; height: 100%; padding: 16px; box-sizing: border-box; text-align: center; overflow-wrap: anywhere; }
 .meteored-preview > strong { color: #42aee8; font-size: 20px; }
+.window-overview { display: flex; flex-direction: column; gap: 12px; width: 100%; height: 100%; overflow: auto; padding: 12px; box-sizing: border-box; }
+.window-overview > strong, .window-statusline { text-align: center; margin: 0; }
+.window-room-list { display: flex; flex-direction: column; gap: 6px; }
+.window-room { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; padding: 10px; border-radius: 4px; }
+.window-room > * { min-width: 0; overflow-wrap: anywhere; }
+.window-room > span:last-child { grid-column: 1 / -1; font-size: 12px; }
+.window-room-status { font-size: 12px; }
 .heating-rooms-table th, .heating-rooms-table td { padding: 8px; border-bottom: 1px solid #45535c; text-align: left; overflow-wrap: anywhere; }
 .gauge-instrument > svg { display: block; width: 100%; flex: 1 1 0; min-height: 0; }
 .gauge-instrument-label { max-width: 100%; flex: 0 0 auto; font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

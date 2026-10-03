@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.192
+
+- Add Window Status Overview to optional Weather and Heating package 1.5.0 with JSON room list and optional open-room count state/attribute bindings.
+- Support headline/status colors, distinct open/closed room-name and change colors, room backgrounds, no-card display and legacy icon-state inference without loading ioBroker assets.
+- Preserve unknown states/counts and all existing widget definitions; assign open/closed colors according to their labels.
+
 ## 0.1.191
 
 - Add METEORED Weather Widget to optional Weather and Heating package 1.4.0 with widget ID, no-card display and optional hourly reload.
