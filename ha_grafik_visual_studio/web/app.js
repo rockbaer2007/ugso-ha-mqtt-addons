@@ -262,6 +262,14 @@ function propertyGroupEnabled(widget, group, index) {
   return widget.enabledPropertyGroups?.[propertyGroupKey(group, index)] !== false;
 }
 
+function optionalWidgetGroupEnabled(widget, key) {
+  if (widget[key] !== undefined) return widget[key] === true;
+  const groups = widgetPropertyGroups(widget);
+  const index = groups.findIndex(group => group.masterKey === key);
+  if (index < 0 || !propertyGroupEnabled(widget, groups[index], index)) return false;
+  return key === "signalImagesEnabled" ? Number(widget.signalCount) > 0 : Boolean(widget.extraUrlTrue || widget.extraUrlFalse);
+}
+
 function indexedWidgetGroups(widget) {
   if (["sensor", "red-number", "gauge", "bar"].includes(widget.type)) return [{ id: "numeric-source", label: "Wertquelle", fields: [
     { label: "Wertquelle", key: "numericSource", type: "select", default: "entity", refreshProperties: true, options: [{ value: "entity", label: "Home-Assistant-Entität / Vorschau" }, { value: "dock", label: "Wert vom Dockpunkt" }, { value: "preview", label: "Vorschauwert" }] },
@@ -891,7 +899,7 @@ function renderWidgetFinder() {
     check.addEventListener("change", () => {
       state.widgetSelectionDraft ??= new Set(selected);
       if (check.checked) state.widgetSelectionDraft.add(widget.id); else state.widgetSelectionDraft.delete(widget.id);
-      updateWidgetSelectorAllState();
+      applyWidgetSelection(state.widgetSelectionDraft);
     });
     const preview = document.createElement("span"); preview.className = "widget-choice-preview widget-selector-preview"; preview.dataset.kind = definition.preview?.kind || "symbol";
     for (const lineText of definition.preview?.lines || [definition.icon || "□"]) { const line = document.createElement("span"); line.textContent = lineText; preview.append(line); }
@@ -2212,7 +2220,7 @@ function addWidget(definition) {
   const page = currentPage();
   const index = page.widgets.length;
   const widget = {
-    id, type: definition.type, generalEnabled: false, visibilityEnabled: false, dockPointsEnabled: false, locked: false,
+    id, type: definition.type, generalEnabled: false, visibilityEnabled: false, dockPointsEnabled: false, signalImagesEnabled: false, extraControlEnabled: false, locked: false,
     x: 24 + (index % 4) * 150, y: 24 + Math.floor(index / 4) * 90, width: 140, height: 62, radius: 8, visible: true, layer: 0,
     fontSize: 13, fontWeight: "400", textAlign: "left", textColor: "#e7ecee", backgroundColor: "",
     borderColor: "#626c70", borderWidth: 0, borderStyle: "none", padding: 0, shadow: false, opacity: 1,
@@ -2591,7 +2599,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
             event.stopPropagation();
             if (numberHelper) void writeRuntimeHelperValue(widget.entityId, isOnState ? Number(widget.min ?? 0) : Number(widget.max ?? 1));
             else setRuntimeBooleanWidget(widget, !isOnState);
-            const url = safeUrl(isOnState ? widget.extraUrlFalse : widget.extraUrlTrue); if (url) window.open(url, "_blank", "noopener,noreferrer");
+            const url = optionalWidgetGroupEnabled(widget, "extraControlEnabled") ? safeUrl(isOnState ? widget.extraUrlFalse : widget.extraUrlTrue) : null; if (url) window.open(url, "_blank", "noopener,noreferrer");
           };
           content.addEventListener("click", toggle);
           content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(event); } });
@@ -2876,7 +2884,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
         marker.dataset.count = String(occupied); marker.title = `${label}${occupied ? ` · ${occupied} Verbindung${occupied === 1 ? "" : "en"}` : ""}`; element.append(marker);
       }
     }
-    const signalCount = isConnection ? 0 : Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
+    const signalCount = isConnection || !optionalWidgetGroupEnabled(widget, "signalImagesEnabled") ? 0 : Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
     for (const [signalIndex, signal] of (widget.signalImages || []).slice(0, signalCount).entries()) {
       if (!signal || (!runtimeMode && signal.hideInEditor)) continue;
       const actual = widget.entityId ? displayedWidgetState(widget) : widget.state ?? widget.value ?? "";
@@ -3401,7 +3409,7 @@ function renderProperties() {
       }
     }
     const enabled = document.createElement("input"); enabled.type = "checkbox"; enabled.className = "property-section-enabled";
-    enabled.checked = group.masterKey ? (widget[group.masterKey] ?? group.defaultEnabled ?? true) : propertyGroupEnabled(widget, group, index);
+    enabled.checked = ["signalImagesEnabled", "extraControlEnabled"].includes(group.masterKey) ? optionalWidgetGroupEnabled(widget, group.masterKey) : group.masterKey ? (widget[group.masterKey] ?? group.defaultEnabled ?? true) : propertyGroupEnabled(widget, group, index);
     enabled.setAttribute("aria-label", group.masterKey ? `${group.label} aktivieren` : `${group.label}: Optionen im Projekt speichern`);
     enabled.title = group.masterKey ? `${group.label} vollständig aktivieren oder deaktivieren` : "Optionen dieser Gruppe im gespeicherten Projekt übernehmen";
     enabled.addEventListener("click", (event) => event.stopPropagation());
@@ -3565,7 +3573,7 @@ $("#widget-selector-menu").addEventListener("click", (event) => event.stopPropag
 $("#widget-selector-all").addEventListener("change", (event) => {
   state.widgetSelectionDraft = event.target.checked ? new Set(currentPage().widgets.map(widget => widget.id)) : new Set();
   for (const check of document.querySelectorAll("#widget-selector-list input[type=checkbox]")) check.checked = event.target.checked;
-  updateWidgetSelectorAllState();
+  applyWidgetSelection(state.widgetSelectionDraft);
 });
 $("#widget-selector-select").addEventListener("click", () => { applyWidgetSelection(state.widgetSelectionDraft || new Set()); toggleWidgetSelector(false); });
 $("#widget-selector-clear").addEventListener("click", () => { applyWidgetSelection(new Set()); toggleWidgetSelector(false); });
@@ -3961,7 +3969,7 @@ $("#files-folder").addEventListener("click", async () => {
   await renderObjects();
 });
 $("#files-copy").addEventListener("click", async () => {
-  const paths = state.selectedFiles.map((path) => "/local/" + path);
+  const paths = state.selectedFiles.map((path) => "/local/studio/" + path);
   try {
     await navigator.clipboard.writeText(paths.join("\n"));
     $("#status").textContent = paths.length + " Pfad(e) in die Zwischenablage kopiert";
@@ -3971,7 +3979,7 @@ $("#files-copy").addEventListener("click", async () => {
 });
 $("#files-apply").addEventListener("click", () => {
   if (!activeIconInput || state.selectedFiles.length !== 1) return;
-  activeIconInput.value = "/local/" + state.selectedFiles[0];
+  activeIconInput.value = "/local/studio/" + state.selectedFiles[0];
   activeIconInput.dispatchEvent(new Event("input", { bubbles: true }));
   $("#objects-dialog").close();
   if ($("#icon-picker").open) $("#icon-picker").close();

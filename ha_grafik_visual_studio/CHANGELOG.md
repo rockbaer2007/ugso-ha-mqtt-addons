@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.129
+
+- Uses /local/studio/ paths for widget image selection and copied file paths.
+- Disables signal images and extra controls for new widgets, alongside docking points. Previously configured optional behavior remains available; heading switches now control rendering and extra URL actions.
+- Synchronizes individual and all-widget checkbox selections immediately with the editor selection.
+
 ## 0.1.128
 
 - Restricts the Files browser to Home Assistant's /config/www/studio directory, creates it automatically when opened and explains how to create it manually if permissions prevent creation.
