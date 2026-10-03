@@ -1,11 +1,22 @@
-# UGSo Technic 1.4.0
+# UGSo Technic 1.5.0
 
 Inspiriert von den ioBroker-Technic-Widgets von Sefina-DS:
 https://github.com/Sefina-DS/ioBroker.vis-2-widgets-technic
 
-Eigene Umsetzung für Home Assistant. Enthält Window – Wall, Switch – Boolean, Dimmer – Light, Room – Overlay und Clock – Date.
-Die weiteren zwei Widgets des Originalsets sind noch nicht enthalten.
-Requires Studio 0.1.201 or newer. Install ugso.technic.wg through Settings > Widget packages.
+Eigene Umsetzung für Home Assistant. Enthält Window – Wall, Switch – Boolean, Dimmer – Light, Room – Overlay, Clock – Date und Thermostat – Temperature.
+Das verbleibende StatusList-Widget ist noch nicht enthalten.
+Requires Studio 0.1.202 or newer. Install ugso.technic.wg through Settings > Widget packages.
+
+Thermostat – Temperature: target climate or input_number, optional actual temperature,
+humidity, actuator and cooling entities. Blank read bindings fall back to climate
+attributes. Drag the 300-degree arc or use the keyboard range; one write on release.
+Default bounds 15–28, step 0.5, size 220x220. HA capabilities, live limits and steps
+are checked before climate.set_temperature or input_number.set_value. Unknown,
+unsupported, editor and read-only states never write; the caption stays visible.
+History uses HA Recorder (24 hours/7 days), not ioBroker InfluxDB. Target and actual
+use the temperature axis; actuator uses the right 0–100% axis. Heating/cooling
+activity is 100%, idle/off is 0%, not a measured valve position. Recorder must track
+the selected entities. History colors, cooling color and all bindings are exported.
 
 Clock – Date uses the browser's current local time and timezone, without HA bindings.
 Time: 12/24 hours, optional seconds, color, size and bold. Date: DE/EN/FR/ES/IT/NL,

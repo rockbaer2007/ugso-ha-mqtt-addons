@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.202
+
+- Add Thermostat – Temperature to Technic 1.5.0: target/actual temperature, humidity, actuator and cooling bindings, configurable 300-degree dial, bounds, step and colors. Fixed HA actions validate live capabilities and limits; dragging commits once and captions remain visible.
+- Add read-only HA Recorder history for 24 hours or seven days with separate temperature/activity axes and configurable colors. Preserve prior package definitions and exported settings; batch attribute reads within the existing API limit.
+
 ## 0.1.201
 
 - Add Clock – Date to Technic 1.4.0 with local browser time, 12/24-hour display, optional seconds, six date languages and configurable date ordering, separators, month/year formats and weekday.

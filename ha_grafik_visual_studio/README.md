@@ -1,6 +1,6 @@
 # HA Grafik Visual Studio
 
-Studio 0.1.201 adds Clock – Date in external UGSo Technic 1.4.0, with browser-local time and configurable dates in six languages. See [Technic package](packages/technic/README.md).
+Studio 0.1.202 adds Thermostat – Temperature in external UGSo Technic 1.5.0, with bounded HA setpoint writes, actual temperature, humidity, actuator/cooling display and HA Recorder history (24 hours/7 days). See [Technic package](packages/technic/README.md).
 
 Studio 0.1.198 extends the external UGSo Technic set to 1.1.0 with Switch – Boolean alongside Window – Wall. See [Technic package](packages/technic/README.md).
 

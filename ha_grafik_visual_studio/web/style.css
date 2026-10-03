@@ -897,6 +897,17 @@ body.runtime-mode .runtime-page-menu-toggle { position: fixed; z-index: 10; top:
 .technic-light > input { width: 90%; height: 14px; min-height: 14px; margin: 0; padding: 0; accent-color: #2ecfbf; }
 .technic-light > input:disabled { opacity: .5; }
 .technic-clock { width: 100%; height: 100%; min-width: 0; box-sizing: border-box; display: flex; overflow: auto; }
+.technic-temperature { width: 100%; height: 100%; min-height: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.technic-temperature-dial { flex: 1; min-height: 0; display: flex; justify-content: center; }
+.technic-temperature-dial > svg { height: 100%; max-width: 100%; touch-action: none; }
+.technic-temperature > input { width: 85%; height: 14px; min-height: 14px; padding: 0; margin: 0; accent-color: #2ecfbf; }
+.technic-temperature > button { padding: 2px 12px; min-height: 22px; font-size: 12px; }
+.technic-temperature-history { width: min(850px, calc(100vw - 24px)); max-height: calc(100vh - 24px); box-sizing: border-box; overflow: auto; background: #0d1820; color: #e8f4f3; border: 1px solid #2ecfbf; border-radius: 8px; }
+.technic-temperature-history::backdrop { background: rgb(0 0 0 / .55); }
+.technic-temperature-history-actions { display: flex; gap: 8px; margin: 12px 0; }
+.technic-temperature-history-actions > button { flex: 1; min-width: 0; }
+.technic-temperature-history-actions > button[aria-pressed="true"] { border-color: #2ecfbf; color: #2ecfbf; }
+.technic-temperature-history svg { width: 100%; display: block; }
 .technic-clock > span { flex-shrink: 0; white-space: nowrap; line-height: 1.2; }
 .technic-clock > span[hidden] { display: none; }
 .technic-room { width: 100%; height: 100%; min-height: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; overflow: auto; }
