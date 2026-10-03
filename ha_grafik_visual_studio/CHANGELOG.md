@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.165
+
+- iFrame 8 follows the 600 × 320 reference defaults, with per-index URL and sandbox options and an inclusive highest index up to 20 (21 entries).
+- Editor uses live entity indexes; runtime retains an unchanged frame across redraws and replaces it when the selected URL or sandbox changes. Disabled indexed groups take effect immediately in the editor.
+- Only CSS General starts enabled. Bilingual documentation and optional migration hints explain indexing and refresh behavior.
+
 ## 0.1.164
 
 - iFrame exposes the standard options under General with 600 × 320 defaults; only CSS General starts enabled.

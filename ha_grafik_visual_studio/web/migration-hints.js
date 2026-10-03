@@ -1,4 +1,8 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "iframe-8" && key === "entityId") return "Die HA-Entität liefert den URL-Index: false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen; kein zusätzlicher HA-Helfer nötig. Ohne Entität wird Frame [0] angezeigt.";
+  if (widget.type === "iframe-8" && key === "count") return "Höchster Index: 20 ergibt 21 Einträge von [0] bis [20]. Deaktivierte oder leere Einträge zeigen keinen Frame.";
+  if (widget.type === "iframe-8" && /^frameNoSandbox\d+$/.test(key)) return migrationHint({ type: "iframe" }, "noSandbox");
+  if (widget.type === "iframe-8" && ["refreshInterval", "noCacheBuster"].includes(key)) return migrationHint({ type: "iframe" }, key);
   if (widget.type === "iframe" && key === "noSandbox") return "Kein Sandkasten hebt die Einschränkung der eingebetteten Seite auf. Anmeldung und Einbettung richten sich weiterhin nach Browser und Zielseite; kein HA-Helfer nötig.";
   if (widget.type === "iframe" && key === "refreshInterval") return "0 deaktiviert regelmäßiges Neuladen. Millisekunden aktualisieren die eingebettete Seite, nicht HA-Entitäten.";
   if (widget.type === "iframe" && key === "noCacheBuster") return "Aktualisiert mit unveränderter URL. Ohne Haken wird ein Zeitstempel als URL-Parameter ergänzt; vorhandene Parameter und Sprungmarken bleiben erhalten.";

@@ -33,6 +33,8 @@ const ENGLISH = {
   "0 oder leer deaktiviert die Aktualisierung. Millisekunden bauen den HTML-Inhalt neu auf; das ist keine HA-Abfragezeit.": "0 or empty disables refresh. Milliseconds rebuild the HTML content; this is not an HA polling interval.",
   "Durchsichtigkeit (Schatten/CSS)": "Transparency (shadow/CSS)",
   "SVG bei false": "SVG when false",
+  "Die HA-Entität liefert den URL-Index: false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen; kein zusätzlicher HA-Helfer nötig. Ohne Entität wird Frame [0] angezeigt.": "The HA entity supplies the URL index: false/off maps to 0, true/on to 1. Read-only; no additional HA helper required. Without an entity, frame [0] is displayed.",
+  "Höchster Index: 20 ergibt 21 Einträge von [0] bis [20]. Deaktivierte oder leere Einträge zeigen keinen Frame.": "Highest index: 20 creates 21 entries from [0] to [20]. Disabled or empty entries display no frame.",
   "Kein Sandkasten hebt die Einschränkung der eingebetteten Seite auf. Anmeldung und Einbettung richten sich weiterhin nach Browser und Zielseite; kein HA-Helfer nötig.": "No sandbox removes restrictions on the embedded page. Authentication and embedding still depend on the browser and target page; no HA helper required.",
   "0 deaktiviert regelmäßiges Neuladen. Millisekunden aktualisieren die eingebettete Seite, nicht HA-Entitäten.": "0 disables periodic reloads. Milliseconds refresh the embedded page, not HA entities.",
   "Aktualisiert mit unveränderter URL. Ohne Haken wird ein Zeitstempel als URL-Parameter ergänzt; vorhandene Parameter und Sprungmarken bleiben erhalten.": "Refreshes the unchanged URL. Otherwise a timestamp query parameter is added; existing parameters and fragments are preserved.",

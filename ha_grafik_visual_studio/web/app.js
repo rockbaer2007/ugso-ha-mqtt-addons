@@ -11,7 +11,7 @@ import { boolSelectOn } from "./bool-select.js";
 import { boolSvgOn, boolSvgNext, boolSvgOpacity } from "./bool-svg.js";
 import { redNumberDisplay } from "./red-number.js";
 import { svgShapeGeometry } from "./svg-shape.js";
-import { mediaRefreshUrl, iframeOptions } from "./iframe-widget.js";
+import { mediaRefreshUrl, iframeOptions, iframeCount, iframeIndex } from "./iframe-widget.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
@@ -345,11 +345,12 @@ function indexedWidgetGroups(widget) {
   ] }));
   const specs = { "iframe-8": ["frames", 20, [{ label: "URL falls Wert", key: "frameSource" }, { label: "Kein Sandkasten", key: "frameNoSandbox", type: "checkbox", default: false }]], "image-8": ["Bild", 50, [{ label: "Quelle", key: "imageSource", previewImage: true }]], "view-in-widget-8": ["Seite", 50, [{ label: "Seite", key: "page", type: "page" }]] };
   const spec = specs[widget.type]; if (!spec) return [];
-  const [label, max, fields] = spec; const count = widget.type === "view-in-widget-8" ? viewCount(widget) : Math.max(1, Math.min(max, Math.trunc(Number(widget.count) || 1)));
+  const [label, max, fields] = spec; const count = widget.type === "view-in-widget-8" ? viewCount(widget) : widget.type === "iframe-8" ? iframeCount(widget) : Math.max(1, Math.min(max, Math.trunc(Number(widget.count) || 1)));
   return Array.from({ length: count + 1 }, (_, index) => ({ id: `indexed-${widget.type}-${index}`, label: `${label} [${index}]`, indexed: { index, count, max, fields }, fields: fields.map(field => ({ ...field, key: `${field.key}${index}`, label: `${field.label} [${index}]` })) }));
 }
 
 function widgetStateIndex(widget) {
+  if (widget.type === "iframe-8") return iframeIndex(widget, displayedWidgetState(widget));
   if (widget.type === "view-in-widget-8") return viewIndex(widget, displayedWidgetState(widget));
   const value = displayedWidgetState(widget); const index = value === true || ["true", "on"].includes(value) ? 1 : value === false || ["false", "off"].includes(value) ? 0 : Number(value ?? 0);
   const max = widget.type === "iframe-8" ? 20 : 50; const count = Math.max(1, Math.min(max, Math.trunc(Number(widget.count) || 1)));
@@ -563,7 +564,7 @@ function displayedWidgetState(widget) {
     return numericWidgetInput(widget, surface?.widgets || currentPage().widgets, state.entityStates) ?? "--";
   }
   if (widget.type === "string") return stringDisplayValue(widget, state.entityStates[widget.entityId], runtimeMode);
-  if ((runtimeMode || ["view-in-widget-8", "bool-svg", "red-number"].includes(widget.type)) && widget.entityId) {
+  if ((runtimeMode || ["view-in-widget-8", "bool-svg", "red-number", "iframe-8"].includes(widget.type)) && widget.entityId) {
     return state.entityStates[widget.entityId]?.state ?? "--";
   }
   return widget.state;
@@ -2493,7 +2494,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const dashboardSurfaceKey = `${state.projectId}:${activePage.id}`;
   const retainedDashboards = new Map();
   for (const child of [...stage.children]) {
-    if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8") || child.classList.contains("widget-iframe")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
+    if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8") || child.classList.contains("widget-iframe") || child.classList.contains("widget-iframe-8")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
     else child.remove();
   }
   const filterKey = filterPageKey(activePage);
@@ -2554,7 +2555,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     });
     if (widget.type === "dashboard-in-widget") { element.dataset.dashboardSurface = dashboardSurfaceKey; element.style.maxWidth = "800px"; element.style.maxHeight = "640px"; }
     if (widget.type === "view-in-widget-8") element.dataset.dashboardSurface = dashboardSurfaceKey;
-    if (widget.type === "iframe") element.dataset.dashboardSurface = dashboardSurfaceKey;
+    if (["iframe", "iframe-8"].includes(widget.type)) element.dataset.dashboardSurface = dashboardSurfaceKey;
     const content = element.firstElementChild || document.createElement("div");
     content.className = "widget-content";
     Object.assign(content.style, {
@@ -2923,7 +2924,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       const index = widgetStateIndex(widget); const source = widget.type === "iframe" ? widget.source : widget[`frameSource${index}`];
       if (safeUrl(source)) {
         const options = iframeOptions({ ...widget, noSandbox: widget.type === "iframe" ? widget.noSandbox : widget[`frameNoSandbox${index}`] });
-        let frame = widget.type === "iframe" ? content.querySelector("iframe") : null;
+        let frame = content.querySelector("iframe");
         const created = !frame || frame.dataset.source !== source || frame.getAttribute("sandbox") !== options.sandbox;
         if (created) {
           content.replaceChildren(); frame = document.createElement("iframe"); frame.dataset.source = source;
@@ -3881,6 +3882,7 @@ function field(descriptor, widget) {
     input.addEventListener("input", () => { number.value = input.value; });
     number.addEventListener("input", () => { input.value = number.value; number.value = input.value; input.dispatchEvent(new Event("input", { bubbles: true })); }); wrapper.append(number);
     number.addEventListener("change", () => input.dispatchEvent(new Event("change", { bubbles: true })));
+    if (widget.type === "iframe-8" && descriptor.key === "count") number.addEventListener("blur", renderProperties);
   }
   const update = () => {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
@@ -3888,7 +3890,7 @@ function field(descriptor, widget) {
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (widget.type === "dashboard-in-widget" && ["width", "height"].includes(descriptor.key)) { Object.assign(widget, dashboardSize(widget)); input.value = String(widget[descriptor.key]); }
     if (widget.type === "value-list-html-style" && descriptor.key === "count" && widget.testIndex !== "" && Number(widget.testIndex) > styledListCount(widget)) widget.testIndex = "";
-    if ((["sensor", "slider", "input-value", "string", "view-in-widget-8"].includes(widget.type) && descriptor.key === "entityId") ||
+    if ((["sensor", "slider", "input-value", "string", "view-in-widget-8", "iframe-8"].includes(widget.type) && descriptor.key === "entityId") ||
         (widget.type === "svg-connection" && ["animationSource", "animationNumberEntityId", "animationBooleanEntityId"].includes(descriptor.key))) {
       void refreshEditorLiveStates();
     }
@@ -4048,6 +4050,7 @@ function renderProperties() {
       } else {
         widget.enabledPropertyGroups ??= {};
         widget.enabledPropertyGroups[propertyGroupKey(group, index)] = enabled.checked;
+        if (widget.type === "iframe-8" && group.indexed) renderStage();
       }
     });
     summary.append(enabled);

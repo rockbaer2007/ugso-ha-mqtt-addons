@@ -14,3 +14,13 @@ export function iframeOptions(widget) {
     overflowY: widget.scrollY ? "scroll" : "hidden",
   };
 }
+
+export function iframeCount(widget) {
+  const count = Number(widget.count ?? 2);
+  return Number.isFinite(count) ? Math.max(1, Math.min(20, Math.trunc(count))) : 2;
+}
+
+export function iframeIndex(widget, value) {
+  const index = value == null || value === false || ["false", "off"].includes(value) ? 0 : value === true || ["true", "on"].includes(value) ? 1 : typeof value === "string" && !value.trim() ? NaN : Number(value);
+  return Number.isInteger(index) && index >= 0 && index <= iframeCount(widget) && widget.enabledPropertyGroups?.[`indexed-iframe-8-${index}`] !== false ? index : -1;
+}
