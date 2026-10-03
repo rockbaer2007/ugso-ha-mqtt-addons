@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.176
+
+- Add a separate Interactive Slider with horizontal/vertical orientation, title/unit, value labels, interval/custom marks and read-only display.
+- Provide neutral track/thumb CSS groups with independent inheritance, colors, sizing, rounding and shadows; zero thumb size hides the thumb.
+- Reuse numeric helper writes, keep editor and sensor displays non-writing, and document the widget in German and English.
+
 ## 0.1.175
 
 - Add Checkbox under Interactive with custom value pairs, state labels, four label positions and neutral CSS styling with inheritance.

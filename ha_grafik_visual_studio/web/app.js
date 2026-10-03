@@ -20,6 +20,7 @@ import { noteValue, noteWritable } from "./note-widget.js";
 import { isSeparator, snapSeparator, renderSeparator } from "./separator-line.js";
 import { renderCalendar, CALENDAR_STYLES } from "./calendar-widget.js";
 import { renderCheckbox, checkboxValue } from "./styled-checkbox.js";
+import { renderStyledSlider, styledSliderValue, updateStyledSlider } from "./styled-slider.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
 import { migrationHint } from "./migration-hints.js";
@@ -695,6 +696,9 @@ function stageRuntimeEntityValue(entityId, value) {
       if (widget.type === "svg-connection") {
         const content = document.getElementById(widget.id)?.querySelector(".widget-content");
         if (content) updateRuntimeConnectionVisual(widget, widgets, content);
+      } else if (widget.type === "styled-slider" && widget.entityId) {
+        const root = document.getElementById(widget.id)?.querySelector(".styled-slider");
+        if (root && !root.querySelector("input")?.dataset.dragging) updateStyledSlider(root, widget, styledSliderValue(widget, state.entityStates[widget.entityId]));
       } else if (widget.type === "slider" && widget.entityId) {
         const range = document.getElementById(widget.id)?.querySelector('input[type="range"]');
         const value = sliderLiveValue(widget, state.entityStates[widget.entityId]);
@@ -1594,6 +1598,7 @@ function cloneWidgetForInsert(source, page, idMap) {
   copy.id = idMap.get(oldId) || `widget-${state.nextId++}`;
   remapUniversalReferences(copy, idMap);
   if (copy.type === "styled-checkbox" && idMap.has(copy.styleFromWidget)) copy.styleFromWidget = idMap.get(copy.styleFromWidget);
+  if (copy.type === "styled-slider") for (const key of ["sliderTrackFromWidget", "sliderThumbFromWidget"]) if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
   if (copy.type === "calendar") for (const [prefix] of CALENDAR_STYLES) {
     const key = `${prefix}FromWidget`;
     if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
@@ -2892,6 +2897,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
           content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggle(event); } });
         }
       }
+    } else if (widget.type === "styled-slider") {
+      content.style.overflow = "visible";
+      content.append(renderStyledSlider(widget, document, { runtime: runtimeMode, entry: state.entityStates[widget.entityId], widgets: allProjectWidgets(state.project), label: uiText("Schieberegler"), input: value => { if (widget.entityId) stageRuntimeEntityValue(widget.entityId, value); else widget.value = value; }, commit: value => { if (widget.entityId) void writeRuntimeHelperValue(widget.entityId, value); }, dragEnd: () => { if (runtimeRenderDeferred) renderRuntimeStageWhenReady(); } }));
     } else if (widget.type === "slider") {
       const range = document.createElement("input"); range.type = "range";
       range.className = "widget-slider-input";

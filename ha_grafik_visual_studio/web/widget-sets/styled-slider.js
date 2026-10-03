@@ -1,0 +1,22 @@
+import { SLIDER_STYLE_GROUPS } from "../styled-slider.js";
+const color = (label, key) => ({ label, key, type: "color", optionalColor: true });
+const range = (label, key, min = 0, max = 50) => ({ label, key, type: "range", min, max });
+const shadows = prefix => [range("X-Versatz", `${prefix}ShadowX`, -50), range("Y-Versatz", `${prefix}ShadowY`, -50), range("Unschärfe", `${prefix}ShadowBlur`), range("Ausdehnung", `${prefix}ShadowSize`, -50), color("Schattenfarbe", `${prefix}ShadowColor`)];
+export const styledSliderDefinition = {
+  type: "styled-slider", label: "Schieberegler", icon: "━●━", searchTerms: ["Slider", "Vertikaler Regler"],
+  defaults: { width: 150, height: 40, entityId: "", value: 50, sliderTitle: "", sliderUnit: "", sliderTitleSpacing: 4, minValue: 0, maxValue: 100, step: 1, orientation: "horizontal", showMinMax: true, readOnly: false, valueLabelDisplay: "auto", showSteps: false, stepsInside: false, stepsAbove: false, stepMode: "auto", stepDisplay: 10, customSteps: "", sliderRailColor: "#6E6E6E", sliderRailActiveColor: "#5E6B3F", trackBarType: "normal", trackWidth: 10, trackBorderRadius: 100, trackShadowX: 2, trackShadowY: 2, trackShadowBlur: 2, trackShadowSize: 1, trackShadowColor: "#000000", sliderThumbColor: "#455618", thumbSize: 16, thumbBorderRadius: 100, thumbShadowX: 2, thumbShadowY: 2, thumbShadowBlur: 2, thumbShadowSize: 1, thumbShadowColor: "#00000080", backgroundColor: "transparent", borderWidth: 0, radius: 0, padding: 0, cssOverflowX: "visible", cssOverflowY: "visible" },
+  propertyGroups: [
+    { label: "Allgemein", fields: [
+      { label: "Überschrift", key: "sliderTitle" }, range("Abstand zur Überschrift (px)", "sliderTitleSpacing", 0, 100), { label: "Einheit", key: "sliderUnit" }, { label: "Home-Assistant-Entität", key: "entityId" },
+      { label: "Mindestwert", key: "minValue", type: "number" }, { label: "Maximalwert", key: "maxValue", type: "number" }, { label: "Schritt", key: "step", type: "number", min: 0.000001 },
+      { label: "Orientierung", key: "orientation", type: "select", options: [{ value: "horizontal", label: "Horizontal" }, { value: "vertical", label: "Vertikal" }] },
+      { label: "Min./Max. anzeigen", key: "showMinMax", type: "checkbox" }, { label: "Schreibgeschützt", key: "readOnly", type: "checkbox" },
+      { label: "Wertetikett anzeigen", key: "valueLabelDisplay", type: "select", options: [{ value: "auto", label: "Beim Bedienen" }, { value: "on", label: "Immer" }, { value: "off", label: "Nie" }] },
+      { label: "Vorschauwert", key: "value", type: "number" },
+    ] },
+    { label: "Schrittmarkierungen", fields: [{ label: "Schritte anzeigen", key: "showSteps", type: "checkbox" }, { label: "Schritte innerhalb der Spur", key: "stepsInside", type: "checkbox" }, { label: "Schritte oben / links", key: "stepsAbove", type: "checkbox" }, { label: "Schrittmodus", key: "stepMode", type: "select", options: [{ value: "auto", label: "Automatisch" }, { value: "custom", label: "Benutzerdefiniert" }] }, { label: "Markierungsabstand", key: "stepDisplay", type: "number", min: 0.000001 }, { label: "Eigene Markierungen (Kommaliste)", key: "customSteps" }] },
+    { label: "CSS Schieberegler – Spur", css: true, defaultEnabled: true, fields: [{ label: "Vom Widget", key: `${SLIDER_STYLE_GROUPS[0][0]}FromWidget`, type: "widget", widgetType: "styled-slider" }, color("Farbe der Gleitschiene", "sliderRailColor"), color("Aktive Spurfarbe", "sliderRailActiveColor"), { label: "Spurtyp", key: "trackBarType", type: "select", options: [{ value: "normal", label: "Normal" }, { value: "inverted", label: "Umgekehrt" }, { value: "none", label: "Keine aktive Spur" }] }, range("Spurbreite (px)", "trackWidth", 1), range("Spurrundung (%)", "trackBorderRadius", 0, 100), ...shadows("track")] },
+    { label: "CSS Schieberegler – Daumen", css: true, defaultEnabled: true, fields: [{ label: "Vom Widget", key: `${SLIDER_STYLE_GROUPS[1][0]}FromWidget`, type: "widget", widgetType: "styled-slider" }, color("Daumenfarbe", "sliderThumbColor"), range("Daumengröße (px)", "thumbSize"), range("Daumenrundung (%)", "thumbBorderRadius", 0, 100), ...shadows("thumb")] },
+    { label: "Größe und Position", fields: [{ label: "Breite (px)", key: "width", type: "number", min: 16 }, { label: "Höhe (px)", key: "height", type: "number", min: 16 }, { label: "X (px)", key: "x", type: "number" }, { label: "Y (px)", key: "y", type: "number" }] },
+  ],
+};

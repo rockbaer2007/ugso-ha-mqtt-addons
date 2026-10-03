@@ -3,6 +3,7 @@ import { UNIVERSAL_STYLE_GROUPS, universalColors } from "../universal-element.js
 import { calendarDefinition } from "./calendar.js";
 import { eventCalendarDefinition } from "./event-calendar.js";
 import { checkboxDefinition } from "./styled-checkbox.js";
+import { styledSliderDefinition } from "./styled-slider.js";
 registerWidgetSet({
   id: "ha-grafik-basic2", label: "HA Grafik – Interaktiv",
   widgets: [{
@@ -34,5 +35,5 @@ registerWidgetSet({
       { label: "Zustände und Inhalte", universalStates: true, fields: [{ label: "Anzahl der Zustände", key: "stateCount", type: "select", refreshProperties: true, options: Array.from({ length: 20 }, (_, i) => String(i + 1)) }] },
       ...UNIVERSAL_STYLE_GROUPS,
     ],
-  }, calendarDefinition, eventCalendarDefinition, checkboxDefinition],
+  }, calendarDefinition, eventCalendarDefinition, checkboxDefinition, styledSliderDefinition],
 });
