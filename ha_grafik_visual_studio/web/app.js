@@ -6,6 +6,7 @@ import { MATH_ANCHORS, MATH_IDS, mathPortRole, mathBoxResults, mathCalculations,
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
 import { htmlListEntries, htmlListEntry, styledListCount } from "./value-list.js";
+import { tableRows, tableColumns, updateTableEvent } from "./table-data.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
@@ -69,6 +70,7 @@ const VIEW_PROPERTY_GROUPS = [
 const $ = (selector) => document.querySelector(selector);
 const params = new URLSearchParams(location.search);
 const runtimeMode = location.pathname.endsWith("/runtime") || params.get("mode") === "runtime";
+const tableRuntimeCache = new Map();
 const rootRuntimeMode = runtimeMode;
 const workspace = $("#workspace");
 const stage = $("#stage");
@@ -145,6 +147,9 @@ const commonWidgetGroups = [
 
 function widgetPropertyGroups(widget) {
   let styleEntryGroups = [];
+  if (widget.type === "table") styleEntryGroups = Array.from({ length: Math.min(20, Math.max(0, Math.trunc(Number(widget.maxColumns) || 0))) }, (_, index) => ({ id: `table-column-${index + 1}`, label: `Spalte [${index + 1}]`, fields: [
+    { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
+  ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
   if (["value-list-html", "value-list-html-style"].includes(widget.type)) {
     const options = [{ value: "", label: "Livewert / Vorschauzustand" }, ...htmlListEntries(widget).map((_, index) => ({ value: String(index), label: String(index) }))];
@@ -593,6 +598,7 @@ function runtimeLiveEntityIds() {
     widget.entityId, widget.visibilityEnabled ? widget.visibilityEntityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
     widget.type === "linebox" && widget.outputHelperEnabled ? widget.outputHelperEntityId : "",
+    ...(widget.type === "table" ? [widget.eventEntityId, widget.ackEntityId, widget.selectedEntityId] : []),
   ]))]
     .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id));
 }
@@ -2854,26 +2860,66 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       else content.append(output);
     } else if (widget.type === "table") {
       const tableWrap = document.createElement("div"); tableWrap.className = "widget-table-wrap";
+      const cacheKey = `${state.projectId}:${activePage.id}:${widget.id}:${widget.eventEntityId || ""}`;
+      const cache = tableRuntimeCache.get(cacheKey) || { events: [], selectedIndex: null };
+      if (runtimeMode) tableRuntimeCache.set(cacheKey, cache);
+      const writeTarget = (entityId, value) => {
+        if (!runtimeMode || !entityId) return;
+        if (stateElementReady({ entityId }, value)) setRuntimeStateElement({ entityId }, value);
+        else $("#status").textContent = uiText("Kein verfügbarer HA-Helfer für die Tabellenausgabe");
+      };
+      const showDetail = row => {
+        if (!widget.detailWidget || widget.detailWidget === widget.id) return;
+        const target = [...$("#stage").querySelectorAll("[data-widget-id]")].find(item => item.dataset.widgetId === widget.detailWidget)?.querySelector(".widget-content");
+        if (!target) return;
+        target.replaceChildren();
+        if (row._detail == null) return;
+        const detailTable = document.createElement("table");
+        for (const [name, value] of Object.entries(typeof row._detail === "object" ? row._detail : { detail: row._detail })) {
+          const tr = detailTable.insertRow(); tr.insertCell().textContent = name;
+          appendSafeHtml(tr.insertCell(), String(value ?? ""));
+        }
+        target.append(detailTable);
+      };
       try {
-        const data = JSON.parse(runtimeMode && widget.entityId ? String(displayedWidgetState(widget) || "[]") : widget.tableData || "[]");
-        let rows = Array.isArray(data) ? data : Array.isArray(data?.rows) ? data.rows : [];
-        if (widget.newEventFirst) rows = [...rows].reverse();
+        const source = runtimeMode && widget.entityId ? displayedWidgetState(widget) : widget.tableData;
+        let rows = tableRows(source);
+        if (runtimeMode && widget.eventEntityId && state.entityStates[widget.eventEntityId] !== undefined) updateTableEvent(cache, state.entityStates[widget.eventEntityId].state, widget.newEventFirst);
+        if (runtimeMode) rows = [...rows, ...cache.events];
         if (Number(widget.maxRows) > 0) rows = rows.slice(0, Math.trunc(Number(widget.maxRows)));
         tableWrap.style.overflow = widget.showScrollbar ? "auto" : "hidden";
         if (rows.length) {
-          let columns = [...new Set(rows.flatMap((row) => row && typeof row === "object" ? Object.keys(row) : []))];
-          if (Number(widget.maxColumns) > 0) columns = columns.slice(0, Math.trunc(Number(widget.maxColumns)));
+          const columns = tableColumns(widget, rows[0]);
           const table = document.createElement("table");
-          if (!widget.noHeader) { const head = table.createTHead().insertRow(); columns.forEach((column) => { const cell = document.createElement("th"); cell.textContent = column; head.append(cell); }); }
+          if (!widget.noHeader) { const head = table.createTHead().insertRow(); columns.forEach(column => { const cell = document.createElement("th"); cell.textContent = column.title; cell.style.width = column.width; head.append(cell); }); }
           const body = table.createTBody();
-          rows.forEach((row, index) => { const tr = body.insertRow(); columns.forEach((column) => { const cell = tr.insertCell(); cell.textContent = row?.[column] == null ? "" : String(row[column]); }); if (runtimeMode) { tr.tabIndex = 0; const select = event => { event.stopPropagation(); widget.selectedRow = index; for (const item of body.rows) item.classList.toggle("selected-row", item === tr); if (detail) detail.hidden = false; }; tr.addEventListener("click", select); tr.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); select(event); } }); } });
+          rows.forEach((row, index) => {
+            const tr = body.insertRow();
+            for (const name of String(row._class || "").split(/\s+/).filter(Boolean)) tr.classList.add(`tclass-tr-${name}`);
+            tr.classList.toggle("selected-row", cache.selectedIndex === index || cache.selectedIndex === null && String(row._class || "").split(/\s+/).includes("selected"));
+            columns.forEach(column => {
+              const cell = tr.insertCell(); cell.style.width = column.width;
+              const value = row[column.attribute];
+              if (!column.button) appendSafeHtml(cell, String(value ?? ""));
+              else {
+                const caption = typeof value === "string" ? value : value?.caption;
+                if (!caption) return;
+                const button = document.createElement("button"); button.type = "button"; button.textContent = caption;
+                button.disabled = !runtimeMode || !widget.ackEntityId;
+                button.addEventListener("click", event => { event.stopPropagation(); writeTarget(widget.ackEntityId, row._ack_id || JSON.stringify(row)); }); cell.append(button);
+              }
+            });
+            if (runtimeMode && (widget.detailWidget || widget.selectedEntityId)) {
+              tr.tabIndex = 0;
+              const select = event => { event.stopPropagation(); cache.selectedIndex = index; cache.selectedRow = row; for (const item of body.rows) item.classList.toggle("selected-row", item === tr); writeTarget(widget.selectedEntityId, JSON.stringify(row)); showDetail(row); };
+              tr.addEventListener("click", select); tr.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); select(event); } });
+            }
+          });
           tableWrap.append(table);
         } else tableWrap.textContent = "Keine Tabellendaten";
       } catch { tableWrap.textContent = "Ungültige JSON-Testdaten"; }
       content.append(tableWrap);
-      const detailTarget = activePage.widgets.find(item => item.id === widget.detailWidget && item.id !== widget.id);
-      const detail = detailTarget ? document.createElement("iframe") : null;
-      if (detail) { detail.title = "Tabellendetail"; detail.className = "widget-frame"; detail.hidden = true; const url = new URL(location.href); url.searchParams.set("mode", "runtime"); url.searchParams.set("project", state.projectId); url.searchParams.set("page", activePage.id); url.searchParams.set("onlyWidget", detailTarget.id); url.searchParams.set("embedded", "1"); detail.src = url.href; content.append(detail); }
+      if (runtimeMode && cache.selectedRow) queueMicrotask(() => showDetail(cache.selectedRow));
       if (widget.printText) { const button = document.createElement("button"); button.type = "button"; button.textContent = widget.printText; button.addEventListener("click", event => { event.stopPropagation(); if (widget.printPage) { const url = new URL(location.href); url.searchParams.set("page", widget.printPage); url.searchParams.set("mode", "runtime"); window.open(url.href, "_blank", "noopener,noreferrer"); } else window.print(); }); content.append(button); }
     } else if (widget.type === "fullscreen") {
       const button = document.createElement("button"); button.type = "button"; button.className = "fullscreen-button"; button.textContent = widget.buttonText || "Vollbild";
@@ -3625,6 +3671,7 @@ function field(descriptor, widget) {
   if (descriptor.refreshProperties && input.tagName === "TEXTAREA") input.addEventListener("change", renderProperties);
   if (descriptor.refreshProperties && ["number", "range"].includes(input.type)) input.addEventListener("change", renderProperties);
   if (widget.type === "value-list-html-style" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
+  if (widget.type === "table" && descriptor.key === "maxColumns") input.addEventListener("blur", renderProperties);
   if (descriptor.key === "preset") input.addEventListener("change", () => {
     if (PRESETS[input.value]) Object.assign(widget, PRESETS[input.value]);
     render();

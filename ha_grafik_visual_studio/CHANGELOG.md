@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.148
+
+- Table hides underscore metadata, supports explicit column titles, widths and attributes, and renders sanitized HTML cells.
+- Runtime event rows are deduplicated and replaced by `_id`; new-on-top applies to event rows instead of reversing the static table.
+- Row selection and acknowledgment write to compatible HA helpers. `_detail` displays in the configured detail widget. New tables start with CSS disabled and no print button caption.
+
 ## 0.1.147
 
 - New Bool Checkbox widgets start with all CSS groups disabled, empty HTML additions and autofocus disabled. Existing configurations remain unchanged.

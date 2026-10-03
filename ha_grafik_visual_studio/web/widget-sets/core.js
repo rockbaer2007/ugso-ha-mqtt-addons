@@ -101,7 +101,7 @@ const basicDataWidget = (type, label, icon, defaults, dataFields, hint = "Ohne E
   propertyGroups: [
     metadata(), visibility(),
     { label: "Daten", ...(hint ? { hint } : {}), fields: dataFields },
-    geometry(), ...cssGroups().map(group => ["value-list-html", "value-list-html-style", "bool-display"].includes(type) ? { ...group, defaultEnabled: false } : group),
+    geometry(), ...cssGroups().map(group => ["value-list-html", "value-list-html-style", "bool-display", "table"].includes(type) ? { ...group, defaultEnabled: false } : group),
   ],
 });
 const dateFormats = ["YYYY-MM-DD HH:mm:ss", "DD.MM.YYYY HH:mm:ss", "DD.MM.YYYY HH:mm", "YYYY-MM-DD", "HH:mm:ss"];
@@ -305,7 +305,7 @@ registerWidgetSet({
       { label: "HTML-Inhalt", key: "htmlContent", type: "textarea" }, { label: "URL beim Anklicken (optional)", key: "clickUrl" },
     ]),
     basicDataWidget("table", "Table", "▦", { title: "Tabelle", entityId: "", tableData: "[{\"Name\":\"Temperatur\",\"Wert\":21.5},{\"Name\":\"Luftfeuchte\",\"Wert\":48}]" }, [
-      { label: "Home-Assistant-Entity (JSON-Attribut, später)", key: "entityId" }, { label: "JSON-Testdaten", key: "tableData", type: "textarea" },
+      { label: "Table Object ID (HA-Entität)", key: "entityId" }, { label: "Static JSON (ohne ID)", key: "tableData", type: "textarea" },
     ]),
     basicDataWidget("fullscreen", "Full Screen", "⛶", { title: "Vollbild", buttonText: "Vollbild" }, [
       { label: "Schaltflächentext", key: "buttonText" },
@@ -368,7 +368,10 @@ registerWidgetSet({
     if (widget.type === "image-source") add(...htmlAdditions(), ...refreshFields());
     if (widget.type === "html") add({ label: "Updatezeit (ms)", key: "refreshInterval", type: "range", min: 0, max: 180000, step: 100, default: 0 });
     if (widget.type === "bulb") widget.propertyGroups.push({ label: "Extrasteuerung", masterKey: "extraControlEnabled", defaultEnabled: false, hint: "URLs sind nutzbar; Zielentitäten und Schreibwerte werden erst mit der HA-Schreibanbindung aktiv.", fields: [{ label: "URL bei true", key: "extraUrlTrue" }, { label: "URL bei false", key: "extraUrlFalse" }, { label: "Objekt ID bei true", key: "extraTrueEntityId", disabled: true }, { label: "Objekt ID bei false", key: "extraFalseEntityId", disabled: true }, { label: "Wert für ID bei false", key: "extraValueFalse", disabled: true }, { label: "Wert für ID bei true", key: "extraValueTrue", disabled: true }] });
-    if (widget.type === "table") add({ label: "Ereignis ID", key: "eventEntityId", disabled: true }, { label: "Neues Ereignis am Anfang", key: "newEventFirst", type: "checkbox", default: false }, { label: "Bestätigung ID", key: "ackEntityId", disabled: true }, { label: "Ausgewählt ID", key: "selectedEntityId", disabled: true }, { label: "Kein Header", key: "noHeader", type: "checkbox", default: false }, { label: "Zeige Scrollbar", key: "showScrollbar", type: "checkbox", default: false }, { label: "Detailed widget", key: "detailWidget", type: "widget" }, { label: "Maximale Zeilenanzahl", key: "maxRows", type: "number", min: 0 }, { label: "Kolumnanzahl", key: "maxColumns", type: "number", min: 0 }, { label: "btn_print", key: "printText", default: "Drucken" }, { label: "view_for_print", key: "printPage", type: "page" });
+    if (widget.type === "table") {
+      Object.assign(widget.defaults, { noHeader: false, showScrollbar: false, newEventFirst: false, printText: "" });
+      add({ label: "Ereignis ID", key: "eventEntityId" }, { label: "Neues Ereignis am Anfang", key: "newEventFirst", type: "checkbox", default: false }, { label: "Bestätigung ID (HA-Helfer)", key: "ackEntityId" }, { label: "Ausgewählt ID (input_text)", key: "selectedEntityId" }, { label: "Kein Header", key: "noHeader", type: "checkbox", default: false }, { label: "Zeige Scrollbar", key: "showScrollbar", type: "checkbox", default: false }, { label: "Detailed widget", key: "detailWidget", type: "widget" }, { label: "Maximale Zeilenanzahl", key: "maxRows", type: "number", min: 0 }, { label: "Kolumnanzahl", key: "maxColumns", type: "number", min: 0, max: 20, refreshProperties: true }, { label: "btn_print", key: "printText", default: "" }, { label: "view_for_print", key: "printPage", type: "page" });
+    }
     if (widget.type === "filter-dropdown") add({ label: "editor", key: "filterEntries", type: "filter-editor" }, { label: "Typ", key: "filterType", type: "select", options: ["horizontal", "vertical", "dropdown"], default: "horizontal" }, { label: "Mehrfachauswahl", key: "multiple", type: "checkbox", default: false }, { label: "Keine Option Kein Filter", key: "hideNoFilter", type: "checkbox", default: false }, { label: "Etikett Kein Filter", key: "noFilterLabel", default: "Kein Filter" }, { label: "Variante", key: "variant", type: "select", options: ["outlined", "contained", "text"], default: "outlined" });
     if (["button", "toggle", "checkbox", "bulb", "slider", "sensor", "string", "string-raw", "image-source", "time-value", "timestamp-value", "timestamp", "last-changed", "value-list-text", "value-list-html", "value-list-html-style", "bool-display", "bool-select", "bool-html-control", "table", "bar", "gauge", "image"].includes(widget.type)) {
       widget.propertyGroups.push(signalImages());
