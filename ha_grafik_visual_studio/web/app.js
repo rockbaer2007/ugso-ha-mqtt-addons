@@ -1199,7 +1199,7 @@ async function renderObjects() {
   if (!data.available) { const hint = document.createElement("p"); hint.className = "empty"; hint.textContent = data.error || `Der Ordner /config/www/studio ist nicht verfügbar. Bitte den Ordner erstellen und die Zugriffsrechte prüfen. Geprüfte Pfade: ${(data.checked || []).join(", ")}.`; browser.append(hint); return; }
   if (state.objectPath) {
     const up = document.createElement("button"); up.type = "button"; up.className = "object-folder object-folder-up";
-    const upIcon = document.createElement("img"); upIcon.src = "icons/arrow-up.svg"; upIcon.alt = "";
+    const upIcon = document.createElement("img"); upIcon.src = "icons/folder-up.svg"; upIcon.alt = "";
     const upName = document.createElement("span"); upName.textContent = "Übergeordneter Ordner"; up.append(upIcon, upName);
     up.addEventListener("click", () => openObjects(parts.slice(0, -1).join("/"))); browser.append(up);
   }

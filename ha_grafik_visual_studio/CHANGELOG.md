@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.134
+
+- Uses the supplied folder-up SVG for parent-folder navigation in the Files window.
+
 ## 0.1.133
 
 - Adds case-insensitive file search across all studio subfolders with image previews and relative paths. File-type filters, selection and image insertion also work with search results.
