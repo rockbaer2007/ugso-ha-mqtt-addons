@@ -15,7 +15,7 @@ const geometry = () => fields([
   { label: "X (px)", key: "x", type: "number", min: 0 },
   { label: "Y (px)", key: "y", type: "number", min: 0 },
 ]);
-const cssGroups = () => [
+export const cssGroups = () => [
   { label: "CSS Allgemein", css: true, fields: [
     { label: "position", key: "cssPosition", type: "select", options: ["", "absolute", "relative", "static", "fixed"] },
     { label: "display", key: "cssDisplay", type: "select", options: ["", "block", "inline", "inline-block", "flex", "grid", "none"] },

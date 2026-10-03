@@ -1,5 +1,6 @@
 import { registerWidgetSet } from "../widget-registry.js";
 import { MATH_ANCHORS } from "../linebox-math.js";
+import { cssGroups } from "./core.js";
 
 const anchorOptions = [
   ["left-top", "Links oben"], ["left-center", "Links Mitte"], ["left-bottom", "Links unten"],
@@ -154,6 +155,7 @@ registerWidgetSet({
       backgroundColor: "#12383b", borderColor: "#29c8b5", borderWidth: 2, borderStyle: "solid",
       mathMode: "expression", mathExpression: "A + B", lineboxDivisor: 1,
       mathIcon: "", mathIconSize: 24, mathIconColor: "#29c8b5", mathShowResult: true,
+      padding: 2, textAlign: "center",
       ...Object.fromEntries(MATH_ANCHORS.map(([id]) => [`mathRole_${id}`, "input"])),
     },
     propertyGroups: [{ label: "Berechnung", hint: "Berechnung bearbeiten öffnet die Formel und Rollen A–P. Mehrere Leitungen an einem Eingang werden zuerst summiert. Ungültige Werte stoppen die Ausgabe.", fields: [
@@ -167,6 +169,6 @@ registerWidgetSet({
       { label: "Rahmenfarbe", key: "borderColor", type: "color" },
       { label: "Ergebnistextfarbe", key: "textColor", type: "color" },
       { label: "Zusätzlicher CSS-Stil", key: "mathStyle", type: "textarea" },
-    ] }],
+    ] }, ...cssGroups()],
   }],
 });

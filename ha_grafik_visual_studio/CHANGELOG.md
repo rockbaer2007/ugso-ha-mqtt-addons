@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.140
+
+- Exposes all five shared CSS property groups for SVG LineBox Math, including general layout, font/text, background, borders and shadow/spacing.
+- Honors configured corner radius, padding, result font size and text alignment instead of overriding them in the Math renderer.
+
 ## 0.1.139
 
 - Allows independent SVG LineBox Math width and height from 32 px, including rectangular resizing and size-adaptive editor dock markers.

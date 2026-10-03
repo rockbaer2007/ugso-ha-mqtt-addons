@@ -2500,9 +2500,10 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(renderSvgConnection(widget, activePage.widgets, page.width, page.height, selected));
     } else if (widget.type === "linebox-math") {
       content.classList.add("linebox-math-content");
-      content.style.borderRadius = "0";
-      content.style.padding = "2px";
+      content.style.padding = `${widget.padding ?? 2}px`;
+      for (const key of ["paddingLeft", "paddingTop", "paddingRight", "paddingBottom"]) if (widget[key]) content.style[key] = widget[key];
       content.style.overflow = "hidden";
+      content.style.alignItems = ({ left: "flex-start", center: "center", right: "flex-end" }[widget.textAlign] || "center");
       applySafeStyle(content, widget.mathStyle);
       if (widget.mathIcon) {
         const icon = document.createElement("img"); icon.alt = ""; icon.className = "math-icon";
