@@ -1,5 +1,7 @@
 # Widget-Regeln für HA Grafik Visual Studio
 
+Ab Studio 0.1.193 unterstützt Schnittstelle 0.2 `render.kind: "landlord-notification"`. Der feste Host bietet ein Nachrichtenformular. `notificationService` muss eine konkrete `notify.*`-Aktion sein; `notify.send_message` benötigt `notifyEntityId`. Unspezifisches `notify.notify` und `notify.persistent_notification` sind ausgeschlossen. `messageType` beschreibt den eingerichteten Kanal; Anbieter und Empfänger gehören zur HA-Konfiguration. `messageSubject` und die Formularpriorität werden als Nachrichtentext mitgegeben. Die Runtime übergibt nach bewusstem Senden an `/api/landlord-notification`; der Editor sendet nicht. Entwürfe werden nur im Formular gehalten, nicht im Projekt/Export. Maximal 10.000 Nachrichtenzeichen und 200 Überschriftszeichen. HA-Annahme ist keine Zustellbestätigung. `noCard` entfernt den äußeren Kartenhintergrund.
+
 Stand: 01.10.2026. Dieses Dokument hält die vereinbarten Regeln und den ersten Widget-Paketvertrag fest. Die Tool-Schnittstelle und zusätzliche Widget-Fähigkeiten folgen später.
 
 ## Bereits vorhanden

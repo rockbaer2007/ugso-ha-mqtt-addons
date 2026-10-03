@@ -3,6 +3,7 @@ import { PALETTE_COLORS, allocatePaletteColors } from "./palette-colors.js";
 import { renderWeather } from "./weather-widget.js";
 import { renderHeatingRooms } from "./heating-rooms.js";
 import { renderWindowOverview } from "./window-overview.js";
+import { renderLandlordNotification } from "./landlord-notification.js";
 import { createMeteoredController } from "./meteored.js";
 const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
@@ -2731,7 +2732,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const retainedDashboards = new Map();
   for (const child of [...stage.children]) {
     if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8") || child.classList.contains("widget-iframe") || child.classList.contains("widget-iframe-8") || child.classList.contains("widget-image") || child.classList.contains("widget-image-8")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
-    else if (runtimeMode && child.classList.contains("meteored-host") && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
+    else if (runtimeMode && (child.classList.contains("meteored-host") || child.classList.contains("notification-host")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
     else child.remove();
   }
   cleanupEventCalendars();
@@ -3392,6 +3393,13 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       element.classList.add("meteored-host");
       if (widget.noCard) content.style.background = "transparent";
       meteored.render(content, widget, document, runtimeMode, uiText, getWidgetDefinition(widget.type).render.valueKey);
+    } else if (getWidgetDefinition(widget.type).render?.kind === "landlord-notification") {
+      element.classList.add("notification-host"); element.dataset.dashboardSurface = dashboardSurfaceKey;
+      if (widget.noCard) content.style.background = "transparent";
+      renderLandlordNotification(content, widget, document, runtimeMode, document.documentElement.lang || "de", async payload => {
+        const response = await fetch("api/landlord-notification", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (!response.ok || (await response.json()).accepted !== true) throw new Error("Notification failed");
+      });
     } else if (getWidgetDefinition(widget.type).render?.kind === "window-overview") {
       if (widget.noCard) content.style.background = "transparent";
       content.append(renderWindowOverview(widget, document, state.entityStates, document.documentElement.lang || "de", getWidgetDefinition(widget.type).render.valueKey));

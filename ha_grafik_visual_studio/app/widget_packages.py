@@ -76,7 +76,7 @@ def validate_manifest(manifest):
         if not _short_text(widget["label"]) or not isinstance(widget["defaults"], dict):
             raise ValueError("Widget-Name oder Standardwerte sind ungültig.")
         render = widget["render"]
-        if not isinstance(render, dict) or set(render) != {"kind", "valueKey"} or render["kind"] not in ({"text", "chart", "room-table", "meteored", "window-overview"} if manifest["apiVersion"] == "0.2" else {"text"}):
+        if not isinstance(render, dict) or set(render) != {"kind", "valueKey"} or render["kind"] not in ({"text", "chart", "room-table", "meteored", "window-overview", "landlord-notification"} if manifest["apiVersion"] == "0.2" else {"text"}):
             raise ValueError("Nur deklarative Text-Darstellung ist in 0.1 unterstützt; Diagramme benötigen Schnittstelle 0.2.")
         value_key = render["valueKey"]
         if not isinstance(value_key, str) or not KEY.fullmatch(value_key):

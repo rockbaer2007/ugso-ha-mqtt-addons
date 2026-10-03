@@ -1,5 +1,7 @@
 # HA Grafik Visual Studio
 
+Ab 0.1.193 ergänzt **Wetter und Heizung 1.6.0** **Meinen Vermieter informieren**: Formular mit Information/Wichtig/Dringend, Nachrichtentyp und expliziter HA-Benachrichtigungsaktion. `notify.send_message` benötigt eine ausgewählte `notify.*`-Entität; alternativ ist eine benannte `notify.*`-Aktion möglich. Empfänger und Anbieter werden in HA eingerichtet. Versand erfolgt nur durch **Senden** in der Runtime; Priorität und Überschrift werden als Nachrichtentext mitgegeben. Die Annahme durch HA bestätigt keine Zustellung. Entwürfe bleiben im Formular, nicht im Projekt oder Export. Die sechs bisherigen Widgets bleiben unverändert.
+
 Ab 0.1.192 ergänzt **Wetter und Heizung 1.5.0** die **Fensterstatus-Übersicht**: JSON-Raumliste aus HA-Zustand oder Attribut, optionale Anzahl offener Räume, sieben Farbeinstellungen und **Ohne Karte**. Die Liste verwendet `room`, `sinceText`, `changed` und `isOpen`; ohne Bindung gibt es eine bearbeitbare Vorschau. Fehlende Live-Werte bleiben unbekannt. Die fünf bisherigen Widgets bleiben unverändert.
 
 Ab 0.1.191 ergänzt **Wetter und Heizung 1.4.0** das **METEORED-Wetter-Widget** mit Widget-ID, **Ohne Karte** und standardmäßig aktiviertem stündlichem Neuladen. Die Runtime lädt den offiziellen Meteored-Loader in einem separaten Frame mit `sandbox="allow-scripts"`; im Editor erscheint eine Konfigurationsvorschau. Eine gültige Widget-ID und die passende Domain-Freigabe bei Meteored sind erforderlich. Die vier bisherigen Paket-Widgets bleiben unverändert.

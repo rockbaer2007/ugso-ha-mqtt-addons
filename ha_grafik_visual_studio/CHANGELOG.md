@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.193
+
+- Add Inform My Landlord to optional Weather and Heating package 1.6.0 with message type, explicit HA notify action/entity, message heading, priority and runtime message form.
+- Submit only on deliberate runtime send; preserve drafts across state redraws, reject empty messages and duplicate pending submissions, and distinguish HA acceptance from delivery.
+- Keep message drafts out of project exports and logs; preserve all six existing package widgets and provide no-card display.
+
 ## 0.1.192
 
 - Add Window Status Overview to optional Weather and Heating package 1.5.0 with JSON room list and optional open-room count state/attribute bindings.

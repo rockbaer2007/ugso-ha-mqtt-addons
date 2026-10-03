@@ -17,6 +17,7 @@ from widget_packages import MAX_ZIP_BYTES, list_packages, read_package_zip, vali
 from tool_packages import list_tool_packages, read_tool_package_zip
 from color_favorites import favorites, is_admin
 from meteored import meteored_document
+from landlord_notification import notification_command
 
 LOG = logging.getLogger("ha-grafik-visual-studio")
 PORT = int(os.environ.get("HA_GRAFIK_INGRESS_PORT", "8098"))
@@ -357,7 +358,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.192"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.193"})
             return
         if path == "/meteored-frame":
             try:
@@ -466,6 +467,24 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urlparse(self.path)
+        if parsed.path == "/api/landlord-notification":
+            if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
+                self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "JSON-Anfrage erforderlich."})
+                return
+            request = self.read_request_json()
+            if request is None:
+                return
+            try:
+                command = notification_command(request)
+                home_assistant_commands([command])
+            except ValueError as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+                return
+            except HomeAssistantAPIError:
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "Home Assistant hat die Nachricht nicht bestätigt."})
+                return
+            self.send_json(HTTPStatus.OK, {"accepted": True})
+            return
         if parsed.path == "/api/color-favorites":
             if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
                 self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "JSON-Anfrage erforderlich."})
