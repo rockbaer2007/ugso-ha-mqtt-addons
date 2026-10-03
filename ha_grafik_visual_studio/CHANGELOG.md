@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.186
+
+- Add an independent Gauges palette set with Color, Water, Battery, Arc, Compass, Linear, Radial, Rings, Tank and Thermometer instruments inspired by ioBroker.vis-2-widgets-gauges.
+- Support read-only Home Assistant states, previews, numeric ranges, threshold colors, scales, targets, battery charging, compass speed, up to eight separately bound rings and optional liquid waves respecting reduced motion.
+- Preserve instrument settings in existing JSON project and widget exports; no ioBroker installation or external rendering library is required.
+
 ## 0.1.185
 
 - Make palette selection boxes flatter: 34 px minimum height instead of 42 px, with 32 x 26 px previews and proportionally smaller icons.

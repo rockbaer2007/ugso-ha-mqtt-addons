@@ -28,6 +28,7 @@ import { renderValueList } from "./interactive-value-list.js";
 import { renderStyledSwitch, SWITCH_STYLE_GROUPS } from "./styled-switch.js";
 import { renderRadialSlider, updateRadialSlider, RADIAL_STYLE_GROUPS } from "./radial-slider.js";
 import { renderDropdown } from "./dropdown.js";
+import { isGauge, renderGauge, gaugeEntityIds } from "./gauges.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
@@ -48,6 +49,7 @@ import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
 import "./widget-sets/dataflow.js";
+import { gaugeEntryGroups } from "./widget-sets/gauges.js";
 import { CONVERSIONS, convertPacket, widgetInputPacket } from "./dataflow.js";
 
 const PRESETS = {
@@ -182,6 +184,7 @@ function widgetPropertyGroups(widget) {
   let styleEntryGroups = [];
   if (widget.type === "interactive-table") styleEntryGroups = tableEntryGroups(widget);
   if (widget.type === "dropdown") styleEntryGroups = dropdownEntryGroups(widget);
+  if (isGauge(widget)) styleEntryGroups = gaugeEntryGroups(widget);
   if (widget.type === "event-calendar") styleEntryGroups = [
     ...Array.from({ length: Math.min(20, Math.max(0, Math.trunc(Number(widget.countCalendarSources) || 0))) }, (_, i) => ({ id: `event-source-${i}`, label: `Kalender [${i}]`, defaultEnabled: true, fields: [{ label: "Home-Assistant-Entität", key: `calendar${i}EntityId` }, { label: "Quellfarbe", key: `calendar${i}Color`, type: "color", optionalColor: true }, { label: "Legendentext", key: `calendar${i}Label` }] })),
     ...Array.from({ length: Math.min(20, Math.max(0, Math.trunc(Number(widget.countEventColorRules) || 0))) }, (_, i) => ({ id: `event-rule-${i}`, label: `Farbregel [${i}]`, defaultEnabled: true, fields: [{ label: "Titel enthält", key: `eventRule${i}Title` }, { label: "Terminfarbe", key: `eventRule${i}Color`, type: "color" }] })),
@@ -617,6 +620,7 @@ async function fetchEntityStates(ids) {
 
 function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
+    ...gaugeEntityIds(widget),
     widget.type === "dropdown" ? widget.bgEntityId : "",
     !["dock", "preview"].includes(widget.numericSource) ? widget.entityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
@@ -654,6 +658,7 @@ async function refreshEditorLiveStates() {
 
 function runtimeLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
+    ...gaugeEntityIds(widget),
     widget.type === "dropdown" ? widget.bgEntityId : "",
     widget.entityId, widget.visibilityEnabled ? widget.visibilityEntityId : "",
     ...(widget.type === "event-calendar" ? eventSources(widget).map(source => source.entityId) : []),
@@ -2779,6 +2784,8 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (isSeparator(widget)) {
       content.style.border = "0"; content.style.padding = "0"; content.style.background = "transparent";
       content.append(renderSeparator(widget, document));
+    } else if (isGauge(widget)) {
+      content.append(renderGauge(widget, document, { states: state.entityStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
     } else if (widget.type === "value-converter") {
       content.classList.add("value-converter-content");
       const input = widgetInputPacket(widget, activePage.widgets, state.entityStates, new Set([`data:${widget.id}`]));
@@ -4119,6 +4126,7 @@ function field(descriptor, widget) {
     if (widget.type === "linebox" && descriptor.key?.startsWith("dock_") && input.type === "checkbox" && !input.checked) widget[`lineboxRole_${descriptor.key.slice(5)}`] = "none";
     if (descriptor.key === "testIndex" && widget.type === "value-list-text") widget.state = input.value;
     void updatePreview();
+    if (isGauge(widget) && (descriptor.key === "entityId" || /EntityId\d*$/.test(descriptor.key))) void refreshEditorLiveStates();
     if (widget.type === "string" && descriptor.key === "icon") { const size = $("#properties [data-string-icon-size]"); if (size) size.hidden = !input.value; }
     renderStage();
     if (descriptor.refreshProperties && input.tagName !== "TEXTAREA" && !["number", "range"].includes(input.type)) renderProperties();
@@ -4135,6 +4143,7 @@ function field(descriptor, widget) {
   if (widget.type === "value-list-html-style" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
   if (widget.type === "image-8" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
   if (widget.type === "table" && descriptor.key === "maxColumns") input.addEventListener("blur", renderProperties);
+  if (isGauge(widget) && ["ringCount", "levelCount"].includes(descriptor.key)) input.addEventListener("blur", renderProperties);
   if (descriptor.key === "preset") input.addEventListener("change", () => {
     if (PRESETS[input.value]) Object.assign(widget, PRESETS[input.value]);
     render();

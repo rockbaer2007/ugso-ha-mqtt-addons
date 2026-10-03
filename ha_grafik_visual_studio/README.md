@@ -1,5 +1,7 @@
 # HA Grafik Visual Studio
 
+Ab 0.1.186 enthält **HA Grafik – Gauges** zehn eigenständige SVG-Instrumente: Farbmesser, Wasserstand, Batterie, Bogenmesser, Kompass, Linearmesser, Rundinstrument, Ringe, Tank und Thermometer. Funktionsreferenz: [ioBroker.vis-2-widgets-gauges](https://github.com/ioBroker/ioBroker.vis-2-widgets-gauges/tree/main/src-widgets/src). Die Instrumente lesen HA-Zustände, verwenden ohne Entität Vorschauwerte und speichern ihre Bereiche, Farbstufen, Darstellungsoptionen und zusätzlichen Entitätsbindungen im Projekt-/Widget-JSON. Sie benötigen keine ioBroker-Installation. Die ursprünglichen Basis-Widgets bleiben erhalten.
+
 > **Status: Experimentell.** Das Projekt befindet sich in einer frühen Entwicklungsphase. Funktionen, Projektformat und Bedienung können sich ändern; noch nicht für produktive Dashboards einplanen.
 
 Regeln und Entwürfe für spätere Erweiterungen stehen in [docs/widget-rules.md](docs/widget-rules.md) und [docs/tool-rules.md](docs/tool-rules.md).

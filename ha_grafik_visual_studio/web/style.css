@@ -387,6 +387,16 @@ html.embedded-loading body { visibility: hidden; background: transparent; }
 .widget-group summary { padding: 6px 8px; cursor: pointer; background: #292f31; font-weight: 600; }
 .widget-list { display: grid; gap: 4px; padding: 5px; }
 .widget-choice { display: flex; min-width: 0; min-height: 34px; align-items: center; justify-content: space-between; gap: 8px; padding: 3px 5px 3px 9px; text-align: left; }
+.gauge-instrument { display: flex; flex-direction: column; width: 100%; height: 100%; min-height: 0; align-items: center; overflow: hidden; }
+.gauge-instrument > svg { display: block; width: 100%; flex: 1 1 0; min-height: 0; }
+.gauge-instrument-label { max-width: 100%; flex: 0 0 auto; font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.gauge-ring-reading { max-width: 100%; flex: 0 0 auto; font-size: 11px; line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.gauge-legend-side { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .7fr); align-content: center; }
+.gauge-legend-side > svg { grid-column: 1; grid-row: 1 / span 8; height: 100%; }
+.gauge-legend-side > .gauge-ring-reading { grid-column: 2; }
+@keyframes gauge-wave { from { transform: translateX(0); } to { transform: translateX(-120px); } }
+.gauge-wave { animation: gauge-wave 3s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .gauge-wave { animation: none; } }
 .widget-choice:hover { border-color: var(--accent); }
 .widget-group.is-tinted .widget-choice { background: var(--palette-set-background); color: #fff; }
 .widget-group.is-tinted .widget-choice:hover { background: color-mix(in srgb, var(--palette-set-background), white 10%); }

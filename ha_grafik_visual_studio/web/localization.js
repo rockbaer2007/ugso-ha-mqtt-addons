@@ -2,6 +2,8 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "HA Grafik – Gauges": "HA Grafik – Gauges", "Farbmesser": "Color gauge", "Wasserstand": "Water gauge", "Batterie": "Battery", "Bogenmesser": "Arc gauge", "Kompass": "Compass", "Linearmesser": "Linear gauge", "Rundinstrument": "Radial gauge", "Ringe": "Rings", "Thermometer": "Thermometer", "Messinstrument": "Gauge", "Instrument": "Instrument", "CSS Messinstrument": "CSS Gauge",
+  "Anzahl Farbstufen": "Color level count", "Aktive Farbe": "Active color", "Skalenfarbe": "Scale color", "Zeigerfarbe": "Needle color", "Enden abrunden": "Round ends", "Bogenwinkel (°)": "Sweep angle (°)", "Wellen animieren": "Animate waves", "Wellenhöhe": "Wave amplitude", "Wellendauer (s)": "Wave duration (s)", "Batteriezellen": "Battery cells", "Ladezustand-Entität": "Charging entity", "Ladevorschau": "Charging preview", "Ladesymbolfarbe": "Charging symbol color", "Segmente": "Segments", "Segmentabstand (°)": "Segment gap (°)", "Von Null aus füllen": "Fill from zero", "Zielwert-Entität": "Target entity", "Zielwert (Vorschau)": "Target preview", "Zielmarkierung anzeigen": "Show target", "Zielfarbe": "Target color", "Nordversatz (°)": "North offset (°)", "Richtung umkehren": "Invert direction", "Skala mitdrehen": "Rotate dial", "Zwischenrichtungen anzeigen": "Show intercardinal directions", "Kompasswert": "Compass reading", "Grad und Richtung": "Degrees and direction", "Grad": "Degrees", "Geschwindigkeits-Entität": "Speed entity", "Geschwindigkeit (Vorschau)": "Speed preview", "Geschwindigkeitseinheit": "Speed unit", "Hauptintervalle": "Major intervals", "Unterteilungen": "Minor divisions", "Zeigertyp": "Needle type", "Instrumentenrahmen": "Bezel", "Dünn": "Thin", "Metall": "Metal", "Anzahl Ringe": "Ring count", "Seitlich": "Side", "Ringabstand (px)": "Ring gap (px)", "Tankform": "Tank shape", "Zylinder": "Cylinder", "Liegender Tank": "Horizontal tank", "Prozentwert anzeigen": "Show percentage", "Skalenseite": "Scale side", "Beide": "Both", "Ringfarbe": "Ring color", "Bis Wert": "Up to value",
   "Snapfunktion aktivieren": "Enable snapping",
   "Schriftgröße (px)": "Font size (px)", "Rahmenradius (px)": "Border radius (px)", "Vergleichswert": "Comparison value", "Gleich": "Equal", "Ungleich": "Not equal", "Größer": "Greater", "Kleiner": "Lower", "Größer gleich": "Greater or equal", "Kleiner gleich": "Lower or equal",
   "CSS Dropdown": "CSS Dropdown", "Eigene Optionen": "Custom options", "Eigene Optionen verwenden": "Use custom options", "Anzahl Optionen": "Option count", "Text anzeigen": "Show text", "Hintergrundfarb-Bedingungen": "Background color conditions", "Hintergrund-Entität (optional)": "Background entity (optional)", "Hervorhebungsfarbe": "Highlight color", "Titel Schriftgröße (px)": "Title font size (px)", "Hintergrundbedingung auf Titel anwenden": "Apply conditional background to title", "Titel Abstand oben": "Title padding top", "Titel Abstand unten": "Title padding bottom", "Titel Abstand links": "Title padding left", "Titel Abstand rechts": "Title padding right", "Option": "Option", "Hintergrundbedingung": "Background condition",
@@ -579,6 +581,10 @@ function translate(source) {
   if (!translated) {
     const item = trimmed.match(/^(Wert|HTML Wert|Stil für|Bild|frames|Tab|Kalender|Farbregel|Spalte|Standardsortierung|Zeilenbedingung|Option|Hintergrundbedingung) \[(\d+)\]$/);
     if (item) translated = `${ENGLISH[item[1]] || item[1]} [${item[2]}]`;
+  }
+  if (!translated) {
+    const gauge = trimmed.match(/^(Ring|Farbstufe) (\d+)$/);
+    if (gauge) translated = `${gauge[1] === "Farbstufe" ? "Color level" : "Ring"} ${gauge[2]}`;
   }
   if (!translated) {
     const selection = trimmed.match(/^(\d+) Widgets ausgewählt$/);
