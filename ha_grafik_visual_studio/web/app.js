@@ -17,6 +17,7 @@ import { mediaRefreshUrl, iframeOptions, iframeCount, iframeIndex } from "./ifra
 import { imageOptions, imageCount, imageIndex } from "./image-widget.js";
 import { borderAppearance, borderTitleFragment } from "./border-widget.js";
 import { noteValue, noteWritable } from "./note-widget.js";
+import { isSeparator, snapSeparator, renderSeparator } from "./separator-line.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
@@ -2680,6 +2681,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
         const hasExplicitZIndex = widget.cssZIndex !== undefined && widget.cssZIndex !== "";
         const requestedZIndex = hasExplicitZIndex ? Number(widget.cssZIndex) || 0 : Math.max(0, Number(widget.layer) || 0);
         if (runtimeMode) return String(hasExplicitZIndex ? widget.cssZIndex : requestedZIndex + 2);
+        if (isSeparator(widget) && selected) return "200000";
         if (isConnection && selected) return "200000";
         if (isConnection) return String(Math.min(9999, Math.max(0, hasExplicitZIndex ? requestedZIndex : connectionZIndex(widget, activePage.widgets))) + 2);
         return String(10002 + Math.max(0, requestedZIndex));
@@ -2714,6 +2716,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (isConnection) {
       content.style.background = "none"; content.style.border = "0"; content.style.padding = "0"; content.style.overflow = "visible";
       content.append(renderSvgConnection(widget, activePage.widgets, page.width, page.height, selected));
+    } else if (isSeparator(widget)) {
+      content.style.border = "0"; content.style.padding = "0"; content.style.background = "transparent";
+      content.append(renderSeparator(widget, document));
     } else if (widget.type === "value-converter") {
       content.classList.add("value-converter-content");
       const input = widgetInputPacket(widget, activePage.widgets, state.entityStates, new Set([`data:${widget.id}`]));
@@ -3495,6 +3500,7 @@ function makeDraggable(element, widget) {
         continue;
       }
       member.x = position.x; member.y = position.y;
+      if (origin.members.length === 1 && isSeparator(member)) Object.assign(member, snapSeparator(member, currentPage().widgets));
       const target = document.getElementById(member.id);
       if (target) { target.style.left = `${member.x}px`; target.style.top = `${member.y}px`; }
     }
@@ -3545,6 +3551,10 @@ function makeResizable(element, handle, widget) {
       Object.assign(widget, dashboardSize(widget));
       if (direction.includes("n")) widget.y = Math.max(0, origin.top + origin.height - widget.height);
       if (direction.includes("w")) widget.x = Math.max(0, origin.left + origin.width - widget.width);
+    }
+    if (isSeparator(widget)) {
+      Object.assign(widget, snapSeparator(widget, currentPage().widgets, direction));
+      element.querySelector(".widget-content").replaceChildren(renderSeparator(widget, document));
     }
     element.style.left = `${widget.x}px`; element.style.top = `${widget.y}px`;
     element.style.width = `${widget.width}px`; element.style.height = `${widget.height}px`;
@@ -3993,6 +4003,12 @@ function field(descriptor, widget) {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
     if (descriptor.key === "count" && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    if (isSeparator(widget) && descriptor.key === "separatorThickness") {
+      widget.separatorThickness = Math.min(100, Math.max(1, Number(widget.separatorThickness) || 2));
+      const size = widget.type === "horizontal-line" ? "height" : "width";
+      widget[size] = Math.max(Number(widget[size]) || 16, widget.separatorThickness);
+    }
+    if (isSeparator(widget) && ["x", "y", "width", "height", "separatorSnap"].includes(descriptor.key)) Object.assign(widget, snapSeparator(widget, currentPage().widgets));
     if (widget.type === "dashboard-in-widget" && ["width", "height"].includes(descriptor.key)) { Object.assign(widget, dashboardSize(widget)); input.value = String(widget[descriptor.key]); }
     if (widget.type === "value-list-html-style" && descriptor.key === "count" && widget.testIndex !== "" && Number(widget.testIndex) > styledListCount(widget)) widget.testIndex = "";
     if ((["sensor", "slider", "input-value", "string", "note", "view-in-widget-8", "iframe-8", "image-8", "universal-button"].includes(widget.type) && descriptor.key === "entityId") || descriptor.universalEntity ||
@@ -4139,7 +4155,7 @@ function renderProperties() {
     const required = group.required || (group.css && group.label === "CSS Allgemein");
     if (required) { enabled.checked = true; enabled.disabled = true; }
     enabled.title = group.masterKey ? `${group.label} vollständig aktivieren oder deaktivieren` : "Optionen dieser Gruppe im gespeicherten Projekt übernehmen";
-    if (required) enabled.title = uiText("CSS Allgemein bleibt aktiv, damit Position und Größe gespeichert werden.");
+    if (required) enabled.title = uiText(group.label === "CSS Trennlinie" ? "CSS Trennlinie bleibt aktiv, damit die Liniengestaltung gespeichert wird." : "CSS Allgemein bleibt aktiv, damit Position und Größe gespeichert werden.");
     enabled.addEventListener("click", (event) => event.stopPropagation());
     enabled.addEventListener("change", (event) => {
       event.stopPropagation();

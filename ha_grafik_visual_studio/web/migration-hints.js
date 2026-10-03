@@ -1,4 +1,5 @@
 export function migrationHint(widget, key) {
+  if (["horizontal-line", "vertical-line"].includes(widget.type) && key === "separatorSnap") return "Einrasten verbindet rechtwinklige Trennlinien innerhalb von 8 Seitenpixeln, auch als T-Verbindung. Kein HA-Helfer nötig. Bei CSS-Transformationen oder Positionsüberschreibungen ist Einrasten deaktiviert.";
   if (widget.type === "note" && key === "entityId") return "Zum Bearbeiten wird ein input_text-Helfer benötigt. Sensoren und HA-Attribute werden nur gelesen. Der Notizdialog schreibt ausschließlich den Notiztext, ohne Voranstellen und Anhängen.";
   if (widget.type === "note" && key === "entityAttribute") return migrationHint({ type: "string" }, key);
   if (widget.type === "note" && key === "state") return "Testtext gilt nur im Editor. Wie im VIS2-Note-Widget werden Text und HTML-Felder als Text angezeigt; die Runtime verwendet den Entitätswert.";

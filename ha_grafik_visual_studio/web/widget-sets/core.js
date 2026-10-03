@@ -15,6 +15,17 @@ const geometry = () => fields([
   { label: "X (px)", key: "x", type: "number", min: 0 },
   { label: "Y (px)", key: "y", type: "number", min: 0 },
 ]);
+const separator = (type, label, icon) => ({ type, label, icon,
+  defaults: { width: type === "horizontal-line" ? 200 : 16, height: type === "vertical-line" ? 200 : 16, separatorThickness: 2, separatorColor: "#888888", separatorBorderColor: "#222222", separatorBorderWidth: 0, separatorEnds: "square", separatorSnap: true, borderWidth: 0, padding: 0, radius: 0, backgroundColor: "transparent" },
+  propertyGroups: [metadata(), visibility(), geometry(), { label: "CSS Trennlinie", css: true, defaultEnabled: true, required: true, fields: [
+    { label: "Dicke (px)", key: "separatorThickness", type: "number", min: 1, max: 100 },
+    { label: "Farbe", key: "separatorColor", type: "color" },
+    { label: "Rahmenfarbe", key: "separatorBorderColor", type: "color" },
+    { label: "Rahmenbreite (px)", key: "separatorBorderWidth", type: "number", min: 0, max: 20 },
+    { label: "Enden", key: "separatorEnds", type: "select", options: [{ value: "square", label: "Eckig" }, { value: "round", label: "Rund" }, { value: "pointed", label: "Spitz (pfeilartig)" }] },
+    { label: "Einrasten", key: "separatorSnap", type: "checkbox" },
+  ] }, ...cssGroups().filter(group => group.label === "CSS Allgemein")],
+});
 export const cssGroups = () => [
   { label: "CSS Allgemein", css: true, fields: [
     { label: "position", key: "cssPosition", type: "select", options: ["", "absolute", "relative", "static", "fixed"] },
@@ -325,6 +336,8 @@ registerWidgetSet({
     ], "HTML-Beschriftung zum Wechseln einer Projektseite; Navigation erfolgt nur in der Runtime."),
     basicDataWidget("filter-dropdown", "filter - dropdown", "▽", { filterEntries: [], filterType: "horizontal", variant: "outlined", dropdownVariant: "standard", dropdownSmall: false, multiple: false, hideNoFilter: false, noFilterLabel: "", width: 200, height: 50 }, [
     ], "Ordne Widgets über „Filterwort“ in Generell einer Filteroption zu."),
+    separator("horizontal-line", "Horizontal line", "━"),
+    separator("vertical-line", "Vertical line", "┃"),
     { type: "text", label: "Text", icon: "T", defaults: { title: "Text", textContent: "Eigener Text", backgroundColor: "", borderWidth: 0, borderStyle: "none" }, propertyGroups: [
       metadata(), visibility(),
       { label: "Text", fields: [

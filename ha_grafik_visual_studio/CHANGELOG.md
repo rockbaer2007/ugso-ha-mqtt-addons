@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.172
+
+- Add Horizontal line and Vertical line separator widgets with CSS thickness, HEX fill/border colors, border width and square, round or pointed ends.
+- Snap perpendicular endpoints and T junctions within 8 page pixels when moving, resizing or editing geometry. Store the resulting coordinates in normal project/widget exports.
+- Keep CSS General required and document both widgets and snapping limits in German and English.
+
 ## 0.1.171
 
 - Remove the planned HTML Logout adaptation from the VIS widget special cases. The existing catalog remains at 52 widgets.

@@ -2,6 +2,9 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "CSS Trennlinie bleibt aktiv, damit die Liniengestaltung gespeichert wird.": "CSS separator stays enabled to save line styling.",
+  "CSS Trennlinie": "CSS separator", "Dicke (px)": "Thickness (px)", "Enden": "Ends", "Spitz (pfeilartig)": "Pointed (arrow-like)", "Einrasten": "Snap",
+  "Einrasten verbindet rechtwinklige Trennlinien innerhalb von 8 Seitenpixeln, auch als T-Verbindung. Kein HA-Helfer nötig. Bei CSS-Transformationen oder Positionsüberschreibungen ist Einrasten deaktiviert.": "Snap connects perpendicular separators within 8 page pixels, including T junctions. No HA helper is needed. CSS transforms or position overrides disable snapping.",
   "Notiz öffnen": "Open note", "Notiztext": "Note text", "Leeren": "Clear",
   "Zum Bearbeiten wird ein verfügbarer input_text-Helfer ohne Attributauswahl benötigt.": "Editing requires an available input_text helper without an attribute selection.",
   "Notiz konnte nicht gespeichert werden.": "The note could not be saved.",
