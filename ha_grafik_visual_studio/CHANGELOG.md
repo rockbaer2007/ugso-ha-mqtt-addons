@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.190
+
+- Add Heating Rooms Overview to optional Weather and Heating package 1.3.0, preserving all three existing widget definitions.
+- Display a read-only HTML room table from an HA state or attribute, with unbound preview, headline color and no-card option.
+- Extend declarative API 0.2 with the host-rendered room-table kind; rebuild passive table elements and selected styles without scripts, handlers or external resources.
+
 ## 0.1.189
 
 - Add Weather Widget to optional Weather and Heating package 1.2.0: daily/hourly HA forecasts, JSON state/attribute sources and up to 24 individually bound samples.

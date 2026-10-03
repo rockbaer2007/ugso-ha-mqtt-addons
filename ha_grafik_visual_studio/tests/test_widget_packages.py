@@ -83,6 +83,15 @@ class WidgetPackageTests(unittest.TestCase):
     def test_valid_declarative_widget(self):
         self.assertEqual(read_package_zip(package_bytes(manifest()))["widgets"][0]["type"], "demo.widgets/label")
 
+    def test_room_table_requires_api_02_and_rejects_executable_code(self):
+        data = manifest(); data["widgets"][0]["render"]["kind"] = "room-table"
+        with self.assertRaises(ValueError):
+            read_package_zip(package_bytes(data))
+        data["apiVersion"] = "0.2"
+        self.assertEqual(read_package_zip(package_bytes(data))["widgets"][0]["render"]["kind"], "room-table")
+        with self.assertRaises(ValueError):
+            read_package_zip(package_bytes(data, "renderer.js"))
+
     def test_package_accepts_multiple_widgets(self):
         data = manifest()
         second = json.loads(json.dumps(data["widgets"][0]))
