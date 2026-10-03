@@ -18,6 +18,8 @@ import { imageOptions, imageCount, imageIndex } from "./image-widget.js";
 import { borderAppearance, borderTitleFragment } from "./border-widget.js";
 import { noteValue, noteWritable } from "./note-widget.js";
 import { isSeparator, snapSeparator, renderSeparator } from "./separator-line.js";
+import { renderCalendar, CALENDAR_STYLES } from "./calendar-widget.js";
+const calendarViews = new Map();
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
@@ -1583,6 +1585,10 @@ function cloneWidgetForInsert(source, page, idMap) {
   if (copy.editorGroupId) { if (idMap.has(copy.editorGroupId)) copy.editorGroupId = idMap.get(copy.editorGroupId); else delete copy.editorGroupId; }
   copy.id = idMap.get(oldId) || `widget-${state.nextId++}`;
   remapUniversalReferences(copy, idMap);
+  if (copy.type === "calendar") for (const [prefix] of CALENDAR_STYLES) {
+    const key = `${prefix}FromWidget`;
+    if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
+  }
   reidentifyTabWidgets(copy, () => `widget-${state.nextId++}`, () => `group-${createRandomId()}`);
   copy.name = uniqueWidgetName(page, `${widgetDisplayName(source)} Kopie`);
   for (const key of ["startWidgetId", "endWidgetId", "flowParentId"]) if (copy[key]) copy[key] = idMap.get(copy[key]) || "";
@@ -2758,6 +2764,13 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (widget.type === "universal-button") {
       renderUniversalElement(widget, content, runtimeMode);
       if (runtimeMode && widget.clickThrough) element.style.pointerEvents = "none";
+    } else if (widget.type === "calendar") {
+      content.style.display = "block"; content.style.overflow = "visible";
+      const key = `${state.projectId}:${dashboardSurfaceKey}:${widget.id}`;
+      if (!calendarViews.has(key)) calendarViews.set(key, {});
+      const entry = state.entityStates[widget.entityId];
+      const value = widget.entityId ? entry?.state : runtimeMode ? "" : widget.state;
+      content.append(renderCalendar(widget, document, { runtime: runtimeMode, value: !runtimeMode && String(widget.state ?? "") !== "" ? widget.state : value, entry, widgets: allProjectWidgets(state.project), view: calendarViews.get(key), language: getLanguagePreference() === "auto" ? navigator.language : getLanguagePreference(), text: uiText, refresh: () => renderStage(), write: next => writeRuntimeHelperValue(widget.entityId, next) }));
     } else if (widget.type === "text") {
       content.textContent = widget.textContent ?? widget.state ?? "";
       content.style.whiteSpace = widget.whiteSpace || "pre-wrap";

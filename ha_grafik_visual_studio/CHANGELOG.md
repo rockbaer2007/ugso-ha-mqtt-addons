@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.173
+
+- Add Calendar under Interactive: ISO dates or millisecond timestamps, read-only mode, today highlighting, past/future restrictions, month/year navigation, Monday/Sunday and ISO/simple week numbers.
+- Provide six neutral CSS Calendar groups with HEX colors, selected-day shadows and per-group inheritance from another calendar. Keep CSS General required.
+- Write only to available matching input_text/input_number helpers; editor previews never write and unbound runtime selections stay local. Add optional migration hints and bilingual illustrated documentation.
+
 ## 0.1.172
 
 - Add Horizontal line and Vertical line separator widgets with CSS thickness, HEX fill/border colors, border width and square, round or pointed ends.
