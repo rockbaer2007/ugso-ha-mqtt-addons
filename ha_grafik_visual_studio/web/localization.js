@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Wetter und Heizung": "Weather and Heating", "Allgemeines Diagramm": "General Chart", "Anzahl der Serien": "Series count", "Ohne Karte": "Without card", "Achsentyp": "Axis type", "Datumsformat X-Achse": "X-axis date format", "CSS Diagramm": "CSS Chart", "Achsenfarbe": "Axis color", "Rasterfarbe": "Grid color", "Serienname": "Series name", "Serien-Entität": "Series entity", "Datenattribut (optional)": "Data attribute (optional)", "Vorschau-Daten (JSON)": "Preview data (JSON)", "X-Schlüssel": "X key", "Y-Schlüssel": "Y key", "Serienfarbe": "Series color", "Serientyp": "Series type", "Differenz berechnen": "Calculate differences", "Daten": "Data",
   "HA Grafik – Gauges": "HA Grafik – Gauges", "Farbmesser": "Color gauge", "Wasserstand": "Water gauge", "Batterie": "Battery", "Bogenmesser": "Arc gauge", "Kompass": "Compass", "Linearmesser": "Linear gauge", "Rundinstrument": "Radial gauge", "Ringe": "Rings", "Thermometer": "Thermometer", "Messinstrument": "Gauge", "Instrument": "Instrument", "CSS Messinstrument": "CSS Gauge",
   "Anzahl Farbstufen": "Color level count", "Aktive Farbe": "Active color", "Skalenfarbe": "Scale color", "Zeigerfarbe": "Needle color", "Enden abrunden": "Round ends", "Bogenwinkel (°)": "Sweep angle (°)", "Wellen animieren": "Animate waves", "Wellenhöhe": "Wave amplitude", "Wellendauer (s)": "Wave duration (s)", "Batteriezellen": "Battery cells", "Ladezustand-Entität": "Charging entity", "Ladevorschau": "Charging preview", "Ladesymbolfarbe": "Charging symbol color", "Segmente": "Segments", "Segmentabstand (°)": "Segment gap (°)", "Von Null aus füllen": "Fill from zero", "Zielwert-Entität": "Target entity", "Zielwert (Vorschau)": "Target preview", "Zielmarkierung anzeigen": "Show target", "Zielfarbe": "Target color", "Nordversatz (°)": "North offset (°)", "Richtung umkehren": "Invert direction", "Skala mitdrehen": "Rotate dial", "Zwischenrichtungen anzeigen": "Show intercardinal directions", "Kompasswert": "Compass reading", "Grad und Richtung": "Degrees and direction", "Grad": "Degrees", "Geschwindigkeits-Entität": "Speed entity", "Geschwindigkeit (Vorschau)": "Speed preview", "Geschwindigkeitseinheit": "Speed unit", "Hauptintervalle": "Major intervals", "Unterteilungen": "Minor divisions", "Zeigertyp": "Needle type", "Instrumentenrahmen": "Bezel", "Dünn": "Thin", "Metall": "Metal", "Anzahl Ringe": "Ring count", "Seitlich": "Side", "Ringabstand (px)": "Ring gap (px)", "Tankform": "Tank shape", "Zylinder": "Cylinder", "Liegender Tank": "Horizontal tank", "Prozentwert anzeigen": "Show percentage", "Skalenseite": "Scale side", "Beide": "Both", "Ringfarbe": "Ring color", "Bis Wert": "Up to value",
   "Snapfunktion aktivieren": "Enable snapping",
@@ -310,7 +311,7 @@ Object.assign(ENGLISH, {
   "Installierte Tool-Pakete": "Installed tool packages", "Installierte Tools": "Installed tools", "Tool-Pakete verwalten": "Manage tool packages", "Keine zusätzlichen Widget-Pakete installiert.": "No additional widget packages installed.",
   "Keine zusätzlichen Tool-Pakete installiert.": "No additional tool packages installed.",
   "Zusätzliche Widget-Pakete werden hier angezeigt. Integrierte Widgets sind Teil der App.": "Additional widget packages appear here. Built-in widgets are part of the app.",
-  "Zusätzliche Widget-Pakete mit Schnittstelle 0.1. Integrierte Widgets bleiben Teil der App.": "Additional widget packages using API 0.1. Built-in widgets remain part of the app.",
+  "Zusätzliche Widget-Pakete mit Schnittstelle 0.1 oder 0.2. Integrierte Widgets bleiben Teil der App.": "Additional widget packages using API 0.1 or 0.2. Built-in widgets remain part of the app.",
   "Lokales .wg / .wg.zip installieren": "Install local .wg / .wg.zip", "Paketliste neu laden": "Reload package list",
   "Paket entfernen": "Remove package", "Widget-Paket wirklich entfernen?": "Really remove this widget package?",
   "Widget-Paket wird geprüft …": "Checking widget package …",
@@ -579,7 +580,7 @@ function translate(source) {
     if (port) translated = `${ENGLISH[port[1]] || port[1]}: ${ENGLISH[port[2]]}`;
   }
   if (!translated) {
-    const item = trimmed.match(/^(Wert|HTML Wert|Stil für|Bild|frames|Tab|Kalender|Farbregel|Spalte|Standardsortierung|Zeilenbedingung|Option|Hintergrundbedingung) \[(\d+)\]$/);
+    const item = trimmed.match(/^(Wert|HTML Wert|Stil für|Bild|frames|Tab|Kalender|Farbregel|Spalte|Standardsortierung|Zeilenbedingung|Option|Hintergrundbedingung|Daten) \[(\d+)\]$/);
     if (item) translated = `${ENGLISH[item[1]] || item[1]} [${item[2]}]`;
   }
   if (!translated) {

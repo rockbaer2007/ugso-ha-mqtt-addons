@@ -1,4 +1,5 @@
 import { getWidgetSets, getWidgetDefinition, registerWidgetSet, initializeWidgetCaption } from "./widget-registry.js";
+import { PALETTE_COLORS, allocatePaletteColors } from "./palette-colors.js";
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings } from "./connection-animation.js";
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection, OUTPUT_SIDES, outputDockActive, dockPointActive, hasSimpleOutput, setOutputAnchor } from "./dock-points.js";
@@ -28,6 +29,7 @@ import { renderValueList } from "./interactive-value-list.js";
 import { renderStyledSwitch, SWITCH_STYLE_GROUPS } from "./styled-switch.js";
 import { renderRadialSlider, updateRadialSlider, RADIAL_STYLE_GROUPS } from "./radial-slider.js";
 import { renderDropdown } from "./dropdown.js";
+import { renderPackageChart, chartBindings } from "./package-chart.js";
 import { isGauge, renderGauge, gaugeEntityIds } from "./gauges.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
@@ -193,6 +195,7 @@ function widgetPropertyGroups(widget) {
     { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
   ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
+  if (getWidgetDefinition(widget.type).render?.kind === "chart") groups = groups.filter(group => !/^Daten \[(\d+)\]$/.test(group.label) || Number(group.label.match(/\d+/)[0]) <= Math.min(10, Math.max(1, Number(widget.dataCount) || 1)));
   if (widget.type === "filter-dropdown") groups = groups.map(group => ({ ...group, fields: group.fields.filter(field => field.key !== "variant" || widget.filterType !== "dropdown") }));
   if (["value-list-html", "value-list-html-style"].includes(widget.type)) {
     const options = [{ value: "", label: "Livewert / Vorschauzustand" }, ...htmlListEntries(widget).map((_, index) => ({ value: String(index), label: String(index) }))];
@@ -610,6 +613,7 @@ async function fetchEntityStates(ids) {
     const dropdownIds = new Set(visibleWidgets().filter(widget => widget.type === "dropdown" && ids.slice(offset, offset + 100).includes(widget.entityId)).map(widget => widget.entityId));
     for (const id of dropdownIds) query.append("attribute", `${id}|options`);
     for (const widget of visibleWidgets()) if (widget.type === "interactive-table" && widget.entityAttribute && ids.slice(offset, offset + 100).includes(widget.entityId)) query.append("attribute", `${widget.entityId}|${widget.entityAttribute}`);
+    for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "chart") for (const source of chartBindings(widget)) if (source.attribute && ids.slice(offset, offset + 100).includes(source.entityId)) query.append("attribute", `${source.entityId}|${source.attribute}`);
     const response = await fetch(`api/states?${query}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
@@ -621,6 +625,7 @@ async function fetchEntityStates(ids) {
 function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...gaugeEntityIds(widget),
+    ...(getWidgetDefinition(widget.type).render?.kind === "chart" ? chartBindings(widget).map(s => s.entityId) : []),
     widget.type === "dropdown" ? widget.bgEntityId : "",
     !["dock", "preview"].includes(widget.numericSource) ? widget.entityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
@@ -659,6 +664,7 @@ async function refreshEditorLiveStates() {
 function runtimeLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...gaugeEntityIds(widget),
+    ...(getWidgetDefinition(widget.type).render?.kind === "chart" ? chartBindings(widget).map(s => s.entityId) : []),
     widget.type === "dropdown" ? widget.bgEntityId : "",
     widget.entityId, widget.visibilityEnabled ? widget.visibilityEntityId : "",
     ...(widget.type === "event-calendar" ? eventSources(widget).map(source => source.entityId) : []),
@@ -906,10 +912,12 @@ function renderPalette() {
     state.collapsedWidgetSets = new Set(widgetSets.slice(1).map(set => set.id));
     state.paletteAccordionReady = true;
   }
-  const setColors = { "ha-grafik-basic2": "#46571C", "ha-grafik-special": "#244D63", "ha-grafik-dataflow": "#563D70" };
-  let extraSetIndex = 0;
+  let savedSetColors = {};
+  try { savedSetColors = JSON.parse(localStorage.getItem("gvs-widget-set-colors") || "{}"); } catch { /* Storage may be unavailable. */ }
+  const extraColors = allocatePaletteColors(widgetSets.map(set => set.id), savedSetColors && typeof savedSetColors === "object" ? savedSetColors : {});
+  try { localStorage.setItem("gvs-widget-set-colors", JSON.stringify(extraColors)); } catch { /* Colors still work without persistence. */ }
   for (const set of widgetSets) {
-    const setColor = set.id === "ha-grafik-core" ? null : setColors[set.id] || `hsl(${(38 + extraSetIndex++ * 137.508) % 360} 40% 26%)`;
+    const setColor = PALETTE_COLORS[set.id] || extraColors[set.id];
     const widgets = search ? set.widgets.filter(definition =>
       [definition.label, definition.type, set.label, ...(definition.searchTerms || [])].some(value => String(value || "").toLocaleLowerCase().includes(search))) : set.widgets;
     if (!widgets.length) continue;
@@ -2556,7 +2564,7 @@ function addWidget(definition) {
     widget.dockPointsEnabled = false;
     setAllDockPoints(widget, widgetAnchorIds(widget), false);
   }
-  if (definition.packageId) { widget.packageId = definition.packageId; widget.definitionVersion = "0.1"; }
+  if (definition.packageId) { widget.packageId = definition.packageId; widget.definitionVersion = definition.definitionVersion || "0.1"; }
   widget.name = uniqueWidgetName(page, widget.name || definition.label);
   if (widget.type === "svg-connection") {
     const connectionLayers = page.widgets.filter(item => item.type === "svg-connection").map(item => Math.max(0, Number(item.layer) || 0));
@@ -2786,6 +2794,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(renderSeparator(widget, document));
     } else if (isGauge(widget)) {
       content.append(renderGauge(widget, document, { states: state.entityStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
+    } else if (getWidgetDefinition(widget.type).render?.kind === "chart") {
+      if (widget.noCard) content.style.background = "transparent";
+      content.append(renderPackageChart(widget, document, state.entityStates, document.documentElement.lang || "de", getWidgetDefinition(widget.type).render.valueKey));
     } else if (widget.type === "value-converter") {
       content.classList.add("value-converter-content");
       const input = widgetInputPacket(widget, activePage.widgets, state.entityStates, new Set([`data:${widget.id}`]));
@@ -4060,7 +4071,7 @@ function field(descriptor, widget) {
     aliasPreview.hidden = !showAlias;
     aliasPreview.textContent = alias ? alias.slice(0, 3) : "";
   };
-  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key)) {
+  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || getWidgetDefinition(widget.type).render?.kind === "chart" && /^seriesEntityId\d+$/.test(descriptor.key)) {
     const row = document.createElement("span"); row.className = "property-entity-row";
     const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button";
     picker.textContent = "…";
@@ -4109,7 +4120,7 @@ function field(descriptor, widget) {
   }
   const update = () => {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
-    if (["count", "countEventColorRules", "countCalendarSources", "countColumns", "countDefaultSortColumns", "countRowConditions", "countCustomOptions", "countBgConditions"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
+    if (["count", "dataCount", "countEventColorRules", "countCalendarSources", "countColumns", "countDefaultSortColumns", "countRowConditions", "countCustomOptions", "countBgConditions"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (isSeparator(widget) && descriptor.key === "separatorThickness") {
       widget.separatorThickness = Math.min(100, Math.max(1, Number(widget.separatorThickness) || 2));
@@ -4127,6 +4138,7 @@ function field(descriptor, widget) {
     if (descriptor.key === "testIndex" && widget.type === "value-list-text") widget.state = input.value;
     void updatePreview();
     if (isGauge(widget) && (descriptor.key === "entityId" || /EntityId\d*$/.test(descriptor.key))) void refreshEditorLiveStates();
+    if (getWidgetDefinition(widget.type).render?.kind === "chart" && (descriptor.key === "entityId" || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || descriptor.key === "dataCount")) void refreshEditorLiveStates();
     if (widget.type === "string" && descriptor.key === "icon") { const size = $("#properties [data-string-icon-size]"); if (size) size.hidden = !input.value; }
     renderStage();
     if (descriptor.refreshProperties && input.tagName !== "TEXTAREA" && !["number", "range"].includes(input.type)) renderProperties();
@@ -4144,6 +4156,7 @@ function field(descriptor, widget) {
   if (widget.type === "image-8" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
   if (widget.type === "table" && descriptor.key === "maxColumns") input.addEventListener("blur", renderProperties);
   if (isGauge(widget) && ["ringCount", "levelCount"].includes(descriptor.key)) input.addEventListener("blur", renderProperties);
+  if (descriptor.key === "dataCount" && getWidgetDefinition(widget.type).render?.kind === "chart") input.addEventListener("blur", renderProperties);
   if (descriptor.key === "preset") input.addEventListener("change", () => {
     if (PRESETS[input.value]) Object.assign(widget, PRESETS[input.value]);
     render();
@@ -4513,7 +4526,8 @@ async function loadWidgetPackages() {
       registerWidgetSet({
         id: manifest.id, label: manifest.name,
         widgets: manifest.widgets.map(widget => ({
-          ...widget, packageId: manifest.id, iconSvg: widget.iconData || "icons/text.svg", preview: { kind: "svg", lines: [] },
+          ...widget, packageId: manifest.id, definitionVersion: manifest.apiVersion, iconSvg: widget.iconData || "icons/text.svg", preview: { kind: "svg", lines: [] },
+          propertyGroups: widget.propertyGroups.map(group => ({ ...group, ...(widget.render.kind === "chart" && group.label.startsWith("CSS ") ? { css: true, defaultEnabled: true } : {}) })),
         })),
       });
     }

@@ -51,6 +51,16 @@ def tiny_png():
 
 
 class WidgetPackageTests(unittest.TestCase):
+    def test_chart_requires_api_02_and_keeps_code_forbidden(self):
+        data = manifest()
+        data["widgets"][0]["render"]["kind"] = "chart"
+        with self.assertRaises(ValueError):
+            read_package_zip(package_bytes(data))
+        data["apiVersion"] = "0.2"
+        self.assertEqual(read_package_zip(package_bytes(data))["widgets"][0]["render"]["kind"], "chart")
+        with self.assertRaises(ValueError):
+            read_package_zip(package_bytes(data, "renderer.js"))
+
     def test_valid_declarative_widget(self):
         self.assertEqual(read_package_zip(package_bytes(manifest()))["widgets"][0]["type"], "demo.widgets/label")
 

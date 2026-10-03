@@ -50,6 +50,16 @@ Das ZIP muss zu diesem Beispiel zusätzlich `icons/label.svg` enthalten. Die SVG
 
 GitHub-Installation, Updates, Bilder außerhalb der referenzierten Icons, eigene Skripte, HA-Zustandsbindung und Schreibaktionen sind noch nicht Bestandteil von 0.1. Diese Fähigkeiten benötigen eigene geprüfte Vertragsversionen oder optionale Erweiterungspunkte, damit bestehende Widgets unverändert bleiben.
 
+## Widget-Paket-Schnittstelle 0.2
+
+Ab Studio 0.1.187 bleibt 0.1 unterstützt. Mit `apiVersion: "0.2"` ist zusätzlich `render: {"kind":"chart","valueKey":"headline"}` verfügbar. Der Host zeichnet das Diagramm selbst als SVG; Pakete enthalten weiterhin ausschließlich Manifest und geprüfte Icons. `headline` muss als Textfeld mit Standardwert deklariert sein. Die Instanz speichert `definitionVersion: "0.2"`.
+
+Der Diagrammvertrag verwendet `dataCount` (1–10), `entityId` (erste Reihe als Ersatzbindung), `xAxisType` (`time` oder `category`), `xAxisFormat`, `showLegend`, `noCard`, `axisColor`, `gridColor` und `backgroundColor`. Pro Reihe N heißen die Schlüssel `seriesNameN`, `seriesEntityIdN`, `seriesAttributeN`, `seriesDataN`, `seriesXKeyN`, `seriesYKeyN`, `seriesUnitN`, `seriesColorN`, `seriesTypeN` (`line`/`bar`), `seriesAxisN` (`left`/`right`) und `seriesDifferenceN`. Attribute oder Zustände können JSON-Arrays liefern; Vorschau-JSON gilt nur ohne Entitätsbindung. Die Bindung ist lesend. Ungültige Daten ergeben keine Vorschau anstelle fehlender Live-Daten.
+
+Zeitwerte sind ISO-Datumsangaben oder Unix-Millisekunden; Kategorien sind Texte. Fehlende Werte unterbrechen Linien und Differenzen. Höchstens 20.000 Eingabezeilen werden akzeptiert und auf höchstens 500 Punkte pro Reihe begrenzt. Format-Tokens sind `YYYY`, `MM`, `DD`, `ddd`, `HH`, `mm`, `ss`; ausführbare Formatierer sind nicht erlaubt. Das Referenzpaket entsteht mit `python packages/weather-heating/build.py`.
+
+Externe Sets erhalten automatisch eine eigene Palettenfarbe mit Abstand zu belegten Farbtönen. Die Zuordnung und Reservierung entfernter Sets bleibt im lokalen Browser-Speicher erhalten. Basis und integrierte Sets behalten ihre Farben. Eine browserübergreifende Farbzuordnung ist nicht Teil dieses Vertrags.
+
 ## Erweiterungsentwurf
 
 Der geplante Packer soll Widget-Pakete als ZIP-Datei mit der Endung `*.wg` ausgeben, zum Beispiel `solar.wg`. Bisherige `*.wg.zip` bleiben importierbar. Die Endung kennzeichnet die Paketart; beim Import wird zusätzlich das Manifest geprüft. Folgende Angaben sollen die Schnittstelle abdecken:

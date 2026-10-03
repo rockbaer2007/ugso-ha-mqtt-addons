@@ -39,7 +39,7 @@ def validate_manifest(manifest):
     if "icon" in manifest and (not isinstance(manifest["icon"], str) or not ICON_PATH.fullmatch(manifest["icon"])):
         raise ValueError("Paketbild muss eine SVG- oder PNG-Datei unter icons/ sein.")
     package_id = manifest["id"]
-    if manifest["format"] != "ha-grafik-widget-package" or manifest["apiVersion"] != API_VERSION:
+    if manifest["format"] != "ha-grafik-widget-package" or manifest["apiVersion"] not in {API_VERSION, "0.2"}:
         raise ValueError("Paketformat oder Widget-Schnittstellenversion wird nicht unterstützt.")
     if not isinstance(package_id, str) or len(package_id) > 80 or not PACKAGE_ID.fullmatch(package_id):
         raise ValueError("Ungültige Paket-ID.")
@@ -64,8 +64,8 @@ def validate_manifest(manifest):
         if not _short_text(widget["label"]) or not isinstance(widget["defaults"], dict):
             raise ValueError("Widget-Name oder Standardwerte sind ungültig.")
         render = widget["render"]
-        if not isinstance(render, dict) or set(render) != {"kind", "valueKey"} or render["kind"] != "text":
-            raise ValueError("Derzeit ist nur die deklarative Text-Darstellung unterstützt.")
+        if not isinstance(render, dict) or set(render) != {"kind", "valueKey"} or render["kind"] not in ({"text", "chart"} if manifest["apiVersion"] == "0.2" else {"text"}):
+            raise ValueError("Nur deklarative Text-Darstellung ist in 0.1 unterstützt; Diagramme benötigen Schnittstelle 0.2.")
         value_key = render["valueKey"]
         if not isinstance(value_key, str) or not KEY.fullmatch(value_key):
             raise ValueError("Ungültiger Anzeigeschlüssel.")

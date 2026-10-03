@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.187
+
+- Automatically assign unused, separated palette colors to external widget sets; preserve assignments in this browser across reloads, removal and reinstallation. Keep Basic and built-in set colors unchanged.
+- Add the optional Weather and Heating widget package, initially containing General Chart with up to ten JSON series, line/bar plots, independent left/right axes, units, difference calculation and configurable time/category labels.
+- Extend declarative widget-package API 0.2 with the trusted host chart renderer; retain API 0.1 text packages and reject executable package code.
+- Include a reproducible package builder and validated ugso.weather-heating.wg installer. This set is available only after installation; other upstream weather/heating widgets are not included yet.
+
 ## 0.1.186
 
 - Add an independent Gauges palette set with Color, Water, Battery, Arc, Compass, Linear, Radial, Rings, Tank and Thermometer instruments inspired by ioBroker.vis-2-widgets-gauges.
