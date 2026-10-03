@@ -354,6 +354,10 @@ registerWidgetSet({
     if (widget.type === "screen-resolution") widget.propertyGroups = widget.propertyGroups.filter(group => group.label !== "Daten");
     const data = widget.propertyGroups.find(group => ["Daten", "Allgemein"].includes(group.label));
     const add = (...fields) => data?.fields.push(...fields);
+    if (widget.type === "view-in-widget") {
+      Object.assign(widget.defaults, { width: 300, height: 200, targetPage: "" });
+      widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
+    }
     if (widget.type === "input-value") {
       Object.assign(widget.defaults, { width: 150, height: 70, numeric: false, autoSet: false, autoSetDelay: 1000, readOnly: false, noStyle: false, autofocus: false, prefix: "", suffix: "" });
       widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);

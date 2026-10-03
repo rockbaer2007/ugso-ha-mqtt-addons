@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.158
+
+- New Dashboard in widget under Special embeds HA dashboards at 32..800 by 32..640px. Dashboard selection reads Lovelace panel titles/paths; optional view and HA base URL support ingress and direct access.
+- Runtime embeds use the normal HA browser session without storing tokens. Frames remain mounted during state refreshes; editor previews avoid loading interactive dashboards.
+- View in widget remains a separate Studio page container with 300x200 defaults. Both widgets start with only CSS General enabled and optional migration hints.
+
 ## 0.1.157
 
 - Input val supports numeric min/max, configurable auto-set delay (1000ms default), Enter submission and an optional confirmation button. Auto-set also works with withEnter; leaving the field alone no longer writes.

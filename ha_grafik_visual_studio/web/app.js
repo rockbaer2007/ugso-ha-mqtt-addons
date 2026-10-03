@@ -14,6 +14,7 @@ import { barDisplay } from "./bar-display.js";
 import { filterEntries, defaultFilters, filterSelected, chooseFilter, filterHex } from "./filter-widget.js";
 import { stringDisplayValue } from "./string-display.js";
 import { inputValueDelay, inputValueSubmission } from "./input-value.js";
+import { dashboardSize, dashboardUrl } from "./dashboard-widget.js";
 const inputValueDrafts = new Map();
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
@@ -2471,11 +2472,17 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const hideEditorGrid = !runtimeMode && page.grid === "aus";
   stage.className = `stage${runtimeGrid ? " runtime-grid" : ""}${hideEditorGrid ? " no-grid" : ""}${pageClasses.map((name) => ` ${name}`).join("")}`;
   if (!embedded) $("#runtime-pages-menu-toggle").hidden = page.navigationVisible === false;
-  stage.replaceChildren();
+  const dashboardSurfaceKey = `${state.projectId}:${activePage.id}`;
+  const retainedDashboards = new Map();
+  for (const child of [...stage.children]) {
+    if (runtimeMode && child.classList.contains("widget-dashboard-in-widget") && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
+    else child.remove();
+  }
   const filterKey = filterPageKey(activePage);
   if (!pageFilters.has(filterKey)) pageFilters.set(filterKey, defaultFilters(activePage.widgets.find(widget => widget.type === "filter-dropdown") || {}));
   const selectedFilters = pageFilters.get(filterKey);
   for (const widget of activePage.widgets) {
+    if (widget.type === "dashboard-in-widget") Object.assign(widget, dashboardSize(widget));
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
     if (widget.visible === false) continue;
     if (runtimeMode && (widget.hideInRuntime === true || widget.type === "value-converter" || widget.dataFlowVariant === "value-connection")) continue;
@@ -2498,7 +2505,8 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       if (junction) stage.append(junction);
       continue;
     }
-    const element = document.createElement("div");
+    const element = retainedDashboards.get(widget.id) || document.createElement("div");
+    retainedDashboards.delete(widget.id);
     element.id = widget.id;
     element.dataset.widgetId = widget.id;
     const selected = !runtimeMode && (state.selectedIds.length ? state.selectedIds.includes(widget.id) : widget.id === state.selectedId);
@@ -2526,7 +2534,8 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       cursor: widget.cssCursor || "", transform: widget.cssTransform || "",
       marginLeft: widget.marginLeft || "", marginTop: widget.marginTop || "", marginRight: widget.marginRight || "", marginBottom: widget.marginBottom || "",
     });
-    const content = document.createElement("div");
+    if (widget.type === "dashboard-in-widget") { element.dataset.dashboardSurface = dashboardSurfaceKey; element.style.maxWidth = "800px"; element.style.maxHeight = "640px"; }
+    const content = element.firstElementChild || document.createElement("div");
     content.className = "widget-content";
     Object.assign(content.style, {
       borderRadius: `${widget.radius}px`, color: widget.textColor || widget.color || "",
@@ -2832,6 +2841,19 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       }
     } else if (widget.type === "tabs") {
       content.append(renderTabsWidget(widget, activePage, surfaceChain));
+    } else if (widget.type === "dashboard-in-widget") {
+      const source = dashboardUrl(widget, location.origin);
+      const frame = content.querySelector("iframe");
+      if (!runtimeMode || !source) {
+        content.replaceChildren(); content.classList.add("dashboard-preview");
+        const label = document.createElement("strong"); label.textContent = uiText("HA-Dashboard");
+        const path = document.createElement("span"); path.textContent = source ? `${widget.dashboardPath}${widget.dashboardView ? `/${widget.dashboardView}` : ""}` : uiText("Dashboard auswählen oder gültigen Pfad eintragen");
+        content.append(label, path);
+      } else if (frame?.getAttribute("src") !== source) {
+        content.replaceChildren(); content.classList.remove("dashboard-preview");
+        const dashboard = document.createElement("iframe"); dashboard.className = "widget-frame"; dashboard.title = widget.title || uiText("HA-Dashboard"); dashboard.src = source;
+        content.append(dashboard);
+      }
     } else if (["view-in-widget", "view-in-widget-8"].includes(widget.type)) {
       const index = widgetStateIndex(widget);
       const target = widget.type === "view-in-widget" ? widget.targetPage : widget[`page${index}`]; const chain = (params.get("chain") || "").split(",").filter(Boolean);
@@ -3068,7 +3090,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       const prefix = document.createElement("span"); appendSafeHtml(prefix, widget.prefix || ""); content.prepend(prefix);
       appendSafeHtml(content, widget.suffix ?? (Number(displayedWidgetState(widget)) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""));
     }
-    element.append(content);
+    if (content.parentElement !== element) element.append(content);
     if (isConnection && !runtimeMode) {
       const start = connectionEndpoint(widget, "start", activePage.widgets);
       const tab = document.createElement("div");
@@ -3170,10 +3192,11 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       }
     }
     if (!runtimeMode) element.addEventListener("contextmenu", event => openWidgetContextMenu(event, widget));
-    if (!isConnection) element.addEventListener("click", event => { if (!runtimeMode && !event.target.closest("[data-tab-switch]")) { if (!(state.selectedIds.includes(widget.id) && state.selectedIds.length > 1 && !event.ctrlKey)) selectWidget(widget.id, event.ctrlKey && event.shiftKey); render(); } }, { capture: true });
+    if (!runtimeMode && !isConnection) element.addEventListener("click", event => { if (!event.target.closest("[data-tab-switch]")) { if (!(state.selectedIds.includes(widget.id) && state.selectedIds.length > 1 && !event.ctrlKey)) selectWidget(widget.id, event.ctrlKey && event.shiftKey); render(); } }, { capture: true });
     if (!runtimeMode && !isConnection && !widgetLocked) makeDraggable(element, widget);
-    stage.append(element);
+    if (element.parentElement !== stage) stage.append(element);
   }
+  for (const element of retainedDashboards.values()) element.remove();
   if (!runtimeMode) renderEditorGroups();
 }
 
@@ -3347,6 +3370,11 @@ function makeResizable(element, handle, widget) {
       if (direction.includes("n")) widget.y = Math.max(0, origin.top + origin.height - widget.height);
       if (direction.includes("w")) widget.x = Math.max(0, origin.left + origin.width - widget.width);
     }
+    if (widget.type === "dashboard-in-widget") {
+      Object.assign(widget, dashboardSize(widget));
+      if (direction.includes("n")) widget.y = Math.max(0, origin.top + origin.height - widget.height);
+      if (direction.includes("w")) widget.x = Math.max(0, origin.left + origin.width - widget.width);
+    }
     element.style.left = `${widget.x}px`; element.style.top = `${widget.y}px`;
     element.style.width = `${widget.width}px`; element.style.height = `${widget.height}px`;
   });
@@ -3368,6 +3396,31 @@ function openPageSelector(input, multiple = true) {
     button.addEventListener("click", () => { if (apply) { input.value = options.filter(([, check]) => check.checked).map(([id]) => id).join(";"); input.dispatchEvent(new Event(input.tagName === "SELECT" ? "change" : "input", { bubbles: true })); } dialog.close(); }); actions.append(button);
   }
   dialog.append(actions); document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); dialog.showModal();
+}
+
+async function openDashboardSelector(input) {
+  const dialog = document.createElement("dialog"); dialog.className = "studio-dialog";
+  const heading = document.createElement("h2"); heading.textContent = "HA-Dashboard auswählen";
+  const status = document.createElement("p"); status.textContent = "Dashboards werden geladen …";
+  const list = document.createElement("div"); list.className = "dashboard-choices";
+  const actions = document.createElement("div"); actions.className = "dialog-actions";
+  const apply = document.createElement("button"); apply.type = "button"; apply.textContent = "Übernehmen"; apply.disabled = true;
+  const cancel = document.createElement("button"); cancel.type = "button"; cancel.textContent = "Abbrechen"; cancel.addEventListener("click", () => dialog.close());
+  let selected = input.value;
+  apply.addEventListener("click", () => { input.value = selected; input.dispatchEvent(new Event("input", { bubbles: true })); dialog.close(); });
+  actions.append(apply, cancel); dialog.append(heading, status, list, actions); document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); dialog.showModal();
+  try {
+    const response = await fetch("api/dashboards", { cache: "no-store" }); const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || uiText("Dashboards konnten nicht geladen werden."));
+    if (!dialog.isConnected) return;
+    status.textContent = payload.dashboards.length ? uiText("Dashboard auswählen") : uiText("Keine HA-Dashboards gefunden. Pfad direkt im Dashboard-Feld eintragen.");
+    for (const dashboard of payload.dashboards) {
+      const label = document.createElement("label"); const radio = document.createElement("input"); radio.type = "radio"; radio.name = "ha-dashboard"; radio.value = dashboard.path; radio.checked = dashboard.path === input.value;
+      if (radio.checked) apply.disabled = false;
+      radio.addEventListener("change", () => { selected = radio.value; apply.disabled = false; });
+      label.append(radio, document.createTextNode(`${dashboard.title} · ${dashboard.path}`)); list.append(label);
+    }
+  } catch (error) { if (dialog.isConnected) status.textContent = `${error.message} ${uiText("Pfad direkt im Dashboard-Feld eintragen.")}`; }
 }
 
 function openHtmlEditor(input) {
@@ -3672,7 +3725,7 @@ function field(descriptor, widget) {
       const option = document.createElement("option"); option.value = typeof item === "string" ? item : item.value;
       option.textContent = typeof item === "string" ? item : item.label; input.append(option);
     }
-  } else { input = document.createElement("input"); input.type = descriptor.type || "text"; }
+  } else { input = document.createElement("input"); input.type = descriptor.type === "dashboard" ? "text" : descriptor.type || "text"; }
   if (descriptor.min !== undefined) input.min = descriptor.min;
   if (descriptor.max !== undefined) input.max = descriptor.max;
   if (widget.type === "slider" && descriptor.key === "scaleSteps") input.max = sliderScale(widget).limit;
@@ -3738,6 +3791,10 @@ function field(descriptor, widget) {
     picker.title = "Icon oder Bild auswählen"; picker.setAttribute("aria-label", "Icon oder Bild auswählen");
     picker.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); openIconPicker(input); });
     row.append(preview, aliasPreview, input, picker); wrapper.append(row); void updatePreview();
+  } else if (descriptor.type === "dashboard") {
+    const row = document.createElement("span"); row.className = "property-input-row";
+    const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button"; picker.textContent = "…"; picker.setAttribute("aria-label", "HA-Dashboard auswählen");
+    picker.addEventListener("click", () => openDashboardSelector(input)); row.append(input, picker); wrapper.append(row);
   } else if (descriptor.key === "multiViews" || descriptor.type === "page") {
     const row = document.createElement("span"); row.className = "property-input-row";
     const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button"; picker.textContent = "…"; picker.title = "Seiten auswählen"; picker.setAttribute("aria-label", picker.title);
@@ -3757,6 +3814,7 @@ function field(descriptor, widget) {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
     if (descriptor.key === "count" && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    if (widget.type === "dashboard-in-widget" && ["width", "height"].includes(descriptor.key)) { Object.assign(widget, dashboardSize(widget)); input.value = String(widget[descriptor.key]); }
     if (widget.type === "value-list-html-style" && descriptor.key === "count" && widget.testIndex !== "" && Number(widget.testIndex) > styledListCount(widget)) widget.testIndex = "";
     if ((["sensor", "slider", "input-value", "string"].includes(widget.type) && descriptor.key === "entityId") ||
         (widget.type === "svg-connection" && ["animationSource", "animationNumberEntityId", "animationBooleanEntityId"].includes(descriptor.key))) {

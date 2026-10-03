@@ -13,6 +13,22 @@ registerWidgetSet({
   id: "ha-grafik-special",
   label: "HA Grafik – Spezial",
   widgets: [{
+    type: "dashboard-in-widget", label: "Dashboard in widget", searchTerms: ["HA Dashboard", "Dashboard im Widget"], icon: "▣",
+    preview: { kind: "plain", lines: ["HA", "Dashboard"] },
+    defaults: { title: "", width: 300, height: 200, dashboardPath: "", dashboardView: "", dashboardBaseUrl: "" },
+    propertyGroups: [
+      { label: "Allgemein", fields: [
+        { label: "Dashboard", key: "dashboardPath", type: "dashboard" },
+        { label: "Dashboard-Ansicht (optional)", key: "dashboardView" },
+        { label: "HA-Basis-URL (optional)", key: "dashboardBaseUrl" },
+      ] },
+      { label: "Größe und Position", fields: [
+        { label: "Breite (px)", key: "width", type: "number", min: 32, max: 800 },
+        { label: "Höhe (px)", key: "height", type: "number", min: 32, max: 640 },
+        { label: "X (px)", key: "x", type: "number", min: 0 }, { label: "Y (px)", key: "y", type: "number", min: 0 },
+      ] }, ...cssGroups().map(group => ({ ...group, defaultEnabled: false })),
+    ],
+  }, {
     type: "svg-connection",
     label: "SVG-Line",
     searchTerms: ["SVG-Verbindungslinie"],

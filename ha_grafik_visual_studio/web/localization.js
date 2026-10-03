@@ -2,6 +2,15 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Dashboard in widget": "Dashboard in widget", "HA-Dashboard": "HA dashboard", "HA-Dashboard auswählen": "Select HA dashboard", "Dashboard auswählen": "Select dashboard",
+  "Dashboard-Ansicht (optional)": "Dashboard view (optional)", "HA-Basis-URL (optional)": "HA base URL (optional)",
+  "Dashboard auswählen oder gültigen Pfad eintragen": "Select a dashboard or enter a valid path",
+  "Dashboards werden geladen …": "Loading dashboards …", "Dashboards konnten nicht geladen werden.": "Could not load dashboards.",
+  "Keine HA-Dashboards gefunden. Pfad direkt im Dashboard-Feld eintragen.": "No HA dashboards found. Enter the path directly in the dashboard field.",
+  "Pfad direkt im Dashboard-Feld eintragen.": "Enter the path directly in the dashboard field.",
+  "Bettet eine Studio-Projektseite ein; kein HA-Helfer nötig. Für HA-Dashboards gibt es Dashboard in widget unter Spezial. Rekursive Seiteneinbettung wird verhindert.": "Embeds a Studio project page; no HA helper is needed. For HA dashboards use Dashboard in widget under Special. Recursive page embedding is prevented.",
+  "HA-Dashboard auswählen oder Pfad eintragen, zum Beispiel /lovelace. Anmeldung erfolgt über die normale HA-Browsersitzung; kein HA-Helfer oder Token im Widget nötig. Maximal 800 × 640 px.": "Select an HA dashboard or enter a path, e.g. /lovelace. Authentication uses the normal HA browser session; no HA helper or token in the widget is needed. Maximum 800 × 640 px.",
+  "Im HA-Ingress leer lassen: Die aktuelle HA-Adresse wird verwendet. Bei direktem Studio-Zugriff die HA-Basis-URL eintragen, zum Beispiel https://ha.example.org. Einbettung hängt von Anmeldung und Browserregeln ab.": "Leave empty in HA ingress to use the current HA address. For direct Studio access enter the HA base URL, e.g. https://ha.example.org. Embedding depends on authentication and browser rules.",
   "Auto-setzen Verzögerung (ms)": "Auto-set delay (ms)",
   "Enter bestätigt die Eingabe immer. withEnter ergänzt eine Bestätigungstaste; Auto-setzen bleibt unabhängig davon aktiv. Ohne Auto-setzen wird beim Verlassen nicht geschrieben.": "Enter always submits the input. withEnter adds a confirmation button; auto-set works independently. Without auto-set, leaving the field does not write.",
   "Mit Style: Voranstellen ist die Feldbeschriftung, Anhängen der Hilfstext. Ohne Style: bereinigtes HTML vor und hinter einem einfachen Eingabefeld.": "Styled: prepend is the field label, append is helper text. No style: sanitized HTML before and after a plain input.",

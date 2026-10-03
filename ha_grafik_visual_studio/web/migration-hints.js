@@ -1,4 +1,7 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "view-in-widget" && key === "targetPage") return "Bettet eine Studio-Projektseite ein; kein HA-Helfer nötig. Für HA-Dashboards gibt es Dashboard in widget unter Spezial. Rekursive Seiteneinbettung wird verhindert.";
+  if (widget.type === "dashboard-in-widget" && key === "dashboardPath") return "HA-Dashboard auswählen oder Pfad eintragen, zum Beispiel /lovelace. Anmeldung erfolgt über die normale HA-Browsersitzung; kein HA-Helfer oder Token im Widget nötig. Maximal 800 × 640 px.";
+  if (widget.type === "dashboard-in-widget" && key === "dashboardBaseUrl") return "Im HA-Ingress leer lassen: Die aktuelle HA-Adresse wird verwendet. Bei direktem Studio-Zugriff die HA-Basis-URL eintragen, zum Beispiel https://ha.example.org. Einbettung hängt von Anmeldung und Browserregeln ab.";
   if (widget.type === "input-value" && key === "withEnter") return "Enter bestätigt die Eingabe immer. withEnter ergänzt eine Bestätigungstaste; Auto-setzen bleibt unabhängig davon aktiv. Ohne Auto-setzen wird beim Verlassen nicht geschrieben.";
   if (widget.type === "input-value" && key === "noStyle") return "Mit Style: Voranstellen ist die Feldbeschriftung, Anhängen der Hilfstext. Ohne Style: bereinigtes HTML vor und hinter einem einfachen Eingabefeld.";
   if (widget.type === "string" && key === "entityAttribute") return "ioBroker-Attributdatenpunkte wie friendly_name entsprechen HA-Attributen: Entität auswählen und hier friendly_name eintragen. Leer zeigt den Zustand. Kein HA-Helfer nötig.";

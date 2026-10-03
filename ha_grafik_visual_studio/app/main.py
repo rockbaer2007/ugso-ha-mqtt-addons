@@ -132,6 +132,19 @@ def home_assistant_commands(commands):
                 pass
 
 
+def load_home_assistant_dashboards():
+    """Expose only dashboard titles and paths, never panel configuration or tokens."""
+    panels = home_assistant_commands(["get_panels"])[0]
+    if not isinstance(panels, dict):
+        raise HomeAssistantAPIError("Ungültige Home-Assistant-Dashboardantwort.")
+    return {"dashboards": [
+        {"title": panel.get("title") if isinstance(panel.get("title"), str) and panel["title"] else path, "path": "/" + path}
+        for path, panel in panels.items()
+        if isinstance(panel, dict) and panel.get("component_name") == "lovelace"
+        and re.fullmatch(r"[a-zA-Z0-9_-]+", path)
+    ]}
+
+
 def load_home_assistant_entities():
     """Read entity registry, device registry, and current states via Supervisor."""
     entity_entries, device_entries, state_entries = home_assistant_commands(
@@ -253,13 +266,19 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.157"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.158"})
             return
         if path == "/api/entities":
             try:
                 self.send_json(HTTPStatus.OK, load_home_assistant_entities())
             except HomeAssistantAPIError as error:
                 LOG.warning("Home-Assistant-Entitäten konnten nicht geladen werden: %s", error)
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})
+            return
+        if path == "/api/dashboards":
+            try:
+                self.send_json(HTTPStatus.OK, load_home_assistant_dashboards())
+            except HomeAssistantAPIError as error:
                 self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})
             return
         if path == "/api/states":
