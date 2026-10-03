@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.144
+
+- ValueList HTML now offers a list-derived editor-only test-index dropdown and an explicit live/preview-state option. Runtime continues using the bound entity; selecting a test index does not modify its stored state.
+- Preserves comma text, supports semicolon/newline entry separators and escaped semicolons (`§§`), and renders no entry for unavailable or out-of-range values.
+- New ValueList HTML widgets start with all CSS groups disabled; existing group settings remain intact.
+
 ## 0.1.143
 
 - New Data flow widgets start with CSS groups disabled; Value calculation also starts with its Display group disabled. Calculation and conversion controls remain enabled, and existing widgets retain their saved choices.

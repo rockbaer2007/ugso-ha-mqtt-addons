@@ -5,6 +5,7 @@ import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelectio
 import { MATH_ANCHORS, MATH_IDS, mathPortRole, mathBoxResults, mathCalculations, validateMathAssignments, mathLeadPoint, evaluateMathExpression } from "./linebox-math.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
+import { htmlListEntries, htmlListEntry } from "./value-list.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
@@ -143,7 +144,11 @@ const commonWidgetGroups = [
 ];
 
 function widgetPropertyGroups(widget) {
-  const groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
+  let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
+  if (widget.type === "value-list-html") {
+    const options = [{ value: "", label: "Livewert / Vorschauzustand" }, ...htmlListEntries(widget).map((_, index) => ({ value: String(index), label: String(index) }))];
+    groups = groups.map(group => ({ ...group, fields: group.fields.map(field => field.key === "testIndex" ? { ...field, type: "select", default: "", options } : field) }));
+  }
   const dataGroup = { label: "Datenfluss", hint: "Wertausgabe am gewählten aktiven Dockpunkt. Wert-Verbindungen laufen vom Start zum Ziel; ein Konverter-Eingang erlaubt genau eine Quelle.", fields: [
     { label: "Ausgangspunkt aktivieren", key: "dataOutputEnabled", type: "checkbox", default: false, refreshProperties: true },
     { label: "Ausgangspunkt", key: "dataOutputAnchor", type: "radio", options: OUTPUT_SIDES.map(([value, label]) => ({ value, label })), default: "right-center" },
@@ -2253,6 +2258,7 @@ function formatDate(value, format, relative) {
 }
 
 function listEntry(widget) {
+  if (widget.type === "value-list-html") return htmlListEntry(widget, displayedWidgetState(widget), !runtimeMode);
   const values = String(widget.valueList || "").split(/\r?\n|;/).map((value, index) => widget[`listValue${index}`] ?? value);
   const raw = Number(displayedWidgetState(widget) ?? widget.testIndex ?? 0);
   const index = Number.isFinite(raw) ? Math.trunc(raw) : 0;
@@ -3603,10 +3609,10 @@ function field(descriptor, widget) {
       void refreshEditorLiveStates();
     }
     if (widget.type === "linebox" && descriptor.key?.startsWith("dock_") && input.type === "checkbox" && !input.checked) widget[`lineboxRole_${descriptor.key.slice(5)}`] = "none";
-    if (descriptor.key === "testIndex" && widget.type?.startsWith("value-list-")) widget.state = input.value;
+    if (descriptor.key === "testIndex" && widget.type?.startsWith("value-list-") && widget.type !== "value-list-html") widget.state = input.value;
     void updatePreview();
     renderStage();
-    if (descriptor.refreshProperties && !["number", "range"].includes(input.type)) renderProperties();
+    if (descriptor.refreshProperties && input.tagName !== "TEXTAREA" && !["number", "range"].includes(input.type)) renderProperties();
     if (["name", "title"].includes(descriptor.key) && widget.id) {
       renderWidgetFinder();
       const heading = document.querySelector(".selected-widget-heading");
@@ -3614,6 +3620,7 @@ function field(descriptor, widget) {
     }
   };
   input.addEventListener(input.tagName === "SELECT" ? "change" : "input", update);
+  if (descriptor.refreshProperties && input.tagName === "TEXTAREA") input.addEventListener("change", renderProperties);
   if (descriptor.refreshProperties && ["number", "range"].includes(input.type)) input.addEventListener("change", renderProperties);
   if (descriptor.key === "preset") input.addEventListener("change", () => {
     if (PRESETS[input.value]) Object.assign(widget, PRESETS[input.value]);
