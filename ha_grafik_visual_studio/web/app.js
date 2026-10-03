@@ -14,7 +14,7 @@ import { svgShapeGeometry } from "./svg-shape.js";
 import { UNIVERSAL_STYLE_GROUPS, universalStateFields, universalStyle, universalVisual, universalNext, universalResolvedColors, universalClip, remapUniversalReferences } from "./universal-element.js";
 const universalFeedback = new Map();
 import { mediaRefreshUrl, iframeOptions, iframeCount, iframeIndex } from "./iframe-widget.js";
-import { imageOptions } from "./image-widget.js";
+import { imageOptions, imageCount, imageIndex } from "./image-widget.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
@@ -346,13 +346,14 @@ function indexedWidgetGroups(widget) {
     { label: "Überlauf X", key: `tabOverflowX${index}`, type: "select", default: "auto", options: ["none", "visible", "hidden", "scroll", "auto", "initial", "inherit"] },
     { label: "Überlauf Y", key: `tabOverflowY${index}`, type: "select", default: "auto", options: ["none", "visible", "hidden", "scroll", "auto", "initial", "inherit"] },
   ] }));
-  const specs = { "iframe-8": ["frames", 20, [{ label: "URL falls Wert", key: "frameSource" }, { label: "Kein Sandkasten", key: "frameNoSandbox", type: "checkbox", default: false }]], "image-8": ["Bild", 50, [{ label: "Quelle", key: "imageSource", previewImage: true }]], "view-in-widget-8": ["Seite", 50, [{ label: "Seite", key: "page", type: "page" }]] };
+  const specs = { "iframe-8": ["frames", 20, [{ label: "URL falls Wert", key: "frameSource" }, { label: "Kein Sandkasten", key: "frameNoSandbox", type: "checkbox", default: false }]], "image-8": ["Bild", 200, [{ label: "Quelle", key: "imageSource", previewImage: true }]], "view-in-widget-8": ["Seite", 50, [{ label: "Seite", key: "page", type: "page" }]] };
   const spec = specs[widget.type]; if (!spec) return [];
-  const [label, max, fields] = spec; const count = widget.type === "view-in-widget-8" ? viewCount(widget) : widget.type === "iframe-8" ? iframeCount(widget) : Math.max(1, Math.min(max, Math.trunc(Number(widget.count) || 1)));
-  return Array.from({ length: count + 1 }, (_, index) => ({ id: `indexed-${widget.type}-${index}`, label: `${label} [${index}]`, indexed: { index, count, max, fields }, fields: fields.map(field => ({ ...field, key: `${field.key}${index}`, label: `${field.label} [${index}]` })) }));
+  const [label, max, fields] = spec; const count = widget.type === "view-in-widget-8" ? viewCount(widget) : widget.type === "iframe-8" ? iframeCount(widget) : imageCount(widget);
+  return Array.from({ length: count + 1 }, (_, index) => ({ id: `indexed-${widget.type}-${index}`, label: `${label} [${index}]`, indexed: { index, count, max, min: widget.type === "image-8" ? 0 : 1, fields }, fields: fields.map(field => ({ ...field, key: `${field.key}${index}`, label: `${field.label} [${index}]` })) }));
 }
 
 function widgetStateIndex(widget) {
+  if (widget.type === "image-8") return imageIndex(widget, widget.entityId || widget.dataInputEnabled ? displayedWidgetState(widget) : 0);
   if (widget.type === "iframe-8") return iframeIndex(widget, displayedWidgetState(widget));
   if (widget.type === "view-in-widget-8") return viewIndex(widget, displayedWidgetState(widget));
   const value = displayedWidgetState(widget); const index = value === true || ["true", "on"].includes(value) ? 1 : value === false || ["false", "off"].includes(value) ? 0 : Number(value ?? 0);
@@ -569,8 +570,8 @@ function displayedWidgetState(widget) {
     return numericWidgetInput(widget, surface?.widgets || currentPage().widgets, state.entityStates) ?? "--";
   }
   if (widget.type === "string") return stringDisplayValue(widget, state.entityStates[widget.entityId], runtimeMode);
-  if ((runtimeMode || ["view-in-widget-8", "bool-svg", "red-number", "iframe-8", "universal-button"].includes(widget.type)) && widget.entityId) {
-    return state.entityStates[widget.entityId]?.state ?? "--";
+  if ((runtimeMode || ["view-in-widget-8", "bool-svg", "red-number", "iframe-8", "image-8", "universal-button"].includes(widget.type)) && widget.entityId) {
+    return state.entityStates[widget.entityId]?.state ?? (widget.type === "image-8" ? 0 : "--");
   }
   return widget.state;
 }
@@ -2603,7 +2604,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const dashboardSurfaceKey = `${state.projectId}:${activePage.id}`;
   const retainedDashboards = new Map();
   for (const child of [...stage.children]) {
-    if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8") || child.classList.contains("widget-iframe") || child.classList.contains("widget-iframe-8") || child.classList.contains("widget-image")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
+    if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8") || child.classList.contains("widget-iframe") || child.classList.contains("widget-iframe-8") || child.classList.contains("widget-image") || child.classList.contains("widget-image-8")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
     else child.remove();
   }
   const filterKey = filterPageKey(activePage);
@@ -2664,7 +2665,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     });
     if (widget.type === "dashboard-in-widget") { element.dataset.dashboardSurface = dashboardSurfaceKey; element.style.maxWidth = "800px"; element.style.maxHeight = "640px"; }
     if (widget.type === "view-in-widget-8") element.dataset.dashboardSurface = dashboardSurfaceKey;
-    if (["iframe", "iframe-8", "image"].includes(widget.type)) element.dataset.dashboardSurface = dashboardSurfaceKey;
+    if (["iframe", "iframe-8", "image", "image-8"].includes(widget.type)) element.dataset.dashboardSurface = dashboardSurfaceKey;
     const content = element.firstElementChild || document.createElement("div");
     content.className = "widget-content";
     Object.assign(content.style, {
@@ -3000,20 +3001,17 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       const index = widgetStateIndex(widget);
       const liveSource = widget.type === "image" && runtimeMode && widget.entityId ? safeUrl(displayedWidgetState(widget), true) : "";
       const source = liveSource || (widget.type === "image" ? widget.imageSrc : widget[`imageSource${index}`]);
-      if (widget.type === "image") {
-        content.style.display = "block";
-        const options = imageOptions(widget, runtimeMode);
-        for (const target of [element, content]) { target.style.pointerEvents = options.pointerEvents; target.style.userSelect = options.userSelect; target.style.touchAction = options.touchAction; }
-        const url = safeUrl(source, true);
-        if (url) {
-          let image = content.querySelector("img"); const created = !image || image.dataset.source !== url;
-          if (created) { content.replaceChildren(); image = document.createElement("img"); image.dataset.source = url; content.append(image); }
-          refreshImageMedia(image, widget, url, created);
-          const { draggable, ...style } = options; Object.assign(image.style, style); image.style.objectFit = "fill"; image.draggable = draggable; image.alt = widget.title || uiText("Bild");
-        } else content.replaceChildren();
-        if (!runtimeMode) { element.style.pointerEvents = ""; content.style.pointerEvents = "none"; }
-      } else if (source) { const image = document.createElement("img"); refreshableMedia(image, widget, source); image.style.objectFit = widget.stretch ? "fill" : "contain"; image.style.pointerEvents = widget.allowUserInteractions ? "auto" : "none"; image.alt = widget.title || "Bild"; content.append(image); }
-      else { content.classList.add("image-placeholder"); content.setAttribute("aria-label", widget.title || "Bild"); }
+      content.style.display = "block";
+      const options = imageOptions(widget, runtimeMode);
+      for (const target of [element, content]) { target.style.pointerEvents = options.pointerEvents; target.style.userSelect = options.userSelect; target.style.touchAction = options.touchAction; }
+      const url = safeUrl(source, true);
+      if (url) {
+        let image = content.querySelector("img"); const created = !image || image.dataset.source !== url;
+        if (created) { content.replaceChildren(); image = document.createElement("img"); image.dataset.source = url; content.append(image); }
+        refreshImageMedia(image, widget, url, created);
+        const { draggable, ...style } = options; Object.assign(image.style, style); image.style.objectFit = "fill"; image.draggable = draggable; image.alt = widget.title || uiText("Bild");
+      } else content.replaceChildren();
+      if (!runtimeMode) { element.style.pointerEvents = ""; content.style.pointerEvents = "none"; }
     } else if (widget.type === "string") {
       if (widget.icon) { const image = document.createElement("img"); image.className = "string-icon"; const size = Math.min(200, Math.max(5, Number(widget.iconSize) || 24)); image.style.width = image.style.height = `${size}px`; setIconImageSource(image, widget.icon); image.alt = ""; content.append(image); }
       const value = widget.dataInputEnabled === true ? displayedWidgetState(widget) : stringDisplayValue(widget, state.entityStates[widget.entityId], runtimeMode);
@@ -3967,7 +3965,7 @@ function field(descriptor, widget) {
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (widget.type === "dashboard-in-widget" && ["width", "height"].includes(descriptor.key)) { Object.assign(widget, dashboardSize(widget)); input.value = String(widget[descriptor.key]); }
     if (widget.type === "value-list-html-style" && descriptor.key === "count" && widget.testIndex !== "" && Number(widget.testIndex) > styledListCount(widget)) widget.testIndex = "";
-    if ((["sensor", "slider", "input-value", "string", "view-in-widget-8", "iframe-8", "universal-button"].includes(widget.type) && descriptor.key === "entityId") || descriptor.universalEntity ||
+    if ((["sensor", "slider", "input-value", "string", "view-in-widget-8", "iframe-8", "image-8", "universal-button"].includes(widget.type) && descriptor.key === "entityId") || descriptor.universalEntity ||
         (widget.type === "svg-connection" && ["animationSource", "animationNumberEntityId", "animationBooleanEntityId"].includes(descriptor.key))) {
       void refreshEditorLiveStates();
     }
@@ -3988,6 +3986,7 @@ function field(descriptor, widget) {
   if (descriptor.refreshProperties && input.tagName === "TEXTAREA") input.addEventListener("change", renderProperties);
   if (descriptor.refreshProperties && ["number", "range"].includes(input.type)) input.addEventListener("change", renderProperties);
   if (widget.type === "value-list-html-style" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
+  if (widget.type === "image-8" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
   if (widget.type === "table" && descriptor.key === "maxColumns") input.addEventListener("blur", renderProperties);
   if (descriptor.key === "preset") input.addEventListener("change", () => {
     if (PRESETS[input.value]) Object.assign(widget, PRESETS[input.value]);
@@ -4094,11 +4093,11 @@ function renderProperties() {
     const title = document.createElement("span"); title.className = "property-section-title"; title.textContent = group.label;
     summary.append(title);
     if (group.indexed) {
-      const { index: entryIndex, count, max, fields } = group.indexed;
+      const { index: entryIndex, count, max, min = 1, fields } = group.indexed;
       const swap = (a, b) => { for (const descriptor of fields) { const keyA = `${descriptor.key}${a}`; const keyB = `${descriptor.key}${b}`; [widget[keyA], widget[keyB]] = [widget[keyB], widget[keyA]]; } const enabled = widget.enabledPropertyGroups ??= {}; const aKey = `indexed-${widget.type}-${a}`; const bKey = `indexed-${widget.type}-${b}`; [enabled[aKey], enabled[bKey]] = [enabled[bKey], enabled[aKey]]; };
       for (const [label, disabled, action] of [
-        ["Kopieren", count >= max, () => { for (let i = count + 1; i > entryIndex + 1; i--) swap(i, i - 1); for (const descriptor of fields) widget[`${descriptor.key}${entryIndex + 1}`] = widget[`${descriptor.key}${entryIndex}`]; widget.count = count + 1; }],
-        ["Löschen", count <= 1, () => { for (let i = entryIndex; i < count; i++) swap(i, i + 1); for (const descriptor of fields) delete widget[`${descriptor.key}${count}`]; delete widget.enabledPropertyGroups?.[`indexed-${widget.type}-${count}`]; widget.count = count - 1; }],
+        ["Kopieren", count >= max, () => { for (let i = count + 1; i > entryIndex + 1; i--) swap(i, i - 1); for (const descriptor of fields) widget[`${descriptor.key}${entryIndex + 1}`] = widget[`${descriptor.key}${entryIndex}`]; if (widget.type === "image-8") (widget.enabledPropertyGroups ??= {})[`indexed-image-8-${entryIndex + 1}`] = widget.enabledPropertyGroups[`indexed-image-8-${entryIndex}`] ?? true; widget.count = count + 1; }],
+        ["Löschen", count <= min, () => { for (let i = entryIndex; i < count; i++) swap(i, i + 1); for (const descriptor of fields) delete widget[`${descriptor.key}${count}`]; delete widget.enabledPropertyGroups?.[`indexed-${widget.type}-${count}`]; widget.count = count - 1; }],
         ["Nach oben", entryIndex === 0, () => swap(entryIndex, entryIndex - 1)], ["Nach unten", entryIndex === count, () => swap(entryIndex, entryIndex + 1)],
       ]) {
         const button = document.createElement("button"); button.type = "button"; button.textContent = { Kopieren: "⧉", Löschen: "×", "Nach oben": "↑", "Nach unten": "↓" }[label]; button.title = label; button.setAttribute("aria-label", `${label} ${group.label}`); button.disabled = disabled; button.addEventListener("click", event => { event.preventDefault(); event.stopPropagation(); action(); renderProperties(); renderStage(); }); summary.append(button);
@@ -4127,7 +4126,7 @@ function renderProperties() {
       } else {
         widget.enabledPropertyGroups ??= {};
         widget.enabledPropertyGroups[propertyGroupKey(group, index)] = enabled.checked;
-        if (widget.type === "iframe-8" && group.indexed) renderStage();
+        if (["iframe-8", "image-8"].includes(widget.type) && group.indexed) renderStage();
       }
     });
     summary.append(enabled);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.168
+
+- Image 8 follows the standard indexed-image settings, with the highest index limited to 200 (Image [0] through Image [200]). Empty, disabled and invalid entries display no image.
+- Read the selected HA index in the editor and runtime, with index 0 as the unbound default. Reuse Image sizing, native interactions and persistent refresh timers.
+- Keep CSS General required, add optional migration hints and document the widget in German and English.
+
 ## 0.1.167
 
 - Image exposes the standard source, stretch, refresh and native-interaction settings with 200 × 130 defaults. Only CSS General starts enabled.

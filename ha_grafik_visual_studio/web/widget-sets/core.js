@@ -177,7 +177,7 @@ registerWidgetSet({
     basicDataWidget("view-in-widget-8", "View in widget 8", "▣", { state: 0, count: 1, width: 300, height: 200, entityId: "", page0: "", page1: "" }, [{ label: "Home-Assistant-Entität", key: "entityId" }, { label: "Werteanzahl bis", key: "count", type: "number", min: 0, max: 50, refreshProperties: true }], ""),
     basicDataWidget("iframe", "iFrame", "▣", { source: "", noFrame: true }, [{ label: "Quelle", key: "source" }, { label: "Kein Sandkasten", key: "noSandbox", type: "checkbox", default: false }, ...frameFields()], "Die Zielseite muss Einbettung erlauben."),
     basicDataWidget("iframe-8", "iFrame 8", "▣", { state: 0, count: 2, noFrame: true }, [...entityTest(), ...frameFields(), { label: "Werteanzahl bis", key: "count", type: "range", min: 1, max: 20, step: 1, refreshProperties: true }]),
-    basicDataWidget("image-8", "Image 8", "▧", { state: 0, count: 1 }, [...entityTest(), { label: "Werteanzahl bis", key: "count", type: "number", min: 1, max: 50, refreshProperties: true }, ...imageFields()]),
+    basicDataWidget("image-8", "Image 8", "▧", { count: 0, width: 200, height: 130, padding: 0, radius: 0, borderWidth: 0, backgroundColor: "transparent" }, [{ label: "Home-Assistant-Entität", key: "entityId" }, { label: "Werteanzahl bis", key: "count", type: "number", min: 0, max: 200, default: 0, refreshProperties: true }, ...imageFields()]),
     basicDataWidget("ackflag-html", "AckFlag HTML", "✓", { state: false, htmlTrue: "Bestätigt", htmlFalse: "Ausstehend" }, [...entityTest(), ...htmlAdditions(), { label: "HTML bei false", key: "htmlFalse", type: "html" }, { label: "HTML bei true", key: "htmlTrue", type: "html" }], ""),
     { type: "button", label: "Icon Toggle Button", searchTerms: ["Schaltfläche (Icon Ein/Aus)"], icon: "◉", defaults: { title: "Icon Toggle Button", entityId: "", state: "off", icon_off: "", icon_on: "", readOnly: false }, propertyGroups: [
       metadata(), visibility(),
@@ -365,6 +365,12 @@ registerWidgetSet({
       data.label = "Allgemein";
       delete data.hint;
       data.fields = data.fields.filter(field => field.key !== "state");
+      widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
+    }
+    if (widget.type === "image-8") {
+      data.label = "Allgemein";
+      delete data.hint;
+      Object.assign(widget.defaults, { stretch: false, refreshInterval: 0, refreshOnWake: false, refreshOnView: false, noCacheBuster: false, allowUserInteractions: false });
       widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
     }
     if (widget.type === "iframe") {

@@ -2,6 +2,8 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Die HA-Entität liefert den Bildindex: false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen; kein zusätzlicher HA-Helfer nötig. Ohne Entität wird Bild [0] angezeigt.": "The HA entity supplies the image index: false/off is 0, true/on is 1. It is read only; no additional HA helper is needed. Without an entity, Image [0] is displayed.",
+  "Höchster Index: maximal 200 ergibt 201 Einträge von [0] bis [200]. Deaktivierte oder leere Einträge zeigen kein Bild.": "Highest index: the maximum of 200 gives 201 entries from [0] to [200]. Disabled or empty entries display no image.",
   "Bild über die Studio-Dateiauswahl oder eine URL wählen. VIS2-Pfade mit _PRJ_NAME müssen durch den passenden Studio-Dateipfad ersetzt werden. Kein HA-Helfer nötig.": "Select an image using Studio files or a URL. Replace VIS2 paths containing _PRJ_NAME with the appropriate Studio file path. No HA helper is needed.",
   "Erlaubt normale Browseraktionen am Bild, zum Beispiel Ziehen oder das Kontextmenü. Es wird kein HA-Wert geschrieben; im Editor bleibt das Widget bearbeitbar.": "Allows normal browser actions on the image, such as dragging or the context menu. No HA state is written; the widget remains editable in the editor.",
   "Ohne Strecken: volle Breite mit ursprünglichem Seitenverhältnis; überstehende Höhe wird abgeschnitten. Mit Strecken: volle Breite und Höhe.": "Without stretching: full width with the original aspect ratio; excess height is clipped. With stretching: full width and height.",

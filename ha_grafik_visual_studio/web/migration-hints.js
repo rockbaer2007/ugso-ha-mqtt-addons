@@ -1,4 +1,8 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "image-8" && key === "entityId") return "Die HA-Entität liefert den Bildindex: false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen; kein zusätzlicher HA-Helfer nötig. Ohne Entität wird Bild [0] angezeigt.";
+  if (widget.type === "image-8" && key === "count") return "Höchster Index: maximal 200 ergibt 201 Einträge von [0] bis [200]. Deaktivierte oder leere Einträge zeigen kein Bild.";
+  if (widget.type === "image-8" && /^imageSource\d+$/.test(key)) return migrationHint({ type: "image" }, "imageSrc");
+  if (widget.type === "image-8" && ["stretch", "refreshInterval", "noCacheBuster", "allowUserInteractions"].includes(key)) return migrationHint({ type: "image" }, key);
   if (widget.type === "image" && key === "imageSrc") return "Bild über die Studio-Dateiauswahl oder eine URL wählen. VIS2-Pfade mit _PRJ_NAME müssen durch den passenden Studio-Dateipfad ersetzt werden. Kein HA-Helfer nötig.";
   if (widget.type === "image" && key === "allowUserInteractions") return "Erlaubt normale Browseraktionen am Bild, zum Beispiel Ziehen oder das Kontextmenü. Es wird kein HA-Wert geschrieben; im Editor bleibt das Widget bearbeitbar.";
   if (widget.type === "image" && key === "stretch") return "Ohne Strecken: volle Breite mit ursprünglichem Seitenverhältnis; überstehende Höhe wird abgeschnitten. Mit Strecken: volle Breite und Höhe.";
