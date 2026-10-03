@@ -2,6 +2,8 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Filterwerte entsprechen den Filterwörtern der Widgets auf dieser Seite. Kein HA-Helfer nötig. Textfarben werden als HEX gespeichert; Standard gilt beim Start der Runtime.": "Filter values match widget filter words on this page. No HA helper is needed. Text colors are stored as HEX; defaults apply when runtime starts.",
+  "Dropdown-Menü": "Dropdown menu", "Horizontale Tasten": "Horizontal buttons", "Vertikale Tasten": "Vertical buttons", "Klein": "Small",
   "HTML wird bereinigt angezeigt. Eingebettete Skripte und Event-Handler werden nicht ausgeführt; keine HA-Schreibentität nötig.": "HTML is sanitized. Embedded scripts and event handlers are not executed; no HA write entity is needed.",
   "HTML-Beschriftung zum Wechseln einer Projektseite; Navigation erfolgt nur in der Runtime.": "HTML label for switching project pages; navigation runs only in runtime.",
   "Unteransicht": "Subview",

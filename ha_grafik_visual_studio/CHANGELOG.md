@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.155
+
+- Filter dropdown now offers separate dropdown/button variants, small dropdowns, optional title/autofocus, page-local runtime filters and multi-value entries. Editor widgets remain visible.
+- Entry editing supports ordering, icons/images, HEX text and active text colors, optional alpha, clearing colors and a single default for single selection. Legacy RGB(A) colors remain compatible.
+- Active button colors affect text instead of backgrounds. Dropdown options support icons and keyboard navigation. New widgets use 200x50, empty entries and CSS General enabled; other CSS groups start disabled.
+
 ## 0.1.154
 
 - CSS General is required and always enabled for every registered widget, including future packages and projects with previously disabled groups. Geometry is retained during export.

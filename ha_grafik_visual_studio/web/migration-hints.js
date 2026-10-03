@@ -1,4 +1,5 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "filter-dropdown" && key === "filterEntries") return "Filterwerte entsprechen den Filterwörtern der Widgets auf dieser Seite. Kein HA-Helfer nötig. Textfarben werden als HEX gespeichert; Standard gilt beim Start der Runtime.";
   if (widget.type === "navigation" && key === "navHtml") return "HTML wird bereinigt angezeigt; eingebettete Skripte werden nicht ausgeführt. Seitenwechsel benötigt keinen HA-Helfer.";
   if (widget.type === "navigation" && key === "subView") return "VIS2-Unteransichten dienen speziellen Navigationssystemen, zum Beispiel Jaeger Design. Diese Funktion ist in Studio noch nicht angebunden; Tabs sind davon unabhängig.";
   if (widget.type === "html" && key === "htmlContent") return "HTML wird bereinigt angezeigt. Eingebettete Skripte und Event-Handler werden nicht ausgeführt; keine HA-Schreibentität nötig.";

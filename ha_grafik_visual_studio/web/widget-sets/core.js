@@ -323,8 +323,7 @@ registerWidgetSet({
       { label: "HTML", key: "navHtml", type: "html" }, { label: "View zum Navigieren", key: "targetPage", type: "page" },
       { label: "Unteransicht", key: "subView", disabled: true },
     ], "HTML-Beschriftung zum Wechseln einer Projektseite; Navigation erfolgt nur in der Runtime."),
-    basicDataWidget("filter-dropdown", "filter - dropdown", "▽", { title: "Filter", filterOptions: "Licht;Heizung;Sicherheit", filterType: "horizontal", variant: "outlined" }, [
-      { label: "Filteroptionen (durch Semikolon getrennt)", key: "filterOptions" },
+    basicDataWidget("filter-dropdown", "filter - dropdown", "▽", { filterEntries: [], filterType: "horizontal", variant: "outlined", dropdownVariant: "standard", dropdownSmall: false, multiple: false, hideNoFilter: false, noFilterLabel: "", width: 200, height: 50 }, [
     ], "Ordne Widgets über „Filterwort“ in Generell einer Filteroption zu."),
     { type: "text", label: "Text", icon: "T", defaults: { title: "Text", textContent: "Eigener Text", backgroundColor: "", borderWidth: 0, borderStyle: "none" }, propertyGroups: [
       metadata(), visibility(),
@@ -373,7 +372,15 @@ registerWidgetSet({
       Object.assign(widget.defaults, { noHeader: false, showScrollbar: false, newEventFirst: false, printText: "" });
       add({ label: "Ereignis ID", key: "eventEntityId" }, { label: "Neues Ereignis am Anfang", key: "newEventFirst", type: "checkbox", default: false }, { label: "Bestätigung ID (HA-Helfer)", key: "ackEntityId" }, { label: "Ausgewählt ID (input_text)", key: "selectedEntityId" }, { label: "Kein Header", key: "noHeader", type: "checkbox", default: false }, { label: "Zeige Scrollbar", key: "showScrollbar", type: "checkbox", default: false }, { label: "Detailed widget", key: "detailWidget", type: "widget" }, { label: "Maximale Zeilenanzahl", key: "maxRows", type: "number", min: 0 }, { label: "Kolumnanzahl", key: "maxColumns", type: "number", min: 0, max: 20, refreshProperties: true }, { label: "btn_print", key: "printText", default: "" }, { label: "view_for_print", key: "printPage", type: "page" });
     }
-    if (widget.type === "filter-dropdown") add({ label: "editor", key: "filterEntries", type: "filter-editor" }, { label: "Typ", key: "filterType", type: "select", options: ["horizontal", "vertical", "dropdown"], default: "horizontal" }, { label: "Mehrfachauswahl", key: "multiple", type: "checkbox", default: false }, { label: "Keine Option Kein Filter", key: "hideNoFilter", type: "checkbox", default: false }, { label: "Etikett Kein Filter", key: "noFilterLabel", default: "Kein Filter" }, { label: "Variante", key: "variant", type: "select", options: ["outlined", "contained", "text"], default: "outlined" });
+    if (widget.type === "filter-dropdown") {
+      const dropdown = { key: "filterType", value: "dropdown" };
+      add({ label: "editor", key: "filterEntries", type: "filter-editor" }, { label: "Typ", key: "filterType", type: "select", refreshProperties: true, options: [{ value: "dropdown", label: "Dropdown-Menü" }, { value: "horizontal", label: "Horizontale Tasten" }, { value: "vertical", label: "Vertikale Tasten" }], default: "horizontal" },
+        { label: "Name", key: "dropdownTitle", showWhen: dropdown }, { label: "Autofokus", key: "autofocus", type: "checkbox", default: false, showWhen: dropdown },
+        { label: "Mehrfachauswahl", key: "multiple", type: "checkbox", default: false }, { label: "Keine Option Kein Filter", key: "hideNoFilter", type: "checkbox", default: false, refreshProperties: true }, { label: "Etikett Kein Filter", key: "noFilterLabel", default: "", showWhen: { key: "hideNoFilter", value: false, default: false } },
+        { label: "Variante", key: "variant", type: "select", options: ["outlined", "contained", "text"], default: "outlined" },
+        { label: "Variante", key: "dropdownVariant", type: "select", options: ["standard", "outlined", "filled"], default: "standard", showWhen: dropdown }, { label: "Klein", key: "dropdownSmall", type: "checkbox", default: false, showWhen: dropdown });
+      widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
+    }
     if (["button", "toggle", "checkbox", "bulb", "slider", "sensor", "string", "string-raw", "image-source", "time-value", "timestamp-value", "timestamp", "last-changed", "value-list-text", "value-list-html", "value-list-html-style", "bool-display", "bool-select", "bool-html-control", "table", "bar", "gauge", "image"].includes(widget.type)) {
       widget.propertyGroups.push(signalImages());
     }

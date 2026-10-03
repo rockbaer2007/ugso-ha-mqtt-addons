@@ -11,6 +11,7 @@ import { boolSelectOn } from "./bool-select.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
+import { filterEntries, defaultFilters, filterSelected, chooseFilter, filterHex } from "./filter-widget.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
@@ -155,6 +156,7 @@ function widgetPropertyGroups(widget) {
     { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
   ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
+  if (widget.type === "filter-dropdown") groups = groups.map(group => ({ ...group, fields: group.fields.filter(field => field.key !== "variant" || widget.filterType !== "dropdown") }));
   if (["value-list-html", "value-list-html-style"].includes(widget.type)) {
     const options = [{ value: "", label: "Livewert / Vorschauzustand" }, ...htmlListEntries(widget).map((_, index) => ({ value: String(index), label: String(index) }))];
     groups = groups.map(group => ({ ...group, fields: group.fields.map(field => field.key === "testIndex" ? { ...field, type: "select", default: "", options } : field) }));
@@ -297,6 +299,9 @@ function setIconImageSource(image, value, color = "") {
 function propertyGroupKey(group, index) {
   return group.id || `${index}-${group.label.toLocaleLowerCase("de").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
 }
+
+const pageFilters = new Map();
+const filterPageKey = page => `${state.projectId}:${page.id}`;
 
 function propertyGroupEnabled(widget, group, index) {
   if (group.required || (group.css && group.label === "CSS Allgemein")) return true;
@@ -2463,11 +2468,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   stage.className = `stage${runtimeGrid ? " runtime-grid" : ""}${hideEditorGrid ? " no-grid" : ""}${pageClasses.map((name) => ` ${name}`).join("")}`;
   if (!embedded) $("#runtime-pages-menu-toggle").hidden = page.navigationVisible === false;
   stage.replaceChildren();
-  if (state.activeFilter === undefined) {
-    const filter = activePage.widgets.find(widget => widget.type === "filter-dropdown"); const defaults = (filter?.filterEntries || []).filter(entry => entry.isDefault).map(entry => String(entry.value)); state.activeFilter = filter?.multiple ? defaults : defaults.slice(0, 1);
-  }
-  const activeFilter = state.activeFilter || "";
-  const selectedFilters = Array.isArray(activeFilter) ? activeFilter : activeFilter ? [activeFilter] : [];
+  const filterKey = filterPageKey(activePage);
+  if (!pageFilters.has(filterKey)) pageFilters.set(filterKey, defaultFilters(activePage.widgets.find(widget => widget.type === "filter-dropdown") || {}));
+  const selectedFilters = pageFilters.get(filterKey);
   for (const widget of activePage.widgets) {
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
     if (widget.visible === false) continue;
@@ -2485,7 +2488,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       }
     }
     const filterTags = String(widget.filterWord || "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
-    if (widget.type !== "filter-dropdown" && selectedFilters.length && filterTags.length && !selectedFilters.some(value => filterTags.includes(value))) continue;
+    if (runtimeMode && widget.type !== "filter-dropdown" && selectedFilters.length && filterTags.length && !selectedFilters.some(value => filterTags.includes(value))) continue;
     if (runtimeMode && widget.type === "linebox") {
       const junction = renderLineboxJunction(widget, activePage.widgets);
       if (junction) stage.append(junction);
@@ -2973,16 +2976,38 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       } else if (href) { const link = document.createElement("a"); link.className = "widget-navigation"; link.href = href; appendSafeHtml(link, widget.navHtml ?? widget.navLabel ?? "Öffnen"); content.append(link); }
       else appendSafeHtml(content, widget.navHtml ?? widget.navLabel ?? "");
     } else if (widget.type === "filter-dropdown") {
-      const entries = Array.isArray(widget.filterEntries) ? widget.filterEntries : String(widget.filterOptions || "").split(/[;,\n]/).map(value => ({ value: value.trim(), title: value.trim() })).filter(entry => entry.value);
+      const entries = filterEntries(widget);
       const values = widget.hideNoFilter ? entries : [{ value: "", title: widget.noFilterLabel || "Kein Filter" }, ...entries];
-      const choose = value => { state.activeFilter = widget.multiple && value ? selectedFilters.includes(value) ? selectedFilters.filter(item => item !== value) : [...selectedFilters, value] : value ? [value] : []; renderStage(); };
+      const choose = value => { if (!runtimeMode) return; pageFilters.set(filterKey, chooseFilter(selectedFilters, value, widget.multiple)); renderStage(); };
+      const fillItem = (element, entry, dropdown = false) => {
+        const selected = filterSelected(entry, selectedFilters);
+        const color = dropdown ? (selected ? entry.textColor : entry.activeColor || entry.textColor) : (selected ? entry.activeColor || entry.textColor : entry.textColor);
+        element.style.color = color || "";
+        const icon = entry.icon || entry.image;
+        if (icon) { const image = document.createElement("img"); image.alt = ""; image.width = 24; image.height = 24; setIconImageSource(image, icon, color || ""); element.append(image); }
+        element.append(document.createTextNode(entry.title || entry.value));
+      };
       if (!widget.filterType || widget.filterType === "dropdown") {
-        const select = document.createElement("select"); select.className = "widget-control"; select.multiple = widget.multiple === true; select.setAttribute("aria-label", widget.title || "Widget-Filter");
-        for (const entry of values) { const option = document.createElement("option"); option.value = String(entry.value); option.textContent = entry.title || entry.value; option.selected = selectedFilters.includes(String(entry.value)) || !selectedFilters.length && !entry.value; select.append(option); }
-        select.addEventListener("change", event => { event.stopPropagation(); state.activeFilter = [...select.selectedOptions].map(option => option.value).filter(Boolean); renderStage(); }); content.append(select);
+        content.style.overflow = "visible"; content.style.flexDirection = "column"; content.style.alignItems = "stretch";
+        const dropdown = document.createElement("details"); dropdown.className = `filter-dropdown-control ${widget.dropdownVariant || "standard"}${widget.dropdownSmall ? " small" : ""}`;
+        const normalLayer = element.style.zIndex;
+        dropdown.addEventListener("toggle", () => { element.style.zIndex = dropdown.open ? "1000" : normalLayer; });
+        const summary = document.createElement("summary"); summary.setAttribute("aria-label", widget.dropdownTitle || "Widget-Filter");
+        const selected = entries.filter(entry => filterSelected(entry, selectedFilters));
+        summary.textContent = selected.length ? selected.map(entry => entry.title || entry.value).join(", ") : widget.hideNoFilter ? "" : widget.noFilterLabel || uiText("Kein Filter");
+        if (selected.length === 1) summary.style.color = selected[0].textColor || "";
+        summary.addEventListener("click", event => { event.stopPropagation(); if (!runtimeMode) event.preventDefault(); });
+        const menu = document.createElement("div"); menu.className = "widget-filter-options"; menu.setAttribute("role", "listbox"); menu.setAttribute("aria-label", widget.dropdownTitle || "Widget-Filter"); menu.setAttribute("aria-multiselectable", String(widget.multiple === true));
+        for (const entry of values) { const option = document.createElement("button"); option.type = "button"; option.setAttribute("role", "option"); option.setAttribute("aria-selected", String(filterSelected(entry, selectedFilters))); fillItem(option, entry, true); option.addEventListener("click", event => { event.stopPropagation(); choose(entry.value); }); menu.append(option); }
+        summary.addEventListener("keydown", event => { if (runtimeMode && event.key === "ArrowDown") { event.preventDefault(); dropdown.open = true; menu.firstElementChild?.focus(); } });
+        dropdown.addEventListener("focusout", event => { if (!dropdown.contains(event.relatedTarget)) dropdown.open = false; });
+        menu.addEventListener("keydown", event => { if (event.key === "Escape") { dropdown.open = false; summary.focus(); } if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) { event.preventDefault(); const options = [...menu.children], index = options.indexOf(document.activeElement); options[event.key === "Home" ? 0 : event.key === "End" ? options.length - 1 : (index + (event.key === "ArrowUp" ? -1 : 1) + options.length) % options.length]?.focus(); } });
+        dropdown.append(summary, menu); content.append(dropdown);
+        if (widget.dropdownTitle) { const title = document.createElement("span"); title.className = "filter-dropdown-title"; title.textContent = widget.dropdownTitle; content.prepend(title); }
+        if (runtimeMode && widget.autofocus) queueMicrotask(() => { if (summary.isConnected) summary.focus(); });
       } else {
         const buttons = document.createElement("div"); buttons.className = `widget-filter-buttons ${widget.filterType}`;
-        for (const entry of values) { const button = document.createElement("button"); button.type = "button"; const selected = entry.value ? selectedFilters.includes(String(entry.value)) : !selectedFilters.length; button.setAttribute("aria-pressed", selected); button.className = widget.variant || "outlined"; button.style.color = entry.textColor || ""; button.style.backgroundColor = selected ? entry.activeColor || "" : ""; const icon = entry.image || entry.icon; if (icon) { const image = document.createElement("img"); image.alt = ""; image.width = 18; image.height = 18; setIconImageSource(image, icon); button.append(image); } button.append(document.createTextNode(entry.title || entry.value)); button.addEventListener("click", event => { event.stopPropagation(); choose(String(entry.value)); }); buttons.append(button); } content.append(buttons);
+        for (const entry of values) { const button = document.createElement("button"); button.type = "button"; button.setAttribute("aria-pressed", filterSelected(entry, selectedFilters)); button.className = widget.variant || "outlined"; fillItem(button, entry); button.addEventListener("click", event => { event.stopPropagation(); choose(entry.value); }); buttons.append(button); } content.append(buttons);
       }
     } else if (widget.type === "sensor") {
       const display = numberDisplay({ ...widget, entityId: widget.numericSource === "dock" ? "dock" : widget.numericSource === "preview" ? "" : widget.entityId }, state.entityStates[widget.entityId]);
@@ -3498,14 +3523,37 @@ function openMathDialog(widget) {
 }
 
 function openFilterEditor(widget) {
-  const draft = Array.isArray(widget.filterEntries) ? structuredClone(widget.filterEntries) : String(widget.filterOptions || "").split(/[;,\n]/).filter(Boolean).map(value => ({ value, title: value }));
+  const draft = filterEntries(widget).map(entry => ({ ...entry, textColor: filterHex(entry.textColor), activeColor: filterHex(entry.activeColor) }));
+  if (!widget.multiple) { let hasDefault = false; for (const entry of draft) { if (entry.isDefault) { entry.isDefault = !hasDefault; hasDefault = true; } } }
   const dialog = document.createElement("dialog"); dialog.className = "studio-dialog filter-editor";
+  dialog.setAttribute("aria-label", uiText("Filter bearbeiten"));
   const heading = document.createElement("h2"); heading.textContent = "Filter bearbeiten"; const list = document.createElement("div"); list.className = "filter-editor-list";
-  const fields = [{ label: "Wert", key: "value" }, { label: "Titel", key: "title" }, { label: "Symbol", key: "icon", previewImage: true }, { label: "Bild", key: "image", previewImage: true }, { label: "Textfarbe", key: "textColor", type: "color" }, { label: "Aktive Farbe", key: "activeColor", type: "color" }, { label: "Standard", key: "isDefault", type: "checkbox", default: false }];
-  const draw = () => { list.replaceChildren(); draft.forEach((entry, index) => { const row = document.createElement("div"); row.className = "filter-editor-row"; for (const descriptor of fields) row.append(field(descriptor, entry)); const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "×"; remove.setAttribute("aria-label", `Eintrag ${index + 1} löschen`); remove.addEventListener("click", () => { draft.splice(index, 1); draw(); }); row.append(remove); list.append(row); }); };
+  const fields = [{ label: "Wert", key: "value" }, { label: "Titel", key: "title" }, { label: "Symbol", key: "icon", previewImage: true }, { label: "Bild", key: "image", previewImage: true }];
+  const colorField = (entry, key, title) => {
+    const label = document.createElement("label"); label.textContent = uiText(title);
+    const controls = document.createElement("span"); controls.className = "filter-color-controls";
+    const text = document.createElement("input"); text.type = "text"; text.placeholder = "#RRGGBB"; text.pattern = "#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?"; text.value = entry[key] || ""; text.setAttribute("aria-label", `${uiText(title)} HEX`);
+    const swatch = document.createElement("input"); swatch.type = "color"; swatch.value = /^#[0-9a-f]{6,8}$/i.test(text.value) ? text.value.slice(0, 7) : "#000000"; swatch.setAttribute("aria-label", `${uiText(title)} ${uiText("Farbe wählen")}`);
+    text.addEventListener("input", () => { entry[key] = text.value; if (/^#[0-9a-f]{6,8}$/i.test(text.value)) swatch.value = text.value.slice(0, 7); });
+    swatch.addEventListener("input", () => { entry[key] = text.value = swatch.value.toUpperCase(); });
+    const clear = document.createElement("button"); clear.type = "button"; clear.textContent = "×"; clear.setAttribute("aria-label", `${uiText(title)} ${uiText("Löschen")}`); clear.onclick = () => { text.value = entry[key] = ""; };
+    controls.append(text, swatch, clear); label.append(controls); return label;
+  };
+  const draw = () => { list.replaceChildren(); draft.forEach((entry, index) => {
+    const row = document.createElement("div"); row.className = "filter-editor-row";
+    for (const descriptor of fields) row.append(field(descriptor, entry));
+    row.append(colorField(entry, "textColor", "Textfarbe"), colorField(entry, "activeColor", "Aktive Farbe"));
+    const standard = field({ label: "Standard", key: "isDefault", type: "checkbox", default: false }, entry);
+    standard.querySelector("input").addEventListener("change", () => { if (!widget.multiple && entry.isDefault) { for (const other of draft) if (other !== entry) other.isDefault = false; draw(); } }); row.append(standard);
+    const actions = document.createElement("span"); actions.className = "filter-row-actions";
+    for (const [text, label, disabled, action] of [["↑", "Nach oben", index === 0, () => { [draft[index - 1], draft[index]] = [draft[index], draft[index - 1]]; }], ["↓", "Nach unten", index === draft.length - 1, () => { [draft[index + 1], draft[index]] = [draft[index], draft[index + 1]]; }], ["×", "Löschen", false, () => draft.splice(index, 1)]]) {
+      const button = document.createElement("button"); button.type = "button"; button.textContent = text; button.disabled = disabled; button.setAttribute("aria-label", `${uiText(label)} ${index + 1}`); button.onclick = () => { action(); draw(); }; actions.append(button);
+    }
+    row.append(actions); list.append(row);
+  }); };
   const add = document.createElement("button"); add.type = "button"; add.textContent = "+ Hinzufügen"; add.addEventListener("click", () => { draft.push({ value: "", title: "", isDefault: false }); draw(); });
   const actions = document.createElement("div"); actions.className = "dialog-actions";
-  for (const [label, apply] of [["Anwenden", true], ["Abbrechen", false]]) { const button = document.createElement("button"); button.type = "button"; button.textContent = label; button.addEventListener("click", () => { if (apply) { widget.filterEntries = draft; const selected = draft.filter(entry => entry.isDefault).map(entry => String(entry.value)); state.activeFilter = widget.multiple ? selected : selected.slice(0, 1); renderStage(); } dialog.close(); }); actions.append(button); }
+  for (const [label, apply] of [["Anwenden", true], ["Abbrechen", false]]) { const button = document.createElement("button"); button.type = "button"; button.textContent = label; button.addEventListener("click", () => { if (apply) { recordHistorySnapshot(); widget.filterEntries = draft.map(entry => ({ ...entry, textColor: filterHex(entry.textColor), activeColor: filterHex(entry.activeColor) })); pageFilters.set(filterPageKey(currentPage()), defaultFilters(widget)); renderStage(); } dialog.close(); }); actions.append(button); }
   draw(); dialog.append(heading, add, list, actions); document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); dialog.showModal();
 }
 
@@ -3581,7 +3629,7 @@ function field(descriptor, widget) {
     return choices;
   }
   const wrapper = document.createElement("label"); wrapper.textContent = descriptor.label;
-  if (descriptor.type === "filter-editor") { const button = document.createElement("button"); button.type = "button"; button.textContent = "Bearbeiten"; button.setAttribute("aria-label", "Filter bearbeiten"); button.addEventListener("click", () => openFilterEditor(widget)); wrapper.append(button); return wrapper; }
+  if (descriptor.type === "filter-editor") { const button = document.createElement("button"); button.type = "button"; button.textContent = "Bearbeiten"; button.setAttribute("aria-label", "Filter bearbeiten"); button.addEventListener("click", () => openFilterEditor(widget)); wrapper.append(button); appendMigrationHint(wrapper, button, widget, descriptor.key); return wrapper; }
   if (descriptor.type === "connection-points") { const button = document.createElement("button"); button.type = "button"; button.textContent = `${Array.isArray(widget.connectionPoints) ? widget.connectionPoints.length : 0} Punkte bearbeiten`; button.addEventListener("click", () => openConnectionPointsEditor(widget)); wrapper.append(button); return wrapper; }
   let input;
   if (descriptor.type === "textarea" || htmlField) input = document.createElement("textarea");
@@ -3707,10 +3755,15 @@ function field(descriptor, widget) {
     if (PRESETS[input.value]) Object.assign(widget, PRESETS[input.value]);
     render();
   });
-  const migration = migrationHint(widget, descriptor.key);
+  appendMigrationHint(wrapper, input, widget, descriptor.key);
+  return wrapper;
+}
+
+function appendMigrationHint(wrapper, input, widget, key) {
+  const migration = migrationHint(widget, key);
   if (migration && !runtimeMode && state.project.settings?.showMigrationHints !== false) {
     const hint = document.createElement("small"); hint.className = "migration-hint"; hint.textContent = uiText(migration);
-    hint.id = `migration-${widget.id}-${descriptor.key}`; hint.setAttribute("aria-hidden", "true");
+    hint.id = `migration-${widget.id}-${key}`; hint.setAttribute("aria-hidden", "true");
     input.setAttribute("aria-describedby", hint.id);
     let background = $("#properties");
     let channels = [0, 0, 0];
@@ -3722,7 +3775,6 @@ function field(descriptor, widget) {
     hint.dataset.theme = channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722 > 140 ? "light" : "dark";
     wrapper.append(hint);
   }
-  return wrapper;
 }
 
 function renderProperties() {
