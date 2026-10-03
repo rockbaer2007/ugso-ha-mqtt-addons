@@ -33,6 +33,8 @@ const ENGLISH = {
   "0 oder leer deaktiviert die Aktualisierung. Millisekunden bauen den HTML-Inhalt neu auf; das ist keine HA-Abfragezeit.": "0 or empty disables refresh. Milliseconds rebuild the HTML content; this is not an HA polling interval.",
   "Durchsichtigkeit (Schatten/CSS)": "Transparency (shadow/CSS)",
   "SVG bei false": "SVG when false",
+  "Kreis": "Circle",
+  "Liest einen Zahlenwert; kein HA-Helfer nötig. Bei 0, false oder fehlendem Zahlenwert wird die Anzeige in der Runtime ausgeblendet. Im Editor bleibt sie bearbeitbar.": "Reads a numeric value; no HA helper required. Zero, false or a missing numeric value hides the display in runtime. It remains editable in the editor.",
   "SVG bei true": "SVG when true",
   "Im Editor bleibt das SVG mindestens zu 20 % sichtbar. In der Runtime gilt die eingestellte Durchsichtigkeit vollständig.": "The SVG remains at least 20% visible in the editor. Runtime uses the configured opacity without this limit.",
   "CSS-Rand angeben, zum Beispiel 2px solid blue. Eine einzelne 2 ist keine vollständige CSS-Randangabe.": "Enter a CSS border, for example 2px solid blue. A bare 2 is not a complete CSS border.",

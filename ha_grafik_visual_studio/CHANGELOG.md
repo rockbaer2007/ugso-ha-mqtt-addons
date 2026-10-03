@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.162
+
+- Red Number follows VIS2 geometry (52 × 30), circle/pin rendering, three editable HTML fields and numeric singular/plural selection.
+- Runtime hides zero or missing numeric values; the editor reads bound entities and retains an editable placeholder. Circle borders use 3px, color controls use HEX, optional CSS starts disabled.
+
 ## 0.1.161
 
 - Bool SVG follows VIS2 defaults: 85 × 85 pixels, two editable star snippets, native SVG coordinates, read-only mode and opacity with a 20% visibility floor in the editor.

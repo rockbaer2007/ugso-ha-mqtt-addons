@@ -9,6 +9,7 @@ import { htmlListEntries, htmlListEntry, styledListCount } from "./value-list.js
 import { tableRows, tableColumns, updateTableEvent } from "./table-data.js";
 import { boolSelectOn } from "./bool-select.js";
 import { boolSvgOn, boolSvgNext, boolSvgOpacity } from "./bool-svg.js";
+import { redNumberDisplay } from "./red-number.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
@@ -560,7 +561,7 @@ function displayedWidgetState(widget) {
     return numericWidgetInput(widget, surface?.widgets || currentPage().widgets, state.entityStates) ?? "--";
   }
   if (widget.type === "string") return stringDisplayValue(widget, state.entityStates[widget.entityId], runtimeMode);
-  if ((runtimeMode || ["view-in-widget-8", "bool-svg"].includes(widget.type)) && widget.entityId) {
+  if ((runtimeMode || ["view-in-widget-8", "bool-svg", "red-number"].includes(widget.type)) && widget.entityId) {
     return state.entityStates[widget.entityId]?.state ?? "--";
   }
   return widget.state;
@@ -2813,10 +2814,26 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (widget.type === "note") {
       const note = document.createElement("div"); note.className = `note-content${widget.hideCorner ? " no-corner" : ""}`; appendSafeHtml(note, `${widget.prefix || ""}${displayedWidgetState(widget) ?? ""}${widget.suffix || ""}`); content.append(note);
     } else if (widget.type === "red-number") {
-      const liveValue = displayedWidgetState(widget);
-      const badge = document.createElement("span"); badge.className = `widget-badge ${widget.badgeType === "pin" ? "pin" : "circle"}`; badge.style.background = widget.badgeBackground || "#c62828";
-      badge.style.border = `1px solid ${widget.badgeBorder || "transparent"}`; badge.style.borderRadius = `${Number(widget.radius ?? 16)}px`;
-      appendSafeHtml(badge, widget.prefix || ""); badge.append(document.createTextNode(String(liveValue ?? ""))); appendSafeHtml(badge, Number(liveValue) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""); content.append(badge);
+      const display = redNumberDisplay(displayedWidgetState(widget), runtimeMode, Boolean(widget.entityId || widget.numericSource || widget.dataInputEnabled));
+      if (display.visible) {
+        const pin = widget.badgeType === "pin";
+        const badge = document.createElement("div"); badge.className = `widget-badge ${pin ? "pin" : "circle"}`;
+        badge.style.color = widget.textColor || widget.color || "#FFFFFF";
+        badge.style.fontSize = `${widget.fontSize ?? 20}px`; badge.style.fontFamily = widget.fontFamily || "Helvetica, sans-serif";
+        if (pin) {
+          const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 16 24");
+          const path = document.createElementNS(svg.namespaceURI, "path");
+          path.setAttribute("d", "M8 0 C3.6 0 0 3.6 0 8 C0 13 8 24 8 24 C8 24 16 13 16 8 C16 3.6 12.4 0 8 0 Z");
+          path.setAttribute("fill", widget.badgeBackground || "#FF0000"); svg.append(path); badge.append(svg);
+        } else {
+          badge.style.background = widget.badgeBackground || "#FF0000";
+          badge.style.border = `3px solid ${widget.badgeBorder || "#FFFFFF"}`; badge.style.borderRadius = `${Number(widget.radius ?? 16)}px`;
+        }
+        const label = document.createElement("span"); label.className = "widget-badge-label";
+        appendSafeHtml(label, widget.prefix || ""); label.append(document.createTextNode(display.text));
+        appendSafeHtml(label, display.singular ? widget.suffixSingular || "" : widget.suffixPlural || "");
+        badge.append(label); content.append(badge);
+      }
     } else if (widget.type === "bool-svg") {
       const svgState = displayedWidgetState(widget);
       const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -3779,7 +3796,7 @@ function field(descriptor, widget) {
   if (descriptor.step !== undefined) input.step = descriptor.step;
   if (input.type === "checkbox" && descriptor.key?.startsWith("dock_")) input.dataset.dockPoint = descriptor.key;
   if (input.type === "checkbox") input.checked = widget[descriptor.key] ?? descriptor.default ?? true;
-  else input.value = widget[descriptor.key] ?? descriptor.default ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
+  else input.value = widget.type === "red-number" && descriptor.type === "color" ? filterHex(widget[descriptor.key] ?? descriptor.default ?? "#FFFFFF") : widget[descriptor.key] ?? descriptor.default ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
   input.disabled = descriptor.disabled === true;
   if (widget.type === "html-state" && descriptor.key === "writeValue") input.value = widget.writeValue ?? widget.state ?? "";
   let preview;
