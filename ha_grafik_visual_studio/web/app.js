@@ -8,6 +8,7 @@ import { numberDisplay } from "./number-display.js";
 import { htmlListEntries, htmlListEntry, styledListCount } from "./value-list.js";
 import { tableRows, tableColumns, updateTableEvent } from "./table-data.js";
 import { boolSelectOn } from "./bool-select.js";
+import { migrationHint } from "./migration-hints.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
@@ -3663,6 +3664,7 @@ function field(descriptor, widget) {
     void updatePreview();
     renderStage();
     if (descriptor.refreshProperties && input.tagName !== "TEXTAREA" && !["number", "range"].includes(input.type)) renderProperties();
+    if (["readOnly", "interaction"].includes(descriptor.key)) renderProperties();
     if (["name", "title"].includes(descriptor.key) && widget.id) {
       renderWidgetFinder();
       const heading = document.querySelector(".selected-widget-heading");
@@ -3678,6 +3680,19 @@ function field(descriptor, widget) {
     if (PRESETS[input.value]) Object.assign(widget, PRESETS[input.value]);
     render();
   });
+  const migration = migrationHint(widget, descriptor.key);
+  if (migration && !runtimeMode && state.project.settings?.showMigrationHints !== false) {
+    const hint = document.createElement("small"); hint.className = "migration-hint"; hint.textContent = uiText(migration);
+    let background = $("#properties");
+    let channels = [0, 0, 0];
+    while (background) {
+      const color = getComputedStyle(background).backgroundColor.match(/[\d.]+/g)?.map(Number);
+      if (color?.length >= 3 && (color.length < 4 || color[3] > 0)) { channels = color.slice(0, 3); break; }
+      background = background.parentElement;
+    }
+    hint.dataset.theme = channels[0] * .2126 + channels[1] * .7152 + channels[2] * .0722 > 140 ? "light" : "dark";
+    wrapper.append(hint);
+  }
   return wrapper;
 }
 
@@ -4185,6 +4200,7 @@ function openSettingsDialog() {
   if (!state.project) { $("#status").textContent = "Projekt wird noch geladen …"; return; }
   const settings = state.project.settings ??= {};
   $("#settings-auto-save").checked = settings.autoSave !== false;
+  $("#settings-migration-hints").checked = settings.showMigrationHints !== false;
   $("#settings-auto-save-delay").value = settings.autoSaveDelaySeconds ?? 5;
   $("#settings-auto-save-delay").disabled = settings.autoSave === false;
   $("#settings-language").value = getLanguagePreference();
@@ -4263,6 +4279,7 @@ $("#settings-save").addEventListener("click", async (event) => {
   state.project.settings ??= {};
   Object.assign(state.project.settings, {
     autoSave: $("#settings-auto-save").checked,
+    showMigrationHints: $("#settings-migration-hints").checked,
     autoSaveDelaySeconds: Math.max(1, Math.min(300, Math.round(Number($("#settings-auto-save-delay").value) || 5))),
     dockColor: /^#[0-9a-f]{6}$/i.test($("#settings-dock-color").value) ? $("#settings-dock-color").value : "#ffd54f",
     outputDockColor: /^#[0-9a-f]{6}$/i.test($("#settings-output-dock-color").value) ? $("#settings-output-dock-color").value : "#74c0fc",

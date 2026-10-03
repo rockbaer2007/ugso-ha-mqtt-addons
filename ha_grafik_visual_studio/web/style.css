@@ -610,6 +610,8 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .property-fields input[type="color"] { height: 30px; padding: 2px; }
 .property-fields input:disabled, .property-fields select:disabled { opacity: .55; cursor: not-allowed; }
 .property-hint { margin: 0; color: var(--muted); font-size: 10px; }
+.migration-hint { display: block; margin-top: 3px; font-size: 10px; line-height: 1.35; font-weight: 400; color: #ff9e9e; overflow-wrap: anywhere; }
+.migration-hint[data-theme="light"] { color: #a92727; }
 .widget.widget-text { display: block; overflow: hidden; border: 0; background: transparent; cursor: grab; user-select: none; }
 .empty { margin: 3px; color: var(--muted); }
 body.runtime-mode { overflow: auto; background: #111; }

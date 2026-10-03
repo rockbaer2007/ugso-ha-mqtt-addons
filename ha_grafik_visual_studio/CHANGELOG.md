@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.150
+
+- Added project-wide Show migration hints setting, enabled by default. Editor fields explain the required HA helper/switch target, JSON/index sources and unavailable extra write targets.
+- Hints use compact 10px regular text, light red on dark backgrounds and dark red on light backgrounds. Display-only controls get read-only guidance; runtime contains no migration hints.
+
 ## 0.1.149
 
 - Bool Select uses configurable true/false labels and 0/1 option values. It supports HA number/text helpers as well as switchable entities and reads numeric states correctly.

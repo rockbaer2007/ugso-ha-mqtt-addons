@@ -2,6 +2,22 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Umsteigerhinweise anzeigen": "Show migration hints",
+  "Benötigt einen input_number-Helfer für das berechnete Ergebnis. Ohne HA-Ausgabe bleibt die Berechnung lokal.": "Requires an input_number helper for the calculated result. Without HA output, calculation stays local.",
+  "Liest JSON-Zeilen aus einem HA-Zustand. Ohne Entität wird Static JSON verwendet.": "Reads JSON rows from an HA state. Without an entity, Static JSON is used.",
+  "Liest einzelne JSON-Ereigniszeilen. Zum Lesen ist kein zusätzlicher Helfer nötig.": "Reads individual JSON event rows. Reading requires no additional helper.",
+  "Benötigt einen passenden input_text- oder input_number-Helfer für die Bestätigung; Typ und Länge müssen zum Wert passen.": "Requires a compatible input_text or input_number helper for acknowledgment; type and length must match the value.",
+  "Benötigt einen input_text-Helfer für die ausgewählte JSON-Zeile. Die maximale Textlänge des Helfers beachten.": "Requires an input_text helper for the selected JSON row. Check the helper's maximum text length.",
+  "Diese zusätzlichen Schreibziele sind noch nicht angebunden; hier wird derzeit kein HA-Wert geschrieben.": "These additional write targets are not connected yet; no HA value is currently written here.",
+  "Nur Anzeige: Die Entität wird gelesen, nicht geschaltet. Dafür ist kein zusätzlicher Helfer nötig.": "Display only: the entity is read, not controlled. No additional helper is needed.",
+  "Benötigt einen input_number-Helfer. Minimum, Maximum und Schrittweite müssen zum Helfer passen.": "Requires an input_number helper. Minimum, maximum and step must match the helper.",
+  "Benötigt einen input_number-Helfer für Zahlen oder einen input_text-Helfer für Text.": "Requires an input_number helper for numbers or an input_text helper for text.",
+  "Schaltet switch, light oder input_boolean; für 0/1 benötigt es einen passenden input_number- oder input_text-Helfer.": "Controls switch, light or input_boolean; 0/1 values require a compatible input_number or input_text helper.",
+  "Schaltet switch, light oder input_boolean. Für numerische Min-/Max-Werte wird ein input_number-Helfer benötigt.": "Controls switch, light or input_boolean. Numeric min/max values require an input_number helper.",
+  "Benötigt eine schaltbare HA-Entität: switch, light oder input_boolean. Ein Sensor ist kein Schreibziel.": "Requires a controllable HA entity: switch, light or input_boolean. A sensor is not a write target.",
+  "Benötigt eine schaltbare HA-Entität oder einen passenden input_number-/input_text-Helfer für den gewählten Zustand.": "Requires a controllable HA entity or a compatible input_number/input_text helper for the selected state.",
+  "HA hat kein ioBroker-ack-Flag. Eine eigene Bestätigungsentität liefert den Anzeigezustand.": "HA has no ioBroker ack flag. A separate acknowledgment entity supplies the display state.",
+  "Die HA-Entität liefert den Listenindex, nicht den angezeigten Text. Zum Anzeigen ist kein zusätzlicher Helfer nötig.": "The HA entity supplies the list index, not the displayed text. Displaying it requires no additional helper.",
   "HTML bei 'false'": "HTML for 'false'", "HTML bei 'true'": "HTML for 'true'",
   "CSS-Deklarationen verwenden, zum Beispiel font-weight: bold; color: #29c8b5;": "Use CSS declarations, for example font-weight: bold; color: #29c8b5;",
   "Testwert (nur Editor)": "Test value (editor only)", "Livewert / Vorschauzustand": "Live value / preview state",
