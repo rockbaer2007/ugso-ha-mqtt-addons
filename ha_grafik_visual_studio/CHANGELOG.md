@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.152
+
+- Bar reversal changes its origin instead of complementing the numeric fill percentage. Vertical bars start at the top normally and at the bottom when reversed.
+- Bar borders and VIS2's misleading transparency/shadow field now apply CSS border and box-shadow to the fill. Existing stored opacity is preserved.
+- New bars default to blue, 0..100, 200x130 and disabled CSS groups. Optional migration hints explain read-only sensors, borders, shadows and reverse direction.
+
 ## 0.1.151
 
 - HTML State now writes its configured fixed value on runtime click or keyboard activation, using compatible HA switch entities or number/text helpers. It does not toggle based on the current state.

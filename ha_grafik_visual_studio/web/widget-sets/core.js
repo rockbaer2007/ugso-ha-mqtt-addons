@@ -101,7 +101,7 @@ const basicDataWidget = (type, label, icon, defaults, dataFields, hint = "Ohne E
   propertyGroups: [
     metadata(), visibility(),
     { label: "Daten", ...(hint ? { hint } : {}), fields: dataFields },
-    geometry(), ...cssGroups().map(group => ["value-list-html", "value-list-html-style", "bool-display", "bool-select", "html-state", "table"].includes(type) ? { ...group, defaultEnabled: false } : group),
+    geometry(), ...cssGroups().map(group => ["value-list-html", "value-list-html-style", "bool-display", "bool-select", "html-state", "bar", "table"].includes(type) ? { ...group, defaultEnabled: false } : group),
   ],
 });
 const dateFormats = ["YYYY-MM-DD HH:mm:ss", "DD.MM.YYYY HH:mm:ss", "DD.MM.YYYY HH:mm", "YYYY-MM-DD", "HH:mm:ss"];
@@ -311,7 +311,7 @@ registerWidgetSet({
     basicDataWidget("fullscreen", "Full Screen", "⛶", { title: "Vollbild", buttonText: "Vollbild" }, [
       { label: "Schaltflächentext", key: "buttonText" },
     ], "Der Button schaltet den Vollbildmodus für die Oberfläche ein und aus."),
-    basicDataWidget("bar", "Bar", "▰", { title: "Balken", entityId: "", state: 35, min: 0, max: 100, barColor: "#29c8b5", orientation: "horizontal" }, [
+    basicDataWidget("bar", "Bar", "▰", { title: "Balken", entityId: "", state: 0, min: 0, max: 100, barColor: "blue", orientation: "horizontal", invert: false, barBorder: "", barShadow: "", width: 200, height: 130 }, [
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testwert", key: "state", type: "number" },
       { label: "Minimum", key: "min", type: "number" }, { label: "Maximum", key: "max", type: "number" },
       { label: "Farbe", key: "barColor", type: "color" }, { label: "Ausrichtung", key: "orientation", type: "select", options: [{ value: "horizontal", label: "Horizontal" }, { value: "vertical", label: "Vertikal" }] },
@@ -362,7 +362,7 @@ registerWidgetSet({
     }
     if (widget.type === "bool-select") add(...htmlAdditions(), { label: "Autofokus", key: "autofocus", type: "checkbox", default: false });
     if (widget.type === "string") add({ label: "Icon", key: "icon", previewImage: true });
-    if (widget.type === "bar") add({ label: "Wert umkehren", key: "invert", type: "checkbox", default: false }, { label: "Rand", key: "barBorder" }, { label: "Durchsichtigkeit", key: "barOpacity", type: "range", min: 0, max: 1, step: 0.05, default: 1 });
+    if (widget.type === "bar") add({ label: "Rand", key: "barBorder" }, { label: "Durchsichtigkeit (Schatten/CSS)", key: "barShadow" }, { label: "Wert umkehren", key: "invert", type: "checkbox", default: false });
     if (widget.type === "navigation") add({ label: "HTML", key: "navHtml", type: "html", default: "Öffnen" }, { label: "View zum Navigieren", key: "targetPage", type: "page" });
     if (widget.type === "image") add({ label: "Quelle", key: "imageSrc", previewImage: true }, ...imageFields());
     if (widget.type === "image-source") add(...htmlAdditions(), ...refreshFields());

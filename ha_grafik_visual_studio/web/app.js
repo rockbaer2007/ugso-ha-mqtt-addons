@@ -10,6 +10,7 @@ import { tableRows, tableColumns, updateTableEvent } from "./table-data.js";
 import { boolSelectOn } from "./bool-select.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
+import { barDisplay } from "./bar-display.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
@@ -2948,13 +2949,15 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
         catch { button.textContent = "Vollbild nicht verfügbar"; }
       }); content.append(button);
     } else if (widget.type === "bar") {
-      const min = Number(widget.min ?? 0); const max = Number(widget.max ?? 100); const current = Number(displayedWidgetState(widget));
-      const ratio = Number.isFinite(current) && max > min ? Math.max(0, Math.min(1, (current - min) / (max - min))) : 0;
+      const current = displayedWidgetState(widget);
+      const display = barDisplay(widget, current);
       const track = document.createElement("div"); track.className = `bar-track ${widget.orientation === "vertical" ? "vertical" : "horizontal"}`;
-      track.style.border = widget.barBorder || ""; track.style.opacity = String(widget.barOpacity ?? 1);
+      track.style.opacity = String(widget.barOpacity ?? 1);
       const fill = document.createElement("span"); fill.className = "bar-fill"; fill.style.backgroundColor = widget.barColor || "var(--accent)";
-      fill.style[widget.orientation === "vertical" ? "height" : "width"] = `${(widget.invert ? 1 - ratio : ratio) * 100}%`; track.append(fill); content.append(track);
-      if (widget.numericSource === "dock" && !Number.isFinite(current)) { fill.style[widget.orientation === "vertical" ? "height" : "width"] = "0%"; const missing = document.createElement("span"); missing.textContent = "--"; content.append(missing); }
+      fill.style.inset = display.inset; fill.style[display.dimension] = `${display.percent}%`;
+      fill.style.border = widget.barBorder || ""; fill.style.boxShadow = widget.barShadow || "";
+      track.append(fill); content.append(track);
+      if (widget.numericSource === "dock" && !Number.isFinite(Number(current))) { fill.style[display.dimension] = "0%"; const missing = document.createElement("span"); missing.textContent = "--"; content.append(missing); }
     } else if (widget.type === "navigation") {
       const href = safeUrl(widget.navUrl);
       if (widget.targetPage) {

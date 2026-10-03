@@ -1,4 +1,7 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "bar" && key === "barBorder") return "CSS-Rand angeben, zum Beispiel 2px solid blue. Eine einzelne 2 ist keine vollständige CSS-Randangabe.";
+  if (widget.type === "bar" && key === "barShadow") return "VIS2 nennt dieses Feld Durchsichtigkeit, speichert aber shadow: CSS-Schatten, zum Beispiel 2px 2px 4px #0008.";
+  if (widget.type === "bar" && key === "invert") return "Ändert die Wachstumsrichtung, nicht den Füllstand: horizontal von rechts, vertikal von unten.";
   if (widget.type === "html-state" && key === "clickUrl") return "Die URL wird per GET vom Browser aufgerufen, nicht über den ioBroker-Server. Browser- und Netzwerkregeln gelten.";
   if (key === "outputHelperEntityId") return "Benötigt einen input_number-Helfer für das berechnete Ergebnis. Ohne HA-Ausgabe bleibt die Berechnung lokal.";
   if (widget.type === "table") {
@@ -9,6 +12,7 @@ export function migrationHint(widget, key) {
   }
   if (["extraTrueEntityId", "extraFalseEntityId"].includes(key)) return "Diese zusätzlichen Schreibziele sind noch nicht angebunden; hier wird derzeit kein HA-Wert geschrieben.";
   if (key !== "entityId") return "";
+  if (widget.type === "bar") return "Liest einen Zahlenwert, zum Beispiel Solarleistung. Es wird kein HA-Wert geschrieben und kein zusätzlicher Helfer benötigt.";
   if (widget.readOnly === true) return "Nur Anzeige: Die Entität wird gelesen, nicht geschaltet. Dafür ist kein zusätzlicher Helfer nötig.";
   if (widget.type === "slider") return "Benötigt einen input_number-Helfer. Minimum, Maximum und Schrittweite müssen zum Helfer passen.";
   if (widget.type === "input-value") return "Benötigt einen input_number-Helfer für Zahlen oder einen input_text-Helfer für Text.";

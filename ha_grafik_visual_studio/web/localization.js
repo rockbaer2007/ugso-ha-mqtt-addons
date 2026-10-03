@@ -2,6 +2,11 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Durchsichtigkeit (Schatten/CSS)": "Transparency (shadow/CSS)",
+  "CSS-Rand angeben, zum Beispiel 2px solid blue. Eine einzelne 2 ist keine vollständige CSS-Randangabe.": "Enter a CSS border, for example 2px solid blue. A bare 2 is not a complete CSS border.",
+  "VIS2 nennt dieses Feld Durchsichtigkeit, speichert aber shadow: CSS-Schatten, zum Beispiel 2px 2px 4px #0008.": "VIS2 calls this field transparency but stores shadow: a CSS box shadow, for example 2px 2px 4px #0008.",
+  "Ändert die Wachstumsrichtung, nicht den Füllstand: horizontal von rechts, vertikal von unten.": "Changes the growth direction, not the fill percentage: from the right horizontally, from the bottom vertically.",
+  "Liest einen Zahlenwert, zum Beispiel Solarleistung. Es wird kein HA-Wert geschrieben und kein zusätzlicher Helfer benötigt.": "Reads a numeric value, such as solar power. It does not write HA values or require an additional helper.",
   "Rufe URL bei Klick": "Call URL on click", "URL-Aufruf fehlgeschlagen": "URL request failed",
   "Schreibt bei jedem Klick denselben Wert; kein Umschalten zwischen zwei Zuständen.": "Writes the same value on each click; does not toggle between states.",
   "Die URL wird per GET vom Browser aufgerufen, nicht über den ioBroker-Server. Browser- und Netzwerkregeln gelten.": "The URL is called via GET from the browser, not the ioBroker server. Browser and network rules apply.",
