@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.184
+
+- Color Interactive palette entries olive green, Special blue and Data Flow violet while preserving the Basic palette.
+- Assign additional installed widget sets their own palette color and retain readable white labels, hover and keyboard focus states.
+
 ## 0.1.183
 
 - Remove docking points and data-flow controls from Horizontal line and Vertical line; ignore and clear legacy connector settings.

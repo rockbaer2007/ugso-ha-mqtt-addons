@@ -901,13 +901,20 @@ function renderPalette() {
     state.collapsedWidgetSets = new Set(widgetSets.slice(1).map(set => set.id));
     state.paletteAccordionReady = true;
   }
+  const setColors = { "ha-grafik-basic2": "#46571C", "ha-grafik-special": "#244D63", "ha-grafik-dataflow": "#563D70" };
+  let extraSetIndex = 0;
   for (const set of widgetSets) {
+    const setColor = set.id === "ha-grafik-core" ? null : setColors[set.id] || `hsl(${(38 + extraSetIndex++ * 137.508) % 360} 40% 26%)`;
     const widgets = search ? set.widgets.filter(definition =>
       [definition.label, definition.type, set.label, ...(definition.searchTerms || [])].some(value => String(value || "").toLocaleLowerCase().includes(search))) : set.widgets;
     if (!widgets.length) continue;
     const group = document.createElement("details");
     group.className = "widget-group";
     group.dataset.widgetSetId = set.id;
+    if (set.id !== "ha-grafik-core") {
+      group.classList.add("is-tinted");
+      group.style.setProperty("--palette-set-background", setColor);
+    }
     group.open = Boolean(search) || !state.collapsedWidgetSets.has(set.id);
     group.addEventListener("toggle", () => {
       if (search) return;
