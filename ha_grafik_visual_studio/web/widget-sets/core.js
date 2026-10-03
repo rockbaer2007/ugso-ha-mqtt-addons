@@ -174,7 +174,7 @@ registerWidgetSet({
       ] }, geometry(), ...cssGroups(),
     ] },
     basicDataWidget("view-in-widget", "View in widget", "▣", {}, [{ label: "Seite", key: "targetPage", type: "page" }], "Bettet eine gespeicherte Projektseite ein; rekursive Einbettung wird verhindert."),
-    basicDataWidget("view-in-widget-8", "View in widget 8", "▣", { state: 0, count: 1 }, [...entityTest(), { label: "Werteanzahl bis", key: "count", type: "number", min: 1, max: 50, refreshProperties: true }]),
+    basicDataWidget("view-in-widget-8", "View in widget 8", "▣", { state: 0, count: 1, width: 300, height: 200, entityId: "", page0: "", page1: "" }, [{ label: "Home-Assistant-Entität", key: "entityId" }, { label: "Werteanzahl bis", key: "count", type: "number", min: 0, max: 50, refreshProperties: true }], ""),
     basicDataWidget("iframe", "iFrame", "▣", { source: "", noFrame: true }, [{ label: "Quelle", key: "source" }, { label: "Kein Sandkasten", key: "noSandbox", type: "checkbox", default: false }, ...frameFields()], "Die Zielseite muss Einbettung erlauben."),
     basicDataWidget("iframe-8", "iFrame 8", "▣", { state: 0, count: 2, noFrame: true }, [...entityTest(), ...frameFields(), { label: "Werteanzahl bis", key: "count", type: "range", min: 1, max: 20, step: 1, refreshProperties: true }]),
     basicDataWidget("image-8", "Image 8", "▧", { state: 0, count: 1 }, [...entityTest(), { label: "Werteanzahl bis", key: "count", type: "number", min: 1, max: 50, refreshProperties: true }, ...imageFields()]),
@@ -356,6 +356,10 @@ registerWidgetSet({
     const add = (...fields) => data?.fields.push(...fields);
     if (widget.type === "view-in-widget") {
       Object.assign(widget.defaults, { width: 300, height: 200, targetPage: "" });
+      widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
+    }
+    if (widget.type === "view-in-widget-8") {
+      data.label = "Allgemein";
       widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
     }
     if (widget.type === "input-value") {

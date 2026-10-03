@@ -1,4 +1,6 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "view-in-widget-8" && key === "entityId") return "Die HA-Entität liefert den Seitenindex 0, 1, 2 …; false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen, kein zusätzlicher HA-Helfer benötigt. Ohne Entität wird Seite [0] verwendet.";
+  if (widget.type === "view-in-widget-8" && key === "count") return "Höchster Index: 1 ergibt Seite [0] und Seite [1]. Eingebettet werden Studio-Projektseiten; alle benötigten Seiten müssen beim späteren Projekt-Export enthalten sein. Keine HA-Dashboards.";
   if (widget.type === "view-in-widget" && key === "targetPage") return "Bettet eine Studio-Projektseite ein; kein HA-Helfer nötig. Für HA-Dashboards gibt es Dashboard in widget unter Spezial. Rekursive Seiteneinbettung wird verhindert.";
   if (widget.type === "dashboard-in-widget" && key === "dashboardPath") return "HA-Dashboard auswählen oder Pfad eintragen, zum Beispiel /lovelace. Anmeldung erfolgt über die normale HA-Browsersitzung; kein HA-Helfer oder Token im Widget nötig. Maximal 800 × 640 px.";
   if (widget.type === "dashboard-in-widget" && key === "dashboardBaseUrl") return "Im HA-Ingress leer lassen: Die aktuelle HA-Adresse wird verwendet. Bei direktem Studio-Zugriff die HA-Basis-URL eintragen, zum Beispiel https://ha.example.org. Einbettung hängt von Anmeldung und Browserregeln ab.";

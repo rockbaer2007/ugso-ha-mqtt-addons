@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.160
+
+- View in widget 8 uses the HA entity as a read-only Studio page index in editor and runtime. Highest index 0..50 includes index zero; 1 creates two page slots. Empty, unavailable, fractional and out-of-range states show no selected page.
+- New widgets start at 300x200 with only CSS General enabled. Optional migration hints explain index mapping and Studio page dependencies for future project exports.
+- Stateful embedded pages remain mounted while their target is unchanged; target changes replace the frame. Missing pages and recursive embedding are rejected.
+
 ## 0.1.159
 
 - Dashboard in widget always displays its HA dependency and external-runtime export limitation in the widget settings, independently of optional migration hints.

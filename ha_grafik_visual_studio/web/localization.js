@@ -2,6 +2,9 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Kein gültiger Seitenindex": "No valid page index", "Seite nicht gefunden": "Page not found", "Eingebettete Seite": "Embedded page",
+  "Die HA-Entität liefert den Seitenindex 0, 1, 2 …; false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen, kein zusätzlicher HA-Helfer benötigt. Ohne Entität wird Seite [0] verwendet.": "The HA entity provides page index 0, 1, 2 …; false/off maps to 0, true/on to 1. Read-only; no additional HA helper is needed. Without an entity, Page [0] is used.",
+  "Höchster Index: 1 ergibt Seite [0] und Seite [1]. Eingebettet werden Studio-Projektseiten; alle benötigten Seiten müssen beim späteren Projekt-Export enthalten sein. Keine HA-Dashboards.": "Highest index: 1 creates Page [0] and Page [1]. Embeds Studio project pages; all required pages must be included in future project exports. These are not HA dashboards.",
   "Für Visualisierungen innerhalb von Home Assistant vorgesehen. Wenn ein Export in die externe Runtime geplant ist, dieses Widget möglichst nicht verwenden. Das eingebundene Dashboard wird nicht mit exportiert und benötigt weiterhin Home Assistant sowie eine Browser-Anmeldung.": "Intended for visualizations within Home Assistant. If you plan to export to the external runtime, avoid using this widget where possible. The embedded dashboard is not included in the export and still requires Home Assistant and browser authentication.",
   "Dashboard beim Export": "Dashboard export notice", "Trotzdem exportieren": "Export anyway",
   "Dashboard in widget": "Dashboard in widget", "HA-Dashboard": "HA dashboard", "HA-Dashboard auswählen": "Select HA dashboard", "Dashboard auswählen": "Select dashboard",
