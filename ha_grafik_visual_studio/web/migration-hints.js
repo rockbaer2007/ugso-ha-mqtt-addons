@@ -1,4 +1,9 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "image" && key === "imageSrc") return "Bild über die Studio-Dateiauswahl oder eine URL wählen. VIS2-Pfade mit _PRJ_NAME müssen durch den passenden Studio-Dateipfad ersetzt werden. Kein HA-Helfer nötig.";
+  if (widget.type === "image" && key === "allowUserInteractions") return "Erlaubt normale Browseraktionen am Bild, zum Beispiel Ziehen oder das Kontextmenü. Es wird kein HA-Wert geschrieben; im Editor bleibt das Widget bearbeitbar.";
+  if (widget.type === "image" && key === "stretch") return "Ohne Strecken: volle Breite mit ursprünglichem Seitenverhältnis; überstehende Höhe wird abgeschnitten. Mit Strecken: volle Breite und Höhe.";
+  if (widget.type === "image" && key === "refreshInterval") return "0 deaktiviert regelmäßiges Neuladen. Millisekunden aktualisieren das Bild; andere Zustandsänderungen laden es nicht erneut.";
+  if (widget.type === "image" && key === "noCacheBuster") return "Aktualisiert mit unveränderter URL; der Browser kann seinen Cache verwenden. Ohne Haken wird ein Zeitstempel ergänzt. Kein HA-Helfer nötig.";
   if (widget.type === "universal-button" && key === "entityId" && ["read-only", "navigation"].includes(widget.interaction)) return "Die HA-Entität wird nur gelesen. Für Anzeige und Navigation wird kein zusätzlicher HA-Helfer benötigt.";
   if (widget.type === "iframe-8" && key === "entityId") return "Die HA-Entität liefert den URL-Index: false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen; kein zusätzlicher HA-Helfer nötig. Ohne Entität wird Frame [0] angezeigt.";
   if (widget.type === "iframe-8" && key === "count") return "Höchster Index: 20 ergibt 21 Einträge von [0] bis [20]. Deaktivierte oder leere Einträge zeigen keinen Frame.";

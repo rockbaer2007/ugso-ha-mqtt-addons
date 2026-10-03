@@ -354,6 +354,12 @@ registerWidgetSet({
     if (widget.type === "screen-resolution") widget.propertyGroups = widget.propertyGroups.filter(group => group.label !== "Daten");
     const data = widget.propertyGroups.find(group => ["Daten", "Allgemein"].includes(group.label));
     const add = (...fields) => data?.fields.push(...fields);
+    if (widget.type === "image") {
+      Object.assign(widget.defaults, { width: 200, height: 130, imageSrc: "", stretch: false, refreshInterval: 0, refreshOnWake: false, refreshOnView: false, noCacheBuster: false, allowUserInteractions: false, padding: 0, radius: 0, borderWidth: 0, backgroundColor: "transparent" });
+      delete widget.defaults.state;
+      data.fields = [];
+      widget.propertyGroups = widget.propertyGroups.filter(group => group.label !== "Widget-Darstellung").map(group => group.css ? { ...group, defaultEnabled: false } : group);
+    }
     if (widget.type === "iframe-8") {
       Object.assign(widget.defaults, { width: 600, height: 320, refreshInterval: 0, refreshOnWake: false, refreshOnView: false, noCacheBuster: false, scrollX: false, scrollY: false });
       data.label = "Allgemein";

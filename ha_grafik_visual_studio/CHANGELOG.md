@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.167
+
+- Image exposes the standard source, stretch, refresh and native-interaction settings with 200 × 130 defaults. Only CSS General starts enabled.
+- Unstretched images keep their aspect ratio at full width and clip excess height; stretched images fill the widget. Native interactions are opt-in in runtime and disabled while editing.
+- Runtime retains unchanged images across redraws and keeps their refresh timers running during unrelated state changes. Wake-up and view-change refresh options remain explicit triggers.
+- Add optional migration hints for Studio file paths, browser caching and image interactions, plus bilingual documentation with an original screenshot.
+
 ## 0.1.166
 
 - Rename State Element to Universal Element, retaining the stored type and old search terms.

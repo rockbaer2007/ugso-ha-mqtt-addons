@@ -2,6 +2,11 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Bild über die Studio-Dateiauswahl oder eine URL wählen. VIS2-Pfade mit _PRJ_NAME müssen durch den passenden Studio-Dateipfad ersetzt werden. Kein HA-Helfer nötig.": "Select an image using Studio files or a URL. Replace VIS2 paths containing _PRJ_NAME with the appropriate Studio file path. No HA helper is needed.",
+  "Erlaubt normale Browseraktionen am Bild, zum Beispiel Ziehen oder das Kontextmenü. Es wird kein HA-Wert geschrieben; im Editor bleibt das Widget bearbeitbar.": "Allows normal browser actions on the image, such as dragging or the context menu. No HA state is written; the widget remains editable in the editor.",
+  "Ohne Strecken: volle Breite mit ursprünglichem Seitenverhältnis; überstehende Höhe wird abgeschnitten. Mit Strecken: volle Breite und Höhe.": "Without stretching: full width with the original aspect ratio; excess height is clipped. With stretching: full width and height.",
+  "0 deaktiviert regelmäßiges Neuladen. Millisekunden aktualisieren das Bild; andere Zustandsänderungen laden es nicht erneut.": "0 disables periodic reloading. Milliseconds refresh the image; unrelated state changes do not reload it.",
+  "Aktualisiert mit unveränderter URL; der Browser kann seinen Cache verwenden. Ohne Haken wird ein Zeitstempel ergänzt. Kein HA-Helfer nötig.": "Refreshes the unchanged URL; the browser may use its cache. Without the checkbox, a timestamp is added. No HA helper is needed.",
   "Zustand hinzufügen": "Add state",
   "Einzeltaste": "Single button", "Getrennte Tasten": "Separate buttons", "Taster / nächsten Zustand": "Button / next state", "Schalten": "Switch", "Wert false": "False value", "Wert true": "True value",
   "Standardzustand": "Default state", "Klick-Feedback": "Click feedback", "Klick durchlassen": "Pass clicks through", "Dauer (ms)": "Duration (ms)",

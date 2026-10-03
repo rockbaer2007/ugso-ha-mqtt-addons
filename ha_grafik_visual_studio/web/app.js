@@ -14,6 +14,7 @@ import { svgShapeGeometry } from "./svg-shape.js";
 import { UNIVERSAL_STYLE_GROUPS, universalStateFields, universalStyle, universalVisual, universalNext, universalResolvedColors, universalClip, remapUniversalReferences } from "./universal-element.js";
 const universalFeedback = new Map();
 import { mediaRefreshUrl, iframeOptions, iframeCount, iframeIndex } from "./iframe-widget.js";
+import { imageOptions } from "./image-widget.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
@@ -1794,6 +1795,25 @@ function appendSafeHtml(parent, markup) {
 }
 
 const mediaRefreshers = new Set();
+const imageRefreshers = new Map();
+const renderedImages = new Set();
+function refreshImageMedia(element, widget, source, initialize) {
+  renderedImages.add(element);
+  const interval = Math.max(0, Number(widget.refreshInterval) || 0);
+  let entry = imageRefreshers.get(element);
+  if (entry && (entry.interval !== interval || entry.source !== source || entry.widget.noCacheBuster !== widget.noCacheBuster)) {
+    if (entry.timer) clearInterval(entry.timer); imageRefreshers.delete(element); entry = null;
+  }
+  if (!entry) {
+    entry = { source, interval, widget: { ...widget }, timer: null, update: () => {
+      if (element.isConnected && element.getClientRects().length && !document.hidden) element.src = mediaRefreshUrl(source, location.href, true, entry.widget.noCacheBuster);
+    } };
+    if (interval > 0) entry.timer = setInterval(entry.update, Math.max(100, interval));
+    imageRefreshers.set(element, entry);
+  }
+  entry.widget = { ...widget };
+  if (initialize) element.src = mediaRefreshUrl(source, location.href, widget.refreshOnView === true, widget.noCacheBuster);
+}
 function refreshableMedia(element, widget, source, initialize = true) {
   const update = (refresh = true) => {
     const url = safeUrl(source, element.tagName === "IMG");
@@ -1805,7 +1825,7 @@ function refreshableMedia(element, widget, source, initialize = true) {
   const entry = { widget, update, timer: interval > 0 ? setInterval(update, Math.max(100, interval)) : null };
   mediaRefreshers.add(entry);
 }
-document.addEventListener("visibilitychange", () => { if (!document.hidden) for (const entry of mediaRefreshers) if (entry.widget.refreshOnWake) entry.update(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) for (const entry of [...mediaRefreshers, ...imageRefreshers.values()]) if (entry.widget.refreshOnWake) entry.update(); });
 window.addEventListener("resize", () => { for (const element of document.querySelectorAll(".screen-resolution-value")) element.textContent = `${window.innerWidth} × ${window.innerHeight}`; });
 
 function renderSvgShape(widget) {
@@ -2525,6 +2545,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const runtimeMode = rootRuntimeMode || embedded;
   const stage = target || $("#stage");
   if (!embedded) {
+    renderedImages.clear();
     for (const entry of mediaRefreshers) if (entry.timer) clearInterval(entry.timer);
     mediaRefreshers.clear();
   }
@@ -2582,7 +2603,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const dashboardSurfaceKey = `${state.projectId}:${activePage.id}`;
   const retainedDashboards = new Map();
   for (const child of [...stage.children]) {
-    if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8") || child.classList.contains("widget-iframe") || child.classList.contains("widget-iframe-8")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
+    if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8") || child.classList.contains("widget-iframe") || child.classList.contains("widget-iframe-8") || child.classList.contains("widget-image")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
     else child.remove();
   }
   const filterKey = filterPageKey(activePage);
@@ -2643,7 +2664,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     });
     if (widget.type === "dashboard-in-widget") { element.dataset.dashboardSurface = dashboardSurfaceKey; element.style.maxWidth = "800px"; element.style.maxHeight = "640px"; }
     if (widget.type === "view-in-widget-8") element.dataset.dashboardSurface = dashboardSurfaceKey;
-    if (["iframe", "iframe-8"].includes(widget.type)) element.dataset.dashboardSurface = dashboardSurfaceKey;
+    if (["iframe", "iframe-8", "image"].includes(widget.type)) element.dataset.dashboardSurface = dashboardSurfaceKey;
     const content = element.firstElementChild || document.createElement("div");
     content.className = "widget-content";
     Object.assign(content.style, {
@@ -2979,7 +3000,19 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       const index = widgetStateIndex(widget);
       const liveSource = widget.type === "image" && runtimeMode && widget.entityId ? safeUrl(displayedWidgetState(widget), true) : "";
       const source = liveSource || (widget.type === "image" ? widget.imageSrc : widget[`imageSource${index}`]);
-      if (source) { const image = document.createElement("img"); refreshableMedia(image, widget, source); image.style.objectFit = widget.stretch ? "fill" : "contain"; image.style.pointerEvents = widget.allowUserInteractions ? "auto" : "none"; image.alt = widget.title || "Bild"; content.append(image); }
+      if (widget.type === "image") {
+        content.style.display = "block";
+        const options = imageOptions(widget, runtimeMode);
+        for (const target of [element, content]) { target.style.pointerEvents = options.pointerEvents; target.style.userSelect = options.userSelect; target.style.touchAction = options.touchAction; }
+        const url = safeUrl(source, true);
+        if (url) {
+          let image = content.querySelector("img"); const created = !image || image.dataset.source !== url;
+          if (created) { content.replaceChildren(); image = document.createElement("img"); image.dataset.source = url; content.append(image); }
+          refreshImageMedia(image, widget, url, created);
+          const { draggable, ...style } = options; Object.assign(image.style, style); image.style.objectFit = "fill"; image.draggable = draggable; image.alt = widget.title || uiText("Bild");
+        } else content.replaceChildren();
+        if (!runtimeMode) { element.style.pointerEvents = ""; content.style.pointerEvents = "none"; }
+      } else if (source) { const image = document.createElement("img"); refreshableMedia(image, widget, source); image.style.objectFit = widget.stretch ? "fill" : "contain"; image.style.pointerEvents = widget.allowUserInteractions ? "auto" : "none"; image.alt = widget.title || "Bild"; content.append(image); }
       else { content.classList.add("image-placeholder"); content.setAttribute("aria-label", widget.title || "Bild"); }
     } else if (widget.type === "string") {
       if (widget.icon) { const image = document.createElement("img"); image.className = "string-icon"; const size = Math.min(200, Math.max(5, Number(widget.iconSize) || 24)); image.style.width = image.style.height = `${size}px`; setIconImageSource(image, widget.icon); image.alt = ""; content.append(image); }
@@ -3307,6 +3340,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (element.parentElement !== stage) stage.append(element);
   }
   for (const element of retainedDashboards.values()) element.remove();
+  if (!embedded) for (const [image, entry] of imageRefreshers) if (!renderedImages.has(image)) { if (entry.timer) clearInterval(entry.timer); imageRefreshers.delete(image); }
   if (!runtimeMode) renderEditorGroups();
 }
 
