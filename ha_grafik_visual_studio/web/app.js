@@ -7,6 +7,7 @@ import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineb
 import { numberDisplay } from "./number-display.js";
 import { htmlListEntries, htmlListEntry, styledListCount } from "./value-list.js";
 import { tableRows, tableColumns, updateTableEvent } from "./table-data.js";
+import { boolSelectOn } from "./bool-select.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
@@ -2847,11 +2848,12 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       }
     } else if (widget.type === "bool-select") {
       const select = document.createElement("select"); select.className = "widget-control";
-      for (const [value, label] of [["off", widget.textOff || "Aus"], ["on", widget.textOn || "Ein"]]) { const option = document.createElement("option"); option.value = value; option.textContent = label; select.append(option); }
-      select.value = isOn(displayedWidgetState(widget)) ? "on" : "off"; select.disabled = !runtimeMode || !switchWidgetReady(widget);
+      for (const [value, label] of [["0", widget.textOff ?? ""], ["1", widget.textOn ?? ""]]) { const option = document.createElement("option"); option.value = value; option.textContent = label; select.append(option); }
+      select.value = boolSelectOn(displayedWidgetState(widget)) ? "1" : "0";
+      select.disabled = !runtimeMode || !stateElementReady(widget, select.value);
       select.autofocus = runtimeMode && widget.autofocus === true;
       select.setAttribute("aria-label", widget.title || "Bool Select");
-      select.addEventListener("change", (event) => { event.stopPropagation(); setRuntimeBooleanWidget(widget, select.value === "on"); }); content.append(select);
+      select.addEventListener("change", (event) => { event.stopPropagation(); if (runtimeMode && stateElementReady(widget, select.value)) setRuntimeStateElement(widget, select.value); }); content.append(select);
     } else if (widget.type === "html-state" || widget.type === "html") {
       const output = document.createElement("div"); output.className = "safe-html"; appendSafeHtml(output, String(widget.htmlContent || "").replaceAll("{value}", String(displayedWidgetState(widget) ?? "")));
       if (widget.type === "html" && Number(widget.refreshInterval) > 0) { const update = () => { output.replaceChildren(); appendSafeHtml(output, widget.htmlContent || ""); }; mediaRefreshers.add({ widget, update, timer: setInterval(update, Math.max(100, Number(widget.refreshInterval))) }); }

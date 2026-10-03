@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.149
+
+- Bool Select uses configurable true/false labels and 0/1 option values. It supports HA number/text helpers as well as switchable entities and reads numeric states correctly.
+- New Bool Select widgets start with empty labels/HTML, autofocus disabled and all CSS groups disabled. Existing labels remain unchanged.
+
 ## 0.1.148
 
 - Table hides underscore metadata, supports explicit column titles, widths and attributes, and renders sanitized HTML cells.
