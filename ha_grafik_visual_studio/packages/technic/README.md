@@ -1,11 +1,22 @@
-# UGSo Technic 1.2.0
+# UGSo Technic 1.3.0
 
 Inspiriert von den ioBroker-Technic-Widgets von Sefina-DS:
 https://github.com/Sefina-DS/ioBroker.vis-2-widgets-technic
 
-Eigene Umsetzung für Home Assistant. Enthält Window – Wall, Switch – Boolean und Dimmer – Light.
-Die weiteren vier Widgets des Originalsets sind noch nicht enthalten.
-Requires Studio 0.1.199 or newer. Install ugso.technic.wg through Settings > Widget packages.
+Eigene Umsetzung für Home Assistant. Enthält Window – Wall, Switch – Boolean, Dimmer – Light und Room – Overlay.
+Die weiteren drei Widgets des Originalsets sind noch nicht enthalten.
+Requires Studio 0.1.200 or newer. Install ugso.technic.wg through Settings > Widget packages.
+
+Room – Overlay: room name, alignment, colors, padding and up to ten status rows.
+Each row reads an HA entity; numbers support units and decimals. Boolean rows
+support ON/OFF text/colors and comma-separated additional entities with AND/OR.
+Unknown inputs remain unknown. Vertical or horizontal layout is selectable.
+Select an existing Studio page to open as a popup or switch to that page.
+Popup size, fixed X/Y position, colors, border, outside-click closing, close button
+and automatic closing are configurable. Escape always closes the modal.
+Self references, recursive embedding and chains longer than eight are blocked.
+The editor only selects; runtime opens the page. Polling preserves the open popup.
+All row and popup settings are retained in widget and project exports.
 
 Dimmer – Light: bind power to light/switch/input_boolean and brightness to a
 dimmable light (brightness 0–255 converted to %) or input_number (0–100).

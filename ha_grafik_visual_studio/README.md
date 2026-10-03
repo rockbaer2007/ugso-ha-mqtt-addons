@@ -1,6 +1,6 @@
 # HA Grafik Visual Studio
 
-Studio 0.1.199 adds Dimmer – Light in external UGSo Technic 1.2.0, with HA brightness and optional power linking. See [Technic package](packages/technic/README.md).
+Studio 0.1.200 adds Room – Overlay in external UGSo Technic 1.3.0, with up to ten live status rows and configurable Studio page popups. See [Technic package](packages/technic/README.md).
 
 Studio 0.1.198 extends the external UGSo Technic set to 1.1.0 with Switch – Boolean alongside Window – Wall. See [Technic package](packages/technic/README.md).
 

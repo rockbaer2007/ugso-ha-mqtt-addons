@@ -8,6 +8,7 @@ import { heatingParamsBindings, renderHeatingParams } from "./heating-params.js"
 import { technicBindings, renderTechnicWindow, syncTechnicControls } from "./technic-window.js";
 import { TECHNIC_SWITCH_ICONS, renderTechnicSwitch } from "./technic-switch.js";
 import { technicLightBindings, renderTechnicLight } from "./technic-light.js";
+import { technicRoomBindings, technicRoomUrl, renderTechnicRoom, syncTechnicRoom } from "./technic-room.js";
 import { createMeteoredController } from "./meteored.js";
 const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
@@ -659,6 +660,7 @@ function editorLiveEntityIds() {
     ...gaugeEntityIds(widget),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
+    ...(getWidgetDefinition(widget.type).render?.kind === "technic-room" ? technicRoomBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "heating-params" ? heatingParamsBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "window-overview" ? [widget.openCountEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "chart" ? chartBindings(widget).map(s => s.entityId) : []),
@@ -702,6 +704,7 @@ function runtimeLiveEntityIds() {
     ...gaugeEntityIds(widget),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
+    ...(getWidgetDefinition(widget.type).render?.kind === "technic-room" ? technicRoomBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "heating-params" ? heatingParamsBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "window-overview" ? [widget.openCountEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "chart" ? chartBindings(widget).map(s => s.entityId) : []),
@@ -3405,6 +3408,11 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       element.classList.add("meteored-host");
       if (widget.noCard) content.style.background = "transparent";
       meteored.render(content, widget, document, runtimeMode, uiText, getWidgetDefinition(widget.type).render.valueKey);
+    } else if (getWidgetDefinition(widget.type).render?.kind === "technic-room") {
+      const target = state.project.pages.find(page => page.id === widget.targetPage);
+      const chain = [...(params.get("chain") || "").split(",").filter(Boolean), ...surfaceChain];
+      const popupUrl = target ? technicRoomUrl(location.href, state.projectId, activePage.id, target.id, chain) : null;
+      content.append(renderTechnicRoom(widget, document, { runtime: runtimeMode, locale: document.documentElement.lang || "de", states: state.entityStates, popupUrl, navigate: () => { if (!target) return; state.tabEditor = null; state.tabReturn = null; state.project.currentPageId = target.id; setSingleWidgetSelection(null); render(); void refreshRuntimeStates(); } }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-light") {
       content.append(renderTechnicLight(widget, document, { runtime: runtimeMode, locale: document.documentElement.lang || "de", getStates: () => state.entityStates, onSettled: focusRange => { renderRuntimeStageWhenReady(); if (focusRange) document.getElementById(widget.id)?.querySelector(".technic-light > input")?.focus({ preventScroll: true }); }, write: async request => {
         try {
@@ -3576,6 +3584,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   }
   for (const element of retainedDashboards.values()) element.remove();
   if (!embedded) syncTechnicControls(dashboardSurfaceKey, [...stage.querySelectorAll(".technic-window")].map(element => element.closest("[data-widget-id]")?.dataset.widgetId));
+  if (!embedded) syncTechnicRoom(dashboardSurfaceKey, [...stage.querySelectorAll(".technic-room")].map(element => element.closest("[data-widget-id]")?.dataset.widgetId));
   if (!embedded) meteored.end();
   if (!embedded) finishMarquees();
   if (!embedded) for (const [image, entry] of imageRefreshers) if (!renderedImages.has(image)) { if (entry.timer) clearInterval(entry.timer); imageRefreshers.delete(image); }
@@ -4158,7 +4167,7 @@ function field(descriptor, widget) {
     aliasPreview.hidden = !showAlias;
     aliasPreview.textContent = alias ? alias.slice(0, 3) : "";
   };
-  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || getWidgetDefinition(widget.type).render?.kind === "chart" && /^seriesEntityId\d+$/.test(descriptor.key)) {
+  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || getWidgetDefinition(widget.type).render?.kind === "technic-room" && /^rowEntityId\d+$/.test(descriptor.key) || getWidgetDefinition(widget.type).render?.kind === "chart" && /^seriesEntityId\d+$/.test(descriptor.key)) {
     const row = document.createElement("span"); row.className = "property-entity-row";
     const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button";
     picker.textContent = "…";
@@ -4229,6 +4238,7 @@ function field(descriptor, widget) {
     if (getWidgetDefinition(widget.type).render?.kind === "technic-window" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "technic-switch" && descriptor.key === "entityId") void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "technic-light" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
+    if (getWidgetDefinition(widget.type).render?.kind === "technic-room") { if (/EntityId(s)?\d+$/.test(descriptor.key) || descriptor.key === "rowCount") void refreshEditorLiveStates(); if (descriptor.key === "rowCount") renderProperties(); }
     if (getWidgetDefinition(widget.type).render?.kind === "room-table" && ["entityId", "tableAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "window-overview" && ["entityId", "tableAttribute", "openCountEntityId", "openCountAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "chart" && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || ["dataCount", "showWeekData", "weatherSource", "forecastType", "forecastAttribute"].includes(descriptor.key))) void refreshEditorLiveStates();
@@ -4330,6 +4340,13 @@ function renderProperties() {
   if (state.propertyTab === "scripts") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Widget-Skripte werden in einem späteren Ausbauschritt ergänzt."; panel.append(empty); return; }
   if (widget.type === "toggle" && typeof widget.state === "boolean") widget.state = widget.state ? "on" : "off";
   let groups = widgetPropertyGroups(widget);
+  if (getWidgetDefinition(widget.type).render?.kind === "technic-room") {
+    const labels = { left: "Links", center: "Mitte", right: "Rechts", top: "Oben", middle: "Mitte", bottom: "Unten", number: "Zahl", bool: "Wahr / Falsch", and: "UND", or: "ODER", popup: "Popup", switchView: "Seite wechseln" };
+    // Keep saved group keys stable when changing the visible row count.
+    groups = groups.map((group, index) => ({ ...group, id: propertyGroupKey(group, index) }))
+      .filter(group => !/^Statuszeile \[\d+\]$/.test(group.label) || Number(group.label.match(/\d+/)[0]) <= Math.min(10, Math.max(0, Number(widget.rowCount) || 0)))
+      .map(group => ({ ...group, fields: group.fields.map(descriptor => descriptor.key === "targetPage" ? { ...descriptor, type: "page" } : descriptor.type === "select" ? { ...descriptor, options: descriptor.options.map(value => ({ value, label: labels[value] || value })) } : descriptor) }));
+  }
   groups = [...groups, ...indexedWidgetGroups(widget)];
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
   const updateHeading = () => { heading.textContent = `${widgetDisplayName(widget)} — ${getWidgetDefinition(widget.dataFlowVariant || widget.type).label} · ${widget.id}`; };

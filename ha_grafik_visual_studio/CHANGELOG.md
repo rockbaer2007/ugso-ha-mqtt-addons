@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.200
+
+- Add Room – Overlay to external Technic 1.3.0: room name, alignment, padding and up to ten live numeric/Boolean status rows with AND/OR inputs.
+- Open local Studio pages in persistent runtime popups or navigate to the target page; support size, fixed position, colors, borders, closing controls and timers. Guard recursive embedding; preserve captions and exports.
+
 ## 0.1.199
 
 - Add Dimmer – Light to external Technic 1.2.0 with radial pointer control, keyboard range, center power button, caption placement, size and three colors.
