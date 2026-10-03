@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.137
+
+- Adds SVG LineBox Math under Special: visible square, 16 clockwise ports A–P, green occupied/orange free markers in the editor, and perpendicular connection entry in editor and runtime.
+- Adds a calculation dialog with port roles, size, arithmetic expressions, occupied-port averages and previews. Multiple lines sum per input; results flow to numeric widgets and downstream boxes without additional HA entities.
+- Invalid inputs, division by zero and feedback cycles stop output and expose an error; formulas are parsed without executing JavaScript.
+
 ## 0.1.136
 
 - Adds independent automatic animation divisors for numeric entities and LineBox outputs. Each has a target speed (default 1 cycle/s, adjustable 0.05–5); zero stops motion and negative values reverse it. Manual divisors remain stored.

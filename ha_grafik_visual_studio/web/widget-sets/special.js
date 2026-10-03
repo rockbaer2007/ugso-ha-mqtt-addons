@@ -1,11 +1,12 @@
 import { registerWidgetSet } from "../widget-registry.js";
+import { MATH_ANCHORS } from "../linebox-math.js";
 
 const anchorOptions = [
   ["left-top", "Links oben"], ["left-center", "Links Mitte"], ["left-bottom", "Links unten"],
   ["right-top", "Rechts oben"], ["right-center", "Rechts Mitte"], ["right-bottom", "Rechts unten"],
   ["top-quarter", "Oben 1/4"], ["top-center", "Oben Mitte"], ["top-three-quarter", "Oben 3/4"],
   ["bottom-quarter", "Unten 1/4"], ["bottom-center", "Unten Mitte"], ["bottom-three-quarter", "Unten 3/4"],
-].map(([value, label]) => ({ value, label }));
+].map(([value, label]) => ({ value, label })).concat(MATH_ANCHORS.map(([value, label]) => ({ value, label })));
 
 registerWidgetSet({
   id: "ha-grafik-special",
@@ -146,5 +147,16 @@ registerWidgetSet({
         { label: "Zahlenhelfer", key: "outputHelperEntityId", showWhen: { key: "outputHelperEnabled", value: true } },
       ] },
     ],
+  }, {
+    type: "linebox-math", label: "SVG LineBox Math", icon: "▣", preview: { kind: "plain", lines: ["ƒ"] },
+    defaults: {
+      title: "", width: 160, height: 160, radius: 0, dockPointsEnabled: false, dockAlwaysVisible: true,
+      backgroundColor: "#12383b", borderColor: "#29c8b5", borderWidth: 2, borderStyle: "solid",
+      mathMode: "expression", mathExpression: "A + B", lineboxDivisor: 1,
+      ...Object.fromEntries(MATH_ANCHORS.map(([id]) => [`mathRole_${id}`, "input"])),
+    },
+    propertyGroups: [{ label: "Berechnung", hint: "Berechnung bearbeiten öffnet die Formel und Rollen A–P. Mehrere Leitungen an einem Eingang werden zuerst summiert. Ungültige Werte stoppen die Ausgabe.", fields: [
+      { label: "Beschriftung (optional)", key: "title" },
+    ] }],
   }],
 });

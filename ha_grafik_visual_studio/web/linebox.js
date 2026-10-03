@@ -1,4 +1,5 @@
 import { dockPointKey } from "./dock-points.js";
+import { mathBoxResult, mathPortRole } from "./linebox-math.js";
 
 const roleKey = anchorId => `lineboxRole_${anchorId.replaceAll("-", "_")}`;
 const passKey = anchorId => `lineboxPass_${anchorId.replaceAll("-", "_")}`;
@@ -88,6 +89,11 @@ export function lineboxHelperOutput(box, widgets, entityStates) {
 
 export function lineboxOutputForConnection(line, widgets, entityStates, visited = new Set()) {
   for (const side of ["start", "end"]) {
+    const math = widgets.find(item => item.id === line[`${side}WidgetId`] && item.type === "linebox-math");
+    if (mathPortRole(math, line[`${side}Anchor`]) === "output") {
+      const result = mathBoxResult(math, widgets, entityStates, visited);
+      return { boxId: math.id, value: result.value === null ? null : side === "start" ? result.value : -result.value };
+    }
     const box = widgets.find(item => item.id === line[`${side}WidgetId`] && item.type === "linebox");
     const anchorId = line[`${side}Anchor`] || (side === "start" ? "right-center" : "left-center");
     if (lineboxPortRole(box, anchorId) !== "output" || box[passKey(anchorId)] !== true) continue;

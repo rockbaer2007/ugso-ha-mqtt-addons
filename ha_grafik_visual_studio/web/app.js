@@ -2,6 +2,7 @@ import { getWidgetSets, getWidgetDefinition, registerWidgetSet, initializeWidget
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings } from "./connection-animation.js";
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
+import { MATH_ANCHORS, MATH_IDS, mathBoxResult, mathLeadPoint, evaluateMathExpression } from "./linebox-math.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
@@ -114,6 +115,8 @@ const CONNECTION_ANCHORS = [
   ["bottom-quarter", "Unten 1/4", 0.25, 1], ["bottom-center", "Unten Mitte", 0.5, 1], ["bottom-three-quarter", "Unten 3/4", 0.75, 1],
 ];
 const CONNECTION_ANCHOR_IDS = CONNECTION_ANCHORS.map(([id]) => id);
+const widgetAnchors = widget => widget.type === "linebox-math" ? MATH_ANCHORS : CONNECTION_ANCHORS;
+const widgetAnchorIds = widget => widgetAnchors(widget).map(([id]) => id);
 const connectionAnchorGroup = { id: "dock-points", label: "Andockpunkte", masterKey: "dockPointsEnabled", defaultEnabled: false, hint: "Der Haken in der Überschrift aktiviert den Bereich. Alle Punkte sind zunächst aus und lassen sich gemeinsam oder einzeln einschalten.", fields: [
   ...CONNECTION_ANCHORS.map(([id, label]) => ({ label, key: dockPointKey(id), type: "checkbox", default: false })),
   { label: "Mehrfachbelegung erlauben", key: "dockMultiple", type: "checkbox", default: true },
@@ -139,6 +142,13 @@ const commonWidgetGroups = [
 
 function widgetPropertyGroups(widget) {
   const groups = getWidgetDefinition(widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
+  if (widget.type === "linebox-math") {
+    const dockGroup = { ...connectionAnchorGroup, fields: [
+      ...MATH_ANCHORS.map(([id, label]) => ({ label, key: dockPointKey(id), type: "checkbox", default: false })),
+      ...connectionAnchorGroup.fields.filter(field => !field.key.startsWith("dock_")),
+    ] };
+    return [...commonWidgetGroups, dockGroup, ...groups];
+  }
   if (widget.type === "linebox") {
     const dockGroup = { ...connectionAnchorGroup, fields: connectionAnchorGroup.fields.map(field => field.key.startsWith("dock_") ? { ...field, refreshProperties: true } : field) };
     const portFields = CONNECTION_ANCHORS.flatMap(([anchorId, label]) => {
@@ -342,7 +352,7 @@ function ensureProjectPages(project) {
     page.visible ??= true;
     page.page ||= { preset: "desktop", ...PRESETS.desktop, background: "#242729", backgroundMode: "tile" };
     page.widgets = Array.isArray(page.widgets) ? page.widgets : [];
-    for (const widget of page.widgets) if (widget.type !== "svg-connection") initializeDockPoints(widget, CONNECTION_ANCHOR_IDS);
+    for (const widget of page.widgets) if (widget.type !== "svg-connection") initializeDockPoints(widget, widgetAnchorIds(widget));
     ensureWidgetNames(page);
   });
   project.currentPageId = project.pages.some((page) => page.id === project.currentPageId) ? project.currentPageId : project.pages[0].id;
@@ -359,7 +369,7 @@ function currentPage() {
     const owner = selected?.widgets.find(widget => widget.id === tabContext.ownerId && widget.type === "tabs");
     if (owner && tabContext.index >= 0 && tabContext.index < tabCount(owner)) {
       const surface = ownTabSurface(owner, tabContext.index);
-      for (const widget of surface.widgets) if (widget.type !== "svg-connection") initializeDockPoints(widget, CONNECTION_ANCHOR_IDS);
+      for (const widget of surface.widgets) if (widget.type !== "svg-connection") initializeDockPoints(widget, widgetAnchorIds(widget));
       ensureWidgetNames(surface); return surface;
     }
     if (!runtimeMode) state.tabEditor = null;
@@ -624,6 +634,9 @@ function stageRuntimeEntityValue(entityId, value) {
       } else if (widget.type === "linebox") {
         const value = document.getElementById(`linebox-junction-${widget.id}`)?.querySelector(".linebox-output-value");
         if (value) { value.textContent = lineboxValueText(widget, widgets); value.setAttribute("aria-label", `${uiText("Ausgabewert")}: ${value.textContent}`); }
+      } else if (widget.type === "linebox-math") {
+        const value = document.getElementById(widget.id)?.querySelector(".math-result");
+        if (value) updateMathResult(widget, widgets, value);
       }
     }
     }
@@ -1631,7 +1644,7 @@ async function importWidgets(file) {
       widget.height = Math.max(16, Number(widget.height) || 62);
       widget.layer = Math.max(0, Math.min(9999, Math.trunc(Number(widget.layer) || 0)));
       widget.generalEnabled ??= false; widget.visibilityEnabled ??= false; widget.locked ??= false;
-      if (widget.type !== "svg-connection") initializeDockPoints(widget, CONNECTION_ANCHOR_IDS);
+      if (widget.type !== "svg-connection") initializeDockPoints(widget, widgetAnchorIds(widget));
       currentPage().widgets.push(widget);
     }
     setSingleWidgetSelection(currentPage().widgets.at(-widgets.length).id);
@@ -1737,14 +1750,15 @@ function renderSvgShape(widget) {
 }
 
 function connectionAnchorPosition(widget, anchorId) {
-  const anchor = CONNECTION_ANCHORS.find(([id]) => id === anchorId) || CONNECTION_ANCHORS.find(([id]) => id === "right-center");
+  const anchors = widgetAnchors(widget);
+  const anchor = anchors.find(([id]) => id === anchorId) || anchors.find(([id]) => id === "right-center") || anchors[0];
   return { x: Number(widget.x) + Number(widget.width) * anchor[2], y: Number(widget.y) + Number(widget.height) * anchor[3] };
 }
 
 function closestConnectionAnchor(clientX, clientY, connection, prefix, widgets, bounds, width, height) {
   let closest = null;
   for (const target of widgets.filter(item => item.type !== "svg-connection" && item.visible !== false && item.dockPointsEnabled === true)) {
-    for (const [anchorId] of CONNECTION_ANCHORS) {
+    for (const [anchorId] of widgetAnchors(target)) {
       if (target[dockPointKey(anchorId)] !== true) continue;
       const occupied = widgets.filter(item => item.type === "svg-connection").flatMap(item => ["start", "end"].map(side => ({ item, side }))).filter(({ item, side }) => {
         if (item.id === connection.id && side === prefix) return false;
@@ -1802,7 +1816,7 @@ function connectionEndpoint(widget, prefix, widgets) {
       if (join) return join;
     }
     const position = connectionAnchorPosition(target, anchorId);
-    if (connections.length > 1 && currentIndex >= 0) {
+    if (target.type !== "linebox-math" && connections.length > 1 && currentIndex >= 0) {
       const offset = (currentIndex - (Math.min(connections.length, limit) - 1) / 2) * (Number(target.dockLaneSpacing) || 6);
       if (anchorId.startsWith("left-") || anchorId.startsWith("right-")) position.y += offset;
       else position.x += offset;
@@ -1831,6 +1845,14 @@ function connectionRoute(widget, widgets, reverse = false) {
     const middleX = start.x + (end.x - start.x) / 2;
     points = [start, { x: middleX, y: start.y }, { x: middleX, y: end.y }, end];
   } else points = [start, ...intermediate, end];
+  const startBox = widgets.find(item => item.id === widget.startWidgetId);
+  const endBox = widgets.find(item => item.id === widget.endWidgetId);
+  const startLead = mathLeadPoint(startBox, widget.startAnchor, start);
+  const endLead = mathLeadPoint(endBox, widget.endAnchor, end);
+  if (startLead || endLead) {
+    const inner = intermediate.length ? intermediate : [{ x: (startLead || start).x, y: (endLead || end).y }];
+    points = [start, ...(startLead ? [startLead] : []), ...inner, ...(endLead ? [endLead] : []), end];
+  }
   if (reverse) points.reverse();
   return points;
 }
@@ -2263,7 +2285,7 @@ function addWidget(definition) {
   };
   if (widget.type !== "svg-connection") {
     widget.dockPointsEnabled = false;
-    setAllDockPoints(widget, CONNECTION_ANCHOR_IDS, false);
+    setAllDockPoints(widget, widgetAnchorIds(widget), false);
   }
   if (definition.packageId) { widget.packageId = definition.packageId; widget.definitionVersion = "0.1"; }
   widget.name = uniqueWidgetName(page, widget.name || definition.label);
@@ -2404,6 +2426,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const activeFilter = state.activeFilter || "";
   const selectedFilters = Array.isArray(activeFilter) ? activeFilter : activeFilter ? [activeFilter] : [];
   for (const widget of activePage.widgets) {
+    if (widget.type === "linebox-math") { widget.width = Math.max(96, Number(widget.width) || 160); widget.height = widget.width; }
     if (widget.visible === false) continue;
     const editorFilterWords = String(widget.generalEnabled === true ? widget.filterWord || "" : "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
     const editorFilterMatches = state.editorWidgetFilter?.words?.some((word) => editorFilterWords.includes(word));
@@ -2475,6 +2498,12 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (isConnection) {
       content.style.background = "none"; content.style.border = "0"; content.style.padding = "0"; content.style.overflow = "visible";
       content.append(renderSvgConnection(widget, activePage.widgets, page.width, page.height, selected));
+    } else if (widget.type === "linebox-math") {
+      content.classList.add("linebox-math-content");
+      content.style.borderRadius = "0";
+      if (widget.title) { const caption = document.createElement("strong"); caption.textContent = widget.title; content.append(caption); }
+      const value = document.createElement("span"); value.className = "math-result"; content.append(value);
+      updateMathResult(widget, activePage.widgets, value);
     } else if (widget.type === "linebox") {
       content.classList.add("linebox-content");
       const title = document.createElement("strong"); title.textContent = widget.title || "";
@@ -2913,11 +2942,12 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     const hasConnections = activePage.widgets.some(item => item.type === "svg-connection" && item.visible !== false);
     const showDockPoints = !runtimeMode && !isConnection && widget.dockPointsEnabled === true && (selected || widget.dockAlwaysVisible || hasConnections);
     if (showDockPoints) {
-      for (const [anchorId, label, x, y] of CONNECTION_ANCHORS) {
+      for (const [anchorId, label, x, y] of widgetAnchors(widget)) {
         if (widget[dockPointKey(anchorId)] !== true) continue;
         const marker = document.createElement("span"); marker.className = "widget-dock-point"; marker.style.left = `${x * 100}%`; marker.style.top = `${y * 100}%`; marker.dataset.anchorId = anchorId; marker.dataset.widgetId = widget.id;
         const occupied = activePage.widgets.filter(item => item.type === "svg-connection" && [[item.startWidgetId, item.startAnchor], [item.endWidgetId, item.endAnchor]].some(([id, anchor]) => id === widget.id && (anchor || "right-center") === anchorId)).length;
         marker.dataset.count = String(occupied); marker.title = `${label}${occupied ? ` · ${occupied} Verbindung${occupied === 1 ? "" : "en"}` : ""}`; element.append(marker);
+        if (widget.type === "linebox-math") { marker.classList.add("math-dock-point"); marker.classList.toggle("is-occupied", occupied > 0); marker.textContent = anchorId; }
       }
     }
     const signalCount = isConnection || !optionalWidgetGroupEnabled(widget, "signalImagesEnabled") ? 0 : Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
@@ -3129,6 +3159,12 @@ function makeResizable(element, handle, widget) {
     if (direction.includes("s")) widget.height = Math.max(16, Math.round(origin.height + dy));
     if (direction.includes("w")) { widget.width = Math.max(16, Math.round(origin.width - dx)); widget.x = Math.max(0, Math.round(origin.left + origin.width - widget.width)); }
     if (direction.includes("n")) { widget.height = Math.max(16, Math.round(origin.height - dy)); widget.y = Math.max(0, Math.round(origin.top + origin.height - widget.height)); }
+    if (widget.type === "linebox-math") {
+      const size = Math.max(96, direction.includes("e") || direction.includes("w") ? widget.width : widget.height);
+      widget.width = size; widget.height = size;
+      if (direction.includes("n")) widget.y = Math.max(0, origin.top + origin.height - size);
+      if (direction.includes("w")) widget.x = Math.max(0, origin.left + origin.width - size);
+    }
     element.style.left = `${widget.x}px`; element.style.top = `${widget.y}px`;
     element.style.width = `${widget.width}px`; element.style.height = `${widget.height}px`;
   });
@@ -3167,6 +3203,66 @@ function openHtmlEditor(input) {
   }
   area.append(lines, editor); dialog.append(heading, area, actions); document.body.append(dialog);
   dialog.addEventListener("close", () => { dialog.remove(); input.focus(); }); dialog.showModal(); editor.focus();
+}
+
+function updateMathResult(widget, widgets, element) {
+  const result = mathBoxResult(widget, widgets, state.entityStates);
+  element.textContent = result.value === null ? "—" : String(Number(result.value.toFixed(6)));
+  element.title = result.error || "Berechneter Wert";
+  element.classList.toggle("is-error", Boolean(result.error));
+  element.setAttribute("aria-label", result.error || `Ergebnis: ${element.textContent}`);
+}
+
+function openMathDialog(widget) {
+  const draft = structuredClone(widget);
+  const dialog = document.createElement("dialog"); dialog.className = "studio-dialog math-editor";
+  const heading = document.createElement("h2"); heading.textContent = "SVG LineBox Math · Berechnung";
+  const hint = document.createElement("p"); hint.textContent = "A–P im Uhrzeigersinn. Mehrere Leitungen je Eingang werden mit Vorzeichen summiert. Formel: + − * / und Klammern, z. B. (A + B) / C. Dezimalzahlen mit Punkt.";
+  const modeLabel = document.createElement("label"); modeLabel.textContent = "Berechnungsart ";
+  const mode = document.createElement("select");
+  for (const [value, label] of [["expression", "Eigene Formel"], ["average", "Durchschnitt aller belegten Eingänge"]]) { const option = document.createElement("option"); option.value = value; option.textContent = label; mode.append(option); }
+  mode.value = draft.mathMode || "expression"; modeLabel.append(mode);
+  const formulaLabel = document.createElement("label"); formulaLabel.textContent = "Formel ";
+  const formula = document.createElement("input"); formula.value = draft.mathExpression || "A + B"; formula.maxLength = 512; formulaLabel.append(formula);
+  const sizeLabel = document.createElement("label"); sizeLabel.textContent = "Quadratgröße (px) ";
+  const size = document.createElement("input"); size.type = "number"; size.min = "96"; size.max = "2000"; size.value = String(widget.width || 160); sizeLabel.append(size);
+  const list = document.createElement("div"); list.className = "math-port-list";
+  const preview = document.createElement("p"); preview.className = "math-preview"; preview.setAttribute("aria-live", "polite");
+  const inputValues = new Map();
+  const refresh = () => {
+    draft.mathMode = mode.value; draft.mathExpression = formula.value;
+    formula.disabled = mode.value === "average";
+    const widgets = currentPage().widgets.map(item => item.id === widget.id ? draft : item);
+    const result = mathBoxResult(draft, widgets, state.entityStates);
+    preview.textContent = result.error ? result.error : `Ergebnis: ${Number(result.value.toFixed(6))}`;
+    for (const [id, element] of inputValues) element.textContent = result.values[id] === undefined ? "—" : String(Number(result.values[id].toFixed(6)));
+  };
+  for (const [id, label] of MATH_ANCHORS) {
+    const row = document.createElement("label"); row.className = "math-port-row";
+    const letter = document.createElement("strong"); letter.textContent = id; letter.title = label;
+    const occupied = currentPage().widgets.some(line => line.type === "svg-connection" && ["start", "end"].some(side => line[`${side}WidgetId`] === widget.id && line[`${side}Anchor`] === id));
+    letter.className = occupied ? "math-port-letter is-occupied" : "math-port-letter";
+    const role = document.createElement("select"); role.setAttribute("aria-label", `${id}: Rolle`);
+    for (const [value, text] of [["none", "Aus"], ["input", "Eingang"], ["output", "Ausgang"]]) { const option = document.createElement("option"); option.value = value; option.textContent = text; role.append(option); }
+    role.value = draft.dockPointsEnabled === true && draft[dockPointKey(id)] === true ? draft[`mathRole_${id}`] || "input" : "none";
+    const value = document.createElement("span"); inputValues.set(id, value);
+    role.addEventListener("change", () => { draft[`mathRole_${id}`] = role.value; draft[dockPointKey(id)] = role.value !== "none"; draft.dockPointsEnabled = MATH_IDS.some(id => draft[dockPointKey(id)] === true); refresh(); });
+    row.append(letter, role, value); list.append(row);
+  }
+  mode.addEventListener("change", refresh); formula.addEventListener("input", refresh);
+  const actions = document.createElement("div"); actions.className = "dialog-actions";
+  const apply = document.createElement("button"); apply.textContent = "Anwenden"; apply.type = "button";
+  apply.addEventListener("click", () => {
+    refresh();
+    if (!Number.isFinite(Number(size.value)) || Number(size.value) < 96 || Number(size.value) > 2000) { preview.textContent = "Quadratgröße: 96 bis 2000 px"; return; }
+    if (draft.mathMode === "expression") { try { evaluateMathExpression(draft.mathExpression, Object.fromEntries(MATH_IDS.map(id => [id, 1])), true); } catch (error) { preview.textContent = error.message; return; } }
+    recordHistorySnapshot(); preserveDockedConnectionPositions(widget, currentPage().widgets);
+    for (const key of ["mathMode", "mathExpression", "dockPointsEnabled", ...MATH_IDS.flatMap(id => [dockPointKey(id), `mathRole_${id}`])]) widget[key] = draft[key];
+    widget.width = widget.height = Math.round(Number(size.value)); dialog.close(); render();
+  });
+  const cancel = document.createElement("button"); cancel.textContent = "Abbrechen"; cancel.type = "button"; cancel.addEventListener("click", () => dialog.close());
+  actions.append(apply, cancel); dialog.append(heading, hint, modeLabel, formulaLabel, sizeLabel, list, preview, actions);
+  document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); refresh(); dialog.showModal(); formula.focus();
 }
 
 function openFilterEditor(widget) {
@@ -3444,6 +3540,10 @@ function renderProperties() {
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
   const updateHeading = () => { heading.textContent = `${widgetDisplayName(widget)} — ${getWidgetDefinition(widget.type).label} · ${widget.id}`; };
   updateHeading(); panel.append(heading);
+  if (widget.type === "linebox-math") {
+    const edit = document.createElement("button"); edit.type = "button"; edit.textContent = "Berechnung bearbeiten";
+    edit.addEventListener("click", () => openMathDialog(widget)); panel.append(edit);
+  }
   for (const [index, group] of groups.entries()) {
     const details = document.createElement("details"); details.className = "property-section";
     const sectionKey = `widget:${widget.id}:${group.label}:${index}`;
@@ -3493,14 +3593,14 @@ function renderProperties() {
       const allCheckbox = document.createElement("input"); allCheckbox.type = "checkbox"; allCheckbox.setAttribute("aria-label", "Alle Punkte");
       allLabel.append(allCheckbox, document.createTextNode("Alle Punkte")); body.append(allLabel);
       updateDockAll = () => {
-        const selection = dockPointSelection(widget, CONNECTION_ANCHOR_IDS);
+        const selection = dockPointSelection(widget, widgetAnchorIds(widget));
         allCheckbox.checked = selection === "all";
         allCheckbox.indeterminate = selection === "some";
       };
       allCheckbox.addEventListener("change", () => {
         recordHistorySnapshot();
         if (!allCheckbox.checked) preserveDockedConnectionPositions(widget, page.widgets);
-        setAllDockPoints(widget, CONNECTION_ANCHOR_IDS, allCheckbox.checked);
+        setAllDockPoints(widget, widgetAnchorIds(widget), allCheckbox.checked);
         if (widget.type === "linebox" && !allCheckbox.checked) for (const anchorId of CONNECTION_ANCHOR_IDS) widget[`lineboxRole_${anchorId.replaceAll("-", "_")}`] = "none";
         for (const input of body.querySelectorAll("input[data-dock-point]")) input.checked = allCheckbox.checked;
         updateDockAll(); renderStage();
