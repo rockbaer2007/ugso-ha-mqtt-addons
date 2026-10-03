@@ -15,6 +15,7 @@ import { UNIVERSAL_STYLE_GROUPS, universalStateFields, universalStyle, universal
 const universalFeedback = new Map();
 import { mediaRefreshUrl, iframeOptions, iframeCount, iframeIndex } from "./iframe-widget.js";
 import { imageOptions, imageCount, imageIndex } from "./image-widget.js";
+import { borderAppearance, borderTitleFragment } from "./border-widget.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
@@ -2733,12 +2734,11 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.style.whiteSpace = widget.whiteSpace || "pre-wrap";
     } else if (widget.type === "border") {
       content.classList.add("border-content");
+      const appearance = borderAppearance(widget, page.theme === "light");
       const header = document.createElement("span"); header.className = "border-header";
-      header.style.height = `${Math.max(0, Number(widget.headerHeight) || 0)}px`; header.style.backgroundColor = widget.headerColor || "transparent";
-      const heading = document.createElement("span"); heading.className = "border-title"; heading.textContent = widget.title || "";
-      heading.style.backgroundColor = widget.titleBackground || "transparent";
-      heading.style.color = widget.titleColor || "inherit";
-      heading.style.top = `${widget.titleTopOffset ?? -9}px`; heading.style.left = `${widget.titleLeftOffset ?? 16}px`;
+      Object.assign(header.style, appearance.header);
+      const heading = document.createElement("span"); heading.className = "border-title"; heading.append(borderTitleFragment(widget.title, document));
+      Object.assign(heading.style, appearance.title);
       content.append(header, heading);
     } else if (widget.type === "button") {
       const on = isOn(displayedWidgetState(widget));

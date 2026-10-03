@@ -332,7 +332,7 @@ registerWidgetSet({
       ] },
       geometry(), ...cssGroups(),
     ] },
-    { type: "border", label: "Border", icon: "▱", defaults: { title: "Titel", borderColor: "#1688e7", borderWidth: 1, borderStyle: "solid", backgroundColor: "", titleBackground: "", titleColor: "#e7ecee", titleTopOffset: -9, titleLeftOffset: 16, headerHeight: 0, headerColor: "" }, propertyGroups: [
+    { type: "border", label: "Border", icon: "▱", defaults: { title: "Titel", width: 100, height: 70, borderColor: "#888888", borderWidth: 1, borderStyle: "solid", radius: 0, padding: 0, backgroundColor: "", titleBackground: "", titleTopOffset: -10, titleLeftOffset: 20, headerHeight: 0, headerColor: "", cssOverflowX: "visible", cssOverflowY: "visible" }, propertyGroups: [
       metadata(), visibility(),
       { label: "Allgemein", fields: [
         { label: "Titel", key: "title" },
@@ -341,7 +341,6 @@ registerWidgetSet({
         { label: "Titel-Links-Abstand (px)", key: "titleLeftOffset", type: "range", min: -20, max: 30, step: 1 },
         { label: "Kopfhöhe (px)", key: "headerHeight", type: "range", min: 0, max: 100, step: 1 },
         { label: "Kopffarbe", key: "headerColor", type: "color" },
-        { label: "Titelfarbe", key: "titleColor", type: "color" },
       ] },
       geometry(), ...cssGroups(),
     ] },
@@ -354,6 +353,7 @@ registerWidgetSet({
     if (widget.type === "screen-resolution") widget.propertyGroups = widget.propertyGroups.filter(group => group.label !== "Daten");
     const data = widget.propertyGroups.find(group => ["Daten", "Allgemein"].includes(group.label));
     const add = (...fields) => data?.fields.push(...fields);
+    if (widget.type === "border") widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
     if (widget.type === "image") {
       Object.assign(widget.defaults, { width: 200, height: 130, imageSrc: "", stretch: false, refreshInterval: 0, refreshOnWake: false, refreshOnView: false, noCacheBuster: false, allowUserInteractions: false, padding: 0, radius: 0, borderWidth: 0, backgroundColor: "transparent" });
       delete widget.defaults.state;

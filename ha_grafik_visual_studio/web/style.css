@@ -294,7 +294,7 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .linebox-output-value.is-above { bottom: calc(100% + 6px); }
 .linebox-output-value.is-below { top: calc(100% + 6px); }
 .border-header { position: absolute; top: 0; right: 0; left: 0; display: block; pointer-events: none; }
-.border-title { position: absolute; max-width: 90%; padding: 0 5px; transform: translateY(-50%); white-space: nowrap; }
+.border-title { position: absolute; max-width: 90%; padding: 0 5px; white-space: nowrap; }
 .widget-content > button { max-width: 100%; max-height: 100%; cursor: pointer; }
 .widget-content > input[type="range"] { width: 100%; }
 .widget-slider-input { appearance: none; background: transparent; height: max(var(--slider-track-size), var(--slider-thumb-size)); padding: 0; border: 0; cursor: pointer; }

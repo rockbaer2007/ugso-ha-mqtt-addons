@@ -1,4 +1,6 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "border" && key === "title") return "Rahmen und Titel sind reine Anzeige; kein HA-Helfer nötig. HTML im Titel wird bereinigt. Position und Größe werden über CSS Allgemein gespeichert.";
+  if (widget.type === "border" && key === "headerHeight") return "0 blendet den Kopfbereich aus. Ohne Titelhintergrund erhält der Titel dann eine zum Thema passende Fläche; mit Kopfbereich bleibt sie transparent.";
   if (widget.type === "image-8" && key === "entityId") return "Die HA-Entität liefert den Bildindex: false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen; kein zusätzlicher HA-Helfer nötig. Ohne Entität wird Bild [0] angezeigt.";
   if (widget.type === "image-8" && key === "count") return "Höchster Index: maximal 200 ergibt 201 Einträge von [0] bis [200]. Deaktivierte oder leere Einträge zeigen kein Bild.";
   if (widget.type === "image-8" && /^imageSource\d+$/.test(key)) return migrationHint({ type: "image" }, "imageSrc");

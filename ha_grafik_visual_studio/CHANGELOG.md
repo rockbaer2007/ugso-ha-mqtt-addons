@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.169
+
+- Align Border with the standard 100 × 70 frame, gray 1px border, visible overflow and title offsets -10/20; remove the extra vertical title translation.
+- Render sanitized title HTML, with theme-aware title/header backgrounds and the six standard fields. Keep existing title colors compatible.
+- Keep CSS General required and add optional migration hints plus bilingual documentation with Studio screenshots.
+
 ## 0.1.168
 
 - Image 8 follows the standard indexed-image settings, with the highest index limited to 200 (Image [0] through Image [200]). Empty, disabled and invalid entries display no image.
