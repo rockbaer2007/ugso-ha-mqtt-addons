@@ -9,6 +9,7 @@ import { htmlListEntries, htmlListEntry, styledListCount } from "./value-list.js
 import { tableRows, tableColumns, updateTableEvent } from "./table-data.js";
 import { boolSelectOn } from "./bool-select.js";
 import { migrationHint } from "./migration-hints.js";
+import { htmlStateValue } from "./html-state.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
@@ -2856,11 +2857,26 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       select.setAttribute("aria-label", widget.title || "Bool Select");
       select.addEventListener("change", (event) => { event.stopPropagation(); if (runtimeMode && stateElementReady(widget, select.value)) setRuntimeStateElement(widget, select.value); }); content.append(select);
     } else if (widget.type === "html-state" || widget.type === "html") {
-      const output = document.createElement("div"); output.className = "safe-html"; appendSafeHtml(output, String(widget.htmlContent || "").replaceAll("{value}", String(displayedWidgetState(widget) ?? "")));
+      const output = document.createElement("div"); output.className = "safe-html";
+      appendSafeHtml(output, widget.type === "html-state" ? widget.htmlContent || "" : String(widget.htmlContent || "").replaceAll("{value}", String(displayedWidgetState(widget) ?? "")));
       if (widget.type === "html" && Number(widget.refreshInterval) > 0) { const update = () => { output.replaceChildren(); appendSafeHtml(output, widget.htmlContent || ""); }; mediaRefreshers.add({ widget, update, timer: setInterval(update, Math.max(100, Number(widget.refreshInterval))) }); }
-      const url = safeUrl(widget.clickUrl);
-      if (widget.type === "html-state" && url) { const link = document.createElement("a"); link.href = url; link.rel = "noopener noreferrer"; link.append(output); content.append(link); }
-      else content.append(output);
+      if (widget.type === "html-state" && runtimeMode) {
+        const candidate = safeUrl(widget.clickUrl);
+        const url = candidate && /^https?:$/.test(new URL(candidate, location.href).protocol) ? candidate : "";
+        const value = htmlStateValue(widget);
+        const ready = Boolean(url) || Boolean(widget.entityId && stateElementReady(widget, value));
+        output.setAttribute("role", "button"); output.setAttribute("aria-label", widget.title || "HTML State"); output.setAttribute("aria-disabled", String(!ready)); output.tabIndex = ready ? 0 : -1;
+        if (ready) {
+          const activate = event => {
+            event.stopPropagation();
+            if (url) void fetch(url, { method: "GET", mode: "no-cors" }).catch(error => { $("#status").textContent = `${uiText("URL-Aufruf fehlgeschlagen")}: ${error.message}`; });
+            if (widget.entityId && stateElementReady(widget, value)) setRuntimeStateElement(widget, value);
+          };
+          output.addEventListener("click", activate);
+          output.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); activate(event); } });
+        }
+      }
+      content.append(output);
     } else if (widget.type === "table") {
       const tableWrap = document.createElement("div"); tableWrap.className = "widget-table-wrap";
       const cacheKey = `${state.projectId}:${activePage.id}:${widget.id}:${widget.eventEntityId || ""}`;
@@ -3579,6 +3595,7 @@ function field(descriptor, widget) {
   if (input.type === "checkbox") input.checked = widget[descriptor.key] ?? descriptor.default ?? true;
   else input.value = widget[descriptor.key] ?? descriptor.default ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
   input.disabled = descriptor.disabled === true;
+  if (widget.type === "html-state" && descriptor.key === "writeValue") input.value = widget.writeValue ?? widget.state ?? "";
   let preview;
   let aliasPreview;
   let previewRow;
@@ -3683,6 +3700,8 @@ function field(descriptor, widget) {
   const migration = migrationHint(widget, descriptor.key);
   if (migration && !runtimeMode && state.project.settings?.showMigrationHints !== false) {
     const hint = document.createElement("small"); hint.className = "migration-hint"; hint.textContent = uiText(migration);
+    hint.id = `migration-${widget.id}-${descriptor.key}`; hint.setAttribute("aria-hidden", "true");
+    input.setAttribute("aria-describedby", hint.id);
     let background = $("#properties");
     let channels = [0, 0, 0];
     while (background) {

@@ -101,7 +101,7 @@ const basicDataWidget = (type, label, icon, defaults, dataFields, hint = "Ohne E
   propertyGroups: [
     metadata(), visibility(),
     { label: "Daten", ...(hint ? { hint } : {}), fields: dataFields },
-    geometry(), ...cssGroups().map(group => ["value-list-html", "value-list-html-style", "bool-display", "bool-select", "table"].includes(type) ? { ...group, defaultEnabled: false } : group),
+    geometry(), ...cssGroups().map(group => ["value-list-html", "value-list-html-style", "bool-display", "bool-select", "html-state", "table"].includes(type) ? { ...group, defaultEnabled: false } : group),
   ],
 });
 const dateFormats = ["YYYY-MM-DD HH:mm:ss", "DD.MM.YYYY HH:mm:ss", "DD.MM.YYYY HH:mm", "YYYY-MM-DD", "HH:mm:ss"];
@@ -301,9 +301,10 @@ registerWidgetSet({
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testzustand", key: "state", type: "select", options: [{ value: "false", label: "Aus" }, { value: "true", label: "Ein" }] },
       { label: "HTML für Ein", key: "htmlTrue", type: "textarea" }, { label: "HTML für Aus", key: "htmlFalse", type: "textarea" },
     ]),
-    basicDataWidget("html-state", "HTML State", "HTML", { title: "HTML State", htmlContent: "<strong>Eigener HTML-Inhalt</strong>", clickUrl: "" }, [
-      { label: "HTML-Inhalt", key: "htmlContent", type: "textarea" }, { label: "URL beim Anklicken (optional)", key: "clickUrl" },
-    ]),
+    basicDataWidget("html-state", "HTML State", "HTML", { title: "HTML State", entityId: "", htmlContent: "", writeValue: "", clickUrl: "" }, [
+      { label: "Home-Assistant-Entität", key: "entityId" }, { label: "HTML", key: "htmlContent", type: "html" },
+      { label: "Wert", key: "writeValue" }, { label: "Rufe URL bei Klick", key: "clickUrl" },
+    ], "Schreibt bei jedem Klick denselben Wert; kein Umschalten zwischen zwei Zuständen."),
     basicDataWidget("table", "Table", "▦", { title: "Tabelle", entityId: "", tableData: "[{\"Name\":\"Temperatur\",\"Wert\":21.5},{\"Name\":\"Luftfeuchte\",\"Wert\":48}]" }, [
       { label: "Table Object ID (HA-Entität)", key: "entityId" }, { label: "Static JSON (ohne ID)", key: "tableData", type: "textarea" },
     ]),
@@ -360,7 +361,6 @@ registerWidgetSet({
       add({ label: "HTML anhängen", key: "suffix" }, { label: "Autofokus", key: "autofocus", type: "checkbox", default: false });
     }
     if (widget.type === "bool-select") add(...htmlAdditions(), { label: "Autofokus", key: "autofocus", type: "checkbox", default: false });
-    if (widget.type === "html-state") add({ label: "Home-Assistant-Entität", key: "entityId" }, { label: "Wert (Vorschau)", key: "state" });
     if (widget.type === "string") add({ label: "Icon", key: "icon", previewImage: true });
     if (widget.type === "bar") add({ label: "Wert umkehren", key: "invert", type: "checkbox", default: false }, { label: "Rand", key: "barBorder" }, { label: "Durchsichtigkeit", key: "barOpacity", type: "range", min: 0, max: 1, step: 0.05, default: 1 });
     if (widget.type === "navigation") add({ label: "HTML", key: "navHtml", type: "html", default: "Öffnen" }, { label: "View zum Navigieren", key: "targetPage", type: "page" });

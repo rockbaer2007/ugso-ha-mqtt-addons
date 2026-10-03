@@ -2,6 +2,10 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Rufe URL bei Klick": "Call URL on click", "URL-Aufruf fehlgeschlagen": "URL request failed",
+  "Schreibt bei jedem Klick denselben Wert; kein Umschalten zwischen zwei Zuständen.": "Writes the same value on each click; does not toggle between states.",
+  "Die URL wird per GET vom Browser aufgerufen, nicht über den ioBroker-Server. Browser- und Netzwerkregeln gelten.": "The URL is called via GET from the browser, not the ioBroker server. Browser and network rules apply.",
+  "Schreibt einen festen Wert an switch, light, input_boolean oder einen passenden input_number-/input_text-Helfer. Ein Sensor ist kein Schreibziel.": "Writes a fixed value to switch, light, input_boolean or a compatible input_number/input_text helper. A sensor is not a write target.",
   "Umsteigerhinweise anzeigen": "Show migration hints",
   "Benötigt einen input_number-Helfer für das berechnete Ergebnis. Ohne HA-Ausgabe bleibt die Berechnung lokal.": "Requires an input_number helper for the calculated result. Without HA output, calculation stays local.",
   "Liest JSON-Zeilen aus einem HA-Zustand. Ohne Entität wird Static JSON verwendet.": "Reads JSON rows from an HA state. Without an entity, Static JSON is used.",

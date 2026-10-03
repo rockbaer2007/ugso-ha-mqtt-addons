@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.151
+
+- HTML State now writes its configured fixed value on runtime click or keyboard activation, using compatible HA switch entities or number/text helpers. It does not toggle based on the current state.
+- Optional click URLs are requested via browser GET instead of navigating away. Migration hints explain HA targets and browser/network constraints.
+- New HTML State widgets have empty fields and disabled CSS groups. Previous state values are retained as the fixed-value fallback; HTML is displayed literally with sanitization.
+
 ## 0.1.150
 
 - Added project-wide Show migration hints setting, enabled by default. Editor fields explain the required HA helper/switch target, JSON/index sources and unavailable extra write targets.
