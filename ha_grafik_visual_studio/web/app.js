@@ -1,7 +1,7 @@
 import { getWidgetSets, getWidgetDefinition, registerWidgetSet, initializeWidgetCaption } from "./widget-registry.js";
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings } from "./connection-animation.js";
-import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
+import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection, OUTPUT_SIDES, outputDockActive, dockPointActive, hasSimpleOutput, setOutputAnchor } from "./dock-points.js";
 import { MATH_ANCHORS, MATH_IDS, mathPortRole, mathBoxResults, mathCalculations, validateMathAssignments, mathLeadPoint, evaluateMathExpression } from "./linebox-math.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
@@ -145,7 +145,8 @@ const commonWidgetGroups = [
 function widgetPropertyGroups(widget) {
   const groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
   const dataGroup = { label: "Datenfluss", hint: "Wertausgabe am gewählten aktiven Dockpunkt. Wert-Verbindungen laufen vom Start zum Ziel; ein Konverter-Eingang erlaubt genau eine Quelle.", fields: [
-    { label: "Ausgangs-Dockpunkt", key: "dataOutputAnchor", type: "select", options: CONNECTION_ANCHORS.map(([value, label]) => ({ value, label })), default: "right-center" },
+    { label: "Ausgangspunkt aktivieren", key: "dataOutputEnabled", type: "checkbox", default: false, refreshProperties: true },
+    { label: "Ausgangspunkt", key: "dataOutputAnchor", type: "radio", options: OUTPUT_SIDES.map(([value, label]) => ({ value, label })), default: "right-center" },
     { label: "Wert vom Datenfluss übernehmen", key: "dataInputEnabled", type: "checkbox", default: false },
     { label: "Eingangs-Dockpunkt", key: "dataInputAnchor", type: "select", options: CONNECTION_ANCHORS.map(([value, label]) => ({ value, label })), default: "left-center" },
   ] };
@@ -1770,9 +1771,9 @@ function connectionAnchorPosition(widget, anchorId) {
 
 function closestConnectionAnchor(clientX, clientY, connection, prefix, widgets, bounds, width, height) {
   let closest = null;
-  for (const target of widgets.filter(item => item.type !== "svg-connection" && item.visible !== false && item.dockPointsEnabled === true)) {
+  for (const target of widgets.filter(item => item.type !== "svg-connection" && item.visible !== false)) {
     for (const [anchorId] of widgetAnchors(target)) {
-      if (target[dockPointKey(anchorId)] !== true) continue;
+      if (!dockPointActive(target, anchorId, prefix)) continue;
       const occupied = widgets.filter(item => item.type === "svg-connection").flatMap(item => ["start", "end"].map(side => ({ item, side }))).filter(({ item, side }) => {
         if (item.id === connection.id && side === prefix) return false;
         return item[`${side}WidgetId`] === target.id && (item[`${side}Anchor`] || (side === "start" ? "right-center" : "left-center")) === anchorId && !item[`${side}Collector`];
@@ -1816,7 +1817,7 @@ function connectionEndpoint(widget, prefix, widgets) {
   if (collector) return collector;
   const target = widgets.find(item => item.id === widget[`${prefix}WidgetId`] && item.type !== "svg-connection");
   const anchorId = widget[`${prefix}Anchor`] || (prefix === "start" ? "right-center" : "left-center");
-  const anchorEnabled = target?.dockPointsEnabled === true && target?.[dockPointKey(anchorId)] === true;
+  const anchorEnabled = dockPointActive(target, anchorId, prefix);
   if (target && anchorEnabled) {
     const connections = widgets.filter(item => item.type === "svg-connection").flatMap(item => ["start", "end"].map(side => ({
       id: `${item.id}:${side}`, widget: item, side,
@@ -2298,6 +2299,7 @@ function addWidget(definition) {
     ...structuredClone(definition.defaults),
   };
   widget.type = definition.runtimeType || widget.type;
+  if (hasSimpleOutput(widget)) { widget.dataOutputEnabled = false; widget.dataOutputAnchor = "right-center"; }
   if (widget.type !== "svg-connection") {
     widget.dockPointsEnabled = false;
     setAllDockPoints(widget, widgetAnchorIds(widget), false);
@@ -2410,6 +2412,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   stage.style.backgroundColor = page.background || "#242729";
   stage.style.setProperty("--stage-background", page.background || "#242729");
   stage.style.setProperty("--dock-color", state.project.settings?.dockColor || "#ffd54f");
+  stage.style.setProperty("--output-dock-color", state.project.settings?.outputDockColor || "#74c0fc");
   const backgroundImage = safeUrl(page.backgroundAsset || page.backgroundImage, true);
   stage.style.backgroundImage = backgroundImage ? `url(${JSON.stringify(backgroundImage)})` : "none";
   stage.style.backgroundRepeat = page.backgroundRepeat || (page.backgroundMode === "tile" ? "repeat" : "no-repeat");
@@ -2975,11 +2978,12 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       tab.append(select, edit); element.append(tab);
     }
     const hasConnections = activePage.widgets.some(item => item.type === "svg-connection" && item.visible !== false);
-    const showDockPoints = !runtimeMode && !isConnection && widget.dockPointsEnabled === true && (selected || widget.dockAlwaysVisible || hasConnections);
+    const showDockPoints = !runtimeMode && !isConnection && (widget.dockPointsEnabled === true || widget.dataOutputEnabled === true) && (selected || widget.dockAlwaysVisible || hasConnections);
     if (showDockPoints) {
       for (const [anchorId, label, x, y] of widgetAnchors(widget)) {
-        if (widget[dockPointKey(anchorId)] !== true) continue;
+        if (!dockPointActive(widget, anchorId)) continue;
         const marker = document.createElement("span"); marker.className = "widget-dock-point"; marker.style.left = `${x * 100}%`; marker.style.top = `${y * 100}%`; marker.dataset.anchorId = anchorId; marker.dataset.widgetId = widget.id;
+        if (outputDockActive(widget, anchorId)) { marker.classList.add("output-dock-point"); marker.style.setProperty("--dock-color", "var(--output-dock-color)"); }
         const occupied = activePage.widgets.filter(item => item.type === "svg-connection" && [[item.startWidgetId, item.startAnchor], [item.endWidgetId, item.endAnchor]].some(([id, anchor]) => id === widget.id && (anchor || "right-center") === anchorId)).length;
         marker.dataset.count = String(occupied); marker.title = `${label}${occupied ? ` · ${occupied} Verbindung${occupied === 1 ? "" : "en"}` : ""}`; element.append(marker);
         if (widget.type === "linebox-math") {
@@ -3483,7 +3487,7 @@ function field(descriptor, widget) {
       const label = document.createElement("label"); label.className = "property-radio-option";
       const input = document.createElement("input"); input.type = "radio"; input.name = `${widget.id}-${descriptor.key}`;
       input.value = option.value; input.checked = selected === option.value; input.disabled = descriptor.disabled === true;
-      input.addEventListener("change", () => { if (!input.checked) return; widget[descriptor.key] = input.value; renderStage(); renderProperties(); });
+      input.addEventListener("change", () => { if (!input.checked) return; if (descriptor.key === "dataOutputAnchor") setOutputAnchor(widget, currentPage().widgets, input.value); else widget[descriptor.key] = input.value; renderStage(); renderProperties(); });
       label.append(input, document.createTextNode(option.label)); choices.append(label);
     }
     return choices;
@@ -4130,6 +4134,7 @@ function openSettingsDialog() {
   $("#settings-auto-save-delay").disabled = settings.autoSave === false;
   $("#settings-language").value = getLanguagePreference();
   $("#settings-dock-color").value = /^#[0-9a-f]{6}$/i.test(settings.dockColor || "") ? settings.dockColor : "#ffd54f";
+  $("#settings-output-dock-color").value = /^#[0-9a-f]{6}$/i.test(settings.outputDockColor || "") ? settings.outputDockColor : "#74c0fc";
   $("#settings-reload").value = settings.reloadMode || "reload";
   $("#settings-dark-reconnect").checked = Boolean(settings.darkReconnect);
   $("#settings-debounce").value = settings.debounceMs ?? 200;
@@ -4205,6 +4210,7 @@ $("#settings-save").addEventListener("click", async (event) => {
     autoSave: $("#settings-auto-save").checked,
     autoSaveDelaySeconds: Math.max(1, Math.min(300, Math.round(Number($("#settings-auto-save-delay").value) || 5))),
     dockColor: /^#[0-9a-f]{6}$/i.test($("#settings-dock-color").value) ? $("#settings-dock-color").value : "#ffd54f",
+    outputDockColor: /^#[0-9a-f]{6}$/i.test($("#settings-output-dock-color").value) ? $("#settings-output-dock-color").value : "#74c0fc",
     reloadMode: $("#settings-reload").value,
     darkReconnect: $("#settings-dark-reconnect").checked,
     debounceMs: Math.max(0, Math.min(10000, Number($("#settings-debounce").value) || 0)),

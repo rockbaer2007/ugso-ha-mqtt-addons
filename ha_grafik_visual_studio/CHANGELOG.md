@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.142
+
+- Adds an independently switchable value output for ordinary widgets with top/bottom/right/left radio buttons. Output points are editor-only and use the separate Output point color in Studio settings.
+- Keeps existing docking configurations and supports the new output in snapping, hidden value connections and numeric calculations; disabled outputs stop forwarding values.
+
 ## 0.1.141
 
 - Adds the Data flow palette with Value converter, Value connection and Value calculation. Connections and calculations reuse SVG-Line/LineBox Math internally and start hidden in runtime; converters are always runtime-invisible.

@@ -9,6 +9,20 @@ const dock = (id, type, state) => ({ id, type, state, dockPointsEnabled: true, d
 import { dockPointKey } from "../web/dock-points.js";
 const enable = (widget, ...ids) => Object.assign(widget, { dockPointsEnabled: true }, Object.fromEntries(ids.map(id => [dockPointKey(id), true])));
 const link = (id, start, end, endAnchor = "left-center") => ({ id, type: "svg-connection", dataFlowVariant: "value-connection", startWidgetId: start, startAnchor: "right-center", endWidgetId: end, endAnchor });
+
+test("independent output forwards live units on either line type and stops when disabled", () => {
+  const source = { id: "source", type: "sensor", entityId: "sensor.temp", dataOutputEnabled: true, dataOutputAnchor: "top-center", dockPointsEnabled: false };
+  const line = { id: "line", type: "svg-connection", startWidgetId: source.id, startAnchor: "top-center" };
+  const states = { "sensor.temp": { state: "23.5", attributes: { unit_of_measurement: "°C" } } };
+  assert.equal(lineValuePacket(line, [source, line], states).unit, "°C");
+  assert.equal(numericConnectionValue(line, [source, line], states), 23.5);
+  source.dataOutputAnchor = "bottom-center";
+  assert.ok(lineValuePacket(line, [source, line], states).error);
+  line.startAnchor = "bottom-center";
+  assert.equal(numericConnectionValue(line, [source, line], states), 23.5);
+  source.dataOutputEnabled = false;
+  assert.equal(numericConnectionValue(line, [source, line], states), null);
+});
 test("units are recognized in text or source metadata without duplication", () => {
   assert.deepEqual(parseNumberUnit(" 23,5 °C ", "°F"), { value: 23.5, unit: "°C" });
   assert.equal(convertPacket({ conversion: "text-number" }, input("23,5 °C")).value, 23.5);

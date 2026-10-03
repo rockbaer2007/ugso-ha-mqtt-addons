@@ -2,6 +2,9 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Andockpunkte und ihre Belegungszähler sind standardmäßig gelb. Der separate Ausgangspunkt ist standardmäßig hellblau. Beide Farben gelten nur im Editor.": "Docking points and their counters default to yellow. The separate output point defaults to light blue. Both colors apply only in the editor.",
+  "Ausgangspunkt": "Output point", "Ausgangspunkt aktivieren": "Enable output point",
+  "Oben": "Top", "Unten": "Bottom", "Rechts": "Right", "Links": "Left",
   "HA Grafik – Datenfluss": "HA Grafik – Data flow", "Datenfluss": "Data flow",
   "Wert-Konverter": "Value converter", "Wert-Verbindung": "Value connection", "Wert-Berechnung": "Value calculation",
   "Konvertierung bearbeiten": "Edit conversion", "Konvertierung": "Conversion", "Wert-Konverter · Konvertierung": "Value converter · Conversion",

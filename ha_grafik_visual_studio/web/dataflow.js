@@ -1,4 +1,4 @@
-import { dockPointKey } from "./dock-points.js";
+import { dockPointActive, hasSimpleOutput } from "./dock-points.js";
 import { numericWidgetInput, lineboxInputSum, lineboxPortRole } from "./linebox.js";
 import { mathBoxResult, mathPortRole } from "./linebox-math.js";
 
@@ -55,12 +55,12 @@ export function convertPacket(config, input) {
     return config.fallbackEnabled === true ? packet(config.fallback ?? "") : fail(error.message);
   }
 }
-function activeDock(widget, anchor) { return widget?.dockPointsEnabled === true && widget[dockPointKey(anchor)] === true; }
+function activeDock(widget, anchor, side) { return dockPointActive(widget, anchor, side); }
 export function widgetValuePacket(widget, widgets, states, visited = new Set(), anchor = "right-center") {
   if (!widget) return fail("Keine Wertquelle verbunden");
   if (visited.has(`data:${widget.id}`)) return fail("Rückkopplung im Datenfluss");
   const next = new Set(visited).add(`data:${widget.id}`);
-  if (!activeDock(widget, anchor)) return fail("Ausgangs-Dockpunkt ist nicht aktiv");
+  if (!activeDock(widget, anchor, "start") || hasSimpleOutput(widget) && widget.dataOutputEnabled === false) return fail("Ausgangs-Dockpunkt ist nicht aktiv");
   if (widget.type === "linebox-math") {
     if (mathPortRole(widget, anchor) !== "output") return fail("Kein Berechnungsausgang");
     const result = mathBoxResult(widget, widgets, states, visited, anchor); return result.error ? fail(result.error) : packet(result.value);
@@ -95,7 +95,7 @@ export function lineValuePacket(line, widgets, states, visited = new Set()) {
 }
 export function widgetInputPacket(widget, widgets, states, visited = new Set()) {
   const anchor = widget.dataInputAnchor || "left-center";
-  if (!activeDock(widget, anchor)) return fail("Eingangs-Dockpunkt ist nicht aktiv");
+  if (!activeDock(widget, anchor, "end")) return fail("Eingangs-Dockpunkt ist nicht aktiv");
   const lines = widgets.filter(line => line.type === "svg-connection" && line.visible !== false && line.endWidgetId === widget.id && (line.endAnchor || "left-center") === anchor);
   if (lines.length !== 1) return fail(lines.length ? "Genau eine Quelle pro Eingang erlaubt" : "Keine Eingangsverbindung");
   return lineValuePacket(lines[0], widgets, states, visited);

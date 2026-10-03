@@ -1,8 +1,32 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "../web/dock-points.js";
+import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection, dockPointActive, setOutputAnchor } from "../web/dock-points.js";
 
 const anchors = ["left-top", "left-center", "right-bottom"];
+
+test("moving the output preserves outgoing connections and leaves inputs untouched", () => {
+  const source = { id: "source", type: "sensor", dataOutputEnabled: true };
+  const lines = [{ type: "svg-connection", startWidgetId: "source" }, { type: "svg-connection", endWidgetId: "source", endAnchor: "right-center" }];
+  setOutputAnchor(source, lines, "top-center");
+  assert.equal(lines[0].startAnchor, "top-center");
+  assert.equal(lines[1].endAnchor, "right-center");
+  setOutputAnchor(source, lines, "bottom-center");
+  assert.equal(lines[0].startAnchor, "bottom-center");
+});
+
+test("single output is independent, directional and switches sides without leaving active outputs", () => {
+  const widget = { type: "sensor", dockPointsEnabled: false, dataOutputEnabled: true, dataOutputAnchor: "top-center" };
+  assert.equal(dockPointActive(widget, "top-center", "start"), true);
+  assert.equal(dockPointActive(widget, "top-center", "end"), false);
+  assert.equal(dockPointActive(widget, "right-center"), false);
+  widget.dataOutputAnchor = "bottom-center";
+  assert.equal(dockPointActive(widget, "top-center"), false);
+  assert.equal(dockPointActive(widget, "bottom-center"), true);
+  widget.dataOutputEnabled = false;
+  assert.equal(dockPointActive(widget, "bottom-center"), false);
+  widget.type = "linebox-math"; widget.dataOutputEnabled = true;
+  assert.equal(dockPointActive(widget, "bottom-center"), false);
+});
 
 test("new or disabled widgets start with every docking point off", () => {
   const widget = { dockPointsEnabled: false };
