@@ -27,6 +27,8 @@ import { beginMarquees, finishMarquees, renderMarquee } from "./marquee.js";
 import { renderValueList } from "./interactive-value-list.js";
 import { renderStyledSwitch, SWITCH_STYLE_GROUPS } from "./styled-switch.js";
 import { renderRadialSlider, updateRadialSlider, RADIAL_STYLE_GROUPS } from "./radial-slider.js";
+import { renderDropdown } from "./dropdown.js";
+import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
 import { migrationHint } from "./migration-hints.js";
@@ -179,6 +181,7 @@ const commonWidgetGroups = [
 function widgetPropertyGroups(widget) {
   let styleEntryGroups = [];
   if (widget.type === "interactive-table") styleEntryGroups = tableEntryGroups(widget);
+  if (widget.type === "dropdown") styleEntryGroups = dropdownEntryGroups(widget);
   if (widget.type === "event-calendar") styleEntryGroups = [
     ...Array.from({ length: Math.min(20, Math.max(0, Math.trunc(Number(widget.countCalendarSources) || 0))) }, (_, i) => ({ id: `event-source-${i}`, label: `Kalender [${i}]`, defaultEnabled: true, fields: [{ label: "Home-Assistant-Entität", key: `calendar${i}EntityId` }, { label: "Quellfarbe", key: `calendar${i}Color`, type: "color", optionalColor: true }, { label: "Legendentext", key: `calendar${i}Label` }] })),
     ...Array.from({ length: Math.min(20, Math.max(0, Math.trunc(Number(widget.countEventColorRules) || 0))) }, (_, i) => ({ id: `event-rule-${i}`, label: `Farbregel [${i}]`, defaultEnabled: true, fields: [{ label: "Titel enthält", key: `eventRule${i}Title` }, { label: "Terminfarbe", key: `eventRule${i}Color`, type: "color" }] })),
@@ -600,6 +603,8 @@ async function fetchEntityStates(ids) {
   const states = [];
   for (let offset = 0; offset < ids.length; offset += 100) {
     const query = new URLSearchParams(ids.slice(offset, offset + 100).map((id) => ["entity_id", id]));
+    const dropdownIds = new Set(visibleWidgets().filter(widget => widget.type === "dropdown" && ids.slice(offset, offset + 100).includes(widget.entityId)).map(widget => widget.entityId));
+    for (const id of dropdownIds) query.append("attribute", `${id}|options`);
     for (const widget of visibleWidgets()) if (widget.type === "interactive-table" && widget.entityAttribute && ids.slice(offset, offset + 100).includes(widget.entityId)) query.append("attribute", `${widget.entityId}|${widget.entityAttribute}`);
     const response = await fetch(`api/states?${query}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -611,6 +616,7 @@ async function fetchEntityStates(ids) {
 
 function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
+    widget.type === "dropdown" ? widget.bgEntityId : "",
     !["dock", "preview"].includes(widget.numericSource) ? widget.entityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
     ...(widget.type === "event-calendar" ? eventSources(widget).map(source => source.entityId) : []),
@@ -647,6 +653,7 @@ async function refreshEditorLiveStates() {
 
 function runtimeLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
+    widget.type === "dropdown" ? widget.bgEntityId : "",
     widget.entityId, widget.visibilityEnabled ? widget.visibilityEntityId : "",
     ...(widget.type === "event-calendar" ? eventSources(widget).map(source => source.entityId) : []),
     ...(widget.type === "universal-button" ? (widget.visualStates || []).filter(item => item.compareSource === "entity").map(item => item.entityId) : []),
@@ -698,7 +705,7 @@ function stageRuntimeEntityValue(entityId, value) {
   runtimeEffectsFrame = requestAnimationFrame(() => {
     runtimeEffectsFrame = 0;
     if (visibleWidgets().some(widget => widget.type === "value-converter" || widget.dataInputEnabled === true)) {
-      if (document.querySelector(".radial-slider[data-dragging='true']")) { runtimeRenderDeferred = true; return; }
+      if (document.querySelector(".radial-slider[data-dragging='true'], .styled-dropdown.is-open")) { runtimeRenderDeferred = true; return; }
       renderStage(); return;
     }
     for (const surface of visibleTabSurfaces(state.project, currentPage(), activeTabIndex)) {
@@ -765,7 +772,7 @@ function scheduleLineboxHelperOutputs() {
 }
 
 function renderRuntimeStageWhenReady() {
-  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true'], .radial-slider[data-dragging='true']") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true']")) {
+  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true'], .radial-slider[data-dragging='true'], .styled-dropdown.is-open") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true']")) {
     runtimeRenderDeferred = true;
     return;
   }
@@ -833,11 +840,11 @@ function setRuntimeStateElement(widget, value) {
   } else if (WRITABLE_TEXT_HELPER.test(widget.entityId)) void writeRuntimeHelperValue(widget.entityId, String(value));
 }
 
-async function writeRuntimeHelperValue(entityId, value) {
+async function writeRuntimeHelperValue(entityId, value, endpoint = "api/helper-value") {
   stageRuntimeEntityValue(entityId, value);
   const previous = helperWriteQueue.get(entityId) || Promise.resolve();
   const request = previous.catch(() => {}).then(async () => {
-    const response = await fetch("api/helper-value", {
+    const response = await fetch(endpoint, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ entity_id: entityId, value }),
     });
@@ -1612,6 +1619,7 @@ function cloneWidgetForInsert(source, page, idMap) {
   copy.id = idMap.get(oldId) || `widget-${state.nextId++}`;
   remapUniversalReferences(copy, idMap);
   if (copy.type === "styled-checkbox" && idMap.has(copy.styleFromWidget)) copy.styleFromWidget = idMap.get(copy.styleFromWidget);
+  if (copy.type === "dropdown" && idMap.has(copy.dropdownFromWidget)) copy.dropdownFromWidget = idMap.get(copy.dropdownFromWidget);
   if (copy.type === "styled-switch") for (const [prefix] of SWITCH_STYLE_GROUPS) if (idMap.has(copy[`${prefix}FromWidget`])) copy[`${prefix}FromWidget`] = idMap.get(copy[`${prefix}FromWidget`]);
   if (copy.type === "radial-slider") for (const [prefix] of RADIAL_STYLE_GROUPS) if (idMap.has(copy[`${prefix}FromWidget`])) copy[`${prefix}FromWidget`] = idMap.get(copy[`${prefix}FromWidget`]);
   if (copy.type === "styled-slider") for (const key of ["sliderTrackFromWidget", "sliderThumbFromWidget"]) if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
@@ -2925,6 +2933,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (widget.type === "radial-slider") {
       content.style.overflow = "visible";
       content.append(renderRadialSlider(widget, document, { runtime: runtimeMode, entry: state.entityStates[widget.entityId], widgets: allProjectWidgets(state.project), label: uiText("Radialer Schieberegler"), input: value => { if (widget.entityId) stageRuntimeEntityValue(widget.entityId, value); else widget.value = value; }, commit: value => { if (widget.entityId) void writeRuntimeHelperValue(widget.entityId, value); }, dragEnd: () => { if (runtimeRenderDeferred) renderRuntimeStageWhenReady(); } }));
+    } else if (widget.type === "dropdown") {
+      content.style.overflow = "visible";
+      content.append(renderDropdown(widget, document, { runtime: runtimeMode, states: state.entityStates, widgets: allProjectWidgets(state.project), write: value => { if (widget.entityId) void writeRuntimeHelperValue(widget.entityId, /^input_number\./.test(widget.entityId) ? Number(value) : value, /^(select|input_select)\./.test(widget.entityId) ? "api/select-option" : "api/helper-value"); else { widget.state = value; renderStage(); document.getElementById(widget.id)?.querySelector(".dropdown-trigger")?.focus(); } } }));
     } else if (widget.type === "slider") {
       const range = document.createElement("input"); range.type = "range";
       range.className = "widget-slider-input";
@@ -4082,7 +4093,7 @@ function field(descriptor, widget) {
   }
   const update = () => {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
-    if (["count", "countEventColorRules", "countCalendarSources", "countColumns", "countDefaultSortColumns", "countRowConditions"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
+    if (["count", "countEventColorRules", "countCalendarSources", "countColumns", "countDefaultSortColumns", "countRowConditions", "countCustomOptions", "countBgConditions"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (isSeparator(widget) && descriptor.key === "separatorThickness") {
       widget.separatorThickness = Math.min(100, Math.max(1, Number(widget.separatorThickness) || 2));

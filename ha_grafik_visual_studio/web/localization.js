@@ -2,6 +2,9 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Schriftgröße (px)": "Font size (px)", "Rahmenradius (px)": "Border radius (px)", "Vergleichswert": "Comparison value", "Gleich": "Equal", "Ungleich": "Not equal", "Größer": "Greater", "Kleiner": "Lower", "Größer gleich": "Greater or equal", "Kleiner gleich": "Lower or equal",
+  "CSS Dropdown": "CSS Dropdown", "Eigene Optionen": "Custom options", "Eigene Optionen verwenden": "Use custom options", "Anzahl Optionen": "Option count", "Text anzeigen": "Show text", "Hintergrundfarb-Bedingungen": "Background color conditions", "Hintergrund-Entität (optional)": "Background entity (optional)", "Hervorhebungsfarbe": "Highlight color", "Titel Schriftgröße (px)": "Title font size (px)", "Hintergrundbedingung auf Titel anwenden": "Apply conditional background to title", "Titel Abstand oben": "Title padding top", "Titel Abstand unten": "Title padding bottom", "Titel Abstand links": "Title padding left", "Titel Abstand rechts": "Title padding right", "Option": "Option", "Hintergrundbedingung": "Background condition",
+  "Dropdown-Schatten · X-Versatz": "Dropdown shadow · X offset", "Dropdown-Schatten · Y-Versatz": "Dropdown shadow · Y offset", "Dropdown-Schatten · Unschärfe": "Dropdown shadow · Blur", "Dropdown-Schatten · Ausdehnung": "Dropdown shadow · Spread", "Dropdown-Schatten · Schattenfarbe": "Dropdown shadow · Color", "Widget-Schatten · X-Versatz": "Widget shadow · X offset", "Widget-Schatten · Y-Versatz": "Widget shadow · Y offset", "Widget-Schatten · Unschärfe": "Widget shadow · Blur", "Widget-Schatten · Ausdehnung": "Widget shadow · Spread", "Widget-Schatten · Schattenfarbe": "Widget shadow · Color",
   "Bezeichnung": "Label", "Wert anzeigen": "Show value", "Wertfarbe": "Value color",
   "Radialer Schieberegler": "Radial Slider", "CSS Radialregler – Spur": "CSS Radial Slider – Track", "CSS Radialregler – Daumen": "CSS Radial Slider – Thumb", "CSS Radialregler – Wert": "CSS Radial Slider – Value", "Startwinkel (°)": "Start angle (°)", "Endwinkel (°)": "End angle (°)", "Bezeichnung anzeigen": "Show label", "Wertgröße (px)": "Value size (px)", "Bezeichnungsgröße (px)": "Label size (px)", "Bezeichnungsfarbe": "Label color",
   "Schalten": "Interactive Switch", "CSS Schalten – Spur": "CSS Switch – Track", "CSS Schalten – Daumen": "CSS Switch – Thumb", "Spurfarbe": "Track color", "Spurfarbe wahr": "Track color true", "Daumenfarbe wahr": "Thumb color true", "Schattenfarbe wahr": "Shadow color true",
@@ -573,7 +576,7 @@ function translate(source) {
     if (port) translated = `${ENGLISH[port[1]] || port[1]}: ${ENGLISH[port[2]]}`;
   }
   if (!translated) {
-    const item = trimmed.match(/^(Wert|HTML Wert|Stil für|Bild|frames|Tab|Kalender|Farbregel|Spalte|Standardsortierung|Zeilenbedingung) \[(\d+)\]$/);
+    const item = trimmed.match(/^(Wert|HTML Wert|Stil für|Bild|frames|Tab|Kalender|Farbregel|Spalte|Standardsortierung|Zeilenbedingung|Option|Hintergrundbedingung) \[(\d+)\]$/);
     if (item) translated = `${ENGLISH[item[1]] || item[1]} [${item[2]}]`;
   }
   if (!translated) {

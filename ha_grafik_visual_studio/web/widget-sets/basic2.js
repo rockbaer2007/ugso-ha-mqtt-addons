@@ -9,6 +9,7 @@ import { marqueeDefinition } from "./marquee.js";
 import { valueListDefinition } from "./interactive-value-list.js";
 import { switchDefinition } from "./styled-switch.js";
 import { radialSliderDefinition } from "./radial-slider.js";
+import { dropdownDefinition } from "./dropdown.js";
 registerWidgetSet({
   id: "ha-grafik-basic2", label: "HA Grafik – Interaktiv",
   widgets: [{
@@ -40,5 +41,5 @@ registerWidgetSet({
       { label: "Zustände und Inhalte", universalStates: true, fields: [{ label: "Anzahl der Zustände", key: "stateCount", type: "select", refreshProperties: true, options: Array.from({ length: 20 }, (_, i) => String(i + 1)) }] },
       ...UNIVERSAL_STYLE_GROUPS,
     ],
-  }, calendarDefinition, eventCalendarDefinition, checkboxDefinition, styledSliderDefinition, interactiveTableDefinition, marqueeDefinition, valueListDefinition, switchDefinition, radialSliderDefinition],
+  }, calendarDefinition, eventCalendarDefinition, checkboxDefinition, styledSliderDefinition, interactiveTableDefinition, marqueeDefinition, valueListDefinition, switchDefinition, radialSliderDefinition, dropdownDefinition],
 });

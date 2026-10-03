@@ -257,6 +257,24 @@ def set_home_assistant_helper_value(entity_id, value):
         "target": {"entity_id": entity_id}, "service_data": {"value": value},
     }])
 
+
+def set_home_assistant_select_option(entity_id, value):
+    """Select only an existing option of an explicitly chosen HA select."""
+    if not isinstance(entity_id, str) or not re.fullmatch(r"(?:select|input_select)\.[a-z0-9_]+", entity_id):
+        raise ValueError("Diese Entität unterstützt keine Optionsauswahl.")
+    if not isinstance(value, str) or len(value) > 1024:
+        raise ValueError("Ungültige Auswahloption.")
+    states = load_home_assistant_states([entity_id], {entity_id: {"options"}})
+    entry = next((item for item in states if item["entity_id"] == entity_id), None)
+    options = entry.get("attributes", {}).get("options") if entry else None
+    if not entry or entry.get("state") in {"unknown", "unavailable"} or not isinstance(options, list) or value not in options:
+        raise ValueError("Die Option ist für diese Entität nicht verfügbar.")
+    home_assistant_commands([{
+        "type": "call_service", "domain": entity_id.split(".", 1)[0], "service": "select_option",
+        "target": {"entity_id": entity_id}, "service_data": {"option": value},
+    }])
+
+
 MIME_TYPES = {".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".json": "application/json; charset=utf-8", ".svg": "image/svg+xml"}
 FILE_MIME_TYPES = {
     ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".svg": "image/svg+xml", ".gif": "image/gif", ".bmp": "image/bmp", ".ico": "image/x-icon",
@@ -315,7 +333,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.181"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.182"})
             return
         if path == "/api/entities":
             try:
@@ -442,7 +460,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self.send_json(HTTPStatus.OK, {"accepted": True})
             return
-        if parsed.path == "/api/helper-value":
+        if parsed.path in {"/api/helper-value", "/api/select-option"}:
             if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
                 self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "JSON-Anfrage erforderlich."})
                 return
@@ -453,7 +471,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Ungültiger Wertbefehl."})
                 return
             try:
-                set_home_assistant_helper_value(request.get("entity_id"), request.get("value"))
+                writer = set_home_assistant_select_option if parsed.path == "/api/select-option" else set_home_assistant_helper_value
+                writer(request.get("entity_id"), request.get("value"))
             except ValueError as error:
                 self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
                 return

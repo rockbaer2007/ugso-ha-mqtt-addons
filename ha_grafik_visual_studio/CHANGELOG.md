@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.182
+
+- Add Dropdown with HA select/input_select options, custom value/text pairs, read-only display and ordered background conditions.
+- Add neutral CSS Dropdown styling with title padding, independent menu/widget shadows and cycle-safe inheritance. Preserve all fields and references in exports and copies.
+- Validate HA select writes against current options; keep unsupported or unavailable entities and editor previews non-writing. Include keyboard operation and illustrated DE/EN documentation.
+
 ## 0.1.181
 
 - Add Radial Slider with configurable domain, steps, clockwise start/end angles, pointer and keyboard controls, centered value/label and read-only display.
