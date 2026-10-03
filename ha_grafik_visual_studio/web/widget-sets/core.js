@@ -155,7 +155,7 @@ registerWidgetSet({
   label: "HA Grafik – Basis",
   widgets: [
     basicDataWidget("link", "link", "↗", { htmlContent: "Link", linkUrl: "" }, [{ label: "HTML", key: "htmlContent", type: "html" }, { label: "Link", key: "linkUrl" }], "HTML-Link mit frei formatiertem Inhalt."),
-    basicDataWidget("note", "Note", "▤", { state: "Notiz", backgroundColor: "rgba(255,255,105,0.8)", hideCorner: false }, [...entityTest(), ...htmlAdditions(), { label: "Testtext (HTML)", key: "state", type: "html" }, { label: "Ecke ausblenden", key: "hideCorner", type: "checkbox", default: false }]),
+    basicDataWidget("note", "Note", "▤", { state: "", entityId: "", entityAttribute: "", prefix: "", suffix: "", width: 100, height: 70, radius: 5, borderColor: "#888888", borderWidth: 1, borderStyle: "solid", padding: 0, backgroundColor: "#FFFF69CC", hideCorner: false }, [{ label: "Home-Assistant-Entität", key: "entityId" }, { label: "HA-Attribut (leer: Zustand)", key: "entityAttribute" }, ...htmlAdditions().map(field => ({ ...field, type: "html" })), { label: "Testtext", key: "state", type: "html" }, { label: "Ecke ausblenden", key: "hideCorner", type: "checkbox", default: false }], ""),
     basicDataWidget("screen-resolution", "Screen Resolution", "▣", {}, [], "Reine Anzeige der aktuellen Fensterauflösung; aktualisiert sich bei Größenänderung."),
     basicDataWidget("red-number", "Red Number", "●", { state: 0, badgeType: "circle", radius: 16, badgeBackground: "#c62828", badgeBorder: "#c62828" }, [...entityTest(), { label: "type", key: "badgeType", type: "select", options: ["circle", "pin"], refreshProperties: true }, { label: "HTML voranstellen", key: "prefix" }, { label: "HTML anhängen (Singular)", key: "suffixSingular" }, { label: "HTML anhängen (Plural)", key: "suffixPlural" }, { label: "Hintergrund", key: "badgeBackground", type: "color" }, { label: "Randfarbe", key: "badgeBorder", type: "color", showWhen: { key: "badgeType", value: "circle" } }, { label: "Grenzradius", key: "radius", type: "range", min: 0, max: 100, step: 1, showWhen: { key: "badgeType", value: "circle" } }]),
     basicDataWidget("bool-svg", "Bool SVG", "◇", { state: false, readOnly: false, svgFalse: "<circle cx='50' cy='50' r='40' fill='#777'/>", svgTrue: "<circle cx='50' cy='50' r='40' fill='#29c8b5'/>", svgOpacity: 1 }, [...entityTest(), { label: "Nur Anzeige", key: "readOnly", type: "checkbox", default: false }, { label: "SVG bei false", key: "svgFalse", type: "html" }, { label: "SVG bei true", key: "svgTrue", type: "html" }, { label: "Durchsichtigkeit", key: "svgOpacity", type: "range", min: 0, max: 1, step: 0.05 }]),
@@ -349,7 +349,11 @@ registerWidgetSet({
   ].map((widget) => {
     if (previousWidgetLabels[widget.type]) widget.searchTerms = [...(widget.searchTerms || []), previousWidgetLabels[widget.type]];
     widget.preview = palettePreviews[widget.type] || { kind: "plain", lines: [widget.icon] };
-    if (widget.type === "note") widget.propertyGroups.find(group => group.label === "Daten").fields = widget.propertyGroups.find(group => group.label === "Daten").fields.filter(field => field.key !== "state" || field.type === "html");
+    if (widget.type === "note") {
+      widget.defaults.textColor = "#222222";
+      widget.propertyGroups.find(group => group.label === "Daten").label = "Allgemein";
+      widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
+    }
     if (widget.type === "screen-resolution") widget.propertyGroups = widget.propertyGroups.filter(group => group.label !== "Daten");
     const data = widget.propertyGroups.find(group => ["Daten", "Allgemein"].includes(group.label));
     const add = (...fields) => data?.fields.push(...fields);

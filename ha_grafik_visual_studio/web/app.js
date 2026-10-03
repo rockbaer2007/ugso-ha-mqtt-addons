@@ -16,6 +16,7 @@ const universalFeedback = new Map();
 import { mediaRefreshUrl, iframeOptions, iframeCount, iframeIndex } from "./iframe-widget.js";
 import { imageOptions, imageCount, imageIndex } from "./image-widget.js";
 import { borderAppearance, borderTitleFragment } from "./border-widget.js";
+import { noteValue, noteWritable } from "./note-widget.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
@@ -571,6 +572,7 @@ function displayedWidgetState(widget) {
     return numericWidgetInput(widget, surface?.widgets || currentPage().widgets, state.entityStates) ?? "--";
   }
   if (widget.type === "string") return stringDisplayValue(widget, state.entityStates[widget.entityId], runtimeMode);
+  if (widget.type === "note") return noteValue(widget, state.entityStates[widget.entityId], runtimeMode);
   if ((runtimeMode || ["view-in-widget-8", "bool-svg", "red-number", "iframe-8", "image-8", "universal-button"].includes(widget.type)) && widget.entityId) {
     return state.entityStates[widget.entityId]?.state ?? (widget.type === "image-8" ? 0 : "--");
   }
@@ -1796,6 +1798,28 @@ function appendSafeHtml(parent, markup) {
   parent.append(template.content);
 }
 
+function openNoteDialog(widget) {
+  if (document.querySelector(".note-dialog")) return;
+  const entry = state.entityStates[widget.entityId]; const writable = noteWritable(widget, entry);
+  const dialog = document.createElement("dialog"); dialog.className = "studio-dialog note-dialog";
+  const title = document.createElement("h2"); title.textContent = uiText("Notiz");
+  const input = document.createElement("textarea"); input.setAttribute("aria-label", uiText("Notiztext")); input.value = noteValue(widget, entry, true); input.readOnly = !writable;
+  if (writable) input.maxLength = Math.max(0, Number(entry.attributes?.max ?? 255));
+  const status = document.createElement("p"); status.textContent = writable ? "" : uiText("Zum Bearbeiten wird ein verfügbarer input_text-Helfer ohne Attributauswahl benötigt.");
+  const actions = document.createElement("div"); actions.className = "dialog-actions";
+  const clear = document.createElement("button"); clear.textContent = uiText("Leeren"); clear.disabled = !writable; clear.addEventListener("click", () => { input.value = ""; input.focus(); });
+  const apply = document.createElement("button"); apply.textContent = uiText("Übernehmen"); apply.disabled = !writable;
+  apply.addEventListener("click", async () => {
+    if (!noteWritable(widget, state.entityStates[widget.entityId])) return;
+    apply.disabled = clear.disabled = true; input.readOnly = true;
+    if (await writeRuntimeHelperValue(widget.entityId, input.value)) dialog.close();
+    else { status.textContent = uiText("Notiz konnte nicht gespeichert werden."); apply.disabled = clear.disabled = false; input.readOnly = false; }
+  });
+  const cancel = document.createElement("button"); cancel.textContent = uiText("Abbrechen"); cancel.addEventListener("click", () => dialog.close());
+  actions.append(clear, apply, cancel); dialog.append(title, input, status, actions); document.body.append(dialog);
+  dialog.addEventListener("close", () => dialog.remove()); dialog.showModal();
+}
+
 const mediaRefreshers = new Set();
 const imageRefreshers = new Map();
 const renderedImages = new Set();
@@ -2866,7 +2890,12 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (widget.type === "link") {
       const link = document.createElement("a"); link.href = safeUrl(widget.linkUrl) || "#"; link.rel = "noopener noreferrer"; appendSafeHtml(link, widget.htmlContent || ""); content.append(link);
     } else if (widget.type === "note") {
-      const note = document.createElement("div"); note.className = `note-content${widget.hideCorner ? " no-corner" : ""}`; appendSafeHtml(note, `${widget.prefix || ""}${displayedWidgetState(widget) ?? ""}${widget.suffix || ""}`); content.append(note);
+      const note = document.createElement("div"); note.className = `note-content${widget.hideCorner ? " no-corner" : ""}`;
+      note.style.setProperty("--note-corner-color", widget.borderColor || "#888888");
+      const value = widget.dataInputEnabled ? displayedWidgetState(widget) : noteValue(widget, state.entityStates[widget.entityId], runtimeMode);
+      note.textContent = `${widget.prefix || ""}${value ?? ""}${widget.suffix || ""}`;
+      if (runtimeMode) { note.tabIndex = 0; note.setAttribute("role", "button"); note.setAttribute("aria-label", uiText("Notiz öffnen")); note.style.cursor = "pointer"; note.addEventListener("click", event => { event.stopPropagation(); openNoteDialog(widget); }); note.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); openNoteDialog(widget); } }); }
+      content.append(note);
     } else if (widget.type === "red-number") {
       const display = redNumberDisplay(displayedWidgetState(widget), runtimeMode, Boolean(widget.entityId || widget.numericSource || widget.dataInputEnabled));
       if (display.visible) {
@@ -3876,6 +3905,7 @@ function field(descriptor, widget) {
   if (input.type === "checkbox") input.checked = widget[descriptor.key] ?? descriptor.default ?? true;
   else input.value = (widget.type === "red-number" || descriptor.optionalColor) && descriptor.type === "color" ? filterHex(widget[descriptor.key] ?? descriptor.default ?? "#FFFFFF") : widget[descriptor.key] ?? descriptor.default ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
   input.disabled = descriptor.disabled === true;
+  if (widget.type === "note" && htmlField) { input.rows = 2; input.style.minHeight = "36px"; input.style.height = "40px"; }
   if (descriptor.optionalColor) {
     const override = document.createElement("input"); override.type = "checkbox"; override.checked = Boolean(widget[descriptor.key]);
     override.setAttribute("aria-label", `${descriptor.label}: eigene Farbe`); input.disabled = !override.checked;
@@ -3965,7 +3995,7 @@ function field(descriptor, widget) {
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (widget.type === "dashboard-in-widget" && ["width", "height"].includes(descriptor.key)) { Object.assign(widget, dashboardSize(widget)); input.value = String(widget[descriptor.key]); }
     if (widget.type === "value-list-html-style" && descriptor.key === "count" && widget.testIndex !== "" && Number(widget.testIndex) > styledListCount(widget)) widget.testIndex = "";
-    if ((["sensor", "slider", "input-value", "string", "view-in-widget-8", "iframe-8", "image-8", "universal-button"].includes(widget.type) && descriptor.key === "entityId") || descriptor.universalEntity ||
+    if ((["sensor", "slider", "input-value", "string", "note", "view-in-widget-8", "iframe-8", "image-8", "universal-button"].includes(widget.type) && descriptor.key === "entityId") || descriptor.universalEntity ||
         (widget.type === "svg-connection" && ["animationSource", "animationNumberEntityId", "animationBooleanEntityId"].includes(descriptor.key))) {
       void refreshEditorLiveStates();
     }

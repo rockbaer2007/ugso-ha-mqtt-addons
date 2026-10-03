@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.170
+
+- Align Note fields, test-text precedence, 100 × 70 defaults, HEX background and the optional corner with the VIS2 reference.
+- Support HA attributes for read-only notes and a runtime dialog that writes note text to available input_text helpers, respecting their length limit.
+- Display Note strings literally, including the HTML editor fields, as in the reference. Keep CSS General required and document helper requirements in optional migration hints and bilingual docs.
+
 ## 0.1.169
 
 - Align Border with the standard 100 × 70 frame, gray 1px border, visible overflow and title offsets -10/20; remove the extra vertical title translation.

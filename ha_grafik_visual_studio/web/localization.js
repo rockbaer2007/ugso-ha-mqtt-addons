@@ -2,6 +2,11 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Notiz öffnen": "Open note", "Notiztext": "Note text", "Leeren": "Clear",
+  "Zum Bearbeiten wird ein verfügbarer input_text-Helfer ohne Attributauswahl benötigt.": "Editing requires an available input_text helper without an attribute selection.",
+  "Notiz konnte nicht gespeichert werden.": "The note could not be saved.",
+  "Zum Bearbeiten wird ein input_text-Helfer benötigt. Sensoren und HA-Attribute werden nur gelesen. Der Notizdialog schreibt ausschließlich den Notiztext, ohne Voranstellen und Anhängen.": "Editing requires an input_text helper. Sensors and HA attributes are read only. The note dialog writes only the note text, without prepend or append text.",
+  "Testtext gilt nur im Editor. Wie im VIS2-Note-Widget werden Text und HTML-Felder als Text angezeigt; die Runtime verwendet den Entitätswert.": "Test text is editor-only. As in VIS2 Note, text and HTML fields are displayed as text; runtime uses the entity value.",
   "Rahmen und Titel sind reine Anzeige; kein HA-Helfer nötig. HTML im Titel wird bereinigt. Position und Größe werden über CSS Allgemein gespeichert.": "Frame and title are display only; no HA helper is needed. Title HTML is sanitized. CSS General stores position and size.",
   "0 blendet den Kopfbereich aus. Ohne Titelhintergrund erhält der Titel dann eine zum Thema passende Fläche; mit Kopfbereich bleibt sie transparent.": "0 hides the header. Without a title background, the title then receives a theme-matched background; with a header it remains transparent.",
   "Die HA-Entität liefert den Bildindex: false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen; kein zusätzlicher HA-Helfer nötig. Ohne Entität wird Bild [0] angezeigt.": "The HA entity supplies the image index: false/off is 0, true/on is 1. It is read only; no additional HA helper is needed. Without an entity, Image [0] is displayed.",
