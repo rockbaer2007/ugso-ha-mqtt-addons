@@ -1,5 +1,6 @@
 import { dockPointKey } from "./dock-points.js";
 import { mathBoxResult, mathPortRole } from "./linebox-math.js";
+import { lineValuePacket, widgetInputPacket, parseNumberUnit } from "./dataflow.js";
 
 const roleKey = anchorId => `lineboxRole_${anchorId.replaceAll("-", "_")}`;
 const passKey = anchorId => `lineboxPass_${anchorId.replaceAll("-", "_")}`;
@@ -9,6 +10,10 @@ const numeric = raw => raw === null || raw === undefined || String(raw).trim() =
 export function numericWidgetInput(widget, widgets, entityStates, visited = new Set()) {
   if (!numericTypes.has(widget?.type) || visited.has(`widget:${widget.id}`)) return null;
   const next = new Set(visited).add(`widget:${widget.id}`);
+  if (widget.dataInputEnabled === true) {
+    const result = widgetInputPacket(widget, widgets, entityStates, next);
+    try { return result.error || typeof result.value === "boolean" ? null : parseNumberUnit(result.value).value; } catch { return null; }
+  }
   if (widget.numericSource !== "dock") return numeric(widget.numericSource !== "preview" && widget.entityId ? entityStates[widget.entityId]?.state : widget.state);
   const anchor = widget.numericInputAnchor || "left-center";
   if (widget.dockPointsEnabled !== true || widget[dockPointKey(anchor)] !== true) return null;
@@ -26,6 +31,10 @@ export function numericWidgetInput(widget, widgets, entityStates, visited = new 
 export function numericConnectionValue(line, widgets, entityStates, visited = new Set()) {
   if (visited.has(`line:${line.id}`)) return null;
   const next = new Set(visited).add(`line:${line.id}`);
+  if (line.dataFlowVariant === "value-connection" || widgets.some(widget => widget.id === line.startWidgetId && widget.type === "value-converter")) {
+    const result = lineValuePacket(line, widgets, entityStates, next);
+    try { return result.error || typeof result.value === "boolean" ? null : parseNumberUnit(result.value).value; } catch { return null; }
+  }
   const forwarded = lineboxOutputForConnection(line, widgets, entityStates, next);
   if (forwarded) return forwarded.value;
   if (line.animationSource === "number" && line.animationNumberEntityId) return numeric(entityStates[line.animationNumberEntityId]?.state);

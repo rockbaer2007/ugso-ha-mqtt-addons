@@ -12,6 +12,8 @@ import { tabCount, ownTabSurface, allProjectWidgets, tabTarget, canEmbedTab, rei
 import "./widget-sets/core.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
+import "./widget-sets/dataflow.js";
+import { CONVERSIONS, convertPacket, widgetInputPacket } from "./dataflow.js";
 
 const PRESETS = {
   desktop: { width: 1920, height: 1080 },
@@ -141,7 +143,12 @@ const commonWidgetGroups = [
 ];
 
 function widgetPropertyGroups(widget) {
-  const groups = getWidgetDefinition(widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
+  const groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
+  const dataGroup = { label: "Datenfluss", hint: "Wertausgabe am gewählten aktiven Dockpunkt. Wert-Verbindungen laufen vom Start zum Ziel; ein Konverter-Eingang erlaubt genau eine Quelle.", fields: [
+    { label: "Ausgangs-Dockpunkt", key: "dataOutputAnchor", type: "select", options: CONNECTION_ANCHORS.map(([value, label]) => ({ value, label })), default: "right-center" },
+    { label: "Wert vom Datenfluss übernehmen", key: "dataInputEnabled", type: "checkbox", default: false },
+    { label: "Eingangs-Dockpunkt", key: "dataInputAnchor", type: "select", options: CONNECTION_ANCHORS.map(([value, label]) => ({ value, label })), default: "left-center" },
+  ] };
   if (widget.type === "linebox-math") {
     const dockGroup = { ...connectionAnchorGroup, fields: [
       ...MATH_ANCHORS.map(([id, label]) => ({ label, key: dockPointKey(id), type: "checkbox", default: false })),
@@ -161,7 +168,7 @@ function widgetPropertyGroups(widget) {
     });
     return [...commonWidgetGroups, dockGroup, { id: "linebox-ports", label: "Anschlüsse", hint: "Nur aktive Andockpunkte erhalten eine Rolle. Eingänge werden mit Vorzeichen summiert; Ausgänge geben den Wert nur bei aktiviertem Haken weiter.", fields: portFields }, ...groups];
   }
-  return widget.type === "svg-connection" ? [...commonWidgetGroups, ...groups] : [...commonWidgetGroups, ...groups, connectionAnchorGroup];
+  return widget.type === "svg-connection" ? [...commonWidgetGroups, ...groups] : [...commonWidgetGroups, ...groups, connectionAnchorGroup, ...(widget.type === "value-converter" ? [] : [dataGroup])];
 }
 
 async function loadMdiIcons() {
@@ -513,6 +520,11 @@ async function loadProject() {
 }
 
 function displayedWidgetState(widget) {
+  if (widget.dataInputEnabled === true) {
+    const surface = visibleTabSurfaces(state.project, currentPage(), activeTabIndex).find(page => page.widgets.includes(widget));
+    const result = widgetInputPacket(widget, surface?.widgets || currentPage().widgets, state.entityStates);
+    return result.error ? "--" : result.value;
+  }
   if (widget.numericSource) {
     const surface = visibleTabSurfaces(state.project, currentPage(), activeTabIndex).find(page => page.widgets.includes(widget));
     return numericWidgetInput(widget, surface?.widgets || currentPage().widgets, state.entityStates) ?? "--";
@@ -537,7 +549,7 @@ async function fetchEntityStates(ids) {
 
 function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
-    ["sensor", "red-number", "gauge", "bar", "slider", "input-value"].includes(widget.type) && !["dock", "preview"].includes(widget.numericSource) ? widget.entityId : "",
+    !["dock", "preview"].includes(widget.numericSource) ? widget.entityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
   ]))]
     .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id || ""));
@@ -618,6 +630,7 @@ function stageRuntimeEntityValue(entityId, value) {
   if (runtimeEffectsFrame) return;
   runtimeEffectsFrame = requestAnimationFrame(() => {
     runtimeEffectsFrame = 0;
+    if (visibleWidgets().some(widget => widget.type === "value-converter" || widget.dataInputEnabled === true)) { renderStage(); return; }
     for (const surface of visibleTabSurfaces(state.project, currentPage(), activeTabIndex)) {
     const widgets = surface.widgets;
     for (const widget of widgets) {
@@ -1926,6 +1939,7 @@ function connectionPathData(widget, widgets, reverse = false) {
 }
 
 function effectiveConnectionStyle(widget, widgets, visited = new Set()) {
+  if (widget.dataFlowVariant === "value-connection") return { ...widget, animationEnabled: false };
   const entityId = connectionAnimationEntityId(widget);
   let result = { ...widget, ...resolveConnectionAnimation(widget, state.entityStates[entityId]) };
   const collectorReference = [widget.endCollector, widget.startCollector].find(reference => connectionCollectorPosition(reference, widgets));
@@ -2283,13 +2297,14 @@ function addWidget(definition) {
     borderColor: "#626c70", borderWidth: 0, borderStyle: "none", padding: 0, shadow: false, opacity: 1,
     ...structuredClone(definition.defaults),
   };
+  widget.type = definition.runtimeType || widget.type;
   if (widget.type !== "svg-connection") {
     widget.dockPointsEnabled = false;
     setAllDockPoints(widget, widgetAnchorIds(widget), false);
   }
   if (definition.packageId) { widget.packageId = definition.packageId; widget.definitionVersion = "0.1"; }
   widget.name = uniqueWidgetName(page, widget.name || definition.label);
-  if (definition.type === "svg-connection") {
+  if (widget.type === "svg-connection") {
     const connectionLayers = page.widgets.filter(item => item.type === "svg-connection").map(item => Math.max(0, Number(item.layer) || 0));
     widget.layer = (connectionLayers.length ? Math.max(...connectionLayers) : 0) + 1;
     widget.startX = Math.min(page.page.width - 40, 100 + (index % 4) * 30);
@@ -2353,7 +2368,7 @@ function renderLineboxJunction(box, widgets) {
 
 function renderNumberValue(element, widget, entityState) {
   const source = widget.numericSource;
-  const display = source === "dock" ? numberDisplay({ ...widget, entityId: "dock" }, { state: displayedWidgetState(widget) })
+  const display = source === "dock" || widget.dataInputEnabled === true ? numberDisplay({ ...widget, entityId: "dock" }, { state: displayedWidgetState(widget) })
     : source === "preview" ? numberDisplay({ ...widget, entityId: "" }) : numberDisplay(widget, entityState);
   element.replaceChildren();
   appendSafeHtml(element, display.prefix);
@@ -2428,6 +2443,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   for (const widget of activePage.widgets) {
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
     if (widget.visible === false) continue;
+    if (runtimeMode && (widget.hideInRuntime === true || widget.type === "value-converter" || widget.dataFlowVariant === "value-connection")) continue;
     const editorFilterWords = String(widget.generalEnabled === true ? widget.filterWord || "" : "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
     const editorFilterMatches = state.editorWidgetFilter?.words?.some((word) => editorFilterWords.includes(word));
     if (!runtimeMode && state.editorWidgetFilter?.mode === "hide" && editorFilterMatches) continue;
@@ -2498,6 +2514,15 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (isConnection) {
       content.style.background = "none"; content.style.border = "0"; content.style.padding = "0"; content.style.overflow = "visible";
       content.append(renderSvgConnection(widget, activePage.widgets, page.width, page.height, selected));
+    } else if (widget.type === "value-converter") {
+      content.classList.add("value-converter-content");
+      const input = widgetInputPacket(widget, activePage.widgets, state.entityStates, new Set([`data:${widget.id}`]));
+      const output = convertPacket(widget, input);
+      const caption = document.createElement("strong"); caption.textContent = widget.title || "⇄";
+      const mode = document.createElement("small"); mode.textContent = CONVERSIONS.find(([id]) => id === widget.conversion)?.[1] || "Konvertierung";
+      const value = document.createElement("span"); value.textContent = output.error || `${String(input.value ?? "—")} → ${String(output.value)}`;
+      value.title = output.error || `${input.type} → ${output.type}${output.unit ? ` · ${output.unit}` : ""}`;
+      value.classList.toggle("is-error", Boolean(output.error)); content.append(caption, mode, value);
     } else if (widget.type === "linebox-math") {
       content.classList.add("linebox-math-content");
       content.style.padding = `${widget.padding ?? 2}px`;
@@ -3228,6 +3253,66 @@ function updateMathResult(widget, widgets, element) {
   element.setAttribute("aria-label", errors.join("; ") || `Ergebnis: ${element.textContent}`);
 }
 
+function openConverterDialog(widget) {
+  const draft = { ...structuredClone(getWidgetDefinition("value-converter").defaults), ...structuredClone(widget) };
+  const dialog = document.createElement("dialog"); dialog.className = "studio-dialog converter-editor";
+  const heading = document.createElement("h2"); heading.textContent = "Wert-Konverter · Konvertierung";
+  const hint = document.createElement("p"); hint.textContent = "Im Editor sichtbar, in Runtime unsichtbar. Genau eine Quelle am Eingang; Wert-Verbindungen vom Start zum Ziel. Fehlende Werte und unbekannte Schaltzustände werden gemeldet.";
+  const choices = document.createElement("fieldset"); choices.className = "converter-modes"; const legend = document.createElement("legend"); legend.textContent = "Konvertierung"; choices.append(legend);
+  const settings = document.createElement("div"); settings.className = "converter-settings";
+  const preview = document.createElement("p"); preview.className = "math-preview"; preview.setAttribute("aria-live", "polite");
+  const refresh = () => {
+    const widgets = currentPage().widgets.map(item => item.id === widget.id ? draft : item);
+    const input = widgetInputPacket(draft, widgets, state.entityStates, new Set([`data:${widget.id}`]));
+    const output = convertPacket(draft, input);
+    for (const label of settings.querySelectorAll("[data-modes]")) label.hidden = !label.dataset.modes.split(" ").includes(draft.conversion);
+    preview.textContent = output.error || `Eingang (${input.type}): ${String(input.value)}${input.unit ? ` · ${input.unit}` : ""} → Ausgang (${output.type}): ${String(output.value)}${output.unit ? ` · ${output.unit}` : ""}`;
+    preview.classList.toggle("is-error", Boolean(output.error));
+  };
+  for (const [value, text] of CONVERSIONS) {
+    const label = document.createElement("label"); label.className = "property-radio-option";
+    const radio = document.createElement("input"); radio.type = "radio"; radio.name = `${widget.id}-conversion`; radio.value = value; radio.checked = (draft.conversion || "text-number") === value;
+    radio.addEventListener("change", () => { if (radio.checked) { draft.conversion = value; refresh(); } }); label.append(radio, document.createTextNode(text)); choices.append(label);
+  }
+  function field(text, key, type = "text", options = []) {
+    const label = document.createElement("label"); label.textContent = text;
+    const modes = { decimals: "number-text", decimalComma: "number-text", includeUnit: "number-text", unit: "number-text text-number scale", booleanFormat: "normalize", invert: "normalize boolean-number boolean-text number-boolean", onText: "boolean-text", offText: "boolean-text", threshold: "number-boolean", factor: "scale", offset: "scale" };
+    if (modes[key]) label.dataset.modes = modes[key];
+    const input = document.createElement(type === "select" ? "select" : "input");
+    if (type !== "select") input.type = type;
+    if (type === "number") input.step = key === "decimals" ? "1" : "any";
+    for (const [value, title] of options) { const option = document.createElement("option"); option.value = value; option.textContent = title; input.append(option); }
+    if (type === "checkbox") input.checked = draft[key] === true; else input.value = String(draft[key] ?? "");
+    input.addEventListener(type === "select" || type === "checkbox" ? "change" : "input", () => { draft[key] = type === "checkbox" ? input.checked : type === "number" ? Number(input.value) : input.value; refresh(); });
+    label.append(input); settings.append(label); return input;
+  }
+  field("Eingangs-Dockpunkt", "dataInputAnchor", "select", CONNECTION_ANCHORS.map(([id, text]) => [id, text]));
+  field("Ausgangs-Dockpunkt", "dataOutputAnchor", "select", CONNECTION_ANCHORS.map(([id, text]) => [id, text]));
+  const enableLabel = document.createElement("label"); enableLabel.textContent = "Gewählte Ein-/Ausgangs-Dockpunkte aktivieren";
+  const enable = document.createElement("input"); enable.type = "checkbox"; enable.checked = draft.dockPointsEnabled === true;
+  enable.addEventListener("change", () => { draft.dockPointsEnabled = enable.checked; for (const id of [draft.dataInputAnchor, draft.dataOutputAnchor]) draft[dockPointKey(id)] = enable.checked; refresh(); }); enableLabel.append(enable); settings.append(enableLabel);
+  const decimals = field("Nachkommastellen (Zahl → Text)", "decimals", "number"); decimals.min = "0"; decimals.max = "10";
+  field("Dezimalkomma (Zahl → Text)", "decimalComma", "checkbox");
+  field("Einheit als Fallback / Ziel bei Skalierung", "unit");
+  field("Einheit im Text mit ausgeben", "includeUnit", "checkbox");
+  field("Schaltzustand-Ausgabe", "booleanFormat", "select", [["boolean", "true / false (Boolean)"], ["number", "1 / 0 (Zahl)"], ["on-off", "on / off (Text)"]]);
+  field("Schaltzustand invertieren", "invert", "checkbox");
+  field("Text für Ein", "onText"); field("Text für Aus", "offText");
+  field("Schwellwert: Ein bei Wert ≥ Grenze", "threshold", "number");
+  field("Faktor (Skalierung)", "factor", "number"); field("Offset (Skalierung)", "offset", "number");
+  field("Ersatzwert bei Fehler aktivieren", "fallbackEnabled", "checkbox"); field("Ersatzwert (Text)", "fallback");
+  const actions = document.createElement("div"); actions.className = "dialog-actions";
+  const apply = document.createElement("button"); apply.type = "button"; apply.textContent = "Anwenden";
+  apply.addEventListener("click", () => {
+    if (draft.dataInputAnchor === draft.dataOutputAnchor) { preview.textContent = "Ein- und Ausgang müssen verschiedene Dockpunkte sein"; return; }
+    if (!Number.isInteger(draft.decimals) || draft.decimals < 0 || draft.decimals > 10 || ![draft.factor ?? 1, draft.offset ?? 0, draft.threshold ?? 0].every(Number.isFinite)) { preview.textContent = "Ungültige Zahleneinstellung"; return; }
+    if (enable.checked) { draft.dockPointsEnabled = true; for (const id of [draft.dataInputAnchor, draft.dataOutputAnchor]) draft[dockPointKey(id)] = true; }
+    recordHistorySnapshot(); Object.assign(widget, draft); dialog.close(); render();
+  });
+  const cancel = document.createElement("button"); cancel.type = "button"; cancel.textContent = "Abbrechen"; cancel.addEventListener("click", () => dialog.close());
+  actions.append(apply, cancel); dialog.append(heading, hint, choices, settings, preview, actions); document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); refresh(); dialog.showModal();
+}
+
 function openMathDialog(widget) {
   const draft = structuredClone(widget);
   draft.mathCalculations = mathCalculations(draft);
@@ -3593,11 +3678,15 @@ function renderProperties() {
     ] }))];
   }
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
-  const updateHeading = () => { heading.textContent = `${widgetDisplayName(widget)} — ${getWidgetDefinition(widget.type).label} · ${widget.id}`; };
+  const updateHeading = () => { heading.textContent = `${widgetDisplayName(widget)} — ${getWidgetDefinition(widget.dataFlowVariant || widget.type).label} · ${widget.id}`; };
   updateHeading(); panel.append(heading);
   if (widget.type === "linebox-math") {
     const edit = document.createElement("button"); edit.type = "button"; edit.textContent = "Berechnung bearbeiten";
     edit.addEventListener("click", () => openMathDialog(widget)); panel.append(edit);
+  }
+  if (widget.type === "value-converter") {
+    const edit = document.createElement("button"); edit.type = "button"; edit.textContent = "Konvertierung bearbeiten";
+    edit.addEventListener("click", () => openConverterDialog(widget)); panel.append(edit);
   }
   for (const [index, group] of groups.entries()) {
     const details = document.createElement("details"); details.className = "property-section";

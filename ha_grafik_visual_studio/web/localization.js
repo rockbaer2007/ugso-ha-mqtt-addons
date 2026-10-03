@@ -2,6 +2,20 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "HA Grafik – Datenfluss": "HA Grafik – Data flow", "Datenfluss": "Data flow",
+  "Wert-Konverter": "Value converter", "Wert-Verbindung": "Value connection", "Wert-Berechnung": "Value calculation",
+  "Konvertierung bearbeiten": "Edit conversion", "Konvertierung": "Conversion", "Wert-Konverter · Konvertierung": "Value converter · Conversion",
+  "Zahl → Text": "Number → text", "Text → Zahl": "Text → number", "Schaltzustand → Zahl": "Switch state → number",
+  "Zahl → Schaltzustand": "Number → switch state", "Schaltzustand → Text": "Switch state → text",
+  "Schaltzustand normalisieren": "Normalize switch state", "Zahl skalieren": "Scale number",
+  "Ausgangs-Dockpunkt": "Output docking point", "Wert vom Datenfluss übernehmen": "Receive value from data flow",
+  "In Runtime ausblenden": "Hide in runtime", "Gewählte Ein-/Ausgangs-Dockpunkte aktivieren": "Enable selected input/output docking points",
+  "Nachkommastellen (Zahl → Text)": "Decimal places (number → text)", "Dezimalkomma (Zahl → Text)": "Decimal comma (number → text)",
+  "Einheit als Fallback / Ziel bei Skalierung": "Fallback unit / target unit for scaling", "Einheit im Text mit ausgeben": "Include unit in text",
+  "Schaltzustand-Ausgabe": "Switch state output", "Schaltzustand invertieren": "Invert switch state",
+  "Text für Ein": "Text for on", "Text für Aus": "Text for off", "Schwellwert: Ein bei Wert ≥ Grenze": "Threshold: on when value ≥ limit",
+  "Faktor (Skalierung)": "Factor (scaling)", "Offset (Skalierung)": "Offset (scaling)",
+  "Ersatzwert bei Fehler aktivieren": "Enable fallback on error", "Ersatzwert (Text)": "Fallback (text)",
   "Dateien suchen": "Search files",
   "Dateien in allen Unterordnern suchen": "Search files in all subfolders",
   "Dateien · /config/www/studio": "Files · /config/www/studio",

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.141
+
+- Adds the Data flow palette with Value converter, Value connection and Value calculation. Connections and calculations reuse SVG-Line/LineBox Math internally and start hidden in runtime; converters are always runtime-invisible.
+- Adds a radio-button converter editor with live typed previews, numeric/text/switch conversions, on/off/true/false/1/0 normalization, unit recognition, explicit unit output, threshold, scaling and opt-in text fallback.
+- Adds directed widget value output/input with active dock selection, one-source validation and cycle detection. Widgets with an entity or preview value can supply typed values, including unit metadata, without additional HA entities.
+
 ## 0.1.140
 
 - Exposes all five shared CSS property groups for SVG LineBox Math, including general layout, font/text, background, borders and shadow/spacing.

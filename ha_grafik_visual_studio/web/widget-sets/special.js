@@ -161,6 +161,7 @@ registerWidgetSet({
     propertyGroups: [{ label: "Berechnung", hint: "Berechnung bearbeiten öffnet die Formel und Rollen A–P. Mehrere Leitungen an einem Eingang werden zuerst summiert. Ungültige Werte stoppen die Ausgabe.", fields: [
       { label: "Beschriftung (optional)", key: "title" },
       { label: "Ergebnis anzeigen", key: "mathShowResult", type: "checkbox", default: true },
+      { label: "In Runtime ausblenden", key: "hideInRuntime", type: "checkbox", default: false },
     ] }, { label: "Darstellung", fields: [
       { label: "Icon", key: "mathIcon", previewImage: true },
       { label: "Icongröße (px)", key: "mathIconSize", type: "number", min: 8, max: 512 },
