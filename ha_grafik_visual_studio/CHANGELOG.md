@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.171
+
+- Remove the planned HTML Logout adaptation from the VIS widget special cases. The existing catalog remains at 52 widgets.
+- Document its exclusion in German and English and clarify that Note can write to input_text helpers.
+
 ## 0.1.170
 
 - Align Note fields, test-text precedence, 100 × 70 defaults, HEX background and the optional corner with the VIS2 reference.

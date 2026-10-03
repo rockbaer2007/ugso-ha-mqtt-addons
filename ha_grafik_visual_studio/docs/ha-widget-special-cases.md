@@ -8,17 +8,6 @@ Home Assistants dokumentiertes Zustandsobjekt enthält Zustand, Attribute, Zeits
 
 Quelle: https://www.home-assistant.io/docs/configuration/state_object/
 
-## HTML logout
-
-Echte Abmeldung widerruft den Refresh-Token der betreffenden Benutzersitzung. Grafik Visual Studio besitzt derzeit nur den serverseitigen Supervisor-Zugang, keine eigene Benutzer-Refresh-Token-Sitzung. Diesen Zugang zu widerrufen wäre keine Benutzerabmeldung. Daher wird kein automatischer Logout vorgetäuscht. Ein späteres Widget benötigt einen expliziten Logout-Vertrag mit dem HA-Frontend; Weiterleitung darf erst nach bestätigtem Logout erfolgen.
-
-Die geprüfte Companion-WebView-Dokumentation beschreibt Navigation und Links, aber keine allgemeine Funktion zum Schließen der mobilen App. App-Schließen bleibt daher als nicht zugesichert vorgemerkt. Eine Browserfenster-Schließfunktion wäre kein Ersatz.
-
-Quellen:
-- https://developers.home-assistant.io/docs/auth_api/
-- https://developers.home-assistant.io/docs/frontend/external-authentication/
-- https://companion.home-assistant.io/docs/integrations/android-webview/
-
 ## Speech to Text (optional)
 
 Die Assist-Pipeline unterstützt Speech to Text und liefert das Erkennungsergebnis über ihre Ereignisse. Für eine HA-native Umsetzung werden eine konfigurierte STT-Pipeline, Audioaufnahme und Streaming an die authentifizierte Pipeline benötigt. Der aktuelle Proxy dient der Entitätenauswahl und implementiert dieses Audioprotokoll nicht.
