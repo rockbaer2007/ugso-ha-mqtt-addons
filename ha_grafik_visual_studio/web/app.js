@@ -23,6 +23,7 @@ import { renderCheckbox, checkboxValue } from "./styled-checkbox.js";
 import { renderStyledSlider, styledSliderValue, updateStyledSlider } from "./styled-slider.js";
 import { renderInteractiveTable, tableDefaultSort, TABLE_STYLE_GROUPS } from "./interactive-table.js";
 import { tableEntryGroups } from "./widget-sets/interactive-table.js";
+import { beginMarquees, finishMarquees, renderMarquee } from "./marquee.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
 import { migrationHint } from "./migration-hints.js";
@@ -2601,6 +2602,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const runtimeMode = rootRuntimeMode || embedded;
   const stage = target || $("#stage");
   if (!embedded) {
+    beginMarquees();
     renderedImages.clear();
     for (const entry of mediaRefreshers) if (entry.timer) clearInterval(entry.timer);
     mediaRefreshers.clear();
@@ -3154,6 +3156,8 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
         }
       }
       content.append(output);
+    } else if (widget.type === "marquee") {
+      content.append(renderMarquee(widget, document, { runtime: runtimeMode, value: stringEntityValue(widget, state.entityStates[widget.entityId]), key: `${state.projectId}:${activePage.id}:${widget.id}` }));
     } else if (widget.type === "interactive-table") {
       const cacheKey = `interactive:${state.projectId}:${activePage.id}:${widget.id}`;
       const signature = JSON.stringify([widget.multiSort, widget.defaultSortColumn, widget.defaultSortOrder, widget.countDefaultSortColumns, ...Array.from({ length: 20 }, (_, i) => [widget[`defaultSortKey${i + 1}`], widget[`defaultSortDir${i + 1}`]])]);
@@ -3427,6 +3431,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (element.parentElement !== stage) stage.append(element);
   }
   for (const element of retainedDashboards.values()) element.remove();
+  if (!embedded) finishMarquees();
   if (!embedded) for (const [image, entry] of imageRefreshers) if (!renderedImages.has(image)) { if (entry.timer) clearInterval(entry.timer); imageRefreshers.delete(image); }
   if (!runtimeMode) renderEditorGroups();
 }

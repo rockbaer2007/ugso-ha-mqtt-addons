@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.178
+
+- Add Marquee with static text or HA state, left/right direction, constant pixel speed, copies, spacing and hover pause.
+- Keep animation progress during state refreshes, fill short-text loops automatically, and respect reduced motion. Editor previews remain static.
+- Include all settings in project/package exports and document the widget in German and English.
+
 ## 0.1.177
 
 - Add Interactive Table with JSON state/attribute sources, column formats and arithmetic formulas, sorting, filters, pagination, sticky headers and row color conditions.
