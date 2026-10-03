@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.156
+
+- String supports HTML editors for prefix/suffix/test text, plain-text source values, editor-only test override and fixed 5..200px icon size (24px default). Size controls appear only with an icon.
+- HA attribute selection maps VIS2 attribute datapoints such as friendly_name to the selected entity's attributes, including the output dock value. Missing sources show --.
+- New String widgets start with empty fields, 100x30 size and only CSS General enabled. Optional migration hints explain attribute selection and preview semantics.
+
 ## 0.1.155
 
 - Filter dropdown now offers separate dropdown/button variants, small dropdowns, optional title/autofocus, page-local runtime filters and multi-value entries. Editor widgets remain visible.

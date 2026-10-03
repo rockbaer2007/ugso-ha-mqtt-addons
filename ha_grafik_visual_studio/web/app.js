@@ -12,6 +12,7 @@ import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
 import { filterEntries, defaultFilters, filterSelected, chooseFilter, filterHex } from "./filter-widget.js";
+import { stringDisplayValue } from "./string-display.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
@@ -552,6 +553,7 @@ function displayedWidgetState(widget) {
     const surface = visibleTabSurfaces(state.project, currentPage(), activeTabIndex).find(page => page.widgets.includes(widget));
     return numericWidgetInput(widget, surface?.widgets || currentPage().widgets, state.entityStates) ?? "--";
   }
+  if (widget.type === "string") return stringDisplayValue(widget, state.entityStates[widget.entityId], runtimeMode);
   if (runtimeMode && widget.entityId) {
     return state.entityStates[widget.entityId]?.state ?? "--";
   }
@@ -2824,8 +2826,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       if (source) { const image = document.createElement("img"); refreshableMedia(image, widget, source); image.style.objectFit = widget.stretch ? "fill" : "contain"; image.style.pointerEvents = widget.allowUserInteractions ? "auto" : "none"; image.alt = widget.title || "Bild"; content.append(image); }
       else { content.classList.add("image-placeholder"); content.setAttribute("aria-label", widget.title || "Bild"); }
     } else if (widget.type === "string") {
-      if (widget.icon) { const image = document.createElement("img"); image.className = "button-icon"; setIconImageSource(image, widget.icon); image.alt = ""; content.append(image); }
-      const text = document.createElement("span"); text.className = "basic-string"; appendSafeHtml(text, widget.prefix || ""); text.append(document.createTextNode(String(displayedWidgetState(widget) ?? ""))); appendSafeHtml(text, widget.suffix || ""); content.append(text);
+      if (widget.icon) { const image = document.createElement("img"); image.className = "string-icon"; const size = Math.min(200, Math.max(5, Number(widget.iconSize) || 24)); image.style.width = image.style.height = `${size}px`; setIconImageSource(image, widget.icon); image.alt = ""; content.append(image); }
+      const value = widget.dataInputEnabled === true ? displayedWidgetState(widget) : stringDisplayValue(widget, state.entityStates[widget.entityId], runtimeMode);
+      const text = document.createElement("span"); text.className = "basic-string"; appendSafeHtml(text, widget.prefix || ""); text.append(document.createTextNode(String(value))); appendSafeHtml(text, widget.suffix || ""); content.append(text);
     } else if (widget.type === "string-raw") {
       appendSafeHtml(content, `${widget.prefix || ""}${displayedWidgetState(widget) ?? ""}${widget.suffix || ""}`);
     } else if (widget.type === "image-source") {
@@ -3629,6 +3632,7 @@ function field(descriptor, widget) {
     return choices;
   }
   const wrapper = document.createElement("label"); wrapper.textContent = descriptor.label;
+  if (widget.type === "string" && descriptor.key === "iconSize") { wrapper.dataset.stringIconSize = ""; wrapper.hidden = !widget.icon; }
   if (descriptor.type === "filter-editor") { const button = document.createElement("button"); button.type = "button"; button.textContent = "Bearbeiten"; button.setAttribute("aria-label", "Filter bearbeiten"); button.addEventListener("click", () => openFilterEditor(widget)); wrapper.append(button); appendMigrationHint(wrapper, button, widget, descriptor.key); return wrapper; }
   if (descriptor.type === "connection-points") { const button = document.createElement("button"); button.type = "button"; button.textContent = `${Array.isArray(widget.connectionPoints) ? widget.connectionPoints.length : 0} Punkte bearbeiten`; button.addEventListener("click", () => openConnectionPointsEditor(widget)); wrapper.append(button); return wrapper; }
   let input;
@@ -3730,13 +3734,14 @@ function field(descriptor, widget) {
     if (descriptor.key === "count" && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (widget.type === "value-list-html-style" && descriptor.key === "count" && widget.testIndex !== "" && Number(widget.testIndex) > styledListCount(widget)) widget.testIndex = "";
-    if ((["sensor", "slider", "input-value"].includes(widget.type) && descriptor.key === "entityId") ||
+    if ((["sensor", "slider", "input-value", "string"].includes(widget.type) && descriptor.key === "entityId") ||
         (widget.type === "svg-connection" && ["animationSource", "animationNumberEntityId", "animationBooleanEntityId"].includes(descriptor.key))) {
       void refreshEditorLiveStates();
     }
     if (widget.type === "linebox" && descriptor.key?.startsWith("dock_") && input.type === "checkbox" && !input.checked) widget[`lineboxRole_${descriptor.key.slice(5)}`] = "none";
     if (descriptor.key === "testIndex" && widget.type === "value-list-text") widget.state = input.value;
     void updatePreview();
+    if (widget.type === "string" && descriptor.key === "icon") { const size = $("#properties [data-string-icon-size]"); if (size) size.hidden = !input.value; }
     renderStage();
     if (descriptor.refreshProperties && input.tagName !== "TEXTAREA" && !["number", "range"].includes(input.type)) renderProperties();
     if (["readOnly", "interaction"].includes(descriptor.key)) renderProperties();

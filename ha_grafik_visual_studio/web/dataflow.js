@@ -1,4 +1,5 @@
 import { dockPointActive, hasSimpleOutput } from "./dock-points.js";
+import { stringEntityValue } from "./string-display.js";
 import { numericWidgetInput, lineboxInputSum, lineboxPortRole } from "./linebox.js";
 import { mathBoxResult, mathPortRole } from "./linebox-math.js";
 
@@ -74,13 +75,14 @@ export function widgetValuePacket(widget, widgets, states, visited = new Set(), 
   if (widget.dataInputEnabled === true) return widgetInputPacket(widget, widgets, states, next);
   const entry = states[widget.entityId];
   let value = widget.entityId && widget.numericSource !== "preview" ? entry?.state : widget.state ?? widget.value;
+  if (widget.type === "string" && widget.entityId) value = stringEntityValue(widget, entry);
   if (widget.numericSource === "dock") value = numericWidgetInput(widget, widgets, states, visited);
   if (unavailable(value)) return fail("Quelle hat keinen verfügbaren Wert");
   if (widget.type === "sensor") {
     try { const parsed = parseNumberUnit(value, entry?.attributes?.unit_of_measurement || widget.unit || ""); return packet(parsed.value * (Number(widget.factor ?? 1)), parsed.unit); }
     catch (error) { return fail(error.message); }
   }
-  return packet(value, entry?.attributes?.unit_of_measurement || widget.unit || "");
+  return packet(value, widget.type === "string" && widget.entityAttribute ? "" : entry?.attributes?.unit_of_measurement || widget.unit || "");
 }
 export function lineValuePacket(line, widgets, states, visited = new Set()) {
   if (visited.has(`data-line:${line.id}`)) return fail("Rückkopplung im Datenfluss");

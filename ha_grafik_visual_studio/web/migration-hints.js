@@ -1,4 +1,6 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "string" && key === "entityAttribute") return "ioBroker-Attributdatenpunkte wie friendly_name entsprechen HA-Attributen: Entität auswählen und hier friendly_name eintragen. Leer zeigt den Zustand. Kein HA-Helfer nötig.";
+  if (widget.type === "string" && key === "state") return "Testtext gilt nur im Editor. Der Entitätswert und der Testtext bleiben Text; nur HTML davor und dahinter wird formatiert.";
   if (widget.type === "filter-dropdown" && key === "filterEntries") return "Filterwerte entsprechen den Filterwörtern der Widgets auf dieser Seite. Kein HA-Helfer nötig. Textfarben werden als HEX gespeichert; Standard gilt beim Start der Runtime.";
   if (widget.type === "navigation" && key === "navHtml") return "HTML wird bereinigt angezeigt; eingebettete Skripte werden nicht ausgeführt. Seitenwechsel benötigt keinen HA-Helfer.";
   if (widget.type === "navigation" && key === "subView") return "VIS2-Unteransichten dienen speziellen Navigationssystemen, zum Beispiel Jaeger Design. Diese Funktion ist in Studio noch nicht angebunden; Tabs sind davon unabhängig.";

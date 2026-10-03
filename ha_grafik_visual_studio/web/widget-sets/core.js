@@ -257,9 +257,9 @@ registerWidgetSet({
       ] },
       geometry(), ...cssGroups(),
     ] },
-    basicDataWidget("string", "String", "T", { title: "Textwert", entityId: "", state: "Beispieltext", prefix: "", suffix: "" }, [
-      { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testwert", key: "state" },
-      { label: "HTML voranstellen", key: "prefix" }, { label: "HTML anhängen", key: "suffix" },
+    basicDataWidget("string", "String", "T", { entityId: "", entityAttribute: "", state: "", prefix: "", suffix: "", icon: "", iconSize: 24, width: 100, height: 30 }, [
+      { label: "Home-Assistant-Entität", key: "entityId" }, { label: "HA-Attribut (leer: Zustand)", key: "entityAttribute" },
+      { label: "HTML voranstellen", key: "prefix", type: "html" }, { label: "HTML anhängen", key: "suffix", type: "html" }, { label: "Testtext", key: "state", type: "html" },
     ], "Der Zustand wird als Text ausgegeben, vorangestellter und angehängter HTML-Code als HTML. In der Runtime wird eine gebundene Entität gelesen."),
     basicDataWidget("string-raw", "String (unescaped)", "<>…", { title: "HTML-Wert", entityId: "", state: "<strong>Beispiel</strong>", prefix: "", suffix: "" }, [
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testwert (HTML)", key: "state", type: "textarea" },
@@ -361,7 +361,10 @@ registerWidgetSet({
       add({ label: "HTML anhängen", key: "suffix" }, { label: "Autofokus", key: "autofocus", type: "checkbox", default: false });
     }
     if (widget.type === "bool-select") add(...htmlAdditions(), { label: "Autofokus", key: "autofocus", type: "checkbox", default: false });
-    if (widget.type === "string") add({ label: "Icon", key: "icon", previewImage: true });
+    if (widget.type === "string") {
+      add({ label: "Icon", key: "icon", previewImage: true }, { label: "Symbolgröße in Pixel", key: "iconSize", type: "range", min: 5, max: 200, step: 1, default: 24 });
+      widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
+    }
     if (widget.type === "bar") add({ label: "Rand", key: "barBorder" }, { label: "Durchsichtigkeit (Schatten/CSS)", key: "barShadow" }, { label: "Wert umkehren", key: "invert", type: "checkbox", default: false });
     if (widget.type === "navigation") widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
     if (widget.type === "image") add({ label: "Quelle", key: "imageSrc", previewImage: true }, ...imageFields());

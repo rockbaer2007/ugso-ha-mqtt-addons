@@ -2,6 +2,9 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "HA-Attribut (leer: Zustand)": "HA attribute (empty: state)", "Symbolgröße in Pixel": "Icon size in pixels", "Testtext": "Test text",
+  "ioBroker-Attributdatenpunkte wie friendly_name entsprechen HA-Attributen: Entität auswählen und hier friendly_name eintragen. Leer zeigt den Zustand. Kein HA-Helfer nötig.": "ioBroker attribute datapoints such as friendly_name map to HA attributes: select the entity and enter friendly_name here. Empty displays the state. No HA helper is needed.",
+  "Testtext gilt nur im Editor. Der Entitätswert und der Testtext bleiben Text; nur HTML davor und dahinter wird formatiert.": "Test text applies only in the editor. Entity values and test text remain plain text; only prepended and appended HTML is formatted.",
   "Filterwerte entsprechen den Filterwörtern der Widgets auf dieser Seite. Kein HA-Helfer nötig. Textfarben werden als HEX gespeichert; Standard gilt beim Start der Runtime.": "Filter values match widget filter words on this page. No HA helper is needed. Text colors are stored as HEX; defaults apply when runtime starts.",
   "Dropdown-Menü": "Dropdown menu", "Horizontale Tasten": "Horizontal buttons", "Vertikale Tasten": "Vertical buttons", "Klein": "Small",
   "HTML wird bereinigt angezeigt. Eingebettete Skripte und Event-Handler werden nicht ausgeführt; keine HA-Schreibentität nötig.": "HTML is sanitized. Embedded scripts and event handlers are not executed; no HA write entity is needed.",
