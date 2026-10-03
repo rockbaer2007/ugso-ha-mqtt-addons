@@ -34,6 +34,7 @@ const ENGLISH = {
   "Durchsichtigkeit (Schatten/CSS)": "Transparency (shadow/CSS)",
   "SVG bei false": "SVG when false",
   "Kreis": "Circle",
+  "Dreieck": "Triangle", "Quadrat": "Square", "Sechseck": "Hexagon", "Achteck": "Octagon", "Stern": "Star", "Pfeil": "Arrow", "Benutzerdefiniertes Polygon": "Custom polygon",
   "Liest einen Zahlenwert; kein HA-Helfer nötig. Bei 0, false oder fehlendem Zahlenwert wird die Anzeige in der Runtime ausgeblendet. Im Editor bleibt sie bearbeitbar.": "Reads a numeric value; no HA helper required. Zero, false or a missing numeric value hides the display in runtime. It remains editable in the editor.",
   "SVG bei true": "SVG when true",
   "Im Editor bleibt das SVG mindestens zu 20 % sichtbar. In der Runtime gilt die eingestellte Durchsichtigkeit vollständig.": "The SVG remains at least 20% visible in the editor. Runtime uses the configured opacity without this limit.",

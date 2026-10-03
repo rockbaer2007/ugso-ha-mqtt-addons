@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.163
+
+- SVG shape uses 100 × 100 defaults, localized shape choices, stroke widths 0–100 and separate width/height scales in 0.05 steps.
+- Geometry follows the VIS2 reference, including the crossing star, upward arrow and unscaled line stroke. Invalid or oversized polygon strokes cannot produce negative radii.
+- CSS General remains mandatory; other CSS groups start disabled. German and English documentation includes a new screenshot.
+
 ## 0.1.162
 
 - Red Number follows VIS2 geometry (52 × 30), circle/pin rendering, three editable HTML fields and numeric singular/plural selection.

@@ -354,6 +354,19 @@ registerWidgetSet({
     if (widget.type === "screen-resolution") widget.propertyGroups = widget.propertyGroups.filter(group => group.label !== "Daten");
     const data = widget.propertyGroups.find(group => ["Daten", "Allgemein"].includes(group.label));
     const add = (...fields) => data?.fields.push(...fields);
+    if (widget.type === "svg-shape") {
+      Object.assign(widget.defaults, { width: 100, height: 100 });
+      data.label = "Allgemein";
+      delete data.hint;
+      const labels = { line: "Linie", triangle: "Dreieck", square: "Quadrat", pentagon: "Pentagon", hexagon: "Sechseck", octagon: "Achteck", circle: "Kreis", star: "Stern", arrow: "Pfeil", custom: "Benutzerdefiniertes Polygon" };
+      data.fields = data.fields.map(field => {
+        if (field.key === "shape") return { ...field, options: Object.entries(labels).map(([value, label]) => ({ value, label })) };
+        if (field.key === "strokeWidth") return { ...field, max: 100 };
+        if (["scaleX", "scaleY"].includes(field.key)) return { ...field, step: 0.05 };
+        return field;
+      });
+      widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
+    }
     if (widget.type === "red-number") {
       Object.assign(widget.defaults, { width: 52, height: 30, fontSize: 20, badgeBackground: "#FF0000", badgeBorder: "#FFFFFF", prefix: "", suffixSingular: "", suffixPlural: "" });
       data.label = "Allgemein";

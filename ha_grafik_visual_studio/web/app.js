@@ -10,6 +10,7 @@ import { tableRows, tableColumns, updateTableEvent } from "./table-data.js";
 import { boolSelectOn } from "./bool-select.js";
 import { boolSvgOn, boolSvgNext, boolSvgOpacity } from "./bool-svg.js";
 import { redNumberDisplay } from "./red-number.js";
+import { svgShapeGeometry } from "./svg-shape.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
@@ -1801,19 +1802,12 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) for 
 window.addEventListener("resize", () => { for (const element of document.querySelectorAll(".screen-resolution-value")) element.textContent = `${window.innerWidth} × ${window.innerHeight}`; });
 
 function renderSvgShape(widget) {
-  const ns = "http://www.w3.org/2000/svg"; const svg = document.createElementNS(ns, "svg"); svg.setAttribute("viewBox", "0 0 100 100"); svg.style.width = "100%"; svg.style.height = "100%";
-  let shape;
-  if (widget.shape === "circle") { shape = document.createElementNS(ns, "circle"); shape.setAttribute("cx", "50"); shape.setAttribute("cy", "50"); shape.setAttribute("r", "40"); }
-  else if (widget.shape === "line") { shape = document.createElementNS(ns, "line"); for (const [key, value] of Object.entries({ x1: 10, y1: 50, x2: 90, y2: 50 })) shape.setAttribute(key, value); }
-  else {
-    shape = document.createElementNS(ns, "polygon");
-    const counts = { triangle: 3, square: 4, pentagon: 5, hexagon: 6, octagon: 8, star: 10 };
-    const count = counts[widget.shape] || Math.max(3, Math.min(20, Number(widget.pointCount) || 3));
-    const points = Array.from({ length: count }, (_, index) => { const angle = -Math.PI / 2 + index * 2 * Math.PI / count; const radius = widget.shape === "star" && index % 2 ? 18 : 40; return `${50 + Math.cos(angle) * radius},${50 + Math.sin(angle) * radius}`; });
-    shape.setAttribute("points", widget.shape === "arrow" ? "10,35 55,35 55,10 90,50 55,90 55,65 10,65" : points.join(" "));
-  }
+  const ns = "http://www.w3.org/2000/svg"; const svg = document.createElementNS(ns, "svg"); svg.setAttribute("viewBox", "-50 -50 100 100"); svg.style.width = "100%"; svg.style.height = "100%";
+  const geometry = svgShapeGeometry(widget);
+  const shape = document.createElementNS(ns, geometry.tag);
+  for (const [key, value] of Object.entries(geometry.attributes)) shape.setAttribute(key, String(value));
   shape.setAttribute("stroke", widget.strokeColor || "#009cb3"); shape.setAttribute("fill", widget.fillColor || "#00b3ac"); shape.setAttribute("stroke-width", widget.strokeWidth ?? 5);
-  shape.setAttribute("transform", `translate(50 50) rotate(${Number(widget.rotation) || 0}) scale(${Number(widget.scaleX ?? 1)} ${Number(widget.scaleY ?? 1)}) translate(-50 -50)`); svg.append(shape); return svg;
+  svg.append(shape); return svg;
 }
 
 function connectionAnchorPosition(widget, anchorId) {
