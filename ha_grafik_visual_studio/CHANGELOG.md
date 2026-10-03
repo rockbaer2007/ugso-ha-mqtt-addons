@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.131
+
+- Keeps editor widgets, including selected widgets and high layers, behind the widget selection menu by isolating the stage stacking context.
+- Adds Copy and Delete buttons directly to the selection menu. They act on the checked selection; deletion opens the existing confirmation dialog.
+
 ## 0.1.130
 
 - Adds a widget deletion confirmation dialog listing the selected IDs, with Delete, Cancel and an optional five-minute suppression period. Escape cancels; cutting widgets retains its existing behavior and deletion remains undoable.

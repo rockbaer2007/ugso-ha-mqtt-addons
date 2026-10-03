@@ -909,6 +909,8 @@ function renderWidgetFinder() {
   }
   updateWidgetSelectorAllState();
   const selectionCount = selected.size;
+  $("#widget-selector-copy").disabled = selectionCount === 0;
+  $("#widget-selector-delete").disabled = selectionCount === 0;
   $("#widget-duplicate").disabled = selectionCount === 0;
   $("#widget-delete").disabled = selectionCount === 0;
   $("#widget-cut").disabled = selectionCount === 0;
@@ -3602,6 +3604,8 @@ $("#widget-selector-all").addEventListener("change", (event) => {
 });
 $("#widget-selector-select").addEventListener("click", () => { applyWidgetSelection(state.widgetSelectionDraft || new Set()); toggleWidgetSelector(false); });
 $("#widget-selector-clear").addEventListener("click", () => { applyWidgetSelection(new Set()); toggleWidgetSelector(false); });
+$("#widget-selector-copy").addEventListener("click", () => { applyWidgetSelection(state.widgetSelectionDraft || new Set()); copySelectedWidgets(false); });
+$("#widget-selector-delete").addEventListener("click", () => { applyWidgetSelection(state.widgetSelectionDraft || new Set()); toggleWidgetSelector(false); void deleteSelectedWidget(); });
 $("#widget-duplicate").addEventListener("click", duplicateSelectedWidget);
 $("#widget-delete").addEventListener("click", deleteSelectedWidget);
 $("#widget-cut").addEventListener("click", () => copySelectedWidgets(true));
