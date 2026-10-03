@@ -354,6 +354,12 @@ registerWidgetSet({
     if (widget.type === "screen-resolution") widget.propertyGroups = widget.propertyGroups.filter(group => group.label !== "Daten");
     const data = widget.propertyGroups.find(group => ["Daten", "Allgemein"].includes(group.label));
     const add = (...fields) => data?.fields.push(...fields);
+    if (widget.type === "iframe") {
+      Object.assign(widget.defaults, { width: 600, height: 320, refreshInterval: 0, noSandbox: false, refreshOnWake: false, refreshOnView: false, noCacheBuster: false, scrollX: false, scrollY: false, noFrame: true });
+      data.label = "Allgemein";
+      data.fields = [data.fields.find(field => field.key === "source"), data.fields.find(field => field.key === "refreshInterval"), ...data.fields.filter(field => !["source", "refreshInterval"].includes(field.key))];
+      widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
+    }
     if (widget.type === "svg-shape") {
       Object.assign(widget.defaults, { width: 100, height: 100 });
       data.label = "Allgemein";

@@ -1,4 +1,7 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "iframe" && key === "noSandbox") return "Kein Sandkasten hebt die Einschränkung der eingebetteten Seite auf. Anmeldung und Einbettung richten sich weiterhin nach Browser und Zielseite; kein HA-Helfer nötig.";
+  if (widget.type === "iframe" && key === "refreshInterval") return "0 deaktiviert regelmäßiges Neuladen. Millisekunden aktualisieren die eingebettete Seite, nicht HA-Entitäten.";
+  if (widget.type === "iframe" && key === "noCacheBuster") return "Aktualisiert mit unveränderter URL. Ohne Haken wird ein Zeitstempel als URL-Parameter ergänzt; vorhandene Parameter und Sprungmarken bleiben erhalten.";
   if (widget.type === "red-number" && key === "entityId") return "Liest einen Zahlenwert; kein HA-Helfer nötig. Bei 0, false oder fehlendem Zahlenwert wird die Anzeige in der Runtime ausgeblendet. Im Editor bleibt sie bearbeitbar.";
   if (widget.type === "bool-svg" && key === "svgOpacity") return "Im Editor bleibt das SVG mindestens zu 20 % sichtbar. In der Runtime gilt die eingestellte Durchsichtigkeit vollständig.";
   if (widget.type === "view-in-widget-8" && key === "entityId") return "Die HA-Entität liefert den Seitenindex 0, 1, 2 …; false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen, kein zusätzlicher HA-Helfer benötigt. Ohne Entität wird Seite [0] verwendet.";

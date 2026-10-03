@@ -11,6 +11,7 @@ import { boolSelectOn } from "./bool-select.js";
 import { boolSvgOn, boolSvgNext, boolSvgOpacity } from "./bool-svg.js";
 import { redNumberDisplay } from "./red-number.js";
 import { svgShapeGeometry } from "./svg-shape.js";
+import { mediaRefreshUrl, iframeOptions } from "./iframe-widget.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
@@ -1785,15 +1786,13 @@ function appendSafeHtml(parent, markup) {
 }
 
 const mediaRefreshers = new Set();
-function refreshableMedia(element, widget, source) {
+function refreshableMedia(element, widget, source, initialize = true) {
   const update = (refresh = true) => {
     const url = safeUrl(source, element.tagName === "IMG");
     if (!url) return;
-    if (refresh && !widget.noCacheBuster && !url.startsWith("data:")) {
-      const parsed = new URL(url, location.href); parsed.searchParams.set("_gvs", Date.now()); element.src = parsed.href;
-    } else element.src = url;
+    element.src = mediaRefreshUrl(url, location.href, refresh, widget.noCacheBuster);
   };
-  update(widget.refreshOnView === true);
+  if (initialize) update(widget.refreshOnView === true);
   const interval = Math.max(0, Number(widget.refreshInterval) || 0);
   const entry = { widget, update, timer: interval > 0 ? setInterval(update, Math.max(100, interval)) : null };
   mediaRefreshers.add(entry);
@@ -2494,7 +2493,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const dashboardSurfaceKey = `${state.projectId}:${activePage.id}`;
   const retainedDashboards = new Map();
   for (const child of [...stage.children]) {
-    if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
+    if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8") || child.classList.contains("widget-iframe")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
     else child.remove();
   }
   const filterKey = filterPageKey(activePage);
@@ -2555,6 +2554,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     });
     if (widget.type === "dashboard-in-widget") { element.dataset.dashboardSurface = dashboardSurfaceKey; element.style.maxWidth = "800px"; element.style.maxHeight = "640px"; }
     if (widget.type === "view-in-widget-8") element.dataset.dashboardSurface = dashboardSurfaceKey;
+    if (widget.type === "iframe") element.dataset.dashboardSurface = dashboardSurfaceKey;
     const content = element.firstElementChild || document.createElement("div");
     content.className = "widget-content";
     Object.assign(content.style, {
@@ -2921,8 +2921,22 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       }
     } else if (["iframe", "iframe-8"].includes(widget.type)) {
       const index = widgetStateIndex(widget); const source = widget.type === "iframe" ? widget.source : widget[`frameSource${index}`];
-      if (safeUrl(source)) { const frame = document.createElement("iframe"); frame.title = widget.title || "iframe"; frame.className = "widget-frame"; frame.style.border = widget.noFrame !== false ? "0" : "1px solid currentColor"; frame.setAttribute("scrolling", widget.scrollX || widget.scrollY ? "yes" : "no"); if (!(widget.type === "iframe" ? widget.noSandbox : widget[`frameNoSandbox${index}`])) frame.setAttribute("sandbox", "allow-scripts allow-forms"); refreshableMedia(frame, widget, source); content.append(frame); }
-      else content.textContent = "Quelle auswählen";
+      if (safeUrl(source)) {
+        const options = iframeOptions({ ...widget, noSandbox: widget.type === "iframe" ? widget.noSandbox : widget[`frameNoSandbox${index}`] });
+        let frame = widget.type === "iframe" ? content.querySelector("iframe") : null;
+        const created = !frame || frame.dataset.source !== source || frame.getAttribute("sandbox") !== options.sandbox;
+        if (created) {
+          content.replaceChildren(); frame = document.createElement("iframe"); frame.dataset.source = source;
+          frame.className = "widget-frame";
+          if (options.sandbox !== null) frame.setAttribute("sandbox", options.sandbox);
+          content.append(frame);
+        }
+        frame.title = widget.title || "iframe"; frame.style.border = options.border;
+        frame.style.overflowX = options.overflowX; frame.style.overflowY = options.overflowY;
+        frame.style.pointerEvents = runtimeMode ? "auto" : "none";
+        frame.setAttribute("scrolling", options.scrolling);
+        refreshableMedia(frame, widget, source, created);
+      } else content.textContent = "Quelle auswählen";
     } else if (widget.type === "image" || widget.type === "image-8") {
       const index = widgetStateIndex(widget);
       const liveSource = widget.type === "image" && runtimeMode && widget.entityId ? safeUrl(displayedWidgetState(widget), true) : "";

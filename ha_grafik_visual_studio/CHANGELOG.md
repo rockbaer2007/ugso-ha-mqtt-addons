@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.164
+
+- iFrame exposes the standard options under General with 600 × 320 defaults; only CSS General starts enabled.
+- Runtime redraws retain unchanged iFrames instead of reloading their pages. Refresh timers, wake-up and view changes remain explicit reload triggers.
+- Editor iFrames no longer intercept widget selection. Migration hints and bilingual documentation explain sandbox, refresh URLs and browser-dependent scrolling.
+
 ## 0.1.163
 
 - SVG shape uses 100 × 100 defaults, localized shape choices, stroke widths 0–100 and separate width/height scales in 0.05 steps.
