@@ -358,10 +358,19 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .linebox-math-content strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .math-result { font-size: 18px; }
 .math-result.is-error { text-decoration: underline dotted; }
-.math-editor { width: min(620px, 94vw); max-height: 90vh; overflow: auto; }
+.studio-dialog.math-editor { width: min(1020px, 94vw); max-height: 90vh; overflow: auto; }
 .math-editor > label { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
 .math-editor > label input, .math-editor > label select { flex: 1; min-width: 0; }
-.math-port-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; margin-top: 12px; }
+.math-editor > label input[type="number"] { flex: 0 0 7ch; width: 7ch; }
+.math-port-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 14px; margin-top: 12px; }
+.math-calculation-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.math-calculation { min-width: 0; border: 1px solid #65737b; border-radius: 6px; padding: 10px; }
+.math-calculation > label { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0; font-size: 12px; }
+.math-calculation input:not([type="checkbox"]), .math-calculation select { width: 52%; min-width: 0; }
+.math-calculation-result { margin: 6px 0 0; overflow-wrap: anywhere; }
+.math-preview.is-error, .math-calculation-result.is-error { color: #eea65a; }
+.linebox-math-content .math-result { max-width: 100%; font-size: 13px; overflow-wrap: anywhere; text-align: center; }
+@media (max-width: 760px) { .math-port-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } .math-calculation-list { grid-template-columns: 1fr; } }
 .math-port-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) 55px; gap: 6px; align-items: center; }
 .math-port-row select { min-width: 0; width: 100%; }
 .math-port-row > span { overflow: hidden; text-overflow: ellipsis; }

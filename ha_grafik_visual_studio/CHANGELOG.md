@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.138
+
+- Extends SVG LineBox Math to four independent calculations with per-calculation output lists (e.g. E,F;H), previews and optional internal result handoff to one input, disabled by default.
+- Adds role, duplicate assignment and feedback validation. Internal handoff replaces external values at its target input; arithmetic errors affect the corresponding calculation and dependent results.
+- Enlarges the calculation dialog with responsive layouts and preserves existing single-calculation projects as calculation 1 with their previous outputs.
+
 ## 0.1.137
 
 - Adds SVG LineBox Math under Special: visible square, 16 clockwise ports A–P, green occupied/orange free markers in the editor, and perpendicular connection entry in editor and runtime.

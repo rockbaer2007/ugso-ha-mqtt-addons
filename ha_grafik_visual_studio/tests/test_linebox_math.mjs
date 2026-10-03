@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { MATH_ANCHORS, mathBoxResult, evaluateMathExpression, mathLeadPoint } from "../web/linebox-math.js";
+import { MATH_ANCHORS, mathBoxResult, mathBoxResults, mathCalculations, parseMathPorts, validateMathAssignments, evaluateMathExpression, mathLeadPoint } from "../web/linebox-math.js";
 import { numericConnectionValue, numericWidgetInput } from "../web/linebox.js";
 import { getWidgetDefinition } from "../web/widget-registry.js";
 import "../web/widget-sets/special.js";
@@ -59,4 +59,58 @@ test("math forwards into Number and chained boxes, and cycles terminate", () => 
   assert.equal(mathBoxResult(second, [...widgets.filter(item => item.id !== "out"), chain, second], states).value, 140);
   const cycle = { id: "cycle", type: "svg-connection", startWidgetId: "second", startAnchor: "G", endWidgetId: "math", endAnchor: "A" };
   assert.equal(mathBoxResult(math, [...widgets, chain, second, cycle], states).value, null);
+});
+
+const calculation = (expression, outputs = "", extra = {}) => ({ enabled: true, mode: "expression", expression, outputs, inputEnabled: false, inputTarget: "", ...extra });
+
+test("four calculations preserve legacy assignments and parse comma/semicolon output lists", () => {
+  const legacy = box();
+  const migrated = mathCalculations(legacy);
+  assert.equal(migrated.length, 4);
+  assert.equal(migrated[0].outputs, "G");
+  assert.equal(migrated[0].expression, "A - B");
+  assert.equal(migrated.filter(item => item.enabled).length, 1);
+  assert.ok(migrated.every(item => item.inputEnabled === false));
+  assert.deepEqual(parseMathPorts("e,F;H E"), ["E", "F", "H"]);
+  assert.throws(() => parseMathPorts("EF"));
+  assert.throws(() => parseMathPorts("Q"));
+});
+
+test("separate results route by outgoing port and isolate arithmetic errors", () => {
+  const math = { ...box(), dock_H: true, mathRole_H: "output", dock_I: true, mathRole_I: "output", mathCalculations: [calculation("A+B", "G"), calculation("A-B", "H"), calculation("A/0", "I"), calculation("42")] };
+  const widgets = [math, line("one", "A", "sensor.a"), line("two", "B", "sensor.c")];
+  assert.deepEqual(mathBoxResults(math, widgets, states).results.map(result => result.value), [130, 70, null, 42]);
+  for (const [port, value] of [["G", 130], ["H", 70], ["I", null]]) {
+    const output = { id: `out-${port}`, type: "svg-connection", startWidgetId: "math", startAnchor: port };
+    assert.equal(numericConnectionValue(output, [...widgets, output], states), value);
+  }
+  math.mathCalculations[0].outputs = "G;H";
+  math.mathCalculations[1].outputs = "";
+  assert.equal(numericConnectionValue({ id: "multi", type: "svg-connection", startWidgetId: "math", startAnchor: "H" }, widgets, states), 130);
+});
+
+test("internal reuse is opt-in, replaces external input and follows dependencies regardless of order", () => {
+  const math = { ...box(), dock_C: true, mathRole_C: "input", mathCalculations: [calculation("C * 2", "G"), calculation("A + B", "", { inputTarget: "C" })] };
+  const widgets = [math, line("one", "A", "sensor.a"), line("two", "B", "sensor.c")];
+  assert.equal(mathBoxResults(math, widgets, states).results[0].value, null);
+  math.mathCalculations[1].inputEnabled = true;
+  assert.equal(mathBoxResults(math, widgets, states).results[0].value, 260);
+  widgets.push(line("external", "C", "sensor.b"));
+  assert.equal(mathBoxResults(math, widgets, states).results[0].value, 260);
+  math.mathCalculations[1].inputEnabled = false;
+  assert.equal(mathBoxResults(math, widgets, states).results[0].value, 100);
+});
+
+test("assignment validation rejects input/output conflicts, duplicate writers and internal cycles", () => {
+  const math = { ...box(), dock_C: true, mathRole_C: "input", mathCalculations: [calculation("A+B", "A")] };
+  assert.match(validateMathAssignments(math).errors.join(" "), /A ist kein aktiver Ausgang/);
+  math.mathCalculations = [calculation("A", "G"), calculation("B", "G")];
+  assert.match(validateMathAssignments(math).errors.join(" "), /mehreren Rechnungen/);
+  math.mathCalculations = [calculation("A", "", { inputEnabled: true, inputTarget: "C" }), calculation("B", "", { inputEnabled: true, inputTarget: "C" })];
+  assert.match(validateMathAssignments(math).errors.join(" "), /mehrere interne Ergebnisse/);
+  math.mathCalculations = [calculation("C", "G", { inputEnabled: true, inputTarget: "C" })];
+  assert.match(validateMathAssignments(math).errors.join(" "), /Rückkopplung/);
+  assert.equal(mathBoxResults(math, [math], states).results[0].value, null);
+  math.mathCalculations = [calculation("C", "", { inputEnabled: true, inputTarget: "A" }), calculation("A", "", { inputEnabled: true, inputTarget: "C" })];
+  assert.match(validateMathAssignments(math).errors.join(" "), /Rückkopplung/);
 });

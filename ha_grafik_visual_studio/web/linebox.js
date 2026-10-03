@@ -91,7 +91,7 @@ export function lineboxOutputForConnection(line, widgets, entityStates, visited 
   for (const side of ["start", "end"]) {
     const math = widgets.find(item => item.id === line[`${side}WidgetId`] && item.type === "linebox-math");
     if (mathPortRole(math, line[`${side}Anchor`]) === "output") {
-      const result = mathBoxResult(math, widgets, entityStates, visited);
+      const result = mathBoxResult(math, widgets, entityStates, visited, line[`${side}Anchor`]);
       return { boxId: math.id, value: result.value === null ? null : side === "start" ? result.value : -result.value };
     }
     const box = widgets.find(item => item.id === line[`${side}WidgetId`] && item.type === "linebox");

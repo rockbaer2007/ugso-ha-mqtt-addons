@@ -2,7 +2,7 @@ import { getWidgetSets, getWidgetDefinition, registerWidgetSet, initializeWidget
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings } from "./connection-animation.js";
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
-import { MATH_ANCHORS, MATH_IDS, mathBoxResult, mathLeadPoint, evaluateMathExpression } from "./linebox-math.js";
+import { MATH_ANCHORS, MATH_IDS, mathPortRole, mathBoxResults, mathCalculations, validateMathAssignments, mathLeadPoint, evaluateMathExpression } from "./linebox-math.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
@@ -3206,36 +3206,39 @@ function openHtmlEditor(input) {
 }
 
 function updateMathResult(widget, widgets, element) {
-  const result = mathBoxResult(widget, widgets, state.entityStates);
-  element.textContent = result.value === null ? "—" : String(Number(result.value.toFixed(6)));
-  element.title = result.error || "Berechneter Wert";
-  element.classList.toggle("is-error", Boolean(result.error));
-  element.setAttribute("aria-label", result.error || `Ergebnis: ${element.textContent}`);
+  const evaluated = mathBoxResults(widget, widgets, state.entityStates);
+  const active = evaluated.results.map((result, index) => ({ ...result, index })).filter(result => result.enabled);
+  element.textContent = active.length === 1 ? (active[0].value === null ? "—" : String(Number(active[0].value.toFixed(6)))) : active.map(result => `R${result.index + 1}: ${result.value === null ? "—" : Number(result.value.toFixed(6))}`).join(" · ");
+  const errors = active.filter(result => result.error).map(result => `Rechnung ${result.index + 1}: ${result.error}`);
+  element.title = errors.join("; ") || "Berechnete Werte";
+  element.classList.toggle("is-error", errors.length > 0);
+  element.setAttribute("aria-label", errors.join("; ") || `Ergebnis: ${element.textContent}`);
 }
 
 function openMathDialog(widget) {
   const draft = structuredClone(widget);
+  draft.mathCalculations = mathCalculations(draft);
   const dialog = document.createElement("dialog"); dialog.className = "studio-dialog math-editor";
-  const heading = document.createElement("h2"); heading.textContent = "SVG LineBox Math · Berechnung";
-  const hint = document.createElement("p"); hint.textContent = "A–P im Uhrzeigersinn. Mehrere Leitungen je Eingang werden mit Vorzeichen summiert. Formel: + − * / und Klammern, z. B. (A + B) / C. Dezimalzahlen mit Punkt.";
-  const modeLabel = document.createElement("label"); modeLabel.textContent = "Berechnungsart ";
-  const mode = document.createElement("select");
-  for (const [value, label] of [["expression", "Eigene Formel"], ["average", "Durchschnitt aller belegten Eingänge"]]) { const option = document.createElement("option"); option.value = value; option.textContent = label; mode.append(option); }
-  mode.value = draft.mathMode || "expression"; modeLabel.append(mode);
-  const formulaLabel = document.createElement("label"); formulaLabel.textContent = "Formel ";
-  const formula = document.createElement("input"); formula.value = draft.mathExpression || "A + B"; formula.maxLength = 512; formulaLabel.append(formula);
+  const heading = document.createElement("h2"); heading.textContent = "SVG LineBox Math · Berechnungen";
+  const hint = document.createElement("p"); hint.textContent = "Vier getrennte Rechnungen. Ausgänge als Buchstabenliste, z. B. E,F;H. Eingänge A–P können in mehreren Formeln verwendet werden. Interne Übergabe ist je Rechnung zunächst aus und ersetzt am gewählten Eingang externe Leitungswerte.";
   const sizeLabel = document.createElement("label"); sizeLabel.textContent = "Quadratgröße (px) ";
   const size = document.createElement("input"); size.type = "number"; size.min = "96"; size.max = "2000"; size.value = String(widget.width || 160); sizeLabel.append(size);
   const list = document.createElement("div"); list.className = "math-port-list";
+  const calculations = document.createElement("div"); calculations.className = "math-calculation-list";
   const preview = document.createElement("p"); preview.className = "math-preview"; preview.setAttribute("aria-live", "polite");
-  const inputValues = new Map();
+  const inputValues = new Map(), resultElements = [];
   const refresh = () => {
-    draft.mathMode = mode.value; draft.mathExpression = formula.value;
-    formula.disabled = mode.value === "average";
-    const widgets = currentPage().widgets.map(item => item.id === widget.id ? draft : item);
-    const result = mathBoxResult(draft, widgets, state.entityStates);
-    preview.textContent = result.error ? result.error : `Ergebnis: ${Number(result.value.toFixed(6))}`;
-    for (const [id, element] of inputValues) element.textContent = result.values[id] === undefined ? "—" : String(Number(result.values[id].toFixed(6)));
+    const evaluated = mathBoxResults(draft, currentPage().widgets.map(item => item.id === widget.id ? draft : item), state.entityStates);
+    const warnings = [...evaluated.errors];
+    for (const id of MATH_IDS.filter(id => mathPortRole(draft, id) === "output" && !evaluated.outputs.has(id))) warnings.push(`${id}: Ausgang noch keiner Rechnung zugeordnet`);
+    preview.textContent = warnings.join("; ") || "Zuordnung gültig. Formel: + − * / und Klammern; Dezimalzahlen mit Punkt.";
+    preview.classList.toggle("is-error", evaluated.errors.length > 0);
+    for (const [id, element] of inputValues) element.textContent = evaluated.values[id] === undefined ? "—" : String(Number(evaluated.values[id].toFixed(6)));
+    for (const [index, element] of resultElements.entries()) {
+      const result = evaluated.results[index];
+      element.textContent = !result.enabled ? "Ausgeschaltet" : result.error || `Ergebnis: ${Number(result.value.toFixed(6))}`;
+      element.classList.toggle("is-error", Boolean(result.error));
+    }
   };
   for (const [id, label] of MATH_ANCHORS) {
     const row = document.createElement("label"); row.className = "math-port-row";
@@ -3249,20 +3252,58 @@ function openMathDialog(widget) {
     role.addEventListener("change", () => { draft[`mathRole_${id}`] = role.value; draft[dockPointKey(id)] = role.value !== "none"; draft.dockPointsEnabled = MATH_IDS.some(id => draft[dockPointKey(id)] === true); refresh(); });
     row.append(letter, role, value); list.append(row);
   }
-  mode.addEventListener("change", refresh); formula.addEventListener("input", refresh);
+  draft.mathCalculations.forEach((calculation, index) => {
+    const section = document.createElement("fieldset"); section.className = "math-calculation";
+    const legend = document.createElement("legend"); legend.textContent = `Rechnung ${index + 1}`; section.append(legend);
+    function control(text, key, type = "text") {
+      const label = document.createElement("label"); label.textContent = text;
+      const input = document.createElement(type === "select" ? "select" : "input");
+      if (type !== "select") input.type = type;
+      input.setAttribute("aria-label", `Rechnung ${index + 1}: ${text}`);
+      label.append(input); section.append(label);
+      input.addEventListener(type === "select" || type === "checkbox" ? "change" : "input", () => {
+        calculation[key] = type === "checkbox" ? input.checked : input.value;
+        formula.disabled = !calculation.enabled || mode.value === "average";
+        mode.disabled = outputs.disabled = transfer.disabled = !calculation.enabled;
+        target.disabled = !calculation.enabled || transfer.checked !== true;
+        refresh();
+      });
+      return input;
+    }
+    const enabled = control("Aktivieren", "enabled", "checkbox"); enabled.checked = calculation.enabled === true;
+    const mode = control("Berechnungsart", "mode", "select");
+    for (const [value, text] of [["expression", "Eigene Formel"], ["average", "Durchschnitt aller belegten Eingänge"]]) { const option = document.createElement("option"); option.value = value; option.textContent = text; mode.append(option); }
+    mode.value = calculation.mode;
+    const formula = control("Formel", "expression"); formula.value = calculation.expression; formula.maxLength = 512;
+    const outputs = control("Ausgänge (z. B. E,F;H)", "outputs"); outputs.value = calculation.outputs; outputs.maxLength = 64;
+    const transfer = control("Ergebnis intern an Eingang übergeben", "inputEnabled", "checkbox"); transfer.checked = calculation.inputEnabled === true;
+    const target = control("Interner Eingang (ein Buchstabe A–P)", "inputTarget"); target.value = calculation.inputTarget; target.maxLength = 1;
+    formula.disabled = !calculation.enabled || calculation.mode === "average";
+    mode.disabled = outputs.disabled = transfer.disabled = !calculation.enabled;
+    target.disabled = !calculation.enabled || !calculation.inputEnabled;
+    const value = document.createElement("p"); value.className = "math-calculation-result"; value.setAttribute("aria-live", "polite"); section.append(value); resultElements.push(value);
+    calculations.append(section);
+  });
   const actions = document.createElement("div"); actions.className = "dialog-actions";
   const apply = document.createElement("button"); apply.textContent = "Anwenden"; apply.type = "button";
   apply.addEventListener("click", () => {
     refresh();
     if (!Number.isFinite(Number(size.value)) || Number(size.value) < 96 || Number(size.value) > 2000) { preview.textContent = "Quadratgröße: 96 bis 2000 px"; return; }
-    if (draft.mathMode === "expression") { try { evaluateMathExpression(draft.mathExpression, Object.fromEntries(MATH_IDS.map(id => [id, 1])), true); } catch (error) { preview.textContent = error.message; return; } }
+    const assignments = validateMathAssignments(draft);
+    if (assignments.errors.length) { preview.textContent = assignments.errors.join("; "); return; }
+    if (!draft.mathCalculations.some(calculation => calculation.enabled)) { preview.textContent = "Mindestens eine Rechnung aktivieren"; return; }
+    for (const [index, calculation] of draft.mathCalculations.entries()) if (calculation.enabled && calculation.mode === "expression") {
+      try { evaluateMathExpression(calculation.expression, Object.fromEntries(MATH_IDS.map(id => [id, 1])), true); }
+      catch (error) { preview.textContent = `Rechnung ${index + 1}: ${error.message}`; return; }
+    }
     recordHistorySnapshot(); preserveDockedConnectionPositions(widget, currentPage().widgets);
-    for (const key of ["mathMode", "mathExpression", "dockPointsEnabled", ...MATH_IDS.flatMap(id => [dockPointKey(id), `mathRole_${id}`])]) widget[key] = draft[key];
+    for (const key of ["mathCalculations", "dockPointsEnabled", ...MATH_IDS.flatMap(id => [dockPointKey(id), `mathRole_${id}`])]) widget[key] = structuredClone(draft[key]);
+    widget.mathMode = draft.mathCalculations[0].mode; widget.mathExpression = draft.mathCalculations[0].expression;
     widget.width = widget.height = Math.round(Number(size.value)); dialog.close(); render();
   });
   const cancel = document.createElement("button"); cancel.textContent = "Abbrechen"; cancel.type = "button"; cancel.addEventListener("click", () => dialog.close());
-  actions.append(apply, cancel); dialog.append(heading, hint, modeLabel, formulaLabel, sizeLabel, list, preview, actions);
-  document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); refresh(); dialog.showModal(); formula.focus();
+  actions.append(apply, cancel); dialog.append(heading, hint, sizeLabel, list, calculations, preview, actions);
+  document.body.append(dialog); dialog.addEventListener("close", () => dialog.remove()); refresh(); dialog.showModal();
 }
 
 function openFilterEditor(widget) {
