@@ -1,4 +1,4 @@
-import { getWidgetSets, getWidgetDefinition, registerWidgetSet } from "./widget-registry.js";
+import { getWidgetSets, getWidgetDefinition, registerWidgetSet, initializeWidgetCaption } from "./widget-registry.js";
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation } from "./connection-animation.js";
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection } from "./dock-points.js";
@@ -391,6 +391,7 @@ function uniqueWidgetName(page, requested, excludeId = "") {
 function ensureWidgetNames(page) {
   const used = new Set(page.widgets.map(widget => String(widget.name || "").trim().toLocaleLowerCase("de")).filter(Boolean));
   for (const widget of page.widgets) {
+    initializeWidgetCaption(widget);
     if (String(widget.name || "").trim()) continue;
     let base = String(widget.title || "").trim();
     if (!base) { try { base = getWidgetDefinition(widget.type).label; } catch { base = "Widget"; } }
@@ -2476,14 +2477,15 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(renderSvgConnection(widget, activePage.widgets, page.width, page.height, selected));
     } else if (widget.type === "linebox") {
       content.classList.add("linebox-content");
-      const title = document.createElement("strong"); title.textContent = widgetDisplayName(widget);
+      const title = document.createElement("strong"); title.textContent = widget.title || "";
       const sum = lineboxInputSum(widget, activePage.widgets, state.entityStates);
       const value = document.createElement("span"); value.textContent = `Σ ${sum === null ? "—" : Number(sum.toFixed(3))}`;
       const ports = document.createElement("small");
       const inputs = CONNECTION_ANCHOR_IDS.filter(id => lineboxPortRole(widget, id) === "input").length;
       const outputs = CONNECTION_ANCHOR_IDS.filter(id => lineboxPortRole(widget, id) === "output").length;
       ports.textContent = `IN ${inputs} · OUT ${outputs}`;
-      content.append(title, value, ports);
+      if (widget.title) content.append(title);
+      content.append(value, ports);
     } else if (widget.type === "universal-button") {
       const visualStates = widget.visualStates || [];
       const currentState = displayedWidgetState(widget);

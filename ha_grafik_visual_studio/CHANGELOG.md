@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.135
+
+- Separates editor names from visible captions for all registered widget types, including future packages. New captions start empty; old stock captions are removed once while custom captions remain editable.
+- LineBox displays only its explicit caption instead of its technical editor name.
+
 ## 0.1.134
 
 - Uses the supplied folder-up SVG for parent-folder navigation in the Files window.

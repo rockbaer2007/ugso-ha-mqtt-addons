@@ -11,7 +11,21 @@ export function registerWidgetSet(set) {
   }
   const registered = structuredClone(set);
   sets.set(set.id, registered);
-  for (const widget of registered.widgets) types.set(widget.type, widget);
+  for (const widget of registered.widgets) {
+    widget.legacyDefaultTitle = widget.defaults.title;
+    widget.defaults.title = "";
+    widget.defaults.captionInitialized = true;
+    types.set(widget.type, widget);
+  }
+}
+
+/** Remove old automatic captions once; subsequent explicit edits are retained. */
+export function initializeWidgetCaption(widget) {
+  if (widget.captionInitialized === true) return;
+  const definition = types.get(widget.type);
+  if (!definition) return;
+  if (widget.title === definition.legacyDefaultTitle || widget.title === definition.label) widget.title = "";
+  widget.captionInitialized = true;
 }
 
 export function getWidgetSets() { return [...sets.values()]; }
