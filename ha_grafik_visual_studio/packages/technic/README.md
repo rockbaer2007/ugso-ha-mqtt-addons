@@ -1,11 +1,17 @@
-# UGSo Technic 1.5.0
+# UGSo Technic 1.6.0
 
 Inspiriert von den ioBroker-Technic-Widgets von Sefina-DS:
 https://github.com/Sefina-DS/ioBroker.vis-2-widgets-technic
 
-Eigene Umsetzung für Home Assistant. Enthält Window – Wall, Switch – Boolean, Dimmer – Light, Room – Overlay, Clock – Date und Thermostat – Temperature.
-Das verbleibende StatusList-Widget ist noch nicht enthalten.
-Requires Studio 0.1.202 or newer. Install ugso.technic.wg through Settings > Widget packages.
+Eigene Umsetzung für Home Assistant. Enthält alle sieben Widget-Typen: Window – Wall, Switch – Boolean, Dimmer – Light, Room – Overlay, Clock – Date, Thermostat – Temperature und Status – List.
+Requires Studio 0.1.203 or newer. Install ugso.technic.wg through Settings > Widget packages.
+
+Status – List: up to ten read-only HA rows with numeric units/decimals/colors or
+Boolean ON/OFF text/colors and extra comma-separated entities with AND/OR.
+Unknown values remain unknown. Default row count 0, value-column width 90px,
+additional left padding 8px, size 160x120. Typography comes from CSS Font and Text.
+Long text is ellipsized with full tooltips; overflowing rows scroll. Clicks never
+write HA states or hide labels. All settings remain in project/widget exports.
 
 Thermostat – Temperature: target climate or input_number, optional actual temperature,
 humidity, actuator and cooling entities. Blank read bindings fall back to climate

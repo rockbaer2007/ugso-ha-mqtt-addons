@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.203
+
+- Complete Technic 1.6.0 with Status – List: up to ten HA status rows, numeric formatting, Boolean AND/OR inputs, ON/OFF colors/text, configurable value-column offset and left padding.
+- Inherit CSS typography, preserve labels and exports, keep unknown values explicit and scroll overflowing rows. Published widget definitions remain unchanged.
+
 ## 0.1.202
 
 - Add Thermostat – Temperature to Technic 1.5.0: target/actual temperature, humidity, actuator and cooling bindings, configurable 300-degree dial, bounds, step and colors. Fixed HA actions validate live capabilities and limits; dragging commits once and captions remain visible.

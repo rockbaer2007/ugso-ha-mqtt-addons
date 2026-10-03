@@ -11,6 +11,7 @@ import { technicLightBindings, renderTechnicLight } from "./technic-light.js";
 import { technicRoomBindings, technicRoomUrl, renderTechnicRoom, syncTechnicRoom } from "./technic-room.js";
 import { renderTechnicClock, updateTechnicClocks } from "./technic-clock.js";
 import { temperatureBindings, renderTemperature, syncTemperatureHistory } from "./technic-temperature.js";
+import { renderTechnicStatusList } from "./technic-status-list.js";
 import { createMeteoredController } from "./meteored.js";
 const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
@@ -678,7 +679,7 @@ function editorLiveEntityIds() {
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-temperature" ? temperatureBindings(widget) : []),
-    ...(getWidgetDefinition(widget.type).render?.kind === "technic-room" ? technicRoomBindings(widget) : []),
+    ...(["technic-room", "technic-status-list"].includes(getWidgetDefinition(widget.type).render?.kind) ? technicRoomBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "heating-params" ? heatingParamsBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "window-overview" ? [widget.openCountEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "chart" ? chartBindings(widget).map(s => s.entityId) : []),
@@ -723,7 +724,7 @@ function runtimeLiveEntityIds() {
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-temperature" ? temperatureBindings(widget) : []),
-    ...(getWidgetDefinition(widget.type).render?.kind === "technic-room" ? technicRoomBindings(widget) : []),
+    ...(["technic-room", "technic-status-list"].includes(getWidgetDefinition(widget.type).render?.kind) ? technicRoomBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "heating-params" ? heatingParamsBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "window-overview" ? [widget.openCountEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "chart" ? chartBindings(widget).map(s => s.entityId) : []),
@@ -3431,6 +3432,8 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.style.background = widget.colorBg || "transparent";
       content.style.borderRadius = `${Math.max(0, Number(widget.borderRadius) || 0)}px`;
       content.append(renderTechnicClock(widget, document));
+    } else if (getWidgetDefinition(widget.type).render?.kind === "technic-status-list") {
+      content.append(renderTechnicStatusList(widget, document, { states: state.entityStates, locale: document.documentElement.lang || "de" }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-room") {
       const target = state.project.pages.find(page => page.id === widget.targetPage);
       const chain = [...(params.get("chain") || "").split(",").filter(Boolean), ...surfaceChain];
@@ -4197,7 +4200,7 @@ function field(descriptor, widget) {
     aliasPreview.hidden = !showAlias;
     aliasPreview.textContent = alias ? alias.slice(0, 3) : "";
   };
-  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || getWidgetDefinition(widget.type).render?.kind === "technic-room" && /^rowEntityId\d+$/.test(descriptor.key) || getWidgetDefinition(widget.type).render?.kind === "chart" && /^seriesEntityId\d+$/.test(descriptor.key)) {
+  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || ["technic-room", "technic-status-list"].includes(getWidgetDefinition(widget.type).render?.kind) && /^rowEntityId\d+$/.test(descriptor.key) || getWidgetDefinition(widget.type).render?.kind === "chart" && /^seriesEntityId\d+$/.test(descriptor.key)) {
     const row = document.createElement("span"); row.className = "property-entity-row";
     const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button";
     picker.textContent = "…";
@@ -4269,7 +4272,7 @@ function field(descriptor, widget) {
     if (getWidgetDefinition(widget.type).render?.kind === "technic-switch" && descriptor.key === "entityId") void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "technic-light" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "technic-temperature" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
-    if (getWidgetDefinition(widget.type).render?.kind === "technic-room") { if (/EntityId(s)?\d+$/.test(descriptor.key) || descriptor.key === "rowCount") void refreshEditorLiveStates(); if (descriptor.key === "rowCount") renderProperties(); }
+    if (["technic-room", "technic-status-list"].includes(getWidgetDefinition(widget.type).render?.kind)) { if (/EntityId(s)?\d+$/.test(descriptor.key) || descriptor.key === "rowCount") void refreshEditorLiveStates(); if (descriptor.key === "rowCount") renderProperties(); }
     if (getWidgetDefinition(widget.type).render?.kind === "room-table" && ["entityId", "tableAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "window-overview" && ["entityId", "tableAttribute", "openCountEntityId", "openCountAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "chart" && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || ["dataCount", "showWeekData", "weatherSource", "forecastType", "forecastAttribute"].includes(descriptor.key))) void refreshEditorLiveStates();
@@ -4375,7 +4378,7 @@ function renderProperties() {
     const labels = { row: "Nebeneinander", column: "Untereinander", left: "Links", center: "Mitte", right: "Rechts", "24h": "24 Stunden", "12h": "12 Stunden", de: "Deutsch", en: "English", fr: "Français", es: "Español", it: "Italiano", nl: "Nederlands", DMY: "Tag-Monat-Jahr", MDY: "Monat-Tag-Jahr", YMD: "Jahr-Monat-Tag", ".": "Punkt (.)", "-": "Bindestrich (-)", "/": "Schrägstrich (/)", space: "Leerzeichen", numeric: "Numerisch", short: "Kurz", long: "Lang", full: "4-stellig", off: "Aus" };
     groups = groups.map(group => ({ ...group, fields: group.fields.map(descriptor => descriptor.key === "colorBg" ? { ...descriptor, optionalColor: true } : descriptor.type === "select" ? { ...descriptor, options: descriptor.options.map(value => ({ value, label: descriptor.key === "yearFormat" && value === "short" ? "2-stellig" : labels[value] || value })) } : descriptor) }));
   }
-  if (getWidgetDefinition(widget.type).render?.kind === "technic-room") {
+  if (["technic-room", "technic-status-list"].includes(getWidgetDefinition(widget.type).render?.kind)) {
     const labels = { left: "Links", center: "Mitte", right: "Rechts", top: "Oben", middle: "Mitte", bottom: "Unten", number: "Zahl", bool: "Wahr / Falsch", and: "UND", or: "ODER", popup: "Popup", switchView: "Seite wechseln" };
     // Keep saved group keys stable when changing the visible row count.
     groups = groups.map((group, index) => ({ ...group, id: propertyGroupKey(group, index) }))

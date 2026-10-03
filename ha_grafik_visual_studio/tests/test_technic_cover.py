@@ -54,7 +54,7 @@ class TechnicTests(unittest.TestCase):
     def test_package_includes_license_and_rejects_active_or_oversized_docs(self):
         path = Path(__file__).resolve().parents[1] / "packages/technic/ugso.technic.wg"
         package = read_package_zip(path.read_bytes())
-        self.assertEqual(package["id"], "ugso.technic"); self.assertEqual(len(package["widgets"]), 6)
+        self.assertEqual(package["id"], "ugso.technic"); self.assertEqual(len(package["widgets"]), 7)
         from widget_packages import validate_additive_update
         import hashlib
         # Frozen Window – Wall definition from the published 1.0.0 package.
@@ -70,6 +70,14 @@ class TechnicTests(unittest.TestCase):
         self.assertEqual(hashlib.sha256(json.dumps(package["widgets"][4], sort_keys=True, ensure_ascii=True).encode()).hexdigest(), "ad6d93651543495b8bbce49cf6fdac4c107277dd491de5231ba496edab6657ca")
         validate_additive_update({**package, "version": "1.4.0", "widgets": package["widgets"][:5]}, package)
         self.assertEqual(package["widgets"][5]["render"]["kind"], "technic-temperature")
+        self.assertEqual(hashlib.sha256(json.dumps(package["widgets"][5], sort_keys=True, ensure_ascii=True).encode()).hexdigest(), "4f986864b93866e4835663796171428271b78d9e29ce827727de45b641f1e950")
+        validate_additive_update({**package, "version": "1.5.0", "widgets": package["widgets"][:6]}, package)
+        status = package["widgets"][6]
+        self.assertEqual(status["render"]["kind"], "technic-status-list")
+        self.assertEqual(status["defaults"]["valueOffset"], 90)
+        self.assertEqual(status["defaults"]["containerPaddingLeft"], 8)
+        self.assertIn("extraEntityIds10", status["defaults"])
+        self.assertEqual(len(status["propertyGroups"]), 12)
         room = package["widgets"][3]
         self.assertEqual(room["render"]["kind"], "technic-room")
         self.assertEqual(len([group for group in room["propertyGroups"] if group["label"].startswith("Statuszeile [")]), 10)
