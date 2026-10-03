@@ -1455,9 +1455,34 @@ function duplicateSelectedWidget() {
   page.widgets.push(...copies); state.selectedIds = copies.map(widget => widget.id); state.selectedId = state.selectedIds[0]; render();
 }
 
-function deleteSelectedWidget() {
+let suppressWidgetDeleteUntil = 0;
+
+async function deleteSelectedWidget() {
   const page = currentPage();
-  const removedIds = new Set(selectedWidgets().map(widget => widget.id));
+  const widgets = selectedWidgets();
+  if (!widgets.length) return;
+  if (Date.now() >= suppressWidgetDeleteUntil) {
+    const confirmed = await new Promise(resolve => {
+      const dialog = document.createElement("dialog"); dialog.className = "studio-dialog widget-delete-dialog";
+      const heading = document.createElement("h2"); heading.id = "widget-delete-heading"; heading.textContent = uiText("Widgets löschen"); dialog.setAttribute("aria-labelledby", heading.id);
+      const message = document.createElement("p"); message.textContent = uiText("Die Widgets {names} wirklich löschen?", { names: widgets.map(widget => widget.id).join(", ") });
+      const label = document.createElement("label"); label.className = "widget-delete-suppress";
+      const suppress = document.createElement("input"); suppress.type = "checkbox";
+      label.append(suppress, document.createTextNode(uiText("Frage für die nächsten 5 Minuten unterdrücken")));
+      const actions = document.createElement("div"); actions.className = "dialog-actions";
+      const remove = document.createElement("button"); remove.type = "button"; remove.className = "primary"; remove.textContent = "✓ " + uiText("Löschen");
+      const cancel = document.createElement("button"); cancel.type = "button"; cancel.textContent = "× " + uiText("Abbrechen");
+      remove.addEventListener("click", () => { if (suppress.checked) suppressWidgetDeleteUntil = Date.now() + 5 * 60 * 1000; dialog.close("delete"); });
+      cancel.addEventListener("click", () => dialog.close("cancel"));
+      dialog.addEventListener("close", () => { const accepted = dialog.returnValue === "delete"; dialog.remove(); resolve(accepted); }, { once: true });
+      actions.append(remove, cancel); dialog.append(heading, message, label, actions); document.body.append(dialog); dialog.showModal(); cancel.focus();
+    });
+    if (!confirmed) return;
+  }
+  removeWidgets(page, new Set(widgets.map(widget => widget.id)));
+}
+
+function removeWidgets(page, removedIds) {
   if (!removedIds.size) return;
   recordHistorySnapshot();
   page.widgets = page.widgets.filter((widget) => !removedIds.has(widget.id));
@@ -1497,7 +1522,7 @@ function copySelectedWidgets(cut = false) {
   const widgets = selectedWidgets(); if (!widgets.length) return;
   state.widgetClipboard = structuredClone(widgets);
   $("#status").textContent = `${widgets.length} Widget(s) ${cut ? "ausgeschnitten" : "kopiert"}`;
-  if (cut) deleteSelectedWidget(); else renderWidgetFinder();
+  if (cut) removeWidgets(currentPage(), new Set(widgets.map(widget => widget.id))); else renderWidgetFinder();
 }
 
 function pasteWidgets() {

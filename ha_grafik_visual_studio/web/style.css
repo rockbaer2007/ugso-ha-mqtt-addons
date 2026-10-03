@@ -460,6 +460,13 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .settings-path-row button { padding: 4px; }
 .studio-dialog input { min-width: 0; padding: 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 10px; }
+.widget-delete-dialog { width: min(540px, calc(100vw - 24px)); padding: 24px; }
+.widget-delete-dialog h2 { margin: 0 0 24px; font-size: 22px; }
+.widget-delete-dialog p { overflow-wrap: anywhere; }
+.widget-delete-suppress { display: flex; align-items: center; gap: 10px; }
+.widget-delete-suppress input { width: 20px; height: 20px; flex-shrink: 0; }
+.widget-delete-dialog .dialog-actions { margin-top: 36px; }
+.widget-delete-dialog .dialog-actions button { width: 145px; min-height: 40px; }
 .objects-dialog { width: min(90vw, 1600px); height: 75vh; max-height: 75vh; }
 .entities-dialog { box-sizing: border-box; width: 90vw; height: 90vh; max-height: 90vh; }
 .entities-dialog[open] { display: flex; flex-direction: column; gap: 8px; }
