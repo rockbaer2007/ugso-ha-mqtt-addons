@@ -21,6 +21,13 @@
 .event-calendar-legend span { display: inline-flex; gap: 5px; align-items: center; overflow-wrap: anywhere; }
 .event-calendar-legend i { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .event-calendar-notice { font-size: 11px; color: #FF7777; overflow-wrap: anywhere; max-height: 48px; overflow: auto; flex-shrink: 0; }
+.radial-slider { position: relative; width: 100%; height: 100%; touch-action: none; outline: none; }
+.radial-slider > svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.radial-slider[aria-disabled="false"] { cursor: pointer; }
+.radial-slider:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.radial-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; width: 65%; max-height: 65%; overflow: hidden; pointer-events: none; }
+.radial-value, .radial-label { line-height: 1.2; white-space: nowrap; }
+.radial-label { overflow: hidden; text-overflow: ellipsis; }
 .styled-switch { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 100%; min-width: 0; cursor: pointer; }
 .styled-switch.position-start { flex-direction: row-reverse; }
 .styled-switch.position-top { flex-direction: column-reverse; }

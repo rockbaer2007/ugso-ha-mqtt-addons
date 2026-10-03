@@ -26,6 +26,7 @@ import { tableEntryGroups } from "./widget-sets/interactive-table.js";
 import { beginMarquees, finishMarquees, renderMarquee } from "./marquee.js";
 import { renderValueList } from "./interactive-value-list.js";
 import { renderStyledSwitch, SWITCH_STYLE_GROUPS } from "./styled-switch.js";
+import { renderRadialSlider, updateRadialSlider, RADIAL_STYLE_GROUPS } from "./radial-slider.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
 import { migrationHint } from "./migration-hints.js";
@@ -696,13 +697,19 @@ function stageRuntimeEntityValue(entityId, value) {
   if (runtimeEffectsFrame) return;
   runtimeEffectsFrame = requestAnimationFrame(() => {
     runtimeEffectsFrame = 0;
-    if (visibleWidgets().some(widget => widget.type === "value-converter" || widget.dataInputEnabled === true)) { renderStage(); return; }
+    if (visibleWidgets().some(widget => widget.type === "value-converter" || widget.dataInputEnabled === true)) {
+      if (document.querySelector(".radial-slider[data-dragging='true']")) { runtimeRenderDeferred = true; return; }
+      renderStage(); return;
+    }
     for (const surface of visibleTabSurfaces(state.project, currentPage(), activeTabIndex)) {
     const widgets = surface.widgets;
     for (const widget of widgets) {
       if (widget.type === "svg-connection") {
         const content = document.getElementById(widget.id)?.querySelector(".widget-content");
         if (content) updateRuntimeConnectionVisual(widget, widgets, content);
+      } else if (widget.type === "radial-slider" && widget.entityId) {
+        const root = document.getElementById(widget.id)?.querySelector(".radial-slider");
+        if (root && !root.dataset.dragging) updateRadialSlider(root, widget, styledSliderValue(widget, state.entityStates[widget.entityId]));
       } else if (widget.type === "styled-slider" && widget.entityId) {
         const root = document.getElementById(widget.id)?.querySelector(".styled-slider");
         if (root && !root.querySelector("input")?.dataset.dragging) updateStyledSlider(root, widget, styledSliderValue(widget, state.entityStates[widget.entityId]));
@@ -758,7 +765,7 @@ function scheduleLineboxHelperOutputs() {
 }
 
 function renderRuntimeStageWhenReady() {
-  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true']") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true']")) {
+  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true'], .radial-slider[data-dragging='true']") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true']")) {
     runtimeRenderDeferred = true;
     return;
   }
@@ -1606,6 +1613,7 @@ function cloneWidgetForInsert(source, page, idMap) {
   remapUniversalReferences(copy, idMap);
   if (copy.type === "styled-checkbox" && idMap.has(copy.styleFromWidget)) copy.styleFromWidget = idMap.get(copy.styleFromWidget);
   if (copy.type === "styled-switch") for (const [prefix] of SWITCH_STYLE_GROUPS) if (idMap.has(copy[`${prefix}FromWidget`])) copy[`${prefix}FromWidget`] = idMap.get(copy[`${prefix}FromWidget`]);
+  if (copy.type === "radial-slider") for (const [prefix] of RADIAL_STYLE_GROUPS) if (idMap.has(copy[`${prefix}FromWidget`])) copy[`${prefix}FromWidget`] = idMap.get(copy[`${prefix}FromWidget`]);
   if (copy.type === "styled-slider") for (const key of ["sliderTrackFromWidget", "sliderThumbFromWidget"]) if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
   if (copy.type === "interactive-table") for (const [, key] of TABLE_STYLE_GROUPS) if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
   if (copy.type === "calendar") for (const [prefix] of CALENDAR_STYLES) {
@@ -2914,6 +2922,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (widget.type === "styled-slider") {
       content.style.overflow = "visible";
       content.append(renderStyledSlider(widget, document, { runtime: runtimeMode, entry: state.entityStates[widget.entityId], widgets: allProjectWidgets(state.project), label: uiText("Schieberegler"), input: value => { if (widget.entityId) stageRuntimeEntityValue(widget.entityId, value); else widget.value = value; }, commit: value => { if (widget.entityId) void writeRuntimeHelperValue(widget.entityId, value); }, dragEnd: () => { if (runtimeRenderDeferred) renderRuntimeStageWhenReady(); } }));
+    } else if (widget.type === "radial-slider") {
+      content.style.overflow = "visible";
+      content.append(renderRadialSlider(widget, document, { runtime: runtimeMode, entry: state.entityStates[widget.entityId], widgets: allProjectWidgets(state.project), label: uiText("Radialer Schieberegler"), input: value => { if (widget.entityId) stageRuntimeEntityValue(widget.entityId, value); else widget.value = value; }, commit: value => { if (widget.entityId) void writeRuntimeHelperValue(widget.entityId, value); }, dragEnd: () => { if (runtimeRenderDeferred) renderRuntimeStageWhenReady(); } }));
     } else if (widget.type === "slider") {
       const range = document.createElement("input"); range.type = "range";
       range.className = "widget-slider-input";

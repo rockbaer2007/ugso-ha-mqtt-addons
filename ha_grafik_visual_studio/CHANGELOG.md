@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.181
+
+- Add Radial Slider with configurable domain, steps, clockwise start/end angles, pointer and keyboard controls, centered value/label and read-only display.
+- Provide three neutral CSS groups; inherit track/thumb styling independently and retain references when cloning. Keep active pointer gestures stable during HA refreshes.
+- Reuse numeric helper writes, support cancelled drags without writes and include all settings in exports and illustrated DE/EN documentation.
+
 ## 0.1.180
 
 - Add Interactive Switch with configurable false/true pairs, state labels and four label positions; reuse compatible HA switch/helper writes.
