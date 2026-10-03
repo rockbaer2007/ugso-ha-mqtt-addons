@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.180
+
+- Add Interactive Switch with configurable false/true pairs, state labels and four label positions; reuse compatible HA switch/helper writes.
+- Provide neutral track/thumb CSS groups with independent inheritance, state colors, sizing, rounding and state-specific shadows; remap references when cloning widgets.
+- Keep editor and unsupported/unavailable HA sources non-writing; include complete exported settings and bilingual illustrated documentation.
+
 ## 0.1.179
 
 - Add Interactive Value List with manual or HA state text, literal separators including newline/tab escapes, optional trimming and empty entries.

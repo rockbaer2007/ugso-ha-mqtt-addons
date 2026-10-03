@@ -21,6 +21,20 @@
 .event-calendar-legend span { display: inline-flex; gap: 5px; align-items: center; overflow-wrap: anywhere; }
 .event-calendar-legend i { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .event-calendar-notice { font-size: 11px; color: #FF7777; overflow-wrap: anywhere; max-height: 48px; overflow: auto; flex-shrink: 0; }
+.styled-switch { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 100%; min-width: 0; cursor: pointer; }
+.styled-switch.position-start { flex-direction: row-reverse; }
+.styled-switch.position-top { flex-direction: column-reverse; }
+.styled-switch.position-bottom { flex-direction: column; }
+.styled-switch-text { min-width: 0; min-height: 0; max-height: 100%; overflow: auto; overflow-wrap: anywhere; white-space: pre-wrap; }
+.styled-switch.position-top .styled-switch-text, .styled-switch.position-bottom .styled-switch-text { flex: 0 1 auto; }
+.styled-switch-visual { position: relative; display: block; flex: 0 0 auto; }
+.styled-switch-track { position: absolute; width: 100%; top: 50%; transform: translateY(-50%); }
+.styled-switch-thumb { position: absolute; top: 50%; left: 0; }
+.styled-switch input { position: absolute; inset: 0; opacity: 0; margin: 0; padding: 0; width: 100%; height: 100%; min-width: 0; min-height: 0; cursor: pointer; }
+.styled-switch.switch-disabled { cursor: default; }
+.styled-switch.switch-disabled .styled-switch-visual { opacity: .65; }
+.styled-switch input:disabled { cursor: default; }
+.styled-switch:focus-within .styled-switch-visual { outline: 2px solid var(--accent); outline-offset: 3px; }
 .styled-checkbox { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 100%; min-width: 0; cursor: pointer; }
 .styled-checkbox.position-start { flex-direction: row-reverse; }
 .styled-checkbox.position-top { flex-direction: column-reverse; }

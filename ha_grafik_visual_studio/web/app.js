@@ -25,6 +25,7 @@ import { renderInteractiveTable, tableDefaultSort, TABLE_STYLE_GROUPS } from "./
 import { tableEntryGroups } from "./widget-sets/interactive-table.js";
 import { beginMarquees, finishMarquees, renderMarquee } from "./marquee.js";
 import { renderValueList } from "./interactive-value-list.js";
+import { renderStyledSwitch, SWITCH_STYLE_GROUPS } from "./styled-switch.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
 import { migrationHint } from "./migration-hints.js";
@@ -1604,6 +1605,7 @@ function cloneWidgetForInsert(source, page, idMap) {
   copy.id = idMap.get(oldId) || `widget-${state.nextId++}`;
   remapUniversalReferences(copy, idMap);
   if (copy.type === "styled-checkbox" && idMap.has(copy.styleFromWidget)) copy.styleFromWidget = idMap.get(copy.styleFromWidget);
+  if (copy.type === "styled-switch") for (const [prefix] of SWITCH_STYLE_GROUPS) if (idMap.has(copy[`${prefix}FromWidget`])) copy[`${prefix}FromWidget`] = idMap.get(copy[`${prefix}FromWidget`]);
   if (copy.type === "styled-slider") for (const key of ["sliderTrackFromWidget", "sliderThumbFromWidget"]) if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
   if (copy.type === "interactive-table") for (const [, key] of TABLE_STYLE_GROUPS) if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
   if (copy.type === "calendar") for (const [prefix] of CALENDAR_STYLES) {
@@ -2863,6 +2865,10 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.style.overflow = "visible";
       const ready = !helperWriteQueue.has(widget.entityId) && [false, true].every(checked => stateElementReady(widget, checkboxValue(widget, checked)));
       content.append(renderCheckbox(widget, document, { runtime: runtimeMode, ready, value: displayedWidgetState(widget), entry: state.entityStates[widget.entityId], widgets: allProjectWidgets(state.project), write: value => setRuntimeStateElement(widget, value) }));
+    } else if (widget.type === "styled-switch") {
+      content.style.overflow = "visible";
+      const ready = !helperWriteQueue.has(widget.entityId) && [false, true].every(checked => stateElementReady(widget, checkboxValue(widget, checked)));
+      content.append(renderStyledSwitch(widget, document, { runtime: runtimeMode, ready, value: displayedWidgetState(widget), entry: state.entityStates[widget.entityId], widgets: allProjectWidgets(state.project), write: value => setRuntimeStateElement(widget, value) }));
     } else if (widget.type === "checkbox") {
       const label = document.createElement("label"); label.className = "widget-checkbox";
       const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = isOn(displayedWidgetState(widget));
