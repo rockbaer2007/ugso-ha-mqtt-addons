@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.147
+
+- New Bool Checkbox widgets start with all CSS groups disabled, empty HTML additions and autofocus disabled. Existing configurations remain unchanged.
+- Documented prepended/appended HTML, runtime autofocus and Home Assistant checkbox controls in German and English.
+
 ## 0.1.146
 
 - Bool HTML adds prepended/appended HTML and HTML-editor controls for false/true content. Existing contents remain compatible.

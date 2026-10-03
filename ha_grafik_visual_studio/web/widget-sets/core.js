@@ -354,6 +354,8 @@ registerWidgetSet({
     const data = widget.propertyGroups.find(group => ["Daten", "Allgemein"].includes(group.label));
     const add = (...fields) => data?.fields.push(...fields);
     if (widget.type === "checkbox") {
+      Object.assign(widget.defaults, { prefix: "", suffix: "", autofocus: false });
+      widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
       data.fields = data.fields.filter(field => !["suffixSingular", "suffixPlural"].includes(field.key));
       add({ label: "HTML anhängen", key: "suffix" }, { label: "Autofokus", key: "autofocus", type: "checkbox", default: false });
     }
