@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.159
+
+- Dashboard in widget always displays its HA dependency and external-runtime export limitation in the widget settings, independently of optional migration hints.
+- Exporting widgets containing a dashboard, including dashboards in their own tab surfaces, shows the affected widgets and offers Export anyway or Cancel. Dashboard contents and browser authentication are not included in the JSON export.
+
 ## 0.1.158
 
 - New Dashboard in widget under Special embeds HA dashboards at 32..800 by 32..640px. Dashboard selection reads Lovelace panel titles/paths; optional view and HA base URL support ingress and direct access.

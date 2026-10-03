@@ -1,9 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { dashboardUrl, dashboardSize } from "../web/dashboard-widget.js";
+import { dashboardUrl, dashboardSize, dashboardExportWidgets } from "../web/dashboard-widget.js";
 import { getWidgetDefinition } from "../web/widget-registry.js";
 import "../web/widget-sets/core.js";
 import "../web/widget-sets/special.js";
+
+test("Export notices include dashboards nested in own tabs but exclude ordinary widgets", () => {
+  const dashboard = { type: "dashboard-in-widget", id: "nested-dashboard" };
+  const widgets = [{ type: "number" }, { type: "tabs", tabSurfaces: [null, { widgets: [{ type: "tabs", tabSurfaces: [{ widgets: [dashboard] }] }] }] }];
+  assert.deepEqual(dashboardExportWidgets(widgets), [dashboard]);
+  assert.deepEqual(dashboardExportWidgets([{ type: "number" }]), []);
+});
 
 test("Dashboard targets use the HA origin and optional view without credentials", () => {
   assert.equal(dashboardUrl({ dashboardPath: "/lovelace" }, "https://ha.example.org"), "https://ha.example.org/lovelace");

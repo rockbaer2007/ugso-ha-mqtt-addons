@@ -532,6 +532,7 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .settings-path-row button { padding: 4px; }
 .studio-dialog input { min-width: 0; padding: 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--bg); }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 10px; }
+.dashboard-export-dialog .dialog-actions button { flex: 0 1 145px; min-height: 32px; }
 #files-search { width: 100%; margin: 8px 0; }
 .object-search-path { display: block; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; white-space: normal; }
 .widget-delete-dialog { width: min(540px, calc(100vw - 24px)); padding: 24px; }

@@ -14,7 +14,7 @@ import { barDisplay } from "./bar-display.js";
 import { filterEntries, defaultFilters, filterSelected, chooseFilter, filterHex } from "./filter-widget.js";
 import { stringDisplayValue } from "./string-display.js";
 import { inputValueDelay, inputValueSubmission } from "./input-value.js";
-import { dashboardSize, dashboardUrl } from "./dashboard-widget.js";
+import { dashboardSize, dashboardUrl, dashboardExportWidgets, DASHBOARD_EXPORT_NOTICE } from "./dashboard-widget.js";
 const inputValueDrafts = new Map();
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
@@ -1653,10 +1653,31 @@ function changeSelectedWidgetLayer(direction) {
   $("#status").textContent = `Widget ${widget.id}: z-index ${widget.layer}`;
 }
 
-function exportSelectedWidget() {
+async function exportSelectedWidget() {
   const widget = currentPage().widgets.find((item) => item.id === state.selectedId);
   if (!widget) return;
   const widgets = selectedWidgets();
+  const dashboards = dashboardExportWidgets(widgets.length ? widgets : [widget]);
+  if (dashboards.length) {
+    const proceed = await new Promise(resolve => {
+      const dialog = document.createElement("dialog"); dialog.className = "studio-dialog dashboard-export-dialog";
+      const heading = document.createElement("h2"); heading.textContent = uiText("Dashboard beim Export");
+      const hint = document.createElement("p"); hint.className = "property-hint"; hint.textContent = uiText(DASHBOARD_EXPORT_NOTICE);
+      const list = document.createElement("ul");
+      for (const dashboard of dashboards) {
+        const item = document.createElement("li"); item.textContent = `${dashboard.title || uiText("HA-Dashboard")} · ${dashboard.id}`; list.append(item);
+      }
+      const actions = document.createElement("div"); actions.className = "dialog-actions";
+      for (const [label, value] of [["Trotzdem exportieren", "export"], ["Abbrechen", "cancel"]]) {
+        const button = document.createElement("button"); button.type = "button"; button.textContent = uiText(label);
+        button.addEventListener("click", () => dialog.close(value)); actions.append(button);
+      }
+      dialog.append(heading, hint, list, actions); document.body.append(dialog);
+      dialog.addEventListener("close", () => { const accepted = dialog.returnValue === "export"; dialog.remove(); resolve(accepted); }, { once: true });
+      dialog.showModal();
+    });
+    if (!proceed) return;
+  }
   const blob = new Blob([`${JSON.stringify(widgets.length > 1 ? { schemaVersion: 1, widgets } : { schemaVersion: 1, widget }, null, 2)}\n`], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a"); link.href = url; link.download = `${widgets.length > 1 ? "widget-group" : widget.type}-${widget.id}.json`; link.click();
@@ -3922,6 +3943,10 @@ function renderProperties() {
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
   const updateHeading = () => { heading.textContent = `${widgetDisplayName(widget)} — ${getWidgetDefinition(widget.dataFlowVariant || widget.type).label} · ${widget.id}`; };
   updateHeading(); panel.append(heading);
+  if (widget.type === "dashboard-in-widget") {
+    const hint = document.createElement("p"); hint.className = "property-hint dashboard-export-hint";
+    hint.textContent = uiText(DASHBOARD_EXPORT_NOTICE); panel.append(hint);
+  }
   if (widget.type === "linebox-math") {
     const edit = document.createElement("button"); edit.type = "button"; edit.textContent = "Berechnung bearbeiten";
     edit.addEventListener("click", () => openMathDialog(widget)); panel.append(edit);
