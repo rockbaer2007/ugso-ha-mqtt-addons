@@ -2933,7 +2933,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(value);
       if (widget.type === "gauge") content.classList.add("widget-gauge");
     }
-    if (["time-value", "timestamp-value", "timestamp", "last-changed", "value-list-text", "value-list-html", "value-list-html-style", "bool-select", "image-source", "ackflag-html"].includes(widget.type)) {
+    if (["time-value", "timestamp-value", "timestamp", "last-changed", "value-list-text", "value-list-html", "value-list-html-style", "bool-display", "bool-select", "image-source", "ackflag-html"].includes(widget.type)) {
       const prefix = document.createElement("span"); appendSafeHtml(prefix, widget.prefix || ""); content.prepend(prefix);
       appendSafeHtml(content, widget.suffix || "");
     }

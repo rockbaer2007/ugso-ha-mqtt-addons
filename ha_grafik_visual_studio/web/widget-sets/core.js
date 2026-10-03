@@ -101,7 +101,7 @@ const basicDataWidget = (type, label, icon, defaults, dataFields, hint = "Ohne E
   propertyGroups: [
     metadata(), visibility(),
     { label: "Daten", ...(hint ? { hint } : {}), fields: dataFields },
-    geometry(), ...cssGroups().map(group => ["value-list-html", "value-list-html-style"].includes(type) ? { ...group, defaultEnabled: false } : group),
+    geometry(), ...cssGroups().map(group => ["value-list-html", "value-list-html-style", "bool-display"].includes(type) ? { ...group, defaultEnabled: false } : group),
   ],
 });
 const dateFormats = ["YYYY-MM-DD HH:mm:ss", "DD.MM.YYYY HH:mm:ss", "DD.MM.YYYY HH:mm", "YYYY-MM-DD", "HH:mm:ss"];
@@ -289,9 +289,9 @@ registerWidgetSet({
       { label: type !== "value-list-text" ? "Testwert (nur Editor)" : "Vorschau-Index", key: "testIndex", type: type !== "value-list-text" ? "select" : "number", min: 0 },
       ...htmlAdditions(),
     ])),
-    basicDataWidget("bool-display", "Bool HTML", "⇄", { title: "Bool HTML", entityId: "", state: false, htmlTrue: "<strong>Ein</strong>", htmlFalse: "Aus" }, [
+    basicDataWidget("bool-display", "Bool HTML", "⇄", { title: "Bool HTML", entityId: "", state: false, htmlTrue: "", htmlFalse: "", prefix: "", suffix: "" }, [
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Testzustand", key: "state", type: "select", options: [{ value: "false", label: "Aus" }, { value: "true", label: "Ein" }] },
-      { label: "HTML für Ein", key: "htmlTrue", type: "textarea" }, { label: "HTML für Aus", key: "htmlFalse", type: "textarea" },
+      ...htmlAdditions(), { label: "HTML bei 'false'", key: "htmlFalse", type: "html" }, { label: "HTML bei 'true'", key: "htmlTrue", type: "html" },
     ]),
     basicDataWidget("bool-select", "Bool Select", "☑", { title: "Bool Select", entityId: "", state: "off", textOn: "Ein", textOff: "Aus" }, [
       { label: "Home-Assistant-Entity", key: "entityId" }, { label: "Zustand", key: "state", type: "select", options: [{ value: "off", label: "Aus" }, { value: "on", label: "Ein" }] },

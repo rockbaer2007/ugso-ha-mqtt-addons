@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "HTML bei 'false'": "HTML for 'false'", "HTML bei 'true'": "HTML for 'true'",
   "CSS-Deklarationen verwenden, zum Beispiel font-weight: bold; color: #29c8b5;": "Use CSS declarations, for example font-weight: bold; color: #29c8b5;",
   "Testwert (nur Editor)": "Test value (editor only)", "Livewert / Vorschauzustand": "Live value / preview state",
   "Andockpunkte und ihre Belegungszähler sind standardmäßig gelb. Der separate Ausgangspunkt ist standardmäßig hellblau. Beide Farben gelten nur im Editor.": "Docking points and their counters default to yellow. The separate output point defaults to light blue. Both colors apply only in the editor.",

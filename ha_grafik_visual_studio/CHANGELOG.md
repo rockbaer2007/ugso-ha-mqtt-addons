@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.146
+
+- Bool HTML adds prepended/appended HTML and HTML-editor controls for false/true content. Existing contents remain compatible.
+- New Bool HTML widgets start with empty HTML content and all CSS groups disabled. The widget remains read-only.
+
 ## 0.1.145
 
 - ValueList HTML Style uses individual HTML/style entries from index zero through the configured count, including count zero. Preserves legacy list fallback values and supports Boolean indices.
