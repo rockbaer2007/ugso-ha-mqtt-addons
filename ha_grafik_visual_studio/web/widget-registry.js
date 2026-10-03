@@ -10,8 +10,18 @@ export function registerWidgetSet(set) {
     incomingTypes.add(widget.type);
   }
   const registered = structuredClone(set);
+  const generalCss = [...registered.widgets, ...types.values()].flatMap(widget => widget.propertyGroups).find(group => group.css && group.label === "CSS Allgemein");
   sets.set(set.id, registered);
   for (const widget of registered.widgets) {
+    if (generalCss && !widget.propertyGroups.some(group => group.css && group.label === "CSS Allgemein")) {
+      widget.propertyGroups.push({ ...structuredClone(generalCss), id: "css-general-required" });
+    }
+    for (const group of widget.propertyGroups) {
+      if (group.css && group.label === "CSS Allgemein") {
+        group.defaultEnabled = true;
+        group.required = true;
+      }
+    }
     widget.legacyDefaultTitle = widget.defaults.title;
     widget.defaults.title = "";
     widget.defaults.captionInitialized = true;

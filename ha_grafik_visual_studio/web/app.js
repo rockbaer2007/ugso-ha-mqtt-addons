@@ -299,6 +299,7 @@ function propertyGroupKey(group, index) {
 }
 
 function propertyGroupEnabled(widget, group, index) {
+  if (group.required || (group.css && group.label === "CSS Allgemein")) return true;
   return widget.enabledPropertyGroups?.[propertyGroupKey(group, index)] !== false;
 }
 
@@ -352,6 +353,7 @@ function projectForSave(project) {
       const groups = [...widgetPropertyGroups(widget), ...indexedWidgetGroups(widget)];
       widget.enabledPropertyGroups ??= {};
       for (const [index, group] of groups.entries()) {
+        if (group.required || (group.css && group.label === "CSS Allgemein")) widget.enabledPropertyGroups[propertyGroupKey(group, index)] = true;
         if (group.masterKey || propertyGroupEnabled(widget, group, index)) continue;
         for (const descriptor of group.fields) delete widget[descriptor.key];
         if (group.signalImages) {
@@ -2961,10 +2963,15 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (widget.type === "navigation") {
       const href = safeUrl(widget.navUrl);
       if (widget.targetPage) {
-        const button = document.createElement("button"); button.type = "button"; appendSafeHtml(button, widget.navHtml ?? widget.navLabel ?? "Öffnen");
-        button.addEventListener("click", event => { event.stopPropagation(); if (!runtimeMode) return; const page = state.project.pages.find(page => page.id === widget.targetPage); if (page) { state.project.currentPageId = page.id; setSingleWidgetSelection(null); render(); void refreshRuntimeStates(); } }); content.append(button);
+        const link = document.createElement("div"); link.className = "safe-html widget-navigation";
+        appendSafeHtml(link, widget.navHtml ?? widget.navLabel ?? "");
+        if (runtimeMode) { link.setAttribute("role", "link"); link.tabIndex = 0; link.style.cursor = "pointer"; }
+        const navigate = event => { event.stopPropagation(); if (!runtimeMode) return; const page = state.project.pages.find(page => page.id === widget.targetPage); if (page) { state.tabEditor = null; state.tabReturn = null; state.project.currentPageId = page.id; setSingleWidgetSelection(null); render(); void refreshRuntimeStates(); } };
+        link.addEventListener("click", navigate);
+        link.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); navigate(event); } });
+        content.append(link);
       } else if (href) { const link = document.createElement("a"); link.className = "widget-navigation"; link.href = href; appendSafeHtml(link, widget.navHtml ?? widget.navLabel ?? "Öffnen"); content.append(link); }
-      else content.textContent = widget.navLabel || "Ziel-URL fehlt";
+      else appendSafeHtml(content, widget.navHtml ?? widget.navLabel ?? "");
     } else if (widget.type === "filter-dropdown") {
       const entries = Array.isArray(widget.filterEntries) ? widget.filterEntries : String(widget.filterOptions || "").split(/[;,\n]/).map(value => ({ value: value.trim(), title: value.trim() })).filter(entry => entry.value);
       const values = widget.hideNoFilter ? entries : [{ value: "", title: widget.noFilterLabel || "Kein Filter" }, ...entries];
@@ -3806,7 +3813,10 @@ function renderProperties() {
     const enabled = document.createElement("input"); enabled.type = "checkbox"; enabled.className = "property-section-enabled";
     enabled.checked = ["signalImagesEnabled", "extraControlEnabled"].includes(group.masterKey) ? optionalWidgetGroupEnabled(widget, group.masterKey) : group.masterKey ? (widget[group.masterKey] ?? group.defaultEnabled ?? true) : propertyGroupEnabled(widget, group, index);
     enabled.setAttribute("aria-label", group.masterKey ? `${group.label} aktivieren` : `${group.label}: Optionen im Projekt speichern`);
+    const required = group.required || (group.css && group.label === "CSS Allgemein");
+    if (required) { enabled.checked = true; enabled.disabled = true; }
     enabled.title = group.masterKey ? `${group.label} vollständig aktivieren oder deaktivieren` : "Optionen dieser Gruppe im gespeicherten Projekt übernehmen";
+    if (required) enabled.title = uiText("CSS Allgemein bleibt aktiv, damit Position und Größe gespeichert werden.");
     enabled.addEventListener("click", (event) => event.stopPropagation());
     enabled.addEventListener("change", (event) => {
       event.stopPropagation();

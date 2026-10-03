@@ -1,4 +1,6 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "navigation" && key === "navHtml") return "HTML wird bereinigt angezeigt; eingebettete Skripte werden nicht ausgeführt. Seitenwechsel benötigt keinen HA-Helfer.";
+  if (widget.type === "navigation" && key === "subView") return "VIS2-Unteransichten dienen speziellen Navigationssystemen, zum Beispiel Jaeger Design. Diese Funktion ist in Studio noch nicht angebunden; Tabs sind davon unabhängig.";
   if (widget.type === "html" && key === "htmlContent") return "HTML wird bereinigt angezeigt. Eingebettete Skripte und Event-Handler werden nicht ausgeführt; keine HA-Schreibentität nötig.";
   if (widget.type === "html" && key === "refreshInterval") return "0 oder leer deaktiviert die Aktualisierung. Millisekunden bauen den HTML-Inhalt neu auf; das ist keine HA-Abfragezeit.";
   if (widget.type === "bar" && key === "barBorder") return "CSS-Rand angeben, zum Beispiel 2px solid blue. Eine einzelne 2 ist keine vollständige CSS-Randangabe.";

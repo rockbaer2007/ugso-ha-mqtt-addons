@@ -319,9 +319,10 @@ registerWidgetSet({
     basicDataWidget("html", "HTML", "<>…", { title: "HTML", htmlContent: "", refreshInterval: 0, width: 200, height: 130 }, [
       { label: "HTML", key: "htmlContent", type: "html" },
     ], "HTML-Code wird mit seinen Elementen, Attributen und Formatierungen dargestellt."),
-    basicDataWidget("navigation", "HTML navigation", "➜", { title: "Navigation", navLabel: "Öffnen", navUrl: "" }, [
-      { label: "Linktext", key: "navLabel" }, { label: "Ziel-URL oder HA-Pfad", key: "navUrl" },
-    ]),
+    basicDataWidget("navigation", "HTML navigation", "➜", { navHtml: "", navUrl: "", targetPage: "", subView: "", width: 200, height: 130 }, [
+      { label: "HTML", key: "navHtml", type: "html" }, { label: "View zum Navigieren", key: "targetPage", type: "page" },
+      { label: "Unteransicht", key: "subView", disabled: true },
+    ], "HTML-Beschriftung zum Wechseln einer Projektseite; Navigation erfolgt nur in der Runtime."),
     basicDataWidget("filter-dropdown", "filter - dropdown", "▽", { title: "Filter", filterOptions: "Licht;Heizung;Sicherheit", filterType: "horizontal", variant: "outlined" }, [
       { label: "Filteroptionen (durch Semikolon getrennt)", key: "filterOptions" },
     ], "Ordne Widgets über „Filterwort“ in Generell einer Filteroption zu."),
@@ -363,7 +364,7 @@ registerWidgetSet({
     if (widget.type === "bool-select") add(...htmlAdditions(), { label: "Autofokus", key: "autofocus", type: "checkbox", default: false });
     if (widget.type === "string") add({ label: "Icon", key: "icon", previewImage: true });
     if (widget.type === "bar") add({ label: "Rand", key: "barBorder" }, { label: "Durchsichtigkeit (Schatten/CSS)", key: "barShadow" }, { label: "Wert umkehren", key: "invert", type: "checkbox", default: false });
-    if (widget.type === "navigation") add({ label: "HTML", key: "navHtml", type: "html", default: "Öffnen" }, { label: "View zum Navigieren", key: "targetPage", type: "page" });
+    if (widget.type === "navigation") widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
     if (widget.type === "image") add({ label: "Quelle", key: "imageSrc", previewImage: true }, ...imageFields());
     if (widget.type === "image-source") add(...htmlAdditions(), ...refreshFields());
     if (widget.type === "html") add({ label: "Updatezeit (ms)", key: "refreshInterval", type: "range", min: 0, max: 180000, step: 100, default: 0 });

@@ -3,6 +3,11 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
   "HTML wird bereinigt angezeigt. Eingebettete Skripte und Event-Handler werden nicht ausgeführt; keine HA-Schreibentität nötig.": "HTML is sanitized. Embedded scripts and event handlers are not executed; no HA write entity is needed.",
+  "HTML-Beschriftung zum Wechseln einer Projektseite; Navigation erfolgt nur in der Runtime.": "HTML label for switching project pages; navigation runs only in runtime.",
+  "Unteransicht": "Subview",
+  "CSS Allgemein bleibt aktiv, damit Position und Größe gespeichert werden.": "CSS General stays enabled so position and size are saved.",
+  "HTML wird bereinigt angezeigt; eingebettete Skripte werden nicht ausgeführt. Seitenwechsel benötigt keinen HA-Helfer.": "HTML is sanitized; embedded scripts are not executed. Page navigation needs no HA helper.",
+  "VIS2-Unteransichten dienen speziellen Navigationssystemen, zum Beispiel Jaeger Design. Diese Funktion ist in Studio noch nicht angebunden; Tabs sind davon unabhängig.": "VIS2 subviews serve special navigation systems such as Jaeger Design. Studio does not support this function yet; tabs are independent of it.",
   "0 oder leer deaktiviert die Aktualisierung. Millisekunden bauen den HTML-Inhalt neu auf; das ist keine HA-Abfragezeit.": "0 or empty disables refresh. Milliseconds rebuild the HTML content; this is not an HA polling interval.",
   "Durchsichtigkeit (Schatten/CSS)": "Transparency (shadow/CSS)",
   "CSS-Rand angeben, zum Beispiel 2px solid blue. Eine einzelne 2 ist keine vollständige CSS-Randangabe.": "Enter a CSS border, for example 2px solid blue. A bare 2 is not a complete CSS border.",

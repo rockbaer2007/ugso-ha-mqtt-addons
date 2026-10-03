@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.154
+
+- CSS General is required and always enabled for every registered widget, including future packages and projects with previously disabled groups. Geometry is retained during export.
+- HTML navigation starts with empty markup, page selection, 200x130 size and other CSS groups disabled. Untargeted markup remains visible; legacy URLs and labels still render.
+- Migration hints explain sanitized navigation markup and the unsupported VIS2 special-purpose subview field.
+
 ## 0.1.153
 
 - New HTML widgets start with empty HTML, refresh disabled, 200x130 size and disabled CSS groups. HTML is displayed literally and refreshed consistently without a custom value placeholder.
