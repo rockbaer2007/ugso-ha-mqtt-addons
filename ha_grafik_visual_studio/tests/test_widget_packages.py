@@ -16,7 +16,7 @@ from urllib.error import HTTPError
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "app"))
-from widget_packages import read_package_zip  # noqa: E402
+from widget_packages import read_package_zip, validate_additive_update  # noqa: E402
 import main  # noqa: E402
 
 
@@ -51,6 +51,25 @@ def tiny_png():
 
 
 class WidgetPackageTests(unittest.TestCase):
+    def test_updates_only_add_widgets_without_redefining_existing_contract(self):
+        old = manifest()
+        new = manifest()
+        new["version"] = "1.1.0"
+        second = json.loads(json.dumps(new["widgets"][0]))
+        second["type"] = "demo.widgets/second"
+        new["widgets"].append(second)
+        validate_additive_update(old, new)
+        for key, value in [("version", "1.0.0"), ("version", "0.9.0"), ("apiVersion", "0.2")]:
+            bad = json.loads(json.dumps(new)); bad[key] = value
+            with self.assertRaises(ValueError):
+                validate_additive_update(old, bad)
+        bad = json.loads(json.dumps(new)); bad["widgets"][0]["defaults"]["text"] = "Changed"
+        with self.assertRaises(ValueError):
+            validate_additive_update(old, bad)
+        bad["widgets"] = [second]
+        with self.assertRaises(ValueError):
+            validate_additive_update(old, bad)
+
     def test_chart_requires_api_02_and_keeps_code_forbidden(self):
         data = manifest()
         data["widgets"][0]["render"]["kind"] = "chart"
@@ -165,6 +184,17 @@ class WidgetPackageTests(unittest.TestCase):
                     project = json.loads(json.dumps(main.DEFAULT_PROJECT))
                     project["pages"][0]["widgets"] = [{"id": "widget-1", "type": "demo.widgets/label"}]
                     main.Handler.write_project("main", project)
+                    newer = manifest(); newer["version"] = "1.1.0"
+                    extra = json.loads(json.dumps(newer["widgets"][0])); extra["type"] = "demo.widgets/second"
+                    newer["widgets"].append(extra)
+                    update = Request(url, data=package_bytes(newer), method="POST", headers={"X-Package-Name": "demo.wg"})
+                    with urlopen(update) as response:
+                        self.assertEqual(response.status, 200)
+                        self.assertTrue(json.load(response)["updated"])
+                    self.assertEqual(main.Handler.read_project_file(root / "projects" / "main.json")["pages"][0]["widgets"], project["pages"][0]["widgets"])
+                    with self.assertRaises(HTTPError) as duplicate:
+                        urlopen(update)
+                    self.assertEqual(duplicate.exception.code, 409)
                     remove = Request(url + "/demo.widgets", method="DELETE")
                     with self.assertRaises(HTTPError) as blocked:
                         urlopen(remove)

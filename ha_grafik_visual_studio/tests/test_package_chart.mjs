@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { chartPoints, chartSeries, chartBindings, chartTimeLabel, renderPackageChart } from "../web/package-chart.js";
+import { chartPoints, chartSeries, chartBindings, chartTimeLabel, renderPackageChart, weekSeries, WEEK_DAYS } from "../web/package-chart.js";
 test("JSON key/value and pair arrays retain zero and reject malformed data", () => {
   assert.deepEqual(chartPoints('[{"year":"2008","value":0},{"year":"2009","value":7}]', { xKey: "year", time: false }), [{ x: "2008", y: 0 }, { x: "2009", y: 7 }]);
   assert.deepEqual(chartPoints("not json"), []); assert.deepEqual(chartPoints({}), []);
@@ -42,4 +42,27 @@ test("extreme finite values and custom heading keys stay safe", () => {
   assert.equal(nodes(root).some(n => /NaN|Infinity/.test(JSON.stringify(n.attributes))), false);
   assert.equal(chartPoints([[1, -1.7e308], [2, 1.7e308]], { difference: true })[1].y, null);
   assert.equal(chartPoints([[1e100, 2]]).length, 0);
+});
+test("weekly live states preserve zero, skip invalid readings and never substitute preview data", () => {
+  const widget = { chartMode: "two-weeks", showWeekData: true, currentMondayEntityId: "sensor.zero", currentTuesdayEntityId: "sensor.missing", currentMondayPreview: 99, currentTuesdayPreview: 99, previousSundayEntityId: "sensor.negative", positionYAxis: "left" };
+  const data = weekSeries(widget, { "sensor.zero": { state: "0" }, "sensor.negative": { state: "-3.25" } }, "en");
+  assert.equal(chartBindings(widget).length, 14);
+  assert.equal(data[1].points[0].y, 0); assert.equal(data[1].points[1].y, null);
+  assert.equal(data[0].points[6].y, -3.25); assert.equal(data[0].axis, "left");
+  assert.deepEqual(data[0].points.map(p => p.x), ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]);
+  widget.showWeekData = false;
+  assert.equal(chartBindings(widget).length, 0);
+  assert.equal(weekSeries(widget)[1].points[0].y, 99);
+});
+test("weekly preview renders fourteen separated bars, seven weekdays and fixed decimals", () => {
+  const widget = { chartMode: "two-weeks", headline: "Wochen", headlineColor: "red", legendTextColor: "white", decimalPlaces: 2, unit: "kWh", positionYAxis: "right" };
+  WEEK_DAYS.forEach((day, i) => { widget[`current${day}Preview`] = i + .125; widget[`previous${day}Preview`] = i + 2; });
+  const root = renderPackageChart(widget, doc);
+  const all = nodes(root), bars = all.filter(n => n.tag === "rect");
+  assert.equal(bars.length, 14);
+  assert.equal(new Set(bars.map(n => n.attributes.x)).size, 14);
+  assert.equal(root.children[0].style.color, "red");
+  assert.ok(all.some(n => n.tag === "title" && n.textContent.includes("0.13 kWh")));
+  assert.equal(all.filter(n => n.tag === "text" && n.attributes.y === "281").length, 7);
+  assert.equal(all.some(n => /NaN|Infinity/.test(JSON.stringify(n.attributes))), false);
 });

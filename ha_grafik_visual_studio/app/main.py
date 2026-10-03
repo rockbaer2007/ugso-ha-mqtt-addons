@@ -11,8 +11,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlparse
 from uuid import uuid4
+from threading import Lock
 
-from widget_packages import MAX_ZIP_BYTES, list_packages, read_package_zip
+from widget_packages import MAX_ZIP_BYTES, list_packages, read_package_zip, validate_additive_update
 from tool_packages import list_tool_packages, read_tool_package_zip
 from color_favorites import favorites, is_admin
 
@@ -26,6 +27,7 @@ if not WEB_DIR.is_dir():
 PROJECT_FILE = DATA_DIR / "project.json"
 PROJECTS_DIR = DATA_DIR / "projects"
 WIDGET_PACKAGES_DIR = DATA_DIR / "widget_packages"
+WIDGET_PACKAGE_LOCK = Lock()
 TOOL_PACKAGES_DIR = DATA_DIR / "tool_packages"
 WWW_CANDIDATES = (
     Path("/homeassistant/www/studio"),
@@ -333,7 +335,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.187"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.188"})
             return
         if path == "/api/entities":
             try:
@@ -626,15 +628,21 @@ class Handler(BaseHTTPRequestHandler):
             return
         WIDGET_PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
         target = WIDGET_PACKAGES_DIR / (manifest["id"] + ".json")
-        if target.exists():
-            self.send_json(HTTPStatus.CONFLICT, {"error": "Paket ist bereits installiert. Updates folgen später."})
-            return
-        try:
-            target.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
-        except OSError:
-            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Widget-Paket konnte nicht gespeichert werden."})
-            return
-        self.send_json(HTTPStatus.CREATED, {"installed": manifest["id"]})
+        with WIDGET_PACKAGE_LOCK:
+            updated = target.exists()
+            try:
+                if updated:
+                    validate_additive_update(json.loads(target.read_text(encoding="utf-8")), manifest)
+                temporary = target.with_suffix(".tmp")
+                temporary.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+                temporary.replace(target)
+            except ValueError as error:
+                self.send_json(HTTPStatus.CONFLICT, {"error": str(error)})
+                return
+            except OSError:
+                self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Widget-Paket konnte nicht gespeichert werden."})
+                return
+        self.send_json(HTTPStatus.OK if updated else HTTPStatus.CREATED, {"installed": manifest["id"], "updated": updated})
 
     def delete_widget_package(self, package_id):
         installed = next((item for item in list_packages(WIDGET_PACKAGES_DIR) if item["id"] == package_id), None)

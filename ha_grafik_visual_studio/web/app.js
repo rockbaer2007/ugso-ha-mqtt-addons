@@ -4120,7 +4120,7 @@ function field(descriptor, widget) {
   }
   const update = () => {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
-    if (["count", "dataCount", "countEventColorRules", "countCalendarSources", "countColumns", "countDefaultSortColumns", "countRowConditions", "countCustomOptions", "countBgConditions"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
+    if (["count", "dataCount", "decimalPlaces", "countEventColorRules", "countCalendarSources", "countColumns", "countDefaultSortColumns", "countRowConditions", "countCustomOptions", "countBgConditions"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (isSeparator(widget) && descriptor.key === "separatorThickness") {
       widget.separatorThickness = Math.min(100, Math.max(1, Number(widget.separatorThickness) || 2));
@@ -4138,7 +4138,7 @@ function field(descriptor, widget) {
     if (descriptor.key === "testIndex" && widget.type === "value-list-text") widget.state = input.value;
     void updatePreview();
     if (isGauge(widget) && (descriptor.key === "entityId" || /EntityId\d*$/.test(descriptor.key))) void refreshEditorLiveStates();
-    if (getWidgetDefinition(widget.type).render?.kind === "chart" && (descriptor.key === "entityId" || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || descriptor.key === "dataCount")) void refreshEditorLiveStates();
+    if (getWidgetDefinition(widget.type).render?.kind === "chart" && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || ["dataCount", "showWeekData"].includes(descriptor.key))) void refreshEditorLiveStates();
     if (widget.type === "string" && descriptor.key === "icon") { const size = $("#properties [data-string-icon-size]"); if (size) size.hidden = !input.value; }
     renderStage();
     if (descriptor.refreshProperties && input.tagName !== "TEXTAREA" && !["number", "range"].includes(input.type)) renderProperties();

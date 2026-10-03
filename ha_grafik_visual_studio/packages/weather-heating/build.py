@@ -23,7 +23,17 @@ def manifest():
             extra = {"options": ["line", "bar"]} if suffix == "Type" else {"options": ["left", "right"]} if suffix == "Axis" else {}
             fields.append(field(key, label, kind, **extra))
         groups.append({"label": f"Daten [{i}]", "fields": fields})
-    return {"format": "ha-grafik-widget-package", "apiVersion": "0.2", "id": "ugso.weather-heating", "name": "Wetter und Heizung", "version": "1.0.0", "license": "MIT", "icon": "icons/chart.svg", "widgets": [{"type": "ugso.weather-heating/general-chart", "label": "Allgemeines Diagramm", "icon": "icons/chart.svg", "defaults": defaults, "propertyGroups": groups, "render": {"kind": "chart", "valueKey": "headline"}}]}
+    weekly = {"chartMode": "two-weeks", "headline": "", "headlineColor": "#ffffff", "legendTextColor": "#000000", "showWeekData": False, "unit": "kWh", "previousWeekColor": "#0000ff", "currentWeekColor": "#ffff00", "axisColor": "#0000ff", "xAxisColor": "#ffffff", "positionYAxis": "right", "decimalPlaces": 2, "noCard": False, "showLegend": True, "width": 560, "height": 320, "backgroundColor": "#20282d", "textColor": "#ffffff", "borderWidth": 0}
+    week_groups = [{"label": "Allgemein", "fields": [field("noCard", "Ohne Karte", "checkbox"), field("headline", "Überschrift"), field("headlineColor", "Überschriftenfarbe", "color"), field("legendTextColor", "Farbe des Legendentextes", "color"), field("showWeekData", "Wochenwerte anzeigen", "checkbox"), field("unit", "Einheit"), field("previousWeekColor", "Farbe der Vorwoche", "color"), field("currentWeekColor", "Farbe der aktuellen Woche", "color"), field("axisColor", "Farbe der Achsenbeschriftung", "color"), field("positionYAxis", "Position der Y-Achse", "select", options=["left", "right"]), field("decimalPlaces", "Dezimalstellen", "number", min=0, max=5), field("showLegend", "Legende anzeigen", "checkbox")]}, {"label": "X-Achse", "fields": [field("xAxisColor", "Farbe der X-Achse", "color")]}, {"label": "Größe und Position", "fields": [field("width", "Breite (px)", "number", min=64, max=2000), field("height", "Höhe (px)", "number", min=64, max=2000)]}]
+    days = [("Monday", "Montag"), ("Tuesday", "Dienstag"), ("Wednesday", "Mittwoch"), ("Thursday", "Donnerstag"), ("Friday", "Freitag"), ("Saturday", "Samstag"), ("Sunday", "Sonntag")]
+    for week, label, demo in [("current", "Aktuelle Woche", [12, 18, 15, 22, 16, 8, 10]), ("previous", "Vorwoche", [10, 14, 17, 19, 13, 9, 11])]:
+        fields = []
+        for i, (day, day_label) in enumerate(days):
+            entity_key, preview_key = f"{week}{day}EntityId", f"{week}{day}Preview"
+            weekly[entity_key], weekly[preview_key] = "", demo[i]
+            fields.extend([field(entity_key, f"{day_label}: Entität"), field(preview_key, f"{day_label}: Vorschauwert", "number")])
+        week_groups.append({"label": label, "fields": fields})
+    return {"format": "ha-grafik-widget-package", "apiVersion": "0.2", "id": "ugso.weather-heating", "name": "Wetter und Heizung", "version": "1.1.0", "license": "MIT", "icon": "icons/chart.svg", "widgets": [{"type": "ugso.weather-heating/general-chart", "label": "Allgemeines Diagramm", "icon": "icons/chart.svg", "defaults": defaults, "propertyGroups": groups, "render": {"kind": "chart", "valueKey": "headline"}}, {"type": "ugso.weather-heating/two-weeks-bar", "label": "Balkendiagramm für zwei Wochen", "icon": "icons/chart.svg", "defaults": weekly, "propertyGroups": week_groups, "render": {"kind": "chart", "valueKey": "headline"}}]}
 
 
 if __name__ == "__main__":

@@ -28,6 +28,18 @@ SVG_VALUE = re.compile(r"^[a-zA-Z0-9#.,%+\-\s()]*$")
 ElementTree.register_namespace("", SVG_NS)
 
 
+def validate_additive_update(installed, incoming):
+    """Allow a higher package version to add widgets, never redefine existing ones."""
+    for key in ("id", "apiVersion", "name", "license", "icon", "iconData"):
+        if installed.get(key) != incoming.get(key):
+            raise ValueError("Paket-Updates dürfen bestehende Paketangaben nicht ändern.")
+    if tuple(map(int, incoming["version"].split("."))) <= tuple(map(int, installed["version"].split("."))):
+        raise ValueError("Das Paket ist bereits installiert; eine Aktualisierung benötigt eine höhere Version.")
+    new_widgets = {widget["type"]: widget for widget in incoming["widgets"]}
+    if any(new_widgets.get(widget["type"]) != widget for widget in installed["widgets"]):
+        raise ValueError("Paket-Updates dürfen vorhandene Widgets nicht ändern oder entfernen.")
+
+
 def _short_text(value, limit=120):
     return isinstance(value, str) and 0 < len(value.strip()) <= limit
 

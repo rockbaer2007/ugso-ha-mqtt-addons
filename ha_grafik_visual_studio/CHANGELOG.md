@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.188
+
+- Extend the optional Weather and Heating package to 1.1.0 with Two Weeks Bar Chart: fourteen daily HA state bindings, explicit preview/live selection, weekday pairs, units, decimals, colors and left/right Y axis.
+- Permit higher-version additive widget-package updates only when existing widget definitions and package identity remain unchanged; save validated updates atomically without modifying projects.
+
 ## 0.1.187
 
 - Automatically assign unused, separated palette colors to external widget sets; preserve assignments in this browser across reloads, removal and reinstallation. Keep Basic and built-in set colors unchanged.

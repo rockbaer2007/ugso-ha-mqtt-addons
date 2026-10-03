@@ -392,6 +392,7 @@ html.embedded-loading body { visibility: hidden; background: transparent; }
 .package-chart > strong { flex: 0 0 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .package-chart > svg { flex: 1 1 100%; min-height: 0; width: 100%; height: calc(100% - 48px); }
 .package-chart-legend { font-size: 11px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.package-chart-swatch { display: inline-block; width: 10px; height: 10px; margin-right: 4px; border-radius: 2px; }
 .gauge-instrument > svg { display: block; width: 100%; flex: 1 1 0; min-height: 0; }
 .gauge-instrument-label { max-width: 100%; flex: 0 0 auto; font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .gauge-ring-reading { max-width: 100%; flex: 0 0 auto; font-size: 11px; line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
