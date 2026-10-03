@@ -20,7 +20,7 @@ import { boolSelectOn } from "./bool-select.js";
 import { boolSvgOn, boolSvgNext, boolSvgOpacity } from "./bool-svg.js";
 import { redNumberDisplay } from "./red-number.js";
 import { svgShapeGeometry } from "./svg-shape.js";
-import { UNIVERSAL_STYLE_GROUPS, universalStateFields, universalStyle, universalVisual, universalNext, universalResolvedColors, universalClip, remapUniversalReferences } from "./universal-element.js";
+import { UNIVERSAL_STYLE_GROUPS, universalStateFields, universalStyle, universalVisual, universalStateVisual, universalNext, universalResolvedColors, universalClip, remapUniversalReferences } from "./universal-element.js";
 const universalFeedback = new Map();
 import { mediaRefreshUrl, iframeOptions, iframeCount, iframeIndex } from "./iframe-widget.js";
 import { imageOptions, imageCount, imageIndex } from "./image-widget.js";
@@ -2478,7 +2478,7 @@ function renderUniversalElement(widget, content, runtimeMode) {
   const style = Object.assign({}, ...UNIVERSAL_STYLE_GROUPS.map(group => universalStyle(widget, widgets, group)));
   const actual = displayedWidgetState(widget);
   const selected = universalVisual(widget, actual, state.entityStates, matchesCondition);
-  const tiles = widget.buttonMode === "separate" ? selected.states.map((visual, index) => ({ visual: { ...widget.defaultState, ...visual }, index })).filter(tile => tile.visual.enabled !== false) : [selected];
+  const tiles = widget.buttonMode === "separate" ? selected.states.map((visual, index) => ({ visual: universalStateVisual(widget, visual), index })).filter(tile => tile.visual.enabled !== false) : [selected];
   content.classList.add("universal-widget-content");
   content.style.display = "flex"; content.style.padding = "0"; content.style.background = "transparent"; content.style.border = "0"; content.style.boxShadow = "none";
   content.style.overflow = "visible"; content.style.gap = "6px";

@@ -1,3 +1,5 @@
+import { booleanCaption } from "./state-caption.js";
+
 export const checkboxValue = (widget, checked) => {
   const value = widget[checked ? "valueTrue" : "valueFalse"];
   return value === undefined || value === null || value === "" ? checked : value;
@@ -33,7 +35,7 @@ export function renderCheckbox(widget, document, context) {
   input.type = "checkbox"; input.checked = checkboxChecked(widget, context.value);
   if (Number(styles.boxSize) === 0) input.className = "zero-size";
   input.disabled = !context.runtime || !context.ready || !checkboxWritable(widget, context.entry);
-  text.className = "styled-checkbox-text"; text.textContent = String(widget[input.checked ? "textTrue" : "textFalse"] || "");
+  text.className = "styled-checkbox-text"; text.textContent = booleanCaption(widget, input.checked);
   input.setAttribute("aria-label", text.textContent || widget.name || "Checkbox");
   text.hidden = !text.textContent;
   if (!context.runtime) label.style.pointerEvents = "none";

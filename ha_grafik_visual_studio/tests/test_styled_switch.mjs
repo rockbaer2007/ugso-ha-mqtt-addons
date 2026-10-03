@@ -32,6 +32,25 @@ class Element {
   addEventListener(key, fn) { this.listeners[key] = fn; }
 }
 const doc = { createElement: () => new Element() };
+test("switch captions survive repeated toggles and pending redraws", () => {
+  for (const captions of [{ textFalse: "Garage", textTrue: "" }, { textFalse: "", textTrue: "Garage" }, { title: "Garage" }]) {
+    let value = false;
+    for (let click = 0; click < 4; click++) {
+      const context = { runtime: true, ready: true, value, widgets: [], write: next => { value = next; } };
+      const root = renderStyledSwitch(captions, doc, context), input = root.children[0].children[2];
+      assert.equal(root.children[1].textContent, "Garage"); assert.equal(root.children[1].hidden, false);
+      input.checked = !input.checked; input.listeners.change({ stopPropagation() {} });
+      const pending = renderStyledSwitch(captions, doc, { ...context, value, ready: false });
+      assert.equal(pending.children[1].textContent, "Garage");
+    }
+  }
+  for (const [value, expected] of [[false, "Aus"], [true, "Ein"]]) {
+    const root = renderStyledSwitch({ textFalse: "Aus", textTrue: "Ein" }, doc, { runtime: true, ready: true, value, widgets: [], write() {} });
+    assert.equal(root.children[1].textContent, expected);
+  }
+  const empty = renderStyledSwitch({ name: "Editor name" }, doc, { runtime: true, ready: true, value: true, widgets: [], write() {} });
+  assert.equal(empty.children[1].hidden, true);
+});
 test("unbound runtime writes custom pairs and uses a native keyboard-accessible switch", () => {
   let written;
   const widget = { id: "a", valueTrue: "ready", valueFalse: "idle", textTrue: "<b>Ready</b>", textPosition: "top" };

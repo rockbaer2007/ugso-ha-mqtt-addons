@@ -1,4 +1,5 @@
 // Original Studio implementation; VIS2 is a functional reference, not a dependency.
+import { stateCaption } from "./state-caption.js";
 export const COLOR_FIELDS = [
   ["iconColor", "Inhaltsfarbe"], ["backgroundColor", "Hintergrund"], ["textColor", "Textfarbe"],
   ["borderColor", "Randfarbe"], ["outerShadowColor", "Äußere Schattenfarbe"], ["innerShadowColor", "Innere Schattenfarbe"],
@@ -60,7 +61,10 @@ export function universalStyle(widget, widgets, group, seen = new Set()) {
 export function universalVisual(widget, actual, entities, compare) {
   const states = (widget.visualStates || []).slice(0, Math.max(1, Math.min(20, Number(widget.stateCount) || 2)));
   const index = states.findIndex(item => item.enabled !== false && compare(item.compareSource === "entity" ? entities[item.entityId]?.state : actual, item.condition || "==", item.value));
-  return { index, visual: index < 0 ? widget.defaultState || states[0] || {} : { ...widget.defaultState, ...states[index] }, states };
+  return { index, visual: universalStateVisual(widget, index < 0 ? widget.defaultState || states[0] || {} : states[index]), states };
+}
+export function universalStateVisual(widget, state) {
+  return { ...widget.defaultState, ...state, text: String(stateCaption(state?.text, widget.defaultState?.text, widget.title)) };
 }
 export function universalNext(widget, actual, index, states) {
   if (widget.interaction === "switch") {

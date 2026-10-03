@@ -59,7 +59,7 @@ test("SVG LineBox and SVG-Line keep their stored widget types", () => {
   assert.equal(getWidgetDefinition("linebox").defaults.dockPointsEnabled, false);
   assert.equal(getWidgetDefinition("button").label, "Icon Toggle Button");
   assert.equal(getWidgetDefinition("gauge").label, "Gauge");
-  assert.equal(getWidgetDefinition("universal-button").label, "State Element");
+  assert.equal(getWidgetDefinition("universal-button").label, "Universal Element");
 });
 
 test("active input ports sum signed numeric line values", () => {

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.195
+
+- Keep Universal Element captions across clicks: empty state texts inherit the default text or configured title, including separate buttons.
+- Keep Checkbox and Switch captions when one state text is empty; use the other configured text or title. Explicit nonempty state texts still change normally; entirely empty captions stay hidden.
+- Audit widget caption paths and run the complete frontend regression suite; update the stale Universal Element name assertion.
+
 ## 0.1.194
 
 - Add General Heating Parameters to optional Weather and Heating package 1.7.0 with eight independent HA bindings, optional chosen-room display, preview states, read-only and no-card options.

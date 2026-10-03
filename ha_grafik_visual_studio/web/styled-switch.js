@@ -1,4 +1,5 @@
 import { checkboxChecked, checkboxValue, checkboxWritable } from "./styled-checkbox.js";
+import { booleanCaption } from "./state-caption.js";
 
 export const SWITCH_STYLE_GROUPS = [
   ["track", ["trackColor", "trackColorTrue", "trackSize", "trackBorderRadius", "trackShadowX", "trackShadowY", "trackShadowBlur", "trackShadowSize", "trackShadowColor", "trackShadowColorTrue"]],
@@ -32,7 +33,7 @@ export function renderStyledSwitch(widget, doc, context) {
   input.type = "checkbox"; input.setAttribute("role", "switch"); input.checked = checkboxChecked(widget, context.value);
   input.disabled = !context.runtime || !context.ready || !checkboxWritable(widget, context.entry);
   if (input.disabled) label.className += " switch-disabled";
-  text.className = "styled-switch-text"; text.textContent = String(widget[input.checked ? "textTrue" : "textFalse"] || ""); text.hidden = !text.textContent;
+  text.className = "styled-switch-text"; text.textContent = booleanCaption(widget, input.checked); text.hidden = !text.textContent;
   input.setAttribute("aria-label", text.textContent || widget.name || "Switch");
   const appearance = switchAppearance(switchStyle(widget, context.widgets), input.checked);
   visual.className = "styled-switch-visual"; Object.assign(visual.style, { width: `${appearance.width}px`, height: `${appearance.height}px` });

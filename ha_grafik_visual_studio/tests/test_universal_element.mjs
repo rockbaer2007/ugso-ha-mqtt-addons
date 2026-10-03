@@ -1,7 +1,29 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { UNIVERSAL_STYLE_GROUPS, universalStyle, universalVisual, universalNext, universalResolvedColors, universalClip, remapUniversalReferences } from "../web/universal-element.js";
+import { UNIVERSAL_STYLE_GROUPS, universalStyle, universalVisual, universalStateVisual, universalNext, universalResolvedColors, universalClip, remapUniversalReferences } from "../web/universal-element.js";
 const compare = (actual, operator, expected) => operator === ">" ? Number(actual) > Number(expected) : String(actual) === String(expected);
+test("garage caption survives switching, missing HA values and separate tiles without changing the export", () => {
+  const widget = { title: "", interaction: "switch", falseValue: "off", trueValue: "on", defaultState: { text: "Licht Garage", icon: "mdi:lightbulb" }, visualStates: [{ value: "off", text: "" }, { value: "on", text: "", icon: "mdi:lightbulb-on" }] };
+  const original = JSON.stringify(widget);
+  let actual = "off";
+  for (let click = 0; click < 4; click++) {
+    const selected = universalVisual(widget, actual, {}, compare);
+    assert.equal(selected.visual.text, "Licht Garage");
+    actual = universalNext(widget, actual, selected.index, selected.states);
+  }
+  for (const actual of [undefined, "unknown", "unavailable"]) assert.equal(universalVisual(widget, actual, {}, compare).visual.text, "Licht Garage");
+  for (const visual of widget.visualStates) assert.equal(universalStateVisual(widget, visual).text, "Licht Garage");
+  assert.equal(universalVisual(widget, "on", {}, compare).visual.icon, "mdi:lightbulb-on");
+  assert.equal(JSON.stringify(widget), original);
+});
+test("state captions keep explicit text, zero, HTML and title fallback; fully empty captions stay empty", () => {
+  const widget = { title: "Title", defaultState: { text: "Default" } };
+  for (const text of ["On", "<b>Garage</b>", "0", "false"]) assert.equal(universalStateVisual(widget, { text }).text, text);
+  assert.equal(universalStateVisual(widget, { text: 0 }).text, "0");
+  assert.equal(universalStateVisual(widget, { text: "  " }).text, "Default");
+  assert.equal(universalStateVisual({ title: "Title", defaultState: { text: "" } }, {}).text, "Title");
+  assert.equal(universalStateVisual({ name: "Editor name" }, {}).text, "");
+});
 test("selection uses alternate entity, disabled rules and a real default", () => {
   const widget = { stateCount: 2, defaultState: { text: "Idle" }, visualStates: [{ value: "on", enabled: false }, { compareSource: "entity", entityId: "sensor.power", condition: ">", value: 400, text: "Power" }] };
   assert.equal(universalVisual(widget, "on", { "sensor.power": { state: 500 } }, compare).visual.text, "Power");

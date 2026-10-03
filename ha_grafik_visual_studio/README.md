@@ -1,5 +1,7 @@
 # HA Grafik Visual Studio
 
+Ab 0.1.195 bleiben Beschriftungen beim Schalten erhalten: Leere Zustandstexte im **Universal Element** übernehmen den Standardtext, danach den optionalen Titel. **Checkbox** und **Schalten** übernehmen bei einem leeren Zustandstext den anderen Text, danach den Titel. Eigene Texte pro Zustand bleiben möglich; vollständig leere Beschriftungen bleiben leer.
+
 Ab 0.1.194 ergänzt **Wetter und Heizung 1.7.0** **Allgemeine Heizparameter**: acht unabhängige HA-Entitäten für Heizperiode, Feiertag, Anwesenheit, Party, Gäste, Urlaub zu Hause/abwesend und Kaminmodus. Verfügbare `input_boolean`- und `switch`-Entitäten sind in der Runtime schaltbar; Sensoren bleiben Anzeigen. Fehlende Werte sind unbekannt. Dazu kommen eine optionale gewählte Raumanzeige, globale Option **Schreibgeschützt**, **Ohne Karte** und Editor-Vorschauwerte. Das Widget implementiert keine eigene Heizregelung.
 
 Ab 0.1.193 ergänzt **Wetter und Heizung 1.6.0** **Meinen Vermieter informieren**: Formular mit Information/Wichtig/Dringend, Nachrichtentyp und expliziter HA-Benachrichtigungsaktion. `notify.send_message` benötigt eine ausgewählte `notify.*`-Entität; alternativ ist eine benannte `notify.*`-Aktion möglich. Empfänger und Anbieter werden in HA eingerichtet. Versand erfolgt nur durch **Senden** in der Runtime; Priorität und Überschrift werden als Nachrichtentext mitgegeben. Die Annahme durch HA bestätigt keine Zustellung. Entwürfe bleiben im Formular, nicht im Projekt oder Export. Die sechs bisherigen Widgets bleiben unverändert.

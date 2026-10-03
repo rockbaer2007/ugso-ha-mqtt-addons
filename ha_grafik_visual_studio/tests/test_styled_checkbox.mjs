@@ -34,6 +34,23 @@ class Element {
   addEventListener(key, listener) { this.listeners[key] = listener; }
 }
 const document = { createElement: () => new Element() };
+test("checkbox captions survive repeated toggles with one empty state text", () => {
+  for (const captions of [{ textFalse: "Garage", textTrue: "" }, { textFalse: "", textTrue: "Garage" }, { title: "Garage" }]) {
+    const widget = { ...captions }; let value = false;
+    for (let click = 0; click < 4; click++) {
+      const label = renderCheckbox(widget, document, { runtime: true, ready: true, value, widgets: [], write: next => { value = next; } });
+      const [input, text] = label.children;
+      assert.equal(text.textContent, "Garage"); assert.equal(text.hidden, false);
+      input.checked = !input.checked; input.listeners.change({ stopPropagation() {} });
+    }
+  }
+  for (const [value, expected] of [[false, "Aus"], [true, "Ein"]]) {
+    const label = renderCheckbox({ textFalse: "Aus", textTrue: "Ein" }, document, { runtime: true, ready: true, value, widgets: [], write() {} });
+    assert.equal(label.children[1].textContent, expected);
+  }
+  const empty = renderCheckbox({ name: "Editor name" }, document, { runtime: true, ready: true, value: true, widgets: [], write() {} });
+  assert.equal(empty.children[1].hidden, true);
+});
 test("runtime writes a custom pair, editor and sensor never write, labels stay text", () => {
   for (const [runtime, entityId, disabled] of [[true, "", false], [false, "", true], [true, "sensor.test", true]]) {
     const writes = [], widget = { name: "Test", entityId, valueTrue: "ready", valueFalse: "idle", textFalse: "<img src=x>", textPosition: "top" };
