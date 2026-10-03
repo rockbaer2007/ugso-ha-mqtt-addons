@@ -24,6 +24,7 @@ import { renderStyledSlider, styledSliderValue, updateStyledSlider } from "./sty
 import { renderInteractiveTable, tableDefaultSort, TABLE_STYLE_GROUPS } from "./interactive-table.js";
 import { tableEntryGroups } from "./widget-sets/interactive-table.js";
 import { beginMarquees, finishMarquees, renderMarquee } from "./marquee.js";
+import { renderValueList } from "./interactive-value-list.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
 import { migrationHint } from "./migration-hints.js";
@@ -3158,6 +3159,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(output);
     } else if (widget.type === "marquee") {
       content.append(renderMarquee(widget, document, { runtime: runtimeMode, value: stringEntityValue(widget, state.entityStates[widget.entityId]), key: `${state.projectId}:${activePage.id}:${widget.id}` }));
+    } else if (widget.type === "interactive-value-list") {
+      content.style.padding = "0";
+      content.append(renderValueList(widget, document, stringEntityValue(widget, state.entityStates[widget.entityId])));
     } else if (widget.type === "interactive-table") {
       const cacheKey = `interactive:${state.projectId}:${activePage.id}:${widget.id}`;
       const signature = JSON.stringify([widget.multiSort, widget.defaultSortColumn, widget.defaultSortOrder, widget.countDefaultSortColumns, ...Array.from({ length: 20 }, (_, i) => [widget[`defaultSortKey${i + 1}`], widget[`defaultSortDir${i + 1}`]])]);
@@ -4258,7 +4262,7 @@ function renderProperties() {
       });
     }
     if (group.hint) { const hint = document.createElement("p"); hint.className = "property-hint"; hint.textContent = group.hint; body.append(hint); }
-    const visibleFields = (fields, model) => fields.filter((descriptor) => !descriptor.showWhen || (model[descriptor.showWhen.key] ?? descriptor.showWhen.default) === descriptor.showWhen.value).map((descriptor) => field(descriptor, model));
+    const visibleFields = (fields, model) => fields.filter((descriptor) => !descriptor.showWhen || (descriptor.showWhen.values ? descriptor.showWhen.values.includes(model[descriptor.showWhen.key] ?? descriptor.showWhen.default) : (model[descriptor.showWhen.key] ?? descriptor.showWhen.default) === descriptor.showWhen.value)).map((descriptor) => field(descriptor, model));
     body.append(...visibleFields(group.fields, widget));
     if (updateDockAll) {
       for (const input of body.querySelectorAll("input[data-dock-point]")) input.addEventListener("input", updateDockAll);

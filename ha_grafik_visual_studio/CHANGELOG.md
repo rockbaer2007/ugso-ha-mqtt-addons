@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.179
+
+- Add Interactive Value List with manual or HA state text, literal separators including newline/tab escapes, optional trimming and empty entries.
+- Provide eight bullet types, custom characters, bullet colors, spacing and padding; keep text plain and wrap long entries inside a scrollable list.
+- Save/export every setting and add illustrated German and English documentation. Existing Basic ValueList widgets remain available.
+
 ## 0.1.178
 
 - Add Marquee with static text or HA state, left/right direction, constant pixel speed, copies, spacing and hover pause.
