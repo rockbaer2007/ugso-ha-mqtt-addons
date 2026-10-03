@@ -2426,7 +2426,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const activeFilter = state.activeFilter || "";
   const selectedFilters = Array.isArray(activeFilter) ? activeFilter : activeFilter ? [activeFilter] : [];
   for (const widget of activePage.widgets) {
-    if (widget.type === "linebox-math") { widget.width = Math.max(96, Number(widget.width) || 160); widget.height = widget.width; }
+    if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
     if (widget.visible === false) continue;
     const editorFilterWords = String(widget.generalEnabled === true ? widget.filterWord || "" : "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
     const editorFilterMatches = state.editorWidgetFilter?.words?.some((word) => editorFilterWords.includes(word));
@@ -2501,8 +2501,17 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (widget.type === "linebox-math") {
       content.classList.add("linebox-math-content");
       content.style.borderRadius = "0";
+      content.style.padding = "2px";
+      content.style.overflow = "hidden";
+      applySafeStyle(content, widget.mathStyle);
+      if (widget.mathIcon) {
+        const icon = document.createElement("img"); icon.alt = ""; icon.className = "math-icon";
+        const size = Math.max(8, Math.min(512, Number(widget.mathIconSize) || 24));
+        icon.style.width = `${size}px`; icon.style.height = `${size}px`;
+        setIconImageSource(icon, widget.mathIcon, widget.mathIconColor || "#29c8b5"); content.append(icon);
+      }
       if (widget.title) { const caption = document.createElement("strong"); caption.textContent = widget.title; content.append(caption); }
-      const value = document.createElement("span"); value.className = "math-result"; content.append(value);
+      const value = document.createElement("span"); value.className = "math-result"; value.hidden = widget.mathShowResult === false; content.append(value);
       updateMathResult(widget, activePage.widgets, value);
     } else if (widget.type === "linebox") {
       content.classList.add("linebox-content");
@@ -2947,7 +2956,11 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
         const marker = document.createElement("span"); marker.className = "widget-dock-point"; marker.style.left = `${x * 100}%`; marker.style.top = `${y * 100}%`; marker.dataset.anchorId = anchorId; marker.dataset.widgetId = widget.id;
         const occupied = activePage.widgets.filter(item => item.type === "svg-connection" && [[item.startWidgetId, item.startAnchor], [item.endWidgetId, item.endAnchor]].some(([id, anchor]) => id === widget.id && (anchor || "right-center") === anchorId)).length;
         marker.dataset.count = String(occupied); marker.title = `${label}${occupied ? ` · ${occupied} Verbindung${occupied === 1 ? "" : "en"}` : ""}`; element.append(marker);
-        if (widget.type === "linebox-math") { marker.classList.add("math-dock-point"); marker.classList.toggle("is-occupied", occupied > 0); marker.textContent = anchorId; }
+        if (widget.type === "linebox-math") {
+          marker.classList.add("math-dock-point"); marker.classList.toggle("is-occupied", occupied > 0); marker.textContent = anchorId;
+          const markerSize = Math.max(6, Math.min(20, Math.min(widget.width, widget.height) / 4 - 1));
+          Object.assign(marker.style, { width: `${markerSize}px`, height: `${markerSize}px`, fontSize: `${Math.max(5, markerSize * .6)}px`, lineHeight: `${markerSize - 2}px`, borderWidth: "1px" });
+        }
       }
     }
     const signalCount = isConnection || !optionalWidgetGroupEnabled(widget, "signalImagesEnabled") ? 0 : Math.max(0, Math.min(9, Number(widget.signalCount) || 0));
@@ -3160,10 +3173,9 @@ function makeResizable(element, handle, widget) {
     if (direction.includes("w")) { widget.width = Math.max(16, Math.round(origin.width - dx)); widget.x = Math.max(0, Math.round(origin.left + origin.width - widget.width)); }
     if (direction.includes("n")) { widget.height = Math.max(16, Math.round(origin.height - dy)); widget.y = Math.max(0, Math.round(origin.top + origin.height - widget.height)); }
     if (widget.type === "linebox-math") {
-      const size = Math.max(96, direction.includes("e") || direction.includes("w") ? widget.width : widget.height);
-      widget.width = size; widget.height = size;
-      if (direction.includes("n")) widget.y = Math.max(0, origin.top + origin.height - size);
-      if (direction.includes("w")) widget.x = Math.max(0, origin.left + origin.width - size);
+      widget.width = Math.min(2000, Math.max(32, widget.width)); widget.height = Math.min(2000, Math.max(32, widget.height));
+      if (direction.includes("n")) widget.y = Math.max(0, origin.top + origin.height - widget.height);
+      if (direction.includes("w")) widget.x = Math.max(0, origin.left + origin.width - widget.width);
     }
     element.style.left = `${widget.x}px`; element.style.top = `${widget.y}px`;
     element.style.width = `${widget.width}px`; element.style.height = `${widget.height}px`;
@@ -3221,8 +3233,9 @@ function openMathDialog(widget) {
   const dialog = document.createElement("dialog"); dialog.className = "studio-dialog math-editor";
   const heading = document.createElement("h2"); heading.textContent = "SVG LineBox Math · Berechnungen";
   const hint = document.createElement("p"); hint.textContent = "Vier getrennte Rechnungen. Ausgänge als Buchstabenliste, z. B. E,F;H. Eingänge A–P können in mehreren Formeln verwendet werden. Interne Übergabe ist je Rechnung zunächst aus und ersetzt am gewählten Eingang externe Leitungswerte.";
-  const sizeLabel = document.createElement("label"); sizeLabel.textContent = "Quadratgröße (px) ";
-  const size = document.createElement("input"); size.type = "number"; size.min = "96"; size.max = "2000"; size.value = String(widget.width || 160); sizeLabel.append(size);
+  const sizeLabel = document.createElement("label"); sizeLabel.textContent = "Breite / Höhe (px) ";
+  const size = document.createElement("input"); size.type = "number"; size.min = "32"; size.max = "2000"; size.value = String(widget.width || 160); size.setAttribute("aria-label", "Breite (px)");
+  const height = document.createElement("input"); height.type = "number"; height.min = "32"; height.max = "2000"; height.value = String(widget.height || 160); height.setAttribute("aria-label", "Höhe (px)"); sizeLabel.append(size, height);
   const list = document.createElement("div"); list.className = "math-port-list";
   const calculations = document.createElement("div"); calculations.className = "math-calculation-list";
   const preview = document.createElement("p"); preview.className = "math-preview"; preview.setAttribute("aria-live", "polite");
@@ -3288,7 +3301,7 @@ function openMathDialog(widget) {
   const apply = document.createElement("button"); apply.textContent = "Anwenden"; apply.type = "button";
   apply.addEventListener("click", () => {
     refresh();
-    if (!Number.isFinite(Number(size.value)) || Number(size.value) < 96 || Number(size.value) > 2000) { preview.textContent = "Quadratgröße: 96 bis 2000 px"; return; }
+    if ([size, height].some(input => !Number.isFinite(Number(input.value)) || Number(input.value) < 32 || Number(input.value) > 2000)) { preview.textContent = "Breite und Höhe: 32 bis 2000 px"; return; }
     const assignments = validateMathAssignments(draft);
     if (assignments.errors.length) { preview.textContent = assignments.errors.join("; "); return; }
     if (!draft.mathCalculations.some(calculation => calculation.enabled)) { preview.textContent = "Mindestens eine Rechnung aktivieren"; return; }
@@ -3299,7 +3312,7 @@ function openMathDialog(widget) {
     recordHistorySnapshot(); preserveDockedConnectionPositions(widget, currentPage().widgets);
     for (const key of ["mathCalculations", "dockPointsEnabled", ...MATH_IDS.flatMap(id => [dockPointKey(id), `mathRole_${id}`])]) widget[key] = structuredClone(draft[key]);
     widget.mathMode = draft.mathCalculations[0].mode; widget.mathExpression = draft.mathCalculations[0].expression;
-    widget.width = widget.height = Math.round(Number(size.value)); dialog.close(); render();
+    widget.width = Math.round(Number(size.value)); widget.height = Math.round(Number(height.value)); dialog.close(); render();
   });
   const cancel = document.createElement("button"); cancel.textContent = "Abbrechen"; cancel.type = "button"; cancel.addEventListener("click", () => dialog.close());
   actions.append(apply, cancel); dialog.append(heading, hint, sizeLabel, list, calculations, preview, actions);

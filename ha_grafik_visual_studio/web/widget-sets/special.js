@@ -153,10 +153,20 @@ registerWidgetSet({
       title: "", width: 160, height: 160, radius: 0, dockPointsEnabled: false, dockAlwaysVisible: true,
       backgroundColor: "#12383b", borderColor: "#29c8b5", borderWidth: 2, borderStyle: "solid",
       mathMode: "expression", mathExpression: "A + B", lineboxDivisor: 1,
+      mathIcon: "", mathIconSize: 24, mathIconColor: "#29c8b5", mathShowResult: true,
       ...Object.fromEntries(MATH_ANCHORS.map(([id]) => [`mathRole_${id}`, "input"])),
     },
     propertyGroups: [{ label: "Berechnung", hint: "Berechnung bearbeiten öffnet die Formel und Rollen A–P. Mehrere Leitungen an einem Eingang werden zuerst summiert. Ungültige Werte stoppen die Ausgabe.", fields: [
       { label: "Beschriftung (optional)", key: "title" },
+      { label: "Ergebnis anzeigen", key: "mathShowResult", type: "checkbox", default: true },
+    ] }, { label: "Darstellung", fields: [
+      { label: "Icon", key: "mathIcon", previewImage: true },
+      { label: "Icongröße (px)", key: "mathIconSize", type: "number", min: 8, max: 512 },
+      { label: "Iconfarbe", key: "mathIconColor", type: "color" },
+      { label: "Hintergrundfarbe", key: "backgroundColor", type: "color" },
+      { label: "Rahmenfarbe", key: "borderColor", type: "color" },
+      { label: "Ergebnistextfarbe", key: "textColor", type: "color" },
+      { label: "Zusätzlicher CSS-Stil", key: "mathStyle", type: "textarea" },
     ] }],
   }],
 });

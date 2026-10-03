@@ -356,6 +356,8 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .widget-dock-point.math-dock-point::after { display: none; }
 .linebox-math-content { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
 .linebox-math-content strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.linebox-math-content .math-icon { object-fit: contain; max-width: 100%; max-height: 100%; flex-shrink: 1; min-height: 0; }
+.linebox-math-content .math-result[hidden] { display: none; }
 .math-result { font-size: 18px; }
 .math-result.is-error { text-decoration: underline dotted; }
 .studio-dialog.math-editor { width: min(1020px, 94vw); max-height: 90vh; overflow: auto; }

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.139
+
+- Allows independent SVG LineBox Math width and height from 32 px, including rectangular resizing and size-adaptive editor dock markers.
+- Adds an optional icon with size/color controls, background/border/text colors, restricted inline CSS styling and optional result display. Calculations continue when results are hidden.
+
 ## 0.1.138
 
 - Extends SVG LineBox Math to four independent calculations with per-calculation output lists (e.g. E,F;H), previews and optional internal result handoff to one input, disabled by default.
