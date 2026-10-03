@@ -1,4 +1,5 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "universal-button" && key === "entityId" && ["read-only", "navigation"].includes(widget.interaction)) return "Die HA-Entität wird nur gelesen. Für Anzeige und Navigation wird kein zusätzlicher HA-Helfer benötigt.";
   if (widget.type === "iframe-8" && key === "entityId") return "Die HA-Entität liefert den URL-Index: false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen; kein zusätzlicher HA-Helfer nötig. Ohne Entität wird Frame [0] angezeigt.";
   if (widget.type === "iframe-8" && key === "count") return "Höchster Index: 20 ergibt 21 Einträge von [0] bis [20]. Deaktivierte oder leere Einträge zeigen keinen Frame.";
   if (widget.type === "iframe-8" && /^frameNoSandbox\d+$/.test(key)) return migrationHint({ type: "iframe" }, "noSandbox");

@@ -1,3 +1,5 @@
+import { remapUniversalReferences } from "./universal-element.js";
+
 export function tabCount(widget) { return Math.max(1, Math.min(20, Math.trunc(Number(widget.tabCount) || 4))); }
 
 export function tabSize(widget) {
@@ -48,6 +50,7 @@ export function reidentifyTabWidgets(owner, widgetId, groupId) {
     const groups = new Map();
     for (const widget of surface.widgets || []) {
       widget.id = map.get(widget.id);
+      remapUniversalReferences(widget, map);
       if (widget.editorGroupId) { if (!groups.has(widget.editorGroupId)) groups.set(widget.editorGroupId, groupId()); widget.editorGroupId = groups.get(widget.editorGroupId); }
       for (const key of ["startWidgetId", "endWidgetId", "flowParentId"]) if (widget[key]) widget[key] = map.get(widget[key]) || "";
       for (const key of ["startCollector", "endCollector"]) {

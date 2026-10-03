@@ -2,6 +2,21 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Zustand hinzufügen": "Add state",
+  "Einzeltaste": "Single button", "Getrennte Tasten": "Separate buttons", "Taster / nächsten Zustand": "Button / next state", "Schalten": "Switch", "Wert false": "False value", "Wert true": "True value",
+  "Standardzustand": "Default state", "Klick-Feedback": "Click feedback", "Klick durchlassen": "Pass clicks through", "Dauer (ms)": "Duration (ms)",
+  "Vergleichen nach": "Compare using", "Widget-Standard": "Widget default", "Andere HA-Entität": "Other HA entity", "Vergleichsoperator": "Comparison operator", "Klick deaktivieren wenn aktiv": "Disable click when active",
+  "Inhaltsblinkintervall (ms)": "Content blink interval (ms)", "Inhaltsgröße (px, 0 = Widget)": "Content size (px, 0 = widget)", "Inhaltsgröße (px)": "Content size (px)",
+  "Inhaltsfarbe": "Content color", "Randfarbe": "Border color", "Äußere Schattenfarbe": "Outer shadow color", "Innere Schattenfarbe": "Inner shadow color", "Vom Widget": "From widget", "Eigene Einstellungen": "Local settings",
+  "Inhaltstyp": "Content type", "Textdekoration": "Text decoration", "Keiner": "None", "Unterstrichen": "Underline", "Überstrichen": "Overline", "Durchgestrichen": "Strikethrough",
+  "Rand oben": "Top margin", "Rand rechts": "Right margin", "Rand unten": "Bottom margin", "Rand links": "Left margin", "Spiegel": "Mirror", "Drehung": "Rotation",
+  "Ausrichtung": "Alignment", "Richtung": "Direction", "Spalte": "Column", "Zeile": "Row", "Start": "Start", "Ende": "End", "Raum zwischen": "Space between", "Raum rundherum": "Space around", "Gleichmäßig": "Even spacing", "Strecken": "Stretch",
+  "Textausrichtung": "Text alignment", "Inhalt ausrichten": "Align content", "Reihenfolge umkehren": "Reverse order", "Hintergrundopazität": "Background opacity", "Inhaltsopazität": "Content opacity",
+  "Ecken": "Corners", "Eckentyp": "Corner type", "Abgerundet": "Rounded", "Abgeschrägt": "Chamfered", "Oben links": "Top left", "Oben rechts": "Top right", "Unten rechts": "Bottom right", "Unten links": "Bottom left",
+  "Größe oben": "Top width", "Größe rechts": "Right width", "Größe unten": "Bottom width", "Größe links": "Left width", "Rahmenstil": "Border style", "Durchgezogen": "Solid", "Gestrichelt": "Dashed", "Gepunktet": "Dotted", "Doppelt": "Double", "Rille": "Groove", "Erhöht": "Ridge", "Vertieft": "Inset", "Hervorgehoben": "Outset",
+  "Äußerer Schatten": "Outer shadow", "Innerer Schatten": "Inner shadow", "X-Versatz": "X offset", "Y-Versatz": "Y offset", "Verwischen": "Blur", "Größe": "Size", "Drehung der Form": "Shape rotation", "Eckenradius der Form (px)": "Shape corner radius (px)", "Raute": "Diamond", "Siebeneck": "Heptagon", "Benutzerdefiniertes Polygon": "Custom polygon",
+  "Polygonpunkte (%, z. B. 50% 0%, 100% 100%, 0% 100%)": "Polygon points (%, e.g. 50% 0%, 100% 100%, 0% 100%)",
+  "Die HA-Entität wird nur gelesen. Für Anzeige und Navigation wird kein zusätzlicher HA-Helfer benötigt.": "The HA entity is read-only. Display and navigation do not require an additional HA helper.",
   "Kein gültiger Seitenindex": "No valid page index", "Seite nicht gefunden": "Page not found", "Eingebettete Seite": "Embedded page",
   "Die HA-Entität liefert den Seitenindex 0, 1, 2 …; false/off entspricht 0, true/on entspricht 1. Es wird nur gelesen, kein zusätzlicher HA-Helfer benötigt. Ohne Entität wird Seite [0] verwendet.": "The HA entity provides page index 0, 1, 2 …; false/off maps to 0, true/on to 1. Read-only; no additional HA helper is needed. Without an entity, Page [0] is used.",
   "Höchster Index: 1 ergibt Seite [0] und Seite [1]. Eingebettet werden Studio-Projektseiten; alle benötigten Seiten müssen beim späteren Projekt-Export enthalten sein. Keine HA-Dashboards.": "Highest index: 1 creates Page [0] and Page [1]. Embeds Studio project pages; all required pages must be included in future project exports. These are not HA dashboards.",

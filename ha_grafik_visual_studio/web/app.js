@@ -11,6 +11,8 @@ import { boolSelectOn } from "./bool-select.js";
 import { boolSvgOn, boolSvgNext, boolSvgOpacity } from "./bool-svg.js";
 import { redNumberDisplay } from "./red-number.js";
 import { svgShapeGeometry } from "./svg-shape.js";
+import { UNIVERSAL_STYLE_GROUPS, universalStateFields, universalStyle, universalVisual, universalNext, universalResolvedColors, universalClip, remapUniversalReferences } from "./universal-element.js";
+const universalFeedback = new Map();
 import { mediaRefreshUrl, iframeOptions, iframeCount, iframeIndex } from "./iframe-widget.js";
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
@@ -372,6 +374,8 @@ function projectForSave(project) {
         if (group.required || (group.css && group.label === "CSS Allgemein")) widget.enabledPropertyGroups[propertyGroupKey(group, index)] = true;
         if (group.masterKey || propertyGroupEnabled(widget, group, index)) continue;
         for (const descriptor of group.fields) delete widget[descriptor.key];
+        if (group.universalModel) delete widget[group.universalModel];
+        if (group.universalStates) delete widget.visualStates;
         if (group.signalImages) {
           delete widget.signalCount;
           delete widget.signalImages;
@@ -564,7 +568,7 @@ function displayedWidgetState(widget) {
     return numericWidgetInput(widget, surface?.widgets || currentPage().widgets, state.entityStates) ?? "--";
   }
   if (widget.type === "string") return stringDisplayValue(widget, state.entityStates[widget.entityId], runtimeMode);
-  if ((runtimeMode || ["view-in-widget-8", "bool-svg", "red-number", "iframe-8"].includes(widget.type)) && widget.entityId) {
+  if ((runtimeMode || ["view-in-widget-8", "bool-svg", "red-number", "iframe-8", "universal-button"].includes(widget.type)) && widget.entityId) {
     return state.entityStates[widget.entityId]?.state ?? "--";
   }
   return widget.state;
@@ -586,6 +590,7 @@ function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     !["dock", "preview"].includes(widget.numericSource) ? widget.entityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
+    ...(widget.type === "universal-button" ? (widget.visualStates || []).filter(item => item.compareSource === "entity").map(item => item.entityId) : []),
   ]))]
     .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id || ""));
 }
@@ -619,6 +624,7 @@ async function refreshEditorLiveStates() {
 function runtimeLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     widget.entityId, widget.visibilityEnabled ? widget.visibilityEntityId : "",
+    ...(widget.type === "universal-button" ? (widget.visualStates || []).filter(item => item.compareSource === "entity").map(item => item.entityId) : []),
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
     widget.type === "linebox" && widget.outputHelperEnabled ? widget.outputHelperEntityId : "",
     ...(widget.type === "table" ? [widget.eventEntityId, widget.ackEntityId, widget.selectedEntityId] : []),
@@ -1570,6 +1576,7 @@ function cloneWidgetForInsert(source, page, idMap) {
   const copy = structuredClone(source); const oldId = source.id;
   if (copy.editorGroupId) { if (idMap.has(copy.editorGroupId)) copy.editorGroupId = idMap.get(copy.editorGroupId); else delete copy.editorGroupId; }
   copy.id = idMap.get(oldId) || `widget-${state.nextId++}`;
+  remapUniversalReferences(copy, idMap);
   reidentifyTabWidgets(copy, () => `widget-${state.nextId++}`, () => `group-${createRandomId()}`);
   copy.name = uniqueWidgetName(page, `${widgetDisplayName(source)} Kopie`);
   for (const key of ["startWidgetId", "endWidgetId", "flowParentId"]) if (copy[key]) copy[key] = idMap.get(copy[key]) || "";
@@ -2318,6 +2325,87 @@ function applySafeStyle(element, cssText) {
   }
 }
 
+function renderUniversalElement(widget, content, runtimeMode) {
+  const widgets = allProjectWidgets(state.project);
+  const style = Object.assign({}, ...UNIVERSAL_STYLE_GROUPS.map(group => universalStyle(widget, widgets, group)));
+  const actual = displayedWidgetState(widget);
+  const selected = universalVisual(widget, actual, state.entityStates, matchesCondition);
+  const tiles = widget.buttonMode === "separate" ? selected.states.map((visual, index) => ({ visual: { ...widget.defaultState, ...visual }, index })).filter(tile => tile.visual.enabled !== false) : [selected];
+  content.classList.add("universal-widget-content");
+  content.style.display = "flex"; content.style.padding = "0"; content.style.background = "transparent"; content.style.border = "0"; content.style.boxShadow = "none";
+  content.style.overflow = "visible"; content.style.gap = "6px";
+  content.style.flexDirection = style.contentLayout === "horizontal" ? "row" : "column";
+  content.style.alignItems = "stretch"; content.style.justifyContent = "stretch";
+  content.style.pointerEvents = runtimeMode && widget.clickThrough ? "none" : "";
+  content.dataset.state = String(actual ?? "");
+  const pixels = value => `${Number(value) || 0}px`;
+  const margins = prefix => ["Top", "Right", "Bottom", "Left"].map(side => pixels(style[prefix + side])).join(" ");
+  for (const { visual, index } of tiles) {
+    const feedbackKey = `${state.projectId}:${currentPage().id}:${widget.id}:${widget.buttonMode === "separate" ? index : "single"}`;
+    const feedback = universalFeedback.get(feedbackKey);
+    const baseColors = universalResolvedColors(visual, widget, widgets);
+    const activeFeedback = feedback && feedback > Date.now();
+    const feedbackColors = activeFeedback ? universalResolvedColors(widget.feedback || {}, widget, widgets, new Set(), false) : {};
+    const colors = { ...baseColors };
+    for (const [key, value] of Object.entries(feedbackColors)) if (value) colors[key] = value;
+    const tile = document.createElement("div"); tile.className = "universal-tile"; tile.dataset.active = String(index === selected.index);
+    const surface = document.createElement("div"); surface.className = "universal-surface";
+    const inside = document.createElement("div"); inside.className = "universal-inside";
+    const border = ["Top", "Right", "Bottom", "Left"].map(side => pixels(widget["ue-borderFrom"] || widget["frame" + side] !== undefined ? style["frame" + side] : widget.borderWidth));
+    const corners = ["TopLeft", "TopRight", "BottomRight", "BottomLeft"].map(side => pixels(widget["ue-cornersFrom"] || widget["corner" + side] !== undefined ? style["corner" + side] : widget.radius ?? style["corner" + side]));
+    surface.style.backgroundColor = colors.backgroundColor || "transparent";
+    surface.style.borderColor = colors.borderColor || "transparent"; surface.style.borderWidth = border.join(" ");
+    surface.style.borderStyle = widget.frameStyle === undefined && !widget["ue-borderFrom"] && widget.borderWidth ? "solid" : style.frameStyle;
+    surface.style.borderRadius = corners.join(" "); surface.style.opacity = style.backgroundOpacity;
+    const shadows = [];
+    if (colors.outerShadowColor) shadows.push(`${pixels(style.outerX)} ${pixels(style.outerY)} ${pixels(style.outerBlur)} ${pixels(style.outerSpread)} ${colors.outerShadowColor}`);
+    else if (widget.shadow) shadows.push("0 4px 12px #0006");
+    if (colors.innerShadowColor) shadows.push(`inset ${pixels(style.innerX)} ${pixels(style.innerY)} ${pixels(style.innerBlur)} ${pixels(style.innerSpread)} ${colors.innerShadowColor}`);
+    surface.style.boxShadow = shadows.join(",") || "none";
+    const clip = universalClip(style, Number.parseFloat(widget.width) / (style.contentLayout === "horizontal" ? tiles.length : 1), Number.parseFloat(widget.height) / (style.contentLayout === "horizontal" ? 1 : tiles.length));
+    surface.style.clipPath = clip; inside.style.clipPath = clip; inside.style.borderRadius = clip ? "0" : corners.join(" ");
+    inside.style.display = "flex"; inside.style.flexDirection = (style.contentLayout === "horizontal" ? "row" : "column") + (style.reverseContent ? "-reverse" : "");
+    inside.style.justifyContent = ["start", "end"].includes(style.contentAlign) ? `flex-${style.contentAlign}` : style.contentAlign;
+    inside.style.alignItems = ["start", "end"].includes(style.itemsAlign) ? `flex-${style.itemsAlign}` : style.itemsAlign;
+    inside.style.textAlign = style.textAlign; inside.style.opacity = style.contentOpacity;
+    inside.style.padding = ["Top", "Right", "Bottom", "Left"].map(side => pixels(widget["ue-paddingFrom"] || widget["inner" + side] !== undefined ? style["inner" + side] : widget.padding ?? style["inner" + side])).join(" ");
+    const media = document.createElement("span"); media.className = "universal-media"; media.style.margin = margins("contentMargin");
+    media.style.transform = `rotate(${Number(style.contentRotation) || 0}deg) scaleX(${(visual.contentMirror ?? style.contentMirror) ? -1 : 1})`;
+    const type = widget.contentType || widget["ue-contentFrom"] ? style.contentType : visual.contentType || style.contentType || "icon";
+    if (type === "icon" || type === "image") {
+      const source = type === "icon" ? String(visual.icon || "").trim() : safeUrl(visual.image, true);
+      if (source && (safeUrl(source, true) || /^mdi:[a-z0-9-]+$/i.test(source))) {
+        const image = document.createElement("img"); image.className = type === "icon" ? "universal-widget-icon" : "universal-widget-image";
+        const size = Math.max(0, Math.min(768, Number(visual.iconSize) || Number(style.contentSize) || 0)); image.style.width = image.style.height = `${size}px`;
+        image.style.objectFit = visual.imageFit || "contain"; image.alt = "";
+        if (type === "icon") setIconImageSource(image, source, colors.iconColor); else image.src = source;
+        media.append(image);
+      } else if (source) media.textContent = source;
+    } else if (type === "html") appendSafeHtml(media, visual.html || "");
+    if (type !== "text") inside.append(media);
+    if (visual.text || type === "text") {
+      const caption = document.createElement("span"); caption.className = "universal-widget-text";
+      appendSafeHtml(caption, visual.text || ""); caption.style.margin = margins("textMargin"); caption.style.textDecoration = style.textDecoration;
+      caption.style.color = colors.textColor || "inherit"; inside.append(caption);
+    }
+    if (Number(visual.blinkInterval) > 0) { inside.classList.add("universal-blink"); inside.style.animationDuration = `${Math.max(100, Number(visual.blinkInterval))}ms`; }
+    tile.append(surface, inside); content.append(tile);
+    tile.setAttribute("aria-label", widget.title || inside.textContent || `Universal Element: ${actual ?? ""}`);
+    if (!runtimeMode || widget.interaction === "read-only" || widget.clickThrough) continue;
+    const nextValue = widget.buttonMode === "separate" ? selected.states[index].value : universalNext(widget, actual, index, selected.states);
+    const ready = !(visual.disableClick && index === selected.index) && (widget.interaction === "navigation" ? Boolean(safeUrl(widget.targetUrl)) : stateElementReady(widget, nextValue));
+    tile.classList.add("is-interactive"); tile.setAttribute("role", widget.interaction === "navigation" ? "link" : "button"); tile.tabIndex = ready ? 0 : -1; tile.setAttribute("aria-disabled", String(!ready));
+    const activate = event => {
+      event.stopPropagation(); if (!ready) return;
+      const duration = Math.min(10000, Math.max(0, Number(widget.feedback?.duration) || 0));
+      if (duration) { const expiry = Date.now() + duration; universalFeedback.set(feedbackKey, expiry); setTimeout(() => { if (universalFeedback.get(feedbackKey) === expiry) { universalFeedback.delete(feedbackKey); renderStage(); } }, duration); }
+      if (widget.interaction === "navigation") { window.open(safeUrl(widget.targetUrl), "_blank", "noopener,noreferrer"); if (duration) renderStage(); }
+      else { setRuntimeStateElement(widget, nextValue); if (duration) renderStage(); }
+    };
+    if (ready) { tile.addEventListener("click", activate); tile.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); activate(event); } }); }
+  }
+}
+
 function matchesCondition(actual, condition, expected) {
   const actualString = String(actual ?? ""); const expectedString = String(expected ?? "");
   const a = Number(actual); const b = Number(expected);
@@ -2616,59 +2704,8 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       if (widget.title) content.append(title);
       content.append(value, ports);
     } else if (widget.type === "universal-button") {
-      const visualStates = widget.visualStates || [];
-      const currentState = displayedWidgetState(widget);
-      const matchingIndex = visualStates.findIndex((item) => matchesCondition(currentState, item.condition || "==", item.value));
-      const visualIndex = matchingIndex >= 0 ? matchingIndex : 0;
-      const visual = visualStates[visualIndex] || {};
-      content.classList.add("universal-widget-content");
-      content.dataset.state = String(currentState ?? "");
-      content.style.display = "flex";
-      content.style.flexDirection = widget.contentLayout === "horizontal" ? "row" : "column";
-      content.style.justifyContent = widget.contentAlign === "start" ? "flex-start" : widget.contentAlign === "end" ? "flex-end" : "center";
-      content.style.alignItems = widget.contentAlign === "start" ? "flex-start" : widget.contentAlign === "end" ? "flex-end" : "center";
-      content.setAttribute("aria-label", widget.title || `State Element: ${currentState ?? ""}`);
-      if (visual.contentType === "icon") {
-        const iconValue = String(visual.icon || "").trim();
-        if (safeUrl(iconValue, true) || /^mdi:[a-z0-9-]+$/i.test(iconValue)) {
-          const image = document.createElement("img"); image.className = "universal-widget-icon";
-          const iconSize = Math.max(8, Math.min(512, Number(visual.iconSize) || 48));
-          image.style.width = `${iconSize}px`; image.style.height = `${iconSize}px`; image.style.objectFit = "contain";
-          setIconImageSource(image, iconValue, visual.iconColor); image.alt = visual.text || iconValue; content.append(image);
-        } else if (/^[a-z0-9_-]+:[a-z0-9_-]+$/i.test(iconValue)) {
-          const name = document.createElement("span"); name.className = "universal-widget-icon-fallback"; name.textContent = iconValue; content.append(name);
-        }
-      } else if (visual.contentType === "image") {
-        const imageUrl = safeUrl(visual.image, true);
-        if (imageUrl) {
-          const image = document.createElement("img"); image.className = "universal-widget-image";
-          const size = Math.max(8, Math.min(768, Number(visual.iconSize) || 96));
-          image.style.width = `${size}px`; image.style.height = `${size}px`; image.style.objectFit = visual.imageFit || "contain";
-          image.src = imageUrl; image.alt = visual.text || ""; content.append(image);
-        }
-      } else if (visual.contentType === "text") {
-        const text = document.createElement("span"); text.className = "universal-widget-text"; text.textContent = visual.text || ""; content.append(text);
-      } else if (visual.contentType === "html") {
-        const html = document.createElement("span"); html.className = "universal-widget-html"; appendSafeHtml(html, visual.html || ""); content.append(html);
-      }
-      if (runtimeMode && widget.interaction !== "read-only") {
-        const nextValue = widget.interaction === "switch" && WRITABLE_SWITCH_ENTITY.test(widget.entityId || "") ? !isOn(currentState) ? "on" : "off" : visualStates[(visualIndex + 1) % Math.max(visualStates.length, 1)]?.value ?? "on";
-        const ready = widget.interaction === "navigation" || stateElementReady(widget, nextValue);
-        content.classList.add("is-interactive"); content.tabIndex = ready ? 0 : -1; content.setAttribute("aria-disabled", String(!ready));
-        if (widget.interaction === "navigation") content.setAttribute("role", "link");
-        else content.setAttribute("role", "button");
-        const activate = (event) => {
-          event.stopPropagation();
-          if (!ready) return;
-          if (widget.interaction === "navigation") {
-            const target = safeUrl(widget.targetUrl);
-            if (target) window.open(target, "_blank", "noopener,noreferrer");
-          } else {
-            setRuntimeStateElement(widget, nextValue);
-          }
-        };
-        if (ready) { content.addEventListener("click", activate); content.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); activate(event); } }); }
-      }
+      renderUniversalElement(widget, content, runtimeMode);
+      if (runtimeMode && widget.clickThrough) element.style.pointerEvents = "none";
     } else if (widget.type === "text") {
       content.textContent = widget.textContent ?? widget.state ?? "";
       content.style.whiteSpace = widget.whiteSpace || "pre-wrap";
@@ -3790,7 +3827,7 @@ function field(descriptor, widget) {
   else if (["select", "page", "widget", "collector", "connection"].includes(descriptor.type)) {
     input = document.createElement("select");
     const choices = descriptor.type === "page" ? [{ value: "", label: "Keine Seite" }, ...state.project.pages.map(page => ({ value: page.id, label: page.name }))]
-      : descriptor.type === "widget" ? [{ value: "", label: "Kein Widget / freier Punkt" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type !== "svg-connection").map(item => ({ value: item.id, label: `${widgetDisplayName(item)} · ${item.id}` }))]
+      : descriptor.type === "widget" ? [{ value: "", label: descriptor.widgetType ? "Eigene Einstellungen" : "Kein Widget / freier Punkt" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type !== "svg-connection" && (!descriptor.widgetType || item.type === descriptor.widgetType)).map(item => ({ value: item.id, label: `${widgetDisplayName(item)} · ${item.id}` }))]
       : descriptor.type === "connection" ? [{ value: "", label: "Keine Hauptlinie" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").map(item => ({ value: item.id, label: `${widgetDisplayName(item)} · ${item.id}` }))]
       : descriptor.type === "collector" ? [{ value: "", label: "Kein Sammelpunkt" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").flatMap(item => (item.connectionPoints || []).filter(point => point.collectorEnabled).map(point => ({ value: `${item.id}:${point.id}`, label: `${widgetDisplayName(item)} · ${point.name || point.id}` })))]
       : descriptor.options || [];
@@ -3805,8 +3842,14 @@ function field(descriptor, widget) {
   if (descriptor.step !== undefined) input.step = descriptor.step;
   if (input.type === "checkbox" && descriptor.key?.startsWith("dock_")) input.dataset.dockPoint = descriptor.key;
   if (input.type === "checkbox") input.checked = widget[descriptor.key] ?? descriptor.default ?? true;
-  else input.value = widget.type === "red-number" && descriptor.type === "color" ? filterHex(widget[descriptor.key] ?? descriptor.default ?? "#FFFFFF") : widget[descriptor.key] ?? descriptor.default ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
+  else input.value = (widget.type === "red-number" || descriptor.optionalColor) && descriptor.type === "color" ? filterHex(widget[descriptor.key] ?? descriptor.default ?? "#FFFFFF") : widget[descriptor.key] ?? descriptor.default ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
   input.disabled = descriptor.disabled === true;
+  if (descriptor.optionalColor) {
+    const override = document.createElement("input"); override.type = "checkbox"; override.checked = Boolean(widget[descriptor.key]);
+    override.setAttribute("aria-label", `${descriptor.label}: eigene Farbe`); input.disabled = !override.checked;
+    override.addEventListener("change", () => { input.disabled = !override.checked; if (override.checked) widget[descriptor.key] = input.value; else delete widget[descriptor.key]; renderStage(); });
+    wrapper.append(override);
+  }
   if (widget.type === "html-state" && descriptor.key === "writeValue") input.value = widget.writeValue ?? widget.state ?? "";
   let preview;
   let aliasPreview;
@@ -3890,7 +3933,7 @@ function field(descriptor, widget) {
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (widget.type === "dashboard-in-widget" && ["width", "height"].includes(descriptor.key)) { Object.assign(widget, dashboardSize(widget)); input.value = String(widget[descriptor.key]); }
     if (widget.type === "value-list-html-style" && descriptor.key === "count" && widget.testIndex !== "" && Number(widget.testIndex) > styledListCount(widget)) widget.testIndex = "";
-    if ((["sensor", "slider", "input-value", "string", "view-in-widget-8", "iframe-8"].includes(widget.type) && descriptor.key === "entityId") ||
+    if ((["sensor", "slider", "input-value", "string", "view-in-widget-8", "iframe-8", "universal-button"].includes(widget.type) && descriptor.key === "entityId") || descriptor.universalEntity ||
         (widget.type === "svg-connection" && ["animationSource", "animationNumberEntityId", "animationBooleanEntityId"].includes(descriptor.key))) {
       void refreshEditorLiveStates();
     }
@@ -4082,40 +4125,39 @@ function renderProperties() {
       for (const input of body.querySelectorAll("input[data-dock-point]")) input.addEventListener("input", updateDockAll);
       updateDockAll();
     }
+    if (group.universalModel) {
+      const model = widget[group.universalModel] ??= {};
+      body.append(...visibleFields(group.modelFields || universalStateFields(false), model));
+    }
     if (group.universalStates) {
-      const count = Math.max(1, Math.min(5, Number(widget.stateCount) || 2));
+      const count = Math.max(1, Math.min(20, Number(widget.stateCount) || 2));
       widget.visualStates ??= [];
-      while (widget.visualStates.length < count) {
-        const stateIndex = widget.visualStates.length;
-        widget.visualStates.push({ condition: "==", value: `state-${stateIndex + 1}`, contentType: "icon", icon: "mdi:checkbox-blank-circle", image: "", text: "", html: "", iconSize: 48, iconColor: "#29c8b5", imageFit: "contain" });
-      }
-      const stateFields = [
-        { label: "Vergleich", key: "condition", type: "select", options: ["==", "!=", ">", ">=", "<", "<="] },
-        { label: "Zustandswert", key: "value" },
-        { label: "Inhalt", key: "contentType", type: "select", refreshProperties: true, options: [
-          { value: "icon", label: "Icon" }, { value: "image", label: "Bild" }, { value: "text", label: "Text" }, { value: "html", label: "HTML" },
-        ] },
-        { label: "Icon / Iconset", key: "icon", previewImage: true, showWhen: { key: "contentType", value: "icon" } },
-        { label: "Bildpfad / URL", key: "image", previewImage: true, showWhen: { key: "contentType", value: "image" } },
-        { label: "Text", key: "text", type: "textarea", showWhen: { key: "contentType", value: "text" } },
-        { label: "HTML-Inhalt", key: "html", type: "textarea", showWhen: { key: "contentType", value: "html" } },
-        { label: "Icongröße (px)", key: "iconSize", type: "range", min: 8, max: 512, step: 1, showWhen: { key: "contentType", value: "icon" } },
-        { label: "Bildgröße (px)", key: "iconSize", type: "range", min: 8, max: 768, step: 1, showWhen: { key: "contentType", value: "image" } },
-        { label: "Iconfarbe", key: "iconColor", type: "color", showWhen: { key: "contentType", value: "icon" } },
-        { label: "Bildanpassung", key: "imageFit", type: "select", options: ["contain", "cover", "fill"], showWhen: { key: "contentType", value: "image" } },
-      ];
+      while (widget.visualStates.length < count) widget.visualStates.push({ condition: "==", value: String(widget.visualStates.length), contentType: "icon", icon: "mdi:checkbox-blank-circle", text: "" });
       for (let stateIndex = 0; stateIndex < count; stateIndex += 1) {
-        const visualState = widget.visualStates[stateIndex];
+        const visual = widget.visualStates[stateIndex];
         const details = document.createElement("details"); details.className = "signal-section";
         const nestedKey = `widget:${widget.id}:${group.label}:state:${stateIndex}`;
         details.open = state.expandedPropertySections.has(nestedKey);
         details.addEventListener("toggle", () => { if (details.open) state.expandedPropertySections.add(nestedKey); else state.expandedPropertySections.delete(nestedKey); });
-        const summary = document.createElement("summary"); summary.textContent = `Zustand ${stateIndex + 1}`; details.append(summary);
-        const fields = document.createElement("div"); fields.className = "property-fields";
-        fields.append(...visibleFields(stateFields, visualState));
+        const summary = document.createElement("summary"); summary.textContent = `Zustand [${stateIndex + 1}]`;
+        const controls = document.createElement("span"); controls.className = "universal-state-actions";
+        for (const [label, text, disabled, action] of [
+          ["Kopieren", "⧉", count >= 20, () => { widget.visualStates.splice(stateIndex + 1, 0, structuredClone(visual)); widget.stateCount = String(count + 1); }],
+          ["Löschen", "×", count <= 1, () => { widget.visualStates.splice(stateIndex, 1); widget.stateCount = String(count - 1); }],
+          ["Nach oben", "↑", stateIndex === 0, () => { [widget.visualStates[stateIndex], widget.visualStates[stateIndex - 1]] = [widget.visualStates[stateIndex - 1], visual]; }],
+          ["Nach unten", "↓", stateIndex === count - 1, () => { [widget.visualStates[stateIndex], widget.visualStates[stateIndex + 1]] = [widget.visualStates[stateIndex + 1], visual]; }],
+        ]) {
+          const button = document.createElement("button"); button.type = "button"; button.textContent = text; button.disabled = disabled; button.setAttribute("aria-label", `Zustand [${stateIndex + 1}]: ${label}`);
+          button.addEventListener("click", event => { event.preventDefault(); event.stopPropagation(); recordHistorySnapshot(); action(); renderStage(); renderProperties(); }); controls.append(button);
+        }
+        const enabled = document.createElement("input"); enabled.type = "checkbox"; enabled.checked = visual.enabled !== false; enabled.setAttribute("aria-label", `Zustand [${stateIndex + 1}]: aktiv`);
+        enabled.addEventListener("click", event => event.stopPropagation()); enabled.addEventListener("change", () => { visual.enabled = enabled.checked; renderStage(); }); controls.append(enabled);
+        summary.append(controls); details.append(summary);
+        const fields = document.createElement("div"); fields.className = "property-fields"; fields.append(...visibleFields(universalStateFields(), visual));
         details.append(fields); body.append(details);
       }
-      widget.visualStates.length = count;
+      const add = document.createElement("button"); add.type = "button"; add.textContent = uiText("Zustand hinzufügen"); add.disabled = count >= 20;
+      add.addEventListener("click", () => { recordHistorySnapshot(); widget.visualStates.splice(count, 0, { condition: "==", value: String(count), contentType: "icon", icon: "mdi:checkbox-blank-circle", text: "" }); widget.stateCount = String(count + 1); renderProperties(); renderStage(); }); body.append(add);
     }
     if (group.signalImages) {
       const count = Math.max(0, Math.min(9, Number(widget.signalCount) || 0));

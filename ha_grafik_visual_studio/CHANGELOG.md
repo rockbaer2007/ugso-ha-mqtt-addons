@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.166
+
+- Rename State Element to Universal Element, retaining the stored type and old search terms.
+- Add default-state fallback, up to 20 conditional states with alternate HA entities, state copy/delete/reorder, separate buttons and custom false/true write values.
+- Add click feedback and pass-through, text/content styling, live style inheritance, independent opacity and spacing, per-corner round/chamfer shapes, borders, shadows and custom polygons. Legacy styling remains compatible.
+- Keep CSS General required; document the neutral sections in German and English with original Studio screenshots and optional HA migration hints.
+
 ## 0.1.165
 
 - iFrame 8 follows the 600 × 320 reference defaults, with per-index URL and sandbox options and an inclusive highest index up to 20 (21 entries).

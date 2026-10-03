@@ -1,59 +1,35 @@
 import { registerWidgetSet } from "../widget-registry.js";
-
-const layout = () => ({ label: "Größe und Position", fields: [
-  { label: "z-index", key: "layer", type: "number", min: 0, max: 9999 },
-  { label: "Breite (px)", key: "width", type: "number", min: 24, max: 7680 },
-  { label: "Höhe (px)", key: "height", type: "number", min: 24, max: 4320 },
-  { label: "X (px)", key: "x", type: "number", min: 0 }, { label: "Y (px)", key: "y", type: "number", min: 0 },
-] });
-
+import { UNIVERSAL_STYLE_GROUPS, universalColors } from "../universal-element.js";
 registerWidgetSet({
-  id: "ha-grafik-basic2",
-  label: "HA Grafik – Interaktiv",
+  id: "ha-grafik-basic2", label: "HA Grafik – Interaktiv",
   widgets: [{
-    type: "universal-button",
-    label: "State Element",
-    searchTerms: ["Zustands-Element"],
-    icon: "◉",
+    type: "universal-button", label: "Universal Element", searchTerms: ["State Element", "Zustands-Element"], icon: "◉",
     defaults: {
-      title: "", entityId: "", state: "off", interaction: "switch", targetUrl: "", width: 144, height: 112,
-      stateCount: "2", contentLayout: "vertical", contentAlign: "center",
+      title: "", entityId: "", state: "off", interaction: "switch", falseValue: "off", trueValue: "on", targetUrl: "", width: 144, height: 112,
+      stateCount: "2", buttonMode: "single", contentLayout: "vertical", contentAlign: "center",
+      defaultState: { contentType: "icon", icon: "mdi:lightbulb", text: "", iconColor: "#94a3b8" }, feedback: { duration: 0 },
       visualStates: [
-        { condition: "==", value: "off", contentType: "icon", icon: "mdi:lightbulb", image: "", text: "", html: "", iconSize: 48, iconColor: "#94a3b8", imageFit: "contain" },
-        { condition: "==", value: "on", contentType: "icon", icon: "mdi:lightbulb-on", image: "", text: "", html: "", iconSize: 48, iconColor: "#facc15", imageFit: "contain" },
+        { condition: "==", value: "off", contentType: "icon", icon: "mdi:lightbulb", text: "", iconColor: "#94a3b8" },
+        { condition: "==", value: "on", contentType: "icon", icon: "mdi:lightbulb-on", text: "", iconColor: "#facc15" },
       ],
     },
     propertyGroups: [
       { label: "Allgemein", fields: [
-        { label: "Beschriftung (optional)", key: "title" },
-        { label: "Home-Assistant-Entität", key: "entityId" },
-        { label: "Bedienung", key: "interaction", type: "select", options: [
-          { value: "switch", label: "Schalter: Zustand wechseln" },
-          { value: "button", label: "Button: nächsten Zustand zeigen" },
-          { value: "read-only", label: "Nur anzeigen" },
-          { value: "navigation", label: "URL öffnen" },
+        { label: "Beschriftung (optional)", key: "title" }, { label: "Home-Assistant-Entität", key: "entityId" },
+        { label: "Bedienung", key: "interaction", type: "select", refreshProperties: true, options: [
+          { value: "switch", label: "Schalten" }, { value: "button", label: "Taster / nächsten Zustand" },
+          { value: "read-only", label: "Nur anzeigen" }, { value: "navigation", label: "Navigation" },
         ] },
-        { label: "Vorschau-/Testzustand", key: "state" },
-        { label: "Ziel-URL für Navigation", key: "targetUrl" },
-        { label: "Inhaltsanordnung", key: "contentLayout", type: "select", options: [
-          { value: "vertical", label: "Symbol über Text" }, { value: "horizontal", label: "Symbol neben Text" },
-        ] },
-        { label: "Ausrichtung", key: "contentAlign", type: "select", options: [
-          { value: "center", label: "Zentriert" }, { value: "start", label: "Links / oben" }, { value: "end", label: "Rechts / unten" },
-        ] },
+        { label: "Modus", key: "buttonMode", type: "select", options: [{ value: "single", label: "Einzeltaste" }, { value: "separate", label: "Getrennte Tasten" }] },
+        { label: "Wert false", key: "falseValue" }, { label: "Wert true", key: "trueValue" },
+        { label: "Vorschau-/Testzustand", key: "state" }, { label: "Ziel-URL für Navigation", key: "targetUrl" },
       ] },
-      { label: "Zustände und Inhalte", universalStates: true, fields: [
-        { label: "Anzahl der Zustände", key: "stateCount", type: "select", refreshProperties: true, options: ["1", "2", "3", "4", "5"] },
+      { id: "ue-feedback", label: "Klick-Feedback", universalModel: "feedback", fields: [{ label: "Klick durchlassen", key: "clickThrough", type: "checkbox", default: false }], modelFields: [
+        { label: "Dauer (ms)", key: "duration", type: "range", min: 0, max: 10000, default: 0 }, ...universalColors(),
       ] },
-      layout(),
-      { label: "Darstellung", fields: [
-        { label: "Hintergrundfarbe", key: "backgroundColor", type: "color" },
-        { label: "Rahmenfarbe", key: "borderColor", type: "color" },
-        { label: "Rahmenbreite (px)", key: "borderWidth", type: "number", min: 0, max: 32 },
-        { label: "Eckenradius (px)", key: "radius", type: "number", min: 0, max: 200 },
-        { label: "Innenabstand (px)", key: "padding", type: "number", min: 0, max: 120 },
-        { label: "Schatten", key: "shadow", type: "checkbox" },
-      ] },
+      { id: "ue-default", label: "Standardzustand", universalModel: "defaultState", fields: [] },
+      { label: "Zustände und Inhalte", universalStates: true, fields: [{ label: "Anzahl der Zustände", key: "stateCount", type: "select", refreshProperties: true, options: Array.from({ length: 20 }, (_, i) => String(i + 1)) }] },
+      ...UNIVERSAL_STYLE_GROUPS,
     ],
   }],
 });
