@@ -5,6 +5,7 @@ import { renderHeatingRooms } from "./heating-rooms.js";
 import { renderWindowOverview } from "./window-overview.js";
 import { renderLandlordNotification } from "./landlord-notification.js";
 import { heatingParamsBindings, renderHeatingParams } from "./heating-params.js";
+import { technicBindings, renderTechnicWindow, syncTechnicControls } from "./technic-window.js";
 import { createMeteoredController } from "./meteored.js";
 const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
@@ -622,6 +623,7 @@ async function fetchEntityStates(ids) {
     for (const id of dropdownIds) query.append("attribute", `${id}|options`);
     for (const widget of visibleWidgets()) if (widget.type === "interactive-table" && widget.entityAttribute && ids.slice(offset, offset + 100).includes(widget.entityId)) query.append("attribute", `${widget.entityId}|${widget.entityAttribute}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "room-table" && widget.tableAttribute && ids.slice(offset, offset + 100).includes(widget.entityId)) query.append("attribute", `${widget.entityId}|${widget.tableAttribute}`);
+    for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "technic-window" && ids.slice(offset, offset + 100).includes(widget.coverEntityId)) for (const name of ["current_position", "supported_features"]) query.append("attribute", `${widget.coverEntityId}|${name}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "window-overview") for (const [id, attribute] of [[widget.entityId, widget.tableAttribute], [widget.openCountEntityId, widget.openCountAttribute]]) if (attribute && ids.slice(offset, offset + 100).includes(id)) query.append("attribute", `${id}|${attribute}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "chart") for (const source of chartBindings(widget)) if (source.attribute && ids.slice(offset, offset + 100).includes(source.entityId)) query.append("attribute", `${source.entityId}|${source.attribute}`);
     const response = await fetch(`api/states?${query}`, { cache: "no-store" });
@@ -652,6 +654,7 @@ async function fetchEntityStates(ids) {
 function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...gaugeEntityIds(widget),
+    ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "heating-params" ? heatingParamsBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "window-overview" ? [widget.openCountEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "chart" ? chartBindings(widget).map(s => s.entityId) : []),
@@ -693,6 +696,7 @@ async function refreshEditorLiveStates() {
 function runtimeLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...gaugeEntityIds(widget),
+    ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "heating-params" ? heatingParamsBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "window-overview" ? [widget.openCountEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "chart" ? chartBindings(widget).map(s => s.entityId) : []),
@@ -3396,6 +3400,16 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       element.classList.add("meteored-host");
       if (widget.noCard) content.style.background = "transparent";
       meteored.render(content, widget, document, runtimeMode, uiText, getWidgetDefinition(widget.type).render.valueKey);
+    } else if (getWidgetDefinition(widget.type).render?.kind === "technic-window") {
+      content.append(renderTechnicWindow(widget, document, { runtime: runtimeMode, locale: document.documentElement.lang || "de", getStates: () => state.entityStates, writePosition: async (entityId, position) => {
+        const response = await fetch("api/cover-position", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity_id: entityId, position }) });
+        if (!response.ok || (await response.json()).accepted !== true) throw new Error("Cover action failed");
+        void refreshRuntimeStates();
+      }, writeMode: async (entityId, enabled) => {
+        const response = await fetch("api/switch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity_id: entityId, enabled }) });
+        if (!response.ok || (await response.json()).accepted !== true) throw new Error("Mode action failed");
+        void refreshRuntimeStates();
+      } }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "heating-params") {
       if (widget.noCard) content.style.background = "transparent";
       content.append(renderHeatingParams(widget, document, { states: state.entityStates, runtime: runtimeMode, locale: document.documentElement.lang || "de", pending: pendingSwitches, write: (entityId, enabled) => { void writeRuntimeSwitch({ entityId }, enabled); } }));
@@ -3543,6 +3557,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (element.parentElement !== stage) stage.append(element);
   }
   for (const element of retainedDashboards.values()) element.remove();
+  if (!embedded) syncTechnicControls(dashboardSurfaceKey, [...stage.querySelectorAll(".technic-window")].map(element => element.closest("[data-widget-id]")?.dataset.widgetId));
   if (!embedded) meteored.end();
   if (!embedded) finishMarquees();
   if (!embedded) for (const [image, entry] of imageRefreshers) if (!renderedImages.has(image)) { if (entry.timer) clearInterval(entry.timer); imageRefreshers.delete(image); }
@@ -4193,6 +4208,7 @@ function field(descriptor, widget) {
     void updatePreview();
     if (isGauge(widget) && (descriptor.key === "entityId" || /EntityId\d*$/.test(descriptor.key))) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "heating-params" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
+    if (getWidgetDefinition(widget.type).render?.kind === "technic-window" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "room-table" && ["entityId", "tableAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "window-overview" && ["entityId", "tableAttribute", "openCountEntityId", "openCountAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "chart" && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || ["dataCount", "showWeekData", "weatherSource", "forecastType", "forecastAttribute"].includes(descriptor.key))) void refreshEditorLiveStates();
@@ -4584,7 +4600,7 @@ async function loadWidgetPackages() {
         id: manifest.id, label: manifest.name,
         widgets: manifest.widgets.map(widget => ({
           ...widget, packageId: manifest.id, definitionVersion: manifest.apiVersion, iconSvg: widget.iconData || "icons/text.svg", preview: { kind: "svg", lines: [] },
-          propertyGroups: widget.propertyGroups.map(group => ({ ...group, ...(widget.render.kind === "chart" && group.label.startsWith("CSS ") ? { css: true, defaultEnabled: true } : {}) })),
+          propertyGroups: widget.propertyGroups.map(group => ({ ...group, ...(widget.render.kind === "chart" && group.label.startsWith("CSS ") ? { css: true, defaultEnabled: true } : {}), fields: group.fields.map(field => widget.render.kind === "technic-window" && ["handle", "namePosition"].includes(field.key) && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { left: "Links", right: "Rechts", top: "Oben", bottom: "Unten" }[value] || value })) } : field) })),
         })),
       });
     }

@@ -76,7 +76,7 @@ def validate_manifest(manifest):
         if not _short_text(widget["label"]) or not isinstance(widget["defaults"], dict):
             raise ValueError("Widget-Name oder Standardwerte sind ungültig.")
         render = widget["render"]
-        if not isinstance(render, dict) or set(render) != {"kind", "valueKey"} or render["kind"] not in ({"text", "chart", "room-table", "meteored", "window-overview", "landlord-notification", "heating-params"} if manifest["apiVersion"] == "0.2" else {"text"}):
+        if not isinstance(render, dict) or set(render) != {"kind", "valueKey"} or render["kind"] not in ({"text", "chart", "room-table", "meteored", "window-overview", "landlord-notification", "heating-params", "technic-window"} if manifest["apiVersion"] == "0.2" else {"text"}):
             raise ValueError("Nur deklarative Text-Darstellung ist in 0.1 unterstützt; Diagramme benötigen Schnittstelle 0.2.")
         value_key = render["valueKey"]
         if not isinstance(value_key, str) or not KEY.fullmatch(value_key):
@@ -209,8 +209,9 @@ def read_package_zip(body):
         with ZipFile(BytesIO(body)) as archive:
             entries = archive.infolist()
             names = [entry.filename for entry in entries]
-            if not entries or names.count("manifest.json") != 1 or any(name != "manifest.json" and not ICON_PATH.fullmatch(name) for name in names) or len(set(names)) != len(names):
-                raise ValueError("Paket darf nur manifest.json und referenzierte SVG-/PNG-Bilder enthalten.")
+            document_names = {"LICENSE.txt", "README.md"} & set(names)
+            if not entries or names.count("manifest.json") != 1 or any(name != "manifest.json" and name not in document_names and not ICON_PATH.fullmatch(name) for name in names) or len(set(names)) != len(names):
+                raise ValueError("Paket darf nur manifest.json, referenzierte SVG-/PNG-Bilder und optionale LICENSE.txt/README.md enthalten.")
             manifest_info = archive.getinfo("manifest.json")
             if manifest_info.file_size > MAX_MANIFEST_BYTES:
                 raise ValueError("Manifest ist größer als 200 KB.")
@@ -223,7 +224,11 @@ def read_package_zip(body):
             icon_names = {widget["icon"] for widget in manifest["widgets"] if "icon" in widget}
             if "icon" in manifest:
                 icon_names.add(manifest["icon"])
-            if set(names) != {"manifest.json", *icon_names}:
+            for name in document_names:
+                if archive.getinfo(name).file_size > 50_000:
+                    raise ValueError("Paketdokument ist größer als 50 KB.")
+                archive.read(name).decode("utf-8")
+            if set(names) != {"manifest.json", *icon_names, *document_names}:
                 raise ValueError("Paketbild fehlt oder wird im Manifest nicht verwendet.")
             icons = embed_icons(archive, icon_names)
             if "icon" in manifest:

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.197
+
+- Add optional UGSo Technic 1.0.0 with Window – Wall, inspired by Sefina-DS ioBroker Technic Widgets: configurable caption, handle side, SVG color/scale, contact/cover/mode bindings and individual inversions.
+- Add a runtime control dialog with position slider, quick positions and mode toggle. Cover writes use a fixed set_cover_position command and verify availability and SET_POSITION capability; the optional mode uses an input_boolean/switch helper.
+- Keep unknown/unbound live values unknown, provide editor-only previews and a read-only option, and preserve settings in widget/project exports.
+- Allow bounded inert LICENSE.txt and README.md package files; include MIT licenses and attribution. Document installation and HA mapping in German and English.
+
 ## 0.1.196
 
 - Show ten compact entries in the widget selector before scrolling; keep selection and editing actions outside the scrolling list.

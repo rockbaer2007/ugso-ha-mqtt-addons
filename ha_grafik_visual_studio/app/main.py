@@ -14,6 +14,7 @@ from uuid import uuid4
 from threading import Lock
 
 from widget_packages import MAX_ZIP_BYTES, list_packages, read_package_zip, validate_additive_update
+from technic_cover import cover_position_command, cover_entry_writable
 from tool_packages import list_tool_packages, read_tool_package_zip
 from color_favorites import favorites, is_admin
 from meteored import meteored_document
@@ -358,7 +359,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.196"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.197"})
             return
         if path == "/meteored-frame":
             try:
@@ -496,6 +497,28 @@ class Handler(BaseHTTPRequestHandler):
             return
         if parsed.path == "/api/tool-packages":
             self.install_tool_package()
+            return
+        if parsed.path == "/api/cover-position":
+            if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
+                self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "JSON-Anfrage erforderlich."})
+                return
+            request = self.read_request_json()
+            if request is None:
+                return
+            try:
+                command = cover_position_command(request)
+                (entries,) = home_assistant_commands(["get_states"])
+                entry = next((item for item in entries or [] if isinstance(item, dict) and item.get("entity_id") == request["entity_id"]), None)
+                if not cover_entry_writable(entry):
+                    raise ValueError("Rollo ist nicht verfügbar oder unterstützt keine Positionssteuerung.")
+                home_assistant_commands([command])
+            except ValueError as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+                return
+            except HomeAssistantAPIError:
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "Rolloaktion fehlgeschlagen."})
+                return
+            self.send_json(HTTPStatus.OK, {"accepted": True})
             return
         if parsed.path == "/api/switch":
             if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":

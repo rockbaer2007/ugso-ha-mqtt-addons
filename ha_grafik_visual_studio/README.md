@@ -1,5 +1,7 @@
 # HA Grafik Visual Studio
 
+Ab **0.1.197** steht **UGSo Technic 1.0.0** als externes installierbares Set bereit. Das erste Widget **Window – Wall** zeigt Fensterkontakt, Rollo und optionalen Auto-/Manuell-Helfer. Ein Runtime-Dialog steuert verfügbare `cover`-Positionen und den Modus; alle Invertierungen und Anzeigeoptionen bleiben im Export erhalten. [Paket und Anleitung](packages/technic/README.md). Inspiriert von den [ioBroker-Technic-Widgets von Sefina-DS](https://github.com/Sefina-DS/ioBroker.vis-2-widgets-technic); eigene HA-Umsetzung mit MIT-Lizenz und Herkunftshinweisen im Paket. Die sechs weiteren Widgets folgen separat.
+
 Ab 0.1.195 bleiben Beschriftungen beim Schalten erhalten: Leere Zustandstexte im **Universal Element** übernehmen den Standardtext, danach den optionalen Titel. **Checkbox** und **Schalten** übernehmen bei einem leeren Zustandstext den anderen Text, danach den Titel. Eigene Texte pro Zustand bleiben möglich; vollständig leere Beschriftungen bleiben leer.
 
 Ab 0.1.194 ergänzt **Wetter und Heizung 1.7.0** **Allgemeine Heizparameter**: acht unabhängige HA-Entitäten für Heizperiode, Feiertag, Anwesenheit, Party, Gäste, Urlaub zu Hause/abwesend und Kaminmodus. Verfügbare `input_boolean`- und `switch`-Entitäten sind in der Runtime schaltbar; Sensoren bleiben Anzeigen. Fehlende Werte sind unbekannt. Dazu kommen eine optionale gewählte Raumanzeige, globale Option **Schreibgeschützt**, **Ohne Karte** und Editor-Vorschauwerte. Das Widget implementiert keine eigene Heizregelung.
