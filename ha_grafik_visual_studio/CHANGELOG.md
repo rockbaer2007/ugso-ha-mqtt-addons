@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.145
+
+- ValueList HTML Style uses individual HTML/style entries from index zero through the configured count, including count zero. Preserves legacy list fallback values and supports Boolean indices.
+- Shares editor-only test-index selection with ValueList HTML without changing runtime state; new widgets start with all CSS groups disabled.
+- Adds CSS declaration guidance and safe per-entry font sizing, family, line height, text decoration and letter spacing. Plain `bold` is not a CSS declaration; use `font-weight: bold;`.
+
 ## 0.1.144
 
 - ValueList HTML now offers a list-derived editor-only test-index dropdown and an explicit live/preview-state option. Runtime continues using the bound entity; selecting a test index does not modify its stored state.

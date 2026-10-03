@@ -5,7 +5,7 @@ import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelectio
 import { MATH_ANCHORS, MATH_IDS, mathPortRole, mathBoxResults, mathCalculations, validateMathAssignments, mathLeadPoint, evaluateMathExpression } from "./linebox-math.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
-import { htmlListEntries, htmlListEntry } from "./value-list.js";
+import { htmlListEntries, htmlListEntry, styledListCount } from "./value-list.js";
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
@@ -144,10 +144,18 @@ const commonWidgetGroups = [
 ];
 
 function widgetPropertyGroups(widget) {
+  let styleEntryGroups = [];
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
-  if (widget.type === "value-list-html") {
+  if (["value-list-html", "value-list-html-style"].includes(widget.type)) {
     const options = [{ value: "", label: "Livewert / Vorschauzustand" }, ...htmlListEntries(widget).map((_, index) => ({ value: String(index), label: String(index) }))];
     groups = groups.map(group => ({ ...group, fields: group.fields.map(field => field.key === "testIndex" ? { ...field, type: "select", default: "", options } : field) }));
+    if (widget.type === "value-list-html-style") {
+      const values = htmlListEntries(widget), styles = String(widget.styleList || "").split(/\r?\n/);
+      styleEntryGroups = Array.from({ length: styledListCount(widget) + 1 }, (_, index) => ({ label: `Wert [${index}]`, hint: "CSS-Deklarationen verwenden, zum Beispiel font-weight: bold; color: #29c8b5;", fields: [
+        { label: `HTML Wert [${index}]`, key: `listValue${index}`, type: "html", default: values[index] || "" },
+        { label: `Stil für [${index}]`, key: `listStyle${index}`, type: "textarea", default: styles[index] || "" },
+      ] }));
+    }
   }
   const dataGroup = { label: "Datenfluss", hint: "Wertausgabe am gewählten aktiven Dockpunkt. Wert-Verbindungen laufen vom Start zum Ziel; ein Konverter-Eingang erlaubt genau eine Quelle.", fields: [
     { label: "Ausgangspunkt aktivieren", key: "dataOutputEnabled", type: "checkbox", default: false, refreshProperties: true },
@@ -174,7 +182,7 @@ function widgetPropertyGroups(widget) {
     });
     return [...commonWidgetGroups, dockGroup, { id: "linebox-ports", label: "Anschlüsse", hint: "Nur aktive Andockpunkte erhalten eine Rolle. Eingänge werden mit Vorzeichen summiert; Ausgänge geben den Wert nur bei aktiviertem Haken weiter.", fields: portFields }, ...groups];
   }
-  return widget.type === "svg-connection" ? [...commonWidgetGroups, ...groups] : [...commonWidgetGroups, ...groups, connectionAnchorGroup, ...(widget.type === "value-converter" ? [] : [dataGroup])];
+  return widget.type === "svg-connection" ? [...commonWidgetGroups, ...groups] : [...commonWidgetGroups, ...groups, connectionAnchorGroup, ...(widget.type === "value-converter" ? [] : [dataGroup]), ...styleEntryGroups];
 }
 
 async function loadMdiIcons() {
@@ -340,13 +348,6 @@ function projectForSave(project) {
         if (group.signalImages) {
           delete widget.signalCount;
           delete widget.signalImages;
-        }
-      }
-      if (widget.type === "value-list-html-style") {
-        const count = Math.max(1, Math.min(50, Math.trunc(Number(widget.count) || 2)));
-        for (let index = 0; index <= count; index++) {
-          if (propertyGroupEnabled(widget, { label: `Wert [${index}]` }, groups.length + index)) continue;
-          delete widget[`listValue${index}`]; delete widget[`listStyle${index}`];
         }
       }
     }
@@ -2258,7 +2259,7 @@ function formatDate(value, format, relative) {
 }
 
 function listEntry(widget) {
-  if (widget.type === "value-list-html") return htmlListEntry(widget, displayedWidgetState(widget), !runtimeMode);
+  if (["value-list-html", "value-list-html-style"].includes(widget.type)) return htmlListEntry(widget, displayedWidgetState(widget), !runtimeMode);
   const values = String(widget.valueList || "").split(/\r?\n|;/).map((value, index) => widget[`listValue${index}`] ?? value);
   const raw = Number(displayedWidgetState(widget) ?? widget.testIndex ?? 0);
   const index = Number.isFinite(raw) ? Math.trunc(raw) : 0;
@@ -2266,7 +2267,7 @@ function listEntry(widget) {
 }
 
 function applySafeStyle(element, cssText) {
-  const allowed = new Set(["color", "background-color", "font-weight", "font-style", "text-align", "border", "border-radius", "padding", "opacity", "filter", "object-fit", "object-position", "box-shadow", "transform", "display", "width", "height", "margin"]);
+  const allowed = new Set(["color", "background-color", "font-weight", "font-style", "font-size", "font-family", "line-height", "text-decoration", "letter-spacing", "text-align", "border", "border-radius", "padding", "opacity", "filter", "object-fit", "object-position", "box-shadow", "transform", "display", "width", "height", "margin"]);
   for (const declaration of String(cssText || "").split(";")) {
     const separator = declaration.indexOf(":");
     if (separator < 1) continue;
@@ -3602,14 +3603,15 @@ function field(descriptor, widget) {
   }
   const update = () => {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
-    if (descriptor.key === "count" && input.type === "number") input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Math.trunc(Number(input.value) || 1))));
+    if (descriptor.key === "count" && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    if (widget.type === "value-list-html-style" && descriptor.key === "count" && widget.testIndex !== "" && Number(widget.testIndex) > styledListCount(widget)) widget.testIndex = "";
     if ((["sensor", "slider", "input-value"].includes(widget.type) && descriptor.key === "entityId") ||
         (widget.type === "svg-connection" && ["animationSource", "animationNumberEntityId", "animationBooleanEntityId"].includes(descriptor.key))) {
       void refreshEditorLiveStates();
     }
     if (widget.type === "linebox" && descriptor.key?.startsWith("dock_") && input.type === "checkbox" && !input.checked) widget[`lineboxRole_${descriptor.key.slice(5)}`] = "none";
-    if (descriptor.key === "testIndex" && widget.type?.startsWith("value-list-") && widget.type !== "value-list-html") widget.state = input.value;
+    if (descriptor.key === "testIndex" && widget.type === "value-list-text") widget.state = input.value;
     void updatePreview();
     renderStage();
     if (descriptor.refreshProperties && input.tagName !== "TEXTAREA" && !["number", "range"].includes(input.type)) renderProperties();
@@ -3622,6 +3624,7 @@ function field(descriptor, widget) {
   input.addEventListener(input.tagName === "SELECT" ? "change" : "input", update);
   if (descriptor.refreshProperties && input.tagName === "TEXTAREA") input.addEventListener("change", renderProperties);
   if (descriptor.refreshProperties && ["number", "range"].includes(input.type)) input.addEventListener("change", renderProperties);
+  if (widget.type === "value-list-html-style" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
   if (descriptor.key === "preset") input.addEventListener("change", () => {
     if (PRESETS[input.value]) Object.assign(widget, PRESETS[input.value]);
     render();
@@ -3684,16 +3687,6 @@ function renderProperties() {
   if (widget.type === "toggle" && typeof widget.state === "boolean") widget.state = widget.state ? "on" : "off";
   let groups = widgetPropertyGroups(widget);
   groups = [...groups, ...indexedWidgetGroups(widget)];
-  if (widget.type === "value-list-html-style") {
-    const count = Math.max(1, Math.min(50, Math.trunc(Number(widget.count) || 2)));
-    const values = String(widget.valueList || "").split(/\r?\n|;/); const styles = String(widget.styleList || "").split(/\r?\n/);
-    const options = Array.from({ length: count + 1 }, (_, index) => ({ value: String(index), label: `${index}: ${widget[`listValue${index}`] ?? values[index] ?? ""}` }));
-    groups = groups.map(group => ({ ...group, fields: group.fields.map(descriptor => descriptor.key === "state" || descriptor.key === "testIndex" ? { ...descriptor, type: "select", options } : descriptor) }));
-    groups = [...groups, ...Array.from({ length: count + 1 }, (_, index) => ({ label: `Wert [${index}]`, fields: [
-      { label: `HTML Wert [${index}]`, key: `listValue${index}`, default: values[index] || "", refreshProperties: false },
-      { label: `Stil für [${index}]`, key: `listStyle${index}`, default: styles[index] || "", type: "textarea" },
-    ] }))];
-  }
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
   const updateHeading = () => { heading.textContent = `${widgetDisplayName(widget)} — ${getWidgetDefinition(widget.dataFlowVariant || widget.type).label} · ${widget.id}`; };
   updateHeading(); panel.append(heading);

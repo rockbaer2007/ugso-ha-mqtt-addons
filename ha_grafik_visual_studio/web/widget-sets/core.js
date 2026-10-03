@@ -101,7 +101,7 @@ const basicDataWidget = (type, label, icon, defaults, dataFields, hint = "Ohne E
   propertyGroups: [
     metadata(), visibility(),
     { label: "Daten", ...(hint ? { hint } : {}), fields: dataFields },
-    geometry(), ...cssGroups().map(group => type === "value-list-html" ? { ...group, defaultEnabled: false } : group),
+    geometry(), ...cssGroups().map(group => ["value-list-html", "value-list-html-style"].includes(type) ? { ...group, defaultEnabled: false } : group),
   ],
 });
 const dateFormats = ["YYYY-MM-DD HH:mm:ss", "DD.MM.YYYY HH:mm:ss", "DD.MM.YYYY HH:mm", "YYYY-MM-DD", "HH:mm:ss"];
@@ -282,12 +282,11 @@ registerWidgetSet({
     ...[
       ["value-list-text", "ValueList Text"], ["value-list-html", "ValueList HTML"], ["value-list-html-style", "ValueList HTML Style"],
     ].map(([type, label]) => basicDataWidget(type, label, "☷", {
-      title: label, entityId: "", state: "0", valueList: "Aus;Ein;Automatik", styleList: "color:#9aa;\ncolor:#29c8b5;\ncolor:#ffb74d", testIndex: type === "value-list-html" ? "" : 0,
+      title: label, entityId: "", state: "0", ...(type === "value-list-html-style" ? { count: 2, listValue0: "Aus", listValue1: "Ein", listValue2: "Automatik", listStyle0: "", listStyle1: "", listStyle2: "" } : { valueList: "Aus;Ein;Automatik" }), testIndex: type !== "value-list-text" ? "" : 0,
     }, [
       { label: "Home-Assistant-Entity (Indexwert)", key: "entityId" }, { label: "Test-Index / Zustand", key: "state" },
-      { label: "Werteliste (ein Eintrag pro Zeile oder mit Semikolon)", key: "valueList", type: "textarea", refreshProperties: type === "value-list-html" },
-      ...(type === "value-list-html-style" ? [{ label: "CSS-Stil je Zeile (Bestandsdaten)", key: "styleList", type: "textarea" }, { label: "Werteanzahl bis", key: "count", type: "number", min: 1, max: 50, default: 2, refreshProperties: true }] : []),
-      { label: type === "value-list-html" ? "Testwert (nur Editor)" : "Vorschau-Index", key: "testIndex", type: type === "value-list-html" ? "select" : "number", min: 0 },
+      ...(type === "value-list-html-style" ? [{ label: "Werteanzahl bis", key: "count", type: "number", min: 0, max: 50, default: 2, refreshProperties: true }] : [{ label: "Werteliste (ein Eintrag pro Zeile oder mit Semikolon)", key: "valueList", type: "textarea", refreshProperties: type === "value-list-html" }]),
+      { label: type !== "value-list-text" ? "Testwert (nur Editor)" : "Vorschau-Index", key: "testIndex", type: type !== "value-list-text" ? "select" : "number", min: 0 },
       ...htmlAdditions(),
     ])),
     basicDataWidget("bool-display", "Bool HTML", "⇄", { title: "Bool HTML", entityId: "", state: false, htmlTrue: "<strong>Ein</strong>", htmlFalse: "Aus" }, [
