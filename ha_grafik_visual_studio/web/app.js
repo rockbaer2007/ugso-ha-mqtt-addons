@@ -2,6 +2,8 @@ import { getWidgetSets, getWidgetDefinition, registerWidgetSet, initializeWidget
 import { PALETTE_COLORS, allocatePaletteColors } from "./palette-colors.js";
 import { renderWeather } from "./weather-widget.js";
 import { renderHeatingRooms } from "./heating-rooms.js";
+import { createMeteoredController } from "./meteored.js";
+const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings } from "./connection-animation.js";
@@ -2665,6 +2667,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const stage = target || $("#stage");
   if (!embedded) {
     beginMarquees();
+    meteored.begin();
     renderedImages.clear();
     for (const entry of mediaRefreshers) if (entry.timer) clearInterval(entry.timer);
     mediaRefreshers.clear();
@@ -2724,6 +2727,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const retainedDashboards = new Map();
   for (const child of [...stage.children]) {
     if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8") || child.classList.contains("widget-iframe") || child.classList.contains("widget-iframe-8") || child.classList.contains("widget-image") || child.classList.contains("widget-image-8")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
+    else if (runtimeMode && child.classList.contains("meteored-host") && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
     else child.remove();
   }
   cleanupEventCalendars();
@@ -3380,6 +3384,10 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
         if (widget.title) { const title = document.createElement("span"); title.className = "widget-title"; title.textContent = widget.title; content.append(title); }
       }
       content.append(value);
+    } else if (getWidgetDefinition(widget.type).render?.kind === "meteored") {
+      element.classList.add("meteored-host");
+      if (widget.noCard) content.style.background = "transparent";
+      meteored.render(content, widget, document, runtimeMode, uiText, getWidgetDefinition(widget.type).render.valueKey);
     } else if (getWidgetDefinition(widget.type).render?.kind === "room-table") {
       if (widget.noCard) content.style.background = "transparent";
       content.append(renderHeatingRooms(widget, document, state.entityStates, document.documentElement.lang || "de", getWidgetDefinition(widget.type).render.valueKey));
@@ -3514,6 +3522,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (element.parentElement !== stage) stage.append(element);
   }
   for (const element of retainedDashboards.values()) element.remove();
+  if (!embedded) meteored.end();
   if (!embedded) finishMarquees();
   if (!embedded) for (const [image, entry] of imageRefreshers) if (!renderedImages.has(image)) { if (entry.timer) clearInterval(entry.timer); imageRefreshers.delete(image); }
   if (!runtimeMode) renderEditorGroups();

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.191
+
+- Add METEORED Weather Widget to optional Weather and Heating package 1.4.0 with widget ID, no-card display and optional hourly reload.
+- Load the fixed Meteored provider loader in a sandboxed runtime iframe; keep the editor as a configuration preview and retain frames/timers across runtime redraws.
+- Preserve all four existing widget definitions and export settings through the declarative package contract.
+
 ## 0.1.190
 
 - Add Heating Rooms Overview to optional Weather and Heating package 1.3.0, preserving all three existing widget definitions.

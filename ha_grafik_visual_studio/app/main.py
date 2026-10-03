@@ -16,6 +16,7 @@ from threading import Lock
 from widget_packages import MAX_ZIP_BYTES, list_packages, read_package_zip, validate_additive_update
 from tool_packages import list_tool_packages, read_tool_package_zip
 from color_favorites import favorites, is_admin
+from meteored import meteored_document
 
 LOG = logging.getLogger("ha-grafik-visual-studio")
 PORT = int(os.environ.get("HA_GRAFIK_INGRESS_PORT", "8098"))
@@ -313,12 +314,14 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
 
-    def send_bytes(self, status, body, content_type):
+    def send_bytes(self, status, body, content_type, headers=None):
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Cache-Control", "no-store")
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(body)
 
@@ -354,7 +357,14 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.190"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.191"})
+            return
+        if path == "/meteored-frame":
+            try:
+                body = meteored_document(query.get("widget_id", [""])[0])
+                self.send_bytes(HTTPStatus.OK, body, "text/html; charset=utf-8", {"Content-Security-Policy": "sandbox allow-scripts"})
+            except ValueError as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
             return
         if path == "/api/entities":
             try:

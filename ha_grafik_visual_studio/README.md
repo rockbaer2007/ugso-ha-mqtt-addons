@@ -1,5 +1,7 @@
 # HA Grafik Visual Studio
 
+Ab 0.1.191 ergänzt **Wetter und Heizung 1.4.0** das **METEORED-Wetter-Widget** mit Widget-ID, **Ohne Karte** und standardmäßig aktiviertem stündlichem Neuladen. Die Runtime lädt den offiziellen Meteored-Loader in einem separaten Frame mit `sandbox="allow-scripts"`; im Editor erscheint eine Konfigurationsvorschau. Eine gültige Widget-ID und die passende Domain-Freigabe bei Meteored sind erforderlich. Die vier bisherigen Paket-Widgets bleiben unverändert.
+
 Ab 0.1.190 ergänzt **Wetter und Heizung 1.3.0** die **Übersicht über Heizräume**: eine fertige HTML-Raumtabelle aus einem HA-Zustand oder Attribut, lesend und ohne Schreibaktionen. Ohne Entitätsbindung gibt es eine bearbeitbare Vorschau. Überschriftenfarbe und **Ohne Karte** sind einstellbar. Passive Tabellenelemente und ausgewählte Formatierungen werden übernommen; ausführbare Inhalte und externe Ressourcen werden entfernt.
 
 Ab 0.1.189 ergänzt **Wetter und Heizung 1.2.0** das **Wetter-Widget**: HA-Vorhersage, JSON-Array oder einzelne Sensoren; fünf Tageswerte oder 24 Stundenwerte; Temperatur, Regen, Wolken/Sonnenanteil und Regenwahrscheinlichkeit mit Farben, Achsen und getrennten Diagrammen. Der lesende HA-Vorhersageabruf verwendet `weather.get_forecasts` über die Supervisor-Anbindung und wird fünf Minuten zwischengespeichert. Das lokale Paket-Update erhält die vorhandenen Diagrammdefinitionen.
