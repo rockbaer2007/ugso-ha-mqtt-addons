@@ -64,6 +64,8 @@ Zeitwerte sind ISO-Datumsangaben oder Unix-Millisekunden; Kategorien sind Texte.
 
 Externe Sets erhalten automatisch eine eigene Palettenfarbe mit Abstand zu belegten Farbtönen. Die Zuordnung und Reservierung entfernter Sets bleibt im lokalen Browser-Speicher erhalten. Basis und integrierte Sets behalten ihre Farben. Eine browserübergreifende Farbzuordnung ist nicht Teil dieses Vertrags.
 
+Der Diagrammmodus `weather` ab Studio 0.1.189 unterstützt HA-Vorhersagen über den festen lesenden `weather.get_forecasts`-Aufruf, JSON-Zustände/-Attribute und Einzelentitäten. Er zeigt fünf Tages- oder 24 Stundenwerte; nur ungebundene HA-/JSON-Quellen verwenden Vorschau-JSON. Fehlende Werte bleiben Lücken. Temperatur, Niederschlag, Wolkenbedeckung und Regenwahrscheinlichkeit werden nicht aus Zustandsnamen geschätzt. Sonnenanteil ist ausschließlich `100 - cloud_coverage`. Unterschiedliche Einheiten auf derselben Achse und ausdrücklich getrennte Reihen bekommen eigene Diagrammflächen. Erfolgreiche HA-Antworten werden im Browser fünf Minuten zwischengespeichert, Fehler eine Minute; der Server gibt nur begrenzte Vorhersagefelder zurück. Das optionale Referenzpaket 1.2.0 ergänzt diesen Modus ohne Änderung seiner bestehenden Widgets.
+
 ## Erweiterungsentwurf
 
 Der geplante Packer soll Widget-Pakete als ZIP-Datei mit der Endung `*.wg` ausgeben, zum Beispiel `solar.wg`. Bisherige `*.wg.zip` bleiben importierbar. Die Endung kennzeichnet die Paketart; beim Import wird zusätzlich das Manifest geprüft. Folgende Angaben sollen die Schnittstelle abdecken:

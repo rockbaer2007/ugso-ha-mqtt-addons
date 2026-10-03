@@ -1,7 +1,8 @@
+import { weatherBindings } from "./weather-data.js";
 const count = widget => Math.min(10, Math.max(1, Math.trunc(Number(widget.dataCount) || 1)));
 const numeric = v => (typeof v === "number" || typeof v === "string" && v.trim()) && Number.isFinite(Number(v)) ? Number(v) : null;
 export const WEEK_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-export const chartBindings = widget => widget.chartMode === "two-weeks"
+export const chartBindings = widget => widget.chartMode === "weather" ? [...weatherBindings(widget), { entityId: widget.locationEntityId || "", attribute: "" }] : widget.chartMode === "two-weeks"
   ? widget.showWeekData === true ? ["previous", "current"].flatMap(week => WEEK_DAYS.map(day => ({ entityId: widget[`${week}${day}EntityId`] || "", attribute: "" }))) : []
   : Array.from({ length: count(widget) }, (_, i) => ({ entityId: widget[`seriesEntityId${i + 1}`] || (i === 0 ? widget.entityId : ""), attribute: widget[`seriesAttribute${i + 1}`] || "" }));
 export function weekSeries(widget, states = {}, locale = "de") {

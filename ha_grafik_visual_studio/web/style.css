@@ -393,6 +393,9 @@ html.embedded-loading body { visibility: hidden; background: transparent; }
 .package-chart > svg { flex: 1 1 100%; min-height: 0; width: 100%; height: calc(100% - 48px); }
 .package-chart-legend { font-size: 11px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .package-chart-swatch { display: inline-block; width: 10px; height: 10px; margin-right: 4px; border-radius: 2px; }
+.weather-charts { display: flex; flex-direction: column; gap: 8px; width: 100%; height: 100%; overflow: auto; }
+.weather-charts > strong { flex: none; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.weather-charts > .package-chart { flex: 1 0 220px; min-height: 220px; }
 .gauge-instrument > svg { display: block; width: 100%; flex: 1 1 0; min-height: 0; }
 .gauge-instrument-label { max-width: 100%; flex: 0 0 auto; font-size: 12px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .gauge-ring-reading { max-width: 100%; flex: 0 0 auto; font-size: 11px; line-height: 1.2; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

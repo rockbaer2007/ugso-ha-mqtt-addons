@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.189
+
+- Add Weather Widget to optional Weather and Heating package 1.2.0: daily/hourly HA forecasts, JSON state/attribute sources and up to 24 individually bound samples.
+- Support temperature min/max, rain, cloud/sun fraction and rain probability with independent visibility, colors, axes and separate panels; preserve units and missing readings.
+- Read weather.get_forecasts through a bounded host endpoint; cache browser results for five minutes and retain existing package definitions during additive updates.
+
 ## 0.1.188
 
 - Extend the optional Weather and Heating package to 1.1.0 with Two Weeks Bar Chart: fourteen daily HA state bindings, explicit preview/live selection, weekday pairs, units, decimals, colors and left/right Y axis.

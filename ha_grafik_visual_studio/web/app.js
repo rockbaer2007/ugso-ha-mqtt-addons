@@ -1,5 +1,7 @@
 import { getWidgetSets, getWidgetDefinition, registerWidgetSet, initializeWidgetCaption } from "./widget-registry.js";
 import { PALETTE_COLORS, allocatePaletteColors } from "./palette-colors.js";
+import { renderWeather } from "./weather-widget.js";
+const weatherForecastCache = new Map();
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings } from "./connection-animation.js";
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection, OUTPUT_SIDES, outputDockActive, dockPointActive, hasSimpleOutput, setOutputAnchor } from "./dock-points.js";
@@ -619,7 +621,24 @@ async function fetchEntityStates(ids) {
     const payload = await response.json();
     states.push(...(payload.states || []));
   }
-  return Object.fromEntries(states.map((entry) => [entry.entity_id, entry]));
+  const result = Object.fromEntries(states.map((entry) => [entry.entity_id, entry]));
+  const weather = visibleWidgets().filter(w => w.chartMode === "weather" && w.weatherSource === "home-assistant" && /^weather\.[a-z0-9_]+$/.test(w.entityId || "") && ids.includes(w.entityId));
+  for (const type of ["daily", "hourly"]) {
+    const entities = [...new Set(weather.filter(w => (w.forecastType || "daily") === type).map(w => w.entityId))];
+    for (const entity of entities) {
+      const key = `${type}:${entity}`, cached = weatherForecastCache.get(key);
+      if (!cached || cached.until < Date.now()) {
+        try {
+          const response = await fetch(`api/weather-forecasts?${new URLSearchParams({ entity_id: entity, type })}`, { cache: "no-store" });
+          if (!response.ok) throw new Error("Forecast unavailable");
+          const payload = await response.json();
+          weatherForecastCache.set(key, { rows: payload.forecasts?.[entity], until: Date.now() + 300000 });
+        } catch { weatherForecastCache.set(key, { rows: undefined, until: Date.now() + 60000 }); }
+      }
+      if (result[entity]) { result[entity].weatherForecasts ??= {}; result[entity].weatherForecasts[type] = weatherForecastCache.get(key)?.rows; }
+    }
+  }
+  return result;
 }
 
 function editorLiveEntityIds() {
@@ -2796,7 +2815,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(renderGauge(widget, document, { states: state.entityStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "chart") {
       if (widget.noCard) content.style.background = "transparent";
-      content.append(renderPackageChart(widget, document, state.entityStates, document.documentElement.lang || "de", getWidgetDefinition(widget.type).render.valueKey));
+      content.append(widget.chartMode === "weather" ? renderWeather(widget, document, state.entityStates, document.documentElement.lang || "de") : renderPackageChart(widget, document, state.entityStates, document.documentElement.lang || "de", getWidgetDefinition(widget.type).render.valueKey));
     } else if (widget.type === "value-converter") {
       content.classList.add("value-converter-content");
       const input = widgetInputPacket(widget, activePage.widgets, state.entityStates, new Set([`data:${widget.id}`]));
@@ -4138,7 +4157,7 @@ function field(descriptor, widget) {
     if (descriptor.key === "testIndex" && widget.type === "value-list-text") widget.state = input.value;
     void updatePreview();
     if (isGauge(widget) && (descriptor.key === "entityId" || /EntityId\d*$/.test(descriptor.key))) void refreshEditorLiveStates();
-    if (getWidgetDefinition(widget.type).render?.kind === "chart" && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || ["dataCount", "showWeekData"].includes(descriptor.key))) void refreshEditorLiveStates();
+    if (getWidgetDefinition(widget.type).render?.kind === "chart" && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || ["dataCount", "showWeekData", "weatherSource", "forecastType", "forecastAttribute"].includes(descriptor.key))) void refreshEditorLiveStates();
     if (widget.type === "string" && descriptor.key === "icon") { const size = $("#properties [data-string-icon-size]"); if (size) size.hidden = !input.value; }
     renderStage();
     if (descriptor.refreshProperties && input.tagName !== "TEXTAREA" && !["number", "range"].includes(input.type)) renderProperties();

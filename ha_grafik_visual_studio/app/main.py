@@ -164,6 +164,25 @@ def load_calendar_events(entity_ids, start, end):
     return calendars
 
 
+def load_weather_forecasts(entity_ids, forecast_type):
+    """Read bounded forecast response data through the fixed HA weather service."""
+    if forecast_type not in {"daily", "hourly"} or not entity_ids or len(entity_ids) > 10 or any(not re.fullmatch(r"weather\.[a-z0-9_]+", entity) for entity in entity_ids):
+        raise ValueError("Ungültige Wetterauswahl oder Vorhersageart.")
+    ids = list(dict.fromkeys(entity_ids))
+    result = home_assistant_commands([{"type": "call_service", "domain": "weather", "service": "get_forecasts", "target": {"entity_id": ids}, "service_data": {"type": forecast_type}, "return_response": True}])[0]
+    response = result.get("response") if isinstance(result, dict) else None
+    if not isinstance(response, dict):
+        raise HomeAssistantAPIError("Home Assistant hat keine Wettervorhersage geliefert.")
+    forecasts = {}
+    for entity in ids:
+        source = response.get(entity)
+        rows = source.get("forecast") if isinstance(source, dict) else None
+        if not isinstance(rows, list):
+            raise HomeAssistantAPIError("Die gewählte Wetterentität unterstützt diese Vorhersage nicht.")
+        forecasts[entity] = [{key: value for key, value in row.items() if key in {"datetime", "condition", "temperature", "templow", "precipitation", "precipitation_probability", "cloud_coverage"} and ((isinstance(value, str) and len(value) <= 300) or (isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)))} for row in rows[:288] if isinstance(row, dict)]
+    return forecasts
+
+
 def load_home_assistant_dashboards():
     """Expose only dashboard titles and paths, never panel configuration or tokens."""
     panels = home_assistant_commands(["get_panels"])[0]
@@ -335,7 +354,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.188"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.189"})
             return
         if path == "/api/entities":
             try:
@@ -354,6 +373,14 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 calendars = load_calendar_events(query.get("entity_id", []), query.get("start", [""])[0], query.get("end", [""])[0])
                 self.send_json(HTTPStatus.OK, {"calendars": calendars})
+            except ValueError as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+            except HomeAssistantAPIError as error:
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})
+            return
+        if path == "/api/weather-forecasts":
+            try:
+                self.send_json(HTTPStatus.OK, {"forecasts": load_weather_forecasts(query.get("entity_id", []), query.get("type", ["daily"])[0])})
             except ValueError as error:
                 self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
             except HomeAssistantAPIError as error:
