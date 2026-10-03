@@ -196,14 +196,33 @@ def load_home_assistant_entities():
     return {"entities": entities, "devices": devices, "states": states}
 
 
-def load_home_assistant_states(entity_ids):
+def load_home_assistant_states(entity_ids, selected_attributes=None):
     """Read only the requested states without fetching the registries."""
     requested = set(entity_ids)
     (state_entries,) = home_assistant_commands(["get_states"])
-    return [
-        {key: entry.get(key) for key in ("entity_id", "state", "last_changed", "last_updated")}
-        for entry in (state_entries or []) if isinstance(entry, dict) and entry.get("entity_id") in requested
-    ]
+    result = []
+    for entry in (state_entries or []):
+        if not isinstance(entry, dict) or entry.get("entity_id") not in requested:
+            continue
+        state = {key: entry.get(key) for key in ("entity_id", "state", "last_changed", "last_updated")}
+        names = (selected_attributes or {}).get(entry["entity_id"], [])
+        attributes = entry.get("attributes") or {}
+        if names and isinstance(attributes, dict):
+            state["attributes"] = {name: attributes[name] for name in names if name in attributes}
+        result.append(state)
+    return result
+
+
+def selected_state_attributes(entity_ids, values):
+    if len(values) > 100:
+        raise ValueError("Ungültige Attributauswahl.")
+    selected = {}
+    for value in values:
+        entity_id, separator, name = value.partition("|")
+        if not separator or entity_id not in entity_ids or not name or len(name) > 128 or any(ord(char) < 32 for char in name):
+            raise ValueError("Ungültige Attributauswahl.")
+        selected.setdefault(entity_id, set()).add(name)
+    return selected
 
 
 def set_home_assistant_switch(entity_id, enabled):
@@ -296,7 +315,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.176"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.177"})
             return
         if path == "/api/entities":
             try:
@@ -326,7 +345,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Ungültige Entitätenauswahl."})
                 return
             try:
-                self.send_json(HTTPStatus.OK, {"states": load_home_assistant_states(entity_ids)})
+                attributes = selected_state_attributes(entity_ids, query.get("attribute", []))
+                self.send_json(HTTPStatus.OK, {"states": load_home_assistant_states(entity_ids, attributes)})
+            except ValueError as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
             except HomeAssistantAPIError as error:
                 LOG.warning("Home-Assistant-Zustände konnten nicht geladen werden: %s", error)
                 self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})

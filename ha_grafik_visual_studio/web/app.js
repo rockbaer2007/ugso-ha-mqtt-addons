@@ -21,13 +21,15 @@ import { isSeparator, snapSeparator, renderSeparator } from "./separator-line.js
 import { renderCalendar, CALENDAR_STYLES } from "./calendar-widget.js";
 import { renderCheckbox, checkboxValue } from "./styled-checkbox.js";
 import { renderStyledSlider, styledSliderValue, updateStyledSlider } from "./styled-slider.js";
+import { renderInteractiveTable, tableDefaultSort, TABLE_STYLE_GROUPS } from "./interactive-table.js";
+import { tableEntryGroups } from "./widget-sets/interactive-table.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
 import { filterEntries, defaultFilters, filterSelected, chooseFilter, filterHex } from "./filter-widget.js";
-import { stringDisplayValue } from "./string-display.js";
+import { stringDisplayValue, stringEntityValue } from "./string-display.js";
 import { inputValueDelay, inputValueSubmission } from "./input-value.js";
 import { dashboardSize, dashboardUrl, dashboardExportWidgets, DASHBOARD_EXPORT_NOTICE } from "./dashboard-widget.js";
 import { viewCount, viewIndex } from "./stateful-view.js";
@@ -172,6 +174,7 @@ const commonWidgetGroups = [
 
 function widgetPropertyGroups(widget) {
   let styleEntryGroups = [];
+  if (widget.type === "interactive-table") styleEntryGroups = tableEntryGroups(widget);
   if (widget.type === "event-calendar") styleEntryGroups = [
     ...Array.from({ length: Math.min(20, Math.max(0, Math.trunc(Number(widget.countCalendarSources) || 0))) }, (_, i) => ({ id: `event-source-${i}`, label: `Kalender [${i}]`, defaultEnabled: true, fields: [{ label: "Home-Assistant-Entität", key: `calendar${i}EntityId` }, { label: "Quellfarbe", key: `calendar${i}Color`, type: "color", optionalColor: true }, { label: "Legendentext", key: `calendar${i}Label` }] })),
     ...Array.from({ length: Math.min(20, Math.max(0, Math.trunc(Number(widget.countEventColorRules) || 0))) }, (_, i) => ({ id: `event-rule-${i}`, label: `Farbregel [${i}]`, defaultEnabled: true, fields: [{ label: "Titel enthält", key: `eventRule${i}Title` }, { label: "Terminfarbe", key: `eventRule${i}Color`, type: "color" }] })),
@@ -593,6 +596,7 @@ async function fetchEntityStates(ids) {
   const states = [];
   for (let offset = 0; offset < ids.length; offset += 100) {
     const query = new URLSearchParams(ids.slice(offset, offset + 100).map((id) => ["entity_id", id]));
+    for (const widget of visibleWidgets()) if (widget.type === "interactive-table" && widget.entityAttribute && ids.slice(offset, offset + 100).includes(widget.entityId)) query.append("attribute", `${widget.entityId}|${widget.entityAttribute}`);
     const response = await fetch(`api/states?${query}`, { cache: "no-store" });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const payload = await response.json();
@@ -1599,6 +1603,7 @@ function cloneWidgetForInsert(source, page, idMap) {
   remapUniversalReferences(copy, idMap);
   if (copy.type === "styled-checkbox" && idMap.has(copy.styleFromWidget)) copy.styleFromWidget = idMap.get(copy.styleFromWidget);
   if (copy.type === "styled-slider") for (const key of ["sliderTrackFromWidget", "sliderThumbFromWidget"]) if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
+  if (copy.type === "interactive-table") for (const [, key] of TABLE_STYLE_GROUPS) if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
   if (copy.type === "calendar") for (const [prefix] of CALENDAR_STYLES) {
     const key = `${prefix}FromWidget`;
     if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
@@ -3149,6 +3154,14 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
         }
       }
       content.append(output);
+    } else if (widget.type === "interactive-table") {
+      const cacheKey = `interactive:${state.projectId}:${activePage.id}:${widget.id}`;
+      const signature = JSON.stringify([widget.multiSort, widget.defaultSortColumn, widget.defaultSortOrder, widget.countDefaultSortColumns, ...Array.from({ length: 20 }, (_, i) => [widget[`defaultSortKey${i + 1}`], widget[`defaultSortDir${i + 1}`]])]);
+      let cache = tableRuntimeCache.get(cacheKey);
+      if (!cache || cache.signature !== signature) { cache = { signature, sort: tableDefaultSort(widget), filters: {}, page: 0 }; tableRuntimeCache.set(cacheKey, cache); }
+      const source = runtimeMode && widget.entityId ? stringEntityValue(widget, state.entityStates[widget.entityId]) : widget.tableData;
+      const draw = () => content.replaceChildren(renderInteractiveTable(widget, document, { runtime: runtimeMode, source: source ?? [], state: cache, widgets: allProjectWidgets(state.project), t: uiText, locale: document.documentElement.lang || "de", safeUrl, redraw: draw }));
+      draw();
     } else if (widget.type === "table") {
       const tableWrap = document.createElement("div"); tableWrap.className = "widget-table-wrap";
       const cacheKey = `${state.projectId}:${activePage.id}:${widget.id}:${widget.eventEntityId || ""}`;
@@ -4043,7 +4056,7 @@ function field(descriptor, widget) {
   }
   const update = () => {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
-    if (["count", "countEventColorRules", "countCalendarSources"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
+    if (["count", "countEventColorRules", "countCalendarSources", "countColumns", "countDefaultSortColumns", "countRowConditions"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (isSeparator(widget) && descriptor.key === "separatorThickness") {
       widget.separatorThickness = Math.min(100, Math.max(1, Number(widget.separatorThickness) || 2));

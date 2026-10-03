@@ -2,6 +2,13 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Standard-Sortierspalte": "Default sort column", "Standard-Sortierreihenfolge": "Default sort order", "Sortierreihenfolge": "Sort order", "Standardsortierung": "Default sort", "Zeilenbedingung": "Row condition", "Spaltenschlüssel": "Column key", "Präfix": "Prefix", "Suffix": "Suffix", "Platzhalter": "Placeholder", "Dezimaltrennzeichen": "Decimal separator", "Tausendertrennzeichen": "Thousands separator", "IP-Adresse": "IP address",
+  "Tabelle": "Interactive Table", "CSS Tabelle – Darstellung": "CSS Table – Appearance", "CSS Tabelle – Rahmenradius": "CSS Table – Corner radius", "CSS Tabelle – Rahmen": "CSS Table – Border", "CSS Tabelle – Äußerer Schatten": "CSS Table – Outer shadow",
+  "HA-Attribut (optional)": "HA attribute (optional)", "Tabellendaten (JSON, Vorschau / ohne Entität)": "Table data (JSON, preview / without entity)", "Spalten zählen (0 = automatisch)": "Column count (0 = automatic)", "Max. Zeilen (0 = alle)": "Max. rows (0 = all)", "Kopf anzeigen": "Show header", "Paginierung": "Pagination", "Zeilen pro Seite": "Rows per page", "Kopfzeile fixieren": "Sticky header", "Summenzeile markieren": "Mark summary row", "Mehrspaltensortierung": "Multi-column sorting", "Anzahl Standardsortierungen": "Default sort count", "Zeilenbedingungen": "Row conditions", "Anzahl der Bedingungen": "Condition count", "Spalte ausblenden": "Hide column", "Schlüssel": "Key", "Spaltenbreite (px, 0 = automatisch)": "Column width (px, 0 = automatic)", "Titel ausrichten": "Header alignment", "Inhalt ausrichten": "Cell alignment", "Boolean-Farbe aktiv": "Boolean checked color", "Boolean-Farbe inaktiv": "Boolean unchecked color", "Eigenes Datumsformat": "Custom date format", "Link-Ziel": "Link target", "Gleicher Tab": "Same tab", "Übergeordnetes Frame": "Parent frame", "Oberstes Frame": "Top frame", "Sortierbar": "Sortable", "Filter aktivieren": "Enable filter", "Spaltenschlüssel oder Index (ab 0)": "Column key or index (from 0)", "Zeilenfarbe": "Row color", "Textfarbe ganze Zeile": "Whole row text color", "Textfarbe Bedingungsspalte": "Condition column text color", "Kopfzeilenhintergrund": "Header background", "Hintergrund ungerade Zeile": "Odd row background", "Hintergrund gerade Zeile": "Even row background", "Kopfzeilenhöhe (px)": "Header height (px)", "Zeilenhöhe (px)": "Row height (px)", "Höhe Seitenleiste (px)": "Pagination height (px)", "Kopfzeilenrand (px)": "Header border (px)", "Kopfzeilenrandfarbe": "Header border color", "Zeilenrand (px)": "Row border (px)", "Zeilenrandfarbe": "Row border color", "Vorherige Tabellenseite": "Previous table page", "Nächste Tabellenseite": "Next table page", "Zeilen": "Rows", "Sortieren": "Sort", "Filtern": "Filter",
+  "Tabellendaten müssen eine JSON-Liste von Objekten sein.": "Table data must be a JSON array of objects.",
+  "Liest eine JSON-Liste aus dem HA-Zustand oder dem gewählten Attribut. Lange Listen gehören in ein Attribut. Kein Schreibhelfer nötig; die Tabelle schreibt keine HA-Werte.": "Reads a JSON array from the HA state or selected attribute. Long lists belong in an attribute. No write helper required; the table never writes HA values.",
+  "Formeln verwenden Zahlenfelder der Zeile, + - * / % ** und Klammern. Kein JavaScript; ungültige Formeln zeigen den Platzhalter.": "Formulas use numeric row fields, + - * / % ** and parentheses. No JavaScript; invalid formulas display the placeholder.",
+  "Markiert die letzte angezeigte Ergebniszeile mit einer Doppellinie. Summen müssen bereits in den JSON-Daten stehen; es werden keine Summen berechnet.": "Marks the last result row with a double line. Totals must already exist in the JSON data; no totals are calculated.",
   "Schieberegler": "Interactive Slider", "CSS Schieberegler – Spur": "CSS Slider – Track", "CSS Schieberegler – Daumen": "CSS Slider – Thumb", "Abstand zur Überschrift (px)": "Title spacing (px)", "Mindestwert": "Minimum value", "Maximalwert": "Maximum value", "Orientierung": "Orientation", "Min./Max. anzeigen": "Show min/max", "Wertetikett anzeigen": "Value label", "Beim Bedienen": "During interaction", "Immer": "Always", "Nie": "Never", "Schrittmarkierungen": "Step marks", "Schritte anzeigen": "Show step marks", "Schritte innerhalb der Spur": "Marks inside track", "Schritte oben / links": "Marks above / left", "Schrittmodus": "Mark mode", "Markierungsabstand": "Mark interval", "Eigene Markierungen (Kommaliste)": "Custom marks (comma-separated)", "Farbe der Gleitschiene": "Rail color", "Aktive Spurfarbe": "Active track color", "Spurbreite (px)": "Track width (px)", "Spurrundung (%)": "Track radius (%)", "Daumenfarbe": "Thumb color", "Daumengröße (px)": "Thumb size (px)", "Daumenrundung (%)": "Thumb radius (%)",
   "Zum Schreiben wird ein input_number-Helfer benötigt. Minimum, Maximum und Schritt müssen zum Helfer passen. Sensoren werden nur gelesen. Ohne Entität bleibt der Wert lokal; im Editor wird nichts geschrieben.": "Writing requires an input_number helper. Minimum, maximum and step must match the helper. Sensors are read only. Without an entity, the value stays local; the editor never writes values.",
   "Markierungsabstand ist unabhängig vom Bedienschritt. Dichte Skalen werden auf höchstens 201 Markierungen ausgedünnt; Beschriftungen passen sich der Widgetgröße an.": "Mark spacing is independent of the interaction step. Dense scales are thinned to at most 201 marks; labels adapt to the widget size.",
@@ -403,7 +410,7 @@ Object.assign(ENGLISH, {
   "Strecken": "Stretch", "Strichlänge": "Dash length", "Symbol": "Symbol",
   "Symbol Aus (Bild-URL)": "Off symbol (image URL)", "Symbol Ein (Bild-URL)": "On symbol (image URL)",
   "Symbol neben Text": "Symbol beside text", "Symbol über Text": "Symbol above text",
-  "Synchronisierung": "Synchronization", "Tabelle": "Table", "Test-Index / Zustand": "Test index / state",
+  "Synchronisierung": "Synchronization", "Tabelle": "Interactive Table", "Test-Index / Zustand": "Test index / state",
   "Testtext (HTML)": "Test text (HTML)", "Testwert": "Test value", "Testwert (HTML)": "Test value (HTML)",
   "Testwert / Zeitstempel": "Test value / timestamp", "Testzustand": "Test state",
   "Text für Aus": "Text for off", "Text für Ein": "Text for on", "Text oder Vorlage ({value})": "Text or template ({value})",
@@ -552,14 +559,14 @@ function translate(source) {
   let translated = ENGLISH[trimmed];
   if (!translated) {
     const group = trimmed.match(/^(.+): Optionen im Projekt speichern$/);
-    if (group) translated = `${ENGLISH[group[1]] || group[1]}: Save options in project`;
+    if (group) translated = `${translate(group[1])}: Save options in project`;
   }
   if (!translated) {
     const port = trimmed.match(/^(.+): (Rolle|Berechneten Wert weitergeben)$/);
     if (port) translated = `${ENGLISH[port[1]] || port[1]}: ${ENGLISH[port[2]]}`;
   }
   if (!translated) {
-    const item = trimmed.match(/^(Wert|HTML Wert|Stil für|Bild|frames|Tab|Kalender|Farbregel) \[(\d+)\]$/);
+    const item = trimmed.match(/^(Wert|HTML Wert|Stil für|Bild|frames|Tab|Kalender|Farbregel|Spalte|Standardsortierung|Zeilenbedingung) \[(\d+)\]$/);
     if (item) translated = `${ENGLISH[item[1]] || item[1]} [${item[2]}]`;
   }
   if (!translated) {

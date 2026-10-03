@@ -48,6 +48,19 @@ class FakeConnection:
 
 
 class StatesTests(unittest.TestCase):
+    def test_attribute_selection_returns_only_requested_attributes(self):
+        rows = [{"entity_id": "sensor.table", "state": "2", "attributes": {"events": [{"name": "a"}], "private": "not requested"}}, {"entity_id": "sensor.other", "state": "1"}]
+        with patch.object(APP, "home_assistant_commands", return_value=[rows]):
+            states = APP.load_home_assistant_states(["sensor.table"], {"sensor.table": {"events"}})
+        self.assertEqual(states[0]["attributes"], {"events": [{"name": "a"}]})
+        self.assertEqual(len(states), 1)
+
+    def test_attribute_selection_rejects_unrequested_entities_and_invalid_names(self):
+        self.assertEqual(APP.selected_state_attributes(["sensor.table"], ["sensor.table|events", "sensor.table|events"]), {"sensor.table": {"events"}})
+        for value in ["sensor.other|events", "sensor.table|", "sensor.table", "sensor.table|bad\nname"]:
+            with self.assertRaises(ValueError):
+                APP.selected_state_attributes(["sensor.table"], [value])
+
     def test_only_requested_states_are_returned_without_registry_reads(self):
         connection = FakeConnection()
         websocket = types.SimpleNamespace(

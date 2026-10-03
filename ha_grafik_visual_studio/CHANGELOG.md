@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.177
+
+- Add Interactive Table with JSON state/attribute sources, column formats and arithmetic formulas, sorting, filters, pagination, sticky headers and row color conditions.
+- Provide four neutral CSS Table groups with independent inheritance, borders, corner radii and shadows; retain the Basic Table.
+- Return only explicitly requested HA attributes and keep all table interaction read only. Add bilingual illustrated documentation.
+
 ## 0.1.176
 
 - Add a separate Interactive Slider with horizontal/vertical orientation, title/unit, value labels, interval/custom marks and read-only display.
