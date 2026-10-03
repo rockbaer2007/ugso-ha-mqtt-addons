@@ -21,6 +21,18 @@
 .event-calendar-legend span { display: inline-flex; gap: 5px; align-items: center; overflow-wrap: anywhere; }
 .event-calendar-legend i { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .event-calendar-notice { font-size: 11px; color: #FF7777; overflow-wrap: anywhere; max-height: 48px; overflow: auto; flex-shrink: 0; }
+.styled-checkbox { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; height: 100%; min-width: 0; cursor: pointer; }
+.styled-checkbox.position-start { flex-direction: row-reverse; }
+.styled-checkbox.position-top { flex-direction: column-reverse; }
+.styled-checkbox.position-bottom { flex-direction: column; }
+.styled-checkbox-text { min-width: 0; max-height: 100%; overflow: auto; overflow-wrap: anywhere; white-space: pre-wrap; }
+.styled-checkbox.position-top .styled-checkbox-text, .styled-checkbox.position-bottom .styled-checkbox-text { max-height: calc(100% - var(--checkbox-size, 24px) - 6px); }
+.styled-checkbox input { appearance: none; display: grid; place-content: center; flex: 0 0 auto; margin: 0; padding: 0; width: var(--checkbox-size, 24px); height: var(--checkbox-size, 24px); min-width: 0; min-height: 0; border: 0; border-radius: 3px; color: var(--checkbox-color, var(--muted)); background: transparent; box-shadow: inset 0 0 0 2px currentColor; cursor: pointer; }
+.styled-checkbox input:checked { color: var(--checkbox-active, var(--accent)); background: currentColor; }
+.styled-checkbox input:checked::after { content: ""; width: calc(var(--checkbox-size, 24px) * .35); height: calc(var(--checkbox-size, 24px) * .55); border: solid var(--bg); border-width: 0 2px 2px 0; transform: translateY(-1px) rotate(45deg); }
+.styled-checkbox input:disabled { cursor: default; opacity: .65; }
+.styled-checkbox input.zero-size::after { display: none; }
+.styled-checkbox:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
 .calendar-widget { width: 100%; font-size: 13px; }
 .calendar-header { display: flex; align-items: center; justify-content: space-between; gap: 4px; height: 44px; color: var(--cal-headerTextColor); }
 .calendar-header button { width: 30px; height: 30px; flex-shrink: 0; padding: 0; background: transparent; border: 0; color: var(--cal-headerIconColor); font-size: 24px; }

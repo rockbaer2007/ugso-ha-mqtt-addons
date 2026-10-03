@@ -91,6 +91,14 @@ Diese Integration ist wie das Add-on experimentell. Bei Fehlern kannst du den In
 
 Die Entitätenauswahl funktioniert auch im normalen Add-on-Ingress. Die optionale Integration ist nur für separate Einträge **HA Grafik Editor** und **HA Grafik Runtime** erforderlich. Nach Updates dieser Integration müssen Änderungen im Ordner `custom_components/ha_grafik_visual_studio` erneut nach `/config/custom_components/ha_grafik_visual_studio` kopiert und Home Assistant neu gestartet werden.
 
+## Vorgemerkter Ausbau: Kalender-JSON-Integration
+
+Eine eigene Home-Assistant-Integration soll später HA-Kalender zusammenführen und
+Terminlisten für Kalender-Widgets und andere Verbraucher bereitstellen. Geplant:
+Terminanzahl als Sensorzustand, vollständige JSON-Terminliste im Attribut `events`,
+konfigurierbarer Zeitraum und Aktualisierung. Die Widget-Anbindung an `calendar.*`
+ist bereits vorhanden; diese wiederverwendbare Integration ist noch nicht implementiert.
+
 ## VIS2 als Referenz
 
 VIS2 wurde auf Paket- und Quellcodeebene untersucht. Es trennt Editor (`Editor.tsx`) und Runtime (`Runtime.tsx`), lädt Widget-Sets über einen Widget-Katalog und unterstützt unter anderem mehrere Ansichten, Widget-Eigenschaften, Seitenauflösungen sowie absolute und rasterbasierte Layouts. Dieses Projekt übernimmt nur diese allgemeinen Produktideen. Es enthält keinen VIS2-Code, keine VIS2-Widgets und keine VIS2-Ressourcen. Die Widget-Registrierung ist für eigenständige Home-Assistant-Widgets vorgesehen. Ein späterer Importer ist als Konvertierungshilfe geplant, nicht als Möglichkeit, VIS-Widgets samt Abhängigkeiten direkt in Home Assistant auszuführen.

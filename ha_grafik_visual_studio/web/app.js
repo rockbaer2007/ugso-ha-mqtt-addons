@@ -19,6 +19,7 @@ import { borderAppearance, borderTitleFragment } from "./border-widget.js";
 import { noteValue, noteWritable } from "./note-widget.js";
 import { isSeparator, snapSeparator, renderSeparator } from "./separator-line.js";
 import { renderCalendar, CALENDAR_STYLES } from "./calendar-widget.js";
+import { renderCheckbox, checkboxValue } from "./styled-checkbox.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
 import { migrationHint } from "./migration-hints.js";
@@ -1592,6 +1593,7 @@ function cloneWidgetForInsert(source, page, idMap) {
   if (copy.editorGroupId) { if (idMap.has(copy.editorGroupId)) copy.editorGroupId = idMap.get(copy.editorGroupId); else delete copy.editorGroupId; }
   copy.id = idMap.get(oldId) || `widget-${state.nextId++}`;
   remapUniversalReferences(copy, idMap);
+  if (copy.type === "styled-checkbox" && idMap.has(copy.styleFromWidget)) copy.styleFromWidget = idMap.get(copy.styleFromWidget);
   if (copy.type === "calendar") for (const [prefix] of CALENDAR_STYLES) {
     const key = `${prefix}FromWidget`;
     if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
@@ -2844,6 +2846,10 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       label.append(checkbox, track);
       if (widget.title) { const caption = document.createElement("span"); caption.textContent = widget.title; label.append(caption); }
       content.append(label);
+    } else if (widget.type === "styled-checkbox") {
+      content.style.overflow = "visible";
+      const ready = !helperWriteQueue.has(widget.entityId) && [false, true].every(checked => stateElementReady(widget, checkboxValue(widget, checked)));
+      content.append(renderCheckbox(widget, document, { runtime: runtimeMode, ready, value: displayedWidgetState(widget), entry: state.entityStates[widget.entityId], widgets: allProjectWidgets(state.project), write: value => setRuntimeStateElement(widget, value) }));
     } else if (widget.type === "checkbox") {
       const label = document.createElement("label"); label.className = "widget-checkbox";
       const checkbox = document.createElement("input"); checkbox.type = "checkbox"; checkbox.checked = isOn(displayedWidgetState(widget));

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.175
+
+- Add Checkbox under Interactive with custom value pairs, state labels, four label positions and neutral CSS styling with inheritance.
+- Reuse existing HA switch and helper writes; keep unsupported/unavailable entities read only and editor previews non-writing.
+- Record the planned Calendar JSON integration: event count as state and complete event list in an events attribute.
+
 ## 0.1.174
 
 - Add Event Calendar under Interactive with month, week, day, year and list views, multiple calendar sources, a legend and ordered title color rules.
