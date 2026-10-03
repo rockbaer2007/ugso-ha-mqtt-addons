@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.185
+
+- Make palette selection boxes flatter: 34 px minimum height instead of 42 px, with 32 x 26 px previews and proportionally smaller icons.
+- Preserve set colors and readable labels while fitting more entries in every widget set.
+- Use the standard mdi:view-dashboard icon for Dashboard in widget in the palette.
+
 ## 0.1.184
 
 - Color Interactive palette entries olive green, Special blue and Data Flow violet while preserving the Basic palette.

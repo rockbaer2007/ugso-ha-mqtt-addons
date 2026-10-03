@@ -14,7 +14,7 @@ registerWidgetSet({
   label: "HA Grafik – Spezial",
   widgets: [{
     type: "dashboard-in-widget", label: "Dashboard in widget", searchTerms: ["HA Dashboard", "Dashboard im Widget"], icon: "▣",
-    preview: { kind: "plain", lines: ["HA", "Dashboard"] },
+    iconSvg: "icons/dashboard.svg", preview: { kind: "svg", lines: [] },
     defaults: { title: "", width: 300, height: 200, dashboardPath: "", dashboardView: "", dashboardBaseUrl: "" },
     propertyGroups: [
       { label: "Allgemein", fields: [
