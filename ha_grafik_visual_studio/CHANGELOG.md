@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.198
+
+- Extend the optional Technic set to 1.1.0 with Switch – Boolean: persistent caption, top/bottom placement, 16 original geometric icons, scale and ON/OFF colors.
+- Support HA switch/light/input_boolean and numeric input_number 0/1 values. Unknown, unbound, read-only and editor controls never write; pending clicks are deduplicated and failures allow retry.
+- Preserve Window – Wall during additive package updates. Update DE/EN installation and control documentation.
+
 ## 0.1.197
 
 - Add optional UGSo Technic 1.0.0 with Window – Wall, inspired by Sefina-DS ioBroker Technic Widgets: configurable caption, handle side, SVG color/scale, contact/cover/mode bindings and individual inversions.

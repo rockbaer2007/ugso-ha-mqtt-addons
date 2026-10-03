@@ -6,6 +6,7 @@ import { renderWindowOverview } from "./window-overview.js";
 import { renderLandlordNotification } from "./landlord-notification.js";
 import { heatingParamsBindings, renderHeatingParams } from "./heating-params.js";
 import { technicBindings, renderTechnicWindow, syncTechnicControls } from "./technic-window.js";
+import { TECHNIC_SWITCH_ICONS, renderTechnicSwitch } from "./technic-switch.js";
 import { createMeteoredController } from "./meteored.js";
 const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
@@ -3400,6 +3401,12 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       element.classList.add("meteored-host");
       if (widget.noCard) content.style.background = "transparent";
       meteored.render(content, widget, document, runtimeMode, uiText, getWidgetDefinition(widget.type).render.valueKey);
+    } else if (getWidgetDefinition(widget.type).render?.kind === "technic-switch") {
+      content.append(renderTechnicSwitch(widget, document, { runtime: runtimeMode, locale: document.documentElement.lang || "de", getStates: () => state.entityStates, onSettled: () => renderStage(), write: async (entityId, value, numeric) => {
+        const response = await fetch(numeric ? "api/helper-value" : "api/switch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(numeric ? { entity_id: entityId, value } : { entity_id: entityId, enabled: value }) });
+        if (!response.ok || (await response.json()).accepted !== true) throw new Error("Switch action failed");
+        await refreshRuntimeStates();
+      } }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-window") {
       content.append(renderTechnicWindow(widget, document, { runtime: runtimeMode, locale: document.documentElement.lang || "de", getStates: () => state.entityStates, writePosition: async (entityId, position) => {
         const response = await fetch("api/cover-position", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity_id: entityId, position }) });
@@ -4209,6 +4216,7 @@ function field(descriptor, widget) {
     if (isGauge(widget) && (descriptor.key === "entityId" || /EntityId\d*$/.test(descriptor.key))) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "heating-params" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "technic-window" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
+    if (getWidgetDefinition(widget.type).render?.kind === "technic-switch" && descriptor.key === "entityId") void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "room-table" && ["entityId", "tableAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "window-overview" && ["entityId", "tableAttribute", "openCountEntityId", "openCountAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "chart" && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || ["dataCount", "showWeekData", "weatherSource", "forecastType", "forecastAttribute"].includes(descriptor.key))) void refreshEditorLiveStates();
@@ -4600,7 +4608,7 @@ async function loadWidgetPackages() {
         id: manifest.id, label: manifest.name,
         widgets: manifest.widgets.map(widget => ({
           ...widget, packageId: manifest.id, definitionVersion: manifest.apiVersion, iconSvg: widget.iconData || "icons/text.svg", preview: { kind: "svg", lines: [] },
-          propertyGroups: widget.propertyGroups.map(group => ({ ...group, ...(widget.render.kind === "chart" && group.label.startsWith("CSS ") ? { css: true, defaultEnabled: true } : {}), fields: group.fields.map(field => widget.render.kind === "technic-window" && ["handle", "namePosition"].includes(field.key) && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { left: "Links", right: "Rechts", top: "Oben", bottom: "Unten" }[value] || value })) } : field) })),
+          propertyGroups: widget.propertyGroups.map(group => ({ ...group, ...(widget.render.kind === "chart" && group.label.startsWith("CSS ") ? { css: true, defaultEnabled: true } : {}), fields: group.fields.map(field => ["technic-window", "technic-switch"].includes(widget.render.kind) && ["handle", "namePosition", "valueType", "iconKey"].includes(field.key) && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { left: "Links", right: "Rechts", top: "Oben", bottom: "Unten", bool: "Wahr / Falsch", number: "0 / 1", ...TECHNIC_SWITCH_ICONS }[value] || value })) } : field) })),
         })),
       });
     }
