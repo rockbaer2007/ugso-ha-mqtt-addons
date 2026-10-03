@@ -188,14 +188,15 @@ button { cursor: pointer; }
 .widget-filter-open[aria-pressed="true"] { border-color: var(--accent); background: #344143; }
 .widget-finder { display: grid; width: clamp(210px, 20vw, 330px); min-width: 210px; flex: 1 1 260px; grid-template-rows: auto 32px; align-content: center; gap: 4px; padding: 4px 10px; color: var(--muted); font-size: 11px; white-space: nowrap; }
 .widget-finder > button { display: flex; width: 100%; min-width: 0; align-items: center; justify-content: space-between; overflow: hidden; padding: 5px 7px; text-overflow: ellipsis; }
-.widget-selector-menu { position: fixed; z-index: 80; top: var(--toolbar-height); width: min(470px, calc(100vw - 16px)); max-height: min(520px, calc(100vh - var(--toolbar-height) - 12px)); overflow: hidden; border: 1px solid var(--line); border-radius: 0 0 7px 7px; color: var(--text); background: #292f31; box-shadow: 0 12px 32px #000a; }
+.widget-selector-menu { position: fixed; z-index: 80; top: var(--toolbar-height); width: min(470px, calc(100vw - 16px)); max-height: calc(100dvh - var(--toolbar-height) - 12px); overflow: hidden; border: 1px solid var(--line); border-radius: 0 0 7px 7px; color: var(--text); background: #292f31; box-shadow: 0 12px 32px #000a; }
 .widget-selector-menu[hidden] { display: none; }
 .widget-selector-actions { display: grid; grid-template-columns: auto 1fr 1fr; align-items: center; gap: 5px; padding: 8px; background: #315779; }
 .widget-selector-actions label { display: flex; align-items: center; gap: 6px; font-size: 14px; }
 .widget-selector-actions button { border-color: transparent; color: #55bdf2; background: transparent; text-transform: uppercase; }
-.widget-selector-list { display: grid; max-height: 420px; overflow: auto; }
+.widget-selector-list { display: grid; grid-auto-rows: 48px; max-height: 480px; overflow-y: auto; overflow-x: hidden; }
 .widget-selector-menu { display: flex; flex-direction: column; }
 .widget-selector-menu .widget-selector-list { min-height: 0; flex: 1; }
+.widget-selector-actions, .widget-selector-edit-actions { flex-shrink: 0; }
 .widget-selector-edit-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 8px; border-top: 1px solid var(--line); }
 #stage { isolation: isolate; }
 .widget-selector-row { display: grid; grid-template-columns: 28px 36px minmax(0, 1fr); align-items: center; gap: 7px; min-height: 48px; padding: 6px 10px; border-bottom: 1px dashed #536063; }

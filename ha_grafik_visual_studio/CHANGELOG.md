@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.196
+
+- Show ten compact entries in the widget selector before scrolling; keep selection and editing actions outside the scrolling list.
+- Limit the menu to the available viewport on smaller screens.
+
 ## 0.1.195
 
 - Keep Universal Element captions across clicks: empty state texts inherit the default text or configured title, including separate buttons.
