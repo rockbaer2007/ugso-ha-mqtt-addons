@@ -36,11 +36,26 @@ def manifest():
     package = {"format": "ha-grafik-widget-package", "apiVersion": "0.2", "id": "ugso.weather-heating", "name": "Wetter und Heizung", "version": "1.3.0", "license": "MIT", "icon": "icons/chart.svg", "widgets": [{"type": "ugso.weather-heating/general-chart", "label": "Allgemeines Diagramm", "icon": "icons/chart.svg", "defaults": defaults, "propertyGroups": groups, "render": {"kind": "chart", "valueKey": "headline"}}, {"type": "ugso.weather-heating/two-weeks-bar", "label": "Balkendiagramm für zwei Wochen", "icon": "icons/chart.svg", "defaults": weekly, "propertyGroups": week_groups, "render": {"kind": "chart", "valueKey": "headline"}}]}
     package["widgets"].append(weather_definition(field))
     package["widgets"].append({"type": "ugso.weather-heating/heating-rooms", "label": "Übersicht über Heizräume", "icon": "icons/chart.svg", "defaults": {"entityId": "", "tableAttribute": "", "tablePreview": '<table><thead><tr><th>Raum</th><th>Ist</th><th>Soll</th><th>Status</th></tr></thead><tbody><tr><td>Wohnzimmer</td><td>21 °C</td><td>22 °C</td><td style="color: #ffca28">Heizen</td></tr><tr><td>Küche</td><td>20 °C</td><td>20 °C</td><td>Bereit</td></tr></tbody></table>', "noCard": False, "headlineColor": "#ffffff", "width": 560, "height": 240, "backgroundColor": "#20282d", "textColor": "#ffffff", "borderWidth": 0}, "propertyGroups": [{"label": "Allgemein", "fields": [field("noCard", "Ohne Karte", "checkbox")]}, {"label": "Raumtabelle", "fields": [field("entityId", "Raumtabellen-Entität"), field("tableAttribute", "Tabellenattribut (optional)"), field("tablePreview", "Vorschau-Raumtabelle (HTML)")]}, {"label": "Farben", "fields": [field("headlineColor", "Überschriftenfarbe", "color")]}, {"label": "Größe und Position", "fields": [field("width", "Breite (px)", "number", min=64, max=2000), field("height", "Höhe (px)", "number", min=64, max=2000)]}], "render": {"kind": "room-table", "valueKey": "tablePreview"}})
-    package["version"] = "1.6.0"
+    package["version"] = "1.7.0"
     package["widgets"].append({"type": "ugso.weather-heating/meteored", "label": "METEORED-Wetter-Widget", "icon": "icons/chart.svg", "defaults": {"meteoredWidgetId": "", "enableReload": True, "noCard": False, "width": 560, "height": 300, "backgroundColor": "#20282d", "textColor": "#ffffff", "borderWidth": 0}, "propertyGroups": [{"label": "Allgemein", "fields": [field("noCard", "Ohne Karte", "checkbox"), field("meteoredWidgetId", "Meteored-Widget-ID"), field("enableReload", "Neuladen aktivieren", "checkbox")]}, {"label": "Größe und Position", "fields": [field("width", "Breite (px)", "number", min=64, max=2000), field("height", "Höhe (px)", "number", min=64, max=2000)]}], "render": {"kind": "meteored", "valueKey": "meteoredWidgetId"}})
     package["widgets"].append(window_definition(field))
     package["widgets"].append(landlord_definition(field))
+    package["widgets"].append(heating_params_definition(field))
     return package
+
+
+def heating_params_definition(field):
+    rows = [("heatingPeriod", "Heizperiode aktiv"), ("publicHoliday", "Heute Feiertag"), ("present", "Anwesend"), ("party", "Jetzt feiern"), ("guests", "Gäste anwesend"), ("holidayHome", "Urlaub zu Hause"), ("vacationAway", "Urlaub abwesend"), ("fireplace", "Kaminmodus")]
+    defaults = {"chosenRoomEntityId": "", "noCard": False, "readOnly": False, "width": 350, "height": 350, "backgroundColor": "#20282d", "textColor": "#ffffff", "borderWidth": 0}
+    bindings = [field("chosenRoomEntityId", "Gewählter Raum: Entität (optional)")]
+    previews = []
+    for key, label in rows:
+        defaults[key + "EntityId"] = ""
+        defaults[key + "Preview"] = False
+        bindings.append(field(key + "EntityId", label + ": Entität"))
+        previews.append(field(key + "Preview", label + ": Vorschau", "checkbox"))
+    groups = [{"label": "Allgemein", "fields": [field("noCard", "Ohne Karte", "checkbox"), field("readOnly", "Schreibgeschützt", "checkbox")]}, {"label": "Heizparameter-Entitäten", "fields": bindings}, {"label": "Vorschau", "fields": previews}, {"label": "Größe und Position", "fields": [field("width", "Breite (px)", "number", min=64, max=2000), field("height", "Höhe (px)", "number", min=64, max=2000)]}]
+    return {"type": "ugso.weather-heating/general-heating-params", "label": "Allgemeine Heizparameter", "icon": "icons/chart.svg", "defaults": defaults, "propertyGroups": groups, "render": {"kind": "heating-params", "valueKey": "chosenRoomEntityId"}}
 
 
 def landlord_definition(field):

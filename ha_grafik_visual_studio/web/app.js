@@ -4,6 +4,7 @@ import { renderWeather } from "./weather-widget.js";
 import { renderHeatingRooms } from "./heating-rooms.js";
 import { renderWindowOverview } from "./window-overview.js";
 import { renderLandlordNotification } from "./landlord-notification.js";
+import { heatingParamsBindings, renderHeatingParams } from "./heating-params.js";
 import { createMeteoredController } from "./meteored.js";
 const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
@@ -651,6 +652,7 @@ async function fetchEntityStates(ids) {
 function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...gaugeEntityIds(widget),
+    ...(getWidgetDefinition(widget.type).render?.kind === "heating-params" ? heatingParamsBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "window-overview" ? [widget.openCountEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "chart" ? chartBindings(widget).map(s => s.entityId) : []),
     widget.type === "dropdown" ? widget.bgEntityId : "",
@@ -691,6 +693,7 @@ async function refreshEditorLiveStates() {
 function runtimeLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...gaugeEntityIds(widget),
+    ...(getWidgetDefinition(widget.type).render?.kind === "heating-params" ? heatingParamsBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "window-overview" ? [widget.openCountEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "chart" ? chartBindings(widget).map(s => s.entityId) : []),
     widget.type === "dropdown" ? widget.bgEntityId : "",
@@ -3393,6 +3396,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       element.classList.add("meteored-host");
       if (widget.noCard) content.style.background = "transparent";
       meteored.render(content, widget, document, runtimeMode, uiText, getWidgetDefinition(widget.type).render.valueKey);
+    } else if (getWidgetDefinition(widget.type).render?.kind === "heating-params") {
+      if (widget.noCard) content.style.background = "transparent";
+      content.append(renderHeatingParams(widget, document, { states: state.entityStates, runtime: runtimeMode, locale: document.documentElement.lang || "de", pending: pendingSwitches, write: (entityId, enabled) => { void writeRuntimeSwitch({ entityId }, enabled); } }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "landlord-notification") {
       element.classList.add("notification-host"); element.dataset.dashboardSurface = dashboardSurfaceKey;
       if (widget.noCard) content.style.background = "transparent";
@@ -4186,6 +4192,7 @@ function field(descriptor, widget) {
     if (descriptor.key === "testIndex" && widget.type === "value-list-text") widget.state = input.value;
     void updatePreview();
     if (isGauge(widget) && (descriptor.key === "entityId" || /EntityId\d*$/.test(descriptor.key))) void refreshEditorLiveStates();
+    if (getWidgetDefinition(widget.type).render?.kind === "heating-params" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "room-table" && ["entityId", "tableAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "window-overview" && ["entityId", "tableAttribute", "openCountEntityId", "openCountAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "chart" && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || ["dataCount", "showWeekData", "weatherSource", "forecastType", "forecastAttribute"].includes(descriptor.key))) void refreshEditorLiveStates();

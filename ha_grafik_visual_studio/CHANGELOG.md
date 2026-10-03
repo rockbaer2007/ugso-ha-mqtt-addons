@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.194
+
+- Add General Heating Parameters to optional Weather and Heating package 1.7.0 with eight independent HA bindings, optional chosen-room display, preview states, read-only and no-card options.
+- Control available input_boolean/switch entities in runtime through the existing bounded switch API; sensors remain read-only and unknown/unbound states never become false preview values.
+- Preserve all seven existing package definitions and export every configured binding and display option.
+
 ## 0.1.193
 
 - Add Inform My Landlord to optional Weather and Heating package 1.6.0 with message type, explicit HA notify action/entity, message heading, priority and runtime message form.
