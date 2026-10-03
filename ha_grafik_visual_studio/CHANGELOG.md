@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.157
+
+- Input val supports numeric min/max, configurable auto-set delay (1000ms default), Enter submission and an optional confirmation button. Auto-set also works with withEnter; leaving the field alone no longer writes.
+- Styled inputs use prefix as label and suffix as helper text; No style uses sanitized surrounding HTML. Numeric mode applies to read-only sensors too. New widgets use 150x70 and only CSS General enabled.
+- Optional migration hints explain confirmation and display behavior; numeric writes reject empty, non-finite and out-of-range values.
+
 ## 0.1.156
 
 - String supports HTML editors for prefix/suffix/test text, plain-text source values, editor-only test override and fixed 5..200px icon size (24px default). Size controls appear only with an icon.

@@ -198,6 +198,13 @@ html[lang="en"] .widget-edit-actions::after { content: "Edit"; }
 .widget-input { min-width: 0; width: 100%; color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 4px; padding: 4px; }
 .widget-input.filled { background: #ffffff15; }
 .widget-input.outlined { border: 1px solid currentColor; border-radius: 4px; }
+.input-value-field { display: flex; flex-direction: column; width: 100%; min-width: 0; height: 100%; justify-content: center; gap: 2px; }
+.input-value-label, .input-value-helper { font-size: .75em; overflow-wrap: anywhere; }
+.input-value-row { display: flex; align-items: center; min-width: 0; }
+.input-value-row .widget-input { flex: 1; font: inherit; border: 0; border-radius: 0; border-bottom: 1px solid currentColor; box-sizing: border-box; }
+.input-value-row .widget-input.outlined { border: 1px solid currentColor; border-radius: 4px; }
+.input-value-confirm { flex: none; padding: 2px 5px; min-width: 0; }
+.input-value-confirm[hidden] { display: none; }
 html.embedded-loading { background: transparent; }
 html.embedded-loading body { visibility: hidden; background: transparent; }
 .embedded-runtime .toolbar, body.embedded-runtime.runtime-mode .runtime-page-menu-toggle { display: none; }

@@ -2,6 +2,9 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Auto-setzen Verzögerung (ms)": "Auto-set delay (ms)",
+  "Enter bestätigt die Eingabe immer. withEnter ergänzt eine Bestätigungstaste; Auto-setzen bleibt unabhängig davon aktiv. Ohne Auto-setzen wird beim Verlassen nicht geschrieben.": "Enter always submits the input. withEnter adds a confirmation button; auto-set works independently. Without auto-set, leaving the field does not write.",
+  "Mit Style: Voranstellen ist die Feldbeschriftung, Anhängen der Hilfstext. Ohne Style: bereinigtes HTML vor und hinter einem einfachen Eingabefeld.": "Styled: prepend is the field label, append is helper text. No style: sanitized HTML before and after a plain input.",
   "HA-Attribut (leer: Zustand)": "HA attribute (empty: state)", "Symbolgröße in Pixel": "Icon size in pixels", "Testtext": "Test text",
   "ioBroker-Attributdatenpunkte wie friendly_name entsprechen HA-Attributen: Entität auswählen und hier friendly_name eintragen. Leer zeigt den Zustand. Kein HA-Helfer nötig.": "ioBroker attribute datapoints such as friendly_name map to HA attributes: select the entity and enter friendly_name here. Empty displays the state. No HA helper is needed.",
   "Testtext gilt nur im Editor. Der Entitätswert und der Testtext bleiben Text; nur HTML davor und dahinter wird formatiert.": "Test text applies only in the editor. Entity values and test text remain plain text; only prepended and appended HTML is formatted.",

@@ -354,6 +354,19 @@ registerWidgetSet({
     if (widget.type === "screen-resolution") widget.propertyGroups = widget.propertyGroups.filter(group => group.label !== "Daten");
     const data = widget.propertyGroups.find(group => ["Daten", "Allgemein"].includes(group.label));
     const add = (...fields) => data?.fields.push(...fields);
+    if (widget.type === "input-value") {
+      Object.assign(widget.defaults, { width: 150, height: 70, numeric: false, autoSet: false, autoSetDelay: 1000, readOnly: false, noStyle: false, autofocus: false, prefix: "", suffix: "" });
+      widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);
+      data.fields = data.fields.filter(field => field.key !== "state").map(field => {
+        if (["prefix", "suffix"].includes(field.key)) return { ...field, type: "html" };
+        if (["numeric", "autoSet", "noStyle", "readOnly"].includes(field.key)) return { ...field, refreshProperties: true };
+        if (["withEnter", "variant"].includes(field.key)) return { ...field, showWhen: { key: "noStyle", value: false, default: false } };
+        return field;
+      });
+      const numericIndex = data.fields.findIndex(field => field.key === "numeric");
+      data.fields.splice(numericIndex + 1, 0, ...["min", "max"].map(key => ({ label: key, key, type: "number", showWhen: { key: "numeric", value: true } })));
+      data.fields.splice(data.fields.findIndex(field => field.key === "autoSet") + 1, 0, { label: "Auto-setzen Verzögerung (ms)", key: "autoSetDelay", type: "number", min: 1, default: 1000, showWhen: { key: "autoSet", value: true } });
+    }
     if (widget.type === "checkbox") {
       Object.assign(widget.defaults, { prefix: "", suffix: "", autofocus: false });
       widget.propertyGroups = widget.propertyGroups.map(group => group.css ? { ...group, defaultEnabled: false } : group);

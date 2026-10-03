@@ -1,4 +1,6 @@
 export function migrationHint(widget, key) {
+  if (widget.type === "input-value" && key === "withEnter") return "Enter bestätigt die Eingabe immer. withEnter ergänzt eine Bestätigungstaste; Auto-setzen bleibt unabhängig davon aktiv. Ohne Auto-setzen wird beim Verlassen nicht geschrieben.";
+  if (widget.type === "input-value" && key === "noStyle") return "Mit Style: Voranstellen ist die Feldbeschriftung, Anhängen der Hilfstext. Ohne Style: bereinigtes HTML vor und hinter einem einfachen Eingabefeld.";
   if (widget.type === "string" && key === "entityAttribute") return "ioBroker-Attributdatenpunkte wie friendly_name entsprechen HA-Attributen: Entität auswählen und hier friendly_name eintragen. Leer zeigt den Zustand. Kein HA-Helfer nötig.";
   if (widget.type === "string" && key === "state") return "Testtext gilt nur im Editor. Der Entitätswert und der Testtext bleiben Text; nur HTML davor und dahinter wird formatiert.";
   if (widget.type === "filter-dropdown" && key === "filterEntries") return "Filterwerte entsprechen den Filterwörtern der Widgets auf dieser Seite. Kein HA-Helfer nötig. Textfarben werden als HEX gespeichert; Standard gilt beim Start der Runtime.";

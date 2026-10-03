@@ -13,6 +13,8 @@ import { htmlStateValue } from "./html-state.js";
 import { barDisplay } from "./bar-display.js";
 import { filterEntries, defaultFilters, filterSelected, chooseFilter, filterHex } from "./filter-widget.js";
 import { stringDisplayValue } from "./string-display.js";
+import { inputValueDelay, inputValueSubmission } from "./input-value.js";
+const inputValueDrafts = new Map();
 import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
@@ -715,7 +717,7 @@ function scheduleLineboxHelperOutputs() {
 }
 
 function renderRuntimeStageWhenReady() {
-  if (helperWriteQueue.size || document.activeElement?.matches(".widget-input[data-editing='true'], input[type='range'][data-dragging='true']")) {
+  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true']") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true']")) {
     runtimeRenderDeferred = true;
     return;
   }
@@ -2787,25 +2789,47 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (widget.type === "input-value") {
       const bound = Boolean(widget.entityId); const numberHelper = WRITABLE_NUMBER_HELPER.test(widget.entityId || ""); const textHelper = WRITABLE_TEXT_HELPER.test(widget.entityId || "");
       const live = state.entityStates[widget.entityId]?.state;
-      const input = document.createElement("input"); input.type = numberHelper || (!bound && widget.numeric) ? "number" : "text";
+      const input = document.createElement("input"); input.type = widget.numeric ? "number" : "text";
       if (input.type === "number") input.step = "any";
+      if (widget.numeric) for (const key of ["min", "max"]) if (widget[key] !== undefined && widget[key] !== null && String(widget[key]).trim() !== "") input[key] = String(widget[key]);
       input.value = String(bound ? live ?? "" : widget.state ?? "");
       input.readOnly = !runtimeMode || widget.readOnly === true || (bound && ((!numberHelper && !textHelper) || live === undefined));
+      const draftKey = `${state.projectId}:${activePage.id}:${widget.id}`;
+      if (runtimeMode && !input.readOnly && inputValueDrafts.has(draftKey)) input.value = inputValueDrafts.get(draftKey);
       input.autofocus = runtimeMode && widget.autofocus === true; input.className = widget.noStyle ? "" : `widget-input ${widget.variant || "standard"}`; input.setAttribute("aria-label", widget.title || "Eingegebener Wert");
+      input.classList.add("input-value-control");
+      const confirm = document.createElement("button"); confirm.type = "button"; confirm.textContent = "↵"; confirm.setAttribute("aria-label", uiText("Wert übernehmen")); confirm.className = "input-value-confirm"; confirm.hidden = true;
+      confirm.hidden = input.readOnly || !widget.withEnter || widget.noStyle || !inputValueDrafts.has(draftKey);
       let timer = null; let lastSubmitted;
       const apply = () => {
         clearTimeout(timer);
-        if (input.readOnly || input.value === lastSubmitted || (numberHelper && input.value.trim() === "")) return;
+        delete input.dataset.autoPending;
+        if (!input.isConnected || input.readOnly || input.value === lastSubmitted) return;
+        const submission = inputValueSubmission(widget, input.value, numberHelper);
+        if (!submission.valid || !input.checkValidity()) { input.reportValidity(); return; }
         lastSubmitted = input.value;
-        if (bound) void writeRuntimeHelperValue(widget.entityId, numberHelper ? Number(input.value) : input.value).then((ok) => { if (!ok && lastSubmitted === input.value) lastSubmitted = undefined; });
-        else widget.state = widget.numeric && input.value !== "" ? Number(input.value) : input.value;
+        inputValueDrafts.delete(draftKey);
+        confirm.hidden = true;
+        if (bound) void writeRuntimeHelperValue(widget.entityId, submission.value).then((ok) => { if (!ok && lastSubmitted === input.value) { lastSubmitted = undefined; inputValueDrafts.set(draftKey, input.value); confirm.hidden = !widget.withEnter || widget.noStyle; } });
+        else widget.state = submission.value;
       };
       input.addEventListener("focus", () => { input.dataset.editing = "true"; });
       input.addEventListener("blur", () => { delete input.dataset.editing; if (bound) window.setTimeout(renderRuntimeStageWhenReady, 0); });
-      input.addEventListener("input", () => { if (widget.autoSet && !widget.withEnter && !input.readOnly) { clearTimeout(timer); timer = window.setTimeout(apply, 350); } });
-      input.addEventListener("change", () => { if (!widget.withEnter) apply(); });
-      input.addEventListener("keydown", event => { event.stopPropagation(); if (event.key === "Enter") apply(); });
-      appendSafeHtml(content, widget.prefix || ""); content.append(input); appendSafeHtml(content, widget.suffix || "");
+      input.addEventListener("input", () => {
+        if (!input.readOnly) inputValueDrafts.set(draftKey, input.value);
+        confirm.hidden = input.readOnly || !widget.withEnter || widget.noStyle || input.value === lastSubmitted;
+        if (widget.autoSet && !input.readOnly) { clearTimeout(timer); input.dataset.autoPending = "true"; timer = window.setTimeout(apply, inputValueDelay(widget)); }
+      });
+      input.addEventListener("keydown", event => { event.stopPropagation(); if (event.key === "Enter") { event.preventDefault(); apply(); } });
+      confirm.addEventListener("click", event => { event.stopPropagation(); apply(); });
+      if (widget.noStyle) { appendSafeHtml(content, widget.prefix || ""); content.append(input); appendSafeHtml(content, widget.suffix || ""); }
+      else {
+        const field = document.createElement("label"); field.className = `input-value-field ${widget.variant || "standard"}`;
+        const label = document.createElement("span"); label.className = "input-value-label"; label.textContent = widget.prefix || "";
+        const row = document.createElement("span"); row.className = "input-value-row"; row.append(input, confirm);
+        const helper = document.createElement("span"); helper.className = "input-value-helper"; helper.textContent = widget.suffix || "";
+        field.append(label, row, helper); content.append(field);
+      }
     } else if (widget.type === "tabs") {
       content.append(renderTabsWidget(widget, activePage, surfaceChain));
     } else if (["view-in-widget", "view-in-widget-8"].includes(widget.type)) {
