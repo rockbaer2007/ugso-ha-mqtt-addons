@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.174
+
+- Add Event Calendar under Interactive with month, week, day, year and list views, multiple calendar sources, a legend and ordered title color rules.
+- Read full date ranges from Home Assistant calendars and accept JSON event lists; no event writes. Bundle FullCalendar locally under its MIT license.
+- Provide six neutral CSS Event Calendar groups, HEX colors and per-group inheritance. Keep CSS General required.
+
 ## 0.1.173
 
 - Add Calendar under Interactive: ISO dates or millisecond timestamps, read-only mode, today highlighting, past/future restrictions, month/year navigation, Monday/Sunday and ISO/simple week numbers.

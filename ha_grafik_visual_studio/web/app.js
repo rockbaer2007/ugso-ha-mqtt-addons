@@ -19,6 +19,7 @@ import { borderAppearance, borderTitleFragment } from "./border-widget.js";
 import { noteValue, noteWritable } from "./note-widget.js";
 import { isSeparator, snapSeparator, renderSeparator } from "./separator-line.js";
 import { renderCalendar, CALENDAR_STYLES } from "./calendar-widget.js";
+import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
 import { migrationHint } from "./migration-hints.js";
 import { htmlStateValue } from "./html-state.js";
@@ -169,6 +170,10 @@ const commonWidgetGroups = [
 
 function widgetPropertyGroups(widget) {
   let styleEntryGroups = [];
+  if (widget.type === "event-calendar") styleEntryGroups = [
+    ...Array.from({ length: Math.min(20, Math.max(0, Math.trunc(Number(widget.countCalendarSources) || 0))) }, (_, i) => ({ id: `event-source-${i}`, label: `Kalender [${i}]`, defaultEnabled: true, fields: [{ label: "Home-Assistant-Entität", key: `calendar${i}EntityId` }, { label: "Quellfarbe", key: `calendar${i}Color`, type: "color", optionalColor: true }, { label: "Legendentext", key: `calendar${i}Label` }] })),
+    ...Array.from({ length: Math.min(20, Math.max(0, Math.trunc(Number(widget.countEventColorRules) || 0))) }, (_, i) => ({ id: `event-rule-${i}`, label: `Farbregel [${i}]`, defaultEnabled: true, fields: [{ label: "Titel enthält", key: `eventRule${i}Title` }, { label: "Terminfarbe", key: `eventRule${i}Color`, type: "color" }] })),
+  ];
   if (widget.type === "table") styleEntryGroups = Array.from({ length: Math.min(20, Math.max(0, Math.trunc(Number(widget.maxColumns) || 0))) }, (_, index) => ({ id: `table-column-${index + 1}`, label: `Spalte [${index + 1}]`, fields: [
     { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
   ] }));
@@ -598,6 +603,7 @@ function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     !["dock", "preview"].includes(widget.numericSource) ? widget.entityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
+    ...(widget.type === "event-calendar" ? eventSources(widget).map(source => source.entityId) : []),
     ...(widget.type === "universal-button" ? (widget.visualStates || []).filter(item => item.compareSource === "entity").map(item => item.entityId) : []),
   ]))]
     .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id || ""));
@@ -632,6 +638,7 @@ async function refreshEditorLiveStates() {
 function runtimeLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     widget.entityId, widget.visibilityEnabled ? widget.visibilityEntityId : "",
+    ...(widget.type === "event-calendar" ? eventSources(widget).map(source => source.entityId) : []),
     ...(widget.type === "universal-button" ? (widget.visualStates || []).filter(item => item.compareSource === "entity").map(item => item.entityId) : []),
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
     widget.type === "linebox" && widget.outputHelperEnabled ? widget.outputHelperEntityId : "",
@@ -1586,6 +1593,10 @@ function cloneWidgetForInsert(source, page, idMap) {
   copy.id = idMap.get(oldId) || `widget-${state.nextId++}`;
   remapUniversalReferences(copy, idMap);
   if (copy.type === "calendar") for (const [prefix] of CALENDAR_STYLES) {
+    const key = `${prefix}FromWidget`;
+    if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
+  }
+  if (copy.type === "event-calendar") for (const [prefix] of EVENT_STYLES) {
     const key = `${prefix}FromWidget`;
     if (idMap.has(copy[key])) copy[key] = idMap.get(copy[key]);
   }
@@ -2639,6 +2650,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8") || child.classList.contains("widget-iframe") || child.classList.contains("widget-iframe-8") || child.classList.contains("widget-image") || child.classList.contains("widget-image-8")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
     else child.remove();
   }
+  cleanupEventCalendars();
   const filterKey = filterPageKey(activePage);
   if (!pageFilters.has(filterKey)) pageFilters.set(filterKey, defaultFilters(activePage.widgets.find(widget => widget.type === "filter-dropdown") || {}));
   const selectedFilters = pageFilters.get(filterKey);
@@ -2764,6 +2776,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (widget.type === "universal-button") {
       renderUniversalElement(widget, content, runtimeMode);
       if (runtimeMode && widget.clickThrough) element.style.pointerEvents = "none";
+    } else if (widget.type === "event-calendar") {
+      content.style.display = "block";
+      content.append(renderEventCalendar(widget, document, { runtime: runtimeMode, states: state.entityStates, widgets: allProjectWidgets(state.project), key: `${dashboardSurfaceKey}:${widget.id}`, language: getLanguagePreference() === "auto" ? navigator.language : getLanguagePreference(), text: uiText }));
     } else if (widget.type === "calendar") {
       content.style.display = "block"; content.style.overflow = "visible";
       const key = `${state.projectId}:${dashboardSurfaceKey}:${widget.id}`;
@@ -4014,7 +4029,7 @@ function field(descriptor, widget) {
   }
   const update = () => {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
-    if (descriptor.key === "count" && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
+    if (["count", "countEventColorRules", "countCalendarSources"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (isSeparator(widget) && descriptor.key === "separatorThickness") {
       widget.separatorThickness = Math.min(100, Math.max(1, Number(widget.separatorThickness) || 2));

@@ -5,6 +5,7 @@ import logging
 import math
 import os
 import re
+from datetime import datetime, timedelta
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -130,6 +131,35 @@ def home_assistant_commands(commands):
                 connection.close()
             except websocket.WebSocketException:
                 pass
+
+
+def load_calendar_events(entity_ids, start, end):
+    """Read complete events for a bounded range, without exposing auth/context data."""
+    if not entity_ids or len(entity_ids) > 20 or any(not re.fullmatch(r"calendar\.[a-z0-9_]+", entity) for entity in entity_ids):
+        raise ValueError("Ungültige Kalenderauswahl.")
+    try:
+        first, last = (datetime.fromisoformat(value.replace("Z", "+00:00")) for value in (start, end))
+        if first.utcoffset() is None or last.utcoffset() is None or not timedelta(0) < last - first <= timedelta(days=400):
+            raise ValueError()
+    except (ValueError, TypeError, AttributeError) as error:
+        raise ValueError("Ungültiger Kalenderzeitraum (maximal 400 Tage, mit Zeitzone).") from error
+    ids = list(dict.fromkeys(entity_ids))
+    result = home_assistant_commands([{
+        "type": "call_service", "domain": "calendar", "service": "get_events",
+        "target": {"entity_id": ids}, "service_data": {"start_date_time": start, "end_date_time": end},
+        "return_response": True,
+    }])[0]
+    response = result.get("response") if isinstance(result, dict) else None
+    if not isinstance(response, dict):
+        raise HomeAssistantAPIError("Home Assistant hat keine Kalenderdaten geliefert.")
+    calendars = {}
+    for entity in ids:
+        source = response.get(entity)
+        entries = source.get("events") if isinstance(source, dict) else None
+        if not isinstance(entries, list):
+            raise HomeAssistantAPIError(f"Keine Terminliste für {entity} verfügbar.")
+        calendars[entity] = [{key: value for key, value in item.items() if key in ("summary", "start", "end") and isinstance(value, str)} for item in entries if isinstance(item, dict)]
+    return calendars
 
 
 def load_home_assistant_dashboards():
@@ -266,7 +296,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.173"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.174"})
             return
         if path == "/api/entities":
             try:
@@ -278,6 +308,15 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/dashboards":
             try:
                 self.send_json(HTTPStatus.OK, load_home_assistant_dashboards())
+            except HomeAssistantAPIError as error:
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})
+            return
+        if path == "/api/calendar-events":
+            try:
+                calendars = load_calendar_events(query.get("entity_id", []), query.get("start", [""])[0], query.get("end", [""])[0])
+                self.send_json(HTTPStatus.OK, {"calendars": calendars})
+            except ValueError as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
             except HomeAssistantAPIError as error:
                 self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})
             return
