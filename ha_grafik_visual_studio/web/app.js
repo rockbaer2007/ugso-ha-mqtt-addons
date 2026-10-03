@@ -17,7 +17,7 @@ import { mediaRefreshUrl, iframeOptions, iframeCount, iframeIndex } from "./ifra
 import { imageOptions, imageCount, imageIndex } from "./image-widget.js";
 import { borderAppearance, borderTitleFragment } from "./border-widget.js";
 import { noteValue, noteWritable } from "./note-widget.js";
-import { isSeparator, snapSeparator, renderSeparator } from "./separator-line.js";
+import { isSeparator, snapSeparator, renderSeparator, clearSeparatorConnections } from "./separator-line.js";
 import { renderCalendar, CALENDAR_STYLES } from "./calendar-widget.js";
 import { renderCheckbox, checkboxValue } from "./styled-checkbox.js";
 import { renderStyledSlider, styledSliderValue, updateStyledSlider } from "./styled-slider.js";
@@ -227,7 +227,7 @@ function widgetPropertyGroups(widget) {
     });
     return [...commonWidgetGroups, dockGroup, { id: "linebox-ports", label: "Anschlüsse", hint: "Nur aktive Andockpunkte erhalten eine Rolle. Eingänge werden mit Vorzeichen summiert; Ausgänge geben den Wert nur bei aktiviertem Haken weiter.", fields: portFields }, ...groups];
   }
-  return widget.type === "svg-connection" ? [...commonWidgetGroups, ...groups] : [...commonWidgetGroups, ...groups, connectionAnchorGroup, ...(widget.type === "value-converter" ? [] : [dataGroup]), ...styleEntryGroups];
+  return widget.type === "svg-connection" || isSeparator(widget) ? [...commonWidgetGroups, ...groups] : [...commonWidgetGroups, ...groups, connectionAnchorGroup, ...(widget.type === "value-converter" ? [] : [dataGroup]), ...styleEntryGroups];
 }
 
 async function loadMdiIcons() {
@@ -392,6 +392,7 @@ function projectForSave(project) {
       for (const descriptor of group.fields) delete page.page[descriptor.key];
     }
     for (const widget of page.widgets || []) {
+      clearSeparatorConnections(widget);
       const groups = [...widgetPropertyGroups(widget), ...indexedWidgetGroups(widget)];
       widget.enabledPropertyGroups ??= {};
       for (const [index, group] of groups.entries()) {
@@ -2531,6 +2532,7 @@ function addWidget(definition) {
     ...structuredClone(definition.defaults),
   };
   widget.type = definition.runtimeType || widget.type;
+  clearSeparatorConnections(widget);
   for (const [index, group] of widgetPropertyGroups(widget).entries()) {
     if (!group.masterKey && group.defaultEnabled === false) {
       widget.enabledPropertyGroups ??= {};
@@ -3406,7 +3408,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       tab.append(select, edit); element.append(tab);
     }
     const hasConnections = activePage.widgets.some(item => item.type === "svg-connection" && item.visible !== false);
-    const showDockPoints = !runtimeMode && !isConnection && (widget.dockPointsEnabled === true || widget.dataOutputEnabled === true) && (selected || widget.dockAlwaysVisible || hasConnections);
+    const showDockPoints = !runtimeMode && !isConnection && !isSeparator(widget) && (widget.dockPointsEnabled === true || widget.dataOutputEnabled === true) && (selected || widget.dockAlwaysVisible || hasConnections);
     if (showDockPoints) {
       for (const [anchorId, label, x, y] of widgetAnchors(widget)) {
         if (!dockPointActive(widget, anchorId)) continue;

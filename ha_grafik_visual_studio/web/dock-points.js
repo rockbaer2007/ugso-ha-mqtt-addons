@@ -1,10 +1,12 @@
+import { isSeparator, clearSeparatorConnections } from "./separator-line.js";
+
 export function dockPointKey(anchorId) {
   return `dock_${anchorId.replaceAll("-", "_")}`;
 }
 
 export const OUTPUT_SIDES = [["top-center", "Oben"], ["bottom-center", "Unten"], ["right-center", "Rechts"], ["left-center", "Links"]];
 export function hasSimpleOutput(widget) {
-  return !!widget && !["svg-connection", "linebox", "linebox-math", "value-converter"].includes(widget.type);
+  return !!widget && !isSeparator(widget) && !["svg-connection", "linebox", "linebox-math", "value-converter"].includes(widget.type);
 }
 export function outputDockActive(widget, anchor) {
   return hasSimpleOutput(widget) && widget.dataOutputEnabled === true && anchor === (widget.dataOutputAnchor || "right-center");
@@ -19,11 +21,13 @@ export function setOutputAnchor(widget, widgets, anchor) {
   }
 }
 export function dockPointActive(widget, anchor, side = "") {
+  if (widget && isSeparator(widget)) return false;
   if (outputDockActive(widget, anchor)) return side !== "end";
   return widget?.dockPointsEnabled === true && widget[dockPointKey(anchor)] === true;
 }
 
 export function initializeDockPoints(widget, anchorIds) {
+  if (isSeparator(widget)) { clearSeparatorConnections(widget); return; }
   const legacyEnabled = widget.dockPointsEnabled === true;
   for (const anchorId of anchorIds) widget[dockPointKey(anchorId)] ??= legacyEnabled;
 }

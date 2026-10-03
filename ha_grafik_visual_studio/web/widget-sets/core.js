@@ -16,14 +16,14 @@ const geometry = () => fields([
   { label: "Y (px)", key: "y", type: "number", min: 0 },
 ]);
 const separator = (type, label, icon) => ({ type, label, icon,
-  defaults: { width: type === "horizontal-line" ? 200 : 16, height: type === "vertical-line" ? 200 : 16, separatorThickness: 2, separatorColor: "#888888", separatorBorderColor: "#222222", separatorBorderWidth: 0, separatorEnds: "square", separatorSnap: true, borderWidth: 0, padding: 0, radius: 0, backgroundColor: "transparent" },
+  defaults: { width: type === "horizontal-line" ? 200 : 16, height: type === "vertical-line" ? 200 : 16, separatorThickness: 2, separatorColor: "#888888", separatorBorderColor: "#222222", separatorBorderWidth: 0, separatorEnds: "square", separatorSnap: false, borderWidth: 0, padding: 0, radius: 0, backgroundColor: "transparent" },
   propertyGroups: [metadata(), visibility(), geometry(), { label: "CSS Trennlinie", css: true, defaultEnabled: true, required: true, fields: [
     { label: "Dicke (px)", key: "separatorThickness", type: "number", min: 1, max: 100 },
     { label: "Farbe", key: "separatorColor", type: "color" },
     { label: "Rahmenfarbe", key: "separatorBorderColor", type: "color" },
     { label: "Rahmenbreite (px)", key: "separatorBorderWidth", type: "number", min: 0, max: 20 },
     { label: "Enden", key: "separatorEnds", type: "select", options: [{ value: "square", label: "Eckig" }, { value: "round", label: "Rund" }, { value: "pointed", label: "Spitz (pfeilartig)" }] },
-    { label: "Einrasten", key: "separatorSnap", type: "checkbox" },
+    { label: "Snapfunktion aktivieren", key: "separatorSnap", type: "checkbox" },
   ] }, ...cssGroups().filter(group => group.label === "CSS Allgemein")],
 });
 export const cssGroups = () => [

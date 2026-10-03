@@ -1,11 +1,16 @@
 export const isSeparator = w => ["horizontal-line", "vertical-line"].includes(w.type);
+export function clearSeparatorConnections(widget) {
+  if (!isSeparator(widget)) return;
+  for (const key of Object.keys(widget)) if (/^(dock|dataInput|dataOutput)/.test(key)) delete widget[key];
+  if (widget.enabledPropertyGroups) delete widget.enabledPropertyGroups["dock-points"];
+}
 const eligible = w => isSeparator(w) && !w.cssTransform && (!w.cssPosition || w.cssPosition === "absolute") && !["cssLeft", "cssTop", "cssWidth", "cssHeight"].some(k => w[k]);
 const vertical = w => w.type === "vertical-line";
 const bounds = w => ({ x: Number(w.x) || 0, y: Number(w.y) || 0, width: Math.max(16, Number(w.width) || 16), height: Math.max(16, Number(w.height) || 16) });
 
 export function snapSeparator(widget, peers, direction = "", tolerance = 8) {
   const box = bounds(widget);
-  if (!eligible(widget) || widget.separatorSnap === false) return box;
+  if (!eligible(widget) || widget.separatorSnap !== true) return box;
   const v = vertical(widget), axis = v ? "y" : "x", cross = v ? "x" : "y", size = v ? "height" : "width", breadth = v ? "width" : "height";
   let best;
   const consider = (delta, apply) => {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.183
+
+- Remove docking points and data-flow controls from Horizontal line and Vertical line; ignore and clear legacy connector settings.
+- Make separator snapping explicitly opt-in for new lines. Preserve enabled snapping in existing projects and connect at any position along perpendicular separators without fixed docking points.
+
 ## 0.1.182
 
 - Add Dropdown with HA select/input_select options, custom value/text pairs, read-only display and ordered background conditions.
