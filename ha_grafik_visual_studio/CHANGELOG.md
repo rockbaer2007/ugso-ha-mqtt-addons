@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.132
+
+- Moves all selected widgets together when dragging a selected widget, including pasted selections and selected connection lines with intermediate points. Relative spacing and existing attachments are retained; locked members block the move.
+- Keeps multi-selection when clicking an already selected widget and records a shared drag as one undo operation.
+
 ## 0.1.131
 
 - Keeps editor widgets, including selected widgets and high layers, behind the widget selection menu by isolating the stage stacking context.

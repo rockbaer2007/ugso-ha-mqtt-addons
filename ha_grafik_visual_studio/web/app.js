@@ -2083,8 +2083,10 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
   }
   let lineDrag = null;
   let suppressLineClick = false;
+  makeDraggable(hit, widget);
   hit.addEventListener("pointerdown", event => {
     if (runtimeMode || event.button !== 0) return;
+    if (state.selectedIds.includes(widget.id) && selectedWidgets().length > 1) return;
     event.preventDefault(); event.stopPropagation();
     lineDrag = {
       clientX: event.clientX,
@@ -2948,7 +2950,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       }
     }
     if (!runtimeMode) element.addEventListener("contextmenu", event => openWidgetContextMenu(event, widget));
-    if (!isConnection) element.addEventListener("click", event => { if (!runtimeMode && !event.target.closest("[data-tab-switch]")) { selectWidget(widget.id, event.ctrlKey && event.shiftKey); render(); } }, { capture: true });
+    if (!isConnection) element.addEventListener("click", event => { if (!runtimeMode && !event.target.closest("[data-tab-switch]")) { if (!(state.selectedIds.includes(widget.id) && state.selectedIds.length > 1 && !event.ctrlKey)) selectWidget(widget.id, event.ctrlKey && event.shiftKey); render(); } }, { capture: true });
     if (!runtimeMode && !isConnection && !widgetLocked) makeDraggable(element, widget);
     stage.append(element);
   }
@@ -3047,12 +3049,19 @@ function renderTabsWidget(widget, parent, surfaceChain = []) {
 function makeDraggable(element, widget) {
   let origin;
   element.addEventListener("pointerdown", (event) => {
+    if (runtimeMode) return;
     if (event.button !== 0) return;
     if (event.target.closest(".resize-handle")) return;
     if (event.target.closest("[data-tab-switch]")) return;
-    const members = groupMembers(currentPage().widgets, widget, state.editingGroupId);
+    const members = state.selectedIds.includes(widget.id) ? selectedWidgets() : groupMembers(currentPage().widgets, widget, state.editingGroupId);
+    if (widget.type === "svg-connection" && members.length < 2) return;
     if (members.some(item => item.generalEnabled && item.locked)) return;
-    origin = { x: event.clientX, y: event.clientY, members: members.map(item => ({ id: item.id, x: Number(item.x) || 0, y: Number(item.y) || 0 })), moved: false, historyCaptured: false };
+    origin = { x: event.clientX, y: event.clientY, members: members.map(item => {
+      if (item.type !== "svg-connection") return { id: item.id, x: Number(item.x) || 0, y: Number(item.y) || 0 };
+      const start = connectionEndpoint(item, "start", currentPage().widgets), end = connectionEndpoint(item, "end", currentPage().widgets);
+      const points = structuredClone(item.connectionPoints || []);
+      return { id: item.id, x: Math.min(start.x, end.x, ...points.map(point => Number(point.x) || 0)), y: Math.min(start.y, end.y, ...points.map(point => Number(point.y) || 0)), start, end, points };
+    }), moved: false, historyCaptured: false };
     element.setPointerCapture(event.pointerId);
   });
   element.addEventListener("pointermove", (event) => {
@@ -3063,9 +3072,21 @@ function makeDraggable(element, widget) {
     const scale = stage.clientWidth / Number.parseFloat(stage.style.width);
     for (const position of translateGroup(origin.members, (event.clientX - origin.x) / scale, (event.clientY - origin.y) / scale)) {
       const member = currentPage().widgets.find(item => item.id === position.id);
+      const initial = origin.members.find(item => item.id === position.id);
+      if (member.type === "svg-connection") {
+        const dx = position.x - initial.x, dy = position.y - initial.y;
+        member.startX = initial.start.x + dx; member.startY = initial.start.y + dy;
+        member.endX = initial.end.x + dx; member.endY = initial.end.y + dy;
+        member.connectionPoints = initial.points.map(point => ({ ...point, x: (Number(point.x) || 0) + dx, y: (Number(point.y) || 0) + dy }));
+        continue;
+      }
       member.x = position.x; member.y = position.y;
       const target = document.getElementById(member.id);
       if (target) { target.style.left = `${member.x}px`; target.style.top = `${member.y}px`; }
+    }
+    for (const line of currentPage().widgets.filter(item => item.type === "svg-connection")) {
+      const path = connectionPathData(line, currentPage().widgets);
+      for (const shape of document.getElementById(line.id)?.querySelectorAll(".connection-base, .connection-hit-target, .connection-flow, .connection-crossing-gap") || []) shape.setAttribute("d", path);
     }
     for (const outline of stage.querySelectorAll(".editor-group-outline")) {
       const bounds = groupBounds(currentPage().widgets.filter(item => item.editorGroupId === outline.dataset.groupId));
