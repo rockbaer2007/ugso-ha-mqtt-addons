@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.209
+
+- Remove duplicate Copy and Delete buttons from the widget selection popup. Existing toolbar actions and selection controls remain available.
+
 ## 0.1.208
 
 - Highlight missing installation risk confirmation in red and scroll/focus it into view when Install is clicked. Clear the highlight when the checkbox is checked or the source changes, for both widget and tool catalog/GitHub installations.

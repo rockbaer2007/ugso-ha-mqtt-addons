@@ -226,8 +226,7 @@ button { cursor: pointer; }
 .widget-selector-list { display: grid; grid-auto-rows: 48px; max-height: 480px; overflow-y: auto; overflow-x: hidden; }
 .widget-selector-menu { display: flex; flex-direction: column; }
 .widget-selector-menu .widget-selector-list { min-height: 0; flex: 1; }
-.widget-selector-actions, .widget-selector-edit-actions { flex-shrink: 0; }
-.widget-selector-edit-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 8px; border-top: 1px solid var(--line); }
+.widget-selector-actions { flex-shrink: 0; }
 #stage { isolation: isolate; }
 .widget-selector-row { display: grid; grid-template-columns: 28px 36px minmax(0, 1fr); align-items: center; gap: 7px; min-height: 48px; padding: 6px 10px; border-bottom: 1px dashed #536063; }
 .widget-selector-preview { display: grid; width: 32px; height: 30px; place-items: center; overflow: hidden; color: var(--accent); font-size: 18px; }

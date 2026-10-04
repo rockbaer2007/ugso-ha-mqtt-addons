@@ -1104,8 +1104,6 @@ function renderWidgetFinder() {
   }
   updateWidgetSelectorAllState();
   const selectionCount = selected.size;
-  $("#widget-selector-copy").disabled = selectionCount === 0;
-  $("#widget-selector-delete").disabled = selectionCount === 0;
   $("#widget-duplicate").disabled = selectionCount === 0;
   $("#widget-delete").disabled = selectionCount === 0;
   $("#widget-cut").disabled = selectionCount === 0;
@@ -4593,8 +4591,6 @@ $("#widget-selector-all").addEventListener("change", (event) => {
 });
 $("#widget-selector-select").addEventListener("click", () => { applyWidgetSelection(state.widgetSelectionDraft || new Set()); toggleWidgetSelector(false); });
 $("#widget-selector-clear").addEventListener("click", () => { applyWidgetSelection(new Set()); toggleWidgetSelector(false); });
-$("#widget-selector-copy").addEventListener("click", () => { applyWidgetSelection(state.widgetSelectionDraft || new Set()); copySelectedWidgets(false); });
-$("#widget-selector-delete").addEventListener("click", () => { applyWidgetSelection(state.widgetSelectionDraft || new Set()); toggleWidgetSelector(false); void deleteSelectedWidget(); });
 $("#widget-duplicate").addEventListener("click", duplicateSelectedWidget);
 $("#widget-delete").addEventListener("click", deleteSelectedWidget);
 $("#widget-cut").addEventListener("click", () => copySelectedWidgets(true));
@@ -4885,8 +4881,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.208" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.208" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.209" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.209" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
