@@ -862,6 +862,14 @@ function renderRuntimeStageWhenReady() {
   renderStage();
 }
 
+function showRuntimeControlError(message) {
+  $("#status").textContent = message;
+  if (runtimeMode) {
+    $("#runtime-control-error").textContent = message;
+    $("#runtime-control-error").hidden = false;
+  }
+}
+
 async function writeRuntimeSwitch(widget, enabled) {
   const entityId = widget.entityId;
   if (!WRITABLE_SWITCH_ENTITY.test(entityId || "") || pendingSwitches.has(entityId)) return;
@@ -882,11 +890,7 @@ async function writeRuntimeSwitch(widget, enabled) {
   } catch (error) {
     stagedEntityValues.delete(entityId);
     const message = `${uiText("Schalten fehlgeschlagen")} (${entityId}): ${error.message}`;
-    $("#status").textContent = message;
-    if (runtimeMode) {
-      $("#runtime-control-error").textContent = message;
-      $("#runtime-control-error").hidden = false;
-    }
+    showRuntimeControlError(message);
   } finally {
     pendingSwitches.delete(entityId);
     renderRuntimeStageWhenReady();
@@ -2963,7 +2967,18 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       checkbox.setAttribute("aria-label", widget.title || "Schalter"); checkbox.dataset.state = checkbox.checked ? "on" : "off";
       const bound = runtimeMode && Boolean(widget.entityId);
       checkbox.disabled = bound && (!WRITABLE_SWITCH_ENTITY.test(widget.entityId) || !["on", "off"].includes(state.entityStates[widget.entityId]?.state) || pendingSwitches.has(widget.entityId));
-      if (bound && checkbox.disabled) label.title = "Keine schaltbare Home-Assistant-Entität mit verfügbarem Zustand";
+      if (bound && checkbox.disabled) {
+        const entry = state.entityStates[widget.entityId];
+        const reason = !WRITABLE_SWITCH_ENTITY.test(widget.entityId)
+          ? uiText("Diese Entität unterstützt die Schaltersteuerung nicht.")
+          : pendingSwitches.has(widget.entityId) ? uiText("Schaltbefehl läuft …")
+          : !entry ? uiText("Home-Assistant-Zustand nicht geladen. Prüfe Verbindung und Entity-ID.")
+          : `${uiText("Home-Assistant-Zustand nicht schaltbar")}: ${entry.state}`;
+        label.title = `${widget.entityId}: ${reason}`;
+      }
+      label.addEventListener("click", () => {
+        if (bound && checkbox.disabled && !pendingSwitches.has(widget.entityId)) showRuntimeControlError(label.title);
+      });
       checkbox.addEventListener("change", (event) => {
         event.stopPropagation();
         if (bound) {
@@ -4951,8 +4966,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.218" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.218" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.219" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.219" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

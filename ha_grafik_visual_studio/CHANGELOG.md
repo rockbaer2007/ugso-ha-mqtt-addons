@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.219
+
+- Clicking a blocked basic switch now shows its entity and the reason in runtime: missing HA state, unavailable/non-switchable state or unsupported entity. Pending requests remain protected against duplicate clicks.
+
 ## 0.1.218
 
 - Show failed Home Assistant switch requests as a visible runtime alert including the affected entity and API error, instead of only updating the hidden editor status. The next switch attempt clears the previous alert.
