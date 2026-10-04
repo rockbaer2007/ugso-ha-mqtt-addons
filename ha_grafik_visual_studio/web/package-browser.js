@@ -17,6 +17,13 @@ export function packageIcon(manifest, kind) {
 function element(tag, text = "", className = "") {
   const node = document.createElement(tag); node.textContent = uiText(text); node.className = className; return node;
 }
+function githubAlert() {
+  const icon = document.createElement("img");
+  icon.src = "icons/alert.svg";
+  icon.className = "package-github-alert";
+  icon.alt = "";
+  return icon;
+}
 async function responseJson(url) {
   const response = await fetch(url, { cache: "no-store" });
   const result = await response.json();
@@ -55,6 +62,7 @@ export function mountPackageBrowser(kind, { installedPackages, install, version 
     consent.checked = false;
     clearConsentError();
     if (source === "local") return;
+    notice.replaceChildren(...(source === "github" ? [githubAlert()] : []), document.createTextNode(uiText(warning)));
     remote.append(notice, acceptance);
     if (source === "github") {
       const label = element("label", "Direkter GitHub-Dateilink (.wg / .tp)");
@@ -116,6 +124,7 @@ export function mountPackageBrowser(kind, { installedPackages, install, version 
   }
   for (const [source, text] of [["local", "Lokal"], ["catalog", "Katalog"], ["github", "GitHub"]]) {
     const button = element("button", text); button.type = "button"; button.setAttribute("aria-pressed", String(source === "local")); button.onclick = () => void load(source); buttons.set(source, button); sources.append(button);
+    if (source === "github") button.prepend(githubAlert());
   }
   host.append(remote); panel.insertBefore(host, local);
   panel.insertBefore(sources, host);

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.212
+
+- Show a red mdi:alert icon before GitHub and its installation risk notice in both widget and tool package settings.
+
 ## 0.1.211
 
 - Add the external Material Design page dialog renderer with compact/advanced property groups, button or boolean trigger, responsive fullscreen, local page embedding, header/footer styling, keyboard and outside-click close, and optional vibration/click feedback. Keep advanced settings when hiding their groups. Closing a switch/input_boolean-triggered dialog resets that entity; other state entities are read-only.

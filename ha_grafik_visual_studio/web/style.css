@@ -54,7 +54,9 @@
 .dropdown-menu { position:absolute;left:0;top:100%;width:100%;max-height:260px;overflow:auto;z-index:1;padding:4px 0;box-sizing:border-box; }
 .dropdown-menu[hidden] { display:none; }
 .package-source-tabs { display:flex; gap:8px; margin:0; padding:6px 0; position:sticky; top:0; z-index:2; background:var(--panel); }
-.package-source-tabs button { flex:1; min-height:30px; padding:4px 8px; font-size:12px; }
+.package-source-tabs button { flex:1; min-height:30px; padding:4px 8px; font-size:12px; display:flex; align-items:center; justify-content:center; gap:6px; }
+.package-github-alert { width:20px; height:20px; flex:none; vertical-align:middle; }
+.package-risk-notice .package-github-alert { margin-right:8px; }
 .package-source-tabs button[aria-pressed="true"] { border-color:#39b7e8; background:#173a4b; color:#ecf8ff; }
 .package-source-content { display:grid; gap:12px; margin-bottom:16px; }
 .package-source-content[hidden],.settings-package-install[hidden] { display:none; }
