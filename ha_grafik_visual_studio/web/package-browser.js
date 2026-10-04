@@ -7,6 +7,13 @@ export function compareVersions(left, right) {
 }
 
 const warning = "Externe Pakete installierst du auf eigenes Risiko. Prüfe Quelle, Lizenz und Inhalt. Sichere dein Projekt vor der Installation.";
+export function packageIcon(manifest, kind) {
+  const image = document.createElement("img");
+  image.className = "settings-package-image";
+  image.src = manifest?.iconData || (kind === "widget" ? "icons/view-grid.svg" : "icons/toolbox.svg");
+  image.alt = "";
+  return image;
+}
 function element(tag, text = "", className = "") {
   const node = document.createElement(tag); node.textContent = uiText(text); node.className = className; return node;
 }
@@ -55,8 +62,10 @@ export function mountPackageBrowser(kind, { installedPackages, install, version 
       const entries = catalog.packages.filter(item => item.kind === kind);
       for (const item of entries) {
         const row = element("article", "", "package-catalog-entry");
-        row.append(element("strong", item.name), element("p", item.description, "property-hint"));
         const current = installed.find(manifest => manifest.id === item.id);
+        const heading = element("div", "", "package-card-heading");
+        heading.append(packageIcon(current, kind), element("strong", item.name));
+        row.append(heading, element("p", item.description, "property-hint"));
         const sameOrNewer = current && compareVersions(current.version, item.version) >= 0;
         const unsupported = item.minimum_studio_version && compareVersions(version, item.minimum_studio_version) < 0;
         row.append(element("p", `${item.id} · ${item.version} · ${item.license}`, "settings-package-meta"));

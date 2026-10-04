@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.205
+
+- Display catalog and locally installed widget/tool packages as two-column cards with a package icon, wrapped metadata and aligned actions. Use the installed package icon where available and a widget/tool icon otherwise.
+
 ## 0.1.204
 
 - Add Local / Catalog / GitHub sources to widget and tool package settings, using the UGSo catalog with descriptions, licenses, minimum Studio versions, installed status and test-package notices.

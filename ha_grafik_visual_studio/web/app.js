@@ -1,5 +1,5 @@
 import { getWidgetSets, getWidgetDefinition, registerWidgetSet, unregisterExternalWidgetSets, initializeWidgetCaption } from "./widget-registry.js";
-import { mountPackageBrowser } from "./package-browser.js";
+import { mountPackageBrowser, packageIcon } from "./package-browser.js";
 import { PALETTE_COLORS, allocatePaletteColors } from "./palette-colors.js";
 import { renderWeather } from "./weather-widget.js";
 import { renderHeatingRooms } from "./heating-rooms.js";
@@ -4696,7 +4696,7 @@ async function renderWidgetPackageList() {
     }
     for (const manifest of packages) {
       const row = document.createElement("div"); row.className = "settings-package-row"; row.setAttribute("role", "listitem");
-      if (manifest.iconData) { const image = document.createElement("img"); image.className = "settings-package-image"; image.src = manifest.iconData; image.alt = ""; row.append(image); }
+      row.append(packageIcon(manifest, "widget"));
       const info = document.createElement("div"); info.className = "settings-package-info";
       const name = document.createElement("div"); name.textContent = manifest.name;
       const meta = document.createElement("div"); meta.className = "settings-package-meta";
@@ -4714,7 +4714,8 @@ async function renderWidgetPackageList() {
         if (!response.ok) { $("#widget-package-message").textContent = result.error || uiText("Paket konnte nicht entfernt werden."); return; }
         await refreshInstalledPackages("widget");
       });
-      row.append(info, reload, remove); list.append(row);
+      const actions = document.createElement("div"); actions.className = "package-card-actions";
+      actions.append(reload, remove); row.append(info, actions); list.append(row);
     }
   } catch (error) { $("#widget-package-message").textContent = error.message; }
 }
@@ -4793,7 +4794,7 @@ async function renderToolPackageList() {
     }
     for (const manifest of packages) {
       const row = document.createElement("div"); row.className = "settings-package-row"; row.setAttribute("role", "listitem");
-      if (manifest.iconData) { const image = document.createElement("img"); image.className = "settings-package-image"; image.src = manifest.iconData; image.alt = ""; row.append(image); }
+      row.append(packageIcon(manifest, "tool"));
       const info = document.createElement("div"); info.className = "settings-package-info";
       const name = document.createElement("div"); name.textContent = manifest.name;
       const meta = document.createElement("div"); meta.className = "settings-package-meta";
@@ -4822,7 +4823,9 @@ async function renderToolPackageList() {
         item.append(description, run); tools.append(item);
       }
       const entry = document.createElement("div"); entry.className = "settings-package-entry"; entry.setAttribute("role", "listitem");
-      row.removeAttribute("role"); row.append(info, reload, remove); entry.append(row, tools); list.append(entry);
+      const actions = document.createElement("div"); actions.className = "package-card-actions";
+      actions.append(reload, remove);
+      row.removeAttribute("role"); row.append(info, actions); entry.append(row, tools); list.append(entry);
     }
   } catch (error) { $("#tool-package-message").textContent = error.message; }
 }

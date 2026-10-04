@@ -38,10 +38,12 @@
 .package-source-content label:not(.settings-check) { display:grid; gap:6px; }
 .package-source-content input[type="url"] { width:100%; min-width:0; }
 .package-risk-notice,.package-test-notice { border-left:3px solid #ec9a31; background:#3a2a15; color:#ffd292; padding:10px 12px; margin:0; font-size:13px; }
-.package-catalog-list { display:grid; gap:10px; max-height:55vh; overflow:auto; }
-.package-catalog-entry { border:1px solid #39515b; border-radius:8px; padding:12px; overflow-wrap:anywhere; }
+.package-catalog-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; max-height:55vh; overflow:auto; align-items:stretch; }
+.package-catalog-entry { display:flex; flex-direction:column; min-width:0; border:1px solid #39515b; border-radius:8px; padding:12px; overflow-wrap:anywhere; }
+.package-card-heading { display:flex; align-items:center; gap:10px; min-width:0; margin-bottom:4px; }
+.package-card-heading strong { min-width:0; }
 .package-catalog-entry p { margin:6px 0; }
-.package-catalog-entry button { width:100%; margin-top:8px; }
+.package-catalog-entry button { width:100%; margin-top:auto; }
 .dropdown-option { display:block;width:100%;border:0;padding:7px 10px;text-align:left;background:transparent;color:inherit;font:inherit;overflow-wrap:anywhere;cursor:pointer; }
 .dropdown-option[aria-selected="true"],.dropdown-option:enabled:hover,.dropdown-option:focus-visible { background:var(--dropdown-highlight);outline:none; }
 .dropdown-option:disabled { opacity:.5;cursor:default; }
@@ -719,19 +721,20 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .settings-tab-panel[hidden], #settings-extension-actions[hidden], #settings-general-actions[hidden] { display: none; }
 .settings-tab-panel > label { display: grid; gap: 5px; color: var(--muted); }
 .settings-tab-panel > .settings-check { display: flex; align-items: center; gap: 7px; }
-.settings-package-list { min-height: 54px; max-height: min(320px, 42vh); overflow-y: auto; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-weight: 400; }
-.settings-package-empty { margin: 0; padding: 14px 12px; color: var(--muted); font-weight: 400; }
+.settings-package-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; min-height: 54px; max-height: min(320px, 42vh); overflow-y: auto; font-size: 12px; font-weight: 400; align-items: start; }
+.settings-package-empty { grid-column: 1 / -1; margin: 0; padding: 14px 12px; color: var(--muted); font-weight: 400; }
 .settings-package-install { display: flex; gap: 6px; align-items: center; }
 .settings-package-install button { min-height: 30px; padding: 4px 9px; font-size: 12px; font-weight: 400; }
-.settings-package-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+.settings-package-row { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 8px; padding: 12px; min-width: 0; border: 1px solid var(--line); border-radius: 8px; }
 .settings-package-image { width: 30px; height: 30px; flex: none; object-fit: contain; }
-.settings-package-row:last-child { border-bottom: 0; }
+.settings-package-row:last-child { border-bottom: 1px solid var(--line); }
 .settings-package-info { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .settings-package-meta { color: var(--muted); font-size: 11px; }
 .settings-package-row button { width: 29px; height: 29px; flex: none; padding: 4px; }
 .settings-package-row button img { display: block; width: 16px; height: 16px; margin: auto; }
-.settings-package-entry + .settings-package-entry { border-top: 1px solid var(--line); }
-.settings-package-entry .settings-package-row { border-bottom: 0; }
+.package-card-actions { display: flex; justify-content: flex-end; gap: 8px; grid-column: 1 / -1; }
+.settings-package-entry { min-width: 0; border: 1px solid var(--line); border-radius: 8px; }
+.settings-package-entry .settings-package-row { border: 0; }
 .settings-tool-list { display: grid; gap: 3px; padding: 0 10px 8px; }
 .settings-tool-row { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
 .settings-tool-image { width: 20px; height: 20px; flex: none; object-fit: contain; }
