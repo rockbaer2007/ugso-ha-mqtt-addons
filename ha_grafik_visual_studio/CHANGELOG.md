@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.217
+
+- Search the entity picker by friendly name, custom/original entity names, entity ID and device names. Multiple words can match across entity and device metadata (for example Licht Tv1); matching device groups expand while searching.
+
 ## 0.1.216
 
 - Allow external package updates to replace widget preview icons while preserving defaults, property groups and renderer contracts. Supports the original MDI preview symbols in MaterialDesign 1.0.1.

@@ -370,7 +370,7 @@ const ENGLISH = {
   "Bilder, Code/JSON, Text, Audio und Video bis 20 MB. Für Icons und Bildfelder können Bilddateien übernommen werden.": "Images, code/JSON, text, audio and video up to 20 MB. Image files can be used for icon and image fields.",
   "Home-Assistant-Entitäten": "Home Assistant entities", "Entitäten-Dialog schließen": "Close entities dialog",
   "Entitäten und Zustände neu laden": "Reload entities and states", "Neu laden": "Reload",
-  "Entitäten oder Geräte suchen …": "Search entities or devices …", "Entitäten suchen": "Search entities",
+  "Name, Entity-ID oder Gerät suchen …": "Search name, entity ID or device …", "Entitäten suchen": "Search entities",
   "Entity-ID in die Zwischenablage kopieren": "Copy entity ID to clipboard", "Zwischenablage": "Clipboard",
   "Entity-ID ins aktive Widget-Feld einfügen": "Insert entity ID into active widget field", "Einfügen": "Insert",
   "Ausgewählt": "Selected", "Keine Entität ausgewählt": "No entity selected", "Entitäten werden geladen …": "Loading entities …",

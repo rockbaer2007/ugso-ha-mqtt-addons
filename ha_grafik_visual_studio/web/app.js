@@ -1,5 +1,6 @@
 import { getWidgetSets, getWidgetDefinition, registerWidgetSet, unregisterExternalWidgetSets, initializeWidgetCaption } from "./widget-registry.js";
 import { mountPackageBrowser, packageIcon } from "./package-browser.js";
+import { entitySearchMatches } from "./entity-search.js";
 import { PALETTE_COLORS, allocatePaletteColors } from "./palette-colors.js";
 import { renderWeather } from "./weather-widget.js";
 import { renderHeatingRooms } from "./heating-rooms.js";
@@ -1281,7 +1282,7 @@ function renderEntities() {
     row.addEventListener("click", () => { state.selectedEntityId = entity.entity_id; renderEntities(); });
     return row;
   };
-  const matchingUnassigned = unassigned.filter((entity) => !query || `${entityName(entity)} ${entity.entity_id}`.toLocaleLowerCase("de").includes(query));
+  const matchingUnassigned = unassigned.filter((entity) => entitySearchMatches(query, entity, state.entityStates[entity.entity_id]));
   if (matchingUnassigned.length) {
     const group = document.createElement("section"); group.className = "entity-tree-group";
     const heading = document.createElement("h3"); heading.textContent = `Ohne Gerät (${matchingUnassigned.length})`; group.append(heading);
@@ -1291,11 +1292,11 @@ function renderEntities() {
   for (const [deviceId, deviceEntities] of groups) {
     const device = devices.get(deviceId) || {};
     const deviceName = device.name_by_user || device.name || device.model || device.manufacturer || `Gerät ${deviceId}`;
-    const deviceMatches = !query || deviceName.toLocaleLowerCase("de").includes(query);
-    const matching = deviceMatches ? deviceEntities : deviceEntities.filter((entity) => `${entityName(entity)} ${entity.entity_id}`.toLocaleLowerCase("de").includes(query));
+    const deviceMatches = entitySearchMatches(query, {}, {}, device);
+    const matching = deviceMatches ? deviceEntities : deviceEntities.filter((entity) => entitySearchMatches(query, entity, state.entityStates[entity.entity_id], device));
     if (!matching.length) continue;
     const section = document.createElement("section"); section.className = "entity-tree-group";
-    const expanded = deviceMatches && query ? true : state.expandedDevices.has(deviceId);
+    const expanded = Boolean(query) || state.expandedDevices.has(deviceId);
     const heading = document.createElement("button"); heading.type = "button"; heading.className = "entity-device-row"; heading.setAttribute("role", "treeitem"); heading.setAttribute("aria-expanded", String(expanded));
     const caret = document.createElement("span"); caret.className = "entity-caret"; caret.textContent = expanded ? "▾" : "▸";
     const icon = document.createElement("img"); icon.src = "icons/folder.svg"; icon.alt = "";
@@ -4944,8 +4945,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.216" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.216" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.217" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.217" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
