@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import { materialItems, materialWritable, materialRows, materialChartData, materialBindings, materialGroups } from '../web/material-widgets.js';
+
+assert.deepEqual(materialItems({listDataMethod:'valueList',valueList:'a;b',valueListLabels:'Alpha;Beta'}).map(v=>v.text),['Alpha','Beta']);
+assert.deepEqual(materialItems({listDataMethod:'multistatesObject'},{attributes:{options:['A','B']}}).map(v=>v.value),['A','B']);
+assert.equal(materialItems({listDataMethod:'inputPerEditor',countSelectItems:1,value0:'',label0:'Wohnzimmer'})[0].value,'Wohnzimmer');
+assert.throws(()=>materialItems({listDataMethod:'jsonStringObject',jsonStringObject:'{}'}));
+assert.equal(materialItems({listDataMethod:'jsonStringObject',jsonStringObject:'[{"value":1,"text":"Eins"},{"text":"ungültig"}]'}).length,1);
+assert.equal(materialWritable({entityId:'input_number.temperature'},{'input_number.temperature':{state:'20'}},'bad'),false);
+assert.equal(materialWritable({entityId:'sensor.temperature'},{'sensor.temperature':{state:'20'}},'21'),false);
+assert.equal(materialWritable({entityId:'input_select.room'},{'input_select.room':{state:'A',attributes:{options:['A','B']}}},'C'),false);
+assert.equal(materialWritable({entityId:'switch.light',lockEntityId:'binary_sensor.lock'},{'switch.light':{state:'on'},'binary_sensor.lock':{state:'on'}},'off'),false);
+assert.equal(materialWritable({entityId:'input_text.name'},{'input_text.name':{state:'A'}},'B'),true);
+assert.deepEqual(materialBindings({entityId:'sensor.a',seriesEntityId0:'sensor.b',rowEntityId2:'switch.c',lockEntityId:'binary_sensor.lock'}),['sensor.b','switch.c','binary_sensor.lock']);
+assert.throws(()=>materialRows({dataMethod:'json',dataJson:'{}'}));
+const alertSource={headline:'Hinweis',custom:{id:7}};
+const alertRow=materialRows({dataMethod:'json',dataJson:JSON.stringify([alertSource])})[0];
+assert.deepEqual(alertRow.source,alertSource);
+assert.equal(Object.keys(alertRow).includes('source'),false);
+assert.equal(materialRows({dataMethod:'editor',rowCount:1,rowEntityId0:'sensor.a'},{},{'sensor.a':{state:'42'}})[0].value,'42');
+assert.deepEqual(materialChartData({chartKind:'json',dataJson:'[{"x":"A","y":10}]'}).datasets[0].data,[10]);
+assert.equal(materialChartData({chartKind:'json',dataJson:'{"axisLabels":["A"],"graphs":[{"type":"bar","legendText":"Verbrauch","color":"#123456","data":[2]}]}'}).datasets[0].label,'Verbrauch');
+assert.deepEqual(materialChartData({chartKind:'json',dataJson:'{"type":"line","data":{"labels":["A"],"datasets":[{"data":[3]}]}}'}).datasets[0].data,[3]);
+assert.deepEqual(materialChartData({chartKind:'bar',dataCount:1,seriesEntityId0:'sensor.a'},null,null,{'sensor.a':{state:'42'}}).datasets[0].data,['42']);
+const groups=[{label:'Allgemein',fields:[]},{label:'Layout (erweitert)',fields:[]},{label:'Menüpunkt [0]',fields:[]},{label:'Menüpunkt [1]',fields:[]}];
+assert.deepEqual(materialGroups(groups,{showAdvanced:false,listDataMethod:'inputPerEditor',countSelectItems:1},(_,i)=>i).map(g=>g.label),['Allgemein','Menüpunkt [0]']);
+console.log('MaterialDesign data sources, write restrictions, bindings and conditional properties passed.');

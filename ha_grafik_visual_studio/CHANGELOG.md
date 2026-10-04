@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.215
+
+- Support the external MaterialDesign 1.0.0 package with 49 widget entries: inputs and autocomplete, button variants, toggles, sliders/progress, value/card/icon, lists/tables/alerts, charts/calendar and local page layouts. Add compact/advanced properties, HA metadata fill and read-only Recorder history. Extend bounded declarations to 64 widgets, 40 groups and a 500 KB manifest; existing installed definitions remain unchanged.
+
 ## 0.1.214
 
 - Add the external Material Design iFrame dialog renderer with validated HTTP/HTTPS sources, default sandbox, optional sandbox opt-out, scrolling and seamless frame options. Reuse compact/advanced dialog controls and boolean triggers without changing local page dialogs.

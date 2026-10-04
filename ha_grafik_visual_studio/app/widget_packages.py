@@ -12,7 +12,7 @@ from zipfile import BadZipFile, ZipFile
 
 API_VERSION = "0.1"
 MAX_ZIP_BYTES = 2_000_000
-MAX_MANIFEST_BYTES = 200_000
+MAX_MANIFEST_BYTES = 500_000
 MAX_ICON_BYTES = 50_000
 PACKAGE_ID = re.compile(r"^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*)+$")
 SLUG = re.compile(r"^[a-z][a-z0-9-]*$")
@@ -60,8 +60,8 @@ def validate_manifest(manifest):
     if not isinstance(manifest["version"], str) or not VERSION.fullmatch(manifest["version"]):
         raise ValueError("Ungültige Paketversion.")
     widgets = manifest["widgets"]
-    if not isinstance(widgets, list) or not 1 <= len(widgets) <= 30:
-        raise ValueError("Ein Paket benötigt 1 bis 30 Widgets.")
+    if not isinstance(widgets, list) or not 1 <= len(widgets) <= 64:
+        raise ValueError("Ein Paket benötigt 1 bis 64 Widgets.")
     seen = set()
     for widget in widgets:
         if not isinstance(widget, dict) or not {"type", "label", "defaults", "propertyGroups", "render"} <= set(widget) or set(widget) - {"type", "label", "defaults", "propertyGroups", "render", "icon"}:
@@ -76,14 +76,16 @@ def validate_manifest(manifest):
         if not _short_text(widget["label"]) or not isinstance(widget["defaults"], dict):
             raise ValueError("Widget-Name oder Standardwerte sind ungültig.")
         render = widget["render"]
-        if not isinstance(render, dict) or set(render) != {"kind", "valueKey"} or render["kind"] not in ({"text", "chart", "room-table", "meteored", "window-overview", "landlord-notification", "heating-params", "technic-window", "technic-switch", "technic-light", "technic-room", "technic-clock", "technic-temperature", "technic-status-list", "material-color-schemes", "material-dialog", "material-iframe-dialog"} if manifest["apiVersion"] == "0.2" else {"text"}):
+        if not isinstance(render, dict) or set(render) != {"kind", "valueKey"} or render["kind"] not in ({"text", "chart", "room-table", "meteored", "window-overview", "landlord-notification", "heating-params", "technic-window", "technic-switch", "technic-light", "technic-room", "technic-clock", "technic-temperature", "technic-status-list", "material-color-schemes", "material-dialog", "material-iframe-dialog", "material-widget"} if manifest["apiVersion"] == "0.2" else {"text"}):
             raise ValueError("Nur deklarative Text-Darstellung ist in 0.1 unterstützt; Diagramme benötigen Schnittstelle 0.2.")
         value_key = render["valueKey"]
+        if render["kind"] == "material-widget" and widget["defaults"].get("materialKind") not in {"input", "select", "autocomplete", "button", "switch", "checkbox", "slider", "slider-round", "progress", "progress-circular", "value", "card", "icon", "version", "calendar", "layout", "chart", "list", "icon-list", "table", "alerts"}:
+            raise ValueError("Unbekannte MaterialDesign-Widget-Funktion.")
         if not isinstance(value_key, str) or not KEY.fullmatch(value_key):
             raise ValueError("Ungültiger Anzeigeschlüssel.")
         if value_key not in widget["defaults"] or not isinstance(widget["defaults"][value_key], (str, int, float)):
             raise ValueError("Für den Anzeigeschlüssel fehlt ein Text- oder Zahlenwert.")
-        if not isinstance(widget["propertyGroups"], list) or not 1 <= len(widget["propertyGroups"]) <= 20:
+        if not isinstance(widget["propertyGroups"], list) or not 1 <= len(widget["propertyGroups"]) <= 40:
             raise ValueError("Ungültige Eigenschaftsgruppen.")
         field_keys = set()
         for group in widget["propertyGroups"]:

@@ -15,6 +15,7 @@ import { temperatureBindings, renderTemperature, syncTemperatureHistory } from "
 import { renderTechnicStatusList } from "./technic-status-list.js";
 import { renderMaterialColorSchemes } from "./material-color-schemes.js";
 import { renderMaterialDialog, materialDialogGroups, syncMaterialDialogs, materialIframeUrl } from "./material-dialog.js";
+import { renderMaterialWidget, materialGroups, materialBindings } from "./material-widgets.js";
 import { createMeteoredController } from "./meteored.js";
 const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
@@ -678,6 +679,7 @@ async function fetchEntityStates(ids) {
 
 function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
+    ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
     ...gaugeEntityIds(widget),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
@@ -723,6 +725,7 @@ async function refreshEditorLiveStates() {
 
 function runtimeLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
+    ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
     ...gaugeEntityIds(widget),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
@@ -3433,6 +3436,26 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.style.background = widget.colorBg || "transparent";
       content.style.borderRadius = `${Math.max(0, Number(widget.borderRadius) || 0)}px`;
       content.append(renderTechnicClock(widget, document));
+    } else if (getWidgetDefinition(widget.type).render?.kind === "material-widget") {
+      content.append(renderMaterialWidget(widget, document, {
+        runtime: runtimeMode, states: state.entityStates, baseUrl: location.href,
+        language: document.documentElement.lang || "de", projectStyle: state.project.settings?.materialDesignStyle || "material3", pageTheme: activePage.page.theme,
+        icon: setIconImageSource, localChange: () => renderStage(), navigate: href => { const url = new URL(href); if (url.origin === location.origin) { url.searchParams.delete("embedded"); url.searchParams.delete("chain"); } location.href = url.href; },
+        pageUrl: pageId => state.project.pages.some(page => page.id === pageId) ? technicRoomUrl(location.href, state.projectId, activePage.id, pageId, [...(params.get("chain") || "").split(",").filter(Boolean), ...surfaceChain]) : null,
+        write: async (entityId, value) => {
+          if (!entityId) return true;
+          if (/^(select|input_select)\./.test(entityId)) return writeRuntimeHelperValue(entityId, String(value), "api/select-option");
+          if (/^input_(number|text)\./.test(entityId)) return writeRuntimeHelperValue(entityId, entityId.startsWith("input_number.") ? Number(value) : String(value));
+          const response = await fetch("api/switch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity_id: entityId, enabled: [true, 1, "1", "true", "on"].includes(value) }) });
+          if (!response.ok) throw new Error("Wert konnte nicht geschrieben werden.");
+          await refreshRuntimeStates(); return true;
+        },
+        history: async current => {
+          const ids = Array.from({ length: Math.min(10, Math.max(1, Number(current.dataCount) || 1)) }, (_, i) => current[`seriesEntityId${i}`] || (i === 0 ? current.entityId : "")).filter(Boolean);
+          const response = await fetch("api/material-history", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity_ids: ids, hours: Number(current.historyHours) || 24 }) });
+          if (!response.ok) throw new Error("Home-Assistant-Verlauf nicht verfügbar."); return response.json();
+        },
+      }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "material-color-schemes") {
       content.append(renderMaterialColorSchemes(widget, document, { projectStyle: state.project.settings?.materialDesignStyle || "material3", pageTheme: activePage.page.theme }));
     } else if (["material-dialog", "material-iframe-dialog"].includes(getWidgetDefinition(widget.type).render?.kind)) {
@@ -4214,7 +4237,7 @@ function field(descriptor, widget) {
     aliasPreview.hidden = !showAlias;
     aliasPreview.textContent = alias ? alias.slice(0, 3) : "";
   };
-  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || ["technic-room", "technic-status-list"].includes(getWidgetDefinition(widget.type).render?.kind) && /^rowEntityId\d+$/.test(descriptor.key) || getWidgetDefinition(widget.type).render?.kind === "chart" && /^seriesEntityId\d+$/.test(descriptor.key)) {
+  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || getWidgetDefinition(widget.type).render?.kind === "material-widget" && /EntityId\d+$/.test(descriptor.key) || ["technic-room", "technic-status-list"].includes(getWidgetDefinition(widget.type).render?.kind) && /^rowEntityId\d+$/.test(descriptor.key) || getWidgetDefinition(widget.type).render?.kind === "chart" && /^seriesEntityId\d+$/.test(descriptor.key)) {
     const row = document.createElement("span"); row.className = "property-entity-row";
     const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button";
     picker.textContent = "…";
@@ -4288,6 +4311,10 @@ function field(descriptor, widget) {
     if (getWidgetDefinition(widget.type).render?.kind === "technic-temperature" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (["material-dialog", "material-iframe-dialog"].includes(getWidgetDefinition(widget.type).render?.kind) && descriptor.key === "entityId") void refreshEditorLiveStates();
     if (["material-dialog", "material-iframe-dialog"].includes(getWidgetDefinition(widget.type).render?.kind) && ["showAdvanced", "showDialogMethod"].includes(descriptor.key)) renderProperties();
+    if (getWidgetDefinition(widget.type).render?.kind === "material-widget") {
+      if (/EntityId\d*$/.test(descriptor.key)) void refreshEditorLiveStates();
+      if (["showAdvanced", "countSelectItems", "listDataMethod", "rowCount", "dataMethod", "dataCount", "countViews"].includes(descriptor.key)) renderProperties();
+    }
     if (["technic-room", "technic-status-list"].includes(getWidgetDefinition(widget.type).render?.kind)) { if (/EntityId(s)?\d+$/.test(descriptor.key) || descriptor.key === "rowCount") void refreshEditorLiveStates(); if (descriptor.key === "rowCount") renderProperties(); }
     if (getWidgetDefinition(widget.type).render?.kind === "room-table" && ["entityId", "tableAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "window-overview" && ["entityId", "tableAttribute", "openCountEntityId", "openCountAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
@@ -4390,6 +4417,7 @@ function renderProperties() {
   if (state.propertyTab === "scripts") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Widget-Skripte werden in einem späteren Ausbauschritt ergänzt."; panel.append(empty); return; }
   if (widget.type === "toggle" && typeof widget.state === "boolean") widget.state = widget.state ? "on" : "off";
   let groups = widgetPropertyGroups(widget);
+  if (getWidgetDefinition(widget.type).render?.kind === "material-widget") groups = materialGroups(groups, widget, propertyGroupKey);
   if (["material-dialog", "material-iframe-dialog"].includes(getWidgetDefinition(widget.type).render?.kind)) groups = materialDialogGroups(groups, widget, propertyGroupKey);
   if (getWidgetDefinition(widget.type).render?.kind === "technic-clock") {
     const labels = { row: "Nebeneinander", column: "Untereinander", left: "Links", center: "Mitte", right: "Rechts", "24h": "24 Stunden", "12h": "12 Stunden", de: "Deutsch", en: "English", fr: "Français", es: "Español", it: "Italiano", nl: "Nederlands", DMY: "Tag-Monat-Jahr", MDY: "Monat-Tag-Jahr", YMD: "Jahr-Monat-Tag", ".": "Punkt (.)", "-": "Bindestrich (-)", "/": "Schrägstrich (/)", space: "Leerzeichen", numeric: "Numerisch", short: "Kurz", long: "Lang", full: "4-stellig", off: "Aus" };
@@ -4406,6 +4434,22 @@ function renderProperties() {
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
   const updateHeading = () => { heading.textContent = `${widgetDisplayName(widget)} — ${getWidgetDefinition(widget.dataFlowVariant || widget.type).label} · ${widget.id}`; };
   updateHeading(); panel.append(heading);
+  if (getWidgetDefinition(widget.type).render?.kind === "material-widget") {
+    const fill = document.createElement("button"); fill.type = "button"; fill.className = "property-action";
+    fill.textContent = "Felder neu aus der Entität befüllen";
+    fill.disabled = !state.entityStates[widget.entityId];
+    fill.addEventListener("click", () => {
+      const attrs = state.entityStates[widget.entityId]?.attributes || {};
+      if (attrs.friendly_name) { widget.labelText = attrs.friendly_name; if (Object.hasOwn(widget, "inputLabelText")) widget.inputLabelText = attrs.friendly_name; }
+      if (Object.hasOwn(widget, "unit") && attrs.unit_of_measurement) widget.unit = attrs.unit_of_measurement;
+      if (Object.hasOwn(widget, "countSelectItems") && Array.isArray(attrs.options)) {
+        widget.countSelectItems = Math.min(20, attrs.options.length); widget.listDataMethod = "inputPerEditor";
+        attrs.options.slice(0, 20).forEach((value, i) => { widget[`value${i}`] = String(value); widget[`label${i}`] = String(value); });
+      }
+      for (const [key, attr] of [["minValue", "min"], ["maxValue", "max"], ["step", "step"]]) if (Object.hasOwn(widget, key) && Number.isFinite(Number(attrs[attr]))) widget[key] = Number(attrs[attr]);
+      renderProperties(); renderStage();
+    }); panel.append(fill);
+  }
   if (widget.type === "dashboard-in-widget") {
     const hint = document.createElement("p"); hint.className = "property-hint dashboard-export-hint";
     hint.textContent = uiText(DASHBOARD_EXPORT_NOTICE); panel.append(hint);
@@ -4900,8 +4944,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.214" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.214" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.215" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.215" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
