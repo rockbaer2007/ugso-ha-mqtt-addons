@@ -1,4 +1,5 @@
-import { getWidgetSets, getWidgetDefinition, registerWidgetSet, initializeWidgetCaption } from "./widget-registry.js";
+import { getWidgetSets, getWidgetDefinition, registerWidgetSet, unregisterExternalWidgetSets, initializeWidgetCaption } from "./widget-registry.js";
+import { mountPackageBrowser } from "./package-browser.js";
 import { PALETTE_COLORS, allocatePaletteColors } from "./palette-colors.js";
 import { renderWeather } from "./weather-widget.js";
 import { renderHeatingRooms } from "./heating-rooms.js";
@@ -4670,9 +4671,11 @@ async function fetchWidgetPackages() {
 
 async function loadWidgetPackages() {
   try {
-    for (const manifest of await fetchWidgetPackages()) {
+    const packages = await fetchWidgetPackages();
+    unregisterExternalWidgetSets();
+    for (const manifest of packages) {
       registerWidgetSet({
-        id: manifest.id, label: manifest.name,
+        id: manifest.id, label: manifest.name, externalPackage: true,
         widgets: manifest.widgets.map(widget => ({
           ...widget, packageId: manifest.id, definitionVersion: manifest.apiVersion, iconSvg: widget.iconData || "icons/text.svg", preview: { kind: "svg", lines: [] },
           propertyGroups: widget.propertyGroups.map(group => ({ ...group, ...(widget.render.kind === "chart" && group.label.startsWith("CSS ") ? { css: true, defaultEnabled: true } : {}), fields: group.fields.map(field => ["technic-window", "technic-switch", "technic-light", "technic-temperature"].includes(widget.render.kind) && ["handle", "namePosition", "valueType", "iconKey"].includes(field.key) && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { left: "Links", right: "Rechts", top: "Oben", bottom: "Unten", bool: "Wahr / Falsch", number: "0 / 1", ...TECHNIC_SWITCH_ICONS }[value] || value })) } : field) })),
@@ -4701,7 +4704,7 @@ async function renderWidgetPackageList() {
       info.append(name, meta);
       const reload = document.createElement("button"); reload.type = "button"; reload.title = uiText("Paketliste neu laden"); reload.setAttribute("aria-label", reload.title);
       const reloadIcon = document.createElement("img"); reloadIcon.src = "icons/refresh.svg"; reloadIcon.alt = ""; reload.append(reloadIcon);
-      reload.addEventListener("click", () => { location.reload(); });
+      reload.addEventListener("click", () => void refreshInstalledPackages("widget"));
       const remove = document.createElement("button"); remove.type = "button"; remove.title = uiText("Paket entfernen"); remove.setAttribute("aria-label", `${remove.title}: ${manifest.name}`);
       const deleteIcon = document.createElement("img"); deleteIcon.src = "icons/delete.svg"; deleteIcon.alt = ""; remove.append(deleteIcon);
       remove.addEventListener("click", async () => {
@@ -4709,7 +4712,7 @@ async function renderWidgetPackageList() {
         const response = await fetch(`api/widget-packages/${encodeURIComponent(manifest.id)}`, { method: "DELETE" });
         const result = await response.json().catch(() => ({}));
         if (!response.ok) { $("#widget-package-message").textContent = result.error || uiText("Paket konnte nicht entfernt werden."); return; }
-        location.reload();
+        await refreshInstalledPackages("widget");
       });
       row.append(info, reload, remove); list.append(row);
     }
@@ -4798,7 +4801,7 @@ async function renderToolPackageList() {
       info.append(name, meta);
       const reload = document.createElement("button"); reload.type = "button"; reload.title = uiText("Paketliste neu laden"); reload.setAttribute("aria-label", reload.title);
       const reloadIcon = document.createElement("img"); reloadIcon.src = "icons/refresh.svg"; reloadIcon.alt = ""; reload.append(reloadIcon);
-      reload.addEventListener("click", () => void renderToolPackageList());
+      reload.addEventListener("click", () => void refreshInstalledPackages("tool"));
       const remove = document.createElement("button"); remove.type = "button"; remove.title = uiText("Paket entfernen"); remove.setAttribute("aria-label", `${remove.title}: ${manifest.name}`);
       const deleteIcon = document.createElement("img"); deleteIcon.src = "icons/delete.svg"; deleteIcon.alt = ""; remove.append(deleteIcon);
       remove.addEventListener("click", async () => {
@@ -4806,7 +4809,7 @@ async function renderToolPackageList() {
         const response = await fetch(`api/tool-packages/${encodeURIComponent(manifest.id)}`, { method: "DELETE" });
         const result = await response.json().catch(() => ({}));
         if (!response.ok) { $("#tool-package-message").textContent = result.error || uiText("Tool-Paket konnte nicht entfernt werden."); return; }
-        void renderToolPackageList();
+        await refreshInstalledPackages("tool");
       });
       const tools = document.createElement("div"); tools.className = "settings-tool-list";
       for (const tool of manifest.tools) {
@@ -4864,6 +4867,23 @@ function openSettingsDialog() {
 }
 $("#settings-menu").addEventListener("click", openSettingsDialog);
 $("#editor-tools-manage").addEventListener("click", () => { openSettingsDialog(); showSettingsTab("tools"); });
+async function refreshInstalledPackages(kind) {
+  if (kind === "widget") { await loadWidgetPackages(); render(); await renderWidgetPackageList(); }
+  else await renderToolPackageList();
+  await packageBrowsers[kind].refresh();
+}
+async function installExternalPackage(kind, file, expected = null, acceptedRisk = false) {
+  if (!acceptedRisk && !window.confirm(uiText("Externe Pakete installierst du auf eigenes Risiko. Prüfe Quelle, Lizenz und Inhalt. Sichere dein Projekt vor der Installation."))) { document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Installation abgebrochen."); return; }
+  const response = await fetch(`api/${kind === "widget" ? "widget" : "tool"}-packages`, { method: "POST", headers: { "Content-Type": "application/zip", "X-Package-Name": file.name || `package.${kind === "widget" ? "wg" : "tp"}`, ...(expected ? { "X-Expected-Package-Id": expected.id, "X-Expected-Package-Version": expected.version } : {}) }, body: file });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error || uiText("Paket konnte nicht installiert werden."));
+  await refreshInstalledPackages(kind);
+  document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
+}
+const packageBrowsers = {
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.204" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.204" }),
+};
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
   const file = event.target.files?.[0];
@@ -4872,11 +4892,8 @@ $("#widget-package-file").addEventListener("change", async (event) => {
   if (![".wg", ".wg.zip"].some(suffix => file.name.toLowerCase().endsWith(suffix))) { message.textContent = uiText("Widget-Paket muss auf .wg oder .wg.zip enden."); return; }
   message.textContent = uiText("Widget-Paket wird geprüft …");
   try {
-    const response = await fetch("api/widget-packages", { method: "POST", headers: { "Content-Type": "application/zip", "X-Package-Name": file.name }, body: file });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) { message.textContent = result.error || uiText("Widget-Paket konnte nicht installiert werden."); return; }
-    location.reload();
-  } catch { message.textContent = uiText("Widget-Paket konnte nicht installiert werden."); }
+    await installExternalPackage("widget", file);
+  } catch (error) { message.textContent = error.message || uiText("Widget-Paket konnte nicht installiert werden."); }
   finally { event.target.value = ""; }
 });
 $("#tool-package-local").addEventListener("click", () => $("#tool-package-file").click());
@@ -4887,12 +4904,8 @@ $("#tool-package-file").addEventListener("change", async (event) => {
   if (![".tp", ".tp.zip"].some(suffix => file.name.toLowerCase().endsWith(suffix))) { message.textContent = uiText("Tool-Paket muss auf .tp oder .tp.zip enden."); return; }
   message.textContent = uiText("Tool-Paket wird geprüft …");
   try {
-    const response = await fetch("api/tool-packages", { method: "POST", headers: { "Content-Type": "application/zip", "X-Package-Name": file.name }, body: file });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) { message.textContent = result.error || uiText("Tool-Paket konnte nicht installiert werden."); return; }
-    message.textContent = uiText("Tool-Paket installiert.");
-    await renderToolPackageList();
-  } catch { message.textContent = uiText("Tool-Paket konnte nicht installiert werden."); }
+    await installExternalPackage("tool", file);
+  } catch (error) { message.textContent = error.message || uiText("Tool-Paket konnte nicht installiert werden."); }
   finally { event.target.value = ""; }
 });
 $("#settings-close").addEventListener("click", () => $("#settings-dialog").close());

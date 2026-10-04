@@ -18,6 +18,7 @@ from technic_cover import cover_position_command, cover_entry_writable
 from technic_light import light_request, dimmer_commands
 from technic_temperature import temperature_request, temperature_command, history_plan, history_series
 from tool_packages import list_tool_packages, read_tool_package_zip
+from package_catalog import catalog_packages, package_download
 from color_favorites import favorites, is_admin
 from meteored import meteored_document
 from landlord_notification import notification_command
@@ -34,6 +35,7 @@ PROJECTS_DIR = DATA_DIR / "projects"
 WIDGET_PACKAGES_DIR = DATA_DIR / "widget_packages"
 WIDGET_PACKAGE_LOCK = Lock()
 TOOL_PACKAGES_DIR = DATA_DIR / "tool_packages"
+TOOL_PACKAGE_LOCK = Lock()
 WWW_CANDIDATES = (
     Path("/homeassistant/www/studio"),
     Path("/homeassistant_config/www/studio"),
@@ -361,7 +363,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.203"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.204"})
             return
         if path == "/meteored-frame":
             try:
@@ -419,6 +421,18 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/widget-packages":
             self.send_json(HTTPStatus.OK, {"packages": list_packages(WIDGET_PACKAGES_DIR)})
+            return
+        if path in {"/api/package-catalog", "/api/package-download"}:
+            try:
+                if path == "/api/package-catalog":
+                    self.send_json(HTTPStatus.OK, catalog_packages())
+                else:
+                    body = package_download(query.get("url", [""])[0], query.get("kind", [""])[0], query.get("sha256", [""])[0])
+                    self.send_bytes(HTTPStatus.OK, body, "application/zip")
+            except ValueError as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+            except (OSError, TypeError, AttributeError):
+                self.send_json(HTTPStatus.BAD_GATEWAY, {"error": "Katalog oder Download ist derzeit nicht erreichbar."})
             return
         if path == "/api/tool-packages":
             self.send_json(HTTPStatus.OK, {"packages": list_tool_packages(TOOL_PACKAGES_DIR)})
@@ -752,6 +766,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             manifest = read_package_zip(self.rfile.read(length))
+            self.check_expected_package(manifest)
         except ValueError as error:
             self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
             return
@@ -792,6 +807,12 @@ class Handler(BaseHTTPRequestHandler):
             return
         self.send_json(HTTPStatus.OK, {"deleted": package_id})
 
+    def check_expected_package(self, manifest):
+        expected_id = self.headers.get("X-Expected-Package-Id")
+        expected_version = self.headers.get("X-Expected-Package-Version")
+        if (expected_id or expected_version) and (manifest["id"] != expected_id or manifest["version"] != expected_version):
+            raise ValueError("Paket-ID oder Version stimmt nicht mit dem Katalog überein.")
+
     def install_tool_package(self):
         if not self.headers.get("X-Package-Name", "").lower().endswith((".tp", ".tp.zip")):
             self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Tool-Paket muss auf .tp oder .tp.zip enden."})
@@ -805,20 +826,27 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             manifest = read_tool_package_zip(self.rfile.read(length))
+            self.check_expected_package(manifest)
         except ValueError as error:
             self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
             return
         TOOL_PACKAGES_DIR.mkdir(parents=True, exist_ok=True)
         target = TOOL_PACKAGES_DIR / (manifest["id"] + ".json")
-        if target.exists():
-            self.send_json(HTTPStatus.CONFLICT, {"error": "Tool-Paket ist bereits installiert. Updates folgen später."})
-            return
-        try:
-            target.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
-        except OSError:
-            self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Tool-Paket konnte nicht gespeichert werden."})
-            return
-        self.send_json(HTTPStatus.CREATED, {"installed": manifest["id"]})
+        with TOOL_PACKAGE_LOCK:
+            updated = target.exists()
+            if updated:
+                existing = json.loads(target.read_text(encoding="utf-8"))
+                if tuple(map(int, manifest["version"].split("."))) <= tuple(map(int, existing["version"].split("."))):
+                    self.send_json(HTTPStatus.CONFLICT, {"error": "Tool-Paket ist bereits in dieser oder einer neueren Version installiert."})
+                    return
+            try:
+                temporary = target.with_suffix(".tmp")
+                temporary.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+                temporary.replace(target)
+            except OSError:
+                self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Tool-Paket konnte nicht gespeichert werden."})
+                return
+        self.send_json(HTTPStatus.OK if updated else HTTPStatus.CREATED, {"installed": manifest["id"], "updated": updated})
 
     def delete_tool_package(self, package_id):
         if not any(item["id"] == package_id for item in list_tool_packages(TOOL_PACKAGES_DIR)):

@@ -40,6 +40,14 @@ export function initializeWidgetCaption(widget) {
 
 export function getWidgetSets() { return [...sets.values()]; }
 
+export function unregisterExternalWidgetSets() {
+  for (const [id, set] of sets) {
+    if (!set.externalPackage) continue;
+    for (const widget of set.widgets) types.delete(widget.type);
+    sets.delete(id);
+  }
+}
+
 export function getWidgetDefinition(type) {
   const definition = types.get(type);
   if (!definition) throw new Error(`Unbekannter Widget-Typ: ${type}`);

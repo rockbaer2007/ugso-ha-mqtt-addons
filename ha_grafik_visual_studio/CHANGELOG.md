@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.204
+
+- Add Local / Catalog / GitHub sources to widget and tool package settings, using the UGSo catalog with descriptions, licenses, minimum Studio versions, installed status and test-package notices.
+- Require an explicit risk confirmation before external installation. Catalog downloads check SHA-256 and selected manifest ID/version; GitHub supports direct public package-file links. All files use the existing ZIP and manifest validators.
+- Refresh widget definitions, palette and tool actions without closing settings or reloading the page. Allow explicit tool updates to a newer version; keep project data and Colorpicker favorites.
+- Link standalone helper tools such as the Windows/Linux Packer to the catalog instead of importing executables into Studio.
+
 ## 0.1.203
 
 - Complete Technic 1.6.0 with Status – List: up to ten HA status rows, numeric formatting, Boolean AND/OR inputs, ON/OFF colors/text, configurable value-column offset and left padding.

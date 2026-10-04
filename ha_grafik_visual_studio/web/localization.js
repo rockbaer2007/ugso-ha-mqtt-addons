@@ -2,6 +2,20 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Lokal": "Local", "Katalog": "Catalog", "Installieren": "Install", "Installiert": "Installed", "Nicht installiert": "Not installed", "Aktualisieren": "Update", "Studio ab": "Studio from",
+  "Externe Pakete installierst du auf eigenes Risiko. Prüfe Quelle, Lizenz und Inhalt. Sichere dein Projekt vor der Installation.": "You install external packages at your own risk. Check the source, license and contents. Back up your project before installation.",
+  "Ich habe den Hinweis gelesen und akzeptiere das Installationsrisiko.": "I have read the notice and accept the installation risk.",
+  "Direkter GitHub-Dateilink (.wg / .tp)": "Direct GitHub file link (.wg / .tp)",
+  "Katalog aktualisieren": "Refresh catalog", "Katalog wird geladen …": "Loading catalog …",
+  "Keine passenden Pakete im Katalog.": "No matching packages in the catalog.",
+  "Katalog und Zusatztools im Browser öffnen": "Open catalog and helper tools in browser",
+  "Bitte zuerst das Installationsrisiko bestätigen.": "Please confirm the installation risk first.",
+  "Paket wird heruntergeladen und geprüft …": "Downloading and checking package …",
+  "Paket installiert. Einstellungen wurden aktualisiert.": "Package installed. Settings refreshed.",
+  "Installation abgebrochen.": "Installation cancelled.",
+  "Paket konnte nicht installiert werden.": "Package could not be installed.",
+  "Katalog oder Download ist derzeit nicht erreichbar.": "Catalog or download is currently unavailable.",
+  "Dies sind reine Testpakete, um die Funktionen kennenzulernen.": "These are test packages only, for learning how the features work.",
   "Werte-Spalten-Versatz (px)": "Value column offset (px)", "Container-Abstand links (px)": "Container left padding (px)",
   "Soll-Temperatur: Entität": "Target temperature: entity", "Ist-Temperatur: Entität": "Actual temperature: entity", "Feuchtigkeit: Entität (%)": "Humidity: entity (%)", "Stellmotor: Entität": "Actuator: entity", "Kühlmodus: Entität": "Cooling mode: entity", "Regler": "Dial", "Min.-Temperatur": "Minimum temperature", "Max.-Temperatur": "Maximum temperature", "Farbe Kühlen": "Cooling color", "Verlauf (HA-Recorder)": "History (HA Recorder)", "Verlaufslinie Farbe (Soll)": "Target history color", "Verlaufslinie Farbe (Ist)": "Actual history color", "Verlauf Stellmotor-Farbe": "Actuator history color",
   "Nebeneinander": "Side by side", "Untereinander": "Stacked", "24 Stunden": "24 hours", "12 Stunden": "12 hours", "Uhrzeit": "Time", "Uhrzeit anzeigen": "Show time", "Sekunden anzeigen": "Show seconds", "Uhrzeitfarbe": "Time color", "Uhrzeit-Schriftgröße": "Time font size", "Uhrzeit fett": "Bold time", "Datum anzeigen": "Show date", "Datumssprache": "Date language", "Reihenfolge": "Order", "Tag-Monat-Jahr": "Day-Month-Year", "Monat-Tag-Jahr": "Month-Day-Year", "Jahr-Monat-Tag": "Year-Month-Day", "Punkt (.)": "Dot (.)", "Bindestrich (-)": "Hyphen (-)", "Schrägstrich (/)": "Slash (/)", "Monatsformat": "Month format", "Jahresformat": "Year format", "Numerisch": "Numeric", "4-stellig": "4 digits", "2-stellig": "2 digits", "Führende Null beim Tag": "Leading zero for day", "Wochentag": "Weekday", "Datumsfarbe": "Date color", "Datums-Schriftgröße": "Date font size", "Datum fett": "Bold date", "Eckenradius (px)": "Corner radius (px)", "Innenabstand (px)": "Padding (px)", "Abstand (px)": "Gap (px)",

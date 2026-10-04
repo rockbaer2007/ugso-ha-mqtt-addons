@@ -1,6 +1,8 @@
 # HA Grafik Visual Studio
 
-Studio 0.1.203 adds Status – List in external UGSo Technic 1.6.0, completing all seven widget types with configurable read-only status rows, column offset and left padding. See [Technic package](packages/technic/README.md).
+Studio 0.1.204 adds Local / Catalog / GitHub sources to widget and tool package settings. The catalog uses `https://visualstudio.ugso-software.de/api/v1/catalog`, lists licenses and installed versions, verifies SHA-256, and preserves the open settings dialog after installation. GitHub accepts direct public `.wg` / `.tp` file links (blob, raw or release download), not repository homepages. All installations use the existing data-only package validators and require a risk confirmation. Tool updates require a newer version. Standalone tools such as the Packer are linked to the catalog rather than installed into Studio.
+
+For an isolated local catalog preview only, set `HA_GRAFIK_CATALOG_URL=http://127.0.0.1:8140` before starting Studio. The normal default stays the HTTPS subdomain. No Home Assistant credentials are sent to the catalog or GitHub. Technic 1.6.0 still contains all seven technical widgets; see [Technic package](packages/technic/README.md).
 
 Studio 0.1.198 extends the external UGSo Technic set to 1.1.0 with Switch – Boolean alongside Window – Wall. See [Technic package](packages/technic/README.md).
 
