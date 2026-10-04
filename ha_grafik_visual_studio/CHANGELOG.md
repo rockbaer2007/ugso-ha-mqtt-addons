@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.218
+
+- Show failed Home Assistant switch requests as a visible runtime alert including the affected entity and API error, instead of only updating the hidden editor status. The next switch attempt clears the previous alert.
+
 ## 0.1.217
 
 - Search the entity picker by friendly name, custom/original entity names, entity ID and device names. Multiple words can match across entity and device metadata (for example Licht Tv1); matching device groups expand while searching.

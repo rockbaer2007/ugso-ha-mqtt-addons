@@ -866,6 +866,7 @@ async function writeRuntimeSwitch(widget, enabled) {
   const entityId = widget.entityId;
   if (!WRITABLE_SWITCH_ENTITY.test(entityId || "") || pendingSwitches.has(entityId)) return;
   pendingSwitches.add(entityId);
+  $("#runtime-control-error").hidden = true;
   stageRuntimeEntityValue(entityId, enabled ? "on" : "off");
   renderRuntimeStageWhenReady();
   try {
@@ -880,7 +881,12 @@ async function writeRuntimeSwitch(widget, enabled) {
     $("#status").textContent = "Schaltbefehl gesendet; warte auf Home Assistant";
   } catch (error) {
     stagedEntityValues.delete(entityId);
-    $("#status").textContent = `${uiText("Schalten fehlgeschlagen")}: ${error.message}`;
+    const message = `${uiText("Schalten fehlgeschlagen")} (${entityId}): ${error.message}`;
+    $("#status").textContent = message;
+    if (runtimeMode) {
+      $("#runtime-control-error").textContent = message;
+      $("#runtime-control-error").hidden = false;
+    }
   } finally {
     pendingSwitches.delete(entityId);
     renderRuntimeStageWhenReady();
@@ -4945,8 +4951,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.217" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.217" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.218" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.218" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

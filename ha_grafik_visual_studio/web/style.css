@@ -897,6 +897,8 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .widget.widget-text { display: block; overflow: hidden; border: 0; background: transparent; cursor: grab; user-select: none; }
 .empty { margin: 3px; color: var(--muted); }
 body.runtime-mode { overflow: auto; background: #111; }
+.runtime-control-error { position: fixed; z-index: 10000; left: 50%; bottom: 16px; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 32px); box-sizing: border-box; padding: 12px 16px; border: 1px solid #ff7979; border-radius: 8px; color: #fff; background: #682626; overflow-wrap: anywhere; }
+.runtime-control-error[hidden] { display: none; }
 body.runtime-mode .toolbar { display: none; }
 body.runtime-mode .workspace { height: 100vh; }
 body.runtime-mode .stage-scroll { display: flex; align-items: flex-start; justify-content: flex-start; overflow: auto; padding: 0; scrollbar-gutter: auto; }
