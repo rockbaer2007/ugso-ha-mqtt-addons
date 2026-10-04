@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.23
+
+- Mark development as discontinued because Parcel Tracker by SoerenKaiser99 is already much further along: https://github.com/SoerenKaiser99/parcel_tracker.
+- Keep the existing source code and documentation as an archive. This final metadata update does not change parcel tracking behavior.
+
 ## 0.1.22
 
 - Fixed the startup crash when DPD account username and password are not configured.

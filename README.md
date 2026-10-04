@@ -8,7 +8,7 @@ Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetrage
 
 - FRITZ!Box to MQTT
 - Heizoel to MQTT
-- Parcel to MQTT
+- [Parcel to MQTT](parcel_to_mqtt/README.md): Entwicklung eingestellt, da [Parcel Tracker von SoerenKaiser99](https://github.com/SoerenKaiser99/parcel_tracker) bereits deutlich weiter entwickelt ist. / Development discontinued because Parcel Tracker is already much further along.
 - [MQTT-Client](mqtt_client/README.md): ausgewählte HA-Zustände an einen externen Broker (z. B. ioBroker) senden, optional mit Ein/Aus-Befehlen zurück an HA.
 - [HA Grafik Visual Studio](ha_grafik_visual_studio/README.md): **experimentelles** Grundgerüst für eine grafische HA-Visualisierung mit getrenntem Editor- und Runtime-Modus.
 

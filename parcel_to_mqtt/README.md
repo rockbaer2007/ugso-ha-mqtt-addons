@@ -1,5 +1,11 @@
 # Parcel to MQTT
 
+## Entwicklung eingestellt / Development discontinued
+
+Parcel Tracker ist bereits deutlich weiter entwickelt. Deshalb stellen wir die Weiterentwicklung von Parcel to MQTT ein und empfehlen Interessierten einen Blick auf [Parcel Tracker von SoerenKaiser99](https://github.com/SoerenKaiser99/parcel_tracker). Quellcode und bisherige Dokumentation bleiben als Archiv erhalten; die folgenden Angaben beschreiben den letzten Stand unseres Pakets.
+
+Parcel Tracker is already much further along. We are therefore discontinuing development of Parcel to MQTT and recommend taking a look at [Parcel Tracker by SoerenKaiser99](https://github.com/SoerenKaiser99/parcel_tracker). Source code and existing documentation remain available as an archive; the information below describes the final state of our package.
+
 ![Parcel to MQTT icon](./icon.png)
 
 Home Assistant app for publishing parcel tracking data through MQTT Discovery.
