@@ -8,6 +8,17 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT.parents[1] / "app"))
 from widget_packages import validate_manifest, read_package_zip
 
+PREVIEW_ICONS = {
+    "general-chart": "vis-widget-echart.png",
+    "two-weeks-bar": "vis-widget-sourceanalytics2weeksbargraph.png",
+    "weather": "vis-widget-weather.png",
+    "heating-rooms": "vis-widget-heatingroomsoverview.png",
+    "meteored": "vis-widget-weathermeteored.png",
+    "window-overview": "vis-widget-heatingwindowstatusoverview.png",
+    "inform-landlord": "landlord.svg",
+    "general-heating-params": "vis-widget-heatinggeneralparams.png",
+}
+
 
 def manifest():
     defaults = {"headline": "headline", "entityId": "", "dataCount": 1, "xAxisType": "time", "xAxisFormat": "ddd HH:mm", "showLegend": True, "noCard": False, "width": 560, "height": 320, "axisColor": "#dce6eb", "gridColor": "#45535c", "backgroundColor": "#20282d", "textColor": "#ffffff", "borderWidth": 0}
@@ -36,11 +47,13 @@ def manifest():
     package = {"format": "ha-grafik-widget-package", "apiVersion": "0.2", "id": "ugso.weather-heating", "name": "Wetter und Heizung", "version": "1.3.0", "license": "MIT", "icon": "icons/chart.svg", "widgets": [{"type": "ugso.weather-heating/general-chart", "label": "Allgemeines Diagramm", "icon": "icons/chart.svg", "defaults": defaults, "propertyGroups": groups, "render": {"kind": "chart", "valueKey": "headline"}}, {"type": "ugso.weather-heating/two-weeks-bar", "label": "Balkendiagramm für zwei Wochen", "icon": "icons/chart.svg", "defaults": weekly, "propertyGroups": week_groups, "render": {"kind": "chart", "valueKey": "headline"}}]}
     package["widgets"].append(weather_definition(field))
     package["widgets"].append({"type": "ugso.weather-heating/heating-rooms", "label": "Übersicht über Heizräume", "icon": "icons/chart.svg", "defaults": {"entityId": "", "tableAttribute": "", "tablePreview": '<table><thead><tr><th>Raum</th><th>Ist</th><th>Soll</th><th>Status</th></tr></thead><tbody><tr><td>Wohnzimmer</td><td>21 °C</td><td>22 °C</td><td style="color: #ffca28">Heizen</td></tr><tr><td>Küche</td><td>20 °C</td><td>20 °C</td><td>Bereit</td></tr></tbody></table>', "noCard": False, "headlineColor": "#ffffff", "width": 560, "height": 240, "backgroundColor": "#20282d", "textColor": "#ffffff", "borderWidth": 0}, "propertyGroups": [{"label": "Allgemein", "fields": [field("noCard", "Ohne Karte", "checkbox")]}, {"label": "Raumtabelle", "fields": [field("entityId", "Raumtabellen-Entität"), field("tableAttribute", "Tabellenattribut (optional)"), field("tablePreview", "Vorschau-Raumtabelle (HTML)")]}, {"label": "Farben", "fields": [field("headlineColor", "Überschriftenfarbe", "color")]}, {"label": "Größe und Position", "fields": [field("width", "Breite (px)", "number", min=64, max=2000), field("height", "Höhe (px)", "number", min=64, max=2000)]}], "render": {"kind": "room-table", "valueKey": "tablePreview"}})
-    package["version"] = "1.7.0"
+    package["version"] = "1.7.1"
     package["widgets"].append({"type": "ugso.weather-heating/meteored", "label": "METEORED-Wetter-Widget", "icon": "icons/chart.svg", "defaults": {"meteoredWidgetId": "", "enableReload": True, "noCard": False, "width": 560, "height": 300, "backgroundColor": "#20282d", "textColor": "#ffffff", "borderWidth": 0}, "propertyGroups": [{"label": "Allgemein", "fields": [field("noCard", "Ohne Karte", "checkbox"), field("meteoredWidgetId", "Meteored-Widget-ID"), field("enableReload", "Neuladen aktivieren", "checkbox")]}, {"label": "Größe und Position", "fields": [field("width", "Breite (px)", "number", min=64, max=2000), field("height", "Höhe (px)", "number", min=64, max=2000)]}], "render": {"kind": "meteored", "valueKey": "meteoredWidgetId"}})
     package["widgets"].append(window_definition(field))
     package["widgets"].append(landlord_definition(field))
     package["widgets"].append(heating_params_definition(field))
+    for widget in package["widgets"]:
+        widget["icon"] = "icons/" + PREVIEW_ICONS[widget["type"].rsplit("/", 1)[1]]
     return package
 
 
@@ -94,5 +107,9 @@ if __name__ == "__main__":
     with ZipFile(target, "w", ZIP_DEFLATED) as archive:
         archive.writestr("manifest.json", json.dumps(data, ensure_ascii=False, indent=2))
         archive.writestr("icons/chart.svg", '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 3V21H22M5 17L10 12L14 15L21 5" fill="none" stroke="#42aee8" stroke-width="2"/></svg>')
+        for filename in PREVIEW_ICONS.values():
+            archive.write(ROOT / "icons" / filename, "icons/" + filename)
+        archive.write(ROOT / "LICENSE-upstream.txt", "LICENSE.txt")
+        archive.write(ROOT / "UPSTREAM.txt", "README.md")
     read_package_zip(target.read_bytes())
     print(target)

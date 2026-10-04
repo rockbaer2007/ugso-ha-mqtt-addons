@@ -1,0 +1,12 @@
+Widget preview images are copied unchanged from:
+https://github.com/rg-engineering/ioBroker.vis-2-widgets-weather-and-heating
+Source directory: src-widgets/public/img
+The visPrev declarations in src-widgets/src/*Widget.tsx define the mapping.
+Filenames are lowercased to comply with the Studio icon path contract.
+Copyright (c) 2024-2026 rg-engineering <info@rg-engineering.eu>
+License: MIT; see LICENSE-upstream.txt for the full license.
+
+Seven original previews are included. The upstream InformMyLandlordWidget
+references vis-widget-InformMyLandlord.png, but that file is absent in the
+upstream source tree. icons/landlord.svg is an original UGSo MIT fallback.
+No upstream executable widget code is included.
