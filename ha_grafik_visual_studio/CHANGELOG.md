@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.206
+
+- Keep compact Local / Catalog / GitHub source buttons visible while scrolling widget and tool settings. Use one scroll area per tab instead of nested scrolling package lists.
+
 ## 0.1.205
 
 - Display catalog and locally installed widget/tool packages as two-column cards with a package icon, wrapped metadata and aligned actions. Use the installed package icon where available and a widget/tool icon otherwise.

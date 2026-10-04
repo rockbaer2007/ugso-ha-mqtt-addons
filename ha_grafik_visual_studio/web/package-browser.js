@@ -100,7 +100,8 @@ export function mountPackageBrowser(kind, { installedPackages, install, version 
   for (const [source, text] of [["local", "Lokal"], ["catalog", "Katalog"], ["github", "GitHub"]]) {
     const button = element("button", text); button.type = "button"; button.setAttribute("aria-pressed", String(source === "local")); button.onclick = () => void load(source); buttons.set(source, button); sources.append(button);
   }
-  host.append(sources, remote); panel.insertBefore(host, local);
+  host.append(remote); panel.insertBefore(host, local);
+  panel.insertBefore(sources, host);
   panel.insertBefore(localNotice, local);
   return { refresh: async () => { if (buttons.get("catalog").getAttribute("aria-pressed") === "true") await load("catalog"); } };
 }

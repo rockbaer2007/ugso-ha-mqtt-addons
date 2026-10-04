@@ -30,15 +30,15 @@
 .dropdown-trigger:enabled:hover,.dropdown-trigger:focus-visible { border-color:var(--dropdown-highlight)!important;outline:2px solid var(--dropdown-highlight);outline-offset:1px; }
 .dropdown-menu { position:absolute;left:0;top:100%;width:100%;max-height:260px;overflow:auto;z-index:1;padding:4px 0;box-sizing:border-box; }
 .dropdown-menu[hidden] { display:none; }
-.package-source-tabs { display:flex; gap:8px; margin:12px 0; }
-.package-source-tabs button { flex:1; min-height:36px; }
+.package-source-tabs { display:flex; gap:8px; margin:0; padding:6px 0; position:sticky; top:0; z-index:2; background:var(--panel); }
+.package-source-tabs button { flex:1; min-height:30px; padding:4px 8px; font-size:12px; }
 .package-source-tabs button[aria-pressed="true"] { border-color:#39b7e8; background:#173a4b; color:#ecf8ff; }
 .package-source-content { display:grid; gap:12px; margin-bottom:16px; }
 .package-source-content[hidden],.settings-package-install[hidden] { display:none; }
 .package-source-content label:not(.settings-check) { display:grid; gap:6px; }
 .package-source-content input[type="url"] { width:100%; min-width:0; }
 .package-risk-notice,.package-test-notice { border-left:3px solid #ec9a31; background:#3a2a15; color:#ffd292; padding:10px 12px; margin:0; font-size:13px; }
-.package-catalog-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; max-height:55vh; overflow:auto; align-items:stretch; }
+.package-catalog-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; align-items:stretch; }
 .package-catalog-entry { display:flex; flex-direction:column; min-width:0; border:1px solid #39515b; border-radius:8px; padding:12px; overflow-wrap:anywhere; }
 .package-card-heading { display:flex; align-items:center; gap:10px; min-width:0; margin-bottom:4px; }
 .package-card-heading strong { min-width:0; }
@@ -717,11 +717,11 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .settings-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
 .settings-tabs button { min-width: 0; min-height: 34px; padding: 6px 4px; font-size: 12px; font-weight: 400; }
 .settings-tabs button[aria-selected="true"] { border-color: var(--accent); color: var(--text); background: #27403e; }
-.settings-tab-panel { display: grid; min-height: 0; align-content: start; gap: 10px; overflow-y: auto; scrollbar-gutter: stable; padding: 2px 4px 4px 0; }
+.settings-tab-panel { display: grid; min-height: 0; align-content: start; gap: 10px; overflow-y: auto; scrollbar-gutter: stable; padding: 0 4px 4px 0; }
 .settings-tab-panel[hidden], #settings-extension-actions[hidden], #settings-general-actions[hidden] { display: none; }
 .settings-tab-panel > label { display: grid; gap: 5px; color: var(--muted); }
 .settings-tab-panel > .settings-check { display: flex; align-items: center; gap: 7px; }
-.settings-package-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; min-height: 54px; max-height: min(320px, 42vh); overflow-y: auto; font-size: 12px; font-weight: 400; align-items: start; }
+.settings-package-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; min-height: 54px; font-size: 12px; font-weight: 400; align-items: start; }
 .settings-package-empty { grid-column: 1 / -1; margin: 0; padding: 14px 12px; color: var(--muted); font-weight: 400; }
 .settings-package-install { display: flex; gap: 6px; align-items: center; }
 .settings-package-install button { min-height: 30px; padding: 4px 9px; font-size: 12px; font-weight: 400; }
