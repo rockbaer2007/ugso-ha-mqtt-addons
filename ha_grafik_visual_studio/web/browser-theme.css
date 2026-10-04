@@ -5,6 +5,7 @@
   --surface-active: #344143;
   --surface-accent: #27403e;
   --workspace-bg: #101314;
+  --editor-grid-line: #ffffff1f;
   --editor-bg: #191d1f;
   --code-bg: #1e1e1e;
   --hover-bg: #ffffff0c;
@@ -42,6 +43,8 @@
     --surface-active: #dbe7eb;
     --surface-accent: #d5eee9;
     --workspace-bg: #e4eaed;
+    --editor-canvas-bg: #d5d7d9;
+    --editor-grid-line: #44484c;
     --editor-bg: #fff;
     --code-bg: #fff;
     --hover-bg: #2030370c;
@@ -63,6 +66,12 @@
     --on-accent: #fff;
     --accent-hover: #086c62;
   }
+  body:not(.runtime-mode) .stage { background-color: var(--editor-canvas-bg) !important; }
+}
+
+body:not(.runtime-mode) .stage::before {
+  background-image: linear-gradient(var(--editor-grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--editor-grid-line) 1px, transparent 1px);
 }
 
 .widget-selector-menu, .pages-panel, .studio-dialog, .widget-context-menu,

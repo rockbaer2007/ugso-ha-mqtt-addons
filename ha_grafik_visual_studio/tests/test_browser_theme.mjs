@@ -50,14 +50,17 @@ test("browser themes switch live with readable shell controls and preserve proje
           dialogText: dialog.color, dialogBg: dialog.backgroundColor,
           buttonText: button.color, buttonBg: button.backgroundColor,
           fieldText: field.color, fieldBg: field.backgroundColor,
-          stageBg: style(".stage").backgroundColor, widgetBg: widget.backgroundColor, widgetText: widget.color,
+          stageBg: style(".stage").backgroundColor,
+          grid: getComputedStyle(document.querySelector(".stage"), "::before").backgroundImage,
+          widgetBg: widget.backgroundColor, widgetText: widget.color,
           marker: window.themeTestMarker };
       });
       for (const part of ["shell", "dialog", "button", "field"]) {
         assert.ok(contrast(appearance[part + "Text"], appearance[part + "Bg"]) >= 4.5, `${scheme}: ${part} contrast`);
       }
       assert.equal(appearance.marker, "same-document");
-      assert.equal(appearance.stageBg, "rgb(248, 220, 154)");
+      assert.equal(appearance.stageBg, scheme === "light" ? "rgb(213, 215, 217)" : "rgb(248, 220, 154)");
+      assert.match(appearance.grid, scheme === "light" ? /rgb\(68, 72, 76\)/ : /rgba\(255, 255, 255, 0\.12/);
       assert.equal(appearance.widgetBg, "rgb(48, 80, 96)");
       assert.equal(appearance.widgetText, "rgb(255, 204, 0)");
       if (process.env.STUDIO_THEME_SCREENSHOTS) {
@@ -70,6 +73,12 @@ test("browser themes switch live with readable shell controls and preserve proje
     const dialogBounds = await page.locator("#settings-dialog").boundingBox();
     assert.ok(dialogBounds.x >= 0 && dialogBounds.x + dialogBounds.width <= 390);
     assert.equal(writes, 0, "changing browser theme must not save project settings");
+    await page.goto(new URL("runtime", preview).href);
+    await page.locator("#theme-test-text .widget-content").waitFor();
+    for (const scheme of ["light", "dark"]) {
+      await page.emulateMedia({ colorScheme: scheme });
+      assert.equal(await page.locator(".stage").evaluate(el => getComputedStyle(el).backgroundColor), "rgb(248, 220, 154)");
+    }
     assert.deepEqual(await (await context.request.get(new URL("api/project", preview).href)).json(), before);
     assert.deepEqual(errors, []);
   } finally {

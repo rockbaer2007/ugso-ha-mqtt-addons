@@ -1,6 +1,8 @@
 # HA Grafik Visual Studio
 
-Studio 0.1.221 follows the browser's light/dark theme automatically. The editor shell, dialogs and native fields update immediately when the preference changes. Explicit page and widget colors remain unchanged. / Studio 0.1.221 übernimmt automatisch das Hell-/Dunkel-Theme des Browsers. Oberfläche, Dialoge und Eingabefelder wechseln auch während der Nutzung; fest eingestellte Seiten- und Widgetfarben bleiben erhalten.
+Studio 0.1.222 uses a gray editor canvas with anthracite grid lines in the light theme and slightly brighter grid lines in the dark theme. Saved page backgrounds remain visible in runtime. / Studio 0.1.222 zeigt im hellen Theme eine graue Arbeitsfläche mit anthrazitfarbenen Rasterlinien und im dunklen Theme etwas hellere Rasterlinien. Gespeicherte Seitenhintergründe bleiben in der Runtime sichtbar.
+
+Studio 0.1.221 follows the browser's light/dark theme automatically. The editor shell, dialogs and native fields update immediately when the preference changes. Saved page and widget colors remain unchanged. / Studio 0.1.221 übernimmt automatisch das Hell-/Dunkel-Theme des Browsers. Oberfläche, Dialoge und Eingabefelder wechseln auch während der Nutzung; gespeicherte Seiten- und Widgetfarben bleiben erhalten.
 
 Studio 0.1.204 adds Local / Catalog / GitHub sources to widget and tool package settings. The catalog uses `https://visualstudio.ugso-software.de/api/v1/catalog`, lists licenses and installed versions, verifies SHA-256, and preserves the open settings dialog after installation. GitHub accepts direct public `.wg` / `.tp` file links (blob, raw or release download), not repository homepages. All installations use the existing data-only package validators and require a risk confirmation. Tool updates require a newer version. Standalone tools such as the Packer are linked to the catalog rather than installed into Studio.
 

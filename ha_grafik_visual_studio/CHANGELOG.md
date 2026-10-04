@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.222
+
+- Use a gray editor canvas with anthracite grid lines in the light browser theme. Preserve the existing canvas background in the dark theme and brighten its grid lines slightly.
+- Keep the canvas theme confined to the editor; saved page backgrounds, widget colors and runtime rendering remain unchanged.
+
 ## 0.1.221
 
 - Follow the browser's light/dark preference automatically, including changes while Studio is open. Theme the toolbar, sidebars, dialogs, fields, menus and package notices with matching contrast and native controls.
