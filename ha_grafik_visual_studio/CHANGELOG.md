@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.208
+
+- Highlight missing installation risk confirmation in red and scroll/focus it into view when Install is clicked. Clear the highlight when the checkbox is checked or the source changes, for both widget and tool catalog/GitHub installations.
+
 ## 0.1.207
 
 - Reload the catalog and installed versions whenever widget or tool settings are opened. After uninstalling, show the refreshed catalog so removed packages can be installed again regardless of their original installation source. New approved packages appear on the next tab opening.

@@ -35,6 +35,15 @@ export function mountPackageBrowser(kind, { installedPackages, install, version 
   const localNotice = element("p", warning, "property-hint");
   const acceptance = element("label", "", "settings-check");
   const consent = document.createElement("input"); consent.type = "checkbox";
+  const clearConsentError = () => {
+    acceptance.classList.remove("package-consent-error");
+    consent.removeAttribute("aria-invalid");
+  };
+  consent.addEventListener("change", () => {
+    if (!consent.checked) return;
+    clearConsentError();
+    if (message.textContent === uiText("Bitte zuerst das Installationsrisiko bestätigen.")) message.textContent = "";
+  });
   acceptance.append(consent, element("span", "Ich habe den Hinweis gelesen und akzeptiere das Installationsrisiko."));
   const message = document.querySelector(`#${prefix}-package-message`);
   const buttons = new Map(); let generation = 0;
@@ -44,6 +53,7 @@ export function mountPackageBrowser(kind, { installedPackages, install, version 
     local.hidden = source !== "local"; remote.hidden = source === "local"; remote.replaceChildren();
     localNotice.hidden = source !== "local";
     consent.checked = false;
+    clearConsentError();
     if (source === "local") return;
     remote.append(notice, acceptance);
     if (source === "github") {
@@ -85,7 +95,14 @@ export function mountPackageBrowser(kind, { installedPackages, install, version 
     } catch (error) { if (generation === requestId) message.textContent = error.message; }
   };
   async function download(url, sha256, button, expected = null) {
-    if (!consent.checked) { message.textContent = uiText("Bitte zuerst das Installationsrisiko bestätigen."); consent.focus(); return; }
+    if (!consent.checked) {
+      acceptance.classList.add("package-consent-error");
+      consent.setAttribute("aria-invalid", "true");
+      message.textContent = uiText("Bitte zuerst das Installationsrisiko bestätigen.");
+      acceptance.scrollIntoView({ block: "center" });
+      consent.focus({ preventScroll: true });
+      return;
+    }
     button.disabled = true;
     message.textContent = uiText("Paket wird heruntergeladen und geprüft …");
     try {
