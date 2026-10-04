@@ -70,6 +70,20 @@ class WidgetPackageTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_additive_update(old, bad)
 
+    def test_icon_update_preserves_runtime_contract(self):
+        old = manifest()
+        new = manifest()
+        new['version'] = '1.0.1'
+        new['widgets'][0]['icon'] = 'icons/preview.svg'
+        new['widgets'][0]['iconData'] = '<svg />'
+        validate_additive_update(old, new)
+        for key,value in [('render', {'kind':'text','valueKey':'changed'}),
+                          ('propertyGroups', []), ('defaults', {'text':'changed'})]:
+            bad = json.loads(json.dumps(new))
+            bad['widgets'][0][key] = value
+            with self.assertRaises(ValueError):
+                validate_additive_update(old, bad)
+
     def test_chart_requires_api_02_and_keeps_code_forbidden(self):
         data = manifest()
         data["widgets"][0]["render"]["kind"] = "chart"

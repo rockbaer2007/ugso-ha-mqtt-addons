@@ -29,14 +29,16 @@ ElementTree.register_namespace("", SVG_NS)
 
 
 def validate_additive_update(installed, incoming):
-    """Allow a higher package version to add widgets, never redefine existing ones."""
+    """Allow added widgets and icon changes without redefining runtime contracts."""
     for key in ("id", "apiVersion", "name", "license", "icon", "iconData"):
         if installed.get(key) != incoming.get(key):
             raise ValueError("Paket-Updates dürfen bestehende Paketangaben nicht ändern.")
     if tuple(map(int, incoming["version"].split("."))) <= tuple(map(int, installed["version"].split("."))):
         raise ValueError("Das Paket ist bereits installiert; eine Aktualisierung benötigt eine höhere Version.")
     new_widgets = {widget["type"]: widget for widget in incoming["widgets"]}
-    if any(new_widgets.get(widget["type"]) != widget for widget in installed["widgets"]):
+    def contract(widget):
+        return {key: value for key, value in widget.items() if key not in {"icon", "iconData"}}
+    if any(widget["type"] not in new_widgets or contract(new_widgets[widget["type"]]) != contract(widget) for widget in installed["widgets"]):
         raise ValueError("Paket-Updates dürfen vorhandene Widgets nicht ändern oder entfernen.")
 
 
