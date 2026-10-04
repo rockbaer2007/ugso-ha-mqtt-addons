@@ -1,4 +1,9 @@
 :root { color-scheme: dark light; font: 13px/1.4 system-ui, sans-serif; --bg: #171a1c; --panel: #202426; --line: #3b4548; --text: #e7ecee; --muted: #aab6ba; --accent: #29c8b5; --orange: #ff9f16; --toolbar-height: 92px; }
+.material-color-schemes { width:100%; height:100%; overflow:auto; box-sizing:border-box; padding:16px; text-align:left; font:16px/1.5 system-ui,sans-serif; }
+.material-schemes-title { min-width:570px; font-size:20px; margin-bottom:16px; }
+.material-schemes-row { display:flex; align-items:stretch; min-width:max-content; margin-top:4px; min-height:22px; }
+.material-schemes-row > span:first-child { flex:0 0 180px; }
+.material-scheme-swatch { flex:0 0 30px; min-height:22px; margin-left:4px; }
 .event-calendar { height: 100%; display: flex; flex-direction: column; min-height: 0; color: var(--text); --fc-page-bg-color: var(--panel); --fc-neutral-bg-color: #88888814; --fc-list-event-hover-bg-color: #88888826; --fc-today-bg-color: var(--fcTodayBackgroundColor, #5E6B3F14); --fc-now-indicator-color: var(--fcNowIndicatorColor, #D9483F); }
 .event-calendar-host { flex: 1; min-height: 0; }
 .event-calendar .fc-scroller { scrollbar-color: var(--line) var(--panel); scrollbar-width: thin; }

@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+  "Material Design: Projektstandard": "Material Design: project default", "Gestaltungsstil": "Design style", "Klassisch": "Classic", "Projektstandard": "Project default", "Farbschema": "Color theme", "Hell": "Light", "Dunkel": "Dark",
   "Lokal": "Local", "Katalog": "Catalog", "Installieren": "Install", "Installiert": "Installed", "Nicht installiert": "Not installed", "Aktualisieren": "Update", "Studio ab": "Studio from",
   "Externe Pakete installierst du auf eigenes Risiko. Prüfe Quelle, Lizenz und Inhalt. Sichere dein Projekt vor der Installation.": "You install external packages at your own risk. Check the source, license and contents. Back up your project before installation.",
   "Ich habe den Hinweis gelesen und akzeptiere das Installationsrisiko.": "I have read the notice and accept the installation risk.",

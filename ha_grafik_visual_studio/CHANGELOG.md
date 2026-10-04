@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.210
+
+- Add the fixed, read-only material-color-schemes renderer for external Material Design packages. Preview 26 attributed palettes with Classic, Material 3 and project styles, page light/dark theme and scrolling. Add a saved project-wide Material Design style setting. Packages remain data-only; no ioBroker objects or code are executed.
+
 ## 0.1.209
 
 - Remove duplicate Copy and Delete buttons from the widget selection popup. Existing toolbar actions and selection controls remain available.

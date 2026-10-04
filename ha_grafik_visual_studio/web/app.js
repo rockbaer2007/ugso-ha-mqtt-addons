@@ -13,6 +13,7 @@ import { technicRoomBindings, technicRoomUrl, renderTechnicRoom, syncTechnicRoom
 import { renderTechnicClock, updateTechnicClocks } from "./technic-clock.js";
 import { temperatureBindings, renderTemperature, syncTemperatureHistory } from "./technic-temperature.js";
 import { renderTechnicStatusList } from "./technic-status-list.js";
+import { renderMaterialColorSchemes } from "./material-color-schemes.js";
 import { createMeteoredController } from "./meteored.js";
 const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
@@ -3431,6 +3432,8 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.style.background = widget.colorBg || "transparent";
       content.style.borderRadius = `${Math.max(0, Number(widget.borderRadius) || 0)}px`;
       content.append(renderTechnicClock(widget, document));
+    } else if (getWidgetDefinition(widget.type).render?.kind === "material-color-schemes") {
+      content.append(renderMaterialColorSchemes(widget, document, { projectStyle: state.project.settings?.materialDesignStyle || "material3", pageTheme: activePage.page.theme }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-status-list") {
       content.append(renderTechnicStatusList(widget, document, { states: state.entityStates, locale: document.documentElement.lang || "de" }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-room") {
@@ -4674,7 +4677,7 @@ async function loadWidgetPackages() {
         id: manifest.id, label: manifest.name, externalPackage: true,
         widgets: manifest.widgets.map(widget => ({
           ...widget, packageId: manifest.id, definitionVersion: manifest.apiVersion, iconSvg: widget.iconData || "icons/text.svg", preview: { kind: "svg", lines: [] },
-          propertyGroups: widget.propertyGroups.map(group => ({ ...group, ...(widget.render.kind === "chart" && group.label.startsWith("CSS ") ? { css: true, defaultEnabled: true } : {}), fields: group.fields.map(field => ["technic-window", "technic-switch", "technic-light", "technic-temperature"].includes(widget.render.kind) && ["handle", "namePosition", "valueType", "iconKey"].includes(field.key) && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { left: "Links", right: "Rechts", top: "Oben", bottom: "Unten", bool: "Wahr / Falsch", number: "0 / 1", ...TECHNIC_SWITCH_ICONS }[value] || value })) } : field) })),
+          propertyGroups: widget.propertyGroups.map(group => ({ ...group, ...(widget.render.kind === "chart" && group.label.startsWith("CSS ") ? { css: true, defaultEnabled: true } : {}), fields: group.fields.map(field => widget.render.kind === "material-color-schemes" && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { legacy: "Klassisch", material3: "Material 3", project: "Projektstandard", light: "Hell", dark: "Dunkel" }[value] || value })) } : ["technic-window", "technic-switch", "technic-light", "technic-temperature"].includes(widget.render.kind) && ["handle", "namePosition", "valueType", "iconKey"].includes(field.key) && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { left: "Links", right: "Rechts", top: "Oben", bottom: "Unten", bool: "Wahr / Falsch", number: "0 / 1", ...TECHNIC_SWITCH_ICONS }[value] || value })) } : field) })),
         })),
       });
     }
@@ -4860,6 +4863,7 @@ function openSettingsDialog() {
   $("#project-favicon").value = settings.favicon || "";
   $("#settings-ignore-unloaded").checked = settings.ignoreUnloaded !== false;
   $("#settings-overflow").value = settings.bodyOverflow || "auto";
+  $("#settings-material-design-style").value = settings.materialDesignStyle || "material3";
   showSettingsTab("general");
   const dialog = $("#settings-dialog");
   if (!dialog.open) dialog.showModal();
@@ -4881,8 +4885,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.209" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.209" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.210" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.210" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
@@ -4946,6 +4950,7 @@ $("#settings-save").addEventListener("click", async (event) => {
     public: $("#settings-public").checked,
     ignoreUnloaded: $("#settings-ignore-unloaded").checked,
     bodyOverflow: $("#settings-overflow").value,
+    materialDesignStyle: $("#settings-material-design-style").value,
   });
   state.project.settings.title = $("#project-title").value.trim();
   state.project.settings.favicon = $("#project-favicon").value.trim();
