@@ -412,11 +412,8 @@ function widgetStateIndex(widget) {
 function projectForSave(project) {
   const saved = structuredClone(project);
   for (const page of [...(saved.pages || []), ...allProjectWidgets(saved).flatMap(widget => (widget.tabSurfaces || []).filter(Boolean))]) {
-    page.page.enabledPropertyGroups ??= {};
-    for (const [index, group] of VIEW_PROPERTY_GROUPS.entries()) {
-      if (propertyGroupEnabled(page.page, group, index)) continue;
-      for (const descriptor of group.fields) delete page.page[descriptor.key];
-    }
+    // Page settings always apply to the page; legacy group flags must not drop values.
+    delete page.page.enabledPropertyGroups;
     for (const widget of page.widgets || []) {
       clearSeparatorConnections(widget);
       const groups = [...widgetPropertyGroups(widget), ...indexedWidgetGroups(widget)];
@@ -1894,6 +1891,9 @@ function addPage() {
   const name = state.project.pages.some((page) => page.name === "Neue Seite") ? `Seite ${state.project.pages.length + 1}` : "Neue Seite";
   const page = currentPage();
   const created = { id: makePageId(), name, visible: true, page: structuredClone(page.page), widgets: [] };
+  delete created.page.enabledPropertyGroups;
+  state.propertyTab = "view";
+  state.expandedPropertySections.add("view:CSS allgemein:0");
   state.project.pages.push(created); state.project.currentPageId = created.id; setSingleWidgetSelection(null); render();
 }
 
@@ -4166,6 +4166,7 @@ function openConnectionPointsEditor(widget) {
 }
 
 function field(descriptor, widget) {
+  const renderKind = widget.type ? getWidgetDefinition(widget.type).render?.kind : null;
   if (descriptor.type === "tab-edit") {
     const button = document.createElement("button"); button.type = "button"; button.textContent = uiText(descriptor.label);
     button.onclick = () => {
@@ -4259,7 +4260,7 @@ function field(descriptor, widget) {
     aliasPreview.hidden = !showAlias;
     aliasPreview.textContent = alias ? alias.slice(0, 3) : "";
   };
-  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || getWidgetDefinition(widget.type).render?.kind === "material-widget" && /EntityId\d+$/.test(descriptor.key) || ["technic-room", "technic-status-list"].includes(getWidgetDefinition(widget.type).render?.kind) && /^rowEntityId\d+$/.test(descriptor.key) || getWidgetDefinition(widget.type).render?.kind === "chart" && /^seriesEntityId\d+$/.test(descriptor.key)) {
+  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || renderKind === "material-widget" && /EntityId\d+$/.test(descriptor.key) || ["technic-room", "technic-status-list"].includes(renderKind) && /^rowEntityId\d+$/.test(descriptor.key) || renderKind === "chart" && /^seriesEntityId\d+$/.test(descriptor.key)) {
     const row = document.createElement("span"); row.className = "property-entity-row";
     const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button";
     picker.textContent = "…";
@@ -4326,21 +4327,21 @@ function field(descriptor, widget) {
     if (descriptor.key === "testIndex" && widget.type === "value-list-text") widget.state = input.value;
     void updatePreview();
     if (isGauge(widget) && (descriptor.key === "entityId" || /EntityId\d*$/.test(descriptor.key))) void refreshEditorLiveStates();
-    if (getWidgetDefinition(widget.type).render?.kind === "heating-params" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
-    if (getWidgetDefinition(widget.type).render?.kind === "technic-window" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
-    if (getWidgetDefinition(widget.type).render?.kind === "technic-switch" && descriptor.key === "entityId") void refreshEditorLiveStates();
-    if (getWidgetDefinition(widget.type).render?.kind === "technic-light" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
-    if (getWidgetDefinition(widget.type).render?.kind === "technic-temperature" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
-    if (["material-dialog", "material-iframe-dialog"].includes(getWidgetDefinition(widget.type).render?.kind) && descriptor.key === "entityId") void refreshEditorLiveStates();
-    if (["material-dialog", "material-iframe-dialog"].includes(getWidgetDefinition(widget.type).render?.kind) && ["showAdvanced", "showDialogMethod"].includes(descriptor.key)) renderProperties();
-    if (getWidgetDefinition(widget.type).render?.kind === "material-widget") {
+    if (renderKind === "heating-params" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
+    if (renderKind === "technic-window" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
+    if (renderKind === "technic-switch" && descriptor.key === "entityId") void refreshEditorLiveStates();
+    if (renderKind === "technic-light" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
+    if (renderKind === "technic-temperature" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
+    if (["material-dialog", "material-iframe-dialog"].includes(renderKind) && descriptor.key === "entityId") void refreshEditorLiveStates();
+    if (["material-dialog", "material-iframe-dialog"].includes(renderKind) && ["showAdvanced", "showDialogMethod"].includes(descriptor.key)) renderProperties();
+    if (renderKind === "material-widget") {
       if (/EntityId\d*$/.test(descriptor.key)) void refreshEditorLiveStates();
       if (["showAdvanced", "countSelectItems", "listDataMethod", "rowCount", "dataMethod", "dataCount", "countViews"].includes(descriptor.key)) renderProperties();
     }
-    if (["technic-room", "technic-status-list"].includes(getWidgetDefinition(widget.type).render?.kind)) { if (/EntityId(s)?\d+$/.test(descriptor.key) || descriptor.key === "rowCount") void refreshEditorLiveStates(); if (descriptor.key === "rowCount") renderProperties(); }
-    if (getWidgetDefinition(widget.type).render?.kind === "room-table" && ["entityId", "tableAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
-    if (getWidgetDefinition(widget.type).render?.kind === "window-overview" && ["entityId", "tableAttribute", "openCountEntityId", "openCountAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
-    if (getWidgetDefinition(widget.type).render?.kind === "chart" && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || ["dataCount", "showWeekData", "weatherSource", "forecastType", "forecastAttribute"].includes(descriptor.key))) void refreshEditorLiveStates();
+    if (["technic-room", "technic-status-list"].includes(renderKind)) { if (/EntityId(s)?\d+$/.test(descriptor.key) || descriptor.key === "rowCount") void refreshEditorLiveStates(); if (descriptor.key === "rowCount") renderProperties(); }
+    if (renderKind === "room-table" && ["entityId", "tableAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
+    if (renderKind === "window-overview" && ["entityId", "tableAttribute", "openCountEntityId", "openCountAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
+    if (renderKind === "chart" && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || /^series(EntityId|Attribute)\d+$/.test(descriptor.key) || ["dataCount", "showWeekData", "weatherSource", "forecastType", "forecastAttribute"].includes(descriptor.key))) void refreshEditorLiveStates();
     if (widget.type === "string" && descriptor.key === "icon") { const size = $("#properties [data-string-icon-size]"); if (size) size.hidden = !input.value; }
     renderStage();
     if (descriptor.refreshProperties && input.tagName !== "TEXTAREA" && !["number", "range"].includes(input.type)) renderProperties();
@@ -4408,17 +4409,7 @@ function renderProperties() {
       details.addEventListener("toggle", () => { if (details.open) state.expandedPropertySections.add(sectionKey); else state.expandedPropertySections.delete(sectionKey); });
       const summary = document.createElement("summary");
       const title = document.createElement("span"); title.className = "property-section-title"; title.textContent = group.label;
-      const enabled = document.createElement("input"); enabled.type = "checkbox"; enabled.className = "property-section-enabled";
-      enabled.checked = propertyGroupEnabled(page.page, group, index);
-      enabled.setAttribute("aria-label", `${group.label}: Optionen im Projekt speichern`);
-      enabled.title = "Optionen dieser Gruppe im gespeicherten Projekt übernehmen";
-      enabled.addEventListener("click", (event) => event.stopPropagation());
-      enabled.addEventListener("change", (event) => {
-        event.stopPropagation();
-        page.page.enabledPropertyGroups ??= {};
-        page.page.enabledPropertyGroups[propertyGroupKey(group, index)] = enabled.checked;
-      });
-      summary.append(title, enabled);
+      summary.append(title);
       const body = document.createElement("div"); body.className = "property-fields";
       body.append(...group.fields.map((descriptor) => field(descriptor, page.page)));
       details.append(summary, body); panel.append(details);
@@ -4966,8 +4957,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.219" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.219" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.220" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.220" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

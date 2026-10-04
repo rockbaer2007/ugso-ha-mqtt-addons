@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.220
+
+- Fix view field rendering and editing for page settings without a widget type, which previously caused the panel to abort before showing its sections.
+- New pages open their view settings directly. Page settings have collapsible sections without group activation checkboxes; all page values are preserved on save, including values with disabled legacy group flags. Widget group switches remain available.
+
 ## 0.1.219
 
 - Clicking a blocked basic switch now shows its entity and the reason in runtime: missing HA state, unavailable/non-switchable state or unsupported entity. Pending requests remain protected against duplicate clicks.
