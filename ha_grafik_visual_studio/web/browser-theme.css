@@ -1,0 +1,115 @@
+/* Browser preferences affect the Studio shell, not saved page/widget colors. */
+:root {
+  color-scheme: dark;
+  --surface-raised: #292f31;
+  --surface-active: #344143;
+  --surface-accent: #27403e;
+  --workspace-bg: #101314;
+  --editor-bg: #191d1f;
+  --code-bg: #1e1e1e;
+  --hover-bg: #ffffff0c;
+  --preview-bg: #1116;
+  --menu-overlay: #202426cc;
+  --selection-bg: #2675a8;
+  --selection-text: #fff;
+  --info-bg: #173a4b;
+  --info-text: #ecf8ff;
+  --info-accent: #39b7e8;
+  --warning-bg: #3a2a15;
+  --warning-text: #ffd292;
+  --warning-accent: #ec9a31;
+  --error-bg: #481f24;
+  --error-text: #ffb6b6;
+  --error-accent: #f07178;
+  --success-accent: #43cf83;
+  --hint-color: #ff9e9e;
+  --shell-icon-filter: none;
+  --on-accent: #092322;
+  --accent-hover: #57d7c8;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    --bg: #f4f6f7;
+    --panel: #fff;
+    --line: #c3ced2;
+    --text: #203037;
+    --muted: #53656d;
+    --accent: #087b70;
+    --orange: #9b5b00;
+    --surface-raised: #edf2f4;
+    --surface-active: #dbe7eb;
+    --surface-accent: #d5eee9;
+    --workspace-bg: #e4eaed;
+    --editor-bg: #fff;
+    --code-bg: #fff;
+    --hover-bg: #2030370c;
+    --preview-bg: #2030370a;
+    --menu-overlay: #ffffffed;
+    --selection-bg: #126c9c;
+    --info-bg: #dceff8;
+    --info-text: #154b64;
+    --info-accent: #126c9c;
+    --warning-bg: #fff0d4;
+    --warning-text: #714500;
+    --warning-accent: #a35e00;
+    --error-bg: #fff0f0;
+    --error-text: #9d262d;
+    --error-accent: #b8323c;
+    --success-accent: #16824b;
+    --hint-color: #a92727;
+    --shell-icon-filter: brightness(.3);
+    --on-accent: #fff;
+    --accent-hover: #086c62;
+  }
+}
+
+.widget-selector-menu, .pages-panel, .studio-dialog, .widget-context-menu,
+.widget-group summary, .entity-device-row { background: var(--surface-raised); }
+.studio-menu button:hover, .studio-menu button[aria-pressed="true"],
+.widget-filter-open[aria-pressed="true"], .mode-switch a.active,
+.editor-tool-list button:hover, .editor-tool-list button:focus-visible,
+.alignment-toolbar button:hover:not(:disabled), .alignment-toolbar button:focus-visible,
+.alignment-toolbar button.is-long-press,
+.widget-context-menu button:hover, .widget-context-menu button:focus-visible,
+.widget-context-menu summary:hover, .widget-context-menu summary:focus-visible { background: var(--surface-active); }
+.page-actions, .entity-selected, .entities-tree, .objects-breadcrumb button,
+.object-folder-row, .object-folder-up, .grid-view .object-row { background: var(--panel); }
+.stage-wrap, body.runtime-mode { background: var(--workspace-bg); }
+.html-editor-code { background: var(--editor-bg); }
+.project-css-editor { background: var(--code-bg); }
+.project-css-editor::placeholder { color: var(--muted); }
+.primary, #exit-tab-editor { color: var(--on-accent); }
+#exit-tab-editor:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.files-filter select, .files-filter select option { color: var(--text); background: var(--bg); color-scheme: inherit; }
+.settings-tabs button[aria-selected="true"] { background: var(--surface-accent); }
+.page-row.active { color: var(--selection-text); background: var(--selection-bg); }
+.widget-selector-actions { background: var(--info-bg); }
+.widget-selector-actions button { color: var(--info-accent); }
+.widget-selector-row { border-bottom-color: var(--line); }
+.object-row:hover, .object-icon-action:hover { background: var(--hover-bg); }
+.property-image-preview, .property-iconset-preview { background: var(--preview-bg); }
+.properties input[type="range"]::-webkit-slider-runnable-track { background: var(--line); }
+.properties input[type="range"]::-moz-range-track { background: var(--line); }
+.migration-hint, .migration-hint[data-theme="light"] { color: var(--hint-color); }
+.cp-full { color: var(--warning-text); }
+.package-source-tabs button[aria-pressed="true"], .package-catalog-entry button.package-install-available {
+  border-color: var(--info-accent); background: var(--info-bg); color: var(--info-text);
+}
+.package-risk-notice, .package-test-notice {
+  border-left-color: var(--warning-accent); background: var(--warning-bg); color: var(--warning-text);
+}
+.package-source-content .package-consent-error {
+  background: var(--error-bg); color: var(--error-text); outline-color: var(--error-accent);
+}
+.package-consent-error input { accent-color: var(--error-accent); }
+.package-catalog-entry { border-color: var(--line); }
+.package-catalog-entry.package-update-available {
+  border-color: var(--success-accent); box-shadow: inset 0 0 0 1px var(--success-accent);
+}
+body.runtime-mode .runtime-page-menu-toggle { background: var(--menu-overlay); }
+.studio-menu .toolbar-icon img, .page-menu-toggle img, .widget-filter-open img,
+.widget-actions img, .widget-edit-actions img,
+.studio-dialog img[src$="icons/refresh.svg"], .object-icon-action img[src$="icons/download.svg"],
+.runtime-page-menu-toggle img { filter: var(--shell-icon-filter); }

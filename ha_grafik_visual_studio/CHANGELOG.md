@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.221
+
+- Follow the browser's light/dark preference automatically, including changes while Studio is open. Theme the toolbar, sidebars, dialogs, fields, menus and package notices with matching contrast and native controls.
+- Preserve explicitly configured page and widget colors; the theme does not change saved project settings.
+
 ## 0.1.220
 
 - Fix view field rendering and editing for page settings without a widget type, which previously caused the panel to abort before showing its sections.
