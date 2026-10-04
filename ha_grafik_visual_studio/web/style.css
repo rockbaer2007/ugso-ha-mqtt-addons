@@ -71,6 +71,8 @@
 .package-card-heading strong { min-width:0; }
 .package-catalog-entry p { margin:6px 0; }
 .package-catalog-entry button { width:100%; margin-top:auto; }
+.package-catalog-entry.package-update-available { border-color:#43cf83; box-shadow:inset 0 0 0 1px #43cf83; }
+.package-catalog-entry button.package-install-available { background:#17475e; border-color:#39b7e8; color:#ecf8ff; }
 .dropdown-option { display:block;width:100%;border:0;padding:7px 10px;text-align:left;background:transparent;color:inherit;font:inherit;overflow-wrap:anywhere;cursor:pointer; }
 .dropdown-option[aria-selected="true"],.dropdown-option:enabled:hover,.dropdown-option:focus-visible { background:var(--dropdown-highlight);outline:none; }
 .dropdown-option:disabled { opacity:.5;cursor:default; }

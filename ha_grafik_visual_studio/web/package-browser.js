@@ -85,12 +85,14 @@ export function mountPackageBrowser(kind, { installedPackages, install, version 
         heading.append(packageIcon(current, kind), element("strong", item.name));
         row.append(heading, element("p", item.description, "property-hint"));
         const sameOrNewer = current && compareVersions(current.version, item.version) >= 0;
+        if (current && !sameOrNewer) row.classList.add("package-update-available");
         const unsupported = item.minimum_studio_version && compareVersions(version, item.minimum_studio_version) < 0;
         row.append(element("p", `${item.id} · ${item.version} · ${item.license}`, "settings-package-meta"));
         row.append(element("p", current ? `${uiText("Installiert")}: ${current.version}` : "Nicht installiert", "settings-package-meta"));
         if (item.minimum_studio_version) row.append(element("p", `${uiText("Studio ab")}: ${item.minimum_studio_version}`, "settings-package-meta"));
         if (["ugso.widget-test", "ugso.tools-test"].includes(item.id)) row.append(element("p", "Dies sind reine Testpakete, um die Funktionen kennenzulernen.", "package-test-notice"));
         const button = element("button", sameOrNewer ? "Installiert" : current ? "Aktualisieren" : "Installieren"); button.type = "button"; button.disabled = Boolean(sameOrNewer || unsupported);
+        if (!current && !unsupported) button.classList.add("package-install-available");
         button.onclick = () => void download(item.download_url, item.sha256, button, item);
         row.append(button); list.append(row);
       }

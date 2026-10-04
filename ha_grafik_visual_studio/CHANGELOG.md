@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.213
+
+- Mark available widget/tool package updates with a green card border. Highlight only the Install button in blue for new compatible packages; installed packages return to the regular appearance after catalog refresh.
+
 ## 0.1.212
 
 - Show a red mdi:alert icon before GitHub and its installation risk notice in both widget and tool package settings.
