@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.207
+
+- Reload the catalog and installed versions whenever widget or tool settings are opened. After uninstalling, show the refreshed catalog so removed packages can be installed again regardless of their original installation source. New approved packages appear on the next tab opening.
+- Update the catalog compatibility check to the current Studio version.
+
 ## 0.1.206
 
 - Keep compact Local / Catalog / GitHub source buttons visible while scrolling widget and tool settings. Use one scroll area per tab instead of nested scrolling package lists.

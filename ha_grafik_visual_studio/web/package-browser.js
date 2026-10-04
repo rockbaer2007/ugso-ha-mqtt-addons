@@ -103,5 +103,8 @@ export function mountPackageBrowser(kind, { installedPackages, install, version 
   host.append(remote); panel.insertBefore(host, local);
   panel.insertBefore(sources, host);
   panel.insertBefore(localNotice, local);
-  return { refresh: async () => { if (buttons.get("catalog").getAttribute("aria-pressed") === "true") await load("catalog"); } };
+  return {
+    open: () => load("catalog"),
+    refresh: async () => { if (buttons.get("catalog").getAttribute("aria-pressed") === "true") await load("catalog"); },
+  };
 }

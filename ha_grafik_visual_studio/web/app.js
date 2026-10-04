@@ -4712,7 +4712,7 @@ async function renderWidgetPackageList() {
         const response = await fetch(`api/widget-packages/${encodeURIComponent(manifest.id)}`, { method: "DELETE" });
         const result = await response.json().catch(() => ({}));
         if (!response.ok) { $("#widget-package-message").textContent = result.error || uiText("Paket konnte nicht entfernt werden."); return; }
-        await refreshInstalledPackages("widget");
+        await refreshInstalledPackages("widget", true);
       });
       const actions = document.createElement("div"); actions.className = "package-card-actions";
       actions.append(reload, remove); row.append(info, actions); list.append(row);
@@ -4810,7 +4810,7 @@ async function renderToolPackageList() {
         const response = await fetch(`api/tool-packages/${encodeURIComponent(manifest.id)}`, { method: "DELETE" });
         const result = await response.json().catch(() => ({}));
         if (!response.ok) { $("#tool-package-message").textContent = result.error || uiText("Tool-Paket konnte nicht entfernt werden."); return; }
-        await refreshInstalledPackages("tool");
+        await refreshInstalledPackages("tool", true);
       });
       const tools = document.createElement("div"); tools.className = "settings-tool-list";
       for (const tool of manifest.tools) {
@@ -4841,8 +4841,8 @@ function showSettingsTab(tabId) {
   }
   $("#settings-general-actions").hidden = selected !== "general";
   $("#settings-extension-actions").hidden = selected === "general";
-  if (selected === "widgets") void renderWidgetPackageList();
-  if (selected === "tools") void renderToolPackageList();
+  if (selected === "widgets") { void renderWidgetPackageList(); void packageBrowsers.widget.open(); }
+  if (selected === "tools") { void renderToolPackageList(); void packageBrowsers.tool.open(); }
 }
 
 function openSettingsDialog() {
@@ -4870,10 +4870,11 @@ function openSettingsDialog() {
 }
 $("#settings-menu").addEventListener("click", openSettingsDialog);
 $("#editor-tools-manage").addEventListener("click", () => { openSettingsDialog(); showSettingsTab("tools"); });
-async function refreshInstalledPackages(kind) {
+async function refreshInstalledPackages(kind, showCatalog = false) {
   if (kind === "widget") { await loadWidgetPackages(); render(); await renderWidgetPackageList(); }
   else await renderToolPackageList();
-  await packageBrowsers[kind].refresh();
+  if (showCatalog) await packageBrowsers[kind].open();
+  else await packageBrowsers[kind].refresh();
 }
 async function installExternalPackage(kind, file, expected = null, acceptedRisk = false) {
   if (!acceptedRisk && !window.confirm(uiText("Externe Pakete installierst du auf eigenes Risiko. Prüfe Quelle, Lizenz und Inhalt. Sichere dein Projekt vor der Installation."))) { document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Installation abgebrochen."); return; }
@@ -4884,8 +4885,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.204" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.204" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.207" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.207" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
