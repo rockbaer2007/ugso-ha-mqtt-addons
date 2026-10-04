@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { materialDialogGroups, materialDialogLayout, dialogStateOpen, renderMaterialDialog, syncMaterialDialogs } from '../web/material-dialog.js';
+import { materialDialogGroups, materialDialogLayout, dialogStateOpen, renderMaterialDialog, syncMaterialDialogs, materialIframeUrl } from '../web/material-dialog.js';
 
 const groups = ['Allgemein', 'Button Layout', 'Layout Dialog', 'Layout Kopfzeile', 'Layout der Schaltflächen in der Dialogfußzeile'].map(label => ({ label, fields: [{ key: 'targetPage', type: 'text' }] }));
 const key = (group, index) => `stable-${index}`;
@@ -24,7 +24,7 @@ console.log('Advanced visibility, stable group IDs, preserved values, responsive
 class Element {
   constructor(tag) { this.tagName = tag; this.children = []; this.dataset = {}; this.events = {}; this.style = { setProperty() {} }; this.isConnected = true; }
   append(...children) { this.children.push(...children); }
-  setAttribute() {}
+  setAttribute(key, value) { (this.attributes ||= {})[key] = value; }
   addEventListener(event, handler) { this.events[event] = handler; }
   focus() {}
   showModal() { this.open = true; }
@@ -67,3 +67,23 @@ await Promise.resolve();
 assert.equal(doc.body.children.length, countAfterClose + 1, 'new rising edge opens');
 syncMaterialDialogs('', []);
 console.log('Editor/runtime separation, local page embedding, outside close, cleanup and boolean reopening verified.');
+
+for (const source of ['', 'javascript:alert(1)', 'data:text/html,test', 'file:///tmp/test']) assert.equal(materialIframeUrl(source, 'https://studio.example/'), null);
+assert.equal(materialIframeUrl('/dashboard', 'https://studio.example/'), 'https://studio.example/dashboard');
+assert.equal(materialIframeUrl('https://example.com/page', 'https://studio.example/'), 'https://example.com/page');
+assert.deepEqual(materialDialogGroups([...groups, { label: 'iFrame Einstellungen', fields: [{ key: 'src', type: 'text' }] }], widget, key).map(g=>g.label), ['Allgemein', 'Layout Dialog', 'iFrame Einstellungen']);
+const iframeContext = { ...runtime, iframe: true, popupUrl: 'https://example.com/page' };
+renderMaterialDialog({ id: 'frame-test', scrollY: true }, doc, iframeContext).children[0].events.click(click);
+const sandboxed = doc.body.children.at(-1).children[1];
+assert.equal(sandboxed.src, iframeContext.popupUrl);
+assert.equal(sandboxed.attributes.sandbox, 'allow-scripts allow-forms');
+assert.equal(sandboxed.attributes.scrolling, 'yes');
+assert.equal(sandboxed.style.border, '1px solid currentColor');
+syncMaterialDialogs('', []);
+renderMaterialDialog({ id: 'frame-unsandboxed', noSandbox: true, seamless: true }, doc, iframeContext).children[0].events.click(click);
+const unsandboxed = doc.body.children.at(-1).children[1];
+assert.equal(unsandboxed.attributes.sandbox, undefined);
+assert.equal(unsandboxed.attributes.scrolling, 'no');
+assert.equal(unsandboxed.style.border, '0');
+syncMaterialDialogs('', []);
+console.log('iFrame URL validation, compact groups, sandbox, scrolling and seamless options verified.');

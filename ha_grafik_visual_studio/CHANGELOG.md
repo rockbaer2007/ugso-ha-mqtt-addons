@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.214
+
+- Add the external Material Design iFrame dialog renderer with validated HTTP/HTTPS sources, default sandbox, optional sandbox opt-out, scrolling and seamless frame options. Reuse compact/advanced dialog controls and boolean triggers without changing local page dialogs.
+
 ## 0.1.213
 
 - Mark available widget/tool package updates with a green card border. Highlight only the Install button in blue for new compatible packages; installed packages return to the regular appearance after catalog refresh.
