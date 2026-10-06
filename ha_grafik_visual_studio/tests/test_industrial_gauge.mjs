@@ -50,6 +50,23 @@ test("housing and triangle render at unavailable values without unsafe markup", 
   assert.equal(renderIndustrialGauge({...config,radius:12},doc).style.borderRadius,"12px");
   assert.equal(renderIndustrialGauge({...config,radius:0},doc).style.borderRadius,"0px");
 });
+test("solar reading and unit remain visible despite invalid color thresholds", () => {
+  const widget={...config,entityId:"sensor.solar",minValue:0,maxValue:1000,scaleMode:"ring",showValue:true,unit:"W"};
+  const states={"sensor.solar":{state:"423.125",attributes:{unit_of_measurement:"kW"}}};
+  for (const runtime of [false,true]) {
+    const root=renderIndustrialGauge(widget,doc,{states,runtime});
+    assert.equal(nodes(root).find(n=>n.tag==="text").textContent,"423.125 W");
+    assert.match(root.title,/Farbbereiche prüfen/);
+    assert.equal(root.dataset.value,"423.125");
+  }
+  const automatic=renderIndustrialGauge({...widget,unit:""},doc,{states});
+  assert.equal(nodes(automatic).find(n=>n.tag==="text").textContent,"423.125 kW");
+  const hidden=renderIndustrialGauge({...widget,showValue:false},doc,{states});
+  assert.equal(nodes(hidden).find(n=>n.tag==="text").textContent,"");
+  const missing=renderIndustrialGauge(widget,doc,{});
+  assert.equal(nodes(missing).find(n=>n.tag==="text").textContent,"—");
+});
+
 test("editor remains passive; keyboard and release commit only runtime changes", () => {
   let commits=[]; const context={runtime:true,onCommit:v=>commits.push(v)};
   const editor=renderIndustrialGauge(config,doc,{...context,runtime:false});

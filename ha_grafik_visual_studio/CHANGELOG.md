@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.227
+
+- Gauge/Poti zeigt Messwert und Einheit auch bei fehlerhaften Farbgrenzen oder Skalen an. Eine leere Einheit übernimmt die Home-Assistant-Einheit der Eingangsentity; Skalenwarnungen bleiben im Tooltip sichtbar.
+- Gauge/Poti keeps readings and units visible when color thresholds or scales are invalid. An empty unit uses the input entity's Home Assistant unit; scale warnings remain in the tooltip.
+
 ## 0.1.226
 
 - Gauge/Poti exposes a checked-by-default 1:1 aspect ratio option under Size. Typed and dragged dimensions stay equal while enabled, including the displayed property values. Disable it for independent width and height; minimum dimensions remain 64 px.

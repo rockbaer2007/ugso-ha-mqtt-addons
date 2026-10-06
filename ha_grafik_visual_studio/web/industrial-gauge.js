@@ -50,6 +50,7 @@ export function industrialPointerValue(widget, angle, previous) {
 export function renderIndustrialGauge(widget, doc, context = {}) {
   const root = doc.createElement("div"); root.className = "industrial-gauge";
   const model = industrialModel(widget, context.states, context.inputValue);
+  const unit = String(widget.unit || (widget.dataInputEnabled !== true ? context.states?.[widget.entityId]?.attributes?.unit_of_measurement : "") || "");
   const enabled = Boolean(context.runtime && !model.gauge && model.valid);
   root.classList.toggle("industrial-housing", widget.industrialStyle !== false);
   root.style.borderRadius = `${Math.max(0, Math.min(200, finite(widget.radius) ?? 4))}px`;
@@ -79,9 +80,10 @@ export function renderIndustrialGauge(widget, doc, context = {}) {
     pointer.setAttribute("transform", `rotate(${225 + (value == null || !model.valid ? 0 : Math.max(0, Math.min(1, (value - model.min) / (model.max - model.min))) * 270)} 64 64)`);
     if (value == null) root.removeAttribute("aria-valuenow"); else root.setAttribute("aria-valuenow", value);
     const error = !model.valid ? "Ungültige Skala" : widget.scaleMode === "ring" && !bands.length ? "Farbbereiche prüfen" : widget.scaleMode !== "ring" && !ticks.length ? "Teilung zu klein" : value == null ? "Kein Eingangswert" : "";
-    root.title = error || `${value}${widget.unit ? ` ${widget.unit}` : ""}`;
+    const reading = value == null ? "—" : `${Number(value.toFixed(3))}${unit ? ` ${unit}` : ""}`;
+    root.title = error ? `${error}${value == null ? "" : ` · ${reading}`}` : reading;
     root.setAttribute("aria-valuetext", root.title);
-    output.textContent = error ? "—" : widget.showValue === true ? `${Number(value.toFixed(3))}` : "";
+    output.textContent = widget.showValue === true ? reading : value == null ? "—" : "";
     root.classList.toggle("is-invalid", Boolean(error));
   };
   let origin = null, changed = false;
