@@ -1,0 +1,51 @@
+const pending=new Set(),failed=new Set();
+export const isIndustrialSwitch = widget => widget?.type === "ugso.industrial/switch";
+export const switchCount = widget => Math.max(1, Math.min(4, Math.trunc(Number(widget.switchCount) || 1)));
+export function switchAnchors(widget) {
+  return Array.from({length:switchCount(widget)},(_,i)=>[
+    [`input-${i+1}`,`Eingang ${i+1}`,(i+.5)/switchCount(widget),0],
+    [`output-${i+1}`,`Ausgang ${i+1}`,(i+.5)/switchCount(widget),1],
+  ]).flat();
+}
+export function switchPortActive(widget, anchor, side="") {
+  const match=/^(input|output)-([1-4])$/.exec(anchor || "");
+  return !!match && Number(match[2])<=switchCount(widget) && widget[`${match[1]}Dock${match[2]}`]===true && (side!=="start" || match[1]==="output") && (side!=="end" || match[1]==="input");
+}
+export function switchBoolean(value) {
+  if ([true,1,"1","on","true"].includes(value)) return true;
+  if ([false,0,"0","off","false"].includes(value)) return false;
+  return null;
+}
+export function switchBindings(widget) {
+  return Array.from({length:switchCount(widget)},(_,i)=>[widget[`inputEntityId${i+1}`],widget[`outputEntityId${i+1}`]]).flat().filter(Boolean);
+}
+export function switchChannel(widget,n,states={},input) {
+  const entity=widget[`inputEntityId${n}`] || widget[`outputEntityId${n}`], target=widget[`outputEntityId${n}`] || entity;
+  const on=switchBoolean(widget[`inputDock${n}`]===true ? input : entity ? states[entity]?.state : widget[`switchState${n}`] ?? false);
+  return {on,target,writable: !target || /^(switch|light|input_boolean)\.[a-z0-9_]+$/.test(target) && switchBoolean(states[target]?.state)!==null};
+}
+const color=(value,fallback)=>/^#[0-9a-f]{6}$/i.test(value || "") ? value : fallback;
+export function renderIndustrialSwitch(widget,doc,{runtime=false,states={},inputs={},onCommit=async()=>{},onSettled=()=>{}}={}) {
+  const root=doc.createElement("div");root.className="industrial-switch";root.setAttribute("role","group");
+  root.style.gridTemplateColumns=`repeat(${switchCount(widget)},minmax(0,1fr))`;
+  const style=widget.industrialStyle!==false;
+  root.classList.toggle("industrial-housing",style);
+  root.style.borderRadius=`${Math.max(0,Math.min(200,widget.radius==null?4:Number(widget.radius)||0))}px`;
+  root.style.borderWidth=`${style ? widget.industrialFrameWidthEnabled===true ? Math.max(1,Math.min(16,Number(widget.industrialFrameWidth)||2)) : 2 : 0}px`;
+  root.style.borderColor=color(widget.industrialFrameColor,"#879097");
+  if(style && widget.industrialScrewsEnabled!==false) for(const corner of ["tl","tr","bl","br"]){const screw=doc.createElement("span");screw.className=`industrial-screw ${corner}`;screw.textContent="×";root.append(screw);}
+  for(let n=1;n<=switchCount(widget);n++) {
+    const channel=switchChannel(widget,n,states,inputs[n]);
+    const cell=doc.createElement("div");cell.className="industrial-switch-cell";cell.dataset.channel=String(n);
+    const led=doc.createElement("span");led.className="industrial-led";led.style.setProperty("--led-color",color(channel.on===true ? widget[`ledOnColor${n}`] : widget[`ledOffColor${n}`],channel.on===true?"#ef5350":"#30383c"));led.classList.toggle("is-on",channel.on===true);led.classList.toggle("is-unknown",channel.on===null);led.setAttribute("aria-hidden","true");
+    const label=doc.createElement("span");label.className="industrial-switch-caption";label.textContent=widget[`label${n}`] || `Schalter ${n}`;label.title=label.textContent;label.style.color=color(widget.valueColor,"#dce5e9");label.style.fontSize=`${Math.max(6,Math.min(72,Number(widget.valueFontSize)||12))}px`;
+    const key=`${widget.id}:${n}`;
+    const button=doc.createElement("button");button.type="button";button.className="industrial-toggle";button.setAttribute("role","switch");button.setAttribute("aria-label",label.textContent);button.setAttribute("aria-checked",String(channel.on===true));button.disabled=!runtime || !channel.writable || channel.on===null || pending.has(key);button.title=failed.has(key)?"Schalten fehlgeschlagen":channel.on===null?"Kein Eingangswert":"";
+    const legend={"on-off":["ON","OFF"],"one-zero":["1","0"],"ein-aus":["EIN","AUS"]}[widget[`switchLegend${n}`]] || ["ON","OFF"];
+    button.dataset.onLabel=legend[0];button.dataset.offLabel=legend[1];
+    const nut=doc.createElement("span");nut.className="industrial-toggle-nut";const lever=doc.createElement("span");lever.className="industrial-toggle-lever";nut.append(lever);button.append(nut);
+    button.addEventListener("click",async event=>{event.stopPropagation();if(button.disabled || pending.has(key))return;pending.add(key);failed.delete(key);button.disabled=true;try{await onCommit(n,!channel.on,channel.target);}catch{failed.add(key);button.title="Schalten fehlgeschlagen";}finally{pending.delete(key);button.disabled=!runtime || !channel.writable || channel.on===null;onSettled();}});
+    cell.append(led,label,button);root.append(cell);
+  }
+  return root;
+}

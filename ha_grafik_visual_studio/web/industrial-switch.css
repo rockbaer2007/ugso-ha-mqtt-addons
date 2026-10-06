@@ -1,0 +1,19 @@
+.industrial-switch { position:relative; width:100%; height:100%; box-sizing:border-box; display:grid; gap:0; padding:2px; overflow:hidden; }
+.industrial-switch.industrial-housing { border:2px solid #879097; background:linear-gradient(135deg,#333d43,#172027); box-shadow:inset 0 0 3px #000; }
+.industrial-switch-cell { min-width:0; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+.industrial-led { flex:0 0 auto; width:8px; height:8px; border-radius:50%; border:1px solid #080c0e; background:radial-gradient(circle at 35% 30%,#ffffffbf,transparent 45%),radial-gradient(circle at 50% 45%,var(--led-color) 35%,#111 100%); box-shadow:inset 0 0 2px #000,0 1px 1px #ffffff55; }
+.industrial-led.is-on { box-shadow:inset 0 0 2px #000,0 0 4px var(--led-color); }
+.industrial-led.is-unknown { opacity:.35; }
+.industrial-switch-caption { max-width:100%; flex:0 0 auto; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
+.industrial-toggle { position:relative; border:0; background:transparent; padding:8px 0; width:100%; min-height:18px; flex:1 1 auto; display:grid; place-items:center; cursor:pointer; }
+.industrial-toggle::before,.industrial-toggle::after { position:absolute; font:bold 8px/1 sans-serif; color:#e1e7e9; }
+.industrial-toggle::before { content:attr(data-on-label);top:0; }
+.industrial-toggle::after { content:attr(data-off-label);bottom:0; }
+.industrial-toggle:disabled { cursor:default; opacity:1; }
+.industrial-toggle-nut { display:block; position:absolute; left:50%;top:50%;transform:translate(-50%,-50%);height:min(48px,calc(100% - 16px));aspect-ratio:1; background:conic-gradient(#adb2b4,#41474b,#d3d8da,#747d82,#c6ccce,#adb2b4); clip-path:polygon(25% 0,75% 0,100% 25%,100% 75%,75% 100%,25% 100%,0 75%,0 25%); }
+.industrial-toggle-nut::before { content:""; position:absolute; inset:15%; border-radius:50%; background:radial-gradient(circle,#9fa6a9 40%,#151b1f 45%,#e7e9ea 55%,#616a70 65%,#bbc1c4); }
+.industrial-toggle-lever { position:absolute; width:30%; height:66%; left:35%; top:43%; border-radius:45% 45% 35% 35%; transform-origin:50% 10%; background:radial-gradient(ellipse at 35% 70%,#f4f6f7 0,#b3b9bd 20%,#40474c 50%,#0b1013 85%); box-shadow:1px 1px 2px #000; transition:top .12s; }
+.industrial-toggle[aria-checked="true"] .industrial-toggle-lever { top:-10%; background:radial-gradient(ellipse at 35% 25%,#f4f6f7 0,#b3b9bd 20%,#40474c 50%,#0b1013 85%); }
+.industrial-toggle:focus-visible { outline:2px solid #54cfea; outline-offset:-2px; }
+.industrial-screw { position:absolute; z-index:1; width:7px; height:7px; line-height:6px; text-align:center; border:1px solid #111; background:#92999d; color:#30383c; border-radius:50%; font-size:9px; pointer-events:none; }
+.industrial-screw.tl {top:3px;left:3px}.industrial-screw.tr {top:3px;right:3px}.industrial-screw.bl {bottom:3px;left:3px}.industrial-screw.br {bottom:3px;right:3px}

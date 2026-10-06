@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.232
+
+- Industriepaket 0.2.0 ergänzt einen Kippschalter mit 1–4 unabhängigen Kanälen, metallischem Hebel, kleiner LED, Beschriftung und festen Schildern ON/OFF, 1/0 oder EIN/AUS. Je Kanal eigene Eingangs-/Ausgangsentitäten und separat aktivierbare Koppelpunkte; Ausgabe als Schaltbefehl oder boolescher Line-Wert. Größe 1:1 bis 4:1, mindestens 64 px je Schalter.
+- Industrial package 0.2.0 adds 1–4 independent toggle switches with metallic levers, small LEDs, captions and fixed ON/OFF, 1/0 or EIN/AUS legends. Each channel supports separate input/output entities and signal ports. Aspect ratio follows channel count, with at least 64 px per switch.
+
 ## 0.1.231
 
 - Schrauben aktivieren steht direkt unter Industriestyle. Schrauben sind standardmäßig aktiv und können separat abgeschaltet werden; erneutes Einschalten von Industriestyle aktiviert sie wieder.

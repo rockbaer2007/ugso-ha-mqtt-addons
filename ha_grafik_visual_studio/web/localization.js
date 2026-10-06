@@ -6,6 +6,7 @@ const ENGLISH = {
 "Wertanzeige": "Value display", "Position des Wertes": "Value position", "Mitte": "Center", "Schriftfarbe": "Font color",
 "Rahmenbreite anpassen": "Customize frame width", "Rahmenbreite (px)": "Frame width (px)",
 "Schrauben aktivieren": "Enable screws",
+"Kippschalter – 1 bis 4": "Toggle switches – 1 to 4", "Anzahl Schalter": "Number of switches", "Koppelpunkte immer anzeigen": "Always show signal ports", "Schildbeschriftung": "Plate legend", "Startzustand": "Initial state", "Eingangs-Koppelpunkt aktivieren": "Enable input port", "Ausgangs-Koppelpunkt aktivieren": "Enable output port", "LED-Farbe Ein": "LED on color", "LED-Farbe Aus": "LED off color", "Schalter 1": "Switch 1", "Schalter 2": "Switch 2", "Schalter 3": "Switch 3", "Schalter 4": "Switch 4",
 "Gehäuse-Snappunkte": "Housing snap points", "Gehäuse-Snapping aktivieren": "Enable housing snapping",
 "Abstand rundherum (px)": "Spacing on all sides (px)", "Snappunkte dauerhaft anzeigen": "Always show snap points",
 "Farbe der Gehäuse-Snappunkte": "Housing snap point color",

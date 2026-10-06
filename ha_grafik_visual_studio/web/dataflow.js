@@ -2,6 +2,7 @@ import { dockPointActive, hasSimpleOutput } from "./dock-points.js";
 import { stringEntityValue } from "./string-display.js";
 import { numericWidgetInput, lineboxInputSum, lineboxPortRole } from "./linebox.js";
 import { mathBoxResult, mathPortRole } from "./linebox-math.js";
+import { isIndustrialSwitch, switchChannel } from "./industrial-switch.js";
 
 export const CONVERSIONS = [
   ["number-text", "Zahl → Text"], ["text-number", "Text → Zahl"],
@@ -62,6 +63,12 @@ export function widgetValuePacket(widget, widgets, states, visited = new Set(), 
   if (visited.has(`data:${widget.id}`)) return fail("Rückkopplung im Datenfluss");
   const next = new Set(visited).add(`data:${widget.id}`);
   if (!activeDock(widget, anchor, "start") || hasSimpleOutput(widget) && widget.dataOutputEnabled === false) return fail("Ausgangs-Dockpunkt ist nicht aktiv");
+  if (isIndustrialSwitch(widget)) {
+    const n=Number(anchor.split("-")[1]);
+    const input=widget[`inputDock${n}`]===true ? widgetInputPacket({...widget,dataInputAnchor:`input-${n}`},widgets,states,next).value : undefined;
+    const model=switchChannel(widget,n,states,input);
+    return typeof widget[`switchCommand${n}`]==="boolean" ? packet(widget[`switchCommand${n}`]) : model.on===null ? fail("Kein Eingangswert") : packet(model.on);
+  }
   if (widget.type === "linebox-math") {
     if (mathPortRole(widget, anchor) !== "output") return fail("Kein Berechnungsausgang");
     const result = mathBoxResult(widget, widgets, states, visited, anchor); return result.error ? fail(result.error) : packet(result.value);

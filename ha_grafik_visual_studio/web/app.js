@@ -54,6 +54,7 @@ import { isGauge, renderGauge, gaugeEntityIds } from "./gauges.js";
 import { industrialModel, industrialQuantize, renderIndustrialGauge } from "./industrial-gauge.js";
 import { HOUSING_CORNERS, housingActive, housingSnapGroup, isIndustrial, snapHousing } from "./housing-snap.js";
 import { squareLocked, industrialSize, industrialResize } from "./industrial-size.js";
+import { isIndustrialSwitch, switchCount, switchAnchors, switchBindings, renderIndustrialSwitch } from "./industrial-switch.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
@@ -182,7 +183,7 @@ const CONNECTION_ANCHORS = [
   ["bottom-quarter", "Unten 1/4", 0.25, 1], ["bottom-center", "Unten Mitte", 0.5, 1], ["bottom-three-quarter", "Unten 3/4", 0.75, 1],
 ];
 const CONNECTION_ANCHOR_IDS = CONNECTION_ANCHORS.map(([id]) => id);
-const widgetAnchors = widget => widget.type === "linebox-math" ? MATH_ANCHORS : CONNECTION_ANCHORS;
+const widgetAnchors = widget => isIndustrialSwitch(widget) ? switchAnchors(widget) : widget.type === "linebox-math" ? MATH_ANCHORS : CONNECTION_ANCHORS;
 const widgetAnchorIds = widget => widgetAnchors(widget).map(([id]) => id);
 const connectionAnchorGroup = { id: "dock-points", label: "Andockpunkte", masterKey: "dockPointsEnabled", defaultEnabled: false, hint: "Der Haken in der Überschrift aktiviert den Bereich. Alle Punkte sind zunächst aus und lassen sich gemeinsam oder einzeln einschalten.", fields: [
   ...CONNECTION_ANCHORS.map(([id, label]) => ({ label, key: dockPointKey(id), type: "checkbox", default: false })),
@@ -221,7 +222,7 @@ function widgetPropertyGroups(widget) {
     { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
   ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
-  if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") {
+  if (["industrial-gauge", "industrial-switch"].includes(getWidgetDefinition(widget.type).render?.kind)) {
     groups = groups.map(group => group.label === "Größe" ? { ...group, fields: [{ label: "Verhältnis 1:1", key: "aspectRatio1to1", type: "checkbox", default: true, refreshProperties: true }, ...group.fields] } : { ...group, fields: group.fields.filter(field => !["showValue", "unit"].includes(field.key)) });
     groups = groups.map(group => group.label === "Gehäuse und Farben" ? { ...group, fields: [...group.fields.flatMap(field => field.key === "industrialStyle" ? [{ ...field, refreshProperties: true }, { label: "Schrauben aktivieren", key: "industrialScrewsEnabled", type: "checkbox", default: true, disabled: widget.industrialStyle === false }] : [field]),
       { label: "Rahmenbreite anpassen", key: "industrialFrameWidthEnabled", type: "checkbox", default: false, refreshProperties: true },
@@ -255,6 +256,7 @@ function widgetPropertyGroups(widget) {
     { label: "Wert vom Datenfluss übernehmen", key: "dataInputEnabled", type: "checkbox", default: false },
     { label: "Eingangs-Dockpunkt", key: "dataInputAnchor", type: "select", options: CONNECTION_ANCHORS.map(([value, label]) => ({ value, label })), default: "left-center" },
   ] };
+  if (isIndustrialSwitch(widget)) return [...commonWidgetGroups, ...groups.filter(group=>!/^Schalter [1-4]$/.test(group.label) || Number(group.label.split(" ")[1])<=switchCount(widget)).map(group=>group.label==="Wertanzeige" ? {...group,label:"Beschriftung",fields:group.fields.filter(field=>["valueFontSize","valueColor"].includes(field.key))} : group.label==="Größe" ? {...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1")} : {...group,fields:group.fields.map(field=>/^switchLegend[1-4]$/.test(field.key)?{...field,options:[{value:"on-off",label:"ON/OFF"},{value:"one-zero",label:"1/0"},{value:"ein-aus",label:"EIN/AUS"}]}:field)}), ...styleEntryGroups];
   if (widget.type === "linebox-math") {
     const dockGroup = { ...connectionAnchorGroup, fields: [
       ...MATH_ANCHORS.map(([id, label]) => ({ label, key: dockPointKey(id), type: "checkbox", default: false })),
@@ -701,6 +703,7 @@ function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
     ...gaugeEntityIds(widget),
+    ...(isIndustrialSwitch(widget) ? switchBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" ? [widget.outputEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
@@ -748,6 +751,7 @@ function runtimeLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
     ...gaugeEntityIds(widget),
+    ...(isIndustrialSwitch(widget) ? switchBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" ? [widget.outputEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
@@ -2841,6 +2845,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   if (!pageFilters.has(filterKey)) pageFilters.set(filterKey, defaultFilters(activePage.widgets.find(widget => widget.type === "filter-dropdown") || {}));
   const selectedFilters = pageFilters.get(filterKey);
   for (const widget of activePage.widgets) {
+    if (isIndustrialSwitch(widget)) { widget.height=Math.max(64,Math.min(1024,Number(widget.height)||128));widget.width=widget.height*switchCount(widget); }
     if (widget.type === "dashboard-in-widget") Object.assign(widget, dashboardSize(widget));
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") Object.assign(widget, industrialSize(widget));
@@ -2926,6 +2931,13 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(renderSeparator(widget, document));
     } else if (isGauge(widget)) {
       content.append(renderGauge(widget, document, { states: state.entityStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
+    } else if (isIndustrialSwitch(widget)) {
+      content.style.padding="0";content.style.border="0";
+      const inputs=Object.fromEntries(Array.from({length:switchCount(widget)},(_,i)=>[i+1,widget[`inputDock${i+1}`]===true ? widgetInputPacket({...widget,dataInputAnchor:`input-${i+1}`},activePage.widgets,state.entityStates,new Set([`data:${widget.id}`])).value : undefined]));
+      content.append(renderIndustrialSwitch(widget,document,{runtime:runtimeMode,states:state.entityStates,inputs,onSettled:()=>renderStage(),onCommit:async(n,value,target)=>{
+        if(target){const response=await fetch("api/switch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({entity_id:target,enabled:value})});if(!response.ok || (await response.json()).accepted!==true)throw new Error("Switch action failed");await refreshRuntimeStates();}
+        widget[`switchState${n}`]=value;widget[`switchCommand${n}`]=value;
+      }}));
     } else if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") {
       content.style.padding = "0"; content.style.border = "0";
       if (runtimeMode && !widget.entityId && widget.dataInputEnabled !== true) widget.state = industrialQuantize(widget, widget.state);
@@ -3681,12 +3693,12 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       if (!housingActive(widget, id)) continue;
       const point = document.createElement("span"); point.className = "housing-snap-point"; point.dataset.housingCorner = id; point.style.left = `${x * 100}%`; point.style.top = `${y * 100}%`; point.title = `Gehäuse-Snappunkt: ${label}`; element.append(point);
     }
-    const showDockPoints = !runtimeMode && !isConnection && !isSeparator(widget) && (widget.dockPointsEnabled === true || widget.dataOutputEnabled === true) && (selected || widget.dockAlwaysVisible || hasConnections);
+    const showDockPoints = !runtimeMode && !isConnection && !isSeparator(widget) && (isIndustrialSwitch(widget) || widget.dockPointsEnabled === true || widget.dataOutputEnabled === true) && (selected || widget.dockAlwaysVisible || hasConnections);
     if (showDockPoints) {
       for (const [anchorId, label, x, y] of widgetAnchors(widget)) {
         if (!dockPointActive(widget, anchorId)) continue;
         const marker = document.createElement("span"); marker.className = "widget-dock-point"; marker.style.left = `${x * 100}%`; marker.style.top = `${y * 100}%`; marker.dataset.anchorId = anchorId; marker.dataset.widgetId = widget.id;
-        const isOutput = outputDockActive(widget, anchorId) || widget.type === "value-converter" && anchorId === (widget.dataOutputAnchor || "right-center") || widget.type === "linebox" && lineboxPortRole(widget, anchorId) === "output" || widget.type === "linebox-math" && mathPortRole(widget, anchorId) === "output";
+        const isOutput = isIndustrialSwitch(widget) && anchorId.startsWith("output-") || outputDockActive(widget, anchorId) || widget.type === "value-converter" && anchorId === (widget.dataOutputAnchor || "right-center") || widget.type === "linebox" && lineboxPortRole(widget, anchorId) === "output" || widget.type === "linebox-math" && mathPortRole(widget, anchorId) === "output";
         if (isOutput) { marker.classList.add("output-dock-point"); marker.style.setProperty("--dock-color", "var(--output-dock-color)"); }
         const occupied = activePage.widgets.filter(item => item.type === "svg-connection" && [[item.startWidgetId, item.startAnchor], [item.endWidgetId, item.endAnchor]].some(([id, anchor]) => id === widget.id && (anchor || "right-center") === anchorId)).length;
         marker.dataset.count = String(occupied); marker.title = `${label}${occupied ? ` · ${occupied} Verbindung${occupied === 1 ? "" : "en"}` : ""}`; element.append(marker);
@@ -3926,6 +3938,12 @@ function makeResizable(element, handle, widget) {
     if (direction.includes("n")) { widget.height = Math.max(16, Math.round(origin.height - dy)); widget.y = Math.max(0, Math.round(origin.top + origin.height - widget.height)); }
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") {
       Object.assign(widget, industrialResize(origin, direction, dx, dy, squareLocked(widget)));
+      syncIndustrialSizeFields(widget);
+    }
+    if (isIndustrialSwitch(widget)) {
+      const count=switchCount(widget);widget.height=Math.max(64,Math.min(1024,Math.round(/[ew]/.test(direction)?widget.width/count:widget.height)));widget.width=widget.height*count;
+      if(direction.includes("w"))widget.x=Math.max(0,origin.left+origin.width-widget.width);
+      if(direction.includes("n"))widget.y=Math.max(0,origin.top+origin.height-widget.height);
       syncIndustrialSizeFields(widget);
     }
     if (widget.type === "linebox-math") {
@@ -4391,7 +4409,12 @@ function field(descriptor, widget) {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
     if (["count", "dataCount", "decimalPlaces", "countEventColorRules", "countCalendarSources", "countColumns", "countDefaultSortColumns", "countRowConditions", "countCustomOptions", "countBgConditions"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
-    if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && descriptor.key === "industrialStyle" && input.checked) widget.industrialScrewsEnabled = true;
+    if (["industrial-gauge","industrial-switch"].includes(getWidgetDefinition(widget.type).render?.kind) && descriptor.key === "industrialStyle" && input.checked) widget.industrialScrewsEnabled = true;
+    if(isIndustrialSwitch(widget)) {
+      if(["width","height","switchCount"].includes(descriptor.key)){widget.switchCount=switchCount(widget);widget.height=Math.max(64,Math.min(1024,Math.round(descriptor.key==="width"?widget.width/switchCount(widget):Number(widget.height)||128)));widget.width=widget.height*switchCount(widget);syncIndustrialSizeFields(widget,descriptor.key);}
+      if(/^(inputEntityId|outputEntityId)[1-4]$/.test(descriptor.key))void refreshEditorLiveStates();
+      if(descriptor.key==="switchCount")renderProperties();
+    }
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["entityId", "outputEntityId"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["width", "height", "aspectRatio1to1"].includes(descriptor.key)) {
       Object.assign(widget, industrialSize(widget, descriptor.key));
@@ -4439,7 +4462,7 @@ function field(descriptor, widget) {
     }
   };
   input.addEventListener(input.tagName === "SELECT" ? "change" : "input", update);
-  if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["width", "height"].includes(descriptor.key)) input.addEventListener("change", () => { input.value = String(widget[descriptor.key]); syncIndustrialSizeFields(widget); });
+  if (["industrial-gauge","industrial-switch"].includes(getWidgetDefinition(widget.type).render?.kind) && ["width", "height"].includes(descriptor.key)) input.addEventListener("change", () => { input.value = String(widget[descriptor.key]); syncIndustrialSizeFields(widget); });
   if (descriptor.refreshProperties && input.tagName === "TEXTAREA") input.addEventListener("change", renderProperties);
   if (descriptor.refreshProperties && ["number", "range"].includes(input.type)) input.addEventListener("change", renderProperties);
   if (widget.type === "value-list-html-style" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
@@ -5045,8 +5068,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.231" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.231" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.232" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.232" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
