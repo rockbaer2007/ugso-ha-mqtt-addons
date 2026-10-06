@@ -78,16 +78,16 @@ test("value display supports center, lower position, pixel font size and safe co
   assert.equal(text({valueFontSize:100}).attributes["font-size"],"72");
 });
 
-test("housing frame supports color thickness and independent visibility", () => {
-  const root=renderIndustrialGauge({...config,industrialFrameColor:"#ffcc00",industrialFrameWidth:5},doc);
+test("housing frame width override falls back to the current default when disabled", () => {
+  const root=renderIndustrialGauge({...config,industrialFrameColor:"#ffcc00",industrialFrameWidthEnabled:true,industrialFrameWidth:5},doc);
   assert.equal(root.style.borderColor,"#ffcc00");
   assert.equal(root.style.borderWidth,"5px");
-  const hidden=renderIndustrialGauge({...config,industrialFrameEnabled:false},doc);
-  assert.equal(hidden.style.borderWidth,"0px");
-  assert.equal(nodes(hidden).filter(n=>n.tag==="circle").length,5);
+  const standard=renderIndustrialGauge({...config,industrialFrameWidthEnabled:false,industrialFrameWidth:5},doc);
+  assert.equal(standard.style.borderWidth,"2px");
+  assert.equal(nodes(standard).filter(n=>n.tag==="circle").length,5);
   assert.equal(renderIndustrialGauge(config,doc).style.borderWidth,"2px");
   assert.equal(renderIndustrialGauge({...config,industrialStyle:false},doc).style.borderWidth,"0px");
-  assert.equal(renderIndustrialGauge({...config,industrialFrameWidth:100},doc).style.borderWidth,"16px");
+  assert.equal(renderIndustrialGauge({...config,industrialFrameWidthEnabled:true,industrialFrameWidth:100},doc).style.borderWidth,"16px");
 });
 
 test("editor remains passive; keyboard and release commit only runtime changes", () => {

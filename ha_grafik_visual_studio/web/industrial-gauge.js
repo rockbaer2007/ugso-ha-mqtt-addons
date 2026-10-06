@@ -53,7 +53,7 @@ export function renderIndustrialGauge(widget, doc, context = {}) {
   const unit = String(widget.unit || (widget.dataInputEnabled !== true ? context.states?.[widget.entityId]?.attributes?.unit_of_measurement : "") || "");
   const enabled = Boolean(context.runtime && !model.gauge && model.valid);
   root.classList.toggle("industrial-housing", widget.industrialStyle !== false);
-  const frameWidth = widget.industrialStyle !== false && widget.industrialFrameEnabled !== false ? Math.max(1, Math.min(16, finite(widget.industrialFrameWidth) ?? 2)) : 0;
+  const frameWidth = widget.industrialStyle === false ? 0 : widget.industrialFrameWidthEnabled === true ? Math.max(1, Math.min(16, finite(widget.industrialFrameWidth) ?? 2)) : 2;
   const frameColor = /^#[0-9a-f]{6}$/i.test(widget.industrialFrameColor || "") ? widget.industrialFrameColor : "#879097";
   root.style.borderWidth = `${frameWidth}px`;
   root.style.borderColor = frameColor;

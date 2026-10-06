@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.230
+
+- Checkbox korrigiert zu „Rahmenbreite anpassen“: ohne Haken gilt die bestehende 2-px-Breite, mit Haken die eigene Breite. Der eigene Wert bleibt beim Abschalten gespeichert; der Rahmen bleibt sichtbar.
+- Corrects the checkbox to Customize frame width: unchecked uses the existing 2 px width; checked uses the custom width. The custom value is retained when disabled, and the frame remains visible.
+
 ## 0.1.229
 
 - Gehäuse und Farben ergänzt Rahmen anzeigen, Rahmenfarbe und Rahmenstärke (1–16 px). Standard bleibt 2 px. Der Rahmen lässt sich unabhängig von Gehäuse und Schrauben ausschalten.
