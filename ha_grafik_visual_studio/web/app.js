@@ -3670,7 +3670,8 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       for (const [anchorId, label, x, y] of widgetAnchors(widget)) {
         if (!dockPointActive(widget, anchorId)) continue;
         const marker = document.createElement("span"); marker.className = "widget-dock-point"; marker.style.left = `${x * 100}%`; marker.style.top = `${y * 100}%`; marker.dataset.anchorId = anchorId; marker.dataset.widgetId = widget.id;
-        if (outputDockActive(widget, anchorId)) { marker.classList.add("output-dock-point"); marker.style.setProperty("--dock-color", "var(--output-dock-color)"); }
+        const isOutput = outputDockActive(widget, anchorId) || widget.type === "value-converter" && anchorId === (widget.dataOutputAnchor || "right-center") || widget.type === "linebox" && lineboxPortRole(widget, anchorId) === "output" || widget.type === "linebox-math" && mathPortRole(widget, anchorId) === "output";
+        if (isOutput) { marker.classList.add("output-dock-point"); marker.style.setProperty("--dock-color", "var(--output-dock-color)"); }
         const occupied = activePage.widgets.filter(item => item.type === "svg-connection" && [[item.startWidgetId, item.startAnchor], [item.endWidgetId, item.endAnchor]].some(([id, anchor]) => id === widget.id && (anchor || "right-center") === anchorId)).length;
         marker.dataset.count = String(occupied); marker.title = `${label}${occupied ? ` · ${occupied} Verbindung${occupied === 1 ? "" : "en"}` : ""}`; element.append(marker);
         if (widget.type === "linebox-math") {
@@ -5019,8 +5020,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.224" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.224" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.225" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.225" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

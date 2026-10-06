@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.225
+
+- Output dock colors now also apply to Value Converter, LineBox and LineBox Math outputs, including occupied Math points. Input colors and port behavior remain unchanged.
+- Die eingestellte Ausgangspunktfarbe gilt jetzt auch für Wert-Konverter, LineBox und LineBox Math; feste Math-Farben überdecken die Ausgangsfarbe nicht mehr.
+
 ## 0.1.224
 
 - Industrial housing now respects the shared CSS corner radius.

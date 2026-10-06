@@ -622,6 +622,7 @@ html[lang="en"] .alignment-toolbar::after { content: "Align"; }
 .widget-dock-point.is-snap-target { z-index: 41; box-shadow: 0 0 0 4px #fff, 0 0 12px 6px var(--dock-color, #ffd54f); transform: translate(-50%, -50%) scale(1.45); }
 .widget-dock-point.math-dock-point, .math-port-letter { width: 20px; height: 20px; border: 2px solid #202a30; border-radius: 3px; background: #ffc078; color: #172126; font: bold 12px/16px sans-serif; text-align: center; }
 .widget-dock-point.math-dock-point.is-occupied, .math-port-letter.is-occupied { background: #69db7c; }
+.widget-dock-point.output-dock-point, .widget-dock-point.math-dock-point.output-dock-point { background: var(--output-dock-color, #74c0fc); }
 .widget-dock-point.math-dock-point::after { display: none; }
 .linebox-math-content { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
 .linebox-math-content strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
