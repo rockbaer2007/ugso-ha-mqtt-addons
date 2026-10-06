@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.229
+
+- Gehäuse und Farben ergänzt Rahmen anzeigen, Rahmenfarbe und Rahmenstärke (1–16 px). Standard bleibt 2 px. Der Rahmen lässt sich unabhängig von Gehäuse und Schrauben ausschalten.
+- Housing and colors adds Show frame, frame color and thickness (1–16 px), defaulting to 2 px. The frame can be hidden independently of the housing and screws.
+
 ## 0.1.228
 
 - Gauge/Poti erhält den eigenen Eigenschaftenbereich Wertanzeige: Mitte oder tiefere untere Position, Schriftgröße in Pixeln und Schriftfarbe. Standard ist unten mit 12 px; die Schriftgröße bleibt beim Vergrößern des Widgets konstant.

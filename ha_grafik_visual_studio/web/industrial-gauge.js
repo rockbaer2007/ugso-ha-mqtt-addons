@@ -53,6 +53,10 @@ export function renderIndustrialGauge(widget, doc, context = {}) {
   const unit = String(widget.unit || (widget.dataInputEnabled !== true ? context.states?.[widget.entityId]?.attributes?.unit_of_measurement : "") || "");
   const enabled = Boolean(context.runtime && !model.gauge && model.valid);
   root.classList.toggle("industrial-housing", widget.industrialStyle !== false);
+  const frameWidth = widget.industrialStyle !== false && widget.industrialFrameEnabled !== false ? Math.max(1, Math.min(16, finite(widget.industrialFrameWidth) ?? 2)) : 0;
+  const frameColor = /^#[0-9a-f]{6}$/i.test(widget.industrialFrameColor || "") ? widget.industrialFrameColor : "#879097";
+  root.style.borderWidth = `${frameWidth}px`;
+  root.style.borderColor = frameColor;
   root.style.borderRadius = `${Math.max(0, Math.min(200, finite(widget.radius) ?? 4))}px`;
   root.setAttribute("role", enabled ? "slider" : "img"); root.setAttribute("aria-label", widget.heading || "Gauge/Poti");
   root.tabIndex = enabled ? 0 : -1; root.setAttribute("aria-disabled", String(!enabled));
@@ -73,7 +77,7 @@ export function renderIndustrialGauge(widget, doc, context = {}) {
   }
   if (!model.gauge) shape("circle", { cx: 64, cy: 64, r: 29, fill: "#303a40", stroke: "#7f8a90", "stroke-width": 2 });
   const pointer = shape("polygon", { points: "64,23 59,34 69,34", fill: widget.pointerColor || "#f2f5f6" });
-  const displaySize = Math.max(1, Math.min(finite(widget.width) ?? 64, finite(widget.height) ?? 64) - (widget.industrialStyle !== false ? 4 : 0));
+  const displaySize = Math.max(1, Math.min(finite(widget.width) ?? 64, finite(widget.height) ?? 64) - 2 * frameWidth);
   const fontSize = Math.max(6, Math.min(72, finite(widget.valueFontSize) ?? 12)) * 128 / displaySize;
   const valueColor = /^#[0-9a-f]{6}$/i.test(widget.valueColor || "") ? widget.valueColor : "#dce5e9";
   const output = shape("text", { x: 64, y: widget.valuePosition === "center" ? 64 : 110, "dominant-baseline": "middle", "text-anchor": "middle", fill: valueColor, "font-size": fontSize });

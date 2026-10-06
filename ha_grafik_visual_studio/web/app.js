@@ -223,6 +223,11 @@ function widgetPropertyGroups(widget) {
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
   if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") {
     groups = groups.map(group => group.label === "Größe" ? { ...group, fields: [{ label: "Verhältnis 1:1", key: "aspectRatio1to1", type: "checkbox", default: true, refreshProperties: true }, ...group.fields] } : { ...group, fields: group.fields.filter(field => !["showValue", "unit"].includes(field.key)) });
+    groups = groups.map(group => group.label === "Gehäuse und Farben" ? { ...group, fields: [...group.fields,
+      { label: "Rahmen anzeigen", key: "industrialFrameEnabled", type: "checkbox", default: true },
+      { label: "Rahmenfarbe", key: "industrialFrameColor", type: "color", default: "#879097" },
+      { label: "Rahmenstärke (px)", key: "industrialFrameWidth", type: "number", default: 2, min: 1, max: 16 },
+    ] } : group);
     groups.splice(1, 0, { label: "Wertanzeige", fields: [
       { label: "Wert anzeigen", key: "showValue", type: "checkbox", default: false },
       { label: "Einheit", key: "unit", default: "" },
@@ -5039,8 +5044,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.228" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.228" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.229" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.229" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

@@ -44,6 +44,14 @@ test("housing radius, corner flags, settings color and dragging work in the edit
     assert.equal(await page.locator("#right .industrial-gauge text").getAttribute("fill"),"#ffcc00");
     await page.locator("#properties [data-property-key='valuePosition']").selectOption("bottom");
     assert.equal(await page.locator("#right .industrial-gauge text").getAttribute("y"),"110");
+    await page.locator("#properties [data-property-key='industrialFrameWidth']").fill("5");
+    await page.locator("#properties [data-property-key='industrialFrameColor']").evaluate(el=>{el.value="#ffcc00";el.dispatchEvent(new Event("input",{bubbles:true}));});
+    assert.equal(await page.locator("#right .industrial-gauge").evaluate(el=>getComputedStyle(el).borderTopWidth),"5px");
+    assert.equal(await page.locator("#right .industrial-gauge").evaluate(el=>getComputedStyle(el).borderTopColor),"rgb(255, 204, 0)");
+    await page.locator("#properties [data-property-key='industrialFrameEnabled']").uncheck();
+    assert.equal(await page.locator("#right .industrial-gauge").evaluate(el=>getComputedStyle(el).borderTopWidth),"0px");
+    await page.locator("#properties [data-property-key='industrialFrameEnabled']").check();
+    assert.equal(await page.locator("#right .industrial-gauge").evaluate(el=>getComputedStyle(el).borderTopWidth),"5px");
     const width=page.locator("#properties [data-property-key='width']").first(),height=page.locator("#properties [data-property-key='height']").first();
     assert.equal(await lock.isChecked(),true);
     await width.fill("192");await width.press("Tab");assert.equal(await height.inputValue(),"192");
