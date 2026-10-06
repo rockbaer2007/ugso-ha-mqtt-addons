@@ -63,7 +63,7 @@ export function renderIndustrialGauge(widget, doc, context = {}) {
   root.setAttribute("aria-valuemin", model.min); root.setAttribute("aria-valuemax", model.max);
   const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 128 128"); svg.setAttribute("aria-hidden", "true"); root.append(svg);
   const shape = (name, attrs) => { const node = doc.createElementNS("http://www.w3.org/2000/svg", name); for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value)); svg.append(node); return node; };
-  if (widget.industrialStyle !== false) for (const [x, y] of [[10, 10], [118, 10], [10, 118], [118, 118]]) {
+  if (widget.industrialStyle !== false && widget.industrialScrewsEnabled !== false) for (const [x, y] of [[10, 10], [118, 10], [10, 118], [118, 118]]) {
     shape("circle", { cx: x, cy: y, r: 4, fill: "#92999d", stroke: "#11181c", "stroke-width": 1 });
     shape("path", { d: `M${x - 2},${y - 2}L${x + 2},${y + 2}M${x - 2},${y + 2}L${x + 2},${y - 2}`, stroke: "#30383c", "stroke-width": 1 });
   }

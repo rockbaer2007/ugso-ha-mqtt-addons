@@ -90,6 +90,15 @@ test("housing frame width override falls back to the current default when disabl
   assert.equal(renderIndustrialGauge({...config,industrialFrameWidthEnabled:true,industrialFrameWidth:100},doc).style.borderWidth,"16px");
 });
 
+test("screws default on with industrial styling and can be hidden independently", () => {
+  const count=widget=>nodes(renderIndustrialGauge({...config,...widget},doc)).filter(n=>n.tag==="circle"&&n.attributes.r==="4").length;
+  assert.equal(count({}),4);
+  assert.equal(count({industrialScrewsEnabled:false}),0);
+  assert.equal(count({industrialScrewsEnabled:true}),4);
+  assert.equal(count({industrialStyle:false,industrialScrewsEnabled:true}),0);
+  assert.equal(renderIndustrialGauge({...config,industrialScrewsEnabled:false},doc).style.borderWidth,"2px");
+});
+
 test("editor remains passive; keyboard and release commit only runtime changes", () => {
   let commits=[]; const context={runtime:true,onCommit:v=>commits.push(v)};
   const editor=renderIndustrialGauge(config,doc,{...context,runtime:false});

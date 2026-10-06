@@ -5,6 +5,7 @@ const ENGLISH = {
 "Verhältnis 1:1": "1:1 aspect ratio",
 "Wertanzeige": "Value display", "Position des Wertes": "Value position", "Mitte": "Center", "Schriftfarbe": "Font color",
 "Rahmenbreite anpassen": "Customize frame width", "Rahmenbreite (px)": "Frame width (px)",
+"Schrauben aktivieren": "Enable screws",
 "Gehäuse-Snappunkte": "Housing snap points", "Gehäuse-Snapping aktivieren": "Enable housing snapping",
 "Abstand rundherum (px)": "Spacing on all sides (px)", "Snappunkte dauerhaft anzeigen": "Always show snap points",
 "Farbe der Gehäuse-Snappunkte": "Housing snap point color",

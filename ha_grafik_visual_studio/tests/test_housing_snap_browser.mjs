@@ -35,6 +35,17 @@ test("housing radius, corner flags, settings color and dragging work in the edit
     await page.locator("#right .industrial-gauge").click();
     await page.locator("#properties details").evaluateAll(items=>items.forEach(item=>item.open=true));
     const lock=page.locator("#properties [data-property-key='aspectRatio1to1']");
+    const screws=page.locator("#properties [data-property-key='industrialScrewsEnabled']"),style=page.locator("#properties [data-property-key='industrialStyle']");
+    assert.equal(await screws.isChecked(),true);
+    await screws.uncheck();
+    assert.equal(await page.locator("#right .industrial-gauge circle[r='4']").count(),0);
+    await style.uncheck();
+    await page.locator("#properties details").evaluateAll(items=>items.forEach(item=>item.open=true));
+    assert.equal(await screws.isDisabled(),true);
+    await style.check();
+    await page.locator("#properties details").evaluateAll(items=>items.forEach(item=>item.open=true));
+    assert.equal(await screws.isChecked(),true);
+    assert.equal(await page.locator("#right .industrial-gauge circle[r='4']").count(),4);
     assert.ok((await page.locator("#properties").textContent()).includes("Wertanzeige"));
     await page.locator("#properties [data-property-key='showValue']").check();
     await page.locator("#properties [data-property-key='valuePosition']").selectOption("center");

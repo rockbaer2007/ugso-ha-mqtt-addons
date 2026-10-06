@@ -223,7 +223,7 @@ function widgetPropertyGroups(widget) {
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
   if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") {
     groups = groups.map(group => group.label === "Größe" ? { ...group, fields: [{ label: "Verhältnis 1:1", key: "aspectRatio1to1", type: "checkbox", default: true, refreshProperties: true }, ...group.fields] } : { ...group, fields: group.fields.filter(field => !["showValue", "unit"].includes(field.key)) });
-    groups = groups.map(group => group.label === "Gehäuse und Farben" ? { ...group, fields: [...group.fields,
+    groups = groups.map(group => group.label === "Gehäuse und Farben" ? { ...group, fields: [...group.fields.flatMap(field => field.key === "industrialStyle" ? [{ ...field, refreshProperties: true }, { label: "Schrauben aktivieren", key: "industrialScrewsEnabled", type: "checkbox", default: true, disabled: widget.industrialStyle === false }] : [field]),
       { label: "Rahmenbreite anpassen", key: "industrialFrameWidthEnabled", type: "checkbox", default: false, refreshProperties: true },
       { label: "Rahmenfarbe", key: "industrialFrameColor", type: "color", default: "#879097" },
       { label: "Rahmenbreite (px)", key: "industrialFrameWidth", type: "number", default: 2, min: 1, max: 16, disabled: widget.industrialFrameWidthEnabled !== true },
@@ -4391,6 +4391,7 @@ function field(descriptor, widget) {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
     if (["count", "dataCount", "decimalPlaces", "countEventColorRules", "countCalendarSources", "countColumns", "countDefaultSortColumns", "countRowConditions", "countCustomOptions", "countBgConditions"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && descriptor.key === "industrialStyle" && input.checked) widget.industrialScrewsEnabled = true;
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["entityId", "outputEntityId"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["width", "height", "aspectRatio1to1"].includes(descriptor.key)) {
       Object.assign(widget, industrialSize(widget, descriptor.key));
@@ -5044,8 +5045,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.230" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.230" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.231" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.231" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

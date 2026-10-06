@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.231
+
+- Schrauben aktivieren steht direkt unter Industriestyle. Schrauben sind standardmäßig aktiv und können separat abgeschaltet werden; erneutes Einschalten von Industriestyle aktiviert sie wieder.
+- Enable screws appears directly below Industrial styling. Screws are enabled by default and can be disabled independently; turning Industrial styling back on enables them again.
+
 ## 0.1.230
 
 - Checkbox korrigiert zu „Rahmenbreite anpassen“: ohne Haken gilt die bestehende 2-px-Breite, mit Haken die eigene Breite. Der eigene Wert bleibt beim Abschalten gespeichert; der Rahmen bleibt sichtbar.
