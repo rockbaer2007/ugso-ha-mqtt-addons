@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.228
+
+- Gauge/Poti erhält den eigenen Eigenschaftenbereich Wertanzeige: Mitte oder tiefere untere Position, Schriftgröße in Pixeln und Schriftfarbe. Standard ist unten mit 12 px; die Schriftgröße bleibt beim Vergrößern des Widgets konstant.
+- Gauge/Poti adds a dedicated Value display group: center or lower bottom position, font size in pixels and font color. The default is bottom with 12 px; font size stays constant when the widget is resized.
+
 ## 0.1.227
 
 - Gauge/Poti zeigt Messwert und Einheit auch bei fehlerhaften Farbgrenzen oder Skalen an. Eine leere Einheit übernimmt die Home-Assistant-Einheit der Eingangsentity; Skalenwarnungen bleiben im Tooltip sichtbar.

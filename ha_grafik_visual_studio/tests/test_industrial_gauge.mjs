@@ -67,6 +67,17 @@ test("solar reading and unit remain visible despite invalid color thresholds", (
   assert.equal(nodes(missing).find(n=>n.tag==="text").textContent,"—");
 });
 
+test("value display supports center, lower position, pixel font size and safe colors", () => {
+  const widget={...config,width:132,height:132,showValue:true,valueFontSize:18,valueColor:"#ffcc00"};
+  const text=options=>nodes(renderIndustrialGauge({...widget,...options},doc)).find(n=>n.tag==="text");
+  assert.equal(text({}).attributes.y,"110");
+  assert.equal(text({valuePosition:"center"}).attributes.y,"64");
+  assert.equal(text({}).attributes["font-size"],"18");
+  assert.equal(text({}).attributes.fill,"#ffcc00");
+  assert.equal(text({valueColor:"url(https://example.org)"}).attributes.fill,"#dce5e9");
+  assert.equal(text({valueFontSize:100}).attributes["font-size"],"72");
+});
+
 test("editor remains passive; keyboard and release commit only runtime changes", () => {
   let commits=[]; const context={runtime:true,onCommit:v=>commits.push(v)};
   const editor=renderIndustrialGauge(config,doc,{...context,runtime:false});

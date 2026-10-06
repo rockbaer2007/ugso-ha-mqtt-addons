@@ -73,7 +73,10 @@ export function renderIndustrialGauge(widget, doc, context = {}) {
   }
   if (!model.gauge) shape("circle", { cx: 64, cy: 64, r: 29, fill: "#303a40", stroke: "#7f8a90", "stroke-width": 2 });
   const pointer = shape("polygon", { points: "64,23 59,34 69,34", fill: widget.pointerColor || "#f2f5f6" });
-  const output = shape("text", { x: 64, y: 96, "text-anchor": "middle", fill: "#dce5e9", "font-size": 9 });
+  const displaySize = Math.max(1, Math.min(finite(widget.width) ?? 64, finite(widget.height) ?? 64) - (widget.industrialStyle !== false ? 4 : 0));
+  const fontSize = Math.max(6, Math.min(72, finite(widget.valueFontSize) ?? 12)) * 128 / displaySize;
+  const valueColor = /^#[0-9a-f]{6}$/i.test(widget.valueColor || "") ? widget.valueColor : "#dce5e9";
+  const output = shape("text", { x: 64, y: widget.valuePosition === "center" ? 64 : 110, "dominant-baseline": "middle", "text-anchor": "middle", fill: valueColor, "font-size": fontSize });
   const update = value => {
     root.dataset.value = value == null ? "" : String(value);
     pointer.style.display = value == null || !model.valid ? "none" : "";

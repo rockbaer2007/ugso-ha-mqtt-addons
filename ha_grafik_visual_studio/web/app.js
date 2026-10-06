@@ -221,7 +221,16 @@ function widgetPropertyGroups(widget) {
     { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
   ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
-  if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") groups = groups.map(group => group.label === "Größe" ? { ...group, fields: [{ label: "Verhältnis 1:1", key: "aspectRatio1to1", type: "checkbox", default: true, refreshProperties: true }, ...group.fields] } : group);
+  if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") {
+    groups = groups.map(group => group.label === "Größe" ? { ...group, fields: [{ label: "Verhältnis 1:1", key: "aspectRatio1to1", type: "checkbox", default: true, refreshProperties: true }, ...group.fields] } : { ...group, fields: group.fields.filter(field => !["showValue", "unit"].includes(field.key)) });
+    groups.splice(1, 0, { label: "Wertanzeige", fields: [
+      { label: "Wert anzeigen", key: "showValue", type: "checkbox", default: false },
+      { label: "Einheit", key: "unit", default: "" },
+      { label: "Position des Wertes", key: "valuePosition", type: "select", default: "bottom", options: [{ value: "center", label: "Mitte" }, { value: "bottom", label: "Unten" }] },
+      { label: "Schriftgröße (px)", key: "valueFontSize", type: "number", default: 12, min: 6, max: 72 },
+      { label: "Schriftfarbe", key: "valueColor", type: "color", default: "#dce5e9" },
+    ] });
+  }
   if (getWidgetDefinition(widget.type).render?.kind === "chart") groups = groups.filter(group => !/^Daten \[(\d+)\]$/.test(group.label) || Number(group.label.match(/\d+/)[0]) <= Math.min(10, Math.max(1, Number(widget.dataCount) || 1)));
   if (widget.type === "filter-dropdown") groups = groups.map(group => ({ ...group, fields: group.fields.filter(field => field.key !== "variant" || widget.filterType !== "dropdown") }));
   if (["value-list-html", "value-list-html-style"].includes(widget.type)) {
@@ -5030,8 +5039,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.227" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.227" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.228" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.228" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

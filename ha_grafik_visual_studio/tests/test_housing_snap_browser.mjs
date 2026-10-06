@@ -35,6 +35,15 @@ test("housing radius, corner flags, settings color and dragging work in the edit
     await page.locator("#right .industrial-gauge").click();
     await page.locator("#properties details").evaluateAll(items=>items.forEach(item=>item.open=true));
     const lock=page.locator("#properties [data-property-key='aspectRatio1to1']");
+    assert.ok((await page.locator("#properties").textContent()).includes("Wertanzeige"));
+    await page.locator("#properties [data-property-key='showValue']").check();
+    await page.locator("#properties [data-property-key='valuePosition']").selectOption("center");
+    await page.locator("#properties [data-property-key='valueFontSize']").fill("18");
+    await page.locator("#properties [data-property-key='valueColor']").evaluate(el=>{el.value="#ffcc00";el.dispatchEvent(new Event("input",{bubbles:true}));});
+    assert.equal(await page.locator("#right .industrial-gauge text").getAttribute("y"),"64");
+    assert.equal(await page.locator("#right .industrial-gauge text").getAttribute("fill"),"#ffcc00");
+    await page.locator("#properties [data-property-key='valuePosition']").selectOption("bottom");
+    assert.equal(await page.locator("#right .industrial-gauge text").getAttribute("y"),"110");
     const width=page.locator("#properties [data-property-key='width']").first(),height=page.locator("#properties [data-property-key='height']").first();
     assert.equal(await lock.isChecked(),true);
     await width.fill("192");await width.press("Tab");assert.equal(await height.inputValue(),"192");
