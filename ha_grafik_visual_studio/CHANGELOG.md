@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.233
+
+- Industrie-Kippschalter verwendet die bereitgestellte transparente PNG-Grafik für Ein und Aus statt des CSS-Hebels. Die Zustände werden aus getrennten Bildbereichen dargestellt; LED, Schilder und Anschlüsse bleiben unverändert.
+- Industrial toggle switches use the supplied transparent PNG for on/off states instead of the CSS lever. Separate image regions provide both states; LEDs, legends and ports retain their behavior.
+
 ## 0.1.232
 
 - Industriepaket 0.2.0 ergänzt einen Kippschalter mit 1–4 unabhängigen Kanälen, metallischem Hebel, kleiner LED, Beschriftung und festen Schildern ON/OFF, 1/0 oder EIN/AUS. Je Kanal eigene Eingangs-/Ausgangsentitäten und separat aktivierbare Koppelpunkte; Ausgabe als Schaltbefehl oder boolescher Line-Wert. Größe 1:1 bis 4:1, mindestens 64 px je Schalter.

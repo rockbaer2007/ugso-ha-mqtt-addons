@@ -43,7 +43,8 @@ export function renderIndustrialSwitch(widget,doc,{runtime=false,states={},input
     const button=doc.createElement("button");button.type="button";button.className="industrial-toggle";button.setAttribute("role","switch");button.setAttribute("aria-label",label.textContent);button.setAttribute("aria-checked",String(channel.on===true));button.disabled=!runtime || !channel.writable || channel.on===null || pending.has(key);button.title=failed.has(key)?"Schalten fehlgeschlagen":channel.on===null?"Kein Eingangswert":"";
     const legend={"on-off":["ON","OFF"],"one-zero":["1","0"],"ein-aus":["EIN","AUS"]}[widget[`switchLegend${n}`]] || ["ON","OFF"];
     button.dataset.onLabel=legend[0];button.dataset.offLabel=legend[1];
-    const nut=doc.createElement("span");nut.className="industrial-toggle-nut";const lever=doc.createElement("span");lever.className="industrial-toggle-lever";nut.append(lever);button.append(nut);
+    const art=doc.createElementNS("http://www.w3.org/2000/svg","svg");art.classList.add("industrial-toggle-art");art.setAttribute("viewBox",channel.on===true?"35 75 205 280":"272 75 205 280");art.setAttribute("aria-hidden","true");
+    const image=doc.createElementNS("http://www.w3.org/2000/svg","image");image.setAttribute("href","assets/industrial/switch-1.png");image.setAttribute("width","502");image.setAttribute("height","413");art.append(image);button.append(art);
     button.addEventListener("click",async event=>{event.stopPropagation();if(button.disabled || pending.has(key))return;pending.add(key);failed.delete(key);button.disabled=true;try{await onCommit(n,!channel.on,channel.target);}catch{failed.add(key);button.title="Schalten fehlgeschlagen";}finally{pending.delete(key);button.disabled=!runtime || !channel.writable || channel.on===null;onSettled();}});
     cell.append(led,label,button);root.append(cell);
   }

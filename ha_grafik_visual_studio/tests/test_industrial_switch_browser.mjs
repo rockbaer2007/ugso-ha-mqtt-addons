@@ -38,8 +38,12 @@ test("four industrial switches render, route ports and control independent entit
   await page.waitForFunction(()=>!document.querySelector("#bank [data-channel='1'] button")?.disabled);
   assert.equal(await channel(1).getAttribute("data-on-label"),"ON");assert.equal(await channel(2).getAttribute("data-off-label"),"0");assert.equal(await channel(3).getAttribute("data-on-label"),"EIN");
   assert.equal(await channel(3).getAttribute("aria-checked"),"true");
+  assert.equal(await channel(1).locator("svg").getAttribute("viewBox"),"272 75 205 280");
+  assert.equal(await channel(3).locator("svg").getAttribute("viewBox"),"35 75 205 280");
+  assert.equal(await channel(1).locator("image").getAttribute("href"),"assets/industrial/switch-1.png");
   await channel(1).click();await page.waitForFunction(()=>document.querySelector("#bank [data-channel='1'] button")?.getAttribute("aria-checked")==="true");
   assert.deepEqual(writes[0],{entity_id:"switch.one",enabled:true});
+  assert.equal(await channel(1).locator("svg").getAttribute("viewBox"),"35 75 205 280");
   await channel(2).click();assert.deepEqual(writes.at(-1),{entity_id:"switch.target",enabled:true});
   await channel(4).click();assert.equal(await channel(4).getAttribute("aria-checked"),"true");assert.equal(writes.length,2);
   assert.equal(await page.locator("#bank [data-channel='4'] .industrial-led").evaluate(el=>el.classList.contains("is-on")),true);
