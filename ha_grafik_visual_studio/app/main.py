@@ -287,6 +287,15 @@ def set_home_assistant_helper_value(entity_id, value):
     }])
 
 
+def set_industrial_value(entity_id, value):
+    """Write an explicitly configured Industrial numeric output."""
+    if not isinstance(entity_id, str) or not re.fullmatch(r"(?:number|input_number)\.[a-z0-9_]+", entity_id):
+        raise ValueError("Industrie-Ausgang benötigt eine number/input_number-Entität.")
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        raise ValueError("Industrie-Ausgang benötigt einen endlichen Zahlenwert.")
+    home_assistant_commands([{"type": "call_service", "domain": entity_id.split(".", 1)[0], "service": "set_value", "target": {"entity_id": entity_id}, "service_data": {"value": value}}])
+
+
 def set_home_assistant_select_option(entity_id, value):
     """Select only an existing option of an explicitly chosen HA select."""
     if not isinstance(entity_id, str) or not re.fullmatch(r"(?:select|input_select)\.[a-z0-9_]+", entity_id):
@@ -364,7 +373,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.222"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.223"})
             return
         if path == "/meteored-frame":
             try:
@@ -610,7 +619,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             self.send_json(HTTPStatus.OK, {"accepted": True})
             return
-        if parsed.path in {"/api/helper-value", "/api/select-option"}:
+        if parsed.path in {"/api/helper-value", "/api/select-option", "/api/industrial-value"}:
             if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
                 self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "JSON-Anfrage erforderlich."})
                 return
@@ -621,7 +630,7 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Ungültiger Wertbefehl."})
                 return
             try:
-                writer = set_home_assistant_select_option if parsed.path == "/api/select-option" else set_home_assistant_helper_value
+                writer = set_industrial_value if parsed.path == "/api/industrial-value" else set_home_assistant_select_option if parsed.path == "/api/select-option" else set_home_assistant_helper_value
                 writer(request.get("entity_id"), request.get("value"))
             except ValueError as error:
                 self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})

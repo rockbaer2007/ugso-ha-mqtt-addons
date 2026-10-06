@@ -2,6 +2,22 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"UGSo Industrie": "UGSo Industrial",
+"Daten und Bedienung": "Data and control",
+"Eingang: Entität (leer = Poti)": "Input entity (empty = rotary control)",
+"Ausgang: number/input_number-Entität": "Output number/input_number entity",
+"Startwert / Vorschauwert": "Initial / preview value",
+"Ausgabe (release = Loslassen, continuous = beim Ziehen)": "Output (release = on release, continuous = while dragging)",
+"Skalenminimum": "Scale minimum", "Skalenmaximum": "Scale maximum",
+"Bedien-Schrittweite": "Control step", "Skalenteilung": "Tick division",
+"Darstellung (ticks = Striche, ring = Farbring)": "Display (ticks = tick scale, ring = color ring)",
+"Anzahl Farbbereiche": "Color band count", "Gehäuse und Farben": "Housing and colors",
+"Industriestyle": "Industrial style", "Farbbereich 1": "Color band 1", "Farbbereich 2": "Color band 2",
+"Farbbereich 3": "Color band 3", "Farbbereich 4": "Color band 4", "Farbbereich 5": "Color band 5",
+"Farbbereich 6": "Color band 6", "Farbbereich 7": "Color band 7", "Farbbereich 8": "Color band 8",
+"Bis Wert (letzter Bereich endet am Maximum)": "Upper limit (last band ends at maximum)",
+"Ungültige Skala": "Invalid scale", "Farbbereiche prüfen": "Check color bands",
+"Teilung zu klein": "Tick division too small", "Kein Eingangswert": "No input value",
 "Erweiterte Optionen anzeigen": "Show advanced options",
 "Methode zum Anzeigen des Dialogs": "Dialog opening method",
 "Boolesche Entität": "Boolean entity",

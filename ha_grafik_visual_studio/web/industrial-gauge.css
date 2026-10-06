@@ -1,0 +1,7 @@
+.industrial-gauge { width:100%; height:100%; box-sizing:border-box; display:grid; place-items:center; overflow:hidden; touch-action:none; user-select:none; color:#e1e7e9; }
+.industrial-gauge.industrial-housing { border:2px solid #879097; border-radius:4px; background:linear-gradient(135deg,#333d43,#172027); box-shadow:inset 0 0 3px #000; }
+.industrial-gauge svg { display:block; width:100%; height:100%; aspect-ratio:1; }
+.industrial-gauge[role="slider"] { cursor:grab; }
+.industrial-gauge[data-dragging="true"] { cursor:grabbing; }
+.industrial-gauge:focus-visible { outline:2px solid #54cfea; outline-offset:-4px; }
+.industrial-gauge.is-invalid { border-color:#d99055; }

@@ -51,6 +51,7 @@ import { renderRadialSlider, updateRadialSlider, RADIAL_STYLE_GROUPS } from "./r
 import { renderDropdown } from "./dropdown.js";
 import { renderPackageChart, chartBindings } from "./package-chart.js";
 import { isGauge, renderGauge, gaugeEntityIds } from "./gauges.js";
+import { industrialModel, industrialQuantize, renderIndustrialGauge } from "./industrial-gauge.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
@@ -146,6 +147,8 @@ const WRITABLE_NUMBER_HELPER = /^input_number\.[a-z0-9_]+$/;
 const WRITABLE_TEXT_HELPER = /^input_text\.[a-z0-9_]+$/;
 const pendingSwitches = new Set();
 const helperWriteQueue = new Map();
+const industrialOutputValues = new Map();
+const industrialOutputTimers = new Map();
 const stagedEntityValues = new Map();
 const lineboxOutputTimers = new Map();
 const lineboxOutputValues = new Map();
@@ -676,9 +679,11 @@ async function fetchEntityStates(ids) {
 }
 
 function editorLiveEntityIds() {
+  // Include the external industrial output in live state polling.
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
     ...gaugeEntityIds(widget),
+    ...(getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" ? [widget.outputEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-temperature" ? temperatureBindings(widget) : []),
@@ -725,6 +730,7 @@ function runtimeLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
     ...gaugeEntityIds(widget),
+    ...(getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" ? [widget.outputEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-temperature" ? temperatureBindings(widget) : []),
@@ -784,7 +790,7 @@ function stageRuntimeEntityValue(entityId, value) {
   runtimeEffectsFrame = requestAnimationFrame(() => {
     runtimeEffectsFrame = 0;
     if (visibleWidgets().some(widget => widget.type === "value-converter" || widget.dataInputEnabled === true)) {
-      if (document.querySelector(".radial-slider[data-dragging='true'], .technic-light[data-dragging='true'], .technic-temperature[data-dragging='true'], .styled-dropdown.is-open")) { runtimeRenderDeferred = true; return; }
+      if (document.querySelector(".industrial-gauge[data-dragging='true'], .radial-slider[data-dragging='true'], .technic-light[data-dragging='true'], .technic-temperature[data-dragging='true'], .styled-dropdown.is-open")) { runtimeRenderDeferred = true; return; }
       renderStage(); return;
     }
     for (const surface of visibleTabSurfaces(state.project, currentPage(), activeTabIndex)) {
@@ -820,6 +826,11 @@ function stageRuntimeEntityValue(entityId, value) {
 
 function scheduleLineboxHelperOutputs() {
   if (!runtimeMode || !state.project || document.hidden) return;
+  for (const widget of visibleWidgets()) {
+    if (getWidgetDefinition(widget.type).render?.kind !== "industrial-gauge" || !widget.outputEntityId || widget.outputEntityId === widget.entityId) continue;
+    const model = industrialModel(widget, state.entityStates, widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined);
+    if (model.gauge && model.valid && model.value != null) void writeIndustrialOutput(widget, model.value);
+  }
   const rootPageId = currentPage().id;
   const projectId = state.projectId;
   for (const page of visibleTabSurfaces(state.project, currentPage(), activeTabIndex)) {
@@ -851,7 +862,7 @@ function scheduleLineboxHelperOutputs() {
 }
 
 function renderRuntimeStageWhenReady() {
-  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true'], .radial-slider[data-dragging='true'], .technic-light[data-dragging='true'], .technic-temperature[data-dragging='true'], .styled-dropdown.is-open") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true']")) {
+  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true'], .industrial-gauge[data-dragging='true'], .radial-slider[data-dragging='true'], .technic-light[data-dragging='true'], .technic-temperature[data-dragging='true'], .styled-dropdown.is-open") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true']")) {
     runtimeRenderDeferred = true;
     return;
   }
@@ -958,6 +969,27 @@ async function writeRuntimeHelperValue(entityId, value, endpoint = "api/helper-v
       void refreshRuntimeStates();
     }
   }
+}
+
+async function writeIndustrialOutput(widget, value) {
+  if (!runtimeMode || !widget.outputEntityId || !Number.isFinite(value)) return;
+  const entityId = widget.outputEntityId;
+  if (!["number", "input_number"].includes(entityId.split(".")[0]) || entityId === widget.entityId || !Number.isFinite(Number(state.entityStates[entityId]?.state)) || state.entityStates[entityId]?.state == null || state.entityStates[entityId]?.state === "") {
+    showRuntimeControlError(`${entityId}: Ausgang benötigt eine verfügbare number/input_number-Entität und muss vom Eingang verschieden sein.`);
+    return;
+  }
+  const projectId = state.projectId, pageId = currentPage().id;
+  const key = `${projectId}:${pageId}:${widget.id}:${entityId}`;
+  const previous = industrialOutputValues.get(key);
+  if (previous?.value === value && (previous.ok || Date.now() - previous.at < 5000)) return;
+  industrialOutputValues.set(key, { value, at: Date.now(), ok: false });
+  if (industrialOutputTimers.has(key)) return;
+  industrialOutputTimers.set(key, window.setTimeout(async () => {
+    industrialOutputTimers.delete(key);
+    if (state.projectId !== projectId || currentPage().id !== pageId || !visibleWidgets().includes(widget) || widget.outputEntityId !== entityId) return;
+    const record = industrialOutputValues.get(key);
+    record.ok = await writeRuntimeHelperValue(entityId, record.value, "api/industrial-value");
+  }, 100));
 }
 
 if (runtimeMode) {
@@ -2792,6 +2824,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   for (const widget of activePage.widgets) {
     if (widget.type === "dashboard-in-widget") Object.assign(widget, dashboardSize(widget));
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
+    if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") widget.width = widget.height = Math.min(4096, Math.max(64, Number(widget.width) || 64, Number(widget.height) || 64));
     if (widget.visible === false) continue;
     if (runtimeMode && (widget.hideInRuntime === true || widget.type === "value-converter" || widget.dataFlowVariant === "value-connection")) continue;
     const editorFilterWords = String(widget.generalEnabled === true ? widget.filterWord || "" : "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
@@ -2874,6 +2907,15 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(renderSeparator(widget, document));
     } else if (isGauge(widget)) {
       content.append(renderGauge(widget, document, { states: state.entityStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
+    } else if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") {
+      content.style.padding = "0"; content.style.border = "0";
+      if (runtimeMode && !widget.entityId && widget.dataInputEnabled !== true) widget.state = industrialQuantize(widget, widget.state);
+      content.append(renderIndustrialGauge(widget, document, { runtime: runtimeMode, states: state.entityStates,
+        inputValue: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined,
+        onInput: value => { widget.state = value; },
+        onCommit: value => { void writeIndustrialOutput(widget, value); },
+        onSettled: () => { renderRuntimeStageWhenReady(); },
+      }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "chart") {
       if (widget.noCard) content.style.background = "transparent";
       content.append(widget.chartMode === "weather" ? renderWeather(widget, document, state.entityStates, document.documentElement.lang || "de") : renderPackageChart(widget, document, state.entityStates, document.documentElement.lang || "de", getWidgetDefinition(widget.type).render.valueKey));
@@ -3849,6 +3891,12 @@ function makeResizable(element, handle, widget) {
     if (direction.includes("s")) widget.height = Math.max(16, Math.round(origin.height + dy));
     if (direction.includes("w")) { widget.width = Math.max(16, Math.round(origin.width - dx)); widget.x = Math.max(0, Math.round(origin.left + origin.width - widget.width)); }
     if (direction.includes("n")) { widget.height = Math.max(16, Math.round(origin.height - dy)); widget.y = Math.max(0, Math.round(origin.top + origin.height - widget.height)); }
+    if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") {
+      const delta = /[ew]/.test(direction) ? (direction.includes("e") ? dx : -dx) : (direction.includes("s") ? dy : -dy);
+      widget.width = widget.height = Math.min(4096, Math.max(64, Math.round(origin.width + delta)));
+      if (direction.includes("n")) widget.y = Math.max(0, origin.top + origin.height - widget.height);
+      if (direction.includes("w")) widget.x = Math.max(0, origin.left + origin.width - widget.width);
+    }
     if (widget.type === "linebox-math") {
       widget.width = Math.min(2000, Math.max(32, widget.width)); widget.height = Math.min(2000, Math.max(32, widget.height));
       if (direction.includes("n")) widget.y = Math.max(0, origin.top + origin.height - widget.height);
@@ -4311,6 +4359,8 @@ function field(descriptor, widget) {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
     if (["count", "dataCount", "decimalPlaces", "countEventColorRules", "countCalendarSources", "countColumns", "countDefaultSortColumns", "countRowConditions", "countCustomOptions", "countBgConditions"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["entityId", "outputEntityId"].includes(descriptor.key)) void refreshEditorLiveStates();
+    if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["width", "height"].includes(descriptor.key)) widget.width = widget.height = Math.min(4096, Math.max(64, Number(widget[descriptor.key]) || 64));
     if (isSeparator(widget) && descriptor.key === "separatorThickness") {
       widget.separatorThickness = Math.min(100, Math.max(1, Number(widget.separatorThickness) || 2));
       const size = widget.type === "horizontal-line" ? "height" : "width";
@@ -4957,8 +5007,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.222" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.222" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.223" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.223" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

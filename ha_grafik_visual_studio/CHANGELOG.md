@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.223
+
+- New optional external Industrial set 0.1.0 with Gauge/Poti – 270°, negative ranges, tick scales or bounded color bands, triangular pointer, industrial housing, and runtime mouse/touch/keyboard control.
+- Explicit entity or dataflow inputs select read-only gauge mode; missing live inputs never enable the rotary control. Numeric output entities and existing visible/invisible signal lines are supported.
+- Neuer optionaler externer Industrie-Satz 0.1.0 mit Gauge/Poti, Strichskala oder Farbring und 2-px-Gehäuserand mit Schrauben. Neue Gehäuse-Andockregeln folgen separat.
+
 ## 0.1.222
 
 - Use a gray editor canvas with anthracite grid lines in the light browser theme. Preserve the existing canvas background in the dark theme and brighten its grid lines slightly.

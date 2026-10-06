@@ -1,5 +1,7 @@
 # HA Grafik Visual Studio
 
+Studio **0.1.223** supports the optional external [Industrial set](packages/industrial/README.md): Gauge/Poti – 270° with tick scale or color ring, entity/dataflow input, numeric output, and industrial housing. / Studio **0.1.223** unterstützt das optionale externe [Industrie-Set](packages/industrial/README.md): Gauge/Poti – 270° mit Strichskala oder Farbring, Entitäts-/Datenfluss-Eingang, numerischem Ausgang und Industriegehäuse.
+
 Studio 0.1.222 uses a gray editor canvas with anthracite grid lines in the light theme and slightly brighter grid lines in the dark theme. Saved page backgrounds remain visible in runtime. / Studio 0.1.222 zeigt im hellen Theme eine graue Arbeitsfläche mit anthrazitfarbenen Rasterlinien und im dunklen Theme etwas hellere Rasterlinien. Gespeicherte Seitenhintergründe bleiben in der Runtime sichtbar.
 
 Studio 0.1.221 follows the browser's light/dark theme automatically. The editor shell, dialogs and native fields update immediately when the preference changes. Saved page and widget colors remain unchanged. / Studio 0.1.221 übernimmt automatisch das Hell-/Dunkel-Theme des Browsers. Oberfläche, Dialoge und Eingabefelder wechseln auch während der Nutzung; gespeicherte Seiten- und Widgetfarben bleiben erhalten.
