@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.226
+
+- Gauge/Poti exposes a checked-by-default 1:1 aspect ratio option under Size. Typed and dragged dimensions stay equal while enabled, including the displayed property values. Disable it for independent width and height; minimum dimensions remain 64 px.
+- Gauge/Poti bietet unter Größe die Checkbox „Verhältnis 1:1“. Eingabe und Ziehen koppeln beide Maße bei aktiviertem Haken; ohne Haken sind Breite und Höhe unabhängig.
+
 ## 0.1.225
 
 - Output dock colors now also apply to Value Converter, LineBox and LineBox Math outputs, including occupied Math points. Input colors and port behavior remain unchanged.

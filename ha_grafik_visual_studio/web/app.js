@@ -53,6 +53,7 @@ import { renderPackageChart, chartBindings } from "./package-chart.js";
 import { isGauge, renderGauge, gaugeEntityIds } from "./gauges.js";
 import { industrialModel, industrialQuantize, renderIndustrialGauge } from "./industrial-gauge.js";
 import { HOUSING_CORNERS, housingActive, housingSnapGroup, isIndustrial, snapHousing } from "./housing-snap.js";
+import { squareLocked, industrialSize, industrialResize } from "./industrial-size.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
@@ -220,6 +221,7 @@ function widgetPropertyGroups(widget) {
     { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
   ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
+  if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") groups = groups.map(group => group.label === "Größe" ? { ...group, fields: [{ label: "Verhältnis 1:1", key: "aspectRatio1to1", type: "checkbox", default: true, refreshProperties: true }, ...group.fields] } : group);
   if (getWidgetDefinition(widget.type).render?.kind === "chart") groups = groups.filter(group => !/^Daten \[(\d+)\]$/.test(group.label) || Number(group.label.match(/\d+/)[0]) <= Math.min(10, Math.max(1, Number(widget.dataCount) || 1)));
   if (widget.type === "filter-dropdown") groups = groups.map(group => ({ ...group, fields: group.fields.filter(field => field.key !== "variant" || widget.filterType !== "dropdown") }));
   if (["value-list-html", "value-list-html-style"].includes(widget.type)) {
@@ -2827,7 +2829,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   for (const widget of activePage.widgets) {
     if (widget.type === "dashboard-in-widget") Object.assign(widget, dashboardSize(widget));
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
-    if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") widget.width = widget.height = Math.min(4096, Math.max(64, Number(widget.width) || 64, Number(widget.height) || 64));
+    if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") Object.assign(widget, industrialSize(widget));
     if (widget.visible === false) continue;
     if (runtimeMode && (widget.hideInRuntime === true || widget.type === "value-converter" || widget.dataFlowVariant === "value-connection")) continue;
     const editorFilterWords = String(widget.generalEnabled === true ? widget.filterWord || "" : "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
@@ -3885,6 +3887,11 @@ function makeDraggable(element, widget) {
   });
 }
 
+function syncIndustrialSizeFields(widget, editingKey) {
+  if (widget.id !== state.selectedId) return;
+  for (const key of ["width", "height"]) if (key !== editingKey) for (const field of document.querySelectorAll(`#properties [data-property-key='${key}']`)) field.value = String(widget[key]);
+}
+
 function makeResizable(element, handle, widget) {
   let origin;
   handle.addEventListener("pointerdown", (event) => {
@@ -3904,10 +3911,8 @@ function makeResizable(element, handle, widget) {
     if (direction.includes("w")) { widget.width = Math.max(16, Math.round(origin.width - dx)); widget.x = Math.max(0, Math.round(origin.left + origin.width - widget.width)); }
     if (direction.includes("n")) { widget.height = Math.max(16, Math.round(origin.height - dy)); widget.y = Math.max(0, Math.round(origin.top + origin.height - widget.height)); }
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") {
-      const delta = /[ew]/.test(direction) ? (direction.includes("e") ? dx : -dx) : (direction.includes("s") ? dy : -dy);
-      widget.width = widget.height = Math.min(4096, Math.max(64, Math.round(origin.width + delta)));
-      if (direction.includes("n")) widget.y = Math.max(0, origin.top + origin.height - widget.height);
-      if (direction.includes("w")) widget.x = Math.max(0, origin.left + origin.width - widget.width);
+      Object.assign(widget, industrialResize(origin, direction, dx, dy, squareLocked(widget)));
+      syncIndustrialSizeFields(widget);
     }
     if (widget.type === "linebox-math") {
       widget.width = Math.min(2000, Math.max(32, widget.width)); widget.height = Math.min(2000, Math.max(32, widget.height));
@@ -4275,6 +4280,7 @@ function field(descriptor, widget) {
       option.textContent = typeof item === "string" ? item : item.label; input.append(option);
     }
   } else { input = document.createElement("input"); input.type = descriptor.type === "dashboard" ? "text" : descriptor.type || "text"; }
+  input.dataset.propertyKey = descriptor.key;
   if (descriptor.min !== undefined) input.min = descriptor.min;
   if (descriptor.max !== undefined) input.max = descriptor.max;
   if (widget.type === "slider" && descriptor.key === "scaleSteps") input.max = sliderScale(widget).limit;
@@ -4372,7 +4378,10 @@ function field(descriptor, widget) {
     if (["count", "dataCount", "decimalPlaces", "countEventColorRules", "countCalendarSources", "countColumns", "countDefaultSortColumns", "countRowConditions", "countCustomOptions", "countBgConditions"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["entityId", "outputEntityId"].includes(descriptor.key)) void refreshEditorLiveStates();
-    if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["width", "height"].includes(descriptor.key)) widget.width = widget.height = Math.min(4096, Math.max(64, Number(widget[descriptor.key]) || 64));
+    if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["width", "height", "aspectRatio1to1"].includes(descriptor.key)) {
+      Object.assign(widget, industrialSize(widget, descriptor.key));
+      syncIndustrialSizeFields(widget, descriptor.key);
+    }
     if (isSeparator(widget) && descriptor.key === "separatorThickness") {
       widget.separatorThickness = Math.min(100, Math.max(1, Number(widget.separatorThickness) || 2));
       const size = widget.type === "horizontal-line" ? "height" : "width";
@@ -4415,6 +4424,7 @@ function field(descriptor, widget) {
     }
   };
   input.addEventListener(input.tagName === "SELECT" ? "change" : "input", update);
+  if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["width", "height"].includes(descriptor.key)) input.addEventListener("change", () => { input.value = String(widget[descriptor.key]); syncIndustrialSizeFields(widget); });
   if (descriptor.refreshProperties && input.tagName === "TEXTAREA") input.addEventListener("change", renderProperties);
   if (descriptor.refreshProperties && ["number", "range"].includes(input.type)) input.addEventListener("change", renderProperties);
   if (widget.type === "value-list-html-style" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
@@ -5020,8 +5030,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.225" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.225" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.226" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.226" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

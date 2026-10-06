@@ -2,6 +2,8 @@
 
 ## Deutsch
 
+**Ab Studio 0.1.226:** Unter **Größe** gibt es die standardmäßig aktivierte Checkbox **Verhältnis 1:1**. Breite und Höhe bleiben beim Ziehen und bei der Eingabe gleich; beide Zahlenfelder werden aktualisiert. Ohne Haken sind die Maße unabhängig. Jedes Maß bleibt mindestens 64 px. Beim erneuten Aktivieren wird das größere Maß für beide Seiten übernommen. Bestehende Widgets bleiben ohne neue Konfiguration quadratisch; Paket 0.1.0 bleibt verwendbar.
+
 **Ergänzung ab Studio 0.1.224:** Unter **CSS Allgemein → Eckenradius (px)** wird auch der Gehäuserahmen gerundet. Unter **Gehäuse-Snappunkte** lassen sich die vier Ecken einzeln aktivieren, zusammen mit einem gemeinsamen Abstand für alle Seiten (Standard 1 px). Beide benachbarten Abstände addieren sich; 1 + 1 px ergibt 2 px Fuge. Einzelne Widgets rasten beim Verschieben ein. Unter **Einstellungen → Allgemein → Editor und Andockpunkte** gibt es eine eigene Gehäuse-Snappunktfarbe. Das Paket 0.1.0 muss dafür nicht neu installiert werden. Automatische Signalanschlussverlegung bleibt geplant; die folgende Beschreibung der noch fehlenden Gehäuse-Andockfunktion bezieht sich auf Studio 0.1.223.
 
 Externes, deklaratives Widget-Set für **Grafik Visual Studio ab 0.1.223**. Installation: `ugso.industrial.wg` unter Einstellungen → Widget-Pakete → Lokal auswählen. Das Paket enthält keinen ausführbaren Code und wird nicht automatisch installiert.
@@ -19,6 +21,8 @@ Industriestyle ergänzt Schrauben in den vier Ecken und einen CSS-Rand von 2 px.
 Build: `python packages/industrial/build.py` im Studio-Ordner.
 
 ## English
+
+**Studio 0.1.226:** **Size** includes a checked-by-default **1:1 aspect ratio** checkbox. Width and height stay equal during dragging and typed changes, and both property fields update. Uncheck it for independent dimensions. Each dimension remains at least 64 px. Re-enabling the lock uses the larger dimension for both sides. Existing widgets keep their square layout without configuration changes; package 0.1.0 remains usable.
 
 **Added in Studio 0.1.224:** **General CSS → Corner radius (px)** also rounds the housing. **Housing snap points** enables each corner independently and provides one spacing value for all sides (default 1 px). Neighboring spacing values add up; 1 + 1 px produces a 2 px gap. Single widgets snap when dragged. **Settings → General → Editor and dock points** includes a separate housing snap point color. Package 0.1.0 does not need reinstalling. Automatic signal port relocation remains planned; the note below about future housing docking describes Studio 0.1.223.
 

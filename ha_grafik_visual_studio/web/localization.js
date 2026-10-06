@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Verhältnis 1:1": "1:1 aspect ratio",
 "Gehäuse-Snappunkte": "Housing snap points", "Gehäuse-Snapping aktivieren": "Enable housing snapping",
 "Abstand rundherum (px)": "Spacing on all sides (px)", "Snappunkte dauerhaft anzeigen": "Always show snap points",
 "Farbe der Gehäuse-Snappunkte": "Housing snap point color",
