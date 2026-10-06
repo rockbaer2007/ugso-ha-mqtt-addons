@@ -52,6 +52,7 @@ import { renderDropdown } from "./dropdown.js";
 import { renderPackageChart, chartBindings } from "./package-chart.js";
 import { isGauge, renderGauge, gaugeEntityIds } from "./gauges.js";
 import { industrialModel, industrialQuantize, renderIndustrialGauge } from "./industrial-gauge.js";
+import { HOUSING_CORNERS, housingActive, housingSnapGroup, isIndustrial, snapHousing } from "./housing-snap.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
@@ -207,6 +208,7 @@ const commonWidgetGroups = [
 
 function widgetPropertyGroups(widget) {
   let styleEntryGroups = [];
+  if (isIndustrial(widget)) styleEntryGroups.push(housingSnapGroup);
   if (widget.type === "interactive-table") styleEntryGroups = tableEntryGroups(widget);
   if (widget.type === "dropdown") styleEntryGroups = dropdownEntryGroups(widget);
   if (isGauge(widget)) styleEntryGroups = gaugeEntryGroups(widget);
@@ -2786,6 +2788,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   stage.style.setProperty("--stage-background", page.background || "#242729");
   stage.style.setProperty("--dock-color", state.project.settings?.dockColor || "#ffd54f");
   stage.style.setProperty("--output-dock-color", state.project.settings?.outputDockColor || "#74c0fc");
+  stage.style.setProperty("--housing-snap-color", state.project.settings?.housingSnapColor || "#c792ea");
   const backgroundImage = safeUrl(page.backgroundAsset || page.backgroundImage, true);
   stage.style.backgroundImage = backgroundImage ? `url(${JSON.stringify(backgroundImage)})` : "none";
   stage.style.backgroundRepeat = page.backgroundRepeat || (page.backgroundMode === "tile" ? "repeat" : "no-repeat");
@@ -3658,6 +3661,10 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       tab.append(select, edit); element.append(tab);
     }
     const hasConnections = activePage.widgets.some(item => item.type === "svg-connection" && item.visible !== false);
+    if (!runtimeMode && isIndustrial(widget) && (selected || widget.housingSnapAlwaysVisible)) for (const [id, label, x, y] of HOUSING_CORNERS) {
+      if (!housingActive(widget, id)) continue;
+      const point = document.createElement("span"); point.className = "housing-snap-point"; point.dataset.housingCorner = id; point.style.left = `${x * 100}%`; point.style.top = `${y * 100}%`; point.title = `Gehäuse-Snappunkt: ${label}`; element.append(point);
+    }
     const showDockPoints = !runtimeMode && !isConnection && !isSeparator(widget) && (widget.dockPointsEnabled === true || widget.dataOutputEnabled === true) && (selected || widget.dockAlwaysVisible || hasConnections);
     if (showDockPoints) {
       for (const [anchorId, label, x, y] of widgetAnchors(widget)) {
@@ -3849,6 +3856,10 @@ function makeDraggable(element, widget) {
         continue;
       }
       member.x = position.x; member.y = position.y;
+      if (origin.members.length === 1 && isIndustrial(member)) {
+        const snap = snapHousing(member, currentPage().widgets, 8 / scale);
+        if (snap) { member.x = snap.x; member.y = snap.y; }
+      }
       if (origin.members.length === 1 && isSeparator(member)) Object.assign(member, snapSeparator(member, currentPage().widgets));
       const target = document.getElementById(member.id);
       if (target) { target.style.left = `${member.x}px`; target.style.top = `${member.y}px`; }
@@ -4976,6 +4987,7 @@ function openSettingsDialog() {
   $("#settings-language").value = getLanguagePreference();
   $("#settings-dock-color").value = /^#[0-9a-f]{6}$/i.test(settings.dockColor || "") ? settings.dockColor : "#ffd54f";
   $("#settings-output-dock-color").value = /^#[0-9a-f]{6}$/i.test(settings.outputDockColor || "") ? settings.outputDockColor : "#74c0fc";
+  $("#settings-housing-snap-color").value = /^#[0-9a-f]{6}$/i.test(settings.housingSnapColor || "") ? settings.housingSnapColor : "#c792ea";
   $("#settings-reload").value = settings.reloadMode || "reload";
   $("#settings-dark-reconnect").checked = Boolean(settings.darkReconnect);
   $("#settings-debounce").value = settings.debounceMs ?? 200;
@@ -5007,8 +5019,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.223" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.223" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.224" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.224" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
@@ -5065,6 +5077,7 @@ $("#settings-save").addEventListener("click", async (event) => {
     autoSaveDelaySeconds: Math.max(1, Math.min(300, Math.round(Number($("#settings-auto-save-delay").value) || 5))),
     dockColor: /^#[0-9a-f]{6}$/i.test($("#settings-dock-color").value) ? $("#settings-dock-color").value : "#ffd54f",
     outputDockColor: /^#[0-9a-f]{6}$/i.test($("#settings-output-dock-color").value) ? $("#settings-output-dock-color").value : "#74c0fc",
+    housingSnapColor: /^#[0-9a-f]{6}$/i.test($("#settings-housing-snap-color").value) ? $("#settings-housing-snap-color").value : "#c792ea",
     reloadMode: $("#settings-reload").value,
     darkReconnect: $("#settings-dark-reconnect").checked,
     debounceMs: Math.max(0, Math.min(10000, Number($("#settings-debounce").value) || 0)),

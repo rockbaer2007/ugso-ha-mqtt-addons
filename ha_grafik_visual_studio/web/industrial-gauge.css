@@ -5,3 +5,4 @@
 .industrial-gauge[data-dragging="true"] { cursor:grabbing; }
 .industrial-gauge:focus-visible { outline:2px solid #54cfea; outline-offset:-4px; }
 .industrial-gauge.is-invalid { border-color:#d99055; }
+.housing-snap-point { position:absolute; width:9px; height:9px; box-sizing:border-box; border:2px solid var(--housing-snap-color,#c792ea); background:#182128; border-radius:2px; transform:translate(-50%,-50%); pointer-events:none; z-index:8; }

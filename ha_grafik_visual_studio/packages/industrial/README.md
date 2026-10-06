@@ -2,6 +2,8 @@
 
 ## Deutsch
 
+**Ergänzung ab Studio 0.1.224:** Unter **CSS Allgemein → Eckenradius (px)** wird auch der Gehäuserahmen gerundet. Unter **Gehäuse-Snappunkte** lassen sich die vier Ecken einzeln aktivieren, zusammen mit einem gemeinsamen Abstand für alle Seiten (Standard 1 px). Beide benachbarten Abstände addieren sich; 1 + 1 px ergibt 2 px Fuge. Einzelne Widgets rasten beim Verschieben ein. Unter **Einstellungen → Allgemein → Editor und Andockpunkte** gibt es eine eigene Gehäuse-Snappunktfarbe. Das Paket 0.1.0 muss dafür nicht neu installiert werden. Automatische Signalanschlussverlegung bleibt geplant; die folgende Beschreibung der noch fehlenden Gehäuse-Andockfunktion bezieht sich auf Studio 0.1.223.
+
 Externes, deklaratives Widget-Set für **Grafik Visual Studio ab 0.1.223**. Installation: `ugso.industrial.wg` unter Einstellungen → Widget-Pakete → Lokal auswählen. Das Paket enthält keinen ausführbaren Code und wird nicht automatisch installiert.
 
 Das erste Widget **Gauge/Poti – 270°** beginnt bei 64 × 64 px. Ohne Eingang dient es in der Runtime als Drehpoti (Maus, Touch und Pfeiltasten; Home/End für die Endwerte). Mit einer Eingangs-Entität oder aktiviertem Datenfluss-Eingang dient es als Gauge. Fehlende Eingangswerte zeigen einen Fehlzustand und schalten nicht zum Poti um. Die Datenfluss-Bindung hat Vorrang vor der Entität.
@@ -17,6 +19,8 @@ Industriestyle ergänzt Schrauben in den vier Ecken und einen CSS-Rand von 2 px.
 Build: `python packages/industrial/build.py` im Studio-Ordner.
 
 ## English
+
+**Added in Studio 0.1.224:** **General CSS → Corner radius (px)** also rounds the housing. **Housing snap points** enables each corner independently and provides one spacing value for all sides (default 1 px). Neighboring spacing values add up; 1 + 1 px produces a 2 px gap. Single widgets snap when dragged. **Settings → General → Editor and dock points** includes a separate housing snap point color. Package 0.1.0 does not need reinstalling. Automatic signal port relocation remains planned; the note below about future housing docking describes Studio 0.1.223.
 
 External, declarative widget set for **Grafik Visual Studio 0.1.223 or newer**. Install `ugso.industrial.wg` through Settings → Widget packages → Local. The package contains no executable code and is not installed automatically.
 

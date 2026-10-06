@@ -47,6 +47,8 @@ test("housing and triangle render at unavailable values without unsafe markup", 
   assert.equal(nodes(root).find(n=>n.tag==="polygon").style.display,"none");
   assert.equal(nodes(root).some(n=>/NaN|Infinity/.test(JSON.stringify(n.attributes))),false);
   assert.equal(nodes(root).some(n=>n.tag==="script"),false);
+  assert.equal(renderIndustrialGauge({...config,radius:12},doc).style.borderRadius,"12px");
+  assert.equal(renderIndustrialGauge({...config,radius:0},doc).style.borderRadius,"0px");
 });
 test("editor remains passive; keyboard and release commit only runtime changes", () => {
   let commits=[]; const context={runtime:true,onCommit:v=>commits.push(v)};

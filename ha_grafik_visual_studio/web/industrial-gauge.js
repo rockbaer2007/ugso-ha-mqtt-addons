@@ -52,6 +52,7 @@ export function renderIndustrialGauge(widget, doc, context = {}) {
   const model = industrialModel(widget, context.states, context.inputValue);
   const enabled = Boolean(context.runtime && !model.gauge && model.valid);
   root.classList.toggle("industrial-housing", widget.industrialStyle !== false);
+  root.style.borderRadius = `${Math.max(0, Math.min(200, finite(widget.radius) ?? 4))}px`;
   root.setAttribute("role", enabled ? "slider" : "img"); root.setAttribute("aria-label", widget.heading || "Gauge/Poti");
   root.tabIndex = enabled ? 0 : -1; root.setAttribute("aria-disabled", String(!enabled));
   root.setAttribute("aria-valuemin", model.min); root.setAttribute("aria-valuemax", model.max);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.224
+
+- Industrial housing now respects the shared CSS corner radius.
+- Settings adds a separate housing snap color. Industrial widgets expose four independently enabled corner snap points and one shared spacing value; dragging a single widget snaps adjacent housings with additive spacing.
+- Industriegehäuse übernimmt CSS-Eckenradius. Neue Gehäuse-Snappunktfarbe und einzeln schaltbare Eckpunkte mit gemeinsamem Abstand; Signalpunkte bleiben getrennt. Automatische Verlegung von Signalanschlüssen folgt separat.
+
 ## 0.1.223
 
 - New optional external Industrial set 0.1.0 with Gauge/Poti – 270°, negative ranges, tick scales or bounded color bands, triangular pointer, industrial housing, and runtime mouse/touch/keyboard control.

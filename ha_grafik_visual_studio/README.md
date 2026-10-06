@@ -1,5 +1,7 @@
 # HA Grafik Visual Studio
 
+Studio **0.1.224** adds the housing snap point color in Settings, individual Industrial corner snap points with shared spacing, and CSS corner radius support for the housing. The existing Industrial 0.1.0 package remains usable. / Studio **0.1.224** ergänzt die Gehäuse-Snappunktfarbe in den Einstellungen, einzeln aktivierbare Industrie-Eckpunkte mit gemeinsamem Abstand und den CSS-Eckenradius am Gehäuse. Das vorhandene Industrie-Paket 0.1.0 bleibt verwendbar.
+
 Studio **0.1.223** supports the optional external [Industrial set](packages/industrial/README.md): Gauge/Poti – 270° with tick scale or color ring, entity/dataflow input, numeric output, and industrial housing. / Studio **0.1.223** unterstützt das optionale externe [Industrie-Set](packages/industrial/README.md): Gauge/Poti – 270° mit Strichskala oder Farbring, Entitäts-/Datenfluss-Eingang, numerischem Ausgang und Industriegehäuse.
 
 Studio 0.1.222 uses a gray editor canvas with anthracite grid lines in the light theme and slightly brighter grid lines in the dark theme. Saved page backgrounds remain visible in runtime. / Studio 0.1.222 zeigt im hellen Theme eine graue Arbeitsfläche mit anthrazitfarbenen Rasterlinien und im dunklen Theme etwas hellere Rasterlinien. Gespeicherte Seitenhintergründe bleiben in der Runtime sichtbar.
