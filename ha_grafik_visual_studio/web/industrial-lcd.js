@@ -2,7 +2,7 @@ import { switchBoolean } from "./industrial-switch.js";
 import { lcdGlyph } from "./lcd-font.js";
 
 export const isIndustrialLcd = widget => ["ugso.industrial/lcd-20x4","ugso.industrial/lcd-16x2"].includes(widget?.type);
-export const lcdDimensions = widget => widget.type === "ugso.industrial/lcd-16x2" ? {columns:16,rows:2,ratio:6,minHeight:32} : {columns:20,rows:4,ratio:3,minHeight:64};
+export const lcdDimensions = widget => widget.type === "ugso.industrial/lcd-16x2" ? {columns:16,rows:2,ratio:3,minHeight:64} : {columns:20,rows:4,ratio:3,minHeight:128};
 export function lcdSize(widget, changed="height") {
   const {ratio,minHeight}=lcdDimensions(widget);
   const height=Math.max(minHeight,Math.min(Math.floor(4096/ratio),Math.round(changed==="width" ? Number(widget.width)/ratio : Number(widget.height)||minHeight)));
@@ -43,7 +43,7 @@ export function renderIndustrialLcd(widget,doc,{states={},input}={}) {
   screen.title=on===null?"?":on?lines.map(line=>line.text).join("\n"):"OFF";
   if(on===true)for(let row=0;row<rows;row++){
     const group=doc.createElementNS(svg.namespaceURI,"g");group.dataset.row=String(row+1);group.dataset.text=lines[row].visible;group.dataset.truncated=String(lines[row].truncated);
-    Array.from(lines[row].visible).forEach((character,col)=>lcdGlyph(character).forEach((bits,y)=>{for(let x=0;x<5;x++)if(bits & (1<<(4-x))){const dot=doc.createElementNS(svg.namespaceURI,"rect");dot.setAttribute("x",String(1+col*6+x));dot.setAttribute("y",String(1+row*10+y));dot.setAttribute("width",".8");dot.setAttribute("height",".8");group.append(dot);}}));svg.append(group);
+    Array.from(lines[row].visible).forEach((character,col)=>lcdGlyph(character).forEach((bits,y)=>{for(let x=0;x<5;x++)if(bits & (1<<(4-x))){const dot=doc.createElementNS(svg.namespaceURI,"rect");dot.setAttribute("x",String(1+col*6+x));dot.setAttribute("y",String(1+row*10+y));dot.setAttribute("width",".9");dot.setAttribute("height",".9");group.append(dot);}}));svg.append(group);
   }
   screen.append(svg);root.append(screen);return root;
 }

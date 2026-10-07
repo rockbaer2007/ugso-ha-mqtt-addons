@@ -4,10 +4,10 @@ import {lcdSize,lcdLine,lcdPower,lcdBindings} from "../web/industrial-lcd.js";
 import {lcdGlyph,lcdCharacterSupported} from "../web/lcd-font.js";
 import {dockPointActive,hasSimpleOutput} from "../web/dock-points.js";
 import {widgetInputPacket,widgetValuePacket} from "../web/dataflow.js";
-test("LCD sizes retain a half-grid or whole-grid height and fixed aspect ratio",()=>{
+test("LCDs use normal two-row height and doubled four-row dimensions",()=>{
  const small={type:"ugso.industrial/lcd-16x2",height:32,width:192};
- assert.deepEqual(lcdSize(small),{height:32,width:192});assert.deepEqual(lcdSize({...small,width:384},"width"),{height:64,width:384});
- assert.deepEqual(lcdSize({...small,height:1}),{height:32,width:192});assert.deepEqual(lcdSize({type:"ugso.industrial/lcd-20x4",height:80}),{height:80,width:240});
+ assert.deepEqual(lcdSize(small),{height:64,width:192});assert.deepEqual(lcdSize({...small,width:384},"width"),{height:128,width:384});
+ assert.deepEqual(lcdSize({...small,height:1}),{height:64,width:192});assert.deepEqual(lcdSize({type:"ugso.industrial/lcd-20x4",height:80}),{height:128,width:384});
 });
 test("line formatting preserves units and Unicode, clips columns and reports unavailable values",()=>{
  const w={type:"ugso.industrial/lcd-16x2",lineEntityId1:"sensor.temp",lineText1:"Temp: ",lineDecimals1:"1"},states={"sensor.temp":{state:"-20.24",attributes:{unit_of_measurement:"°C"}}};

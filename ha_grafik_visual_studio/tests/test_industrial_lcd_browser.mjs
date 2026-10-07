@@ -4,7 +4,7 @@ import {createRequire} from "node:module";
 import {readFile,mkdir} from "node:fs/promises";
 import {join} from "node:path";
 const url=process.env.STUDIO_INDUSTRIAL_TEST_URL;
-test("LCD package renders live rows, power routing, half-grid sizing and both color modes",{skip:!url},async()=>{
+test("LCD package renders live rows, power routing, readable dimensions and darker colors",{skip:!url},async()=>{
  const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE||"playwright");
  const browser=await chromium.launch({headless:true,channel:process.env.STUDIO_THEME_BROWSER||undefined});
  try{
@@ -27,11 +27,15 @@ test("LCD package renders live rows, power routing, half-grid sizing and both co
   await page.locator("#small .industrial-lcd").click();await page.locator("#properties details").evaluateAll(items=>items.forEach(el=>el.open=true));
   const height=page.locator("#properties [data-property-key='height']").first(),width=page.locator("#properties [data-property-key='width']").first();
   await height.fill("32");await height.press("Tab");assert.equal(await width.inputValue(),"192");
-  await width.fill("384");await width.press("Tab");assert.equal(await height.inputValue(),"64");
+  await width.fill("384");await width.press("Tab");assert.equal(await height.inputValue(),"128");
   assert.equal(await page.locator("#properties [data-property-key='dataOutputEnabled']").count(),0);
   assert.equal(await page.locator("#properties [data-property-key='industrialScrewsEnabled']").count(),1);
   await page.goto(new URL("runtime",url).href);await page.waitForFunction(()=>document.querySelector("#blue g[data-row='1']")?.dataset.text==="Temp: -20.2 °C");
   assert.equal(await page.locator("#blue .industrial-lcd").getAttribute("data-power"),"on");
+  const largeBox=await page.locator("#blue").boundingBox(),smallBox=await page.locator("#small").boundingBox();
+  assert.equal(largeBox.height,128);assert.equal(largeBox.width,384);assert.equal(smallBox.height,64);assert.equal(smallBox.width,192);
+  assert.equal(await page.locator("#yellow .industrial-lcd-screen").evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(101, 106, 12)");
+  assert.equal(await page.locator("#blue .industrial-lcd-screen").evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(20, 39, 128)");
   const folder=process.env.STUDIO_TEST_ARTIFACTS||join(process.env.TEMP,"studio-industrial-artifacts");await mkdir(folder,{recursive:true});
   for(const id of ["yellow","blue","small"])await page.locator(`#${id}`).screenshot({path:join(folder,`industrial-lcd-${id}.png`)});
   await page.locator("#toggle button").click();await page.waitForFunction(()=>document.querySelector("#blue .industrial-lcd")?.dataset.power==="off");

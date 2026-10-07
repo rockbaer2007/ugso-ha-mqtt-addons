@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.242
+
+- Lesbare LCD-Größen: 16×2 mindestens 192×64 px, 20×4 mindestens 384×128 px. Bestehende kleinere Displays werden beim Laden angehoben. Blau und Gelb sind dunkler, die weißen Bildpunkte kräftiger. Paket 0.6.0 bleibt unverändert.
+- LCDs use readable minimum dimensions: 16×2 at 192×64 px, 20×4 at 384×128 px. Smaller saved displays normalize on load. Darker blue/yellow backgrounds and stronger white dots improve contrast; package 0.6.0 is unchanged.
+
 ## 0.1.241
 
 - Linear-Gauge aktualisiert nach Auswahl einer Eingangsentität sofort die Skalen-Einstellungen: Farbbalken und Farbbereiche sind verfügbar. Ohne Eingang bleibt der Schieberegler bei Strichskala. / Linear gauges immediately expose color-bar settings after choosing an input entity; unbound sliders retain ticks only.

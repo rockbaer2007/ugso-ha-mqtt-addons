@@ -55,7 +55,7 @@ import { industrialModel, industrialQuantize, renderIndustrialGauge } from "./in
 import { housingPoints, housingActive, housingSnapGroupFor, isIndustrial, snapHousing } from "./housing-snap.js";
 import { squareLocked, industrialSize, industrialResize } from "./industrial-size.js";
 import { isIndustrialSwitch, switchCount, switchSize, switchAnchors, switchBindings, renderIndustrialSwitch } from "./industrial-switch.js";
-import { isIndustrialLcd, lcdSize, lcdAnchors, lcdBindings, renderIndustrialLcd } from "./industrial-lcd.js";
+import { isIndustrialLcd, lcdSize, lcdDimensions, lcdAnchors, lcdBindings, renderIndustrialLcd } from "./industrial-lcd.js";
 import { isIndustrialLinear, linearSize } from "./industrial-linear.js";
 import { isIndustrialOdometer, odometerSize, odometerAnchors, renderIndustrialOdometer } from "./industrial-odometer.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
@@ -265,7 +265,7 @@ function widgetPropertyGroups(widget) {
     groups=groups.filter(group=>gauge || !/^Farbbereich \d+$/.test(group.label)).map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1" && (gauge || field.key!=="bandCount")).map(field=>field.key==="scaleMode"?{...field,label:"Darstellung",options:gauge?[{value:"ticks",label:"Strichskala"},{value:"ring",label:"Farbbalken"}]:[{value:"ticks",label:"Strichskala"}]}:field)}));
   }
   if (isIndustrialOdometer(widget)) return [...commonWidgetGroups,...groups.map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1" && (group.label!=="Wertanzeige" || ["unit","valueColor","valueFontSize"].includes(field.key))).map(field=>field.key==="valueFontSize"?{...field,label:"Einheiten-Schriftgröße (px)"}:field.key==="odometerSeparator"?{...field,options:[{value:"comma",label:"Komma"},{value:"dot",label:"Punkt"}]}:field)})),...styleEntryGroups];
-  if (isIndustrialLcd(widget)) return [...commonWidgetGroups, ...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>field.key==="lcdColor"?{...field,options:[{value:"yellow",label:uiText("Gelb/Weiß")},{value:"blue",label:uiText("Blau/Weiß")}]}:field)})), ...styleEntryGroups];
+  if (isIndustrialLcd(widget)) return [...commonWidgetGroups, ...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>field.key==="lcdColor"?{...field,options:[{value:"yellow",label:uiText("Gelb/Weiß")},{value:"blue",label:uiText("Blau/Weiß")}]}:["width","height"].includes(field.key)?{...field,min:lcdDimensions(widget).minHeight*(field.key==="width"?3:1)}:field)})), ...styleEntryGroups];
   if (isIndustrialSwitch(widget)) return [...commonWidgetGroups, ...groups.filter(group=>!/^Schalter [1-4]$/.test(group.label) || Number(group.label.split(" ")[1])<=switchCount(widget)).map(group=>group.label==="Wertanzeige" ? {...group,label:"Beschriftung",fields:group.fields.filter(field=>["valueFontSize","valueColor"].includes(field.key))} : group.label==="Größe" ? {...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1")} : {...group,fields:group.fields.map(field=>/^switchLegend[1-4]$/.test(field.key)?{...field,options:[{value:"on-off",label:"ON/OFF"},{value:"one-zero",label:"1/0"},{value:"ein-aus",label:"EIN/AUS"}]}:field)}), ...styleEntryGroups];
   if (widget.type === "linebox-math") {
     const dockGroup = { ...connectionAnchorGroup, fields: [
@@ -5120,8 +5120,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.241" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.241" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.242" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.242" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
