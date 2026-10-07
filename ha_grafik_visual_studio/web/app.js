@@ -62,6 +62,7 @@ import { isIndustrialSegment, segmentSize, segmentAnchors, renderIndustrialSegme
 import { isIndustrialClock, clockMode, clockSize, clockAnchors, renderIndustrialClock, updateIndustrialClocks } from "./industrial-clock.js";
 import { isIndustrialWeather, weatherSize, weatherAnchors, weatherBindings, renderIndustrialWeather } from "./industrial-weather.js";
 import { isIndustrialSection, sectionRows, sectionSize, renderIndustrialSection } from "./industrial-section.js";
+import { applyIndustrialBackground, INDUSTRIAL_BACKGROUND } from "./industrial-housing.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
@@ -234,6 +235,8 @@ function widgetPropertyGroups(widget) {
     groups = groups.map(group => group.label === "Gehäuse und Farben" ? { ...group, fields: [...group.fields.flatMap(field => field.key === "industrialStyle" ? [{ ...field, refreshProperties: true }, { label: "Schrauben aktivieren", key: "industrialScrewsEnabled", type: "checkbox", default: true, disabled: widget.industrialStyle === false }] : [field]),
       { label: "Rahmenbreite anpassen", key: "industrialFrameWidthEnabled", type: "checkbox", default: false, refreshProperties: true },
       { label: "Rahmenfarbe", key: "industrialFrameColor", type: "color", default: "#879097" },
+      { label: "Hintergrund anpassen", key: "industrialBackgroundEnabled", type: "checkbox", default: false, refreshProperties: true },
+      { label: "Gehäuse-Hintergrundfarbe", key: "industrialBackgroundColor", type: "color", default: INDUSTRIAL_BACKGROUND, disabled: widget.industrialBackgroundEnabled !== true },
       { label: "Rahmenbreite (px)", key: "industrialFrameWidth", type: "number", default: 2, min: 1, max: 16, disabled: widget.industrialFrameWidthEnabled !== true },
     ] } : group);
     groups.splice(1, 0, { label: "Wertanzeige", fields: [
@@ -3696,6 +3699,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       const prefix = document.createElement("span"); appendSafeHtml(prefix, widget.prefix || ""); content.prepend(prefix);
       appendSafeHtml(content, widget.suffix ?? (Number(displayedWidgetState(widget)) === 1 ? widget.suffixSingular || "" : widget.suffixPlural || ""));
     }
+    if (isIndustrial(widget)) applyIndustrialBackground(widget, content.firstElementChild);
     if (content.parentElement !== element) element.append(content);
     if (isConnection && !runtimeMode) {
       const start = connectionEndpoint(widget, "start", activePage.widgets);
@@ -5201,8 +5205,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.247" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.247" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.248" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.248" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

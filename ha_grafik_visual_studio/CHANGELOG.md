@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.248
+
+- Alle Industrie-Widgets bieten unter „Gehäuse und Farben“ die Checkbox „Hintergrund anpassen“ und eine Gehäuse-Hintergrundfarbe. Ohne Haken bleibt der bisherige Standardverlauf erhalten; mit Haken ersetzt eine eigene Farbe den Gehäusehintergrund. Bildschirm-, Segment- und LED-Farben bleiben unabhängig.
+- All Industrial widgets support an optional custom housing background color in editor and runtime. Disabled by default; the existing standard gradient and independent display colors remain intact. Industrial package 0.10.2 updates the instructions.
+
 ## 0.1.247
 
 - Blindelement: „Abschnitte“ und „Abschnitte senkrecht“ erlauben jetzt je 1 bis 12, maximal 12:12 Rasterfelder. Zellgröße, Abstände und Skalierung bleiben erhalten. Industriepaket 0.10.1 aktualisiert die Anleitung; bestehende Widget-Definitionen bleiben unverändert.

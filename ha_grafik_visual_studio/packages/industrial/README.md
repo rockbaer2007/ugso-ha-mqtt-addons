@@ -1,4 +1,10 @@
-# UGSo Industrie 0.10.1
+# UGSo Industrie 0.10.2
+
+## Gehäusehintergrund / Housing background (Studio 0.1.248+)
+
+Alle Industrie-Widgets: Unter „Gehäuse und Farben“ aktiviert „Hintergrund anpassen“ eine eigene „Gehäuse-Hintergrundfarbe“ (Vorgabe #263238). Ohne Haken bleibt der bisherige Standardverlauf erhalten. Die Farbe gilt nur für das Gehäuse, auch bei abgeschaltetem Industriestyle; Bildschirm-, Segment- und LED-Farben werden separat eingestellt. Funktioniert in Editor und Runtime. Ein Studio-Update genügt auch mit älteren installierten Industriepaketen; Paket 0.10.2 aktualisiert nur die Anleitung.
+
+All Industrial widgets: “Customize background” enables “Housing background color” (default #263238) under “Housing and colors”. Without the checkbox, the standard housing gradient is retained. The color applies only to the housing, including when industrial styling is off; display, segment and LED colors remain independent. Works in editor and runtime. Updating Studio is sufficient with older installed Industrial packages; package 0.10.2 updates the instructions only.
 
 ## Blindelement / Blank panel (Studio 0.1.247+)
 

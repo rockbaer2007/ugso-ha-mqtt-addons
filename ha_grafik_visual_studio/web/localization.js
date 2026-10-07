@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Hintergrund anpassen": "Customize background", "Gehäuse-Hintergrundfarbe": "Housing background color",
 "Blindelement": "Blank panel", "Abschnitte": "Sections", "Abschnitte senkrecht": "Vertical sections",
 "Industrie-Wetter – LCD / LED": "Industrial weather – LCD / LED", "Wetterdisplay": "Weather display", "Wetterentität": "Weather entity",
 "Regenwahrscheinlichkeit anzeigen": "Show rain probability", "Tagesminimum/-maximum anzeigen": "Show daily low/high", "Beispieldaten ohne Wetterentität": "Example data without a weather entity",

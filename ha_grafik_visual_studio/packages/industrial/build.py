@@ -40,7 +40,7 @@ def _base_manifest():
 
 def manifest():
     data = _base_manifest()
-    data["version"] = "0.10.1"
+    data["version"] = "0.10.2"
     toggle = data["widgets"][1]
     rocker = deepcopy(toggle)
     rocker.update(type="ugso.industrial/rocker-switch", label="Wippschalter – 1 bis 4", icon="icons/rocker-gray.svg")
