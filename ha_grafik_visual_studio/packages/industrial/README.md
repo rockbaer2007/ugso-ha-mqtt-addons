@@ -2,6 +2,10 @@
 
 ## Kippschalter / Toggle switches (Studio 0.1.232+)
 
+Ab Studio 0.1.234: E1–E4 oberhalb und A1–A4 unterhalb jedes Schalters. Sechs separate Gehäuse-Snappunkte (vier Ecken und links/rechts mittig) ergeben mit den Signalpunkten 8/10/12/14 mögliche Punkte für 1–4 Schalter. Einzeln aktivierbar, zentrale Farben; vorhandene Verbindungen bleiben erhalten. Host-Update genügt, Paket 0.2.0 bleibt unverändert.
+
+Since Studio 0.1.234: E1–E4 above and A1–A4 below each switch. Six separate housing snap points (four corners and left/right centers) provide 8/10/12/14 available points including signal ports for 1–4 switches. Individually enabled, central colors; existing connections are preserved. A host update is sufficient; package 0.2.0 remains unchanged.
+
 Deutsch: Paket 0.2.0 ergänzt ein bis vier unabhängige Kippschalter, Verhältnis 1:1 bis 4:1, mindestens 64 px pro Schalter. Je Kanal kleine LED mit eigenen Ein-/Aus-Farben, Textbeschriftung und festes Schild ON/OFF, 1/0 oder EIN/AUS. Ab Studio 0.1.233 verwendet der Metallhebel die von rockbaer2007 bereitgestellte transparente PNG mit vollständigem Hebel in beiden Stellungen. Die LED bleibt eine CSS-Zeichnung. Ein Studio-Update genügt; Paket 0.2.0 muss nicht erneut installiert werden. Gehäuse, Schrauben, Rahmen, Schrift und Gehäuse-Snappunkte bleiben einstellbar.
 
 Je Kanal separate Eingangs-/Ausgangsentitäten oder Koppelpunkte. Eingang oben, Ausgang unten in der jeweiligen Spalte, einzeln aktivierbar. Eingangskoppelpunkt hat Vorrang. Die LED zeigt den Eingangszustand; ohne Eingang dient die Ausgangsentität als Rückmeldung. Ohne Bindung wird lokal geschaltet. Ausgänge unterstützen switch, light und input_boolean. Ohne getrennten Ausgang wird eine geeignete Eingangsentity geschaltet. Ausgangs-Lines liefern den letzten Bedienbefehl, vor der ersten Bedienung den aktuellen Zustand. Fehlende Rückmeldung sperrt die Bedienung; der Editor sendet keine Befehle. Zum Hinzufügen das optionale Paket auf 0.2.0 aktualisieren. Die bestehende Gauge/Poti-Definition bleibt erhalten.

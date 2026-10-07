@@ -14,7 +14,7 @@ test("four industrial switches render, route ports and control independent entit
   const packages=await(await page.request.get(new URL("api/widget-packages",url).href)).json();
   const definition=packages.packages.find(p=>p.id==="ugso.industrial").widgets.find(w=>w.type.endsWith("/switch"));
   let fixture=await(await page.request.get(new URL("api/project",url).href)).json();
-  fixture.settings={...fixture.settings,autoSave:false,dockColor:"#112233",outputDockColor:"#ee1188"};
+  fixture.settings={...fixture.settings,autoSave:false,dockColor:"#112233",outputDockColor:"#ee1188",housingSnapColor:"#aa33cc"};
   const bank={...definition.defaults,id:"bank",type:definition.type,x:100,y:100,switchCount:4,height:128,width:512,dockAlwaysVisible:true};
   for(let n=1;n<=4;n++){bank[`outputDock${n}`]=true;bank[`label${n}`]=["Licht","Pumpe","Lüfter","Reserve"][n-1];bank[`ledOnColor${n}`]="#4caf50";}
   bank.outputEntityId1="switch.one";bank.inputEntityId2="switch.two";bank.outputEntityId2="switch.target";bank.switchLegend2="one-zero";bank.switchLegend3="ein-aus";bank.inputDock3=true;bank.inputEntityId3="switch.two";
@@ -26,6 +26,26 @@ test("four industrial switches render, route ports and control independent entit
   await page.route("**/api/switch",async r=>{const body=r.request().postDataJSON();writes.push(body);states[body.entity_id].state=body.enabled?"on":"off";await r.fulfill({json:{accepted:true}});});
   await page.goto(url);try{await page.locator("#bank .industrial-switch").waitFor({timeout:5000});}catch(error){throw new Error(`${error.message}; ${await page.locator("#status").textContent()}; ${errors.join("; ")}`);}
   assert.equal(await page.locator("#bank .industrial-toggle").count(),4);assert.equal(await page.locator("#bank .industrial-toggle:disabled").count(),4);
+  for(let count=1;count<=4;count++){
+   Object.assign(bank,{switchCount:count,width:128*count,housingSnapEnabled:true,housingSnapAlwaysVisible:true,housing_top_left:true,housing_top_right:true,housing_bottom_left:true,housing_bottom_right:true,housing_left_center:true,housing_right_center:true});
+   for(let n=1;n<=4;n++)bank[`inputDock${n}`]=true;
+   await page.reload();await page.locator("#bank .industrial-switch").waitFor();
+   assert.equal(await page.locator("#bank .housing-snap-point").count(),6);
+   assert.equal(await page.locator("#bank .widget-dock-point").count(),2*count);
+   for(let n=1;n<=count;n++){
+    assert.equal(await page.locator(`#bank [data-anchor-id='input-${n}'] .industrial-switch-port-label`).textContent(),`E${n}`);
+    assert.equal(await page.locator(`#bank [data-anchor-id='output-${n}'] .industrial-switch-port-label`).textContent(),`A${n}`);
+   }
+   assert.equal(await page.locator("#bank [data-housing-corner='left-center']").evaluate(el=>getComputedStyle(el).borderColor),"rgb(170, 51, 204)");
+   if(count===1 || count===4){
+    const folder=process.env.STUDIO_TEST_ARTIFACTS||join(process.env.TEMP,"studio-industrial-artifacts");await mkdir(folder,{recursive:true});
+    const box=await page.locator("#bank").boundingBox();
+    await page.locator("#input-wire,#out-wire").evaluateAll(items=>items.forEach(el=>el.style.visibility="hidden"));
+    await page.screenshot({path:join(folder,`industrial-switch-ports-${count}.png`),clip:{x:box.x-20,y:box.y-30,width:box.width+40,height:box.height+60}});
+   }
+  }
+  for(let n=1;n<=4;n++)bank[`inputDock${n}`]=n===3;
+  await page.reload();await page.locator("#bank .industrial-switch").waitFor();
   assert.equal(await page.locator("#bank [data-anchor-id='input-3']").evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(17, 34, 51)");
   for(let n=1;n<=4;n++)assert.equal(await page.locator(`#bank [data-anchor-id='output-${n}']`).evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(238, 17, 136)");
   await page.locator("#bank .industrial-switch").click();await page.locator("#properties details").evaluateAll(items=>items.forEach(el=>el.open=true));
@@ -34,6 +54,7 @@ test("four industrial switches render, route ports and control independent entit
   await width.fill("65");await width.press("Tab");assert.equal(await width.inputValue(),"256");assert.equal(await height.inputValue(),"64");
   assert.equal(await page.locator("#properties [data-property-key='switchLegend3'] option[value='ein-aus']").textContent(),"EIN/AUS");
   await page.goto(new URL("runtime",url).href);await page.locator("#bank .industrial-switch").waitFor();
+  assert.equal(await page.locator("#bank .housing-snap-point, #bank .widget-dock-point, #bank .industrial-switch-port-label").count(),0);
   const channel=n=>page.locator(`#bank [data-channel='${n}'] button`);
   await page.waitForFunction(()=>!document.querySelector("#bank [data-channel='1'] button")?.disabled);
   assert.equal(await channel(1).getAttribute("data-on-label"),"ON");assert.equal(await channel(2).getAttribute("data-off-label"),"0");assert.equal(await channel(3).getAttribute("data-on-label"),"EIN");

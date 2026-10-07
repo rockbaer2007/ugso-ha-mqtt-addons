@@ -52,7 +52,7 @@ import { renderDropdown } from "./dropdown.js";
 import { renderPackageChart, chartBindings } from "./package-chart.js";
 import { isGauge, renderGauge, gaugeEntityIds } from "./gauges.js";
 import { industrialModel, industrialQuantize, renderIndustrialGauge } from "./industrial-gauge.js";
-import { HOUSING_CORNERS, housingActive, housingSnapGroup, isIndustrial, snapHousing } from "./housing-snap.js";
+import { housingPoints, housingActive, housingSnapGroupFor, isIndustrial, snapHousing } from "./housing-snap.js";
 import { squareLocked, industrialSize, industrialResize } from "./industrial-size.js";
 import { isIndustrialSwitch, switchCount, switchAnchors, switchBindings, renderIndustrialSwitch } from "./industrial-switch.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
@@ -210,7 +210,7 @@ const commonWidgetGroups = [
 
 function widgetPropertyGroups(widget) {
   let styleEntryGroups = [];
-  if (isIndustrial(widget)) styleEntryGroups.push(housingSnapGroup);
+  if (isIndustrial(widget)) styleEntryGroups.push(housingSnapGroupFor(widget));
   if (widget.type === "interactive-table") styleEntryGroups = tableEntryGroups(widget);
   if (widget.type === "dropdown") styleEntryGroups = dropdownEntryGroups(widget);
   if (isGauge(widget)) styleEntryGroups = gaugeEntryGroups(widget);
@@ -250,6 +250,7 @@ function widgetPropertyGroups(widget) {
       ] }));
     }
   }
+  if (isIndustrialSwitch(widget)) groups = groups.map(group => ({ ...group, fields: group.fields.map(field => { const port = /^(input|output)Dock([1-4])$/.exec(field.key); return port ? { ...field, label: `${port[1] === "input" ? "E" : "A"}${port[2]}: ${uiText(field.label)}` } : field; }) }));
   const dataGroup = { label: "Datenfluss", hint: "Wertausgabe am gewählten aktiven Dockpunkt. Wert-Verbindungen laufen vom Start zum Ziel; ein Konverter-Eingang erlaubt genau eine Quelle.", fields: [
     { label: "Ausgangspunkt aktivieren", key: "dataOutputEnabled", type: "checkbox", default: false, refreshProperties: true },
     { label: "Ausgangspunkt", key: "dataOutputAnchor", type: "radio", options: OUTPUT_SIDES.map(([value, label]) => ({ value, label })), default: "right-center" },
@@ -3689,7 +3690,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       tab.append(select, edit); element.append(tab);
     }
     const hasConnections = activePage.widgets.some(item => item.type === "svg-connection" && item.visible !== false);
-    if (!runtimeMode && isIndustrial(widget) && (selected || widget.housingSnapAlwaysVisible)) for (const [id, label, x, y] of HOUSING_CORNERS) {
+    if (!runtimeMode && isIndustrial(widget) && (selected || widget.housingSnapAlwaysVisible)) for (const [id, label, x, y] of housingPoints(widget)) {
       if (!housingActive(widget, id)) continue;
       const point = document.createElement("span"); point.className = "housing-snap-point"; point.dataset.housingCorner = id; point.style.left = `${x * 100}%`; point.style.top = `${y * 100}%`; point.title = `Gehäuse-Snappunkt: ${label}`; element.append(point);
     }
@@ -3702,6 +3703,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
         if (isOutput) { marker.classList.add("output-dock-point"); marker.style.setProperty("--dock-color", "var(--output-dock-color)"); }
         const occupied = activePage.widgets.filter(item => item.type === "svg-connection" && [[item.startWidgetId, item.startAnchor], [item.endWidgetId, item.endAnchor]].some(([id, anchor]) => id === widget.id && (anchor || "right-center") === anchorId)).length;
         marker.dataset.count = String(occupied); marker.title = `${label}${occupied ? ` · ${occupied} Verbindung${occupied === 1 ? "" : "en"}` : ""}`; element.append(marker);
+        if (isIndustrialSwitch(widget)) { marker.classList.add("industrial-switch-port"); const caption = document.createElement("span"); caption.className = "industrial-switch-port-label"; caption.textContent = label; marker.append(caption); }
         if (widget.type === "linebox-math") {
           marker.classList.add("math-dock-point"); marker.classList.toggle("is-occupied", occupied > 0); marker.textContent = anchorId;
           const markerSize = Math.max(6, Math.min(20, Math.min(widget.width, widget.height) / 4 - 1));
@@ -5068,8 +5070,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.233" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.233" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.234" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.234" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

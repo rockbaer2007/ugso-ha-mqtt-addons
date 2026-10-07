@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.234
+
+- Kippschalter zeigt im Editor E1–E4 oberhalb und A1–A4 unterhalb des jeweiligen Schalters. Sechs getrennte Gehäuse-Snappunkte (vier Ecken und links/rechts mittig) ergeben zusammen mit den Signalpunkten 8/10/12/14 mögliche Punkte für 1–4 Schalter. Alle Punkte bleiben einzeln aktivierbar; bestehende Verbindungs-IDs bleiben erhalten.
+- Toggle switches show E1–E4 above and A1–A4 below each channel in the editor. Six separate housing snap points (four corners and left/right centers) provide 8/10/12/14 available points including signal ports for 1–4 switches. Points remain individually enabled; existing connection IDs are preserved.
+
 ## 0.1.233
 
 - Industrie-Kippschalter verwendet die bereitgestellte transparente PNG-Grafik für Ein und Aus statt des CSS-Hebels. Die Zustände werden aus getrennten Bildbereichen dargestellt; LED, Schilder und Anschlüsse bleiben unverändert.

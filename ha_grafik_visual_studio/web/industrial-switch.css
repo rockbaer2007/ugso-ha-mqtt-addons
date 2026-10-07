@@ -12,5 +12,7 @@
 .industrial-toggle:disabled { cursor:default; opacity:1; }
 .industrial-toggle-art { display:block; position:absolute; left:50%;top:50%;transform:translate(-50%,-50%);height:min(96px,calc(100% - 16px));width:auto;max-width:85%;aspect-ratio:205/280;overflow:hidden;pointer-events:none; }
 .industrial-toggle:focus-visible { outline:2px solid #54cfea; outline-offset:-2px; }
+.industrial-switch-port-label { position:absolute; left:50%; bottom:13px; transform:translateX(-50%); padding:1px 3px; border:1px solid var(--dock-color,#ffd54f); border-radius:3px; background:#172128; color:#f4f7f9; font:bold 10px/12px sans-serif; white-space:nowrap; }
+.output-dock-point .industrial-switch-port-label { top:13px; bottom:auto; border-color:var(--output-dock-color,#74c0fc); }
 .industrial-screw { position:absolute; z-index:1; width:7px; height:7px; line-height:6px; text-align:center; border:1px solid #111; background:#92999d; color:#30383c; border-radius:50%; font-size:9px; pointer-events:none; }
 .industrial-screw.tl {top:3px;left:3px}.industrial-screw.tr {top:3px;right:3px}.industrial-screw.bl {bottom:3px;left:3px}.industrial-screw.br {bottom:3px;right:3px}

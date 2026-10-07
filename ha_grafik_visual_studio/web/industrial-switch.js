@@ -3,8 +3,8 @@ export const isIndustrialSwitch = widget => widget?.type === "ugso.industrial/sw
 export const switchCount = widget => Math.max(1, Math.min(4, Math.trunc(Number(widget.switchCount) || 1)));
 export function switchAnchors(widget) {
   return Array.from({length:switchCount(widget)},(_,i)=>[
-    [`input-${i+1}`,`Eingang ${i+1}`,(i+.5)/switchCount(widget),0],
-    [`output-${i+1}`,`Ausgang ${i+1}`,(i+.5)/switchCount(widget),1],
+    [`input-${i+1}`,`E${i+1}`,(i+.5)/switchCount(widget),0],
+    [`output-${i+1}`,`A${i+1}`,(i+.5)/switchCount(widget),1],
   ]).flat();
 }
 export function switchPortActive(widget, anchor, side="") {

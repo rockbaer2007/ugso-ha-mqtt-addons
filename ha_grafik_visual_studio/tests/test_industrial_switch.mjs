@@ -2,7 +2,19 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {switchCount,switchAnchors,switchChannel,switchPortActive} from "../web/industrial-switch.js";
 import {widgetValuePacket,widgetInputPacket} from "../web/dataflow.js";
+import {housingPoints} from "../web/housing-snap.js";
 const bank={id:"bank",type:"ugso.industrial/switch",switchCount:4,outputDock1:true,outputDock2:true,outputDock3:true,outputDock4:true,switchState1:true,switchState2:false,switchState3:true,switchState4:false};
+test("1 to 4 switches expose 8/10/12/14 distinct housing and named signal points",()=>{
+ for(let count=1;count<=4;count++){
+  const widget={...bank,switchCount:count},signals=switchAnchors(widget),housing=housingPoints(widget);
+  assert.equal(signals.length+housing.length,6+2*count);
+  for(let n=1;n<=count;n++){
+   assert.deepEqual(signals.find(([id])=>id===`input-${n}`),[`input-${n}`,`E${n}`,(n-.5)/count,0]);
+   assert.deepEqual(signals.find(([id])=>id===`output-${n}`),[`output-${n}`,`A${n}`,(n-.5)/count,1]);
+  }
+  assert.equal(new Set([...signals,...housing].map(([, ,x,y])=>`${x}:${y}`)).size,6+2*count);
+ }
+});
 test("four channels have separate directional ports and boolean outputs",()=>{
   assert.equal(switchCount({switchCount:9}),4);assert.equal(switchAnchors(bank).length,8);
   for(let n=1;n<=4;n++)assert.equal(widgetValuePacket(bank,[bank],{},new Set(),`output-${n}`).value,n%2===1);
