@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Gelb/Weiß": "Yellow/White", "Blau/Weiß": "Blue/White", "Farbmodus": "Color mode", "Ohne Eingang eingeschaltet": "On without an input", "Display Ein/Aus: Entität": "Display power entity", "Ein/Aus-Koppelpunkt aktivieren": "Enable power input port", "Text / Präfix": "Text / prefix", "Einheit aus Entität": "Unit from entity", "Nachkommastellen": "Decimal places", "Zeile 1": "Row 1", "Zeile 2": "Row 2", "Zeile 3": "Row 3", "Zeile 4": "Row 4",
 "Wippschalter – 1 bis 4": "Rocker switches – 1 to 4", "Schalterfarbe": "Switch color", "Weiß/Grau": "White/Gray", "Rot": "Red", "Schwarz": "Black", "Grün": "Green",
 "Verhältnis 1:1": "1:1 aspect ratio",
 "Wertanzeige": "Value display", "Position des Wertes": "Value position", "Mitte": "Center", "Schriftfarbe": "Font color",

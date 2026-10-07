@@ -1,0 +1,43 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {createRequire} from "node:module";
+import {readFile,mkdir} from "node:fs/promises";
+import {join} from "node:path";
+const url=process.env.STUDIO_INDUSTRIAL_TEST_URL;
+test("LCD package renders live rows, power routing, half-grid sizing and both color modes",{skip:!url},async()=>{
+ const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE||"playwright");
+ const browser=await chromium.launch({headless:true,channel:process.env.STUDIO_THEME_BROWSER||undefined});
+ try{
+  const page=await browser.newPage({viewport:{width:1400,height:900}}),errors=[];page.on("pageerror",e=>errors.push(e.message));
+  const install=await page.request.post(new URL("api/widget-packages",url).href,{headers:{"X-Package-Name":"ugso.industrial.wg"},data:await readFile(new URL("../packages/industrial/ugso.industrial.wg",import.meta.url))});
+  assert.ok(install.ok() || /bereits installiert/.test(await install.text()));
+  const packages=await(await page.request.get(new URL("api/widget-packages",url).href)).json(),definitions=packages.packages.find(p=>p.id==="ugso.industrial").widgets;
+  const fixture=await(await page.request.get(new URL("api/project",url).href)).json();fixture.settings={...fixture.settings,autoSave:false};
+  const display=(type,id,x,y,color)=>{const def=definitions.find(w=>w.type.endsWith(type));return {...def.defaults,type:def.type,id,x,y,lcdColor:color,height:type==="lcd-20x4"?128:64,width:384,lineEntityId1:"sensor.temp",lineText1:"Temp: ",lineDecimals1:"1",lineText2:"Pumpe EIN →",lineText3:"Lüfter 230 V",lineText4:"Status: ✓"};};
+  const yellow=display("lcd-20x4","yellow",80,100,"yellow"),blue=display("lcd-20x4","blue",500,100,"blue"),small=display("lcd-16x2","small",80,275,"blue");
+  const toggleDef=definitions.find(w=>w.type.endsWith("/switch"));
+  const toggle={...toggleDef.defaults,type:toggleDef.type,id:"toggle",x:950,y:100,outputDock1:true,switchState1:true};
+  blue.displayInputEnabled=true;blue.dockAlwaysVisible=true;blue.displayEntityId="switch.off";
+  fixture.pages[0].widgets=[yellow,blue,small,toggle,{id:"wire",type:"svg-connection",startWidgetId:"toggle",startAnchor:"output-1",endWidgetId:"blue",endAnchor:"display-power"}];
+  const states={"sensor.temp":{entity_id:"sensor.temp",state:"-20.24",attributes:{unit_of_measurement:"°C"}},"switch.off":{entity_id:"switch.off",state:"off"}};
+  await page.route("**/api/project*",r=>r.fulfill({json:fixture}));await page.route("**/api/states*",r=>r.fulfill({json:{states:Object.values(states)}}));
+  await page.goto(url);await page.locator("#blue .industrial-lcd").waitFor();
+  await page.waitForFunction(()=>document.querySelector("#blue g[data-row='1']")?.dataset.text==="Temp: -20.2 °C");
+  assert.equal(await page.locator("#blue .widget-dock-point").count(),1);assert.equal(await page.locator("#blue .output-dock-point").count(),0);
+  await page.locator("#small .industrial-lcd").click();await page.locator("#properties details").evaluateAll(items=>items.forEach(el=>el.open=true));
+  const height=page.locator("#properties [data-property-key='height']").first(),width=page.locator("#properties [data-property-key='width']").first();
+  await height.fill("32");await height.press("Tab");assert.equal(await width.inputValue(),"192");
+  await width.fill("384");await width.press("Tab");assert.equal(await height.inputValue(),"64");
+  assert.equal(await page.locator("#properties [data-property-key='dataOutputEnabled']").count(),0);
+  assert.equal(await page.locator("#properties [data-property-key='industrialScrewsEnabled']").count(),1);
+  await page.goto(new URL("runtime",url).href);await page.waitForFunction(()=>document.querySelector("#blue g[data-row='1']")?.dataset.text==="Temp: -20.2 °C");
+  assert.equal(await page.locator("#blue .industrial-lcd").getAttribute("data-power"),"on");
+  const folder=process.env.STUDIO_TEST_ARTIFACTS||join(process.env.TEMP,"studio-industrial-artifacts");await mkdir(folder,{recursive:true});
+  for(const id of ["yellow","blue","small"])await page.locator(`#${id}`).screenshot({path:join(folder,`industrial-lcd-${id}.png`)});
+  await page.locator("#toggle button").click();await page.waitForFunction(()=>document.querySelector("#blue .industrial-lcd")?.dataset.power==="off");
+  assert.equal(await page.locator("#blue g").count(),0);await page.locator("#blue").screenshot({path:join(folder,"industrial-lcd-off.png")});
+  assert.equal(await page.locator("#blue .industrial-screw").count(),4);
+  delete states["sensor.temp"];await page.reload();await page.waitForFunction(()=>document.querySelector("#yellow g[data-row='1']")?.dataset.text==="Temp: ?");
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});

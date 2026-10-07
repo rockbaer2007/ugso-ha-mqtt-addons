@@ -24,8 +24,8 @@ class IndustrialTests(unittest.TestCase):
         # Immutable contract fingerprint of the published 0.1.0 Gauge/Poti.
         self.assertEqual(hashlib.sha256(json.dumps(contract, sort_keys=True).encode()).hexdigest(), "bb9a82b02a07c2d0669553990a2e9fe06aea011e443e5f920acaad49b6fef326")
         validate_additive_update({**incoming, "version": "0.1.0", "widgets": [gauge]}, incoming)
-        self.assertEqual(incoming["version"], "0.3.0")
-        self.assertEqual(len(incoming["widgets"]), 3)
+        self.assertEqual(incoming["version"], "0.4.0")
+        self.assertEqual(len(incoming["widgets"]), 5)
 
     def test_rockers_add_all_toggle_properties_without_changing_existing_widgets(self):
         previous = build._base_manifest()
@@ -50,6 +50,15 @@ class IndustrialTests(unittest.TestCase):
         data["apiVersion"] = "0.1"
         with self.assertRaises(ValueError):
             validate_manifest(data)
+
+    def test_lcd_upgrade_preserves_all_three_published_widgets(self):
+        incoming = build.manifest()
+        previous = {**incoming, "version": "0.3.0", "widgets": deepcopy(incoming["widgets"][:3])}
+        validate_additive_update(previous, incoming)
+        for widget, rows, height in zip(incoming["widgets"][3:], (4, 2), (64, 32)):
+            self.assertEqual(widget["render"]["kind"], "industrial-lcd")
+            self.assertEqual((widget["defaults"]["width"], widget["defaults"]["height"]), (192, height))
+            self.assertEqual(len([key for key in widget["defaults"] if key.startswith("lineEntityId")]), rows)
 
     def test_only_explicit_numeric_entities_and_finite_values_can_be_written(self):
         with patch.object(main, "home_assistant_commands") as send:

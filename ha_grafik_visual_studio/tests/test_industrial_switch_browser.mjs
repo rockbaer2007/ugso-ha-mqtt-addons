@@ -47,8 +47,8 @@ test("four industrial switches render, route ports and control independent entit
   }
   for(let n=1;n<=4;n++)bank[`inputDock${n}`]=n===3;
   await page.reload();await page.locator("#bank .industrial-switch").waitFor();
-  assert.equal(await page.locator("#bank [data-anchor-id='input-3']").evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(17, 34, 51)");
-  for(let n=1;n<=4;n++)assert.equal(await page.locator(`#bank [data-anchor-id='output-${n}']`).evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(238, 17, 136)");
+  await page.waitForFunction(()=>{const el=document.querySelector("#bank [data-anchor-id='input-3']");return el && getComputedStyle(el).backgroundColor==="rgb(17, 34, 51)";});
+  for(let n=1;n<=4;n++)await page.waitForFunction(n=>{const el=document.querySelector(`#bank [data-anchor-id='output-${n}']`);return el && getComputedStyle(el).backgroundColor==="rgb(238, 17, 136)";},n);
   await page.locator("#bank .industrial-switch").click();await page.locator("#properties details").evaluateAll(items=>items.forEach(el=>el.open=true));
   const height=page.locator("#properties [data-property-key='height']").first(),width=page.locator("#properties [data-property-key='width']").first();
   await height.fill("160");await height.press("Tab");assert.equal(await width.inputValue(),"646");
@@ -127,7 +127,7 @@ test("four industrial switches render, route ports and control independent entit
   await page.locator("#bank").screenshot({path:join(folder,"industrial-rockers.png")});
   bank.height=64;bank.width=256;await page.reload();await page.locator("#bank .industrial-rocker-art").first().waitFor();
   for(let n=1;n<=4;n++){
-   const art=await channel(n).locator("img").boundingBox(),button=await channel(n).boundingBox();
+   const art=await bounds(`#bank [data-channel='${n}'] img`),button=await bounds(`#bank [data-channel='${n}'] button`);
    assert.ok(art.height>10 && art.x>=button.x && art.y>=button.y && art.y+art.height<=button.y+button.height+1);
   }
   await page.locator("#input-wire,#out-wire").evaluateAll(items=>items.forEach(el=>el.style.visibility="hidden"));

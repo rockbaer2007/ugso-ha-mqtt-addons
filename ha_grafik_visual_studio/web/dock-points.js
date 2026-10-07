@@ -1,5 +1,6 @@
 import { isSeparator, clearSeparatorConnections } from "./separator-line.js";
 import { isIndustrialSwitch, switchPortActive } from "./industrial-switch.js";
+import { isIndustrialLcd, lcdPortActive } from "./industrial-lcd.js";
 
 export function dockPointKey(anchorId) {
   return `dock_${anchorId.replaceAll("-", "_")}`;
@@ -7,7 +8,7 @@ export function dockPointKey(anchorId) {
 
 export const OUTPUT_SIDES = [["top-center", "Oben"], ["bottom-center", "Unten"], ["right-center", "Rechts"], ["left-center", "Links"]];
 export function hasSimpleOutput(widget) {
-  return !!widget && !isIndustrialSwitch(widget) && !isSeparator(widget) && !["svg-connection", "linebox", "linebox-math", "value-converter"].includes(widget.type);
+  return !!widget && !isIndustrialSwitch(widget) && !isIndustrialLcd(widget) && !isSeparator(widget) && !["svg-connection", "linebox", "linebox-math", "value-converter"].includes(widget.type);
 }
 export function outputDockActive(widget, anchor) {
   return hasSimpleOutput(widget) && widget.dataOutputEnabled === true && anchor === (widget.dataOutputAnchor || "right-center");
@@ -23,6 +24,7 @@ export function setOutputAnchor(widget, widgets, anchor) {
 }
 export function dockPointActive(widget, anchor, side = "") {
   if (isIndustrialSwitch(widget)) return switchPortActive(widget, anchor, side);
+  if (isIndustrialLcd(widget)) return lcdPortActive(widget, anchor, side);
   if (widget && isSeparator(widget)) return false;
   if (outputDockActive(widget, anchor)) return side !== "end";
   return widget?.dockPointsEnabled === true && widget[dockPointKey(anchor)] === true;

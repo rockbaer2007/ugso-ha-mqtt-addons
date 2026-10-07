@@ -1,4 +1,14 @@
-# UGSo Industrie 0.3.0
+# UGSo Industrie 0.4.0
+
+## LCD 20×4 / 16×2 (Studio 0.1.238+)
+
+Deutsch: Zwei neue, rein lesende LCD-Widgets mit eigener 5×8-Punktmatrix-Schrift, Gelb/Weiß oder Blau/Weiß und schwarzem Bildschirmrand. 20×4 startet mit 192×64 px (H/B 1:3), 16×2 mit 192×32 px (H/B 0,5:3). Eingabe und Ziehen erhalten das feste Verhältnis. Pro Zeile eine Entität, Text als Präfix oder ohne Entität als fester Inhalt, optionale Einheit und 0–6 Nachkommastellen oder `auto`. Automatische Einheiten kommen aus Home Assistant. Überschüssige Zeichen werden abgeschnitten; der vollständige Text steht im Tooltip. Fehlende Werte erscheinen als `?`, unbekannte Zeichen als Fragezeichen.
+
+Ein/Aus: Ohne Bindung gilt der Vorschauzustand. Eine Display-Entität oder der einzeln aktivierte Eingang `display-power` steuert die Beleuchtung und Schrift. Der Koppelpunkt hat Vorrang; fehlender oder unbekannter Eingang lässt das Display dunkel. Eine sichtbare oder unsichtbare Wert-Verbindung vom Kippschalter/Wippschalter funktioniert ebenfalls. Es gibt keine Zeilen-Koppelpunkte und keine Ausgänge. Vier einzeln aktivierbare Gehäuse-Ecken, Abstand rundherum, Industriestyle, Schrauben und Rahmen bleiben einstellbar.
+
+English: Two new read-only LCD widgets use an original 5×8 bitmap alphabet, yellow/white or blue/white colors and a black screen bezel. 20×4 starts at 192×64 px; 16×2 at 192×32 px. Input and resizing preserve their aspect ratios. Each row supports one entity, a text prefix or static text, units and automatic or 0–6 decimal places. Overflow is clipped, with full text in the tooltip. Unavailable values and unsupported characters show `?`.
+
+One optional power entity or enabled `display-power` input controls the backlight and text. The port takes priority; missing/unknown power makes the display dark. Toggle/rocker connections can be visible or hidden. No row ports or outputs are provided. Four housing corners, all-side spacing, industrial styling, screws and frame settings remain available. Updating preserves the three existing widget definitions.
 
 Deutsch: Ab Studio 0.1.237 gilt die unten beschriebene Abstandsberechnung auch für Wippschalter, einschließlich Eingabe, Ziehen und E/A-Anschlüssen. Ein Studio-Update genügt; Paket 0.3.0 bleibt unverändert.
 

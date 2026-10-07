@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.238
+
+- Industriepaket 0.4.0 ergänzt LCD 20×4 (192×64 px) und 16×2 (192×32 px): eigene 5×8-Punktmatrix-Schrift, Gelb/Weiß und Blau/Weiß, eine Entität je Zeile, Präfix, Einheiten und Nachkommastellen. Ein einzelner Ein/Aus-Eingang oder eine Entität steuert das Display; Gehäuse, Schrauben, Rahmen und Snappunkte bleiben einstellbar.
+- Industrial package 0.4.0 adds 20×4 and 16×2 LCDs with an original 5×8 bitmap alphabet, yellow/white and blue/white modes, one entity per row, prefixes, units and decimal formatting. One power input or entity controls the read-only display; housing, screws, frame and snap points remain configurable.
+
 ## 0.1.237
 
 - Wippschalter verwenden dieselbe Abstandsberechnung wie Kippschalter: 64/130/196/262 px bei 64 px Grundhöhe und 1 px Abstand rundherum. Mehrfachblöcke, Schaltermitten und E/A-Anschlüsse fluchten mit einzelnen Widgets. Eingabe und Ziehen berücksichtigen den eingestellten Abstand.
