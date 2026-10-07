@@ -1,8 +1,8 @@
 import { housingSpace } from "./housing-snap.js";
 
 export const isIndustrialSection = widget => widget?.type === "ugso.industrial/section";
-export const sectionCount = widget => Math.max(1, Math.min(4, Math.trunc(Number(widget.sectionCount) || 1)));
-export const sectionRows = widget => Math.max(1, Math.min(4, Math.trunc(Number(widget.sectionRows) || 1)));
+export const sectionCount = widget => Math.max(1, Math.min(12, Math.trunc(Number(widget.sectionCount) || 1)));
+export const sectionRows = widget => Math.max(1, Math.min(12, Math.trunc(Number(widget.sectionRows) || 1)));
 export function sectionSize(widget, changed = "height") {
   const count = sectionCount(widget), rows = sectionRows(widget), space = housingSpace(widget);
   const gapX = 2 * space * (count - 1), gapY = 2 * space * (rows - 1);

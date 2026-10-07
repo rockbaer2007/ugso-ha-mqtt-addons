@@ -1,10 +1,10 @@
-# UGSo Industrie 0.10.0
+# UGSo Industrie 0.10.1
 
-## Blindelement / Blank panel (Studio 0.1.246+)
+## Blindelement / Blank panel (Studio 0.1.247+)
 
-Leeres Industriegehäuse als Hintergrund für darüberliegende Eingabe- und Anzeige-Widgets. „Abschnitte“ bestimmt die Breite, „Abschnitte senkrecht“ die Höhe (je 1 bis 4), maximal 4:4 Rasterfelder. Mindestens 64×64 px je Rasterzelle, gekoppelte Breite/Höhe und derselbe Rasterausgleich wie bei Schalterblöcken. Bei 64 px Zellgröße und 1 px Abstand: 64 / 130 / 196 / 262 px in jeder Richtung. Die Abschnittswahl erhält die Zellgröße. Nur Gehäuseandockpunkte, keine Entitäten oder Datenanschlüsse. Industriestyle, Schrauben, Rahmenfarbe/-breite, Eckenradius und CSS bleiben einstellbar. Der voreingestellte CSS-z-index -1 legt das Gehäuse unter normale Widgets; bei Bedarf über CSS Allgemein ändern. Darüberliegende Widgets bleiben eigenständige Elemente.
+Leeres Industriegehäuse als Hintergrund für darüberliegende Eingabe- und Anzeige-Widgets. „Abschnitte“ bestimmt die Breite, „Abschnitte senkrecht“ die Höhe (je 1 bis 12), maximal 12:12 Rasterfelder. Mindestens 64×64 px je Rasterzelle, gekoppelte Breite/Höhe und derselbe Rasterausgleich wie bei Schalterblöcken. Bei 64 px Zellgröße und 1 px Abstand: 64 / 130 / 196 / 262 px in jeder Richtung. Die Abschnittswahl erhält die Zellgröße. Nur Gehäuseandockpunkte, keine Entitäten oder Datenanschlüsse. Industriestyle, Schrauben, Rahmenfarbe/-breite, Eckenradius und CSS bleiben einstellbar. Der voreingestellte CSS-z-index -1 legt das Gehäuse unter normale Widgets; bei Bedarf über CSS Allgemein ändern. Darüberliegende Widgets bleiben eigenständige Elemente.
 
-Empty industrial housing underneath independent input/display widgets. “Sections” and “Vertical sections” select one to four columns/rows, up to 4:4 grid cells, with the same grid spacing as switch banks. Minimum cell: 64×64 px; width and height scale together. At 64 px cell size and 1 px spacing, dimensions are 64 / 130 / 196 / 262 px in either direction. Changing section counts preserves cell size. Housing snap points only, no entities or data ports. Shared housing, screws, frame, radius and CSS options remain available. Default CSS z-index -1 places the panel below normal widgets.
+Empty industrial housing underneath independent input/display widgets. “Sections” and “Vertical sections” select one to twelve columns/rows, up to 12:12 grid cells, with the same grid spacing as switch banks. Minimum cell: 64×64 px; width and height scale together. At 64 px cell size and 1 px spacing, dimensions are 64 / 130 / 196 / 262 px in either direction. Changing section counts preserves cell size. Housing snap points only, no entities or data ports. Shared housing, screws, frame, radius and CSS options remain available. Default CSS z-index -1 places the panel below normal widgets.
 
 ## Wetterdisplay / Weather display (Studio 0.1.245+)
 

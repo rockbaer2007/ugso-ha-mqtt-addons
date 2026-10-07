@@ -266,7 +266,7 @@ function widgetPropertyGroups(widget) {
   ] };
   if (isIndustrialSegment(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>field.key==="segmentUnit"?{...field,options:[{value:"off",label:"Aus"},{value:"W",label:"W"},{value:"A",label:"A"},{value:"V",label:"V"}]}:field)})),...styleEntryGroups];
   if (isIndustrialClock(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1" && (field.key!=="clockLedColor" || clockMode(widget)==="led") && (!["clockLcdColor","clockLcdBackground"].includes(field.key) || clockMode(widget)==="lcd")).map(field=>field.key==="clockMode"?{...field,refreshProperties:true,options:[{value:"nixie",label:"Nixieröhre"},{value:"led",label:"LED"},{value:"lcd",label:"LCD"}]}:field.key==="height"?{...field,min:clockMode(widget)==="nixie"?64:32}:field.key==="clockZone"?{...field,options:[{value:"local",label:"Browser-Ortszeit"},{value:"UTC",label:"UTC"},{value:"Europe/Berlin",label:"Europe/Berlin"}]}:field)})),...styleEntryGroups];
-  if (isIndustrialSection(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>["sectionCount","sectionRows"].includes(field.key)?{...field,refreshProperties:true}:field)})),...styleEntryGroups];
+  if (isIndustrialSection(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>["sectionCount","sectionRows"].includes(field.key)?{...field,refreshProperties:true,options:Array.from({length:12},(_,i)=>String(i+1))}:field)})),...styleEntryGroups];
   if (isIndustrialWeather(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1" && (field.key!=="weatherLedColor" || widget.weatherMode==="led") && (!["weatherLcdColor","weatherLcdBackground"].includes(field.key) || widget.weatherMode!=="led")).map(field=>field.key==="weatherMode"?{...field,refreshProperties:true}:field)})),...styleEntryGroups];
   if (isIndustrialLinear(widget)) {
     const gauge=Boolean(widget.entityId || widget.dataInputEnabled===true);
@@ -5201,8 +5201,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.246" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.246" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.247" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.247" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.247
+
+- Blindelement: „Abschnitte“ und „Abschnitte senkrecht“ erlauben jetzt je 1 bis 12, maximal 12:12 Rasterfelder. Zellgröße, Abstände und Skalierung bleiben erhalten. Industriepaket 0.10.1 aktualisiert die Anleitung; bestehende Widget-Definitionen bleiben unverändert.
+- Blank panel supports one to twelve horizontal/vertical sections, up to 12:12 grid cells. Industrial 0.10.1 updates the instructions without changing published widget definitions.
+
 ## 0.1.246
 
 - Industriepaket 0.10.0 ergänzt „Blindelement“ als leeres Hintergrundgehäuse. „Abschnitte“ und „Abschnitte senkrecht“ bieten je 1 bis 4 Rastereinheiten, maximal 4:4, mit den üblichen Zwischenabständen. Gehäuseandockpunkte, Schrauben, Rahmen und CSS sind einstellbar; andere Widgets können darüberliegen.
