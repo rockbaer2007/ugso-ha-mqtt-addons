@@ -1,5 +1,9 @@
 # UGSo Industrie 0.3.0
 
+Deutsch: Ab Studio 0.1.237 gilt die unten beschriebene Abstandsberechnung auch für Wippschalter, einschließlich Eingabe, Ziehen und E/A-Anschlüssen. Ein Studio-Update genügt; Paket 0.3.0 bleibt unverändert.
+
+English: Since Studio 0.1.237, the spacing calculation below also applies to rocker switches, including width input, resizing and E/A ports. Updating Studio is sufficient; package 0.3.0 is unchanged.
+
 Deutsch: Ab Studio 0.1.236 berücksichtigt nur der Kippschalter den Zwischenabstand im Mehrfachblock: Breite = Höhe × Schalteranzahl + 2 × Abstand rundherum × (Schalteranzahl − 1). Bei 64 px Höhe und 1 px Abstand ergeben sich 64/130/196/262 px. Schaltermitten und Anschlüsse fluchten mit einzeln angedockten Widgets. Wippschalter bleiben vorerst unverändert. Das Host-Update genügt; Paket 0.3.0 bleibt unverändert.
 
 English: Since Studio 0.1.236, only toggle banks include spacing: width = height × channel count + 2 × all-side spacing × (channel count − 1). At 64 px height and 1 px spacing, widths are 64/130/196/262 px. Channel centers and ports align with individually docked widgets. Rocker sizing remains unchanged for now. Only a host update is required; package 0.3.0 is unchanged.

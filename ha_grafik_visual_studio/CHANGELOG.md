@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.237
+
+- Wippschalter verwenden dieselbe Abstandsberechnung wie Kippschalter: 64/130/196/262 px bei 64 px Grundhöhe und 1 px Abstand rundherum. Mehrfachblöcke, Schaltermitten und E/A-Anschlüsse fluchten mit einzelnen Widgets. Eingabe und Ziehen berücksichtigen den eingestellten Abstand.
+- Rocker switches use the same spacing calculation as toggle switches: 64/130/196/262 px for 64 px channels with 1 px all-side spacing. Banks, channel centers and E/A ports align with individual widgets. Width input and resizing include configured spacing.
+
 ## 0.1.236
 
 - Kippschalter-Blöcke berücksichtigen den Gehäuseabstand zwischen Kanälen: bei 64 px und 1 px Abstand rundherum sind die Breiten 64/130/196/262 px. Schaltermitten und E/A-Anschlüsse fluchten mit einzelnen Widgets darunter. Eingabe und Ziehen berücksichtigen den Zuschlag. Wippschalter bleiben unverändert.

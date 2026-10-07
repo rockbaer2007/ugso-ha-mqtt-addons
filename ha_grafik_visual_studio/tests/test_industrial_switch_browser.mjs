@@ -9,6 +9,7 @@ test("four industrial switches render, route ports and control independent entit
  const browser=await chromium.launch({headless:true,channel:process.env.STUDIO_THEME_BROWSER||undefined});
  try{
   const page=await browser.newPage({viewport:{width:1500,height:1000}});
+  const bounds=async selector=>(await page.waitForFunction(selector=>{const element=document.querySelector(selector);if(!element)return false;const box=element.getBoundingClientRect();return box.width && box.height ? {x:box.x,y:box.y,width:box.width,height:box.height} : false;},selector)).jsonValue();
   const installed=await page.request.post(new URL("api/widget-packages",url).href,{headers:{"X-Package-Name":"ugso.industrial.wg"},data:await readFile(new URL("../packages/industrial/ugso.industrial.wg",import.meta.url))});
   assert.ok(installed.ok() || /bereits installiert/.test(await installed.text()));
   const packages=await(await page.request.get(new URL("api/widget-packages",url).href)).json();
@@ -29,7 +30,7 @@ test("four industrial switches render, route ports and control independent entit
   for(let count=1;count<=4;count++){
    Object.assign(bank,{switchCount:count,width:128*count,housingSnapEnabled:true,housingSnapAlwaysVisible:true,housing_top_left:true,housing_top_right:true,housing_bottom_left:true,housing_bottom_right:true,housing_left_center:true,housing_right_center:true});
    for(let n=1;n<=4;n++)bank[`inputDock${n}`]=true;
-   await page.reload();await page.locator("#bank .industrial-switch").waitFor();
+   await page.reload();try{await page.locator("#bank .industrial-switch").waitFor({timeout:5000});}catch(error){throw new Error(`count=${count}; ${error.message}; ${await page.locator("#status").textContent()}; ${errors.join("; ")}`);}
    assert.equal(await page.locator("#bank .housing-snap-point").count(),6);
    assert.equal(await page.locator("#bank .widget-dock-point").count(),2*count);
    for(let n=1;n<=count;n++){
@@ -75,7 +76,7 @@ test("four industrial switches render, route ports and control independent entit
   const folder=process.env.STUDIO_TEST_ARTIFACTS||join(process.env.TEMP,"studio-industrial-artifacts");await mkdir(folder,{recursive:true});
   await page.locator("#input-wire,#out-wire").evaluateAll(items=>items.forEach(el=>el.style.visibility="hidden"));
   await page.locator("#bank").screenshot({path:join(folder,"industrial-switches.png")});
-  bank.height=64;bank.width=256;await page.reload();await page.locator("#bank").waitFor();const box=await page.locator("#bank").boundingBox();assert.equal(box.width,262);assert.equal(box.height,64);
+  bank.height=64;bank.width=256;await page.reload();const box=await bounds("#bank");assert.equal(box.width,262);assert.equal(box.height,64);
   await page.locator("#input-wire,#out-wire").evaluateAll(items=>items.forEach(el=>el.style.visibility="hidden"));
   await page.locator("#bank").screenshot({path:join(folder,"industrial-switches-64.png")});
   for(let n=1;n<=4;n++)fixture.pages[0].widgets.push({...definition.defaults,id:`single-${n}`,type:definition.type,x:bank.x+(n-1)*66,y:bank.y+100,height:64,width:64});
@@ -96,6 +97,7 @@ test("four industrial switches render, route ports and control independent entit
    bank.switchCount=count;bank.width=128*count;
    await page.goto(url);await page.locator("#bank .industrial-rocker-art").first().waitFor();
    assert.equal(await page.locator("#bank .industrial-rocker-art").count(),count);
+   assert.equal((await bounds("#bank")).width,128*count+2*(count-1));
    assert.equal(await page.locator("#bank .housing-snap-point").count(),6);
    assert.equal(await page.locator("#bank .industrial-toggle:disabled").count(),count);
    assert.equal(await page.locator("#bank [data-anchor-id^='output-']").count(),count);
@@ -105,6 +107,10 @@ test("four industrial switches render, route ports and control independent entit
   assert.deepEqual(await colorSelect.locator("option").evaluateAll(items=>items.map(el=>el.value)),["white","red","black","green"]);
   await colorSelect.selectOption("black");
   assert.match(await channel(2).locator("img").getAttribute("src"),/rocker-black-/);
+  const rockerWidth=page.locator("#properties [data-property-key='width']").first(),rockerHeight=page.locator("#properties [data-property-key='height']").first(),rockerSpace=page.locator("#properties [data-property-key='housingSpace']").first();
+  await rockerHeight.fill("64");await rockerHeight.press("Tab");assert.equal(await rockerWidth.inputValue(),"262");
+  await rockerSpace.fill("3");await rockerSpace.press("Tab");assert.equal(await rockerWidth.inputValue(),"274");
+  await rockerWidth.fill("530");await rockerWidth.press("Tab");assert.equal(await rockerHeight.inputValue(),"128");
   states["switch.one"].state="off";
   await page.goto(new URL("runtime",url).href);await page.locator("#bank .industrial-rocker-art").first().waitFor();
   await page.waitForFunction(()=>!document.querySelector("#bank [data-channel='1'] button")?.disabled);
@@ -126,6 +132,17 @@ test("four industrial switches render, route ports and control independent entit
   }
   await page.locator("#input-wire,#out-wire").evaluateAll(items=>items.forEach(el=>el.style.visibility="hidden"));
   await page.locator("#bank").screenshot({path:join(folder,"industrial-rockers-64.png")});
+  for(let n=1;n<=4;n++)fixture.pages[0].widgets.push({...rockerDefinition.defaults,id:`single-${n}`,type:rockerDefinition.type,x:bank.x+(n-1)*66,y:bank.y+100,height:64,width:64,rockerColor1:["white","red","black","green"][n-1]});
+  await page.reload();await page.locator("#single-4").waitFor();
+  const rockerBlock=await bounds("#bank");
+  assert.equal(rockerBlock.width,262);
+  for(let n=1;n<=4;n++){
+   const single=await bounds(`#single-${n}`),singleArt=await bounds(`#single-${n} img`),blockArt=await bounds(`#bank [data-channel='${n}'] img`);
+   assert.ok(Math.abs(singleArt.x+singleArt.width/2-blockArt.x-blockArt.width/2)<.5);
+   if(n===4)assert.equal(single.x+single.width,rockerBlock.x+rockerBlock.width);
+  }
+  await page.locator("#input-wire,#out-wire").evaluateAll(items=>items.forEach(el=>el.style.visibility="hidden"));
+  await page.screenshot({path:join(folder,"industrial-rocker-spacing.png"),clip:{x:rockerBlock.x-5,y:rockerBlock.y-5,width:rockerBlock.width+10,height:174}});
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });
