@@ -17,6 +17,28 @@ spec.loader.exec_module(build)
 
 
 class IndustrialTests(unittest.TestCase):
+    def test_upgrade_preserves_all_published_0113_contracts(self):
+        incoming = build.manifest()
+        contracts = [{key: value for key, value in widget.items() if key not in {"icon", "iconData"}} for widget in incoming["widgets"]]
+        self.assertEqual(hashlib.sha256(json.dumps(contracts, sort_keys=True).encode()).hexdigest(), "e0746c5f1db9949019c91ae8feac11920534f1c0aa39c0b675f61b7cbe0ff981")
+        installed = deepcopy(incoming)
+        installed["version"] = "0.11.3"
+        heating = next(widget for widget in installed["widgets"] if widget["type"] == "ugso.industrial/heating")
+        original = deepcopy(installed)
+        validate_additive_update(installed, incoming)
+        self.assertEqual(installed, original)
+        for change in ("defaults", "field-key", "group-label"):
+            bad = deepcopy(incoming)
+            widget = next(item for item in bad["widgets"] if item["type"] == heating["type"])
+            if change == "defaults":
+                widget["defaults"]["heatingEntityId"] = "sensor.other"
+            elif change == "field-key":
+                widget["propertyGroups"][0]["fields"][0]["key"] = "otherKey"
+            else:
+                widget["propertyGroups"][0]["label"] = "Other group"
+            with self.assertRaises(ValueError):
+                validate_additive_update(installed, bad)
+
     def test_upgrade_keeps_published_gauge_contract(self):
         incoming = read_package_zip(build.build().read_bytes())
         gauge = incoming["widgets"][0]
@@ -24,7 +46,7 @@ class IndustrialTests(unittest.TestCase):
         # Immutable contract fingerprint of the published 0.1.0 Gauge/Poti.
         self.assertEqual(hashlib.sha256(json.dumps(contract, sort_keys=True).encode()).hexdigest(), "bb9a82b02a07c2d0669553990a2e9fe06aea011e443e5f920acaad49b6fef326")
         validate_additive_update({**incoming, "version": "0.1.0", "widgets": [gauge]}, incoming)
-        self.assertEqual(incoming["version"], "0.11.4")
+        self.assertEqual(incoming["version"], "0.11.5")
         self.assertEqual(len(incoming["widgets"]), 16)
 
     def test_rockers_add_all_toggle_properties_without_changing_existing_widgets(self):

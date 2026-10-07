@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.259
+
+- Industrial 0.11.5 ersetzt das nicht aktualisierbare 0.11.4 und bewahrt die veröffentlichten Widgetverträge. Die Anzeige „Vorlauftemperatur“ wird im Studio dargestellt, ohne gespeicherte Gruppenschlüssel zu ändern. Lokales Paket 0.11.5 statt 0.11.4 installieren; Entitätsbindungen bleiben erhalten.
+- Industrial 0.11.5 replaces the non-upgradeable 0.11.4 while preserving published widget contracts. Studio displays the supply temperature heading without changing persisted group keys. Install local package 0.11.5 instead; entity bindings are preserved.
+
 ## 0.1.258
 
 - Heizungswidget: Beschriftung „Vorlauf“ statt „Heizkreis“, auch für Temperatur- und Pfeileinstellungen im Industrial-Paket 0.11.4. Bestehende Entitätsbindungen bleiben erhalten.

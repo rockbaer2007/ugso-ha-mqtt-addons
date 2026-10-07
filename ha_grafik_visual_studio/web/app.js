@@ -4455,6 +4455,7 @@ function openConnectionPointsEditor(widget) {
 }
 
 function field(descriptor, widget) {
+  if (isIndustrialHeating(widget) && descriptor.key === "heatingArrow") descriptor = { ...descriptor, label: "Vorlauf" };
   const renderKind = widget.type ? getWidgetDefinition(widget.type).render?.kind : null;
   if (descriptor.type === "tab-edit") {
     const button = document.createElement("button"); button.type = "button"; button.textContent = uiText(descriptor.label);
@@ -4821,7 +4822,7 @@ function renderProperties() {
     details.open = state.expandedPropertySections.has(sectionKey);
     details.addEventListener("toggle", () => { if (details.open) state.expandedPropertySections.add(sectionKey); else state.expandedPropertySections.delete(sectionKey); });
     const summary = document.createElement("summary");
-    const title = document.createElement("span"); title.className = "property-section-title"; title.textContent = group.label;
+    const title = document.createElement("span"); title.className = "property-section-title"; title.textContent = isIndustrialHeating(widget) && group.label === "Heizkreistemperatur" ? "Vorlauftemperatur" : group.label;
     summary.append(title);
     if (group.indexed) {
       const { index: entryIndex, count, max, min = 1, fields } = group.indexed;
@@ -5299,8 +5300,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.258" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.258" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.259" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.259" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

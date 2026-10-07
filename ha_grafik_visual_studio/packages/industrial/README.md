@@ -1,8 +1,8 @@
-# UGSo Industrie 0.11.4
+# UGSo Industrie 0.11.5
 
-Ab Studio 0.1.258 heißt die Heizkreistemperaturanzeige **Vorlauf**. Industrial 0.11.4 verwendet auch in den Temperatur- und Pfeileinstellungen diese Bezeichnung; Entitätsbindungen bleiben erhalten.
+Ab Studio 0.1.258 heißt die Heizkreistemperaturanzeige **Vorlauf**. Industrial 0.11.5 ersetzt das nicht aktualisierbare 0.11.4 und bewahrt die veröffentlichten Widgetverträge. Studio 0.1.259 zeigt die entsprechenden Einstellungen als Vorlauf an, ohne gespeicherte Gruppenschlüssel zu ändern. Entitätsbindungen bleiben erhalten.
 
-Since Studio 0.1.258, the heating circuit temperature display is labelled **Supply**. Industrial 0.11.4 updates its temperature and arrow settings labels without changing entity bindings.
+Since Studio 0.1.258, the heating circuit temperature display is labelled **Supply**. Industrial 0.11.5 replaces the non-upgradeable 0.11.4 and preserves published contracts. Studio 0.1.259 displays supply captions while retaining saved group keys and entity bindings.
 
 ## Eigene Schalterbeschriftung / Custom switch legends (Studio 0.1.249+)
 
