@@ -4462,7 +4462,7 @@ function field(descriptor, widget) {
     aliasPreview.hidden = !showAlias;
     aliasPreview.textContent = alias ? alias.slice(0, 3) : "";
   };
-  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || isIndustrialLcd(widget) && /^lineEntityId[1-4]$/.test(descriptor.key) || renderKind === "material-widget" && /EntityId\d+$/.test(descriptor.key) || ["technic-room", "technic-status-list"].includes(renderKind) && /^rowEntityId\d+$/.test(descriptor.key) || renderKind === "chart" && /^seriesEntityId\d+$/.test(descriptor.key)) {
+  if (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || isIndustrialSwitch(widget) && /^(input|output)EntityId[1-4]$/.test(descriptor.key) || isIndustrialLcd(widget) && /^lineEntityId[1-4]$/.test(descriptor.key) || renderKind === "material-widget" && /EntityId\d+$/.test(descriptor.key) || ["technic-room", "technic-status-list"].includes(renderKind) && /^rowEntityId\d+$/.test(descriptor.key) || renderKind === "chart" && /^seriesEntityId\d+$/.test(descriptor.key)) {
     const row = document.createElement("span"); row.className = "property-entity-row";
     const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button";
     picker.textContent = "…";
@@ -5205,8 +5205,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.249" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.249" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.250" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.250" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

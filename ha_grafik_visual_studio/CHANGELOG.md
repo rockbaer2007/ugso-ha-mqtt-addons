@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.250
+
+- Kipp- und Wippschalter öffnen jetzt über die drei Punkte an jeder Eingangs- und Ausgangsentität die Home-Assistant-Entitätenauswahl. Die Auswahl wird in das richtige Kanalfeld übernommen.
+- Toggle and rocker switches now offer the Home Assistant entity picker for every channel's input and output entity field.
+
 ## 0.1.249
 
 - Kipp- und Wippschalter bieten je Schalter die Schildbeschriftung „Benutzerdefiniert“ mit „Text bei AUS“ und „Text bei EIN“, etwa Kalt/Warm oder 1/2. Die Zustände und Signale bleiben boolesch. Lange Texte werden am Schild gekürzt; der Tooltip zeigt den vollständigen aktuellen Zustandstext.
