@@ -1,4 +1,4 @@
-"""Build the data-only Industrial set (linear widgets: Studio >= 0.1.239)."""
+"""Build the data-only Industrial set (segment widgets: Studio >= 0.1.243)."""
 from copy import deepcopy
 import json
 import sys
@@ -40,7 +40,7 @@ def _base_manifest():
 
 def manifest():
     data = _base_manifest()
-    data["version"] = "0.6.0"
+    data["version"] = "0.7.0"
     toggle = data["widgets"][1]
     rocker = deepcopy(toggle)
     rocker.update(type="ugso.industrial/rocker-switch", label="Wippschalter – 1 bis 4", icon="icons/rocker-gray.svg")
@@ -99,6 +99,23 @@ def manifest():
                   {"label": "Größe", "fields": [field("odometerSpan", "Breite in Rastereinheiten", "select", options=["3", "4"]), field("width", "Breite (px)", "number", min=192, max=4096), field("height", "Höhe (px)", "number", min=32 if slim else 64, max=4096)]}]
         data["widgets"].append({"type": "ugso.industrial/odometer-slim" if slim else "ugso.industrial/odometer", "label": "Zählwerk – Schmal" if slim else "Zählwerk", "icon": "icons/odometer.svg",
                                 "defaults": defaults, "propertyGroups": groups, "render": {"kind": "industrial-odometer", "valueKey": "state"}})
+    for digits, mode in ((7, "led"), (16, "led"), (16, "lcd")):
+        defaults = {"entityId": "", "segmentText": "123.45" if digits == 7 else "SOLAR", "segmentDigits": 6,
+                    "segmentDecimals": 2, "segmentLeadingZeros": False, "segmentUnit": "W", "segmentSpan": "4",
+                    "segmentColor": "#182a15" if mode == "lcd" else "#ff3b30", "segmentBackground": "#8a9b61" if mode == "lcd" else "#080b0d",
+                    "dataInputEnabled": False, "dataInputAnchor": "value-input", "displayEntityId": "", "displayOn": True,
+                    "displayInputEnabled": False, "dockAlwaysVisible": False, "width": 262, "height": 64,
+                    "industrialStyle": True, "industrialScrewsEnabled": True, "backgroundColor": "transparent", "borderWidth": 0, "padding": 0}
+        groups = [{"label": "Segmentanzeige", "fields": [field("entityId", "Inhalt: Entität"), field("segmentText", "Vorschauwert / Text"),
+                  field("dataInputEnabled", "Wert-Eingangs-Koppelpunkt aktivieren", "checkbox"), field("segmentDigits", "Stellen (einschließlich Minuszeichen)", "number", min=1, max=10),
+                  *([field("segmentDecimals", "Nachkommastellen", "number", min=0, max=9), field("segmentLeadingZeros", "Führende Nullen", "checkbox")] if digits == 7 else []),
+                  field("segmentUnit", "Einheiten-LED", "select", options=["off", "W", "A", "V"]), field("segmentColor", "Segment- und Einheitenfarbe", "color"), field("segmentBackground", "Bildschirm-Hintergrund", "color")]},
+                  {"label": "Display Ein/Aus", "fields": [field("displayOn", "Ohne Eingang eingeschaltet", "checkbox"), field("displayEntityId", "Display Ein/Aus: Entität"),
+                  field("displayInputEnabled", "Ein/Aus-Koppelpunkt aktivieren", "checkbox"), field("dockAlwaysVisible", "Koppelpunkte immer anzeigen", "checkbox")]},
+                  {"label": "Gehäuse und Farben", "fields": [field("industrialStyle", "Industriestyle", "checkbox")]},
+                  {"label": "Größe", "fields": [field("segmentSpan", "Breite in Rastereinheiten", "select", options=["3", "4"]), field("width", "Breite (px)", "number", min=192, max=4096), field("height", "Höhe (px)", "number", min=64, max=4096)]}]
+        data["widgets"].append({"type": f"ugso.industrial/segment-{digits}-{mode}", "label": f"{digits}-Segment – {mode.upper()}", "icon": "icons/segment.svg",
+                                "defaults": defaults, "propertyGroups": groups, "render": {"kind": "industrial-segment", "valueKey": "segmentText"}})
     return data
 
 
@@ -112,6 +129,7 @@ def build():
     for color, fill in (("gray", "#c7cbd1"),):
         entries[f"icons/rocker-{color}.svg"] = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="5" y="1" width="14" height="22" rx="3" fill="#17191b"/><rect x="7" y="3" width="10" height="18" rx="2" fill="{fill}"/><circle cx="12" cy="8" r="2" fill="none" stroke="#ffffff"/><path d="M12 14V18" stroke="#ffffff" stroke-width="2"/></svg>'
     target = ROOT / "ugso.industrial.wg"
+    entries["icons/segment.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="2" fill="#11181c" stroke="#879097"/><path d="M4 8h4m-4 4h4m-4 4h4m-4-7v2m4-2v2m-4 2v2m4-2v2m4-7h4m-4 4h4m-4 4h4m-4-7v2m4-2v2m-4 2v2m4-2v2" stroke="#ff3b30"/></svg>'
     with ZipFile(target, "w") as archive:
         for name, body in entries.items():
             info = ZipInfo(name, (2026, 10, 6, 0, 0, 0)); info.compress_type = ZIP_DEFLATED

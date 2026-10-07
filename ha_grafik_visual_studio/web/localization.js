@@ -2,6 +2,10 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"7-Segment – LED": "7-segment LED", "16-Segment – LED": "16-segment LED", "16-Segment – LCD": "16-segment LCD",
+"Segmentanzeige": "Segment display", "Inhalt: Entität": "Content: entity", "Vorschauwert / Text": "Preview value / text",
+"Wert-Eingangs-Koppelpunkt aktivieren": "Enable value input port", "Stellen (einschließlich Minuszeichen)": "Positions (including minus sign)",
+"Einheiten-LED": "Unit indicator", "Segment- und Einheitenfarbe": "Segment and unit color", "Bildschirm-Hintergrund": "Screen background", "Display Ein/Aus": "Display power",
 "Zählwerk": "Odometer", "Zählwerk – Schmal": "Odometer – Slim", "Ganzzahlstellen": "Integer digits", "Führende Nullen": "Leading zeros", "Platz für Minuszeichen": "Reserve minus sign", "Dezimaltrennzeichen": "Decimal separator", "Einheiten-Schriftgröße (px)": "Unit font size (px)", "Komma": "Comma", "Punkt": "Dot",
 "Linear-Gauge / Schieberegler": "Linear gauge / slider", "Linear-Gauge / Schieberegler – Schmal": "Linear gauge / slider – Slim", "Breite in Rastereinheiten": "Width in grid units", "Eingang: Entität (leer = Schieberegler)": "Input entity (empty = slider)", "Strichskala": "Tick scale", "Farbbalken": "Color bar", "Skalenwerte anzeigen": "Show scale values",
 "Gelb/Weiß": "Yellow/White", "Blau/Weiß": "Blue/White", "Farbmodus": "Color mode", "Ohne Eingang eingeschaltet": "On without an input", "Display Ein/Aus: Entität": "Display power entity", "Ein/Aus-Koppelpunkt aktivieren": "Enable power input port", "Text / Präfix": "Text / prefix", "Einheit aus Entität": "Unit from entity", "Nachkommastellen": "Decimal places", "Zeile 1": "Row 1", "Zeile 2": "Row 2", "Zeile 3": "Row 3", "Zeile 4": "Row 4",

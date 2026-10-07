@@ -1,4 +1,12 @@
-# UGSo Industrie 0.6.0
+# UGSo Industrie 0.7.0
+
+## Segmentanzeigen / Segment displays (Studio 0.1.243+)
+
+Deutsch: Drei neue Anzeigen: 7-Segment-LED für Zahlen sowie 16-Segment-LED/LCD für Zahlen und Text. 1–10 feste Stellen, Minus als eigene Stelle, Dezimalpunkt an der vorherigen Stelle; 7-Segment mit Nachkommastellen und optionalen führenden Nullen. Entität oder separat aktivierbarer Wert-Eingang links (`value-input`), der Vorrang hat. Ein/Aus über eine zweite Entität oder einen eigenen Eingang oben (`display-power`); ohne Bindung gilt der Vorschauzustand, fehlende Ein/Aus-Werte lassen die Anzeige dunkel. Keine Ausgänge oder Schreibbefehle. W/A/V rechts untereinander, exklusiv auswählbar oder aus, gleiche Farbe wie die Segmente. LED mit Lichtschein, LCD ohne Lichtschein mit eigenem Hintergrund.
+
+Standard 1:4 (262×64 px), alternativ 1:3 (196×64 px) bei 1 px Abstand. Breite berücksichtigt alle Zwischenräume wie bei Schalterblöcken. Eingabe und Ziehen halten das Verhältnis. Gehäuse, Schrauben, Rahmen und vier Gehäuse-Snappunkte bleiben einstellbar. Nicht verfügbare Zahlen/Überlauf zeigen Striche, lange Texte werden gekürzt; vollständiger Text im Tooltip. Eigene SVG-Geometrie unterstützt A–Z, Ziffern und grundlegende Satzzeichen. Die nur privat nutzbare Schrift 16Segments Basic.otf wird nicht verteilt. Alle neun bestehenden Widget-Definitionen bleiben unverändert.
+
+English: Three new read-only displays: seven-segment LED for numbers, sixteen-segment LED/LCD for numbers and text. 1–10 positions, a sign position and attached decimal points; configurable decimals and leading zeros for seven-segment. Entity or left value input, with port priority. Separate power entity/top input, with port priority and dark display for unknown power. Exclusive W/A/V indicators share the segment color. Default 262×64 px (1:4), optional 196×64 px (1:3), including 1 px spacing between cells; typing and resizing maintain alignment. Housing, screws, frame and four snap corners apply. Missing/overflow numbers show dashes; long text is clipped with a full tooltip. Original SVG geometry avoids redistributing the supplied personal-use-only font. All nine existing widget definitions are preserved.
 
 ## Zählwerk / Odometer (Studio 0.1.240+)
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.243
+
+- Industriepaket 0.7.0 ergänzt 7-Segment-LED sowie 16-Segment-LED/LCD mit 1–10 Stellen, Entität und optionalem Wert-/Ein/Aus-Eingang. Einheiten W/A/V untereinander, exklusiv wählbar oder aus; gemeinsame Farbe. Rasterbreiten 3/4 einschließlich Abständen, Gehäuse, Schrauben und Rahmen. Eigene SVG-Segmente statt einer nur privat nutzbaren Schrift.
+- Industrial 0.7.0 adds seven-segment LED and sixteen-segment LED/LCD displays with 1–10 positions, entity/value inputs and separate power control. Exclusive W/A/V indicators share the segment color. Grid-aligned widths include gaps. Original SVG geometry requires no external font.
+
 ## 0.1.242
 
 - Lesbare LCD-Größen: 16×2 mindestens 192×64 px, 20×4 mindestens 384×128 px. Bestehende kleinere Displays werden beim Laden angehoben. Blau und Gelb sind dunkler, die weißen Bildpunkte kräftiger. Paket 0.6.0 bleibt unverändert.
