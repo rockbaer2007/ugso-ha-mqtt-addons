@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.240
+
+- Industriepaket 0.6.0 ergänzt ein rein lesendes Zählwerk in den Rasterformaten 1:3/1:4 und 0,5:3/0,5:4. Feste Ganzzahl-/Nachkommastellen, rollende Ziffern, Komma oder Punkt, optionale führende Nullen und Minusplatz. Entität oder ein Eingangs-Koppelpunkt; Rasterabstände, Gehäuse, Schrauben und Rahmen bleiben einstellbar.
+- Industrial package 0.6.0 adds normal/slim odometers with fixed digit counts, mechanical rolling animation, decimal separator, optional leading zeros and reserved sign. Slim digit height is half the normal height. Entity or input port; unavailable/overflow readings are explicit and no output is provided.
+
 ## 0.1.239
 
 - Industriepaket 0.5.0 ergänzt Linear-Gauge / Schieberegler: normal H/B 1:2 bis 1:4, schmal 0,5:2 bis 0,5:4. Mit Eingang Dreieck und Strichskala oder Farbbalken; ohne Eingang rechteckiger Griff und ausschließlich Strichskala. Negative Skalen, Teilung, Farbbereiche, Einheiten, Wertanzeige, Gehäuse, Rahmen, Schrauben, Entitäten und Wert-Verbindungen wie beim Gauge/Poti.

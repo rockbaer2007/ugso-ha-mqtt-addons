@@ -40,7 +40,7 @@ def _base_manifest():
 
 def manifest():
     data = _base_manifest()
-    data["version"] = "0.5.0"
+    data["version"] = "0.6.0"
     toggle = data["widgets"][1]
     rocker = deepcopy(toggle)
     rocker.update(type="ugso.industrial/rocker-switch", label="Wippschalter – 1 bis 4", icon="icons/rocker-gray.svg")
@@ -84,6 +84,21 @@ def manifest():
                 group["fields"].append({"key": "scaleLabelsEnabled", "label": "Skalenwerte anzeigen", "type": "checkbox"})
                 linear["defaults"]["scaleLabelsEnabled"] = False
         data["widgets"].append(linear)
+    for slim in (False, True):
+        def field(key, label, kind="text", **extra):
+            return {"key": key, "label": label, "type": kind, **extra}
+        defaults = {"state": 123.45, "entityId": "", "dataInputEnabled": False, "dataInputAnchor": "value-input", "unit": "",
+                    "odometerSpan": "3", "odometerDigits": 5, "odometerDecimals": 2, "odometerSeparator": "comma",
+                    "odometerLeadingZeros": True, "odometerSignEnabled": False, "width": 196, "height": 32 if slim else 64,
+                    "industrialStyle": True, "industrialScrewsEnabled": True, "backgroundColor": "transparent", "borderWidth": 0, "padding": 0, "dockAlwaysVisible": False}
+        groups = [{"label": "Zählwerk", "fields": [field("entityId", "Eingang: Entität"), field("dataInputEnabled", "Eingangs-Koppelpunkt aktivieren", "checkbox"),
+                   field("state", "Vorschauwert", "number"), field("odometerDigits", "Ganzzahlstellen", "number", min=1, max=12), field("odometerDecimals", "Nachkommastellen", "number", min=0, max=6),
+                   field("odometerLeadingZeros", "Führende Nullen", "checkbox"), field("odometerSignEnabled", "Platz für Minuszeichen", "checkbox"),
+                   field("odometerSeparator", "Dezimaltrennzeichen", "select", options=["comma", "dot"]), field("dockAlwaysVisible", "Koppelpunkte immer anzeigen", "checkbox")]},
+                  {"label": "Gehäuse und Farben", "fields": [field("industrialStyle", "Industriestyle", "checkbox")]},
+                  {"label": "Größe", "fields": [field("odometerSpan", "Breite in Rastereinheiten", "select", options=["3", "4"]), field("width", "Breite (px)", "number", min=192, max=4096), field("height", "Höhe (px)", "number", min=32 if slim else 64, max=4096)]}]
+        data["widgets"].append({"type": "ugso.industrial/odometer-slim" if slim else "ugso.industrial/odometer", "label": "Zählwerk – Schmal" if slim else "Zählwerk", "icon": "icons/odometer.svg",
+                                "defaults": defaults, "propertyGroups": groups, "render": {"kind": "industrial-odometer", "valueKey": "state"}})
     return data
 
 
@@ -93,6 +108,7 @@ def build():
     entries["icons/switch.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="1" width="22" height="22" rx="2" fill="#263238" stroke="#879097"/><circle cx="12" cy="5" r="2" fill="#4caf50"/><circle cx="12" cy="15" r="5" fill="#92999d" stroke="#11181c"/><path d="M12 16L12 10" stroke="#e1e7e9" stroke-width="3"/></svg>'
     entries["icons/lcd.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="2" fill="#263238" stroke="#879097"/><rect x="3" y="7" width="18" height="10" fill="#193ae5"/><path d="M5 9h5m-5 3h12m-12 3h9" stroke="#fff" stroke-dasharray="1 1"/></svg>'
     entries["icons/linear.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="2" fill="#263238" stroke="#879097"/><path d="M4 12h16M4 12v4m4-4v3m4-3v4m4-4v3m4-3v4" stroke="#dce5e9"/><path d="M10 8h4l-2 3Z" fill="#42a5f5"/></svg>'
+    entries["icons/odometer.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="2" fill="#263238" stroke="#879097"/><path d="M4 8h4v8H4Zm6 0h4v8h-4Zm6 0h4v8h-4Z" fill="#11181c" stroke="#dce5e9"/><path d="M2 12h20" stroke="#879097"/></svg>'
     for color, fill in (("gray", "#c7cbd1"),):
         entries[f"icons/rocker-{color}.svg"] = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="5" y="1" width="14" height="22" rx="3" fill="#17191b"/><rect x="7" y="3" width="10" height="18" rx="2" fill="{fill}"/><circle cx="12" cy="8" r="2" fill="none" stroke="#ffffff"/><path d="M12 14V18" stroke="#ffffff" stroke-width="2"/></svg>'
     target = ROOT / "ugso.industrial.wg"

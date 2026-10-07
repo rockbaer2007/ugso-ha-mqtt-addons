@@ -1,4 +1,12 @@
-# UGSo Industrie 0.5.0
+# UGSo Industrie 0.6.0
+
+## Zählwerk / Odometer (Studio 0.1.240+)
+
+Deutsch: Eigenständige mechanische Zählwerk-Anzeige, normal 1:3/1:4 oder schmal 0,5:3/0,5:4. Bei 64 px Raster und 1 px Abstand sind die Breiten 196/262 px, Höhen 64/32 px. Rasterbreite plus Lücken berücksichtigt Einzelwidgets. Ziffernfenster haben eine feste Höhe von 62,5 % der Widgethöhe (40/20 px); zusätzliche Stellen passen die Breite, nicht die Höhe an. Feste 1–12 Ganzzahlstellen und 0–6 Nachkommastellen, schmales Komma/Punkt, optionale führende Nullen und reservierter Minusplatz. Einheit aus Entität oder Verbindung, eigene Einheit hat Vorrang. Ziffernfarbe und Einheiten-Schriftgröße, Gehäuse, Rahmen, Schrauben und vier Gehäuse-Snappunkte sind einstellbar.
+
+Ein Eingang links (`value-input`) ist einzeln aktivierbar und hat Vorrang vor der Entität. Ohne Bindung gilt der Vorschauwert. Fehlende Werte zeigen Striche; Überlauf, einschließlich negativer Werte ohne Minusplatz, zeigt `#`. Ziffern rollen bei Änderungen in der Runtime, mit Rücksicht auf reduzierte Bewegung. Kein Ausgang und keine Schreibbefehle. Die sieben bisherigen Widget-Definitionen bleiben erhalten.
+
+English: Original read-only mechanical odometers in normal 1:3/1:4 and slim 0.5:3/0.5:4 formats. With 64 px cells and 1 px spacing, widths are 196/262 px and heights 64/32 px. Digit windows have a fixed height of 62.5% (40/20 px); additional digits compress horizontally. Fixed 1–12 integer digits and 0–6 decimals, narrow comma/dot, optional leading zeros and reserved minus sign. Units, colors, housing, screws, frame and snap points remain configurable. The enabled left `value-input` port takes priority over the entity. Missing values use dashes; overflow uses `#`. Runtime updates animate the digit reels unless reduced motion is requested. No output or service writes. Existing definitions remain unchanged.
 
 ## Linear-Gauge / Schieberegler (Studio 0.1.239+)
 

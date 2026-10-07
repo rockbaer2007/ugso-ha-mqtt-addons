@@ -1,0 +1,13 @@
+.industrial-odometer { position:relative; width:100%; height:100%; box-sizing:border-box; display:flex; align-items:center; gap:4px; padding:4px 12px; overflow:hidden; }
+.industrial-odometer.industrial-housing { border:2px solid #879097; background:linear-gradient(135deg,#333d43,#172027); box-shadow:inset 0 0 3px #000; }
+.industrial-odometer-window { display:flex; align-items:center; gap:1px; flex:1; min-width:0; padding:1px 2px; overflow:hidden; border:2px solid #060a0c; border-radius:2px; background:#080b0d; }
+.odometer-digit,.odometer-separator { position:relative; min-width:0; flex:1; height:var(--digit-height); line-height:var(--digit-height); text-align:center; overflow:hidden; color:var(--digit-color); font-family:monospace; font-size:calc(var(--digit-height) * .8); font-weight:bold; background:linear-gradient(#0c1114,#334047 48%,#151e22 51%,#090e11); }
+.odometer-digit::after { content:""; position:absolute; left:0; right:0; top:50%; border-top:1px solid #0007; pointer-events:none; }
+.odometer-reel { display:flex; flex-direction:column; width:100%; }
+.odometer-reel>span { display:block; flex:none; height:var(--digit-height); line-height:var(--digit-height); transform:scaleX(var(--digit-scale)); }
+.odometer-separator { flex:.3; background:transparent; font-size:0; }
+.odometer-separator::before { content:""; position:absolute; left:50%; top:70%; width:max(1px,calc(var(--digit-height)*.06)); height:max(1px,calc(var(--digit-height)*.06)); border-radius:50%; background:var(--digit-color); transform:translateX(-50%); }
+.odometer-separator[data-character=","]::after { content:""; position:absolute; left:50%; top:75%; width:1px; height:calc(var(--digit-height)*.1); background:var(--digit-color); transform:skewX(-20deg); }
+.odometer-unit { color:var(--digit-color); flex:0 1 auto; max-width:22%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.odometer-unit:empty { display:none; }
+.industrial-odometer[data-error]:not([data-error=""]) .odometer-digit { color:#ffbf69; }
