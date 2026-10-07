@@ -1,0 +1,7 @@
+Reference: https://github.com/ioBroker/ioBroker.vis-2-widgets-energy
+Original authors: ioBroker / bluefox (GermanBluefox) and contributors
+License: MIT
+Reference revision: d0a53871ea7e57c5100de2a1f2ef7b2ee82059c7 (main, inspected 2026-10-07)
+UGSo Energy is a separate Home Assistant adaptation by rockbaer2007.
+No original React code or preview images are included. Rendering and Home
+Assistant integration are implemented independently; this is not a vis-2 adapter.

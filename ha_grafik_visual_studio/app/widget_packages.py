@@ -78,9 +78,11 @@ def validate_manifest(manifest):
         if not _short_text(widget["label"]) or not isinstance(widget["defaults"], dict):
             raise ValueError("Widget-Name oder Standardwerte sind ungültig.")
         render = widget["render"]
-        if not isinstance(render, dict) or set(render) != {"kind", "valueKey"} or render["kind"] not in ({"text", "chart", "room-table", "meteored", "window-overview", "landlord-notification", "heating-params", "technic-window", "technic-switch", "technic-light", "technic-room", "technic-clock", "technic-temperature", "technic-status-list", "material-color-schemes", "material-dialog", "material-iframe-dialog", "material-widget", "industrial-gauge", "industrial-switch", "industrial-lcd", "industrial-linear", "industrial-odometer", "industrial-segment", "industrial-clock", "industrial-weather", "industrial-section", "industrial-heating"} if manifest["apiVersion"] == "0.2" else {"text"}):
+        if not isinstance(render, dict) or set(render) != {"kind", "valueKey"} or render["kind"] not in ({"energy-widget", "text", "chart", "room-table", "meteored", "window-overview", "landlord-notification", "heating-params", "technic-window", "technic-switch", "technic-light", "technic-room", "technic-clock", "technic-temperature", "technic-status-list", "material-color-schemes", "material-dialog", "material-iframe-dialog", "material-widget", "industrial-gauge", "industrial-switch", "industrial-lcd", "industrial-linear", "industrial-odometer", "industrial-segment", "industrial-clock", "industrial-weather", "industrial-section", "industrial-heating"} if manifest["apiVersion"] == "0.2" else {"text"}):
             raise ValueError("Nur deklarative Text-Darstellung ist in 0.1 unterstützt; Diagramme benötigen Schnittstelle 0.2.")
         value_key = render["valueKey"]
+        if render["kind"] == "energy-widget" and widget["defaults"].get("energyKind") not in {"distribution", "consumption", "comparison", "interval", "sufficiency", "battery", "costs", "price"}:
+            raise ValueError("Unbekannte Energy-Widget-Funktion.")
         if render["kind"] == "material-widget" and widget["defaults"].get("materialKind") not in {"input", "select", "autocomplete", "button", "switch", "checkbox", "slider", "slider-round", "progress", "progress-circular", "value", "card", "icon", "version", "calendar", "layout", "chart", "list", "icon-list", "table", "alerts"}:
             raise ValueError("Unbekannte MaterialDesign-Widget-Funktion.")
         if not isinstance(value_key, str) or not KEY.fullmatch(value_key):

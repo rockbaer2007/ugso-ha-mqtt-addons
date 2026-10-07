@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.255
+
+- Separates externes Paket **UGSo Energy 0.1.0** mit acht Widgets: Energiefluss, Verbrauch, Vergleich, lokale Zeitraumwahl, Autarkie, Batterie, Kosten und dynamische Strompreise. Eigenständige HA-Anpassung nach ioBroker.vis-2-widgets-energy; Originalquelle und MIT-Hinweis im Paket und in der Doku.
+- Deklarativer Energy-Renderer, Entitätenauswahl und Attributabruf in Editor und Runtime. Begrenzter, ausschließlich lesender Recorder-Zugriff mit unbekannten Zuständen, Zähler-Resets und expliziten Einheiten/Multiplikatoren.
+- Independent eight-widget Energy package with Home Assistant Recorder integration and upstream attribution. History retention limits availability; no automatic power integration or long-term statistics.
+
 ## 0.1.254
 
 - Zirkulationspfeil am Heizungswidget zeigt nach unten zum Kessel. Die Abschaltoption bleibt erhalten.

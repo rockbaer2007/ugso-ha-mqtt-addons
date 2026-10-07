@@ -63,6 +63,7 @@ import { isIndustrialClock, clockMode, clockSize, clockAnchors, renderIndustrial
 import { isIndustrialWeather, weatherSize, weatherAnchors, weatherBindings, renderIndustrialWeather } from "./industrial-weather.js";
 import { isIndustrialSection, sectionRows, sectionSize, renderIndustrialSection } from "./industrial-section.js";
 import { isIndustrialHeating, heatingSize, heatingBindings, renderIndustrialHeating } from "./industrial-heating.js";
+import { isEnergy, energyBindings, renderEnergy } from "./energy.js";
 import { applyIndustrialBackground, INDUSTRIAL_BACKGROUND } from "./industrial-housing.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
@@ -690,6 +691,7 @@ async function fetchEntityStates(ids) {
     for (const attribute of temperatureAttributes) query.append("attribute", attribute);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "window-overview") for (const [id, attribute] of [[widget.entityId, widget.tableAttribute], [widget.openCountEntityId, widget.openCountAttribute]]) if (attribute && ids.slice(offset, offset + 100).includes(id)) query.append("attribute", `${id}|${attribute}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "chart") for (const source of chartBindings(widget)) if (source.attribute && ids.slice(offset, offset + 100).includes(source.entityId)) query.append("attribute", `${source.entityId}|${source.attribute}`);
+    for (const widget of visibleWidgets()) if (isEnergy(widget) && widget.pricesAttribute && ids.slice(offset, offset + 100).includes(widget.pricesEntityId)) query.append("attribute", `${widget.pricesEntityId}|${widget.pricesAttribute}`);
     const attributes = [...new Set(query.getAll("attribute"))], entries = new Map();
     query.delete("attribute");
     for (let index = 0; index < Math.max(1, attributes.length); index += 100) {
@@ -725,6 +727,7 @@ async function fetchEntityStates(ids) {
 function editorLiveEntityIds() {
   // Include the external industrial output in live state polling.
   return [...new Set(visibleWidgets().flatMap((widget) => [
+    ...(isEnergy(widget) ? energyBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
     ...gaugeEntityIds(widget),
     ...(isIndustrialSwitch(widget) ? switchBindings(widget) : []),
@@ -777,6 +780,7 @@ async function refreshEditorLiveStates() {
 }
 
 function runtimeLiveEntityIds() {
+  // Energy sources must also be polled on the read-only runtime surface.
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
     ...gaugeEntityIds(widget),
@@ -786,6 +790,7 @@ function runtimeLiveEntityIds() {
     ...(isIndustrialClock(widget) ? [widget.displayEntityId] : []),
     ...(isIndustrialWeather(widget) ? weatherBindings(widget) : []),
     ...(isIndustrialHeating(widget) ? heatingBindings(widget) : []),
+    ...(isEnergy(widget) ? energyBindings(widget) : []),
     ...(["industrial-gauge","industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind) ? [widget.outputEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
@@ -2973,6 +2978,12 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(renderSeparator(widget, document));
     } else if (isGauge(widget)) {
       content.append(renderGauge(widget, document, { states: state.entityStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
+    } else if (isEnergy(widget)) {
+      content.style.padding="0"; content.style.border="0";
+      content.append(renderEnergy(widget, document, {states:state.entityStates, locale:document.documentElement.lang||"de", widgets:activePage.widgets, runtime:runtimeMode, refresh:()=>renderStage(), history:async request=>{
+        const response=await fetch("api/energy-history",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(request)});
+        const result=await response.json();if(!response.ok)throw new Error(result.error||uiText("Recorder-Verlauf nicht verfügbar"));return result;
+      }}));
     } else if (isIndustrialHeating(widget)) {
       content.style.padding="0";content.style.border="0";
       content.append(renderIndustrialHeating(widget,document,{states:state.entityStates,locale:document.documentElement.lang||"de"}));
@@ -4591,6 +4602,7 @@ function field(descriptor, widget) {
     void updatePreview();
     if (isGauge(widget) && (descriptor.key === "entityId" || /EntityId\d*$/.test(descriptor.key))) void refreshEditorLiveStates();
     if (renderKind === "heating-params" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
+    if (isEnergy(widget) && (/EntityId$/.test(descriptor.key) || descriptor.key === "pricesAttribute")) void refreshEditorLiveStates();
     if (renderKind === "technic-window" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (renderKind === "technic-switch" && descriptor.key === "entityId") void refreshEditorLiveStates();
     if (renderKind === "technic-light" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
@@ -5223,8 +5235,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.254" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.254" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.255" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.255" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

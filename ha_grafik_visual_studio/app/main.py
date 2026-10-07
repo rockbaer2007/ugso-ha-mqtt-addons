@@ -18,6 +18,7 @@ from technic_cover import cover_position_command, cover_entry_writable
 from technic_light import light_request, dimmer_commands
 from technic_temperature import temperature_request, temperature_command, history_plan, history_series
 from material_history import material_history_plan, material_history_data
+from energy_history import energy_history_plan, energy_history_data
 from tool_packages import list_tool_packages, read_tool_package_zip
 from package_catalog import catalog_packages, package_download
 from color_favorites import favorites, is_admin
@@ -373,7 +374,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.254"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.255"})
             return
         if path == "/meteored-frame":
             try:
@@ -524,7 +525,7 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path == "/api/tool-packages":
             self.install_tool_package()
             return
-        if parsed.path in ("/api/temperature", "/api/thermostat-history", "/api/material-history"):
+        if parsed.path in ("/api/temperature", "/api/thermostat-history", "/api/material-history", "/api/energy-history"):
             if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
                 self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "JSON-Anfrage erforderlich."})
                 return
@@ -537,6 +538,10 @@ class Handler(BaseHTTPRequestHandler):
                     command = temperature_command(request, entries or [])
                     home_assistant_commands([command])
                     result = {"accepted": True}
+                elif parsed.path == "/api/energy-history":
+                    command, start, end = energy_history_plan(request)
+                    (raw,) = home_assistant_commands([command])
+                    result = energy_history_data(command["entity_ids"], raw, start, end)
                 elif parsed.path == "/api/material-history":
                     command, start, end = material_history_plan(request)
                     (raw,) = home_assistant_commands([command])

@@ -1,0 +1,44 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {readFile,mkdir} from 'node:fs/promises';
+import {join} from 'node:path';
+const url=process.env.STUDIO_TEST_URL;
+test('eight Energy widgets install, select entities, render live/Recorder data, save and select runtime periods',{skip:!url},async()=>{
+ const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE||'playwright');const browser=await chromium.launch({headless:true,channel:process.env.STUDIO_THEME_BROWSER||undefined});
+ try{
+  const page=await browser.newPage({viewport:{width:1700,height:1100}}),errors=[],historyRequests=[],stateRequests=[];page.on('pageerror',e=>errors.push(e.message));
+  const invalid=await page.request.post(new URL('api/energy-history',url).href,{data:{entity_ids:['bad/url'],start:'2026-10-06T00:00:00Z',end:'2026-10-07T00:00:00Z'}});assert.equal(invalid.status(),400);
+  const installed=await page.request.post(new URL('api/widget-packages',url).href,{headers:{'X-Package-Name':'ugso.energy.wg'},data:await readFile(new URL('../packages/energy/ugso.energy.wg',import.meta.url))});assert.ok(installed.ok()||/bereits installiert/.test(await installed.text()));
+  const catalog=await(await page.request.get(new URL('api/widget-packages',url).href)).json(),defs=catalog.packages.find(p=>p.id==='ugso.energy').widgets;assert.equal(defs.length,8);
+  const fixture=await(await page.request.get(new URL('api/project',url).href)).json(),widgets=defs.map((def,i)=>({...def.defaults,type:def.type,id:'energy-'+def.defaults.energyKind,x:20+i%3*660,y:20+Math.floor(i/3)*580}));
+  const byKind=Object.fromEntries(widgets.map(w=>[w.energyKind,w]));
+  Object.assign(byKind.distribution,{houseEntityId:'sensor.house',gridEntityId:'sensor.grid',node1EntityId:'sensor.pv',node2EntityId:'sensor.battery',node2SecondEntityId:'sensor.soc',node3EntityId:'sensor.car'});
+  Object.assign(byKind.battery,{socEntityId:'sensor.soc',powerEntityId:'sensor.battery'});
+  Object.assign(byKind.sufficiency,{productionEntityId:'sensor.pv',gridEntityId:'sensor.grid'});
+  Object.assign(byKind.costs,{consumptionEntityId:'sensor.counter',price:.3});
+  Object.assign(byKind.price,{pricesEntityId:'sensor.prices',pricesAttribute:'prices',priceFactor:100,hours:24});
+  Object.assign(byKind.interval,{startDate:'2026-10-06'});
+  Object.assign(byKind.consumption,{intervalWidgetId:'energy-interval',seriesCount:2,series1EntityId:'sensor.counter',series2EntityId:'sensor.counter2'});
+  Object.assign(byKind.comparison,{seriesCount:2,series1EntityId:'sensor.counter',series2EntityId:'sensor.counter2'});
+  fixture.pages[0].widgets=widgets;fixture.currentPageId=fixture.pages[0].id;Object.assign(fixture.pages[0].page,{width:2020,height:1770});fixture.settings={...fixture.settings,autoSave:false};
+  const now=new Date(),midnight=new Date(now);midnight.setHours(0,0,0,0);
+  const values={house:1200,grid:200,pv:1000,battery:2000,soc:60,car:100,counter:10,counter2:20,prices:'available'};
+  const states=Object.entries(values).map(([name,state])=>({entity_id:'sensor.'+name,state:String(state),attributes:name==='prices'?{prices:Array.from({length:24},(_,i)=>({startsAt:new Date(+midnight+i*3600000).toISOString(),total:i===2?-.03:.2+i/100}))}:{unit_of_measurement:name==='soc'?'%':'kWh',friendly_name:name}}));
+  let saved;
+  await page.route('**/api/project*',r=>{if(r.request().method()==='PUT')saved=r.request().postDataJSON();return r.fulfill({json:saved||fixture});});
+  await page.route('**/api/states*',r=>{stateRequests.push(r.request().url());return r.fulfill({json:{states}});});
+  await page.route('**/api/energy-history',r=>{const request=r.request().postDataJSON();historyRequests.push(request);return r.fulfill({json:{start:request.start,end:request.end,series:Object.fromEntries(request.entity_ids.map(id=>[id,[{x:Date.parse(request.start),y:100},{x:Date.parse(request.end),y:110}]]))}});});
+  await page.goto(url);await page.waitForFunction(()=>document.querySelector('#energy-consumption .energy-widget')?.textContent.includes('Zeitraum'));
+  assert.equal(await page.locator('.energy-widget').count(),8);assert.ok(historyRequests.length);assert.match(await page.locator('#energy-battery').textContent(),/60 %/);assert.match(await page.locator('#energy-costs').textContent(),/3 EUR/);
+  assert.ok(stateRequests.some(u=>u.includes('sensor.prices%7Cprices')),'JSON attribute requested');
+  assert.equal(await page.locator('#energy-distribution animateMotion').count(),4);
+  await page.locator('#energy-price').click({position:{x:10,y:10}});await page.locator('#properties details').evaluateAll(items=>items.forEach(item=>item.open=true));
+  const field=page.locator('#properties [data-property-key="pricesEntityId"]');assert.equal(await field.count(),1);assert.ok(await field.locator('..').locator('button').count());
+  await page.locator('#save').click();await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('gespeichert'));assert.equal(saved.pages[0].widgets.length,8);
+  await page.goto(new URL('runtime',url).href);await page.waitForFunction(()=>document.querySelector('#energy-sufficiency')?.textContent.includes('Eigenverbrauch'));
+  const before=historyRequests.length;await page.locator('#energy-interval button').filter({hasText:'Zurück'}).click();await page.waitForTimeout(100);assert.ok(historyRequests.length>before);const expected=await page.evaluate(()=>new Date('2026-10-05T00:00:00').toISOString());assert.equal(historyRequests.at(-1).start,expected);
+  const folder=process.env.STUDIO_TEST_ARTIFACTS||join(process.env.TEMP,'studio-energy-artifacts');await mkdir(folder,{recursive:true});await page.addStyleTag({content:'#runtime-pages-menu-toggle {visibility:hidden;}'});await page.locator('#energy-distribution').screenshot({path:join(folder,'energy-distribution.png')});await page.locator('#energy-battery').screenshot({path:join(folder,'energy-battery.png')});await page.locator('#energy-price').screenshot({path:join(folder,'energy-price.png')});
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();}
+});
