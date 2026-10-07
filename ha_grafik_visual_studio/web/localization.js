@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Projektseiten": "Project pages",
 "Heizung – Kessel und Öltank": "Heating – boiler and oil tank", "Heizung": "Heating system",
 "Beispieldaten ohne Entitäten": "Example data without entities", "Statusbeschriftung": "Status labels", "Statusfarbe Ein": "ON status color", "Statusfarbe Aus": "OFF status color",
 "Heizkreistemperatur": "Heating circuit temperature", "Kesseltemperatur": "Boiler temperature", "Warmwassertemperatur": "Hot water temperature", "Kaltwassertemperatur": "Cold water temperature",
@@ -764,7 +765,7 @@ function excluded(element) {
   if (element.id === "entity-selected-id") return false;
   if (element.classList.contains("empty") && element.closest("#objects-browser, #entities-tree")) return false;
   if (element.closest(".widget-choice-label")) return true;
-  return element.closest("#stage, #page-list, #projects-list, #widget-selector-list, #entities-tree, #objects-browser, #icon-picker-results, script, style, textarea, code, pre") !== null;
+  return element.closest("#stage, #page-list, #editor-page-tabs, #active-page-name, #projects-list, #widget-selector-list, #entities-tree, #objects-browser, #icon-picker-results, script, style, textarea, code, pre") !== null;
 }
 
 function localizeText(node) {

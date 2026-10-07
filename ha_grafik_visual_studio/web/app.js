@@ -1146,6 +1146,59 @@ function renderPalette() {
   }
 }
 
+function selectProjectPage(pageId) {
+  if (!state.project.pages.some(page => page.id === pageId && (!runtimeMode || page.visible))) return;
+  closeWidgetContextMenu(); toggleWidgetSelector(false);
+  state.tabEditor = null; state.tabReturn = null; state.editingGroupId = null;
+  state.project.currentPageId = pageId; state.selectedId = null; state.selectedIds = [];
+  render();
+  if (runtimeMode) void refreshRuntimeStates(); else void refreshEditorLiveStates();
+}
+
+function renderEditorPageTabs() {
+  const tabs = $("#editor-page-tabs");
+  const scrollLeft = tabs.scrollLeft;
+  const changedPage = tabs.dataset.activePage !== state.project.currentPageId;
+  tabs.dataset.activePage = state.project.currentPageId;
+  tabs.setAttribute("aria-label", uiText("Projektseiten"));
+  tabs.replaceChildren();
+  tabs.hidden = runtimeMode;
+  if (runtimeMode) { stage.removeAttribute("role"); stage.removeAttribute("aria-labelledby"); return; }
+  for (const [index, page] of state.project.pages.entries()) {
+    const active = !state.tabEditor && page.id === state.project.currentPageId;
+    const button = document.createElement("button"); button.type = "button";
+    button.id = `editor-page-tab-${index}`; button.dataset.pageId = page.id;
+    button.className = `editor-page-tab${page.visible ? "" : " hidden-page"}`;
+    button.setAttribute("role", "tab"); button.setAttribute("aria-controls", "stage");
+    button.setAttribute("aria-selected", String(active)); button.tabIndex = active ? 0 : -1;
+    button.textContent = page.name;
+    button.title = `${page.name}${page.visible ? "" : ` (${uiText("In Runtime ausgeblendet")})`}`;
+    button.addEventListener("click", () => {
+      selectProjectPage(page.id);
+      const selected = tabs.querySelector('[aria-selected="true"]');
+      selected?.focus({preventScroll: true}); selected?.scrollIntoView({block: "nearest", inline: "nearest"});
+    });
+    button.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const length = state.project.pages.length;
+      const next = event.key === "Home" ? 0 : event.key === "End" ? length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + length) % length;
+      selectProjectPage(state.project.pages[next].id);
+      const selected = tabs.querySelector('[aria-selected="true"]');
+      selected?.focus({preventScroll: true}); selected?.scrollIntoView({block: "nearest", inline: "nearest"});
+    });
+    tabs.append(button);
+    if (active) { stage.setAttribute("role", "tabpanel"); stage.setAttribute("aria-labelledby", button.id); }
+  }
+  // Own tab surfaces are not project pages; keep a way back to their containing page.
+  if (state.tabEditor) {
+    tabs.querySelector(`[data-page-id="${CSS.escape(state.project.currentPageId)}"]`)?.setAttribute("tabindex", "0");
+    stage.removeAttribute("role"); stage.removeAttribute("aria-labelledby");
+  }
+  tabs.scrollLeft = scrollLeft;
+  if (changedPage) tabs.querySelector('[aria-selected="true"]')?.scrollIntoView({block: "nearest", inline: "nearest"});
+}
+
 function renderPageMenu() {
   const list = $("#page-list");
   list.replaceChildren();
@@ -1157,7 +1210,7 @@ function renderPageMenu() {
     const select = document.createElement("button"); select.type = "button"; select.className = "page-select";
     select.textContent = `${page.visible ? "◉" : "◌"}  ${page.name}`;
     select.setAttribute("aria-current", String(page.id === state.project.currentPageId));
-    select.addEventListener("click", () => { state.tabEditor = null; state.tabReturn = null; state.project.currentPageId = page.id; state.selectedId = null; state.selectedIds = []; render(); if (runtimeMode) void refreshRuntimeStates(); else void refreshEditorLiveStates(); });
+    select.addEventListener("click", () => selectProjectPage(page.id));
     row.append(select);
     if (!runtimeMode) {
       const visibility = document.createElement("button"); visibility.type = "button"; visibility.textContent = page.visible ? "◉" : "◌"; visibility.title = page.visible ? "In Runtime sichtbar" : "In Runtime ausgeblendet"; visibility.setAttribute("aria-label", `${page.visible ? "Ausblenden" : "Einblenden"}: ${page.name}`);
@@ -4931,7 +4984,7 @@ function render() {
   $("#preset").value = page.page.preset || "custom";
   $("#page-width").value = page.page.width;
   $("#page-height").value = page.page.height;
-  renderPalette(); renderPageMenu(); renderStage(); renderProperties(); renderWidgetFinder();
+  renderPalette(); renderPageMenu(); renderStage(); renderEditorPageTabs(); renderProperties(); renderWidgetFinder();
 }
 
 $("#widget-finder-toggle").addEventListener("click", (event) => { event.stopPropagation(); toggleWidgetSelector(); });
@@ -5235,8 +5288,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.255" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.255" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.256" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.256" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

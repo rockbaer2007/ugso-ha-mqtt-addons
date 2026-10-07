@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.256
+
+- Projektseiten als kompakte Tabs direkt über der Editorfläche. Aktive Seite hervorgehoben, in der Runtime ausgeblendete Seiten im Editor gestrichelt; viele Seiten scrollen horizontal. Pfeil links/rechts sowie Pos1/Ende wechseln die Seite. Seitenmenü und Tabs verwenden denselben Wechsel; Auswahl und offene Widget-Aktionen werden dabei zurückgesetzt, ungespeicherte Widgetänderungen bleiben im Projekt.
+- Compact project-page tabs above the editor canvas, with keyboard navigation and horizontal scrolling. Runtime navigation stays in the existing page menu.
+
 ## 0.1.255
 
 - Separates externes Paket **UGSo Energy 0.1.0** mit acht Widgets: Energiefluss, Verbrauch, Vergleich, lokale Zeitraumwahl, Autarkie, Batterie, Kosten und dynamische Strompreise. Eigenständige HA-Anpassung nach ioBroker.vis-2-widgets-energy; Originalquelle und MIT-Hinweis im Paket und in der Doku.
