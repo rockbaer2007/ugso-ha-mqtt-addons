@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.252
+
+- Heizungswidget im Querformat **6:4**: Kessel und Tank nebeneinander, freie Wasserleitungen, längere Tankskala und neu positionierte Anzeigen. Bestehende Hochformat-Widgets behalten Rasterzellengröße und Entitätsbindungen beim Wechsel. Mindestgröße 394×262 px, Standard 778×518 px bei 1 px Gehäuseabstand. Industrial 0.11.2 aktualisiert die Anleitung; das Host-Update genügt für vorhandene Pakete.
+- Heating switches to a 6:4 landscape layout with side-by-side boiler and tank, clear water pipes and repositioned readings. Existing portrait projects retain their cell size and bindings.
+
 ## 0.1.251
 
 - Industrial 0.11.1 ergänzt „Heizung – Kessel und Öltank“ mit vier Temperaturen, zwei Pumpen- und Brennerstatus, Störung, numerischem Tankfüllstand und einzeln abschaltbaren Wasser-/Öl-Flusspfeilen. Alle neun Entitäten besitzen eine Auswahl. SVG-Anzeigen sind dynamisch, unbekannte Werte bleiben sichtbar unbekannt. Rasterformat 4:6 mit additiven Gehäuseabständen. Die Paketdatei enthält die aktualisierte deutsche und englische Anleitung.

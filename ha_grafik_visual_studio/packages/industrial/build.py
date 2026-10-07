@@ -1,4 +1,4 @@
-"""Build the data-only Industrial set (heating widget: Studio >= 0.1.251)."""
+"""Build the data-only Industrial set (landscape heating: Studio >= 0.1.252)."""
 from copy import deepcopy
 import json
 import sys
@@ -40,7 +40,7 @@ def _base_manifest():
 
 def manifest():
     data = _base_manifest()
-    data["version"] = "0.11.1"
+    data["version"] = "0.11.2"
     toggle = data["widgets"][1]
     rocker = deepcopy(toggle)
     rocker.update(type="ugso.industrial/rocker-switch", label="Wippschalter – 1 bis 4", icon="icons/rocker-gray.svg")

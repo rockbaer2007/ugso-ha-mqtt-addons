@@ -270,7 +270,7 @@ function widgetPropertyGroups(widget) {
   ] };
   if (isIndustrialSegment(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>field.key==="segmentUnit"?{...field,options:[{value:"off",label:"Aus"},{value:"W",label:"W"},{value:"A",label:"A"},{value:"V",label:"V"}]}:field)})),...styleEntryGroups];
   if (isIndustrialClock(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1" && (field.key!=="clockLedColor" || clockMode(widget)==="led") && (!["clockLcdColor","clockLcdBackground"].includes(field.key) || clockMode(widget)==="lcd")).map(field=>field.key==="clockMode"?{...field,refreshProperties:true,options:[{value:"nixie",label:"Nixieröhre"},{value:"led",label:"LED"},{value:"lcd",label:"LCD"}]}:field.key==="height"?{...field,min:clockMode(widget)==="nixie"?64:32}:field.key==="clockZone"?{...field,options:[{value:"local",label:"Browser-Ortszeit"},{value:"UTC",label:"UTC"},{value:"Europe/Berlin",label:"Europe/Berlin"}]}:field)})),...styleEntryGroups];
-  if (isIndustrialHeating(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>field.key==="statusLegend"?{...field,options:[{value:"ein-aus",label:"EIN/AUS"},{value:"on-off",label:"ON/OFF"},{value:"one-zero",label:"1/0"}]}:field)})),...styleEntryGroups];
+  if (isIndustrialHeating(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>field.key==="statusLegend"?{...field,options:[{value:"ein-aus",label:"EIN/AUS"},{value:"on-off",label:"ON/OFF"},{value:"one-zero",label:"1/0"}]}:["width","height"].includes(field.key)?{...field,min:field.key==="width"?384:256}:field)})),...styleEntryGroups];
   if (isIndustrialSection(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>["sectionCount","sectionRows"].includes(field.key)?{...field,refreshProperties:true,options:Array.from({length:12},(_,i)=>String(i+1))}:field)})),...styleEntryGroups];
   if (isIndustrialWeather(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1" && (field.key!=="weatherLedColor" || widget.weatherMode==="led") && (!["weatherLcdColor","weatherLcdBackground"].includes(field.key) || widget.weatherMode!=="led")).map(field=>field.key==="weatherMode"?{...field,refreshProperties:true}:field)})),...styleEntryGroups];
   if (isIndustrialLinear(widget)) {
@@ -2887,7 +2887,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (isIndustrialClock(widget)) Object.assign(widget,clockSize(widget));
     if (isIndustrialSection(widget)) Object.assign(widget,sectionSize(widget));
     if (isIndustrialWeather(widget)) Object.assign(widget,weatherSize(widget));
-    if (isIndustrialHeating(widget)) Object.assign(widget,heatingSize(widget));
+    if (isIndustrialHeating(widget)) { Object.assign(widget,heatingSize(widget)); widget.heatingLayout="landscape"; }
     if (widget.type === "dashboard-in-widget") Object.assign(widget, dashboardSize(widget));
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") Object.assign(widget, industrialSize(widget));
@@ -5223,8 +5223,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.251" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.251" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.252" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.252" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

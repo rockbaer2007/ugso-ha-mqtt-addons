@@ -116,15 +116,15 @@ Industriestyle ergänzt Schrauben in den vier Ecken und einen CSS-Rand von 2 px.
 
 Build: `python packages/industrial/build.py` im Studio-Ordner.
 
-## Heizung – Kessel und Öltank (0.11.1 / Studio 0.1.251)
+## Heizung – Kessel und Öltank (0.11.2 / Studio 0.1.252)
 
-Read-only SVG-Widget mit rotem Kessel, zwei grünen Pumpen, blauem Brenner, Kupfertank und dünner Ölleitung. Rasterformat Breite:Höhe **4:6**, mindestens 262 × 394 px bei 1 px Gehäuseabstand; Standard 518 × 778 px. Additive Abstände passen zum übrigen Set. Industriestyle, Schrauben, Rahmen und Hintergrundanpassung bleiben unabhängig.
+Read-only SVG-Widget mit rotem Kessel, zwei grünen Pumpen, blauem Brenner, Kupfertank und dünner Ölleitung. Rasterformat Breite:Höhe **6:4**, mindestens 394 × 262 px bei 1 px Gehäuseabstand; Standard 778 × 518 px. Kessel und Tank stehen nebeneinander, die Wasserleitungen enden vor dem Tank. Vorhandene Hochformat-Widgets wechseln bei gleicher Rasterzellengröße ins Querformat. Additive Abstände passen zum übrigen Set. Industriestyle, Schrauben, Rahmen und Hintergrundanpassung bleiben unabhängig. Für das Querformat genügt Studio 0.1.252, auch mit Paket 0.11.1; 0.11.2 ergänzt die Anleitung.
 
 Vier numerische Temperaturentitäten (Heizkreis, Kessel, Warmwasser, Kaltwasser) haben eigene Textfarben. Heizkreistemperatur, beide Pumpenstatus, Brennerstatus und Störungsanzeige lassen sich ausblenden. Statusentitäten liefern `on/off`, `true/false` oder `1/0`; Beschriftung EIN/AUS, ON/OFF oder 1/0. Der numerische Tank-Sensor muss Prozent 0–100 liefern; die Füllhöhe wird auf diese Grenzen beschränkt, der Zahlenwert bleibt unverändert sichtbar. Fehlende/ungültige Werte zeigen einen Strich oder ein Fragezeichen, keine erfundenen Livewerte. Beispieldaten sind ausdrücklich optional und ausgeschaltet. Flusspfeile für Heizkreis, Zirkulation, Warmwasser, Kaltwasser und Öl sind einzeln abschaltbar. Die Ölleitung zeigt zum Brenner. Alle neun Entitätsfelder haben die Home-Assistant-Auswahl. Nur Gehäuse-Andockpunkte, keine Steuerung oder Datenfluss-Ausgänge.
 
-## Heating – boiler and oil tank (0.11.1 / Studio 0.1.251)
+## Heating – boiler and oil tank (0.11.2 / Studio 0.1.252)
 
-Read-only SVG system in a **4:6 width:height grid**, with additive housing gaps, independent styling and nine entity pickers. Four temperature sensors support individual text colors; Boolean pump/burner/fault indicators and heating temperature can be hidden. Choose EIN/AUS, ON/OFF or 1/0 labels. Tank input expects 0–100 percent; its visual column is clamped while the actual reading stays visible. Missing values remain unknown. Optional demo data defaults off. Five independent flow arrows include oil toward the burner. Housing docking only; no control writes or signal outputs.
+Read-only SVG system in a **6:4 width:height grid**, with additive housing gaps, independent styling and nine entity pickers. Minimum 394 × 262 px, default 778 × 518 px at 1 px housing spacing. Boiler and tank sit side by side. Portrait projects migrate while preserving cell size and bindings. Studio 0.1.252 enables the layout with existing package 0.11.1; 0.11.2 updates instructions. Four temperature sensors support individual text colors; Boolean pump/burner/fault indicators and heating temperature can be hidden. Choose EIN/AUS, ON/OFF or 1/0 labels. Tank input expects 0–100 percent; its visual column is clamped while the actual reading stays visible. Missing values remain unknown. Optional demo data defaults off. Five independent flow arrows include oil toward the burner. Housing docking only; no control writes or signal outputs.
 
 ## English
 

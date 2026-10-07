@@ -2,11 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {heatingSize,heatingModel,heatingBoolean,heatingBindings} from "../web/industrial-heating.js";
 import {hasSimpleOutput,dockPointActive} from "../web/dock-points.js";
-test("heating keeps the 4:6 raster with additive gaps for typed width and height",()=>{
- assert.deepEqual(heatingSize({height:778,housingSpace:1}),{width:518,height:778});
- assert.deepEqual(heatingSize({width:262,housingSpace:1},"width"),{width:262,height:394});
- assert.deepEqual(heatingSize({height:12,housingSpace:0}),{width:256,height:384});
- for(const housingSpace of [0,1,32,64]){const size=heatingSize({height:99999,housingSpace});assert.ok(size.width<=4096 && size.height<=4096);assert.equal((size.width-6*housingSpace)/4,(size.height-10*housingSpace)/6);}
+test("heating keeps the 6:4 raster, migrates portrait projects and scales both axes",()=>{
+ assert.deepEqual(heatingSize({height:518,housingSpace:1}),{width:778,height:518});
+ assert.deepEqual(heatingSize({width:394,housingSpace:1},"width"),{width:394,height:262});
+ assert.deepEqual(heatingSize({height:12,housingSpace:0}),{width:384,height:256});
+ assert.deepEqual(heatingSize({width:518,height:778,housingSpace:1}),{width:778,height:518});
+ assert.deepEqual(heatingSize({width:778,height:1162,housingSpace:1,heatingLayout:"landscape"}),{width:1744,height:1162});
+ for(const housingSpace of [0,1,32,64]){const size=heatingSize({height:99999,housingSpace});assert.ok(size.width<=4096 && size.height<=4096);assert.equal((size.width-10*housingSpace)/6,(size.height-6*housingSpace)/4);}
 });
 test("live readings remain unknown without bindings; demo never replaces unavailable entities",()=>{
  assert.equal(heatingModel({}).tank.value,null);assert.equal(heatingModel({}).pump.value,null);
