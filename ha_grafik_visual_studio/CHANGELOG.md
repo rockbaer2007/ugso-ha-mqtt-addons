@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.254
+
+- Zirkulationspfeil am Heizungswidget zeigt nach unten zum Kessel. Die Abschaltoption bleibt erhalten.
+- Heating circulation arrow points down toward the boiler; it can still be hidden.
+
 ## 0.1.253
 
 - Heizungswidget verwendet die detaillierte transparente Vorlage statt der vereinfachten Zeichnung. Dynamische SVG-Anzeigen, Tankfüllstand und Pfeile werden im selben Bildkoordinatensystem skaliert und sitzen am zugehörigen Bauteil. Rasterformat 7:4, Standard 908×518 px bei 1 px Gehäuseabstand; bestehende 4:6/6:4-Widgets behalten Zellgröße und Bindungen. Industrial 0.11.3 ergänzt die Anleitung; das Studio-Update genügt für vorhandene Pakete.

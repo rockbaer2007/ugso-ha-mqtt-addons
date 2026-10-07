@@ -58,7 +58,7 @@ export function renderIndustrialHeating(widget,doc,{states={},locale="de"}={}) {
   status("pump",143,391,153);status("circulation",811,171,176);status("burner",944,803,177);
   if(widget.alertVisible!==false){const group=el("g",{"data-display":"alert","data-state":model.alert.value===null?"unknown":model.alert.value?"on":"off"});el("path",{d:"M807 493L772 555H842Z",fill:model.alert.value===true?color(widget.alertColor,"#ffcf28"):"#596165",stroke:"#15191b","stroke-width":5},group);text(model.alert.value===null?"?":"!",807,547,47,"#15191b",group);const title=el("title",{},group);title.textContent=english?"Fault status":"Störungsstatus";}
   const arrow=(key,x,y,rotation,fill)=>{if(widget[`${key}Arrow`]===false)return;const group=el("g",{"data-arrow":key,transform:`translate(${x} ${y}) rotate(${rotation})`});el("path",{d:"M-22 -8H7V-17L29 0L7 17V8H-22Z",fill,stroke:"#1d2325","stroke-width":2},group);};
-  arrow("heating",90,293,180,"#fff0ed");arrow("hot",1104,410,0,"#fff0ed");arrow("cold",1104,666,180,"#dfedff");arrow("circulation",733,75,-90,"#fff0ed");arrow("oil",1075,782,180,"#ffd2a0");
+  arrow("heating",90,293,180,"#fff0ed");arrow("hot",1104,410,0,"#fff0ed");arrow("cold",1104,666,180,"#dfedff");arrow("circulation",733,75,90,"#fff0ed");arrow("oil",1075,782,180,"#ffd2a0");
   const gauge=el("g",{"data-display":"tank","data-level":model.tank.level??"unknown"});
   panel("tank-label",1385,215,161,52,"",labels.tank,"#eef3f5");
   el("rect",{x:1404,y:266,width:122,height:467,rx:19,fill:`url(#${prefix}-metal)`,stroke:"#15191b","stroke-width":5},gauge);
