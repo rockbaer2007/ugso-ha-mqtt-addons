@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.246
+
+- Industriepaket 0.10.0 ergänzt „Blindelement“ als leeres Hintergrundgehäuse. „Abschnitte“ und „Abschnitte senkrecht“ bieten je 1 bis 4 Rastereinheiten, maximal 4:4, mit den üblichen Zwischenabständen. Gehäuseandockpunkte, Schrauben, Rahmen und CSS sind einstellbar; andere Widgets können darüberliegen.
+- Industrial 0.10.0 adds a blank housing panel with one to four horizontal/vertical sections (up to 4:4), grid-aware spacing, housing snap points and shared housing/CSS options. Its default background layer allows other widgets to sit above it.
+
 ## 0.1.245
 
 - Industriepaket 0.9.0 ergänzt ein Wetterdisplay mit LCD-/LED-Optik, Pixelsymbolen, großer Temperatur sowie Luftfeuchtigkeit und Wind. Optionale Regenwahrscheinlichkeit und Tagesminimum/-maximum kommen aus der täglichen HA-Vorhersage. Einzelne Sensoren können jeden Messwert überschreiben; Einheiten bleiben erhalten, fehlende Werte erscheinen als Striche.

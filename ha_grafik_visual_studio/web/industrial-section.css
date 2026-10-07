@@ -1,0 +1,2 @@
+.industrial-section { position:relative; width:100%; height:100%; box-sizing:border-box; overflow:hidden; }
+.industrial-section.industrial-housing { border:2px solid #879097; background:linear-gradient(135deg,#333d43,#172027); box-shadow:inset 0 0 3px #000; }
