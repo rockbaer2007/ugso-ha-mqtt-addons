@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.257
+
+- Löschen, Kopieren und Ausschneiden in der Toolbar aktualisieren ihren Aktivierungszustand direkt bei der Widgetauswahl, unabhängig vom Neuaufbau der Auswahlliste und Eigenschaften. Browserprüfung für einzelne und mehrere Widgets sowie alle Industrial-/Energy-Widgets.
+- Toolbar delete, copy and cut states update immediately when widget selection changes, independently of rebuilding properties and the selection list. Browser coverage includes deletion, cancellation, undo and all Industrial/Energy widgets.
+
 ## 0.1.256
 
 - Projektseiten als kompakte Tabs direkt über der Editorfläche. Aktive Seite hervorgehoben, in der Runtime ausgeblendete Seiten im Editor gestrichelt; viele Seiten scrollen horizontal. Pfeil links/rechts sowie Pos1/Ende wechseln die Seite. Seitenmenü und Tabs verwenden denselben Wechsel; Auswahl und offene Widget-Aktionen werden dabei zurückgesetzt, ungespeicherte Widgetänderungen bleiben im Projekt.

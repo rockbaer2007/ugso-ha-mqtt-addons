@@ -1237,6 +1237,7 @@ function renderPageMenu() {
 }
 
 function renderWidgetFinder() {
+  updateWidgetActionButtons();
   const page = currentPage();
   const selected = new Set(state.selectedIds.length ? state.selectedIds : state.selectedId ? [state.selectedId] : []);
   $("#widget-selection-count").textContent = String(page.widgets.length);
@@ -1262,15 +1263,21 @@ function renderWidgetFinder() {
     row.append(check, preview, name); list.append(row);
   }
   updateWidgetSelectorAllState();
-  const selectionCount = selected.size;
+}
+
+function updateWidgetActionButtons() {
+  if (!state.project) return;
+  const page = currentPage();
+  const selectionCount = selectedWidgets().length;
+  const primary = page.widgets.find(widget => widget.id === state.selectedId);
   $("#widget-duplicate").disabled = selectionCount === 0;
   $("#widget-delete").disabled = selectionCount === 0;
   $("#widget-cut").disabled = selectionCount === 0;
   $("#widget-copy").disabled = selectionCount === 0;
   $("#widget-paste").disabled = state.widgetClipboard.length === 0;
-  $("#widget-layer-up").disabled = !state.selectedId;
-  $("#widget-layer-down").disabled = !state.selectedId || Number(page.widgets.find((widget) => widget.id === state.selectedId)?.layer || 0) <= 0;
-  $("#widget-export").disabled = !state.selectedId;
+  $("#widget-layer-up").disabled = !primary;
+  $("#widget-layer-down").disabled = !primary || Number(primary.layer || 0) <= 0;
+  $("#widget-export").disabled = !primary;
   const alignmentCount = selectedNormalWidgets().length;
   for (const button of document.querySelectorAll(".alignment-toolbar button")) button.disabled = alignmentCount < 2;
   updateHistoryButtons();
@@ -1286,6 +1293,7 @@ function updateWidgetSelectorAllState() {
 function applyWidgetSelection(ids) {
   const ordered = currentPage().widgets.map(widget => widget.id).filter(id => ids.has(id));
   state.selectedIds = ordered; state.selectedId = ordered[0] || null;
+  updateWidgetActionButtons();
   renderStage(); renderProperties(); renderWidgetFinder();
 }
 
@@ -1648,6 +1656,7 @@ function setSingleWidgetSelection(widgetId) {
   if (!widget || widget.editorGroupId !== state.editingGroupId) state.editingGroupId = null;
   state.selectedIds = groupMembers(currentPage().widgets, widget, state.editingGroupId).map(item => item.id);
   state.selectedId = state.selectedIds[0] || null;
+  updateWidgetActionButtons();
 }
 
 function selectedNormalWidgets() {
@@ -1669,6 +1678,7 @@ function selectWidget(widgetId, additive = false) {
   else members.forEach(id => { if (!selected.includes(id)) selected.push(id); });
   state.selectedIds = selected;
   state.selectedId = selected[0] || null;
+  updateWidgetActionButtons();
 }
 
 function focusWidget(widgetId) {
@@ -4953,6 +4963,7 @@ function renderProperties() {
 function render() {
   applyProjectCss();
   const page = currentPage();
+  updateWidgetActionButtons();
   let exitTabs = $("#exit-tab-editor");
   if (!exitTabs) {
     exitTabs = document.createElement("button"); exitTabs.id = "exit-tab-editor"; exitTabs.type = "button";
@@ -5288,8 +5299,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.256" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.256" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.257" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.257" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
