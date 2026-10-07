@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.251
+
+- Industrial 0.11.0 ergänzt „Heizung – Kessel und Öltank“ mit vier Temperaturen, zwei Pumpen- und Brennerstatus, Störung, numerischem Tankfüllstand und einzeln abschaltbaren Wasser-/Öl-Flusspfeilen. Alle neun Entitäten besitzen eine Auswahl. SVG-Anzeigen sind dynamisch, unbekannte Werte bleiben sichtbar unbekannt. Rasterformat 4:6 mit additiven Gehäuseabständen.
+- Industrial 0.11.0 adds a read-only heating system with dynamic temperatures, Boolean statuses, fault indicator, tank level and independent water/oil arrows in a 4:6 grid layout.
+
 ## 0.1.250
 
 - Kipp- und Wippschalter öffnen jetzt über die drei Punkte an jeder Eingangs- und Ausgangsentität die Home-Assistant-Entitätenauswahl. Die Auswahl wird in das richtige Kanalfeld übernommen.

@@ -1,4 +1,4 @@
-"""Build the data-only Industrial set (weather widget: Studio >= 0.1.245)."""
+"""Build the data-only Industrial set (heating widget: Studio >= 0.1.251)."""
 from copy import deepcopy
 import json
 import sys
@@ -40,7 +40,7 @@ def _base_manifest():
 
 def manifest():
     data = _base_manifest()
-    data["version"] = "0.10.3"
+    data["version"] = "0.11.0"
     toggle = data["widgets"][1]
     rocker = deepcopy(toggle)
     rocker.update(type="ugso.industrial/rocker-switch", label="Wippschalter – 1 bis 4", icon="icons/rocker-gray.svg")
@@ -151,6 +151,29 @@ def manifest():
                 field("sectionRows", "Abschnitte senkrecht", "select", options=["1", "2", "3", "4"]),
                 field("width", "Breite (px)", "number", min=64, max=4096), field("height", "Höhe (px)", "number", min=64, max=4096)]}],
         "render": {"kind": "industrial-section", "valueKey": "sectionCount"}})
+    defaults = {"width": 518, "height": 778, "industrialStyle": True, "industrialScrewsEnabled": True,
+                "backgroundColor": "transparent", "borderWidth": 0, "padding": 0, "heatingDemo": False,
+                "statusLegend": "ein-aus", "statusOnColor": "#39ed1b", "statusOffColor": "#39433d", "statusOffTextColor": "#a4b1ad", "alertColor": "#ffcf28", "tankColor": "#ed9829"}
+    groups = [{"label": "Heizung", "fields": [field("heatingDemo", "Beispieldaten ohne Entitäten", "checkbox"),
+              field("statusLegend", "Statusbeschriftung", "select", options=["ein-aus", "on-off", "one-zero"]),
+              field("statusOnColor", "Statusfarbe Ein", "color"), field("statusOffColor", "LED-Farbe Aus", "color"), field("statusOffTextColor", "Statusfarbe Aus", "color")] }]
+    for key, label in (("heating", "Heizkreistemperatur"), ("boiler", "Kesseltemperatur"), ("hot", "Warmwassertemperatur"), ("cold", "Kaltwassertemperatur")):
+        defaults.update({f"{key}EntityId": "", f"{key}Visible": True, f"{key}Color": "#229dff" if key == "cold" else "#ff3932"})
+        groups.append({"label": label, "fields": [field(f"{key}EntityId", "Entität"), field(f"{key}Visible", "Anzeige sichtbar", "checkbox"), field(f"{key}Color", "Textfarbe", "color")]})
+    for key, label in (("pump", "Heizkreispumpenstatus"), ("circulation", "Zirkulationspumpenstatus"), ("burner", "Brennerstatus"), ("alert", "Störungsanzeige")):
+        defaults.update({f"{key}EntityId": "", f"{key}Visible": True})
+        groups.append({"label": label, "fields": [field(f"{key}EntityId", "Boolean-Entität"), field(f"{key}Visible", "Anzeige sichtbar", "checkbox")]})
+    defaults["tankEntityId"] = ""
+    groups.append({"label": "Tankfüllstand", "fields": [field("tankEntityId", "Numerische Entität (0–100 %)"), field("tankColor", "Füllstandsfarbe", "color")]})
+    arrows = []
+    for key, label in (("heating", "Heizkreis"), ("circulation", "Zirkulation"), ("hot", "Warmwasser"), ("cold", "Kaltwasser"), ("oil", "Öl zum Brenner")):
+        defaults[f"{key}Arrow"] = True
+        arrows.append(field(f"{key}Arrow", label, "checkbox"))
+    groups.extend([{"label": "Flusspfeile", "fields": arrows},
+                   {"label": "Gehäuse und Farben", "fields": [field("industrialStyle", "Industriestyle", "checkbox"), field("alertColor", "Störungsfarbe", "color")]},
+                   {"label": "Größe", "fields": [field("width", "Breite (px)", "number", min=256, max=4096), field("height", "Höhe (px)", "number", min=384, max=4096)]}])
+    data["widgets"].append({"type": "ugso.industrial/heating", "label": "Heizung – Kessel und Öltank", "icon": "icons/heating.svg", "defaults": defaults,
+                            "propertyGroups": groups, "render": {"kind": "industrial-heating", "valueKey": "tankEntityId"}})
     return data
 
 
@@ -165,6 +188,7 @@ def build():
         entries[f"icons/rocker-{color}.svg"] = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="5" y="1" width="14" height="22" rx="3" fill="#17191b"/><rect x="7" y="3" width="10" height="18" rx="2" fill="{fill}"/><circle cx="12" cy="8" r="2" fill="none" stroke="#ffffff"/><path d="M12 14V18" stroke="#ffffff" stroke-width="2"/></svg>'
     entries["icons/section.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" fill="#263238" stroke="#879097"/><path d="M4 7h1m14 0h1M4 17h1m14 0h1" stroke="#92999d" stroke-width="2"/></svg>'
     target = ROOT / "ugso.industrial.wg"
+    entries["icons/heating.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="2" y="8" width="11" height="14" rx="1" fill="#b82222"/><rect x="4" y="11" width="7" height="5" fill="#90999d"/><path d="M7 8V3H3" fill="none" stroke="#90999d" stroke-width="3"/><rect x="16" y="3" width="6" height="19" rx="3" fill="#c5824d"/><path d="M19 8v10" stroke="#ffbd4b" stroke-width="2"/></svg>'
     entries["icons/weather.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="3" width="22" height="18" rx="2" fill="#263238" stroke="#879097"/><path d="M5 9h4v4H5Zm5 3h8v4h-8Z" fill="#8a9b61"/><path d="M11 18h9m-9-8h9" stroke="#42a5f5"/></svg>'
     entries["icons/clock.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="3" width="22" height="18" rx="2" fill="#263238" stroke="#879097"/><rect x="4" y="5" width="6" height="14" rx="3" fill="#b6c1c522" stroke="#b6c1c5"/><rect x="14" y="5" width="6" height="14" rx="3" fill="#b6c1c522" stroke="#b6c1c5"/><path d="M7 8v8m9-8h2l-2 8" stroke="#ff9b36"/><path d="M12 10v1m0 2v1" stroke="#ff9b36"/></svg>'
     entries["icons/segment.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="2" fill="#11181c" stroke="#879097"/><path d="M4 8h4m-4 4h4m-4 4h4m-4-7v2m4-2v2m-4 2v2m4-2v2m4-7h4m-4 4h4m-4 4h4m-4-7v2m4-2v2m-4 2v2m4-2v2" stroke="#ff3b30"/></svg>'

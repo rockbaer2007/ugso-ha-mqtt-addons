@@ -116,6 +116,16 @@ Industriestyle ergänzt Schrauben in den vier Ecken und einen CSS-Rand von 2 px.
 
 Build: `python packages/industrial/build.py` im Studio-Ordner.
 
+## Heizung – Kessel und Öltank (0.11.0 / Studio 0.1.251)
+
+Read-only SVG-Widget mit rotem Kessel, zwei grünen Pumpen, blauem Brenner, Kupfertank und dünner Ölleitung. Rasterformat Breite:Höhe **4:6**, mindestens 262 × 394 px bei 1 px Gehäuseabstand; Standard 518 × 778 px. Additive Abstände passen zum übrigen Set. Industriestyle, Schrauben, Rahmen und Hintergrundanpassung bleiben unabhängig.
+
+Vier numerische Temperaturentitäten (Heizkreis, Kessel, Warmwasser, Kaltwasser) haben eigene Textfarben. Heizkreistemperatur, beide Pumpenstatus, Brennerstatus und Störungsanzeige lassen sich ausblenden. Statusentitäten liefern `on/off`, `true/false` oder `1/0`; Beschriftung EIN/AUS, ON/OFF oder 1/0. Der numerische Tank-Sensor muss Prozent 0–100 liefern; die Füllhöhe wird auf diese Grenzen beschränkt, der Zahlenwert bleibt unverändert sichtbar. Fehlende/ungültige Werte zeigen einen Strich oder ein Fragezeichen, keine erfundenen Livewerte. Beispieldaten sind ausdrücklich optional und ausgeschaltet. Flusspfeile für Heizkreis, Zirkulation, Warmwasser, Kaltwasser und Öl sind einzeln abschaltbar. Die Ölleitung zeigt zum Brenner. Alle neun Entitätsfelder haben die Home-Assistant-Auswahl. Nur Gehäuse-Andockpunkte, keine Steuerung oder Datenfluss-Ausgänge.
+
+## Heating – boiler and oil tank (0.11.0 / Studio 0.1.251)
+
+Read-only SVG system in a **4:6 width:height grid**, with additive housing gaps, independent styling and nine entity pickers. Four temperature sensors support individual text colors; Boolean pump/burner/fault indicators and heating temperature can be hidden. Choose EIN/AUS, ON/OFF or 1/0 labels. Tank input expects 0–100 percent; its visual column is clamped while the actual reading stays visible. Missing values remain unknown. Optional demo data defaults off. Five independent flow arrows include oil toward the burner. Housing docking only; no control writes or signal outputs.
+
 ## English
 
 **Studio 0.1.226:** **Size** includes a checked-by-default **1:1 aspect ratio** checkbox. Width and height stay equal during dragging and typed changes, and both property fields update. Uncheck it for independent dimensions. Each dimension remains at least 64 px. Re-enabling the lock uses the larger dimension for both sides. Existing widgets keep their square layout without configuration changes; package 0.1.0 remains usable.

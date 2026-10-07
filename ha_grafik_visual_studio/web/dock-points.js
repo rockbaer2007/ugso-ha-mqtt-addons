@@ -6,6 +6,7 @@ import { isIndustrialSegment, segmentPortActive } from "./industrial-segment.js"
 import { isIndustrialClock, clockPortActive } from "./industrial-clock.js";
 import { isIndustrialWeather, weatherPortActive } from "./industrial-weather.js";
 import { isIndustrialSection } from "./industrial-section.js";
+import { isIndustrialHeating } from "./industrial-heating.js";
 
 export function dockPointKey(anchorId) {
   return `dock_${anchorId.replaceAll("-", "_")}`;
@@ -13,6 +14,7 @@ export function dockPointKey(anchorId) {
 
 export const OUTPUT_SIDES = [["top-center", "Oben"], ["bottom-center", "Unten"], ["right-center", "Rechts"], ["left-center", "Links"]];
 export function hasSimpleOutput(widget) {
+  if (isIndustrialHeating(widget)) return false;
   return !!widget && !isIndustrialSwitch(widget) && !isIndustrialLcd(widget) && !isIndustrialOdometer(widget) && !isIndustrialSegment(widget) && !isIndustrialClock(widget) && !isIndustrialWeather(widget) && !isIndustrialSection(widget) && !isSeparator(widget) && !["svg-connection", "linebox", "linebox-math", "value-converter"].includes(widget.type);
 }
 export function outputDockActive(widget, anchor) {
@@ -28,6 +30,7 @@ export function setOutputAnchor(widget, widgets, anchor) {
   }
 }
 export function dockPointActive(widget, anchor, side = "") {
+  if (isIndustrialHeating(widget)) return false;
   if (isIndustrialSwitch(widget)) return switchPortActive(widget, anchor, side);
   if (isIndustrialLcd(widget)) return lcdPortActive(widget, anchor, side);
   if (isIndustrialOdometer(widget)) return odometerPortActive(widget, anchor, side);

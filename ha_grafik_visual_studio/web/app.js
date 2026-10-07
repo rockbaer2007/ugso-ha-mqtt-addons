@@ -62,6 +62,7 @@ import { isIndustrialSegment, segmentSize, segmentAnchors, renderIndustrialSegme
 import { isIndustrialClock, clockMode, clockSize, clockAnchors, renderIndustrialClock, updateIndustrialClocks } from "./industrial-clock.js";
 import { isIndustrialWeather, weatherSize, weatherAnchors, weatherBindings, renderIndustrialWeather } from "./industrial-weather.js";
 import { isIndustrialSection, sectionRows, sectionSize, renderIndustrialSection } from "./industrial-section.js";
+import { isIndustrialHeating, heatingSize, heatingBindings, renderIndustrialHeating } from "./industrial-heating.js";
 import { applyIndustrialBackground, INDUSTRIAL_BACKGROUND } from "./industrial-housing.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
@@ -191,7 +192,7 @@ const CONNECTION_ANCHORS = [
   ["bottom-quarter", "Unten 1/4", 0.25, 1], ["bottom-center", "Unten Mitte", 0.5, 1], ["bottom-three-quarter", "Unten 3/4", 0.75, 1],
 ];
 const CONNECTION_ANCHOR_IDS = CONNECTION_ANCHORS.map(([id]) => id);
-const widgetAnchors = widget => isIndustrialSection(widget) ? [] : isIndustrialWeather(widget) ? weatherAnchors : isIndustrialClock(widget) ? clockAnchors : isIndustrialSegment(widget) ? segmentAnchors : isIndustrialOdometer(widget) ? odometerAnchors : isIndustrialLcd(widget) ? lcdAnchors : isIndustrialSwitch(widget) ? switchAnchors(widget) : widget.type === "linebox-math" ? MATH_ANCHORS : CONNECTION_ANCHORS;
+const widgetAnchors = widget => isIndustrialSection(widget) || isIndustrialHeating(widget) ? [] : isIndustrialWeather(widget) ? weatherAnchors : isIndustrialClock(widget) ? clockAnchors : isIndustrialSegment(widget) ? segmentAnchors : isIndustrialOdometer(widget) ? odometerAnchors : isIndustrialLcd(widget) ? lcdAnchors : isIndustrialSwitch(widget) ? switchAnchors(widget) : widget.type === "linebox-math" ? MATH_ANCHORS : CONNECTION_ANCHORS;
 const widgetAnchorIds = widget => widgetAnchors(widget).map(([id]) => id);
 const connectionAnchorGroup = { id: "dock-points", label: "Andockpunkte", masterKey: "dockPointsEnabled", defaultEnabled: false, hint: "Der Haken in der Überschrift aktiviert den Bereich. Alle Punkte sind zunächst aus und lassen sich gemeinsam oder einzeln einschalten.", fields: [
   ...CONNECTION_ANCHORS.map(([id, label]) => ({ label, key: dockPointKey(id), type: "checkbox", default: false })),
@@ -230,7 +231,7 @@ function widgetPropertyGroups(widget) {
     { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
   ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
-  if (["industrial-gauge", "industrial-switch", "industrial-lcd", "industrial-linear", "industrial-odometer", "industrial-segment", "industrial-clock", "industrial-weather", "industrial-section"].includes(getWidgetDefinition(widget.type).render?.kind)) {
+  if (["industrial-gauge", "industrial-switch", "industrial-lcd", "industrial-linear", "industrial-odometer", "industrial-segment", "industrial-clock", "industrial-weather", "industrial-section", "industrial-heating"].includes(getWidgetDefinition(widget.type).render?.kind)) {
     groups = groups.map(group => group.label === "Größe" ? { ...group, fields: [{ label: "Verhältnis 1:1", key: "aspectRatio1to1", type: "checkbox", default: true, refreshProperties: true }, ...group.fields] } : { ...group, fields: group.fields.filter(field => !["showValue", "unit"].includes(field.key)) });
     groups = groups.map(group => group.label === "Gehäuse und Farben" ? { ...group, fields: [...group.fields.flatMap(field => field.key === "industrialStyle" ? [{ ...field, refreshProperties: true }, { label: "Schrauben aktivieren", key: "industrialScrewsEnabled", type: "checkbox", default: true, disabled: widget.industrialStyle === false }] : [field]),
       { label: "Rahmenbreite anpassen", key: "industrialFrameWidthEnabled", type: "checkbox", default: false, refreshProperties: true },
@@ -269,6 +270,7 @@ function widgetPropertyGroups(widget) {
   ] };
   if (isIndustrialSegment(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>field.key==="segmentUnit"?{...field,options:[{value:"off",label:"Aus"},{value:"W",label:"W"},{value:"A",label:"A"},{value:"V",label:"V"}]}:field)})),...styleEntryGroups];
   if (isIndustrialClock(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1" && (field.key!=="clockLedColor" || clockMode(widget)==="led") && (!["clockLcdColor","clockLcdBackground"].includes(field.key) || clockMode(widget)==="lcd")).map(field=>field.key==="clockMode"?{...field,refreshProperties:true,options:[{value:"nixie",label:"Nixieröhre"},{value:"led",label:"LED"},{value:"lcd",label:"LCD"}]}:field.key==="height"?{...field,min:clockMode(widget)==="nixie"?64:32}:field.key==="clockZone"?{...field,options:[{value:"local",label:"Browser-Ortszeit"},{value:"UTC",label:"UTC"},{value:"Europe/Berlin",label:"Europe/Berlin"}]}:field)})),...styleEntryGroups];
+  if (isIndustrialHeating(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>field.key==="statusLegend"?{...field,options:[{value:"ein-aus",label:"EIN/AUS"},{value:"on-off",label:"ON/OFF"},{value:"one-zero",label:"1/0"}]}:field)})),...styleEntryGroups];
   if (isIndustrialSection(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>["sectionCount","sectionRows"].includes(field.key)?{...field,refreshProperties:true,options:Array.from({length:12},(_,i)=>String(i+1))}:field)})),...styleEntryGroups];
   if (isIndustrialWeather(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1" && (field.key!=="weatherLedColor" || widget.weatherMode==="led") && (!["weatherLcdColor","weatherLcdBackground"].includes(field.key) || widget.weatherMode!=="led")).map(field=>field.key==="weatherMode"?{...field,refreshProperties:true}:field)})),...styleEntryGroups];
   if (isIndustrialLinear(widget)) {
@@ -730,6 +732,7 @@ function editorLiveEntityIds() {
     ...(isIndustrialSegment(widget) ? [widget.displayEntityId] : []),
     ...(isIndustrialClock(widget) ? [widget.displayEntityId] : []),
     ...(isIndustrialWeather(widget) ? weatherBindings(widget) : []),
+    ...(isIndustrialHeating(widget) ? heatingBindings(widget) : []),
     ...(["industrial-gauge","industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind) ? [widget.outputEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
@@ -782,6 +785,7 @@ function runtimeLiveEntityIds() {
     ...(isIndustrialSegment(widget) ? [widget.displayEntityId] : []),
     ...(isIndustrialClock(widget) ? [widget.displayEntityId] : []),
     ...(isIndustrialWeather(widget) ? weatherBindings(widget) : []),
+    ...(isIndustrialHeating(widget) ? heatingBindings(widget) : []),
     ...(["industrial-gauge","industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind) ? [widget.outputEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
@@ -2883,6 +2887,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (isIndustrialClock(widget)) Object.assign(widget,clockSize(widget));
     if (isIndustrialSection(widget)) Object.assign(widget,sectionSize(widget));
     if (isIndustrialWeather(widget)) Object.assign(widget,weatherSize(widget));
+    if (isIndustrialHeating(widget)) Object.assign(widget,heatingSize(widget));
     if (widget.type === "dashboard-in-widget") Object.assign(widget, dashboardSize(widget));
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") Object.assign(widget, industrialSize(widget));
@@ -2968,6 +2973,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(renderSeparator(widget, document));
     } else if (isGauge(widget)) {
       content.append(renderGauge(widget, document, { states: state.entityStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
+    } else if (isIndustrialHeating(widget)) {
+      content.style.padding="0";content.style.border="0";
+      content.append(renderIndustrialHeating(widget,document,{states:state.entityStates,locale:document.documentElement.lang||"de"}));
     } else if (isIndustrialSection(widget)) {
       content.style.padding="0";content.style.border="0";
       content.append(renderIndustrialSection(widget,document));
@@ -4044,6 +4052,12 @@ function makeResizable(element, handle, widget) {
       if(direction.includes("n"))widget.y=Math.max(0,origin.top+origin.height-widget.height);
       syncIndustrialSizeFields(widget);
     }
+    if (isIndustrialHeating(widget)) {
+      Object.assign(widget,heatingSize(widget,/[ew]/.test(direction)?"width":"height"));
+      if(direction.includes("w"))widget.x=Math.max(0,origin.left+origin.width-widget.width);
+      if(direction.includes("n"))widget.y=Math.max(0,origin.top+origin.height-widget.height);
+      syncIndustrialSizeFields(widget);
+    }
     if (isIndustrialWeather(widget)) {
       Object.assign(widget,weatherSize(widget,/[ew]/.test(direction)?"width":"height"));
       if(direction.includes("w"))widget.x=Math.max(0,origin.left+origin.width-widget.width);
@@ -4515,7 +4529,7 @@ function field(descriptor, widget) {
     const previousClockMode=isIndustrialClock(widget)?clockMode(widget):null;
     const previousSectionCell=isIndustrialSection(widget)?(widget.height-2*Math.max(0,Math.min(64,Number(widget.housingSpace??1)||0))*(sectionRows(widget)-1))/sectionRows(widget):null;
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
-    if (["industrial-gauge","industrial-switch","industrial-lcd","industrial-linear","industrial-odometer","industrial-segment","industrial-clock","industrial-weather","industrial-section"].includes(getWidgetDefinition(widget.type).render?.kind) && descriptor.key === "industrialStyle" && input.checked) widget.industrialScrewsEnabled = true;
+    if (["industrial-gauge","industrial-switch","industrial-lcd","industrial-linear","industrial-odometer","industrial-segment","industrial-clock","industrial-weather","industrial-section","industrial-heating"].includes(getWidgetDefinition(widget.type).render?.kind) && descriptor.key === "industrialStyle" && input.checked) widget.industrialScrewsEnabled = true;
     if(isIndustrialSection(widget) && ["width","height","sectionCount","sectionRows","housingSpace"].includes(descriptor.key)) {
       if(["sectionCount","sectionRows","housingSpace"].includes(descriptor.key)) widget.height=previousSectionCell*sectionRows(widget)+2*Math.max(0,Math.min(64,Number(widget.housingSpace??1)||0))*(sectionRows(widget)-1);
       Object.assign(widget,sectionSize(widget,descriptor.key));syncIndustrialSizeFields(widget,descriptor.key);
@@ -4523,6 +4537,10 @@ function field(descriptor, widget) {
     if(isIndustrialWeather(widget)) {
       if(["width","height","housingSpace"].includes(descriptor.key)){Object.assign(widget,weatherSize(widget,descriptor.key));syncIndustrialSizeFields(widget,descriptor.key);}
       if(descriptor.key==="entityId" || /EntityId$/.test(descriptor.key) || ["weatherRain","weatherMinMax"].includes(descriptor.key))void refreshEditorLiveStates();
+    }
+    if(isIndustrialHeating(widget)) {
+      if(["width","height","housingSpace"].includes(descriptor.key)){Object.assign(widget,heatingSize(widget,descriptor.key));syncIndustrialSizeFields(widget,descriptor.key);}
+      if(/EntityId$/.test(descriptor.key))void refreshEditorLiveStates();
     }
     if(isIndustrialClock(widget)) {
       if(descriptor.key==="clockMode" && (previousClockMode==="nixie")!==(clockMode(widget)==="nixie"))widget.height=Math.round(widget.height*(clockMode(widget)==="nixie"?2:.5));
@@ -4599,7 +4617,7 @@ function field(descriptor, widget) {
   };
   input.addEventListener(input.tagName === "SELECT" ? "change" : "input", update);
   if (isIndustrialLinear(widget) && ["entityId","dataInputEnabled"].includes(descriptor.key)) input.addEventListener("change", renderProperties);
-  if (["industrial-gauge","industrial-switch","industrial-lcd","industrial-linear","industrial-odometer","industrial-segment","industrial-clock","industrial-weather","industrial-section"].includes(getWidgetDefinition(widget.type).render?.kind) && ["width", "height"].includes(descriptor.key)) input.addEventListener("change", () => { input.value = String(widget[descriptor.key]); syncIndustrialSizeFields(widget); });
+  if (["industrial-gauge","industrial-switch","industrial-lcd","industrial-linear","industrial-odometer","industrial-segment","industrial-clock","industrial-weather","industrial-section","industrial-heating"].includes(getWidgetDefinition(widget.type).render?.kind) && ["width", "height"].includes(descriptor.key)) input.addEventListener("change", () => { input.value = String(widget[descriptor.key]); syncIndustrialSizeFields(widget); });
   if (descriptor.refreshProperties && input.tagName === "TEXTAREA") input.addEventListener("change", renderProperties);
   if (descriptor.refreshProperties && ["number", "range"].includes(input.type)) input.addEventListener("change", renderProperties);
   if (widget.type === "value-list-html-style" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
@@ -5205,8 +5223,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.250" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.250" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.251" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.251" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

@@ -25,6 +25,6 @@ test("every Industrial entity field opens the picker and receives the selected I
     assert.equal(await input.inputValue(),"switch.test",`${def.type}: ${field.key}`);checked++;
    }
   }
-  assert.equal(checked,47);assert.deepEqual(errors,[]);
+  assert.equal(checked,56);assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });

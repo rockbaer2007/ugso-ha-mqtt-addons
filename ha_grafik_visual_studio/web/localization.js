@@ -2,6 +2,11 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Heizung – Kessel und Öltank": "Heating – boiler and oil tank", "Heizung": "Heating system",
+"Beispieldaten ohne Entitäten": "Example data without entities", "Statusbeschriftung": "Status labels", "Statusfarbe Ein": "ON status color", "Statusfarbe Aus": "OFF status color",
+"Heizkreistemperatur": "Heating circuit temperature", "Kesseltemperatur": "Boiler temperature", "Warmwassertemperatur": "Hot water temperature", "Kaltwassertemperatur": "Cold water temperature",
+"Anzeige sichtbar": "Show display", "Textfarbe": "Text color", "Heizkreispumpenstatus": "Heating pump status", "Zirkulationspumpenstatus": "Circulation pump status", "Brennerstatus": "Burner status", "Störungsanzeige": "Fault indicator", "Boolean-Entität": "Boolean entity",
+"Tankfüllstand": "Tank level", "Numerische Entität (0–100 %)": "Numeric entity (0–100 %)", "Füllstandsfarbe": "Level color", "Flusspfeile": "Flow arrows", "Heizkreis": "Heating circuit", "Zirkulation": "Circulation", "Warmwasser": "Hot water", "Kaltwasser": "Cold water", "Öl zum Brenner": "Oil to burner", "Störungsfarbe": "Fault color",
 "Text bei AUS": "Text when OFF", "Text bei EIN": "Text when ON",
 "Hintergrund anpassen": "Customize background", "Gehäuse-Hintergrundfarbe": "Housing background color",
 "Blindelement": "Blank panel", "Abschnitte": "Sections", "Abschnitte senkrecht": "Vertical sections",
