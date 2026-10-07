@@ -1,4 +1,12 @@
-# UGSo Industrie 0.4.0
+# UGSo Industrie 0.5.0
+
+## Linear-Gauge / Schieberegler (Studio 0.1.239+)
+
+Deutsch: Normal H/B 1:2 bis 1:4, schmal 0,5:2 bis 0,5:4. Die Auswahl **Breite in Rastereinheiten** bietet 2, 3 oder 4. Bei 1 px Abstand rundherum: normal 130/196/262 × 64 px, schmal 130/196/262 × 32 px. Wie bei Schalterblöcken gilt Breite = Rasterbreite × Einheiten + 2 × Abstand × (Einheiten − 1); Rasterbreite ist die Höhe, bei der schmalen Variante die doppelte Höhe. So fluchten die Außenkanten mit einzelnen Widgets. Eingabe, Ziehen und Änderungen des Abstands berücksichtigen diesen Zuschlag. Mit Entität oder Datenfluss-Eingang zeigt ein Dreieck den Wert auf einer Strichskala oder einem Farbbalken mit eigenen Bereichen. Ohne Eingang wird das Widget zum Schieberegler mit rechteckigem Griff und **ausschließlich Strichskala**, auch wenn im gespeicherten Projekt noch Farbbalken steht. Maus, Touch und Tastatur funktionieren nur in der Runtime.
+
+Minimum (auch negativ), Maximum, Teilung und Bedien-Schrittweite sind getrennt einstellbar. Null wird hervorgehoben. Optionale Skalenwerte zeigen die Endpunkte und, wenn Platz neben der Wertanzeige bleibt, Null. Farbbereiche gelten ausschließlich für die Anzeige. Ungültige oder fehlende Eingangswerte erhalten keinen erfundenen Zeigerwert. Wert, Einheit, Schrift, Rahmen, Schrauben, Gehäuse-Snappunkte, Abstand und Ein-/Ausgangs-Dockpunkte wie beim Gauge/Poti. Ausgaben über number/input_number oder sichtbare/unsichtbare Wert-Verbindungen; Ausgabe beim Loslassen oder während des Ziehens. Bestehende fünf Widget-Definitionen bleiben erhalten.
+
+English: Normal height/width ratios 1:2–1:4 and slim ratios 0.5:2–0.5:4. Select 2, 3 or 4 grid units. With 1 px all-side spacing, dimensions are 130/196/262 × 64 px or × 32 px. Width = cell width × span + 2 × spacing × (span − 1); cell width is the height, doubled for slim widgets. This aligns outer edges with separate widgets. Typed dimensions, resizing and spacing edits include the gap. An entity or dataflow input turns the widget into a gauge with a triangle and ticks or colored ranges. Without input it becomes a rectangular-handle slider using **ticks only**, including when a saved project requests colors. Runtime supports mouse, touch and keyboard. Negative scales, independent step/division, highlighted zero, optional endpoint labels, units, value styling, housing, screws, frame and docking apply. Numeric outputs and visible/hidden connections share the Gauge/Poti behavior. The five existing widget definitions are preserved.
 
 ## LCD 20×4 / 16×2 (Studio 0.1.238+)
 

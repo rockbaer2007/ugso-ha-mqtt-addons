@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.239
+
+- Industriepaket 0.5.0 ergänzt Linear-Gauge / Schieberegler: normal H/B 1:2 bis 1:4, schmal 0,5:2 bis 0,5:4. Mit Eingang Dreieck und Strichskala oder Farbbalken; ohne Eingang rechteckiger Griff und ausschließlich Strichskala. Negative Skalen, Teilung, Farbbereiche, Einheiten, Wertanzeige, Gehäuse, Rahmen, Schrauben, Entitäten und Wert-Verbindungen wie beim Gauge/Poti.
+- Industrial package 0.5.0 adds normal and slim linear gauges/sliders. Bound input uses a triangle with ticks or colored ranges; local sliders always use ticks and a rectangular handle. Typed dimensions and resizing retain the selected 2–4 grid-unit span. Existing housing, routing, value formatting and numeric output controls apply.
+- Rasterbreiten berücksichtigen den Abstand zwischen Einzelwidgets wie bei Schalterblöcken: 130/196/262 px bei 64 px Raster und 1 px Abstand rundherum, auch für die schmale Ausführung. / Widths include individual-widget gaps: 130/196/262 px with 64 px cells and 1 px all-side spacing, including slim widgets.
+
 ## 0.1.238
 
 - Industriepaket 0.4.0 ergänzt LCD 20×4 (192×64 px) und 16×2 (192×32 px): eigene 5×8-Punktmatrix-Schrift, Gelb/Weiß und Blau/Weiß, eine Entität je Zeile, Präfix, Einheiten und Nachkommastellen. Ein einzelner Ein/Aus-Eingang oder eine Entität steuert das Display; Gehäuse, Schrauben, Rahmen und Snappunkte bleiben einstellbar.

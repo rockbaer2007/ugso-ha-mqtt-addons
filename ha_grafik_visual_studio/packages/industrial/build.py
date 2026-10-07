@@ -1,4 +1,4 @@
-"""Build the data-only Industrial widget set (rockers: Studio >= 0.1.235)."""
+"""Build the data-only Industrial set (linear widgets: Studio >= 0.1.239)."""
 from copy import deepcopy
 import json
 import sys
@@ -40,7 +40,7 @@ def _base_manifest():
 
 def manifest():
     data = _base_manifest()
-    data["version"] = "0.4.0"
+    data["version"] = "0.5.0"
     toggle = data["widgets"][1]
     rocker = deepcopy(toggle)
     rocker.update(type="ugso.industrial/rocker-switch", label="Wippschalter – 1 bis 4", icon="icons/rocker-gray.svg")
@@ -66,6 +66,24 @@ def manifest():
                 field(f"lineUnit{n}", "Einheit"), field(f"lineAutoUnit{n}", "Einheit aus Entität", "checkbox"), field(f"lineDecimals{n}", "Nachkommastellen", "select", options=["auto", "0", "1", "2", "3", "4", "5", "6"])]})
         data["widgets"].append({"type": f"ugso.industrial/lcd-{columns}x{rows}", "label": f"LCD – {columns}×{rows}", "icon": "icons/lcd.svg",
                                 "defaults": defaults, "propertyGroups": groups, "render": {"kind": "industrial-lcd", "valueKey": "lineText1"}})
+    for slim in (False, True):
+        linear = deepcopy(data["widgets"][0])
+        linear.update(type="ugso.industrial/linear-slim" if slim else "ugso.industrial/linear",
+                      label="Linear-Gauge / Schieberegler – Schmal" if slim else "Linear-Gauge / Schieberegler", icon="icons/linear.svg")
+        linear["render"]["kind"] = "industrial-linear"
+        linear["defaults"].update(width=130, height=32 if slim else 64, linearSpan="2", heading="Linear", showValue=True)
+        for group in linear["propertyGroups"]:
+            if group["label"] == "Größe":
+                group["fields"].insert(0, {"key": "linearSpan", "label": "Breite in Rastereinheiten", "type": "select", "options": ["2", "3", "4"]})
+                for item in group["fields"]:
+                    if item["key"] == "height": item["min"] = 32 if slim else 64
+                    if item["key"] == "width": item["min"] = 128
+            if group["label"] == "Daten und Bedienung":
+                group["fields"][1]["label"] = "Eingang: Entität (leer = Schieberegler)"
+            if group["label"] == "Skala":
+                group["fields"].append({"key": "scaleLabelsEnabled", "label": "Skalenwerte anzeigen", "type": "checkbox"})
+                linear["defaults"]["scaleLabelsEnabled"] = False
+        data["widgets"].append(linear)
     return data
 
 
@@ -74,6 +92,7 @@ def build():
     entries = {"manifest.json": json.dumps(data, ensure_ascii=False, indent=2), "icons/gauge.svg": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="1" width="22" height="22" rx="2" fill="#263238" stroke="#879097"/><path d="M6 18A8 8 0 1 1 18 18" fill="none" stroke="#4caf50" stroke-width="2"/><path d="M12 5L10 10H14Z" fill="#f2f5f6"/></svg>', "README.md": (ROOT / "README.md").read_text(encoding="utf-8"), "LICENSE.txt": (ROOT / "LICENSE.txt").read_text(encoding="utf-8")}
     entries["icons/switch.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="1" width="22" height="22" rx="2" fill="#263238" stroke="#879097"/><circle cx="12" cy="5" r="2" fill="#4caf50"/><circle cx="12" cy="15" r="5" fill="#92999d" stroke="#11181c"/><path d="M12 16L12 10" stroke="#e1e7e9" stroke-width="3"/></svg>'
     entries["icons/lcd.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="2" fill="#263238" stroke="#879097"/><rect x="3" y="7" width="18" height="10" fill="#193ae5"/><path d="M5 9h5m-5 3h12m-12 3h9" stroke="#fff" stroke-dasharray="1 1"/></svg>'
+    entries["icons/linear.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="2" fill="#263238" stroke="#879097"/><path d="M4 12h16M4 12v4m4-4v3m4-3v4m4-4v3m4-3v4" stroke="#dce5e9"/><path d="M10 8h4l-2 3Z" fill="#42a5f5"/></svg>'
     for color, fill in (("gray", "#c7cbd1"),):
         entries[f"icons/rocker-{color}.svg"] = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="5" y="1" width="14" height="22" rx="3" fill="#17191b"/><rect x="7" y="3" width="10" height="18" rx="2" fill="{fill}"/><circle cx="12" cy="8" r="2" fill="none" stroke="#ffffff"/><path d="M12 14V18" stroke="#ffffff" stroke-width="2"/></svg>'
     target = ROOT / "ugso.industrial.wg"

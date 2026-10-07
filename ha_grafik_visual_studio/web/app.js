@@ -56,6 +56,7 @@ import { housingPoints, housingActive, housingSnapGroupFor, isIndustrial, snapHo
 import { squareLocked, industrialSize, industrialResize } from "./industrial-size.js";
 import { isIndustrialSwitch, switchCount, switchSize, switchAnchors, switchBindings, renderIndustrialSwitch } from "./industrial-switch.js";
 import { isIndustrialLcd, lcdSize, lcdAnchors, lcdBindings, renderIndustrialLcd } from "./industrial-lcd.js";
+import { isIndustrialLinear, linearSize } from "./industrial-linear.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
@@ -223,7 +224,7 @@ function widgetPropertyGroups(widget) {
     { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
   ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
-  if (["industrial-gauge", "industrial-switch", "industrial-lcd"].includes(getWidgetDefinition(widget.type).render?.kind)) {
+  if (["industrial-gauge", "industrial-switch", "industrial-lcd", "industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind)) {
     groups = groups.map(group => group.label === "Größe" ? { ...group, fields: [{ label: "Verhältnis 1:1", key: "aspectRatio1to1", type: "checkbox", default: true, refreshProperties: true }, ...group.fields] } : { ...group, fields: group.fields.filter(field => !["showValue", "unit"].includes(field.key)) });
     groups = groups.map(group => group.label === "Gehäuse und Farben" ? { ...group, fields: [...group.fields.flatMap(field => field.key === "industrialStyle" ? [{ ...field, refreshProperties: true }, { label: "Schrauben aktivieren", key: "industrialScrewsEnabled", type: "checkbox", default: true, disabled: widget.industrialStyle === false }] : [field]),
       { label: "Rahmenbreite anpassen", key: "industrialFrameWidthEnabled", type: "checkbox", default: false, refreshProperties: true },
@@ -258,6 +259,10 @@ function widgetPropertyGroups(widget) {
     { label: "Wert vom Datenfluss übernehmen", key: "dataInputEnabled", type: "checkbox", default: false },
     { label: "Eingangs-Dockpunkt", key: "dataInputAnchor", type: "select", options: CONNECTION_ANCHORS.map(([value, label]) => ({ value, label })), default: "left-center" },
   ] };
+  if (isIndustrialLinear(widget)) {
+    const gauge=Boolean(widget.entityId || widget.dataInputEnabled===true);
+    groups=groups.filter(group=>gauge || !/^Farbbereich \d+$/.test(group.label)).map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1" && (gauge || field.key!=="bandCount")).map(field=>field.key==="scaleMode"?{...field,label:"Darstellung",options:gauge?[{value:"ticks",label:"Strichskala"},{value:"ring",label:"Farbbalken"}]:[{value:"ticks",label:"Strichskala"}]}:field)}));
+  }
   if (isIndustrialLcd(widget)) return [...commonWidgetGroups, ...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>field.key==="lcdColor"?{...field,options:[{value:"yellow",label:uiText("Gelb/Weiß")},{value:"blue",label:uiText("Blau/Weiß")}]}:field)})), ...styleEntryGroups];
   if (isIndustrialSwitch(widget)) return [...commonWidgetGroups, ...groups.filter(group=>!/^Schalter [1-4]$/.test(group.label) || Number(group.label.split(" ")[1])<=switchCount(widget)).map(group=>group.label==="Wertanzeige" ? {...group,label:"Beschriftung",fields:group.fields.filter(field=>["valueFontSize","valueColor"].includes(field.key))} : group.label==="Größe" ? {...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1")} : {...group,fields:group.fields.map(field=>/^switchLegend[1-4]$/.test(field.key)?{...field,options:[{value:"on-off",label:"ON/OFF"},{value:"one-zero",label:"1/0"},{value:"ein-aus",label:"EIN/AUS"}]}:field)}), ...styleEntryGroups];
   if (widget.type === "linebox-math") {
@@ -708,7 +713,7 @@ function editorLiveEntityIds() {
     ...gaugeEntityIds(widget),
     ...(isIndustrialSwitch(widget) ? switchBindings(widget) : []),
     ...(isIndustrialLcd(widget) ? lcdBindings(widget) : []),
-    ...(getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" ? [widget.outputEntityId] : []),
+    ...(["industrial-gauge","industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind) ? [widget.outputEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-temperature" ? temperatureBindings(widget) : []),
@@ -757,7 +762,7 @@ function runtimeLiveEntityIds() {
     ...gaugeEntityIds(widget),
     ...(isIndustrialSwitch(widget) ? switchBindings(widget) : []),
     ...(isIndustrialLcd(widget) ? lcdBindings(widget) : []),
-    ...(getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" ? [widget.outputEntityId] : []),
+    ...(["industrial-gauge","industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind) ? [widget.outputEntityId] : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-window" ? technicBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-light" ? technicLightBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "technic-temperature" ? temperatureBindings(widget) : []),
@@ -854,7 +859,7 @@ function stageRuntimeEntityValue(entityId, value) {
 function scheduleLineboxHelperOutputs() {
   if (!runtimeMode || !state.project || document.hidden) return;
   for (const widget of visibleWidgets()) {
-    if (getWidgetDefinition(widget.type).render?.kind !== "industrial-gauge" || !widget.outputEntityId || widget.outputEntityId === widget.entityId) continue;
+    if (!["industrial-gauge","industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind) || !widget.outputEntityId || widget.outputEntityId === widget.entityId) continue;
     const model = industrialModel(widget, state.entityStates, widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined);
     if (model.gauge && model.valid && model.value != null) void writeIndustrialOutput(widget, model.value);
   }
@@ -2852,6 +2857,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   for (const widget of activePage.widgets) {
     if (isIndustrialSwitch(widget)) Object.assign(widget,switchSize(widget));
     if (isIndustrialLcd(widget)) Object.assign(widget,lcdSize(widget));
+    if (isIndustrialLinear(widget)) Object.assign(widget,linearSize(widget));
     if (widget.type === "dashboard-in-widget") Object.assign(widget, dashboardSize(widget));
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") Object.assign(widget, industrialSize(widget));
@@ -2948,10 +2954,10 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
         if(target){const response=await fetch("api/switch",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({entity_id:target,enabled:value})});if(!response.ok || (await response.json()).accepted!==true)throw new Error("Switch action failed");await refreshRuntimeStates();}
         widget[`switchState${n}`]=value;widget[`switchCommand${n}`]=value;
       }}));
-    } else if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") {
+    } else if (["industrial-gauge","industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind)) {
       content.style.padding = "0"; content.style.border = "0";
       if (runtimeMode && !widget.entityId && widget.dataInputEnabled !== true) widget.state = industrialQuantize(widget, widget.state);
-      content.append(renderIndustrialGauge(widget, document, { runtime: runtimeMode, states: state.entityStates,
+      content.append(renderIndustrialGauge(widget, document, { linear:isIndustrialLinear(widget), runtime: runtimeMode, states: state.entityStates,
         inputValue: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined,
         onInput: value => { widget.state = value; },
         onCommit: value => { void writeIndustrialOutput(widget, value); },
@@ -3963,6 +3969,12 @@ function makeResizable(element, handle, widget) {
       if(direction.includes("n"))widget.y=Math.max(0,origin.top+origin.height-widget.height);
       syncIndustrialSizeFields(widget);
     }
+    if (isIndustrialLinear(widget)) {
+      Object.assign(widget,linearSize(widget,/[ew]/.test(direction)?"width":"height"));
+      if(direction.includes("w"))widget.x=Math.max(0,origin.left+origin.width-widget.width);
+      if(direction.includes("n"))widget.y=Math.max(0,origin.top+origin.height-widget.height);
+      syncIndustrialSizeFields(widget);
+    }
     if (widget.type === "linebox-math") {
       widget.width = Math.min(2000, Math.max(32, widget.width)); widget.height = Math.min(2000, Math.max(32, widget.height));
       if (direction.includes("n")) widget.y = Math.max(0, origin.top + origin.height - widget.height);
@@ -4426,7 +4438,8 @@ function field(descriptor, widget) {
     if (widget.type === "slider" && descriptor.key === "scaleSteps") input.value = String(sliderScale({ ...widget, scaleSteps: input.value }).count);
     if (["count", "dataCount", "decimalPlaces", "countEventColorRules", "countCalendarSources", "countColumns", "countDefaultSortColumns", "countRowConditions", "countCustomOptions", "countBgConditions"].includes(descriptor.key) && input.type === "number") { const value = Number(input.value); input.value = String(Math.max(Number(descriptor.min ?? 1), Math.min(Number(descriptor.max ?? 50), Number.isFinite(value) ? Math.trunc(value) : Number(descriptor.default ?? 1)))); }
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
-    if (["industrial-gauge","industrial-switch","industrial-lcd"].includes(getWidgetDefinition(widget.type).render?.kind) && descriptor.key === "industrialStyle" && input.checked) widget.industrialScrewsEnabled = true;
+    if (["industrial-gauge","industrial-switch","industrial-lcd","industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind) && descriptor.key === "industrialStyle" && input.checked) widget.industrialScrewsEnabled = true;
+    if(isIndustrialLinear(widget) && ["width","height","linearSpan","housingSpace"].includes(descriptor.key)){Object.assign(widget,linearSize(widget,descriptor.key));syncIndustrialSizeFields(widget,descriptor.key);}
     if(isIndustrialLcd(widget)) {
       if(["width","height"].includes(descriptor.key)){Object.assign(widget,lcdSize(widget,descriptor.key));syncIndustrialSizeFields(widget,descriptor.key);}
       if(descriptor.key==="displayEntityId" || /^lineEntityId[1-4]$/.test(descriptor.key))void refreshEditorLiveStates();
@@ -4436,7 +4449,7 @@ function field(descriptor, widget) {
       if(/^(inputEntityId|outputEntityId)[1-4]$/.test(descriptor.key))void refreshEditorLiveStates();
       if(descriptor.key==="switchCount")renderProperties();
     }
-    if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["entityId", "outputEntityId"].includes(descriptor.key)) void refreshEditorLiveStates();
+    if (["industrial-gauge","industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind) && ["entityId", "outputEntityId"].includes(descriptor.key)) void refreshEditorLiveStates();
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["width", "height", "aspectRatio1to1"].includes(descriptor.key)) {
       Object.assign(widget, industrialSize(widget, descriptor.key));
       syncIndustrialSizeFields(widget, descriptor.key);
@@ -4483,7 +4496,8 @@ function field(descriptor, widget) {
     }
   };
   input.addEventListener(input.tagName === "SELECT" ? "change" : "input", update);
-  if (["industrial-gauge","industrial-switch","industrial-lcd"].includes(getWidgetDefinition(widget.type).render?.kind) && ["width", "height"].includes(descriptor.key)) input.addEventListener("change", () => { input.value = String(widget[descriptor.key]); syncIndustrialSizeFields(widget); });
+  if (isIndustrialLinear(widget) && ["entityId","dataInputEnabled"].includes(descriptor.key)) input.addEventListener("change", renderProperties);
+  if (["industrial-gauge","industrial-switch","industrial-lcd","industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind) && ["width", "height"].includes(descriptor.key)) input.addEventListener("change", () => { input.value = String(widget[descriptor.key]); syncIndustrialSizeFields(widget); });
   if (descriptor.refreshProperties && input.tagName === "TEXTAREA") input.addEventListener("change", renderProperties);
   if (descriptor.refreshProperties && ["number", "range"].includes(input.type)) input.addEventListener("change", renderProperties);
   if (widget.type === "value-list-html-style" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
@@ -5089,8 +5103,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.238" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.238" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.239" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.239" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

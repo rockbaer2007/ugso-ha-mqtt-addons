@@ -49,6 +49,8 @@ export function industrialPointerValue(widget, angle, previous) {
 
 export function renderIndustrialGauge(widget, doc, context = {}) {
   const root = doc.createElement("div"); root.className = "industrial-gauge";
+  const linear = context.linear === true, width = Math.max(128, finite(widget.width) ?? 128), height = Math.max(32, finite(widget.height) ?? 64);
+  if (linear) root.className += " industrial-linear";
   const model = industrialModel(widget, context.states, context.inputValue);
   const unit = String(widget.unit || (widget.dataInputEnabled !== true ? context.states?.[widget.entityId]?.attributes?.unit_of_measurement : "") || "");
   const enabled = Boolean(context.runtime && !model.gauge && model.valid);
@@ -61,32 +63,49 @@ export function renderIndustrialGauge(widget, doc, context = {}) {
   root.setAttribute("role", enabled ? "slider" : "img"); root.setAttribute("aria-label", widget.heading || "Gauge/Poti");
   root.tabIndex = enabled ? 0 : -1; root.setAttribute("aria-disabled", String(!enabled));
   root.setAttribute("aria-valuemin", model.min); root.setAttribute("aria-valuemax", model.max);
-  const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", "0 0 128 128"); svg.setAttribute("aria-hidden", "true"); root.append(svg);
+  const svg = doc.createElementNS("http://www.w3.org/2000/svg", "svg"); svg.setAttribute("viewBox", linear ? `0 0 ${width} ${height}` : "0 0 128 128"); svg.setAttribute("aria-hidden", "true"); root.append(svg);
   const shape = (name, attrs) => { const node = doc.createElementNS("http://www.w3.org/2000/svg", name); for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value)); svg.append(node); return node; };
-  if (widget.industrialStyle !== false && widget.industrialScrewsEnabled !== false) for (const [x, y] of [[10, 10], [118, 10], [10, 118], [118, 118]]) {
-    shape("circle", { cx: x, cy: y, r: 4, fill: "#92999d", stroke: "#11181c", "stroke-width": 1 });
-    shape("path", { d: `M${x - 2},${y - 2}L${x + 2},${y + 2}M${x - 2},${y + 2}L${x + 2},${y - 2}`, stroke: "#30383c", "stroke-width": 1 });
+  if (widget.industrialStyle !== false && widget.industrialScrewsEnabled !== false) for (const [x, y] of linear ? [[6,6],[width-6,6],[6,height-6],[width-6,height-6]] : [[10, 10], [118, 10], [10, 118], [118, 118]]) {
+    shape("circle", { cx: x, cy: y, r: linear ? 2.5 : 4, fill: "#92999d", stroke: "#11181c", "stroke-width": 1 });
+    const d=linear?1.2:2;
+    shape("path", { d: `M${x - d},${y - d}L${x + d},${y + d}M${x - d},${y + d}L${x + d},${y - d}`, stroke: "#30383c", "stroke-width": 1 });
   }
-  shape("path", { d: radialArc(64, 45, 225, 270), fill: "none", stroke: "#526069", "stroke-width": 6 });
   const bands = industrialBands(widget), ticks = industrialTicks(widget);
-  if (widget.scaleMode === "ring" && model.valid) for (const band of bands) shape("path", { d: radialArc(64, 45, 225 + (band.from - model.min) / (model.max - model.min) * 270, (band.to - band.from) / (model.max - model.min) * 270), fill: "none", stroke: band.color, "stroke-width": 6 });
-  if (widget.scaleMode !== "ring") for (const tick of ticks) {
+  // A linear control always uses ticks; a bound gauge may use colored ranges.
+  const colored = widget.scaleMode === "ring" && (!linear || model.gauge), trackY=height*.43, trackStart=18, trackLength=width-36;
+  if (linear) {
+    shape("line", {x1:trackStart,y1:trackY,x2:width-trackStart,y2:trackY,stroke:"#526069","stroke-width":colored?6:2});
+    if(colored && model.valid)for(const band of bands)shape("line",{x1:trackStart+(band.from-model.min)/(model.max-model.min)*trackLength,y1:trackY,x2:trackStart+(band.to-model.min)/(model.max-model.min)*trackLength,y2:trackY,stroke:band.color,"stroke-width":6});
+    if(!colored)for(const tick of ticks){
+      const x=trackStart+(tick-model.min)/(model.max-model.min)*trackLength;
+      shape("line",{x1:x,y1:trackY+2,x2:x,y2:trackY+(tick===0?height*.2:height*.13),stroke:widget.scaleColor || "#e1e7e9","stroke-width":tick===0?2:1});
+      if(widget.scaleLabelsEnabled===true && [model.min,0,model.max].includes(tick) && !(tick===0 && tick!==model.min && tick!==model.max && widget.showValue===true && widget.valuePosition!=="center")){
+        const text=shape("text",{x,y:height*.78,"text-anchor":tick===model.min?"start":tick===model.max?"end":"middle",fill:widget.scaleColor || "#e1e7e9","font-size":height<=32?6:9});text.textContent=String(tick);
+      }
+    }
+  } else {
+  shape("path", { d: radialArc(64, 45, 225, 270), fill: "none", stroke: "#526069", "stroke-width": 6 });
+  if (colored && model.valid) for (const band of bands) shape("path", { d: radialArc(64, 45, 225 + (band.from - model.min) / (model.max - model.min) * 270, (band.to - band.from) / (model.max - model.min) * 270), fill: "none", stroke: band.color, "stroke-width": 6 });
+  if (!colored) for (const tick of ticks) {
     const angle = 225 + (tick - model.min) / (model.max - model.min) * 270;
     const a = radialPoint(64, tick === 0 ? 35 : 39, angle), b = radialPoint(64, 49, angle);
     shape("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: widget.scaleColor || "#e1e7e9", "stroke-width": tick === 0 ? 2.5 : 1.2 });
   }
   if (!model.gauge) shape("circle", { cx: 64, cy: 64, r: 29, fill: "#303a40", stroke: "#7f8a90", "stroke-width": 2 });
-  const pointer = shape("polygon", { points: "64,23 59,34 69,34", fill: widget.pointerColor || "#f2f5f6" });
+  }
+  const pointer = linear && !model.gauge ? shape("rect",{x:-5,y:trackY-height*.17,width:10,height:height*.34,rx:1,fill:widget.pointerColor || "#f2f5f6",stroke:"#11181c","stroke-width":1}) : shape("polygon", { points: linear ? `0,${trackY-2} -5,${trackY-11} 5,${trackY-11}` : "64,23 59,34 69,34", fill: widget.pointerColor || "#f2f5f6" });
+  pointer.setAttribute("data-linear-indicator",linear?model.gauge?"triangle":"handle":"");
   const displaySize = Math.max(1, Math.min(finite(widget.width) ?? 64, finite(widget.height) ?? 64) - 2 * frameWidth);
-  const fontSize = Math.max(6, Math.min(72, finite(widget.valueFontSize) ?? 12)) * 128 / displaySize;
+  const fontSize = Math.max(6, Math.min(72, finite(widget.valueFontSize) ?? 12)) * (linear ? height : 128) / displaySize;
   const valueColor = /^#[0-9a-f]{6}$/i.test(widget.valueColor || "") ? widget.valueColor : "#dce5e9";
-  const output = shape("text", { x: 64, y: widget.valuePosition === "center" ? 64 : 110, "dominant-baseline": "middle", "text-anchor": "middle", fill: valueColor, "font-size": fontSize });
+  const output = shape("text", { x: linear ? width/2 : 64, y: linear ? widget.valuePosition === "center" ? height*.18 : height-8 : widget.valuePosition === "center" ? 64 : 110, "dominant-baseline": "middle", "text-anchor": "middle", fill: valueColor, "font-size": fontSize });
   const update = value => {
     root.dataset.value = value == null ? "" : String(value);
     pointer.style.display = value == null || !model.valid ? "none" : "";
-    pointer.setAttribute("transform", `rotate(${225 + (value == null || !model.valid ? 0 : Math.max(0, Math.min(1, (value - model.min) / (model.max - model.min))) * 270)} 64 64)`);
+    const fraction=value == null || !model.valid ? 0 : Math.max(0,Math.min(1,(value-model.min)/(model.max-model.min)));
+    pointer.setAttribute("transform",linear ? `translate(${trackStart+fraction*trackLength} 0)` : `rotate(${225+fraction*270} 64 64)`);
     if (value == null) root.removeAttribute("aria-valuenow"); else root.setAttribute("aria-valuenow", value);
-    const error = !model.valid ? "Ungültige Skala" : widget.scaleMode === "ring" && !bands.length ? "Farbbereiche prüfen" : widget.scaleMode !== "ring" && !ticks.length ? "Teilung zu klein" : value == null ? "Kein Eingangswert" : "";
+    const error = !model.valid ? "Ungültige Skala" : colored && !bands.length ? "Farbbereiche prüfen" : !colored && !ticks.length ? "Teilung zu klein" : value == null ? "Kein Eingangswert" : "";
     const reading = value == null ? "—" : `${Number(value.toFixed(3))}${unit ? ` ${unit}` : ""}`;
     root.title = error ? `${error}${value == null ? "" : ` · ${reading}`}` : reading;
     root.setAttribute("aria-valuetext", root.title);
@@ -96,6 +115,7 @@ export function renderIndustrialGauge(widget, doc, context = {}) {
   let origin = null, changed = false;
   const input = value => { if (value == null) return; changed ||= root.dataset.value !== String(value); update(value); context.onInput?.(value); if (widget.outputMode === "continuous") context.onCommit?.(value); };
   const fromPointer = event => {
+    if(linear){const box=svg.getBoundingClientRect();const fraction=((event.clientX-box.left)/box.width*width-trackStart)/trackLength;input(industrialQuantize(widget,model.min+Math.max(0,Math.min(1,fraction))*(model.max-model.min)));return;}
     const box = svg.getBoundingClientRect(), x = (event.clientX - box.left) / box.width * 128 - 64, y = (event.clientY - box.top) / box.height * 128 - 64;
     if (Math.hypot(x, y) < 10) return;
     input(industrialPointerValue(widget, Math.atan2(x, -y) * 180 / Math.PI, finite(root.dataset.value)));
