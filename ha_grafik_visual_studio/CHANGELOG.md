@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.241
+
+- Linear-Gauge aktualisiert nach Auswahl einer Eingangsentität sofort die Skalen-Einstellungen: Farbbalken und Farbbereiche sind verfügbar. Ohne Eingang bleibt der Schieberegler bei Strichskala. / Linear gauges immediately expose color-bar settings after choosing an input entity; unbound sliders retain ticks only.
+
 ## 0.1.240
 
 - Industriepaket 0.6.0 ergänzt ein rein lesendes Zählwerk in den Rasterformaten 1:3/1:4 und 0,5:3/0,5:4. Feste Ganzzahl-/Nachkommastellen, rollende Ziffern, Komma oder Punkt, optionale führende Nullen und Minusplatz. Entität oder ein Eingangs-Koppelpunkt; Rasterabstände, Gehäuse, Schrauben und Rahmen bleiben einstellbar.

@@ -18,6 +18,7 @@ test("linear package dimensions, scale-only controls, runtime writes and entity 
   fixture.pages[0].widgets=[slider,gauge,slim,slimGauge,{id:"reading",type:"red-number",x:700,y:100,width:128,height:64,dataInputEnabled:true,dockPointsEnabled:true,dock_left_center:true},{id:"wire",type:"svg-connection",connectionHidden:true,startWidgetId:"slider",startAnchor:"right-center",endWidgetId:"reading",endAnchor:"left-center"}];
   const states={"sensor.temp":{entity_id:"sensor.temp",state:"15",attributes:{unit_of_measurement:"°C"}},"input_number.test":{entity_id:"input_number.test",state:"0"},"number.test":{entity_id:"number.test",state:"0"}};
   await page.route("**/api/project*",r=>r.fulfill({json:fixture}));await page.route("**/api/states*",r=>r.fulfill({json:{states:Object.values(states)}}));
+  await page.route("**/api/entities*",r=>r.fulfill({json:{entities:[{entity_id:"sensor.temp",name:"Temperatur"}],states:Object.values(states)}}));
   await page.route("**/api/industrial-value",async r=>{writes.push(r.request().postDataJSON());await r.fulfill({json:{accepted:true}});});
   await page.goto(url);await page.locator("#slider .industrial-linear").waitFor();
   for(const [id,height] of [["slider",64],["slim",32]]){
@@ -33,6 +34,15 @@ test("linear package dimensions, scale-only controls, runtime writes and entity 
   await page.mouse.move(resize.x+resize.width/2,resize.y+resize.height/2);await page.mouse.down();await page.mouse.move(resize.x+resize.width/2+32,resize.y+resize.height/2);await page.mouse.up();
   const after=await page.locator("#slim").boundingBox();assert.ok(after.width>before.width);assert.ok(Math.abs(after.width-(after.height*8+6))<1);
   assert.deepEqual(writes,[]);
+  await page.locator("#slider .industrial-linear").click();await page.locator("#properties details").evaluateAll(items=>items.forEach(el=>el.open=true));
+  await page.locator("#properties [data-property-key='entityId']").locator("..").locator("button").click();
+  await page.locator("#entities-tree").getByText("Temperatur",{exact:true}).click();await page.locator("#entities-insert").click();
+  assert.equal(await page.locator("#properties [data-property-key='scaleMode'] option[value='ring']").count(),1);
+  await page.locator("#properties details").evaluateAll(items=>items.forEach(el=>el.open=true));
+  await page.locator("#properties [data-property-key='scaleMode']").selectOption("ring");
+  assert.ok(await page.locator("#slider svg line[stroke='#4caf50']").count());
+  await page.locator("#properties [data-property-key='entityId']").fill("");await page.locator("#properties [data-property-key='entityId']").press("Tab");
+  assert.equal(await page.locator("#properties [data-property-key='scaleMode'] option[value='ring']").count(),0);
   await page.goto(new URL("runtime",url).href);await page.waitForFunction(()=>document.querySelector("#gauge .industrial-linear")?.dataset.value==="15");
   assert.equal(await page.locator("#slider [data-linear-indicator='handle']").count(),1);assert.equal(await page.locator("#gauge [data-linear-indicator='triangle']").count(),1);
   assert.equal(await page.locator("#gauge .industrial-linear").getAttribute("role"),"img");

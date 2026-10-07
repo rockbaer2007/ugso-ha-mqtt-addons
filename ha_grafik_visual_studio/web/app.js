@@ -5120,8 +5120,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.240" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.240" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.241" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.241" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
@@ -5214,6 +5214,7 @@ $("#entities-insert").addEventListener("click", () => {
   if (!activeEntityInput || !state.selectedEntityId) return;
   activeEntityInput.value = state.selectedEntityId;
   activeEntityInput.dispatchEvent(new Event("input", { bubbles: true }));
+  if (activeEntityInput.dataset.propertyKey === "entityId" && selectedWidgets().some(isIndustrialLinear)) activeEntityInput.dispatchEvent(new Event("change", { bubbles: true }));
   closeEntities();
 });
 $("#objects-close").addEventListener("click", cancelFileSelection);
