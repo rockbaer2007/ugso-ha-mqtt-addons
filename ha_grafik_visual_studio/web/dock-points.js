@@ -3,6 +3,7 @@ import { isIndustrialSwitch, switchPortActive } from "./industrial-switch.js";
 import { isIndustrialLcd, lcdPortActive } from "./industrial-lcd.js";
 import { isIndustrialOdometer, odometerPortActive } from "./industrial-odometer.js";
 import { isIndustrialSegment, segmentPortActive } from "./industrial-segment.js";
+import { isIndustrialClock, clockPortActive } from "./industrial-clock.js";
 
 export function dockPointKey(anchorId) {
   return `dock_${anchorId.replaceAll("-", "_")}`;
@@ -10,7 +11,7 @@ export function dockPointKey(anchorId) {
 
 export const OUTPUT_SIDES = [["top-center", "Oben"], ["bottom-center", "Unten"], ["right-center", "Rechts"], ["left-center", "Links"]];
 export function hasSimpleOutput(widget) {
-  return !!widget && !isIndustrialSwitch(widget) && !isIndustrialLcd(widget) && !isIndustrialOdometer(widget) && !isIndustrialSegment(widget) && !isSeparator(widget) && !["svg-connection", "linebox", "linebox-math", "value-converter"].includes(widget.type);
+  return !!widget && !isIndustrialSwitch(widget) && !isIndustrialLcd(widget) && !isIndustrialOdometer(widget) && !isIndustrialSegment(widget) && !isIndustrialClock(widget) && !isSeparator(widget) && !["svg-connection", "linebox", "linebox-math", "value-converter"].includes(widget.type);
 }
 export function outputDockActive(widget, anchor) {
   return hasSimpleOutput(widget) && widget.dataOutputEnabled === true && anchor === (widget.dataOutputAnchor || "right-center");
@@ -29,6 +30,7 @@ export function dockPointActive(widget, anchor, side = "") {
   if (isIndustrialLcd(widget)) return lcdPortActive(widget, anchor, side);
   if (isIndustrialOdometer(widget)) return odometerPortActive(widget, anchor, side);
   if (isIndustrialSegment(widget)) return segmentPortActive(widget, anchor, side);
+  if (isIndustrialClock(widget)) return clockPortActive(widget, anchor, side);
   if (widget && isSeparator(widget)) return false;
   if (outputDockActive(widget, anchor)) return side !== "end";
   return widget?.dockPointsEnabled === true && widget[dockPointKey(anchor)] === true;

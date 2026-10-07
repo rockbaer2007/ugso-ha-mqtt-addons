@@ -1,4 +1,4 @@
-"""Build the data-only Industrial set (segment widgets: Studio >= 0.1.243)."""
+"""Build the data-only Industrial set (clock widget: Studio >= 0.1.244)."""
 from copy import deepcopy
 import json
 import sys
@@ -40,7 +40,7 @@ def _base_manifest():
 
 def manifest():
     data = _base_manifest()
-    data["version"] = "0.7.0"
+    data["version"] = "0.8.0"
     toggle = data["widgets"][1]
     rocker = deepcopy(toggle)
     rocker.update(type="ugso.industrial/rocker-switch", label="Wippschalter – 1 bis 4", icon="icons/rocker-gray.svg")
@@ -116,6 +116,17 @@ def manifest():
                   {"label": "Größe", "fields": [field("segmentSpan", "Breite in Rastereinheiten", "select", options=["3", "4"]), field("width", "Breite (px)", "number", min=192, max=4096), field("height", "Höhe (px)", "number", min=64, max=4096)]}]
         data["widgets"].append({"type": f"ugso.industrial/segment-{digits}-{mode}", "label": f"{digits}-Segment – {mode.upper()}", "icon": "icons/segment.svg",
                                 "defaults": defaults, "propertyGroups": groups, "render": {"kind": "industrial-segment", "valueKey": "segmentText"}})
+    data["widgets"].append({"type": "ugso.industrial/clock", "label": "Industrie-Uhr – Nixie / LED / LCD", "icon": "icons/clock.svg",
+        "defaults": {"clockMode": "nixie", "clockSeconds": True, "clockBlink": True, "clockZone": "local", "clockLedColor": "#ff3b30", "clockLcdColor": "#182a15", "clockLcdBackground": "#8a9b61",
+                     "width": 518, "height": 128, "displayOn": True, "displayEntityId": "", "displayInputEnabled": False, "dockAlwaysVisible": False,
+                     "industrialStyle": True, "industrialScrewsEnabled": True, "backgroundColor": "transparent", "borderWidth": 0, "padding": 0},
+        "propertyGroups": [{"label": "Uhr", "fields": [field("clockMode", "Anzeigeart", "select", options=["nixie", "led", "lcd"]), field("clockSeconds", "Sekunden anzeigen", "checkbox"),
+            field("clockBlink", "Doppelpunkte blinken", "checkbox"), field("clockZone", "Zeitzone", "select", options=["local", "UTC", "Europe/Berlin"]),
+            field("clockLedColor", "LED-Leuchtfarbe", "color"), field("clockLcdColor", "LCD-Segmentfarbe", "color"), field("clockLcdBackground", "LCD-Hintergrundfarbe", "color")]},
+            {"label": "Display Ein/Aus", "fields": [field("displayOn", "Ohne Eingang eingeschaltet", "checkbox"), field("displayEntityId", "Display Ein/Aus: Entität"), field("displayInputEnabled", "Ein/Aus-Koppelpunkt aktivieren", "checkbox"), field("dockAlwaysVisible", "Koppelpunkte immer anzeigen", "checkbox")]},
+            {"label": "Gehäuse und Farben", "fields": [field("industrialStyle", "Industriestyle", "checkbox")]},
+            {"label": "Größe", "fields": [field("width", "Breite (px)", "number", min=96, max=4096), field("height", "Höhe (px)", "number", min=32, max=4096)]}],
+        "render": {"kind": "industrial-clock", "valueKey": "clockMode"}})
     return data
 
 
@@ -129,6 +140,7 @@ def build():
     for color, fill in (("gray", "#c7cbd1"),):
         entries[f"icons/rocker-{color}.svg"] = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="5" y="1" width="14" height="22" rx="3" fill="#17191b"/><rect x="7" y="3" width="10" height="18" rx="2" fill="{fill}"/><circle cx="12" cy="8" r="2" fill="none" stroke="#ffffff"/><path d="M12 14V18" stroke="#ffffff" stroke-width="2"/></svg>'
     target = ROOT / "ugso.industrial.wg"
+    entries["icons/clock.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="3" width="22" height="18" rx="2" fill="#263238" stroke="#879097"/><rect x="4" y="5" width="6" height="14" rx="3" fill="#b6c1c522" stroke="#b6c1c5"/><rect x="14" y="5" width="6" height="14" rx="3" fill="#b6c1c522" stroke="#b6c1c5"/><path d="M7 8v8m9-8h2l-2 8" stroke="#ff9b36"/><path d="M12 10v1m0 2v1" stroke="#ff9b36"/></svg>'
     entries["icons/segment.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="2" fill="#11181c" stroke="#879097"/><path d="M4 8h4m-4 4h4m-4 4h4m-4-7v2m4-2v2m-4 2v2m4-2v2m4-7h4m-4 4h4m-4 4h4m-4-7v2m4-2v2m-4 2v2m4-2v2" stroke="#ff3b30"/></svg>'
     with ZipFile(target, "w") as archive:
         for name, body in entries.items():

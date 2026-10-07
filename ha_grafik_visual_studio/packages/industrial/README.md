@@ -1,4 +1,12 @@
-# UGSo Industrie 0.7.0
+# UGSo Industrie 0.8.0
+
+## Industrie-Uhr / Industrial clock (Studio 0.1.244+)
+
+Deutsch: Ein Widget mit Auswahl Nixieröhre / LED / LCD. Zeit HH:MM oder HH:MM:SS, optional blinkende Doppelpunkte, Browser-Ortszeit oder UTC/Europe-Berlin. Die Browser-Uhr ist die Zeitquelle; keine Entität für die Uhrzeit erforderlich. Nixie mit eigenen orange leuchtenden Drahtziffern, Glas, Schutzgitter und Sockel; LED mit frei wählbarer Leuchtfarbe, LCD mit Segment- und Hintergrundfarbe. Die fremde OmniGraffle-Vorlage wird nicht eingebunden.
+
+Standard mit Sekunden: Nixie 518×128 px, LED/LCD 262×64 px; ohne Sekunden 388×128 beziehungsweise 196×64 px. Bei 1 px Abstand entspricht dies dem 1:4-/1:3-Raster einschließlich Zwischenräumen. Mindesthöhe Nixie 64 px, LED/LCD 32 px. Moduswechsel Nixie ↔ LED/LCD verdoppelt/halbiert die Höhe, damit relative Vergrößerungen erhalten bleiben. Eingabe, Ziehen und Abstandsänderungen halten das Verhältnis. Gehäuse, Schrauben, Rahmen und vier einzeln aktive Gehäuse-Ecken. Ein/Aus über Entität oder optionalen Eingang oben (`display-power`); Eingang hat Vorrang, unbekannte Werte lassen die Anzeige dunkel. Keine Ausgänge. Ein gemeinsamer Sekundentakt verändert nur den Uhrinhalt, ohne das Eigenschaftenformular neu zu zeichnen. Alle zwölf bisherigen Definitionen bleiben unverändert.
+
+English: One widget with Nixie, LED or LCD modes, HH:MM/HH:MM:SS, optional blinking colons and browser-local/UTC/Berlin time. The browser clock supplies time. Original Nixie glass, mesh and wire artwork; adjustable LED glow and LCD segment/background colors. Default seconds-enabled dimensions at 1 px spacing: Nixie 518×128 px, LED/LCD 262×64 px; without seconds 388×128 or 196×64 px. Grid gaps apply. Mode switches double/halve height while retaining relative scaling. Minimum heights 64/32 px. Housing, frame, screws and four snap corners apply. Optional power entity/input with port priority and dark unknown state; no outputs. One shared ticker updates clock content without disturbing property edits. Twelve existing definitions remain unchanged.
 
 ## Segmentanzeigen / Segment displays (Studio 0.1.243+)
 

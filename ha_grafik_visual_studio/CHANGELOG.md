@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.244
+
+- Industriepaket 0.8.0 ergänzt eine Uhr mit Nixieröhren-, LED- oder LCD-Ansicht, HH:MM/HH:MM:SS, optional blinkenden Doppelpunkten und Browser-Ortszeit/UTC/Europe-Berlin. LED-/LCD-Farben sind einstellbar. Nixie nutzt eigene Glas-, Gitter- und Drahtgrafiken; keine fremde Vorlage wird verteilt.
+- Größen passen zum Raster einschließlich Abständen; Nixie startet doppelt so hoch wie LED/LCD, Eingabe und Ziehen bleiben proportional. Moduswechsel erhält die relative Vergrößerung. Ein/Aus über Entität oder Eingang, Gehäuse, Schrauben und Rahmen. Der gemeinsame Sekundentakt aktualisiert nur die Uhranzeige und erhält den Eingabefokus.
+- Industrial package 0.8.0 adds a Nixie/LED/LCD clock with selectable seconds, blinking colons, local/UTC/Berlin time, configurable LED/LCD colors, power binding and grid-aware proportional sizing. Original Nixie artwork; twelve published widget contracts are preserved.
+
 ## 0.1.243
 
 - Industriepaket 0.7.0 ergänzt 7-Segment-LED sowie 16-Segment-LED/LCD mit 1–10 Stellen, Entität und optionalem Wert-/Ein/Aus-Eingang. Einheiten W/A/V untereinander, exklusiv wählbar oder aus; gemeinsame Farbe. Rasterbreiten 3/4 einschließlich Abständen, Gehäuse, Schrauben und Rahmen. Eigene SVG-Segmente statt einer nur privat nutzbaren Schrift.

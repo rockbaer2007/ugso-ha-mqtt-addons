@@ -41,6 +41,7 @@ const SIXTEEN={
 };
 const POLYGONS7={a:"3,1 21,1 24,4 21,7 3,7 0,4",b:"25,5 28,8 28,24 25,27 22,24 22,8",c:"25,29 28,32 28,48 25,51 22,48 22,32",d:"3,49 21,49 24,52 21,55 3,55 0,52",e:"-1,29 2,32 2,48 -1,51 -4,48 -4,32",f:"-1,5 2,8 2,24 -1,27 -4,24 -4,8",g:"3,25 21,25 24,28 21,31 3,31 0,28"};
 const LINES16={a:[1,3,12,3],b:[14,3,25,3],c:[27,6,27,25],d:[27,31,27,50],e:[14,53,25,53],f:[1,53,12,53],g:[-1,31,-1,50],h:[-1,6,-1,25],i:[2,28,12,28],j:[14,28,24,28],k:[3,7,11,24],l:[23,7,15,24],m:[3,49,11,32],n:[23,49,15,32],o:[13,6,13,24],p:[13,32,13,50]};
+export const sevenSegmentGeometry = {patterns:SEVEN,polygons:POLYGONS7};
 const safeColor=(value,fallback)=>/^#[0-9a-f]{6}$/i.test(value||"")?value:fallback;
 export function renderIndustrialSegment(widget,doc,{states={},input={},powerInput}={}) {
   const model=segmentModel(widget,states,input,powerInput),root=doc.createElement("div"),style=widget.industrialStyle!==false,lcd=widget.type==="ugso.industrial/segment-16-lcd";

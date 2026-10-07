@@ -2,6 +2,9 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Industrie-Uhr – Nixie / LED / LCD": "Industrial clock – Nixie / LED / LCD", "Uhr": "Clock", "Anzeigeart": "Display type", "Nixieröhre": "Nixie tube",
+"Sekunden anzeigen": "Show seconds", "Doppelpunkte blinken": "Blink colons", "Zeitzone": "Time zone", "Browser-Ortszeit": "Browser local time",
+"LED-Leuchtfarbe": "LED glow color", "LCD-Segmentfarbe": "LCD segment color", "LCD-Hintergrundfarbe": "LCD background color",
 "7-Segment – LED": "7-segment LED", "16-Segment – LED": "16-segment LED", "16-Segment – LCD": "16-segment LCD",
 "Segmentanzeige": "Segment display", "Inhalt: Entität": "Content: entity", "Vorschauwert / Text": "Preview value / text",
 "Wert-Eingangs-Koppelpunkt aktivieren": "Enable value input port", "Stellen (einschließlich Minuszeichen)": "Positions (including minus sign)",

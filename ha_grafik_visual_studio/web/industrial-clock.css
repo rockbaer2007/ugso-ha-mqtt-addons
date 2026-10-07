@@ -1,0 +1,16 @@
+.industrial-clock { position:relative; width:100%; height:100%; box-sizing:border-box; padding:8px 12px; overflow:hidden; }
+.industrial-clock.industrial-housing { border:2px solid #879097; background:linear-gradient(135deg,#333d43,#172027); box-shadow:inset 0 0 3px #000; }
+.industrial-clock-screen { width:100%; height:100%; box-sizing:border-box; border:2px solid #030506; border-radius:3px; background:var(--clock-background); overflow:hidden; }
+.industrial-clock-screen svg { display:block; width:100%; height:100%; }
+.clock-segment,.clock-colon { fill:var(--clock-color); opacity:.07; }
+.industrial-clock .lit { opacity:1; }
+.industrial-clock[data-mode="led"] .lit,.industrial-clock[data-mode="nixie"] .lit { filter:drop-shadow(0 0 1.4px var(--clock-color)); }
+.nixie-glass { fill:#a48a6826; stroke:#b6c1c5; stroke-width:.7; }
+.nixie-tip { fill:#8d949455; stroke:#b6c1c5; stroke-width:.6; }
+.nixie-mesh { fill:none; stroke:#afa584; stroke-width:.35; opacity:.2; }
+.nixie-wire { fill:none; stroke:var(--clock-color); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; opacity:.04; }
+.nixie-wire.inactive { stroke:#9a8170; stroke-width:.5; opacity:.13; }
+.nixie-reflection { fill:none; stroke:#fff; stroke-width:1; opacity:.2; }
+.nixie-base { fill:#272b30; stroke:#7c858a; stroke-width:.7; }
+.nixie-pin { stroke:#929da4; stroke-width:.8; }
+.industrial-clock[data-power="off"] .industrial-clock-screen,.industrial-clock[data-power="unknown"] .industrial-clock-screen { background:#0b100c; }
