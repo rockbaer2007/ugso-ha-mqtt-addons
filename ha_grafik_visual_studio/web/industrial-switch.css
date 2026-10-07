@@ -6,7 +6,7 @@
 .industrial-led.is-unknown { opacity:.35; }
 .industrial-switch-caption { max-width:100%; flex:0 0 auto; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.2; }
 .industrial-toggle { position:relative; border:0; background:transparent; padding:8px 0; width:100%; min-height:18px; flex:1 1 auto; display:grid; place-items:center; cursor:pointer; }
-.industrial-toggle::before,.industrial-toggle::after { position:absolute; font:bold 8px/1 sans-serif; color:#e1e7e9; }
+.industrial-toggle::before,.industrial-toggle::after { position:absolute; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:bold 8px/1 sans-serif; color:#e1e7e9; }
 .industrial-toggle::before { content:attr(data-on-label);top:0; }
 .industrial-toggle::after { content:attr(data-off-label);bottom:0; }
 .industrial-toggle:disabled { cursor:default; opacity:1; }

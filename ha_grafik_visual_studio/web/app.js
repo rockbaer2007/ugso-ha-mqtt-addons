@@ -277,7 +277,7 @@ function widgetPropertyGroups(widget) {
   }
   if (isIndustrialOdometer(widget)) return [...commonWidgetGroups,...groups.map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1" && (group.label!=="Wertanzeige" || ["unit","valueColor","valueFontSize"].includes(field.key))).map(field=>field.key==="valueFontSize"?{...field,label:"Einheiten-Schriftgröße (px)"}:field.key==="odometerSeparator"?{...field,options:[{value:"comma",label:"Komma"},{value:"dot",label:"Punkt"}]}:field)})),...styleEntryGroups];
   if (isIndustrialLcd(widget)) return [...commonWidgetGroups, ...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>field.key==="lcdColor"?{...field,options:[{value:"yellow",label:uiText("Gelb/Weiß")},{value:"blue",label:uiText("Blau/Weiß")}]}:["width","height"].includes(field.key)?{...field,min:lcdDimensions(widget).minHeight*(field.key==="width"?3:1)}:field)})), ...styleEntryGroups];
-  if (isIndustrialSwitch(widget)) return [...commonWidgetGroups, ...groups.filter(group=>!/^Schalter [1-4]$/.test(group.label) || Number(group.label.split(" ")[1])<=switchCount(widget)).map(group=>group.label==="Wertanzeige" ? {...group,label:"Beschriftung",fields:group.fields.filter(field=>["valueFontSize","valueColor"].includes(field.key))} : group.label==="Größe" ? {...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1")} : {...group,fields:group.fields.map(field=>/^switchLegend[1-4]$/.test(field.key)?{...field,options:[{value:"on-off",label:"ON/OFF"},{value:"one-zero",label:"1/0"},{value:"ein-aus",label:"EIN/AUS"}]}:field)}), ...styleEntryGroups];
+  if (isIndustrialSwitch(widget)) return [...commonWidgetGroups, ...groups.filter(group=>!/^Schalter [1-4]$/.test(group.label) || Number(group.label.split(" ")[1])<=switchCount(widget)).map(group=>group.label==="Wertanzeige" ? {...group,label:"Beschriftung",fields:group.fields.filter(field=>["valueFontSize","valueColor"].includes(field.key))} : group.label==="Größe" ? {...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1")} : {...group,fields:group.fields.flatMap(field=>/^switchLegend[1-4]$/.test(field.key)?[{...field,refreshProperties:true,options:[{value:"on-off",label:"ON/OFF"},{value:"one-zero",label:"1/0"},{value:"ein-aus",label:"EIN/AUS"},{value:"custom",label:"Benutzerdefiniert"}]},...(widget[field.key]==="custom"?[{label:"Text bei AUS",key:`switchOffText${field.key.slice(-1)}`,default:"OFF"},{label:"Text bei EIN",key:`switchOnText${field.key.slice(-1)}`,default:"ON"}]:[])]:[field])}), ...styleEntryGroups];
   if (widget.type === "linebox-math") {
     const dockGroup = { ...connectionAnchorGroup, fields: [
       ...MATH_ANCHORS.map(([id, label]) => ({ label, key: dockPointKey(id), type: "checkbox", default: false })),
@@ -5205,8 +5205,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.248" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.248" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.249" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.249" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

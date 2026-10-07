@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.249
+
+- Kipp- und Wippschalter bieten je Schalter die Schildbeschriftung „Benutzerdefiniert“ mit „Text bei AUS“ und „Text bei EIN“, etwa Kalt/Warm oder 1/2. Die Zustände und Signale bleiben boolesch. Lange Texte werden am Schild gekürzt; der Tooltip zeigt den vollständigen aktuellen Zustandstext.
+- Toggle and rocker switches support independent custom OFF/ON legends per channel, while retaining Boolean states and outputs. Industrial package 0.10.3 updates the instructions.
+
 ## 0.1.248
 
 - Alle Industrie-Widgets bieten unter „Gehäuse und Farben“ die Checkbox „Hintergrund anpassen“ und eine Gehäuse-Hintergrundfarbe. Ohne Haken bleibt der bisherige Standardverlauf erhalten; mit Haken ersetzt eine eigene Farbe den Gehäusehintergrund. Bildschirm-, Segment- und LED-Farben bleiben unabhängig.

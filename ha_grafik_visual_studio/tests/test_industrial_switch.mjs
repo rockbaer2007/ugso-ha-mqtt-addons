@@ -1,9 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {switchCount,switchSize,switchGap,switchAnchors,switchChannel,switchPortActive,isIndustrialSwitch,ROCKER_COLORS,rockerColor} from "../web/industrial-switch.js";
+import {switchCount,switchSize,switchGap,switchAnchors,switchChannel,switchPortActive,isIndustrialSwitch,ROCKER_COLORS,rockerColor,switchLegend} from "../web/industrial-switch.js";
 import {widgetValuePacket,widgetInputPacket} from "../web/dataflow.js";
 import {housingPoints} from "../web/housing-snap.js";
 const bank={id:"bank",type:"ugso.industrial/switch",switchCount:4,housingSpace:0,outputDock1:true,outputDock2:true,outputDock3:true,outputDock4:true,switchState1:true,switchState2:false,switchState3:true,switchState4:false};
+test("custom legends are per channel and do not alter Boolean signal values",()=>{
+ const widget={...bank,switchLegend1:"custom",switchOnText1:"2",switchOffText1:"1",switchLegend2:"custom",switchOnText2:"Warm",switchOffText2:"Kalt"};
+ assert.deepEqual(switchLegend(widget,1),["2","1"]);assert.deepEqual(switchLegend(widget,2),["Warm","Kalt"]);
+ assert.equal(widgetValuePacket(widget,[widget],{},new Set(),"output-1").value,true);assert.equal(widgetValuePacket(widget,[widget],{},new Set(),"output-2").value,false);
+ assert.deepEqual(switchLegend({...widget,switchOnText1:"",switchOffText1:""},1),["",""]);
+});
 test("toggle and rocker banks align with spaced single widgets",()=>{
  for(let count=1;count<=4;count++){
   const toggle={...bank,height:64,switchCount:count,housingSpace:1};

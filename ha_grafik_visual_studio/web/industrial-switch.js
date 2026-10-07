@@ -1,4 +1,8 @@
 const pending=new Set(),failed=new Set();
+export function switchLegend(widget, channel) {
+  if (widget[`switchLegend${channel}`] === "custom") return [String(widget[`switchOnText${channel}`] ?? "ON"), String(widget[`switchOffText${channel}`] ?? "OFF")];
+  return {"on-off":["ON","OFF"],"one-zero":["1","0"],"ein-aus":["EIN","AUS"]}[widget[`switchLegend${channel}`]] || ["ON","OFF"];
+}
 export const ROCKER_COLORS = ["white", "red", "black", "green"];
 export const rockerColor = (widget, channel) => widget?.type === "ugso.industrial/rocker-switch" ? ROCKER_COLORS.includes(widget[`rockerColor${channel}`]) ? widget[`rockerColor${channel}`] : "white" : null;
 export const isIndustrialSwitch = widget => ["ugso.industrial/switch", "ugso.industrial/rocker-switch"].includes(widget?.type);
@@ -56,8 +60,9 @@ export function renderIndustrialSwitch(widget,doc,{runtime=false,states={},input
     const label=doc.createElement("span");label.className="industrial-switch-caption";label.textContent=widget[`label${n}`] || `Schalter ${n}`;label.title=label.textContent;label.style.color=color(widget.valueColor,"#dce5e9");label.style.fontSize=`${Math.max(6,Math.min(72,Number(widget.valueFontSize)||12))}px`;
     const key=`${widget.id}:${n}`;
     const button=doc.createElement("button");button.type="button";button.className="industrial-toggle";button.setAttribute("role","switch");button.setAttribute("aria-label",label.textContent);button.setAttribute("aria-checked",String(channel.on===true));button.disabled=!runtime || !channel.writable || channel.on===null || pending.has(key);button.title=failed.has(key)?"Schalten fehlgeschlagen":channel.on===null?"Kein Eingangswert":"";
-    const legend={"on-off":["ON","OFF"],"one-zero":["1","0"],"ein-aus":["EIN","AUS"]}[widget[`switchLegend${n}`]] || ["ON","OFF"];
+    const legend=switchLegend(widget,n);
     button.dataset.onLabel=legend[0];button.dataset.offLabel=legend[1];
+    if (!button.title) button.title=`${label.textContent}: ${channel.on ? legend[0] : legend[1]}`;
     const rocker=rockerColor(widget,n);
     if(rocker){
       const art=doc.createElement("img");art.className="industrial-toggle-art industrial-rocker-art";art.src=`assets/industrial/rocker-${rocker==="white"?"gray":rocker}-${channel.on===true?"on":"off"}.png`;art.alt="";art.setAttribute("aria-hidden","true");art.draggable=false;button.append(art);

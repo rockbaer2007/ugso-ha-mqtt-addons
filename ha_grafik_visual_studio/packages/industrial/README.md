@@ -1,4 +1,10 @@
-# UGSo Industrie 0.10.2
+# UGSo Industrie 0.10.3
+
+## Eigene Schalterbeschriftung / Custom switch legends (Studio 0.1.249+)
+
+Kipp- und Wippschalter: Je Schalter „Benutzerdefiniert“ für die Schildbeschriftung wählen und „Text bei AUS“ / „Text bei EIN“ eingeben. Zum Beispiel Überschrift „Pumpe“, AUS-Text „1“, EIN-Text „2“ oder Kalt/Warm. Nur die Beschriftung ändert sich: Entitätsaktionen und E-/A-Koppelpunkte bleiben boolesch (false/true); 1/2 wird nicht als Zahlenwert ausgegeben. Die vier Kanäle sind unabhängig. Lange Texte werden gekürzt, der Tooltip enthält den vollständigen aktuellen Zustandstext. ON/OFF, 1/0 und EIN/AUS bleiben verfügbar. Ein Studio-Update genügt mit vorhandenen Paketen.
+
+Toggle and rocker switches: Select “Custom” per channel and enter “Text when OFF” / “Text when ON”, such as Cold/Warm or 1/2 with a Pump heading. Only the legend changes; entity actions and ports retain Boolean false/true values. Channels are independent. Long legends are clipped, with the full current state label in the tooltip. Existing ON/OFF, 1/0 and EIN/AUS presets remain available. Updating Studio is sufficient with existing packages.
 
 ## Gehäusehintergrund / Housing background (Studio 0.1.248+)
 
