@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Vorlauf": "Supply", "Vorlauftemperatur": "Supply temperature", "Rücklauf": "Return", "Flusspfeil anzeigen": "Show flow arrow",
 "Projektseiten": "Project pages",
 "Heizung – Kessel und Öltank": "Heating – boiler and oil tank", "Heizung": "Heating system",
 "Beispieldaten ohne Entitäten": "Example data without entities", "Statusbeschriftung": "Status labels", "Statusfarbe Ein": "ON status color", "Statusfarbe Aus": "OFF status color",

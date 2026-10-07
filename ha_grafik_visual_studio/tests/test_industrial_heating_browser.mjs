@@ -11,16 +11,34 @@ test("heating live values, booleans, hiding, independent arrows, raster sizing a
   const install=await page.request.post(new URL("api/widget-packages",url).href,{headers:{"X-Package-Name":"ugso.industrial.wg"},data:await readFile(new URL("../packages/industrial/ugso.industrial.wg",import.meta.url))});assert.ok(install.ok() || /bereits installiert/.test(await install.text()));
   const packages=await(await page.request.get(new URL("api/widget-packages",url).href)).json(),def=packages.packages.find(p=>p.id==="ugso.industrial").widgets.find(w=>w.type==="ugso.industrial/heating");assert.ok(def);
   const fixture=await(await page.request.get(new URL("api/project",url).href)).json(),widget={...def.defaults,type:def.type,id:"heating",x:40,y:40};fixture.pages[0].widgets=[widget];fixture.settings={...fixture.settings,autoSave:false};
-  const states={};for(const [key,state] of Object.entries({heating:"55",boiler:"65",hot:"60",cold:"20",tank:"65",pump:"on",circulation:"off",burner:"on",alert:"on"})){widget[`${key}EntityId`]=`sensor.${key}`;states[`sensor.${key}`]={entity_id:`sensor.${key}`,state,attributes:{unit_of_measurement:["heating","boiler","hot","cold"].includes(key)?"°C":"%"}};}
+  const states={};for(const [key,state] of Object.entries({heating:"55",boiler:"65",hot:"60",cold:"20",return:"40",tank:"65",pump:"on",circulation:"off",burner:"on",alert:"on"})){widget[`${key}EntityId`]=`sensor.${key}`;states[`sensor.${key}`]={entity_id:`sensor.${key}`,state,attributes:{unit_of_measurement:["heating","boiler","hot","cold","return"].includes(key)?"°C":"%"}};}
   let saved;await page.route("**/api/project*",r=>{if(r.request().method()==="PUT"){saved=r.request().postDataJSON();return r.fulfill({json:saved});}return r.fulfill({json:fixture});});
   await page.route("**/api/states*",r=>{const ids=new URL(r.request().url()).searchParams.getAll("entity_id");return r.fulfill({json:{states:ids.map(id=>states[id]).filter(Boolean)}});});
   await page.goto(url);await page.waitForFunction(()=>document.querySelector("#heating [data-display='tank']")?.dataset.level==="65");
   const art=page.locator("#heating image[data-heating-art='reference']");assert.equal(await art.count(),1);assert.ok((await page.request.get(await art.getAttribute("href"))).ok());
   const aligned=()=>page.locator("#heating svg").evaluate(svg=>{const matrix=el=>{const m=el.getScreenCTM();return [m.a,m.b,m.c,m.d,m.e,m.f];};const expected=matrix(svg.querySelector("image"));return [...svg.querySelectorAll("[data-display]")].every(el=>matrix(el).every((value,index)=>Math.abs(value-expected[index])<.001));});
   assert.equal(await aligned(),true,"reference and readings share the same viewport transform");
+  assert.match(await art.getAttribute("href"),/heating-system-return\.png/);
+  assert.match(await page.locator("#heating [data-display='return']").textContent(),/Rücklauf40 °C/);
+  assert.equal(await page.locator("#heating [data-arrow='return']").getAttribute("transform"),"translate(70 721) rotate(0)");
+  assert.equal(await page.locator("#heating [data-display='tank'] rect").last().getAttribute("fill"),"#ee78a5");
   assert.match(await page.locator("#heating [data-display='boiler']").textContent(),/65 °C/);assert.equal(await page.locator("#heating [data-display='circulation']").getAttribute("data-state"),"off");assert.equal(await page.locator("#heating [data-display='alert']").getAttribute("data-state"),"on");
   await page.locator("#heating").click({position:{x:15,y:15}});await page.locator("#properties details").evaluateAll(items=>items.forEach(el=>el.open=true));
   assert.equal(await page.locator("#properties [data-property-key='dataOutputEnabled']").count(),0);
+  assert.equal(await page.locator("#properties [data-property-key='returnEntityId']").inputValue(),"sensor.return");
+  assert.equal(await page.locator("#properties .property-entity-row").filter({has:page.locator("[data-property-key='returnEntityId']")}).getByRole("button",{name:"Home-Assistant-Entität auswählen"}).isEnabled(),true);
+  await page.locator("#properties [data-property-key='returnColor']").evaluate(input=>{input.value="#abcdef";input.dispatchEvent(new Event("input",{bubbles:true}));});
+  assert.equal(await page.locator("#heating [data-display='return'] text").last().getAttribute("fill"),"#abcdef");
+  await page.locator("#properties [data-property-key='returnVisible']").uncheck();
+  assert.equal(await page.locator("#heating [data-display='return']").count(),0);
+  assert.equal(await page.locator("#heating [data-arrow='return']").count(),1);
+  await page.locator("#properties [data-property-key='returnVisible']").check();
+  await page.locator("#properties [data-property-key='returnArrow']").uncheck();
+  assert.equal(await page.locator("#heating [data-arrow='return']").count(),0);
+  await page.locator("#properties [data-property-key='returnArrow']").check();
+  await page.locator("#properties [data-property-key='tankColor']").evaluate(input=>{input.value="#ed9829";input.dispatchEvent(new Event("input",{bubbles:true}));});
+  assert.equal(await page.locator("#heating [data-display='tank'] rect").last().getAttribute("fill"),"#ed9829","custom orange remains selectable after migration");
+  await page.locator("#properties [data-property-key='tankColor']").evaluate(input=>{input.value="#ee78a5";input.dispatchEvent(new Event("input",{bubbles:true}));});
   await page.locator("#properties [data-property-key='hotColor']").evaluate(input=>{input.value="#12abcd";input.dispatchEvent(new Event("input",{bubbles:true}));});assert.equal(await page.locator("#heating [data-display='hot'] text").last().getAttribute("fill"),"#12abcd");
   await page.locator("#properties [data-property-key='statusLegend']").selectOption("one-zero");await page.waitForFunction(()=>document.querySelector("#heating [data-display='pump']")?.textContent.includes("1"));
   for(const key of ["heating","pump","burner"]){await page.locator(`#properties [data-property-key='${key}Visible']`).uncheck();assert.equal(await page.locator(`#heating [data-display='${key}']`).count(),0);}

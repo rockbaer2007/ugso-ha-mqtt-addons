@@ -1,4 +1,8 @@
-# UGSo Industrie 0.11.5
+# UGSo Industrie 0.11.6
+
+Studio **0.1.260** ergänzt die Rücklaufgrafik und die Eigenschaftengruppe **Rücklauf** für alle bestehenden Heizungswidgets: Entitätsauswahl, ausblendbare Temperatur, Textfarbe und separat abschaltbarer Pfeil. Der orange Rücklauf verläuft vor dem linken Behälter mit Knick zum Kessel; der Pfeil sitzt links und zeigt nach rechts. Tankfüllstand ist standardmäßig rosa. 0.11.6 bewahrt die bisherigen Paketverträge; für Grafik und Eigenschaften ist das Studio-Update erforderlich.
+
+Studio **0.1.260** adds the return pipe artwork and **Return** properties to existing heating widgets: entity picker, optional temperature display, text color and independent flow arrow. The orange pipe crosses in front of the expansion vessel, bends toward the boiler and has a right-facing arrow at its left end. Tank level defaults to pink. Package 0.11.6 preserves published contracts; artwork and properties require the Studio update.
 
 Ab Studio 0.1.258 heißt die Heizkreistemperaturanzeige **Vorlauf**. Industrial 0.11.5 ersetzt das nicht aktualisierbare 0.11.4 und bewahrt die veröffentlichten Widgetverträge. Studio 0.1.259 zeigt die entsprechenden Einstellungen als Vorlauf an, ohne gespeicherte Gruppenschlüssel zu ändern. Entitätsbindungen bleiben erhalten.
 

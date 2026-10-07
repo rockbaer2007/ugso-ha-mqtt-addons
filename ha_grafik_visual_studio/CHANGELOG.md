@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.260
+
+- Heizungswidget verwendet die neue transparente Grafik mit höherem roten Anschluss und orangefarbenem Rücklauf mit Knick. Rücklauftemperatur mit Home-Assistant-Entitätsauswahl, Textfarbe und ausblendbarer Anzeige unter dem Rohr; separater Pfeil links im Rohr zeigt zum Kessel. Standard-Tankfüllstand rosa; individuelle Farben bleiben erhalten. Auch bestehende Widgets erhalten die Eigenschaften. Industrial 0.11.6 bewahrt die Paketverträge und ergänzt die Anleitung.
+- Heating now uses the revised artwork and return temperature properties, including entity selection, optional display, text color and independent right-facing arrow. Pink default tank level, existing bindings and custom colors preserved. Available on existing widgets; Industrial 0.11.6 updates instructions without redefining contracts.
+
 ## 0.1.259
 
 - Industrial 0.11.5 ersetzt das nicht aktualisierbare 0.11.4 und bewahrt die veröffentlichten Widgetverträge. Die Anzeige „Vorlauftemperatur“ wird im Studio dargestellt, ohne gespeicherte Gruppenschlüssel zu ändern. Lokales Paket 0.11.5 statt 0.11.4 installieren; Entitätsbindungen bleiben erhalten.

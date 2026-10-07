@@ -4,7 +4,7 @@ import {readFileSync} from "node:fs";
 import {heatingSize,heatingModel,heatingBoolean,heatingBindings,HEATING_ART} from "../web/industrial-heating.js";
 import {hasSimpleOutput,dockPointActive} from "../web/dock-points.js";
 test("the overlay coordinate system uses the actual PNG source dimensions",()=>{
- const png=readFileSync(new URL("../web/assets/industrial/heating-system.png",import.meta.url));
+ const png=readFileSync(new URL("../web/assets/industrial/heating-system-return.png",import.meta.url));
  assert.equal(png.readUInt32BE(16),HEATING_ART.width);assert.equal(png.readUInt32BE(20),HEATING_ART.height);
 });
 test("heating keeps the 7:4 raster and migrates both prior layouts at the same cell size",()=>{
@@ -23,11 +23,12 @@ test("live readings remain unknown without bindings; demo never replaces unavail
  assert.equal(heatingModel({coldEntityId:"sensor.cold"},{"sensor.cold":{state:"-4.2",attributes:{unit_of_measurement:"°F"}}}).cold.unit,"°F");
  for(const value of ["",null,"unknown","unavailable","Infinity","abc"]){assert.equal(heatingModel({tankEntityId:"sensor.tank"},{"sensor.tank":{state:value}}).tank.value,null);}
 });
-test("boolean values, tank bounds and independent nine entity bindings",()=>{
+test("boolean values, tank bounds and independent ten entity bindings",()=>{
  for(const value of [true,1,"on","true","1"])assert.equal(heatingBoolean(value),true);
  for(const value of [false,0,"off","false","0"])assert.equal(heatingBoolean(value),false);
  assert.equal(heatingBoolean("unavailable"),null);
  for(const [state,level] of [["-10",0],["65",65],["130",100]])assert.equal(heatingModel({tankEntityId:"sensor.tank"},{"sensor.tank":{state}}).tank.level,level);
- const widget={type:"ugso.industrial/heating",...Object.fromEntries(["heating","boiler","hot","cold","pump","circulation","burner","alert","tank"].map(key=>[`${key}EntityId`,`sensor.${key}`]))};
- assert.equal(heatingBindings(widget).length,9);assert.equal(hasSimpleOutput(widget),false);assert.equal(dockPointActive(widget,"left-center"),false);
+ const widget={type:"ugso.industrial/heating",...Object.fromEntries(["heating","boiler","hot","cold","return","pump","circulation","burner","alert","tank"].map(key=>[`${key}EntityId`,`sensor.${key}`]))};
+ assert.equal(heatingBindings(widget).length,10);assert.equal(hasSimpleOutput(widget),false);assert.equal(dockPointActive(widget,"left-center"),false);
+ assert.equal(heatingModel({returnEntityId:"sensor.return"},{"sensor.return":{state:"40.2"}}).return.value,40.2);
 });
