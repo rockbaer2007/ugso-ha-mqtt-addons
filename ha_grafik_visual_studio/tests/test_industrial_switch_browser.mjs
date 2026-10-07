@@ -50,8 +50,11 @@ test("four industrial switches render, route ports and control independent entit
   for(let n=1;n<=4;n++)assert.equal(await page.locator(`#bank [data-anchor-id='output-${n}']`).evaluate(el=>getComputedStyle(el).backgroundColor),"rgb(238, 17, 136)");
   await page.locator("#bank .industrial-switch").click();await page.locator("#properties details").evaluateAll(items=>items.forEach(el=>el.open=true));
   const height=page.locator("#properties [data-property-key='height']").first(),width=page.locator("#properties [data-property-key='width']").first();
-  await height.fill("160");await height.press("Tab");assert.equal(await width.inputValue(),"640");
-  await width.fill("65");await width.press("Tab");assert.equal(await width.inputValue(),"256");assert.equal(await height.inputValue(),"64");
+  await height.fill("160");await height.press("Tab");assert.equal(await width.inputValue(),"646");
+  await width.fill("65");await width.press("Tab");assert.equal(await width.inputValue(),"262");assert.equal(await height.inputValue(),"64");
+  const space=page.locator("#properties [data-property-key='housingSpace']").first();
+  await space.fill("3");await space.press("Tab");assert.equal(await width.inputValue(),"274");
+  await space.fill("1");await space.press("Tab");assert.equal(await width.inputValue(),"262");
   assert.equal(await page.locator("#properties [data-property-key='switchLegend3'] option[value='ein-aus']").textContent(),"EIN/AUS");
   await page.goto(new URL("runtime",url).href);await page.locator("#bank .industrial-switch").waitFor();
   assert.equal(await page.locator("#bank .housing-snap-point, #bank .widget-dock-point, #bank .industrial-switch-port-label").count(),0);
@@ -72,9 +75,20 @@ test("four industrial switches render, route ports and control independent entit
   const folder=process.env.STUDIO_TEST_ARTIFACTS||join(process.env.TEMP,"studio-industrial-artifacts");await mkdir(folder,{recursive:true});
   await page.locator("#input-wire,#out-wire").evaluateAll(items=>items.forEach(el=>el.style.visibility="hidden"));
   await page.locator("#bank").screenshot({path:join(folder,"industrial-switches.png")});
-  bank.height=64;bank.width=256;await page.reload();await page.locator("#bank").waitFor();const box=await page.locator("#bank").boundingBox();assert.equal(box.width,256);assert.equal(box.height,64);
+  bank.height=64;bank.width=256;await page.reload();await page.locator("#bank").waitFor();const box=await page.locator("#bank").boundingBox();assert.equal(box.width,262);assert.equal(box.height,64);
   await page.locator("#input-wire,#out-wire").evaluateAll(items=>items.forEach(el=>el.style.visibility="hidden"));
   await page.locator("#bank").screenshot({path:join(folder,"industrial-switches-64.png")});
+  for(let n=1;n<=4;n++)fixture.pages[0].widgets.push({...definition.defaults,id:`single-${n}`,type:definition.type,x:bank.x+(n-1)*66,y:bank.y+100,height:64,width:64});
+  await page.reload();await page.locator("#single-4").waitFor();
+  const block=await page.locator("#bank").boundingBox();
+  for(let n=1;n<=4;n++){
+   const single=await page.locator(`#single-${n}`).boundingBox(),singleLed=await page.locator(`#single-${n} .industrial-led`).boundingBox(),blockLed=await page.locator(`#bank [data-channel='${n}'] .industrial-led`).boundingBox();
+   assert.ok(Math.abs(singleLed.x+singleLed.width/2-blockLed.x-blockLed.width/2)<.5);
+   if(n===4)assert.equal(single.x+single.width,block.x+block.width);
+  }
+  await page.locator("#input-wire,#out-wire").evaluateAll(items=>items.forEach(el=>el.style.visibility="hidden"));
+  await page.screenshot({path:join(folder,"industrial-toggle-spacing.png"),clip:{x:block.x-5,y:block.y-5,width:block.width+10,height:174}});
+  fixture.pages[0].widgets=fixture.pages[0].widgets.filter(w=>!w.id.startsWith("single-"));
   const rockerDefinition=packages.packages.find(p=>p.id==="ugso.industrial").widgets.find(w=>w.type==="ugso.industrial/rocker-switch");
   assert.ok(rockerDefinition);
   Object.assign(bank,{type:rockerDefinition.type,height:128,width:512,switchCount:4,rockerColor1:"white",rockerColor2:"red",rockerColor3:"black",rockerColor4:"green"});

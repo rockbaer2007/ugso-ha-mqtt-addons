@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.236
+
+- Kippschalter-Blöcke berücksichtigen den Gehäuseabstand zwischen Kanälen: bei 64 px und 1 px Abstand rundherum sind die Breiten 64/130/196/262 px. Schaltermitten und E/A-Anschlüsse fluchten mit einzelnen Widgets darunter. Eingabe und Ziehen berücksichtigen den Zuschlag. Wippschalter bleiben unverändert.
+- Toggle banks include housing spacing between channels: 64 px channels with 1 px all-side spacing yield widths of 64/130/196/262 px. Channel centers and ports align with individual widgets below. Width input and resizing include the extra spacing. Rocker switches are unchanged.
+
 ## 0.1.235
 
 - Industriepaket 0.3.0 ergänzt Wippschalter mit Farbauswahl je Kanal: Weiß/Grau, Rot, Schwarz und Grün mit den bereitgestellten transparenten PNGs. Alle Eigenschaften, 1–4 Kanäle, Entitäten, E/A-Koppelpunkte und Gehäuse-Snappunkte des Kippschalters bleiben verfügbar. Bestehende Paketdefinitionen bleiben erhalten.

@@ -1,9 +1,22 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {switchCount,switchAnchors,switchChannel,switchPortActive,isIndustrialSwitch,ROCKER_COLORS,rockerColor} from "../web/industrial-switch.js";
+import {switchCount,switchSize,switchGap,switchAnchors,switchChannel,switchPortActive,isIndustrialSwitch,ROCKER_COLORS,rockerColor} from "../web/industrial-switch.js";
 import {widgetValuePacket,widgetInputPacket} from "../web/dataflow.js";
 import {housingPoints} from "../web/housing-snap.js";
-const bank={id:"bank",type:"ugso.industrial/switch",switchCount:4,outputDock1:true,outputDock2:true,outputDock3:true,outputDock4:true,switchState1:true,switchState2:false,switchState3:true,switchState4:false};
+const bank={id:"bank",type:"ugso.industrial/switch",switchCount:4,housingSpace:0,outputDock1:true,outputDock2:true,outputDock3:true,outputDock4:true,switchState1:true,switchState2:false,switchState3:true,switchState4:false};
+test("toggle banks align with spaced single widgets; rocker sizing is unchanged",()=>{
+ for(let count=1;count<=4;count++){
+  const toggle={...bank,height:64,switchCount:count,housingSpace:1};
+  const size=switchSize(toggle);
+  assert.equal(size.width,64*count+2*(count-1));
+  assert.deepEqual(switchSize({...toggle,...size},"width"),size);
+  for(let n=1;n<=count;n++)assert.ok(Math.abs(switchAnchors(toggle).find(([id])=>id===`input-${n}`)[2]*size.width-(32+(n-1)*66))<1e-9);
+  assert.equal(switchSize({...toggle,type:"ugso.industrial/rocker-switch"}).width,64*count);
+ }
+ assert.equal(switchSize({...bank,height:128,housingSpace:3}).width,530);
+ assert.equal(switchGap({...bank,housingSpace:-1}),0);
+ assert.deepEqual(switchSize({...bank,width:65,housingSpace:1},"width"),{height:64,width:262});
+});
 test("all rocker variants share directional routing and housing points with toggle switches",()=>{
  for(const color of ROCKER_COLORS){
   const rocker={...bank,type:"ugso.industrial/rocker-switch",rockerColor1:color};

@@ -1,5 +1,9 @@
 # UGSo Industrie 0.3.0
 
+Deutsch: Ab Studio 0.1.236 berücksichtigt nur der Kippschalter den Zwischenabstand im Mehrfachblock: Breite = Höhe × Schalteranzahl + 2 × Abstand rundherum × (Schalteranzahl − 1). Bei 64 px Höhe und 1 px Abstand ergeben sich 64/130/196/262 px. Schaltermitten und Anschlüsse fluchten mit einzeln angedockten Widgets. Wippschalter bleiben vorerst unverändert. Das Host-Update genügt; Paket 0.3.0 bleibt unverändert.
+
+English: Since Studio 0.1.236, only toggle banks include spacing: width = height × channel count + 2 × all-side spacing × (channel count − 1). At 64 px height and 1 px spacing, widths are 64/130/196/262 px. Channel centers and ports align with individually docked widgets. Rocker sizing remains unchanged for now. Only a host update is required; package 0.3.0 is unchanged.
+
 ## Wippschalter / Rocker switches
 
 Deutsch: Paket 0.3.0 und Studio ab 0.1.235 ergänzen Wippschalter mit eigener Farbauswahl je Schalter: Weiß/Grau, Rot, Schwarz und Grün. Alle Eigenschaften des Kippschalters gelten unverändert, einschließlich 1–4 Kanälen, LED, Text und Schildbeschriftung, Entitäten, E1–E4/A1–A4 und sechs Gehäuse-Snappunkten. Die Darstellung nutzt die von rockbaer2007 bereitgestellten transparenten Einzelgrafiken. Das aufgedruckte O/I ist Bestandteil der Grafik; zusätzliche Schildbeschriftungen bleiben einstellbar. Das bestehende Gauge/Poti und der Kippschalter bleiben beim Paket-Update erhalten.

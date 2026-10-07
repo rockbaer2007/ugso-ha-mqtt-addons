@@ -54,7 +54,7 @@ import { isGauge, renderGauge, gaugeEntityIds } from "./gauges.js";
 import { industrialModel, industrialQuantize, renderIndustrialGauge } from "./industrial-gauge.js";
 import { housingPoints, housingActive, housingSnapGroupFor, isIndustrial, snapHousing } from "./housing-snap.js";
 import { squareLocked, industrialSize, industrialResize } from "./industrial-size.js";
-import { isIndustrialSwitch, switchCount, switchAnchors, switchBindings, renderIndustrialSwitch } from "./industrial-switch.js";
+import { isIndustrialSwitch, switchCount, switchSize, switchAnchors, switchBindings, renderIndustrialSwitch } from "./industrial-switch.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
 const calendarViews = new Map();
@@ -2846,7 +2846,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   if (!pageFilters.has(filterKey)) pageFilters.set(filterKey, defaultFilters(activePage.widgets.find(widget => widget.type === "filter-dropdown") || {}));
   const selectedFilters = pageFilters.get(filterKey);
   for (const widget of activePage.widgets) {
-    if (isIndustrialSwitch(widget)) { widget.height=Math.max(64,Math.min(1024,Number(widget.height)||128));widget.width=widget.height*switchCount(widget); }
+    if (isIndustrialSwitch(widget)) Object.assign(widget,switchSize(widget));
     if (widget.type === "dashboard-in-widget") Object.assign(widget, dashboardSize(widget));
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") Object.assign(widget, industrialSize(widget));
@@ -3943,7 +3943,7 @@ function makeResizable(element, handle, widget) {
       syncIndustrialSizeFields(widget);
     }
     if (isIndustrialSwitch(widget)) {
-      const count=switchCount(widget);widget.height=Math.max(64,Math.min(1024,Math.round(/[ew]/.test(direction)?widget.width/count:widget.height)));widget.width=widget.height*count;
+      Object.assign(widget,switchSize(widget,/[ew]/.test(direction)?"width":"height"));
       if(direction.includes("w"))widget.x=Math.max(0,origin.left+origin.width-widget.width);
       if(direction.includes("n"))widget.y=Math.max(0,origin.top+origin.height-widget.height);
       syncIndustrialSizeFields(widget);
@@ -4413,7 +4413,7 @@ function field(descriptor, widget) {
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
     if (["industrial-gauge","industrial-switch"].includes(getWidgetDefinition(widget.type).render?.kind) && descriptor.key === "industrialStyle" && input.checked) widget.industrialScrewsEnabled = true;
     if(isIndustrialSwitch(widget)) {
-      if(["width","height","switchCount"].includes(descriptor.key)){widget.switchCount=switchCount(widget);widget.height=Math.max(64,Math.min(1024,Math.round(descriptor.key==="width"?widget.width/switchCount(widget):Number(widget.height)||128)));widget.width=widget.height*switchCount(widget);syncIndustrialSizeFields(widget,descriptor.key);}
+      if(["width","height","switchCount","housingSpace"].includes(descriptor.key)){widget.switchCount=switchCount(widget);Object.assign(widget,switchSize(widget,descriptor.key));syncIndustrialSizeFields(widget,descriptor.key);}
       if(/^(inputEntityId|outputEntityId)[1-4]$/.test(descriptor.key))void refreshEditorLiveStates();
       if(descriptor.key==="switchCount")renderProperties();
     }
@@ -5070,8 +5070,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.235" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.235" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.236" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.236" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {
