@@ -42,7 +42,7 @@ export function renderIndustrialHeating(widget,doc,{states={},locale="de"}={}) {
   const defs=el("defs"),prefix=`heating-${String(widget.id||"preview").replace(/[^a-z0-9_-]/gi,"-")}`;
   const metal=el("linearGradient",{id:`${prefix}-metal`,x1:0,y1:0,x2:1,y2:0},defs);
   for(const [offset,fill] of [[0,"#868b8d"],[.35,"#d0d4d5"],[1,"#92999c"]])el("stop",{offset,"stop-color":fill},metal);
-  const labels={heating:english?"Heating":"Heizkreis",boiler:english?"Boiler":"Kessel",hot:english?"Hot water":"Warmwasser",cold:english?"Cold water":"Kaltwasser",pump:english?"Pump":"Pumpe",circulation:english?"Circulation":"Zirkulation",burner:english?"Burner":"Brenner",tank:english?"Level":"Füllstand"};
+  const labels={heating:english?"Supply":"Vorlauf",boiler:english?"Boiler":"Kessel",hot:english?"Hot water":"Warmwasser",cold:english?"Cold water":"Kaltwasser",pump:english?"Pump":"Pumpe",circulation:english?"Circulation":"Zirkulation",burner:english?"Burner":"Brenner",tank:english?"Level":"Füllstand"};
   const panel=(key,x,y,width,height,label,value,fill,status)=>{
     const group=el("g",{"data-display":key,"data-state":status===null?"unknown":status===true?"on":status===false?"off":"value"});
     el("rect",{x,y,width,height,rx:12,fill:"#121719",stroke:"#15191b","stroke-width":7},group);

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.258
+
+- Heizungswidget: Beschriftung „Vorlauf“ statt „Heizkreis“, auch für Temperatur- und Pfeileinstellungen im Industrial-Paket 0.11.4. Bestehende Entitätsbindungen bleiben erhalten.
+- Heating widget: supply temperature label and settings renamed from heating circuit to supply; existing entity bindings are preserved. Industrial 0.11.4.
+
 ## 0.1.257
 
 - Löschen, Kopieren und Ausschneiden in der Toolbar aktualisieren ihren Aktivierungszustand direkt bei der Widgetauswahl, unabhängig vom Neuaufbau der Auswahlliste und Eigenschaften. Browserprüfung für einzelne und mehrere Widgets sowie alle Industrial-/Energy-Widgets.

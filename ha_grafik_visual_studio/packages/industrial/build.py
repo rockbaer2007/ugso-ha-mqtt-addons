@@ -40,7 +40,7 @@ def _base_manifest():
 
 def manifest():
     data = _base_manifest()
-    data["version"] = "0.11.3"
+    data["version"] = "0.11.4"
     toggle = data["widgets"][1]
     rocker = deepcopy(toggle)
     rocker.update(type="ugso.industrial/rocker-switch", label="Wippschalter – 1 bis 4", icon="icons/rocker-gray.svg")
@@ -157,7 +157,7 @@ def manifest():
     groups = [{"label": "Heizung", "fields": [field("heatingDemo", "Beispieldaten ohne Entitäten", "checkbox"),
               field("statusLegend", "Statusbeschriftung", "select", options=["ein-aus", "on-off", "one-zero"]),
               field("statusOnColor", "Statusfarbe Ein", "color"), field("statusOffColor", "LED-Farbe Aus", "color"), field("statusOffTextColor", "Statusfarbe Aus", "color")] }]
-    for key, label in (("heating", "Heizkreistemperatur"), ("boiler", "Kesseltemperatur"), ("hot", "Warmwassertemperatur"), ("cold", "Kaltwassertemperatur")):
+    for key, label in (("heating", "Vorlauftemperatur"), ("boiler", "Kesseltemperatur"), ("hot", "Warmwassertemperatur"), ("cold", "Kaltwassertemperatur")):
         defaults.update({f"{key}EntityId": "", f"{key}Visible": True, f"{key}Color": "#229dff" if key == "cold" else "#ff3932"})
         groups.append({"label": label, "fields": [field(f"{key}EntityId", "Entität"), field(f"{key}Visible", "Anzeige sichtbar", "checkbox"), field(f"{key}Color", "Textfarbe", "color")]})
     for key, label in (("pump", "Heizkreispumpenstatus"), ("circulation", "Zirkulationspumpenstatus"), ("burner", "Brennerstatus"), ("alert", "Störungsanzeige")):
@@ -166,7 +166,7 @@ def manifest():
     defaults["tankEntityId"] = ""
     groups.append({"label": "Tankfüllstand", "fields": [field("tankEntityId", "Numerische Entität (0–100 %)"), field("tankColor", "Füllstandsfarbe", "color")]})
     arrows = []
-    for key, label in (("heating", "Heizkreis"), ("circulation", "Zirkulation"), ("hot", "Warmwasser"), ("cold", "Kaltwasser"), ("oil", "Öl zum Brenner")):
+    for key, label in (("heating", "Vorlauf"), ("circulation", "Zirkulation"), ("hot", "Warmwasser"), ("cold", "Kaltwasser"), ("oil", "Öl zum Brenner")):
         defaults[f"{key}Arrow"] = True
         arrows.append(field(f"{key}Arrow", label, "checkbox"))
     groups.extend([{"label": "Flusspfeile", "fields": arrows},
