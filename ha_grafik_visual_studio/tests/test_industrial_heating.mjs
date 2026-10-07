@@ -1,14 +1,20 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {heatingSize,heatingModel,heatingBoolean,heatingBindings} from "../web/industrial-heating.js";
+import {readFileSync} from "node:fs";
+import {heatingSize,heatingModel,heatingBoolean,heatingBindings,HEATING_ART} from "../web/industrial-heating.js";
 import {hasSimpleOutput,dockPointActive} from "../web/dock-points.js";
-test("heating keeps the 6:4 raster, migrates portrait projects and scales both axes",()=>{
- assert.deepEqual(heatingSize({height:518,housingSpace:1}),{width:778,height:518});
- assert.deepEqual(heatingSize({width:394,housingSpace:1},"width"),{width:394,height:262});
- assert.deepEqual(heatingSize({height:12,housingSpace:0}),{width:384,height:256});
- assert.deepEqual(heatingSize({width:518,height:778,housingSpace:1}),{width:778,height:518});
- assert.deepEqual(heatingSize({width:778,height:1162,housingSpace:1,heatingLayout:"landscape"}),{width:1744,height:1162});
- for(const housingSpace of [0,1,32,64]){const size=heatingSize({height:99999,housingSpace});assert.ok(size.width<=4096 && size.height<=4096);assert.equal((size.width-10*housingSpace)/6,(size.height-6*housingSpace)/4);}
+test("the overlay coordinate system uses the actual PNG source dimensions",()=>{
+ const png=readFileSync(new URL("../web/assets/industrial/heating-system.png",import.meta.url));
+ assert.equal(png.readUInt32BE(16),HEATING_ART.width);assert.equal(png.readUInt32BE(20),HEATING_ART.height);
+});
+test("heating keeps the 7:4 raster and migrates both prior layouts at the same cell size",()=>{
+ assert.deepEqual(heatingSize({height:518,housingSpace:1}),{width:908,height:518});
+ assert.deepEqual(heatingSize({width:460,housingSpace:1},"width"),{width:460,height:262});
+ assert.deepEqual(heatingSize({height:12,housingSpace:0}),{width:448,height:256});
+ assert.deepEqual(heatingSize({width:518,height:778,housingSpace:1}),{width:908,height:518});
+ assert.deepEqual(heatingSize({width:778,height:518,housingSpace:1,heatingLayout:"landscape"}),{width:908,height:518});
+ assert.deepEqual(heatingSize({width:908,height:1162,housingSpace:1,heatingLayout:"reference"}),{width:2035,height:1162});
+ for(const housingSpace of [0,1,32,64]){const size=heatingSize({height:99999,housingSpace});assert.ok(size.width<=4096 && size.height<=4096);assert.equal((size.width-12*housingSpace)/7,(size.height-6*housingSpace)/4);}
 });
 test("live readings remain unknown without bindings; demo never replaces unavailable entities",()=>{
  assert.equal(heatingModel({}).tank.value,null);assert.equal(heatingModel({}).pump.value,null);

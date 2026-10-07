@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.253
+
+- Heizungswidget verwendet die detaillierte transparente Vorlage statt der vereinfachten Zeichnung. Dynamische SVG-Anzeigen, Tankfüllstand und Pfeile werden im selben Bildkoordinatensystem skaliert und sitzen am zugehörigen Bauteil. Rasterformat 7:4, Standard 908×518 px bei 1 px Gehäuseabstand; bestehende 4:6/6:4-Widgets behalten Zellgröße und Bindungen. Industrial 0.11.3 ergänzt die Anleitung; das Studio-Update genügt für vorhandene Pakete.
+- Heating uses the detailed reference artwork with live SVG overlays sharing its coordinate system, maintaining alignment on resize. The 7:4 layout preserves bindings and grid cell size when upgrading existing widgets.
+
 ## 0.1.252
 
 - Heizungswidget im Querformat **6:4**: Kessel und Tank nebeneinander, freie Wasserleitungen, längere Tankskala und neu positionierte Anzeigen. Bestehende Hochformat-Widgets behalten Rasterzellengröße und Entitätsbindungen beim Wechsel. Mindestgröße 394×262 px, Standard 778×518 px bei 1 px Gehäuseabstand. Industrial 0.11.2 aktualisiert die Anleitung; das Host-Update genügt für vorhandene Pakete.
