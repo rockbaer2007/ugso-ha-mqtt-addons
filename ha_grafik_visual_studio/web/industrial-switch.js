@@ -1,5 +1,7 @@
 const pending=new Set(),failed=new Set();
-export const isIndustrialSwitch = widget => widget?.type === "ugso.industrial/switch";
+export const ROCKER_COLORS = ["white", "red", "black", "green"];
+export const rockerColor = (widget, channel) => widget?.type === "ugso.industrial/rocker-switch" ? ROCKER_COLORS.includes(widget[`rockerColor${channel}`]) ? widget[`rockerColor${channel}`] : "white" : null;
+export const isIndustrialSwitch = widget => ["ugso.industrial/switch", "ugso.industrial/rocker-switch"].includes(widget?.type);
 export const switchCount = widget => Math.max(1, Math.min(4, Math.trunc(Number(widget.switchCount) || 1)));
 export function switchAnchors(widget) {
   return Array.from({length:switchCount(widget)},(_,i)=>[
@@ -43,8 +45,13 @@ export function renderIndustrialSwitch(widget,doc,{runtime=false,states={},input
     const button=doc.createElement("button");button.type="button";button.className="industrial-toggle";button.setAttribute("role","switch");button.setAttribute("aria-label",label.textContent);button.setAttribute("aria-checked",String(channel.on===true));button.disabled=!runtime || !channel.writable || channel.on===null || pending.has(key);button.title=failed.has(key)?"Schalten fehlgeschlagen":channel.on===null?"Kein Eingangswert":"";
     const legend={"on-off":["ON","OFF"],"one-zero":["1","0"],"ein-aus":["EIN","AUS"]}[widget[`switchLegend${n}`]] || ["ON","OFF"];
     button.dataset.onLabel=legend[0];button.dataset.offLabel=legend[1];
-    const art=doc.createElementNS("http://www.w3.org/2000/svg","svg");art.classList.add("industrial-toggle-art");art.setAttribute("viewBox",channel.on===true?"35 75 205 280":"272 75 205 280");art.setAttribute("aria-hidden","true");
-    const image=doc.createElementNS("http://www.w3.org/2000/svg","image");image.setAttribute("href","assets/industrial/switch-1.png");image.setAttribute("width","502");image.setAttribute("height","413");art.append(image);button.append(art);
+    const rocker=rockerColor(widget,n);
+    if(rocker){
+      const art=doc.createElement("img");art.className="industrial-toggle-art industrial-rocker-art";art.src=`assets/industrial/rocker-${rocker==="white"?"gray":rocker}-${channel.on===true?"on":"off"}.png`;art.alt="";art.setAttribute("aria-hidden","true");art.draggable=false;button.append(art);
+    }else{
+      const art=doc.createElementNS("http://www.w3.org/2000/svg","svg");art.classList.add("industrial-toggle-art");art.setAttribute("viewBox",channel.on===true?"35 75 205 280":"272 75 205 280");art.setAttribute("aria-hidden","true");
+      const image=doc.createElementNS("http://www.w3.org/2000/svg","image");image.setAttribute("href","assets/industrial/switch-1.png");image.setAttribute("width","502");image.setAttribute("height","413");art.append(image);button.append(art);
+    }
     button.addEventListener("click",async event=>{event.stopPropagation();if(button.disabled || pending.has(key))return;pending.add(key);failed.delete(key);button.disabled=true;try{await onCommit(n,!channel.on,channel.target);}catch{failed.add(key);button.title="Schalten fehlgeschlagen";}finally{pending.delete(key);button.disabled=!runtime || !channel.writable || channel.on===null;onSettled();}});
     cell.append(led,label,button);root.append(cell);
   }

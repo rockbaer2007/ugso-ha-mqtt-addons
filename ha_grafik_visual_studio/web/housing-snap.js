@@ -1,5 +1,6 @@
+import { isIndustrialSwitch } from "./industrial-switch.js";
 export const HOUSING_CORNERS = [["top-left", "Oben links", 0, 0], ["top-right", "Oben rechts", 1, 0], ["bottom-left", "Unten links", 0, 1], ["bottom-right", "Unten rechts", 1, 1]];
-export const housingPoints = widget => widget?.type === "ugso.industrial/switch" ? [...HOUSING_CORNERS, ["left-center", "Links Mitte", 0, .5], ["right-center", "Rechts Mitte", 1, .5]] : HOUSING_CORNERS;
+export const housingPoints = widget => isIndustrialSwitch(widget) ? [...HOUSING_CORNERS, ["left-center", "Links Mitte", 0, .5], ["right-center", "Rechts Mitte", 1, .5]] : HOUSING_CORNERS;
 export const housingKey = id => `housing_${id.replaceAll("-", "_")}`;
 export const isIndustrial = widget => widget?.type?.startsWith("ugso.industrial/");
 export const housingSpace = widget => Math.max(0, Math.min(64, Number(widget.housingSpace ?? 1) || 0));

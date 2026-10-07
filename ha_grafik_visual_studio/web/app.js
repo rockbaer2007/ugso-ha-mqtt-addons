@@ -250,7 +250,7 @@ function widgetPropertyGroups(widget) {
       ] }));
     }
   }
-  if (isIndustrialSwitch(widget)) groups = groups.map(group => ({ ...group, fields: group.fields.map(field => { const port = /^(input|output)Dock([1-4])$/.exec(field.key); return port ? { ...field, label: `${port[1] === "input" ? "E" : "A"}${port[2]}: ${uiText(field.label)}` } : field; }) }));
+  if (isIndustrialSwitch(widget)) groups = groups.map(group => ({ ...group, fields: group.fields.map(field => { const port = /^(input|output)Dock([1-4])$/.exec(field.key); if(/^rockerColor[1-4]$/.test(field.key)) return {...field,options:[{value:"white",label:uiText("Weiß/Grau")},{value:"red",label:uiText("Rot")},{value:"black",label:uiText("Schwarz")},{value:"green",label:uiText("Grün")}]}; return port ? { ...field, label: `${port[1] === "input" ? "E" : "A"}${port[2]}: ${uiText(field.label)}` } : field; }) }));
   const dataGroup = { label: "Datenfluss", hint: "Wertausgabe am gewählten aktiven Dockpunkt. Wert-Verbindungen laufen vom Start zum Ziel; ein Konverter-Eingang erlaubt genau eine Quelle.", fields: [
     { label: "Ausgangspunkt aktivieren", key: "dataOutputEnabled", type: "checkbox", default: false, refreshProperties: true },
     { label: "Ausgangspunkt", key: "dataOutputAnchor", type: "radio", options: OUTPUT_SIDES.map(([value, label]) => ({ value, label })), default: "right-center" },
@@ -5070,8 +5070,8 @@ async function installExternalPackage(kind, file, expected = null, acceptedRisk 
   document.querySelector(`#${kind === "widget" ? "widget" : "tool"}-package-message`).textContent = uiText("Paket installiert. Einstellungen wurden aktualisiert.");
 }
 const packageBrowsers = {
-  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.234" }),
-  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.234" }),
+  widget: mountPackageBrowser("widget", { installedPackages: fetchWidgetPackages, install: installExternalPackage, version: "0.1.235" }),
+  tool: mountPackageBrowser("tool", { installedPackages: fetchToolPackages, install: installExternalPackage, version: "0.1.235" }),
 };
 $("#widget-package-local").addEventListener("click", () => $("#widget-package-file").click());
 $("#widget-package-file").addEventListener("change", async (event) => {

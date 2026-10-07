@@ -3,6 +3,7 @@ import sys
 import hashlib
 import json
 import unittest
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
 
@@ -23,8 +24,24 @@ class IndustrialTests(unittest.TestCase):
         # Immutable contract fingerprint of the published 0.1.0 Gauge/Poti.
         self.assertEqual(hashlib.sha256(json.dumps(contract, sort_keys=True).encode()).hexdigest(), "bb9a82b02a07c2d0669553990a2e9fe06aea011e443e5f920acaad49b6fef326")
         validate_additive_update({**incoming, "version": "0.1.0", "widgets": [gauge]}, incoming)
-        self.assertEqual(incoming["version"], "0.2.0")
-        self.assertEqual(len(incoming["widgets"]), 2)
+        self.assertEqual(incoming["version"], "0.3.0")
+        self.assertEqual(len(incoming["widgets"]), 3)
+
+    def test_rockers_add_all_toggle_properties_without_changing_existing_widgets(self):
+        previous = build._base_manifest()
+        incoming = build.manifest()
+        validate_additive_update(previous, incoming)
+        self.assertEqual(incoming["widgets"][:2], previous["widgets"])
+        rocker = incoming["widgets"][2]
+        self.assertEqual(rocker["render"], previous["widgets"][1]["render"])
+        defaults = {key: value for key, value in rocker["defaults"].items() if not key.startswith("rockerColor")}
+        groups = deepcopy(rocker["propertyGroups"])
+        for group in groups:
+            group["fields"] = [field for field in group["fields"] if not field["key"].startswith("rockerColor")]
+        self.assertEqual(defaults, previous["widgets"][1]["defaults"])
+        self.assertEqual(groups, previous["widgets"][1]["propertyGroups"])
+        for n in range(1, 5):
+            self.assertEqual(rocker["defaults"][f"rockerColor{n}"], "white")
 
     def test_package_roundtrip_and_contract_version(self):
         data = build.manifest()

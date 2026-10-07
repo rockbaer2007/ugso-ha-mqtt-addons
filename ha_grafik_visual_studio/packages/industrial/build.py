@@ -1,4 +1,5 @@
-"""Build the data-only Industrial widget set (Studio >= 0.1.223)."""
+"""Build the data-only Industrial widget set (rockers: Studio >= 0.1.235)."""
+from copy import deepcopy
 import json
 import sys
 from pathlib import Path
@@ -9,7 +10,7 @@ sys.path.insert(0, str(ROOT.parents[1] / "app"))
 from widget_packages import validate_manifest, read_package_zip
 
 
-def manifest():
+def _base_manifest():
     def field(key, label, kind="text", **extra):
         return {"key": key, "label": label, "type": kind, **extra}
     defaults = {"entityId": "", "outputEntityId": "", "state": 0, "minValue": -20, "maxValue": 30,
@@ -37,10 +38,26 @@ def manifest():
     return {"format": "ha-grafik-widget-package", "apiVersion": "0.2", "id": "ugso.industrial", "name": "UGSo Industrie", "version": "0.2.0", "license": "MIT", "icon": "icons/gauge.svg", "widgets": [{"type": "ugso.industrial/gauge-poti", "label": "Gauge/Poti – 270°", "icon": "icons/gauge.svg", "defaults": defaults, "propertyGroups": groups, "render": {"kind": "industrial-gauge", "valueKey": "state"}}, {"type": "ugso.industrial/switch", "label": "Kippschalter – 1 bis 4", "icon": "icons/switch.svg", "defaults": switch_defaults, "propertyGroups": switch_groups, "render": {"kind": "industrial-switch", "valueKey": "state"}}]}
 
 
+def manifest():
+    data = _base_manifest()
+    data["version"] = "0.3.0"
+    toggle = data["widgets"][1]
+    rocker = deepcopy(toggle)
+    rocker.update(type="ugso.industrial/rocker-switch", label="Wippschalter – 1 bis 4", icon="icons/rocker-gray.svg")
+    for n in range(1, 5):
+        rocker["defaults"][f"rockerColor{n}"] = "white"
+        group = next(group for group in rocker["propertyGroups"] if group["label"] == f"Schalter {n}")
+        group["fields"].insert(1, {"key": f"rockerColor{n}", "label": "Schalterfarbe", "type": "select", "options": ["white", "red", "black", "green"]})
+    data["widgets"].append(rocker)
+    return data
+
+
 def build():
     data = validate_manifest(manifest())
     entries = {"manifest.json": json.dumps(data, ensure_ascii=False, indent=2), "icons/gauge.svg": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="1" width="22" height="22" rx="2" fill="#263238" stroke="#879097"/><path d="M6 18A8 8 0 1 1 18 18" fill="none" stroke="#4caf50" stroke-width="2"/><path d="M12 5L10 10H14Z" fill="#f2f5f6"/></svg>', "README.md": (ROOT / "README.md").read_text(encoding="utf-8"), "LICENSE.txt": (ROOT / "LICENSE.txt").read_text(encoding="utf-8")}
     entries["icons/switch.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="1" width="22" height="22" rx="2" fill="#263238" stroke="#879097"/><circle cx="12" cy="5" r="2" fill="#4caf50"/><circle cx="12" cy="15" r="5" fill="#92999d" stroke="#11181c"/><path d="M12 16L12 10" stroke="#e1e7e9" stroke-width="3"/></svg>'
+    for color, fill in (("gray", "#c7cbd1"),):
+        entries[f"icons/rocker-{color}.svg"] = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="5" y="1" width="14" height="22" rx="3" fill="#17191b"/><rect x="7" y="3" width="10" height="18" rx="2" fill="{fill}"/><circle cx="12" cy="8" r="2" fill="none" stroke="#ffffff"/><path d="M12 14V18" stroke="#ffffff" stroke-width="2"/></svg>'
     target = ROOT / "ugso.industrial.wg"
     with ZipFile(target, "w") as archive:
         for name, body in entries.items():

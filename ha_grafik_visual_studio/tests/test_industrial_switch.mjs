@@ -1,9 +1,21 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {switchCount,switchAnchors,switchChannel,switchPortActive} from "../web/industrial-switch.js";
+import {switchCount,switchAnchors,switchChannel,switchPortActive,isIndustrialSwitch,ROCKER_COLORS,rockerColor} from "../web/industrial-switch.js";
 import {widgetValuePacket,widgetInputPacket} from "../web/dataflow.js";
 import {housingPoints} from "../web/housing-snap.js";
 const bank={id:"bank",type:"ugso.industrial/switch",switchCount:4,outputDock1:true,outputDock2:true,outputDock3:true,outputDock4:true,switchState1:true,switchState2:false,switchState3:true,switchState4:false};
+test("all rocker variants share directional routing and housing points with toggle switches",()=>{
+ for(const color of ROCKER_COLORS){
+  const rocker={...bank,type:"ugso.industrial/rocker-switch",rockerColor1:color};
+  assert.equal(rockerColor(rocker,1),color);
+  assert.equal(rockerColor(rocker,2),"white");
+  assert.equal(isIndustrialSwitch(rocker),true);
+  assert.deepEqual(housingPoints(rocker),housingPoints(bank));
+  assert.deepEqual(switchAnchors(rocker),switchAnchors(bank));
+  for(let n=1;n<=4;n++)assert.equal(widgetValuePacket(rocker,[rocker],{},new Set(),`output-${n}`).value,n%2===1);
+ }
+ assert.equal(isIndustrialSwitch({type:"ugso.industrial/rocker-unknown"}),false);
+});
 test("1 to 4 switches expose 8/10/12/14 distinct housing and named signal points",()=>{
  for(let count=1;count<=4;count++){
   const widget={...bank,switchCount:count},signals=switchAnchors(widget),housing=housingPoints(widget);

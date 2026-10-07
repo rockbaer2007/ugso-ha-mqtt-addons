@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Wippschalter – 1 bis 4": "Rocker switches – 1 to 4", "Schalterfarbe": "Switch color", "Weiß/Grau": "White/Gray", "Rot": "Red", "Schwarz": "Black", "Grün": "Green",
 "Verhältnis 1:1": "1:1 aspect ratio",
 "Wertanzeige": "Value display", "Position des Wertes": "Value position", "Mitte": "Center", "Schriftfarbe": "Font color",
 "Rahmenbreite anpassen": "Customize frame width", "Rahmenbreite (px)": "Frame width (px)",

@@ -1,4 +1,10 @@
-# UGSo Industrie 0.2.0
+# UGSo Industrie 0.3.0
+
+## Wippschalter / Rocker switches
+
+Deutsch: Paket 0.3.0 und Studio ab 0.1.235 ergänzen Wippschalter mit eigener Farbauswahl je Schalter: Weiß/Grau, Rot, Schwarz und Grün. Alle Eigenschaften des Kippschalters gelten unverändert, einschließlich 1–4 Kanälen, LED, Text und Schildbeschriftung, Entitäten, E1–E4/A1–A4 und sechs Gehäuse-Snappunkten. Die Darstellung nutzt die von rockbaer2007 bereitgestellten transparenten Einzelgrafiken. Das aufgedruckte O/I ist Bestandteil der Grafik; zusätzliche Schildbeschriftungen bleiben einstellbar. Das bestehende Gauge/Poti und der Kippschalter bleiben beim Paket-Update erhalten.
+
+English: Package 0.3.0 with Studio 0.1.235 or newer adds rocker switches with an independent color choice per channel: white/gray, red, black and green. All toggle settings apply, including 1–4 channels, LED, captions and legends, entities, E1–E4/A1–A4 and six housing snap points. Artwork uses the transparent individual PNGs supplied by rockbaer2007. Printed O/I symbols are part of the artwork; additional legends remain configurable. Updating preserves existing Gauge/Poti and toggle definitions.
 
 ## Kippschalter / Toggle switches (Studio 0.1.232+)
 

@@ -75,6 +75,43 @@ test("four industrial switches render, route ports and control independent entit
   bank.height=64;bank.width=256;await page.reload();await page.locator("#bank").waitFor();const box=await page.locator("#bank").boundingBox();assert.equal(box.width,256);assert.equal(box.height,64);
   await page.locator("#input-wire,#out-wire").evaluateAll(items=>items.forEach(el=>el.style.visibility="hidden"));
   await page.locator("#bank").screenshot({path:join(folder,"industrial-switches-64.png")});
+  const rockerDefinition=packages.packages.find(p=>p.id==="ugso.industrial").widgets.find(w=>w.type==="ugso.industrial/rocker-switch");
+  assert.ok(rockerDefinition);
+  Object.assign(bank,{type:rockerDefinition.type,height:128,width:512,switchCount:4,rockerColor1:"white",rockerColor2:"red",rockerColor3:"black",rockerColor4:"green"});
+  for(let count=1;count<=4;count++){
+   bank.switchCount=count;bank.width=128*count;
+   await page.goto(url);await page.locator("#bank .industrial-rocker-art").first().waitFor();
+   assert.equal(await page.locator("#bank .industrial-rocker-art").count(),count);
+   assert.equal(await page.locator("#bank .housing-snap-point").count(),6);
+   assert.equal(await page.locator("#bank .industrial-toggle:disabled").count(),count);
+   assert.equal(await page.locator("#bank [data-anchor-id^='output-']").count(),count);
+  }
+  await page.locator("#bank .industrial-switch").click();await page.locator("#properties details").evaluateAll(items=>items.forEach(el=>el.open=true));
+  const colorSelect=page.locator("#properties [data-property-key='rockerColor2']").first();
+  assert.deepEqual(await colorSelect.locator("option").evaluateAll(items=>items.map(el=>el.value)),["white","red","black","green"]);
+  await colorSelect.selectOption("black");
+  assert.match(await channel(2).locator("img").getAttribute("src"),/rocker-black-/);
+  states["switch.one"].state="off";
+  await page.goto(new URL("runtime",url).href);await page.locator("#bank .industrial-rocker-art").first().waitFor();
+  await page.waitForFunction(()=>!document.querySelector("#bank [data-channel='1'] button")?.disabled);
+  for(let n=1;n<=4;n++){
+   const image=channel(n).locator("img");
+   assert.match(await image.getAttribute("src"),new RegExp(`rocker-${["gray","red","black","green"][n-1]}-`));
+   assert.equal(await image.evaluate(el=>el.complete && el.naturalWidth>0),true);
+  }
+  assert.match(await channel(1).locator("img").getAttribute("src"),/gray-off\.png$/);
+  await channel(1).click();await page.waitForFunction(()=>document.querySelector("#bank [data-channel='1'] img")?.src.endsWith("gray-on.png"));
+  assert.deepEqual(writes.at(-1),{entity_id:"switch.one",enabled:true});
+  assert.equal(await page.locator("#bank .widget-dock-point").count(),0);
+  await page.locator("#input-wire,#out-wire").evaluateAll(items=>items.forEach(el=>el.style.visibility="hidden"));
+  await page.locator("#bank").screenshot({path:join(folder,"industrial-rockers.png")});
+  bank.height=64;bank.width=256;await page.reload();await page.locator("#bank .industrial-rocker-art").first().waitFor();
+  for(let n=1;n<=4;n++){
+   const art=await channel(n).locator("img").boundingBox(),button=await channel(n).boundingBox();
+   assert.ok(art.height>10 && art.x>=button.x && art.y>=button.y && art.y+art.height<=button.y+button.height+1);
+  }
+  await page.locator("#input-wire,#out-wire").evaluateAll(items=>items.forEach(el=>el.style.visibility="hidden"));
+  await page.locator("#bank").screenshot({path:join(folder,"industrial-rockers-64.png")});
   assert.deepEqual(errors,[]);
  }finally{await browser.close();}
 });

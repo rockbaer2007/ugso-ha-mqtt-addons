@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.235
+
+- Industriepaket 0.3.0 ergänzt Wippschalter mit Farbauswahl je Kanal: Weiß/Grau, Rot, Schwarz und Grün mit den bereitgestellten transparenten PNGs. Alle Eigenschaften, 1–4 Kanäle, Entitäten, E/A-Koppelpunkte und Gehäuse-Snappunkte des Kippschalters bleiben verfügbar. Bestehende Paketdefinitionen bleiben erhalten.
+- Industrial package 0.3.0 adds rocker switches with independent white/gray, red, black and green artwork per channel using the supplied transparent PNGs. All toggle switch settings, 1–4 channels, entities, signal ports and housing snap points remain available. Existing package definitions are preserved.
+
 ## 0.1.234
 
 - Kippschalter zeigt im Editor E1–E4 oberhalb und A1–A4 unterhalb des jeweiligen Schalters. Sechs getrennte Gehäuse-Snappunkte (vier Ecken und links/rechts mittig) ergeben zusammen mit den Signalpunkten 8/10/12/14 mögliche Punkte für 1–4 Schalter. Alle Punkte bleiben einzeln aktivierbar; bestehende Verbindungs-IDs bleiben erhalten.
