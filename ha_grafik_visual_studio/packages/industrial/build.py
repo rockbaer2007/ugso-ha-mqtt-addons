@@ -1,4 +1,4 @@
-"""Build the data-only Industrial set (clock widget: Studio >= 0.1.244)."""
+"""Build the data-only Industrial set (weather widget: Studio >= 0.1.245)."""
 from copy import deepcopy
 import json
 import sys
@@ -40,7 +40,7 @@ def _base_manifest():
 
 def manifest():
     data = _base_manifest()
-    data["version"] = "0.8.0"
+    data["version"] = "0.9.0"
     toggle = data["widgets"][1]
     rocker = deepcopy(toggle)
     rocker.update(type="ugso.industrial/rocker-switch", label="Wippschalter – 1 bis 4", icon="icons/rocker-gray.svg")
@@ -127,6 +127,21 @@ def manifest():
             {"label": "Gehäuse und Farben", "fields": [field("industrialStyle", "Industriestyle", "checkbox")]},
             {"label": "Größe", "fields": [field("width", "Breite (px)", "number", min=96, max=4096), field("height", "Höhe (px)", "number", min=32, max=4096)]}],
         "render": {"kind": "industrial-clock", "valueKey": "clockMode"}})
+    data["widgets"].append({"type": "ugso.industrial/weather", "label": "Industrie-Wetter – LCD / LED", "icon": "icons/weather.svg",
+        "defaults": {"entityId": "", "weatherMode": "lcd", "weatherRain": True, "weatherMinMax": True, "weatherDemo": False,
+                     "weatherLedColor": "#42a5f5", "weatherLcdColor": "#182a15", "weatherLcdBackground": "#8a9b61",
+                     "temperatureEntityId": "", "humidityEntityId": "", "windEntityId": "", "rainEntityId": "", "lowEntityId": "", "highEntityId": "",
+                     "width": 262, "height": 130, "displayOn": True, "displayEntityId": "", "displayInputEnabled": False, "dockAlwaysVisible": False,
+                     "industrialStyle": True, "industrialScrewsEnabled": True, "backgroundColor": "transparent", "borderWidth": 0, "padding": 0},
+        "propertyGroups": [{"label": "Wetterdisplay", "fields": [field("entityId", "Wetterentität"), field("weatherMode", "Anzeigeart", "select", options=["lcd", "led"]),
+            field("weatherRain", "Regenwahrscheinlichkeit anzeigen", "checkbox"), field("weatherMinMax", "Tagesminimum/-maximum anzeigen", "checkbox"), field("weatherDemo", "Beispieldaten ohne Wetterentität", "checkbox"),
+            field("weatherLedColor", "LED-Leuchtfarbe", "color"), field("weatherLcdColor", "LCD-Segmentfarbe", "color"), field("weatherLcdBackground", "LCD-Hintergrundfarbe", "color")]},
+            {"label": "Zusätzliche Sensoren", "fields": [field("temperatureEntityId", "Temperatur: Sensor"), field("humidityEntityId", "Luftfeuchtigkeit: Sensor"), field("windEntityId", "Windgeschwindigkeit: Sensor"),
+            field("rainEntityId", "Regenwahrscheinlichkeit: Sensor"), field("lowEntityId", "Tagesminimum: Sensor"), field("highEntityId", "Tagesmaximum: Sensor")]},
+            {"label": "Display Ein/Aus", "fields": [field("displayOn", "Ohne Eingang eingeschaltet", "checkbox"), field("displayEntityId", "Display Ein/Aus: Entität"), field("displayInputEnabled", "Ein/Aus-Koppelpunkt aktivieren", "checkbox"), field("dockAlwaysVisible", "Koppelpunkte immer anzeigen", "checkbox")]},
+            {"label": "Gehäuse und Farben", "fields": [field("industrialStyle", "Industriestyle", "checkbox")]},
+            {"label": "Größe", "fields": [field("width", "Breite (px)", "number", min=256, max=4096), field("height", "Höhe (px)", "number", min=128, max=4096)]}],
+        "render": {"kind": "industrial-weather", "valueKey": "entityId"}})
     return data
 
 
@@ -140,6 +155,7 @@ def build():
     for color, fill in (("gray", "#c7cbd1"),):
         entries[f"icons/rocker-{color}.svg"] = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="5" y="1" width="14" height="22" rx="3" fill="#17191b"/><rect x="7" y="3" width="10" height="18" rx="2" fill="{fill}"/><circle cx="12" cy="8" r="2" fill="none" stroke="#ffffff"/><path d="M12 14V18" stroke="#ffffff" stroke-width="2"/></svg>'
     target = ROOT / "ugso.industrial.wg"
+    entries["icons/weather.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="3" width="22" height="18" rx="2" fill="#263238" stroke="#879097"/><path d="M5 9h4v4H5Zm5 3h8v4h-8Z" fill="#8a9b61"/><path d="M11 18h9m-9-8h9" stroke="#42a5f5"/></svg>'
     entries["icons/clock.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="3" width="22" height="18" rx="2" fill="#263238" stroke="#879097"/><rect x="4" y="5" width="6" height="14" rx="3" fill="#b6c1c522" stroke="#b6c1c5"/><rect x="14" y="5" width="6" height="14" rx="3" fill="#b6c1c522" stroke="#b6c1c5"/><path d="M7 8v8m9-8h2l-2 8" stroke="#ff9b36"/><path d="M12 10v1m0 2v1" stroke="#ff9b36"/></svg>'
     entries["icons/segment.svg"] = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect x="1" y="5" width="22" height="14" rx="2" fill="#11181c" stroke="#879097"/><path d="M4 8h4m-4 4h4m-4 4h4m-4-7v2m4-2v2m-4 2v2m4-2v2m4-7h4m-4 4h4m-4 4h4m-4-7v2m4-2v2m-4 2v2m4-2v2" stroke="#ff3b30"/></svg>'
     with ZipFile(target, "w") as archive:

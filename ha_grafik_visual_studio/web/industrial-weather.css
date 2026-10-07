@@ -1,0 +1,6 @@
+.industrial-weather { position:relative; width:100%; height:100%; box-sizing:border-box; padding:8px 12px; overflow:hidden; }
+.industrial-weather.industrial-housing { border:2px solid #879097; background:linear-gradient(135deg,#333d43,#172027); box-shadow:inset 0 0 3px #000; }
+.industrial-weather-screen { width:100%; height:100%; box-sizing:border-box; border:2px solid #030506; border-radius:3px; background:var(--weather-background); overflow:hidden; }
+.industrial-weather-screen svg { display:block; width:100%; height:100%; fill:var(--weather-color); }
+.industrial-weather[data-mode="led"] svg { filter:drop-shadow(0 0 1px var(--weather-color)); }
+.industrial-weather[data-power="off"] .industrial-weather-screen,.industrial-weather[data-power="unknown"] .industrial-weather-screen { background:#0b100c; }

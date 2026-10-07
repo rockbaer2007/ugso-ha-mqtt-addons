@@ -1,4 +1,12 @@
-# UGSo Industrie 0.8.0
+# UGSo Industrie 0.9.0
+
+## Wetterdisplay / Weather display (Studio 0.1.245+)
+
+Deutsch: LCD-/LED-Wetteranzeige mit eigenen Pixelsymbolen für die HA-Wetterzustände, großer Temperatur, Feuchte und Wind. Eine `weather.*`-Entität liefert Zustand und aktuelle Attribute; optionale tägliche Vorhersage ergänzt Regenwahrscheinlichkeit und Tagesminimum/-maximum. Zusätzliche Sensoren für Temperatur, Feuchte, Wind, Regenwahrscheinlichkeit, Minimum und Maximum haben einzeln Vorrang. Einheiten aus HA bleiben erhalten; keine Umrechnung. Fehlende Werte zeigen `--`, fehlende Vorhersagen blockieren die aktuellen Messwerte nicht. Beispieldaten nur per Checkbox ohne Wetterentität, sichtbar als DEMO markiert.
+
+Raster 2:4, Standard 262×130 px mit 1 px Abstand: Höhe = 2 × Rasterzelle + 2 × Abstand, Breite = 4 × Rasterzelle + 6 × Abstand. Mindestzelle 64 px; Eingabe, Ziehen und Abstandsänderungen halten die Ausrichtung zu Einzelwidgets. LED-Farbe beziehungsweise LCD-Segment-/Hintergrundfarbe, Gehäuse, Schrauben, Rahmen und vier Gehäuse-Ecken. Ein/Aus über Entität oder optionalen oberen Eingang `display-power`, mit Eingangsvorrang; fehlender oder unbekannter Eingang lässt das Display dunkel. Kein Wert-Eingang/-Ausgang oder Schreibbefehl. Alle dreizehn bisherigen Definitionen bleiben unverändert.
+
+English: Original pixel weather icons, prominent temperature, humidity and wind in LCD/LED mode. A weather entity supplies current data; optional daily forecasts add rain probability and low/high values for the current browser-local day. Individual sensor overrides take priority, retaining HA units without conversion. Missing readings show dashes; forecast failures leave current readings available. Explicit unbound demo mode is marked DEMO. Standard 262×130 px at 1 px spacing, matching a 2-row/4-column bank of 64 px cells including gaps. Proportional sizing, adjustable colors and housing options. Entity/top input power with port priority and dark unknown state; read-only with no data output. Thirteen existing definitions remain unchanged.
 
 ## Industrie-Uhr / Industrial clock (Studio 0.1.244+)
 

@@ -2,6 +2,10 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Industrie-Wetter – LCD / LED": "Industrial weather – LCD / LED", "Wetterdisplay": "Weather display", "Wetterentität": "Weather entity",
+"Regenwahrscheinlichkeit anzeigen": "Show rain probability", "Tagesminimum/-maximum anzeigen": "Show daily low/high", "Beispieldaten ohne Wetterentität": "Example data without a weather entity",
+"Zusätzliche Sensoren": "Additional sensors", "Temperatur: Sensor": "Temperature sensor", "Luftfeuchtigkeit: Sensor": "Humidity sensor", "Windgeschwindigkeit: Sensor": "Wind speed sensor",
+"Regenwahrscheinlichkeit: Sensor": "Rain probability sensor", "Tagesminimum: Sensor": "Daily low sensor", "Tagesmaximum: Sensor": "Daily high sensor",
 "Industrie-Uhr – Nixie / LED / LCD": "Industrial clock – Nixie / LED / LCD", "Uhr": "Clock", "Anzeigeart": "Display type", "Nixieröhre": "Nixie tube",
 "Sekunden anzeigen": "Show seconds", "Doppelpunkte blinken": "Blink colons", "Zeitzone": "Time zone", "Browser-Ortszeit": "Browser local time",
 "LED-Leuchtfarbe": "LED glow color", "LCD-Segmentfarbe": "LCD segment color", "LCD-Hintergrundfarbe": "LCD background color",

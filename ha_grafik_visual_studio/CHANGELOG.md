@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.245
+
+- Industriepaket 0.9.0 ergänzt ein Wetterdisplay mit LCD-/LED-Optik, Pixelsymbolen, großer Temperatur sowie Luftfeuchtigkeit und Wind. Optionale Regenwahrscheinlichkeit und Tagesminimum/-maximum kommen aus der täglichen HA-Vorhersage. Einzelne Sensoren können jeden Messwert überschreiben; Einheiten bleiben erhalten, fehlende Werte erscheinen als Striche.
+- Raster 2:4 mit 262×130 px bei 1 px Abstand, proportionale Größenänderung einschließlich Zwischenräumen. Ein/Aus-Entität oder oberer Eingang, Gehäuse, Schrauben, Rahmen und vier Gehäuse-Ecken. Beispieldaten sind ausdrücklich zuschaltbar und als DEMO markiert. Alle dreizehn bestehenden Definitionen bleiben unverändert.
+- Industrial 0.9.0 adds a read-only LCD/LED weather panel with original pixel icons, weather entity data, optional daily forecast details and sensor overrides. Grid-aware sizing, units, missing values, power control and housing options are supported.
+
 ## 0.1.244
 
 - Industriepaket 0.8.0 ergänzt eine Uhr mit Nixieröhren-, LED- oder LCD-Ansicht, HH:MM/HH:MM:SS, optional blinkenden Doppelpunkten und Browser-Ortszeit/UTC/Europe-Berlin. LED-/LCD-Farben sind einstellbar. Nixie nutzt eigene Glas-, Gitter- und Drahtgrafiken; keine fremde Vorlage wird verteilt.
