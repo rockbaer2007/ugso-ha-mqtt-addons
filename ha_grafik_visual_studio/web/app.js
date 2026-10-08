@@ -5195,10 +5195,6 @@ $("#runtime-pages-menu-toggle").addEventListener("click", () => togglePagesMenu(
 $("#pages-close").addEventListener("click", () => togglePagesMenu(false));
 $("#page-add").addEventListener("click", addPage);
 $("#palette-search").addEventListener("input", renderPalette);
-$("#widgets-menu").addEventListener("click", () => {
-  const panel = $("#palette-panel"); panel.hidden = !panel.hidden;
-  $("#widgets-menu").setAttribute("aria-pressed", String(!panel.hidden));
-});
 const SETTINGS_TABS = ["general", "widgets", "tools"];
 
 async function fetchWidgetPackages() {

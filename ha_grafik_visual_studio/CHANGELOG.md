@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.272
+
+- Überflüssige Widgets-Schaltfläche aus der oberen Leiste entfernt. Die Widget-Palette bleibt direkt erreichbar.
+- Removed the redundant Widgets toolbar button. The widget palette remains directly accessible.
+
 ## 0.1.271
 
 - Alle Widgets erhalten zentral die vollständigen CSS-Gruppen. Industrial bleibt bei seinen eigenen Gehäuse-Einstellungen. Fehlende optionale Gruppen werden deaktiviert ergänzt; vorhandene Gruppen und deren Einstellungen bleiben erhalten.
