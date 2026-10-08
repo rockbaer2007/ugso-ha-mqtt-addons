@@ -570,6 +570,7 @@ let savedProjectSnapshot = "";
 let observedProjectSnapshot = "";
 let projectChangedAt = 0;
 let projectSavePending = false;
+let projectSaveCompletion = Promise.resolve();
 
 function rawProjectSnapshot() { return state.project ? JSON.stringify(state.project) : ""; }
 
@@ -616,6 +617,8 @@ function redoWidgetChange() {
 async function saveProject(automatic = false) {
   if (projectSavePending) return false;
   projectSavePending = true;
+  let completeSave;
+  projectSaveCompletion = new Promise(resolve => { completeSave = resolve; });
   const projectId = state.projectId;
   try {
     const snapshot = JSON.stringify(projectForSave(state.project));
@@ -631,6 +634,7 @@ async function saveProject(automatic = false) {
     return false;
   } finally {
     projectSavePending = false;
+    completeSave();
   }
 }
 
@@ -5112,6 +5116,25 @@ for (const [id, key, max] of [["page-width", "width", 7680], ["page-height", "he
 $("#save").addEventListener("click", async () => {
   await saveProject();
 });
+for (const id of ["runtime-link", "runtime-tab-link"]) {
+  const link = $("#" + id);
+  const openRuntime = async event => {
+    if (runtimeMode || (event.type === "auxclick" && event.button !== 1)) return;
+    event.preventDefault();
+    const newTab = link.target === "_blank" || event.button === 1 || event.ctrlKey || event.metaKey || event.shiftKey;
+    const target = link.href;
+    // Reserve the tab during the user gesture, before awaiting the save request.
+    const preview = newTab ? window.open("about:blank", "_blank") : null;
+    if (preview) preview.opener = null;
+    await projectSaveCompletion;
+    if (!await saveProject()) { preview?.close(); return; }
+    if (preview) preview.location.replace(target);
+    else if (!newTab) location.assign(target);
+    else $("#status").textContent = uiText("Runtime-Tab konnte nicht geöffnet werden. Bitte Pop-ups erlauben.");
+  };
+  link.addEventListener("click", openRuntime);
+  link.addEventListener("auxclick", openRuntime);
+}
 $("#pages-menu-toggle").addEventListener("click", () => togglePagesMenu());
 $("#runtime-pages-menu-toggle").addEventListener("click", () => togglePagesMenu());
 $("#pages-close").addEventListener("click", () => togglePagesMenu(false));

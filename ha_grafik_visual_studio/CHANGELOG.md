@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.264
+
+- Runtime und Neuer Tab speichern vor dem Öffnen das aktuelle Projekt, einschließlich zuletzt verschobener Widgets. Laufende Speichervorgänge werden abgewartet; bei Speicherfehler bleibt der Editor geöffnet. Allgemeiner Fix für alle Widgetsets.
+- Runtime navigation and new-tab preview save the current project before loading, including recent widget positions. Pending saves are awaited; failed saves keep the editor open. Applies to every widget set.
+
 ## 0.1.263
 
 - Automatische DE/EN-Sprache gemäß Studio für Status, Hinweise und Drucker-Eigenschaften; keine eigene Widget-Sprachauswahl. Benutzertexte und Entitätsmeldungen bleiben unverändert.

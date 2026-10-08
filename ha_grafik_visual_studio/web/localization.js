@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Runtime-Tab konnte nicht geöffnet werden. Bitte Pop-ups erlauben.": "Could not open runtime tab. Please allow pop-ups.",
 "Drucker": "Printer", "Druckermodell": "Printer model", "Multifunktionsdrucker": "Multifunction printer", "Tintenstrahldrucker": "Inkjet printer", "Bürodrucker": "Office printer",
 "Status: Entität": "Status entity", "Statusmeldung anzeigen": "Show status message", "Statusmeldung: Entität (optional)": "Status message entity (optional)", "Leistung: Entität (optional)": "Power entity (optional)", "Seitenzähler: Entität (optional)": "Page counter entity (optional)",
 "Patronen": "Cartridges", "Anzahl der Patronen": "Number of cartridges", "Tintenpatrone": "Ink cartridge", "Warnschwelle (%)": "Warning threshold (%)", "Füllstand: Entität (%)": "Supply level entity (%)", "Druckstatus: Farbe": "Printing status color",
