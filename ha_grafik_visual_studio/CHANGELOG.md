@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.266
+
+- Neues externes Widgetset UGSo Calendar +, inspiriert von xBourner/calendar-card-plus (MIT): automatische Erkennung aller Home-Assistant-Kalender, standardmäßig alle eingeblendet, individuelle Farben und Hintergründe, Tages-/Kalendergruppen, kompakte oder ausgeklappte Terminliste und Detail-Popup. Automatische DE/EN-Sprache; Termine werden ausschließlich gelesen.
+- New external UGSo Calendar + set: automatic discovery of all Home Assistant calendars, enabled by default, per-calendar colors/backgrounds, day/calendar grouping, compact/expanded event list and details popup. Automatic DE/EN language; read-only calendar access. Original project attribution is included.
+
 ## 0.1.265
 
 - Autosave erholt sich nach Speicherfehlern: Wiederholung nach fünf Sekunden statt dauerhaftem Anhalten bis zur nächsten Änderung. Speicheranfragen werden nach 15 Sekunden abgebrochen und geben die Speichersperre frei. Änderungen während einer laufenden Anfrage bleiben für die nächste Speicherung erhalten; manuelles Speichern wartet bei Bedarf auf die laufende Anfrage. Zwei-Sekunden-Autosave mit Verschieben und Verbindungsfehlern im Browser geprüft.

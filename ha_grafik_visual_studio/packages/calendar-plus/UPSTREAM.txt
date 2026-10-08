@@ -1,0 +1,3 @@
+Inspiration: https://github.com/xBourner/calendar-card-plus
+Upstream license: MIT, Copyright (c) 2026 xBourner
+Independent Studio implementation by rockbaer2007; no original code or assets copied.

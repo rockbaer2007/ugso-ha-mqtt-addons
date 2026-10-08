@@ -65,6 +65,7 @@ import { isIndustrialSection, sectionRows, sectionSize, renderIndustrialSection 
 import { isIndustrialHeating, heatingSize, heatingBindings, heatingReturnGroup, renderIndustrialHeating } from "./industrial-heating.js";
 import { isEnergy, energyBindings, renderEnergy } from "./energy.js";
 import { isPrinter, cartridgeCount, printerBindings, printerWebUrl, renderPrinter } from "./printer.js";
+import { isCalendarPlus, calendarPlusCatalog, calendarPlusKey, calendarPlusSources, renderCalendarPlus, cleanupCalendarPlus } from "./calendar-plus.js";
 import { applyIndustrialBackground, INDUSTRIAL_BACKGROUND } from "./industrial-housing.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
@@ -233,6 +234,16 @@ function widgetPropertyGroups(widget) {
     { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
   ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
+  if (isCalendarPlus(widget)) {
+    groups = groups.map(group => ({...group, required:true, fields:group.fields.map(field => field.key==='calendarTheme'?{...field,options:[{value:'auto',label:'Auto'},{value:'dark',label:'Dunkel'},{value:'light',label:'Hell'}]}:field)}));
+    groups.splice(groups.length - 1, 0, {id:'calendar-plus-sources',label:'Meine Kalender',required:true,hint:'Alle Kalender werden automatisch erkannt und sind zunächst eingeblendet.',fields:[]}, ...calendarPlusSources(widget, calendarPlusCatalog(), true).map(source => ({
+      id: `calendar-plus-${source.entityId}`, label: source.label, hint: source.entityId,
+      masterKey: calendarPlusKey(source.entityId, 'Enabled'), defaultEnabled: true, fields: [
+        {key:calendarPlusKey(source.entityId,'Color'),label:'Farbe',type:'color',default:source.color},
+        {key:calendarPlusKey(source.entityId,'Background'),label:'Hintergrundfarbe',type:'color',default:'',optionalColor:true},
+      ],
+    })));
+  }
   if (isPrinter(widget)) {
     const labels = { mfp: "Multifunktionsdrucker", inkjet: "Tintenstrahldrucker", office: "Bürodrucker", ink: "Tintenpatrone", toner: "Toner" };
     groups = groups.map((group, index) => ({ ...group, id: propertyGroupKey(group, index + commonWidgetGroups.length + (index > 0 ? 1 : 0)) }))
@@ -2976,6 +2987,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     else child.remove();
   }
   cleanupEventCalendars();
+  cleanupCalendarPlus();
   const filterKey = filterPageKey(activePage);
   if (!pageFilters.has(filterKey)) pageFilters.set(filterKey, defaultFilters(activePage.widgets.find(widget => widget.type === "filter-dropdown") || {}));
   const selectedFilters = pageFilters.get(filterKey);
@@ -3080,6 +3092,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(renderSeparator(widget, document));
     } else if (isGauge(widget)) {
       content.append(renderGauge(widget, document, { states: state.entityStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
+    } else if (isCalendarPlus(widget)) {
+      content.style.padding = "0"; content.style.border = "0";
+      content.append(renderCalendarPlus(widget, document, {locale:document.documentElement.lang||"de",runtime:runtimeMode,key:`${dashboardSurfaceKey}:${widget.id}`,onCatalogChange:()=>{if(!runtimeMode)renderProperties();}}));
     } else if (isPrinter(widget)) {
       content.style.padding="0"; content.style.border="0";
       content.append(renderPrinter(widget, document, {states:state.entityStates, locale:document.documentElement.lang||"de", imageSource:safeUrl(widget.printerImageSrc,true), webSource:safeUrl(printerWebUrl(widget,state.entityStates))}));
@@ -4881,7 +4896,7 @@ function renderProperties() {
   }
   for (const [index, group] of groups.entries()) {
     const details = document.createElement("details"); details.className = "property-section";
-    const sectionKey = isPrinter(widget) ? `widget:${widget.id}:${propertyGroupKey(group,index)}` : `widget:${widget.id}:${group.label}:${index}`;
+    const sectionKey = isPrinter(widget) || isCalendarPlus(widget) ? `widget:${widget.id}:${propertyGroupKey(group,index)}` : `widget:${widget.id}:${group.label}:${index}`;
     details.open = state.expandedPropertySections.has(sectionKey);
     details.addEventListener("toggle", () => { if (details.open) state.expandedPropertySections.add(sectionKey); else state.expandedPropertySections.delete(sectionKey); });
     const summary = document.createElement("summary");
@@ -4925,6 +4940,11 @@ function renderProperties() {
       }
     });
     summary.append(enabled);
+    if (isCalendarPlus(widget) && group.masterKey) {
+      const toggle=document.createElement('button');toggle.type='button';toggle.textContent=uiText(enabled.checked?'Ausblenden':'Einblenden');
+      toggle.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();enabled.checked=!enabled.checked;enabled.dispatchEvent(new Event('change'));renderProperties();});
+      enabled.hidden=true;summary.append(toggle);
+    }
     const body = document.createElement("div"); body.className = "property-fields";
     let updateDockAll = null;
     if (group.id === "dock-points") {

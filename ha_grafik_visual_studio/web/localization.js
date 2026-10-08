@@ -2,6 +2,14 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Kalender +": "Calendar +", "Konfiguration": "Configuration", "Meine Kalender": "My calendars",
+"Vorschau (Tage)": "Lookahead (days)", "Maximale Termine": "Maximum events", "Ereignisse ausklappen": "Expand events",
+"Detail-Popup aktivieren": "Enable details popup", "Nach Tag gruppieren": "Group by day", "Nach Tag und Kalender gruppieren": "Group by day and calendar",
+"Zeige bevorstehende Ereignisse": "Show upcoming events", "Zeige leere Tage": "Show empty days", "Text & Sichtbarkeit": "Text & visibility",
+"Einblenden Kalender Name": "Show calendar name", "Einblenden Datum": "Show date", "Zeige Ort": "Show location", "Zeige Dauer": "Show duration",
+"Zeige Zeit": "Show time", "Zeige Wochentag": "Show weekday", "Monat und Wochentag tauschen": "Swap month and weekday",
+"Wochentag ausschreiben": "Full weekday name", "Zeige Trenner": "Show dividers", "Einblenden": "Show", "Ausblenden": "Hide",
+"Alle Kalender werden automatisch erkannt und sind zunächst eingeblendet.": "All calendars are discovered automatically and enabled by default.",
 "Speichern fehlgeschlagen – Zeitüberschreitung": "Save failed – request timed out",
 "Runtime-Tab konnte nicht geöffnet werden. Bitte Pop-ups erlauben.": "Could not open runtime tab. Please allow pop-ups.",
 "Drucker": "Printer", "Druckermodell": "Printer model", "Multifunktionsdrucker": "Multifunction printer", "Tintenstrahldrucker": "Inkjet printer", "Bürodrucker": "Office printer",

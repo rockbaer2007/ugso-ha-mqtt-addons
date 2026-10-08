@@ -169,7 +169,7 @@ def load_calendar_events(entity_ids, start, end):
         entries = source.get("events") if isinstance(source, dict) else None
         if not isinstance(entries, list):
             raise HomeAssistantAPIError(f"Keine Terminliste für {entity} verfügbar.")
-        calendars[entity] = [{key: value for key, value in item.items() if key in ("summary", "start", "end") and isinstance(value, str)} for item in entries if isinstance(item, dict)]
+        calendars[entity] = [{key: value for key, value in item.items() if key in ("summary", "start", "end", "location", "description") and isinstance(value, str)} for item in entries if isinstance(item, dict)]
     return calendars
 
 

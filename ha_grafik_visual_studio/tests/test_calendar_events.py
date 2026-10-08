@@ -4,7 +4,7 @@ from test_states import APP
 
 class CalendarEventsTests(unittest.TestCase):
     def test_read_command_batches_sources_and_strips_context(self):
-        result = {"context": {"secret": "hidden"}, "response": {"calendar.family": {"events": [{"summary": "Trip", "start": "2026-10-03", "end": "2026-10-04", "secret": "hidden"}]}}}
+        result = {"context": {"secret": "hidden"}, "response": {"calendar.family": {"events": [{"summary": "Trip", "start": "2026-10-03", "end": "2026-10-04", "location": "Station", "description": "Train trip", "secret": "hidden"}]}}}
         with patch.object(APP, "home_assistant_commands", return_value=[result]) as commands:
             events = APP.load_calendar_events(["calendar.family", "calendar.family"], "2026-10-01T00:00:00+02:00", "2026-11-01T00:00:00+01:00")
         command = commands.call_args[0][0][0]
@@ -12,6 +12,8 @@ class CalendarEventsTests(unittest.TestCase):
         self.assertTrue(command["return_response"])
         self.assertEqual(command["target"]["entity_id"], ["calendar.family"])
         self.assertNotIn("secret", events["calendar.family"][0])
+        self.assertEqual(events['calendar.family'][0]['location'], 'Station')
+        self.assertEqual(events['calendar.family'][0]['description'], 'Train trip')
 
     def test_invalid_sources_never_call_home_assistant(self):
         for sources in ([], ["input_text.events"], ["calendar.a"] * 21, ["calendar.a/b"]):
