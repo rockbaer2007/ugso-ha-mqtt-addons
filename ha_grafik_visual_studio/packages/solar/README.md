@@ -1,11 +1,12 @@
-# UGSo Solar 0.1.0
+# UGSo Solar 0.1.1
 
-Requires HA Grafik Visual Studio **0.1.276 or later**. Import `ugso.solar.wg` in the widget package manager.
+Requires HA Grafik Visual Studio **0.1.278 or later**. Import `ugso.solar.wg` in the widget package manager.
 
-Three original, brand-neutral SVG widgets: stack inverter head, one reusable battery module, and a smaller standalone inverter with cooling fins. Transparent graphics contain no brand names or embedded raster images.
+Four original, brand-neutral SVG widgets: stack inverter head, one reusable battery module, a smaller standalone inverter with cooling fins, and a solar panel with pole and base. Transparent graphics contain no brand names or embedded raster images.
 
 ## Deutsch
 
+- **Solarpanel mit Standfuß:** 320 × 288 px; Ausrichtung wie Vorlage oder horizontal gespiegelt. Leistung über Eingangsentität (W/kW) mit Entitätsauswahl. Ein abschaltbarer Ausgang, wahlweise am Standrohr über dem Fuß oder an der linken/rechten Widgetkante auf derselben Höhe. Bestehende SVG-Linien folgen der Position. Optionale Textanzeige ohne Rahmen; keine Gehäusekoppelpunkte. Proportionen bleiben beim Skalieren erhalten.
 - **Stapel-Kopfteil:** 256 × 64 px, Grafik mittig und unten bündig; Gehäusekoppelpunkt unten mittig. Linienpunkte links, rechts und oben.
 - **Batteriemodul:** 256 × 169 px, Grafik oben/unten bündig; Gehäusekoppelpunkte oben und unten mittig. Füge für einen Stapel 1–6 unabhängige Instanzen hinzu. Linienpunkte links/rechts.
 - **Wechselrichter Solo:** 144 × 103,3 px; sichtbares Gehäuse etwa ein Drittel schmaler als das Kopfteil. Linienpunkte auf allen vier Seiten.
@@ -16,6 +17,8 @@ Three original, brand-neutral SVG widgets: stack inverter head, one reusable bat
 - Gehäusekoppelpunkte sind unabhängig von Linienpunkten und standardmäßig aktiv mit Abstand 0. Batterie und Solo behalten beim Skalieren ihre Proportionen. Standard-CSS-Gruppen sind vorhanden, optionale zunächst aus.
 
 ## English
+
+The solar panel (320 × 288 px) has a pole and base, original or horizontally mirrored orientation, a selectable power entity (W/kW), and one optional output. Choose the pole just above the base or the left/right widget edge at the same height. Existing SVG lines follow position changes. The plain-text reading can be hidden independently; there are no housing snap points. Resizing preserves proportions.
 
 The head is bottom-aligned; each reusable battery touches its top and bottom widget edges. Center housing snap points join 1–6 battery instances without gaps. Each instance has its own three entities. The solo inverter is visually about one-third narrower than the head.
 

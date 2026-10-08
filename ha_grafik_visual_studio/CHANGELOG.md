@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.278
+
+- UGSo Solar 0.1.1: Solarpanel als eigene SVG-Grafik mit Standrohr und Fuß, wie Vorlage oder gespiegelt. Eingangsentität für Leistung mit Entitätsauswahl; optionaler Textwert ohne Rahmen. Ein Ausgang für SVG-Linien, wahlweise am Standrohr knapp über dem Fuß oder an der linken/rechten Widgetkante. Bestehende Verbindungen folgen der umgestellten Position.
+- UGSo Solar adds a solar panel with pole and base, a power entity and an output selectable at the pole or either widget edge. Connected SVG lines follow position changes. Includes standard CSS settings.
+
 ## 0.1.277
 
 - SVG Linie: Wert-Koppelpunkte bleiben frei verschiebbar, beeinflussen aber weder Pfadart noch Linienverlauf. Nur Zwischen- und Sammelpunkte bilden Knicke. Verbundene Anzeigeleitungen folgen der neuen Punktposition nach dem Verschieben.

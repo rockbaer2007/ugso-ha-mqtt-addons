@@ -78,3 +78,56 @@ test('Solar installs, aligns a six-battery stack, packs unframed values, routes 
     assert.deepEqual(errors,[]);
   } finally {await browser.close();}
 });
+
+test('panel variants keep one output attached when switching pipe and edge positions',{skip:!url},async()=>{
+  const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE||'playwright');
+  const browser=await chromium.launch({headless:true,channel:process.env.STUDIO_THEME_BROWSER||undefined});
+  try {
+    const page=await browser.newPage({viewport:{width:1300,height:900}}),errors=[];
+    page.on('pageerror',error=>errors.push(error.message));
+    await page.addInitScript(()=>localStorage.setItem('ha_grafik_visual_studio_language','de'));
+    const install=await page.request.post(new URL('api/widget-packages',url).href,{headers:{'X-Package-Name':'ugso.solar.wg'},data:await readFile(new URL('../packages/solar/ugso.solar.wg',import.meta.url))});
+    assert.ok(install.ok()||/bereits installiert/.test(await install.text()));
+    const catalog=await(await page.request.get(new URL('api/widget-packages',url).href)).json();
+    const defaults=catalog.packages.find(p=>p.id==='ugso.solar').widgets.find(w=>w.type==='ugso.solar/panel').defaults;
+    const fixture=await(await page.request.get(new URL('api/project',url).href)).json();
+    fixture.currentPageId=fixture.pages[0].id;fixture.settings={...fixture.settings,autoSave:false};
+    Object.assign(fixture.pages[0].page,{width:1000,height:600});
+    fixture.pages[0].widgets=[
+      {...defaults,id:'panel',type:'ugso.solar/panel',x:60,y:70,powerEntityId:'sensor.pv'},
+      {...defaults,id:'mirror',type:'ugso.solar/panel',x:550,y:70,solarPanelOrientation:'mirrored',powerEntityId:'sensor.pv'},
+      {id:'number',type:'sensor',x:430,y:440,width:160,height:80,dataInputEnabled:true,digits:0,factor:1},
+      {id:'panel-line',type:'svg-connection',startWidgetId:'panel',startAnchor:'right-center',endWidgetId:'number',endAnchor:'left-center'}
+    ];
+    let saved;
+    await page.route('**/api/project*',route=>{if(route.request().method()==='PUT')saved=route.request().postDataJSON();return route.fulfill({json:saved||fixture});});
+    await page.route('**/api/entities*',route=>route.fulfill({json:{entities:[{entity_id:'sensor.pv',name:'Solarleistung'}],states:[]}}));
+    await page.route('**/api/states*',route=>route.fulfill({json:{states:[{entity_id:'sensor.pv',state:'1.25',attributes:{unit_of_measurement:'kW'}}]}}));
+    await page.goto(url);await page.waitForFunction(()=>document.querySelector('#number .value')?.textContent.replace(/\D/g,'').includes('1250'));
+    assert.equal(await page.locator('#panel .solar-graphic').evaluate(img=>img.complete&&img.naturalWidth>0),true);
+    assert.equal(await page.locator('#mirror .solar-graphic').evaluate(img=>getComputedStyle(img).transform),'matrix(-1, 0, 0, 1, 0, 0)');
+    await page.locator('#panel').click({position:{x:40,y:40}});
+    await page.locator('#properties details').evaluateAll(nodes=>nodes.forEach(node=>node.open=true));
+    assert.ok(await page.locator('#properties [data-property-key="powerEntityId"]').locator('..').locator('button').count());
+    assert.equal(await page.locator('#panel .output-dock-point').count(),1);
+    assert.equal(await page.locator('#panel .housing-snap-point').count(),0);
+    let previousPath;
+    for(const [position,x] of [['pipe',.5],['left',0],['right',1],['pipe',.5]]) {
+      await page.locator('#properties [data-property-key="solarOutputPosition"]').selectOption(position);
+      const box=await page.locator('#panel').boundingBox(),port=await page.locator('#panel .output-dock-point').boundingBox();
+      assert.ok(Math.abs(port.x+port.width/2-(box.x+box.width*x))<1);
+      assert.ok(Math.abs(port.y+port.height/2-(box.y+box.height*.89))<1);
+      const path=await page.locator('#panel-line .connection-base').getAttribute('d');
+      if(previousPath)assert.notEqual(path,previousPath);previousPath=path;
+    }
+    await page.locator('#properties [data-property-key="showPower"]').uncheck();
+    assert.match((await page.locator('#number .value').textContent()).replace(/\D/g,''),/1250/);
+    await page.locator('#properties [data-property-key="showPower"]').check();
+    await page.locator('#save').click();await page.waitForFunction(()=>document.querySelector('#status')?.textContent.includes('gespeichert'));
+    assert.equal(saved.pages[0].widgets[3].startAnchor,'right-center');
+    await page.goto(new URL('runtime',url).href);await page.waitForFunction(()=>document.querySelector('#number .value')?.textContent.replace(/\D/g,'').includes('1250'));
+    assert.equal(await page.locator('.widget-dock-point').count(),0);
+    if(process.env.STUDIO_SOLAR_ARTIFACTS){await mkdir(process.env.STUDIO_SOLAR_ARTIFACTS,{recursive:true});await page.locator('#stage').screenshot({path:process.env.STUDIO_SOLAR_ARTIFACTS+'/solar-panels.png'});}
+    assert.deepEqual(errors,[]);
+  } finally {await browser.close();}
+});

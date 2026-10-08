@@ -7,7 +7,7 @@ import {widgetValuePacket} from '../web/dataflow.js';
 const battery=(id,x,y)=>({id,type:'ugso.solar/battery',x,y,width:256,height:169,housingSnapEnabled:true,housingTopCenter:true,housingBottomCenter:true,housingSpace:0});
 
 test('Solar shapes keep proportions and expose only the intended signal and housing sides',()=>{
-  for(const [kind,count,housing] of [['head',3,1],['battery',2,2],['solo',4,0]]) {
+  for(const [kind,count,housing] of [['head',3,1],['battery',2,2],['solo',4,0],['panel',1,0]]) {
     const widget={type:'ugso.solar/'+kind,width:256,height:64};
     assert.equal(solarAnchors(widget).length,count);
     assert.equal(housingPoints(widget).length,housing);
@@ -16,6 +16,21 @@ test('Solar shapes keep proportions and expose only the intended signal and hous
     if(kind==='head')assert.equal(size.height,64);
     if(kind!=='head')assert.ok(Math.abs(solarSize({...widget,height:size.height},'height').width-256)<.2);
   }
+});
+
+test('panel has one entity-powered output whose stable anchor moves between pipe and widget edges',()=>{
+  const panel={id:'panel',type:'ugso.solar/panel',width:320,height:288,powerEntityId:'sensor.pv',showPower:false};
+  const states={'sensor.pv':{state:'2.4',attributes:{unit_of_measurement:'kW'}}};
+  for(const [position,x] of [['pipe',.5],['left',0],['right',1]]) {
+    panel.solarOutputPosition=position;
+    assert.deepEqual(solarAnchors(panel),[['right-center','Ausgang',x,.89]]);
+    assert.equal(dockPointActive(panel,'right-center','start'),true);
+    assert.equal(dockPointActive(panel,'right-center','end'),false);
+    assert.equal(widgetValuePacket(panel,[panel],states,new Set(),'right-center').value,2400);
+  }
+  assert.equal(solarSize(panel).height,288);
+  panel.solarOutputEnabled=false;
+  assert.equal(dockPointActive(panel,'right-center','start'),false);
 });
 
 test('six independent batteries snap flush on center points with no corner coupling',()=>{
