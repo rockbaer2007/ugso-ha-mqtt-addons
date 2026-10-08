@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.277
+
+- SVG Linie: Wert-Koppelpunkte bleiben frei verschiebbar, beeinflussen aber weder Pfadart noch Linienverlauf. Nur Zwischen- und Sammelpunkte bilden Knicke. Verbundene Anzeigeleitungen folgen der neuen Punktposition nach dem Verschieben.
+- SVG Line value output points can move freely without changing the main line path or routing mode. Connected display branches follow the moved point.
+
 ## 0.1.276
 
 - UGSo Solar 0.1.0: eigenständiges Set mit Stapel-Kopfteil, einzeln wiederverwendbarem Akkupack und kleinerem Solo-Wechselrichter. Originale neutrale SVGs ohne Logos. Mittige Gehäusekoppelpunkte erlauben bündige Stapel aus 1–6 Akkus; Kopfteilgrafik unten bündig, Batterie oben/unten bündig.

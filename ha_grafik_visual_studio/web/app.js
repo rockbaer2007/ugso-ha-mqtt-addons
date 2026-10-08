@@ -2320,7 +2320,7 @@ function preserveDockedConnectionPositions(target, widgets) {
 
 function connectionRoute(widget, widgets, reverse = false) {
   const start = connectionEndpoint(widget, "start", widgets); const end = connectionEndpoint(widget, "end", widgets);
-  const intermediate = Array.isArray(widget.connectionPoints) ? widget.connectionPoints.map(point => ({ x: Number(point.x) || 0, y: Number(point.y) || 0, point })) : [];
+  const intermediate = Array.isArray(widget.connectionPoints) ? widget.connectionPoints.filter(point=>point.valueOutputEnabled!==true).map(point => ({ x: Number(point.x) || 0, y: Number(point.y) || 0, point })) : [];
   let points;
   if (widget.pathMode === "orthogonal" && !intermediate.length) {
     const middleX = start.x + (end.x - start.x) / 2;
@@ -2372,12 +2372,14 @@ function openConnectionPointDialog(widget, widgets, point) {
     const collectorEnabled = kind === "collector", valueOutputEnabled = kind === "value";
     const points = widget.connectionPoints ??= [];
     const count = points.length + 1;
-    const insertAt = Math.min(points.length, closestConnectionSegmentIndex(widget, widgets, point));
+    const route = connectionRoute(widget, widgets);
+    const nextPoint = route[closestConnectionSegmentIndex(widget, widgets, point) + 1]?.point;
+    const insertAt = !valueOutputEnabled && nextPoint ? points.indexOf(nextPoint) : points.length;
     points.splice(insertAt, 0, {
       id: createRandomId(), name: `${uiText(valueOutputEnabled ? "Wert-Koppelpunkt" : collectorEnabled ? "Sammelpunkt" : "Zwischenpunkt")} ${count}`,
       x: point.x, y: point.y, collectorEnabled, valueOutputEnabled, display: collectorEnabled ? "distributor" : "point",
     });
-    widget.pathMode = "zigzag";
+    if (!valueOutputEnabled) widget.pathMode = "zigzag";
     dialog.close(); render();
   });
   cancel.addEventListener("click", () => dialog.close());
@@ -2515,7 +2517,7 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
       marker.classList.add("is-editable"); let dragging = false;
       marker.addEventListener("pointerdown", event => { event.preventDefault(); event.stopPropagation(); dragging = true; marker.setPointerCapture(event.pointerId); });
       marker.addEventListener("pointermove", event => { if (!dragging) return; const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height; point.x = Math.round((event.clientX - bounds.left) * scaleX); point.y = Math.round((event.clientY - bounds.top) * scaleY); positionMarker(); update(); });
-      marker.addEventListener("pointerup", () => { dragging = false; renderProperties(); });
+      marker.addEventListener("pointerup", () => { dragging = false; renderStage(); renderProperties(); });
     }
   }
   if (selected) {

@@ -15,7 +15,7 @@ test('create value point, connect Number, configure color and hide only the bran
     fixture.settings={...fixture.settings,autoSave:false};
     Object.assign(fixture.pages[0].page,{width:1000,height:700});
     fixture.pages[0].widgets=[
-      {id:'parent',type:'svg-connection',startX:80,startY:160,endX:500,endY:160,animationSource:'number',animationNumberEntityId:'sensor.flow',baseColor:'#abcdef'},
+      {id:'parent',type:'svg-connection',pathMode:'curve',startX:80,startY:160,endX:500,endY:160,animationSource:'number',animationNumberEntityId:'sensor.flow',baseColor:'#abcdef'},
       {id:'number',type:'sensor',x:600,y:330,width:180,height:100,dataInputEnabled:true,digits:1,factor:1},
       {id:'branch',type:'svg-connection',startX:80,startY:380,endWidgetId:'number',endAnchor:'left-center'}
     ];
@@ -25,6 +25,7 @@ test('create value point, connect Number, configure color and hide only the bran
     await page.route('**/api/states*',route=>route.fulfill({json:{states:[{entity_id:'sensor.flow',state:'42.5',attributes:{unit_of_measurement:'L/min'}}]}}));
     await page.goto(url);
     const hit=page.locator('#parent .connection-hit-target');
+    const originalPath=await page.locator('#parent .connection-base').getAttribute('d');
     await hit.click({force:true});
     await hit.click({force:true});
     const dialog=page.locator('.connection-point-type-dialog');
@@ -34,6 +35,7 @@ test('create value point, connect Number, configure color and hide only the bran
     const marker=page.locator('#parent polygon.is-value-output');
     assert.equal(await marker.count(),1);
     assert.equal((await marker.getAttribute('points')).split(' ').length,8);
+    assert.equal(await page.locator('#parent .connection-base').getAttribute('d'),originalPath,'creating a value point keeps the original curve');
     await page.locator('#branch .connection-hit-target').click({force:true});
     await page.locator('#properties details').evaluateAll(nodes=>nodes.forEach(node=>node.open=true));
     const start=page.locator('#properties [data-property-key="startCollector"]');
@@ -42,6 +44,14 @@ test('create value point, connect Number, configure color and hide only the bran
     assert.equal(await page.locator('#properties [data-property-key="endCollector"] option').count(),1,'value output is not an input');
     await start.selectOption(tap);
     await page.waitForFunction(()=>/42[.,]5/.test(document.querySelector('#number .value')?.textContent||''));
+    const branchPath=await page.locator('#branch .connection-base').getAttribute('d');
+    // Select the parent through its line, then move the output off the main path.
+    await hit.click({position:{x:60,y:1},force:true});
+    const before=await marker.boundingBox();
+    await page.mouse.move(before.x+before.width/2,before.y+before.height/2);
+    await page.mouse.down();await page.mouse.move(before.x+before.width/2+55,before.y+before.height/2+45,{steps:5});await page.mouse.up();
+    assert.equal(await page.locator('#parent .connection-base').getAttribute('d'),originalPath,'moving a value point never bends the parent');
+    assert.notEqual(await page.locator('#branch .connection-base').getAttribute('d'),branchPath,'display branch follows the moved point');
     await page.locator('#settings-menu').click();
     await page.locator('#settings-value-point-color').fill('#bb2288');
     await page.locator('#settings-save').click();
@@ -51,6 +61,7 @@ test('create value point, connect Number, configure color and hide only the bran
     await page.waitForFunction(()=>document.querySelector('#status')?.textContent.includes('gespeichert'));
     assert.equal(saved.settings.valuePointColor,'#bb2288');
     assert.equal(saved.pages[0].widgets.find(widget=>widget.id==='parent').connectionPoints[0].valueOutputEnabled,true);
+    assert.equal(saved.pages[0].widgets.find(widget=>widget.id==='parent').pathMode,'curve');
     await page.reload();
     await page.waitForFunction(()=>{const node=document.querySelector('polygon.is-value-output');return node&&getComputedStyle(node).fill==='rgb(187, 34, 136)';});
     assert.equal(await marker.evaluate(node=>getComputedStyle(node).fill),'rgb(187, 34, 136)');
