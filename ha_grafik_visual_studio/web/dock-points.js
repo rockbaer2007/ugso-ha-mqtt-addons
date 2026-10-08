@@ -7,6 +7,7 @@ import { isIndustrialClock, clockPortActive } from "./industrial-clock.js";
 import { isIndustrialWeather, weatherPortActive } from "./industrial-weather.js";
 import { isIndustrialSection } from "./industrial-section.js";
 import { isIndustrialHeating } from "./industrial-heating.js";
+import { isSolar, solarPortActive } from "./solar.js";
 
 export function dockPointKey(anchorId) {
   return `dock_${anchorId.replaceAll("-", "_")}`;
@@ -25,6 +26,7 @@ export function setInputAnchor(widget, widgets, anchor) {
   for(const line of widgets)if(line.type==='svg-connection' && line.endWidgetId===widget.id && (line.endAnchor || 'left-center')===previous)line.endAnchor=anchor;
 }
 export function hasSimpleOutput(widget) {
+  if (isSolar(widget)) return false;
   if (isIndustrialHeating(widget)) return false;
   return !!widget && !isIndustrialSwitch(widget) && !isIndustrialLcd(widget) && !isIndustrialOdometer(widget) && !isIndustrialSegment(widget) && !isIndustrialClock(widget) && !isIndustrialWeather(widget) && !isIndustrialSection(widget) && !isSeparator(widget) && !["svg-connection", "linebox", "linebox-math", "value-converter"].includes(widget.type);
 }
@@ -41,6 +43,7 @@ export function setOutputAnchor(widget, widgets, anchor) {
   }
 }
 export function dockPointActive(widget, anchor, side = "") {
+  if (isSolar(widget)) return solarPortActive(widget, anchor, side);
   if (isIndustrialHeating(widget)) return false;
   if (isIndustrialSwitch(widget)) return switchPortActive(widget, anchor, side);
   if (isIndustrialLcd(widget)) return lcdPortActive(widget, anchor, side);

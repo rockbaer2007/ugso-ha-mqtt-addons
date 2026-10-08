@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.276
+
+- UGSo Solar 0.1.0: eigenständiges Set mit Stapel-Kopfteil, einzeln wiederverwendbarem Akkupack und kleinerem Solo-Wechselrichter. Originale neutrale SVGs ohne Logos. Mittige Gehäusekoppelpunkte erlauben bündige Stapel aus 1–6 Akkus; Kopfteilgrafik unten bündig, Batterie oben/unten bündig.
+- Drei Entitätswerte (W, °C, SoC %) mit einzeln ausblendbaren Textanzeigen ohne Rahmen ab der ersten Drittellinie. Optionale einstellbare Richtungssymbole für Leistung. Pro Linienpunkt frei wählbar: Aus/Eingang/Ausgang und Wertzuordnung. Datenfluss bleibt bei ausgeblendeter Anzeige aktiv. Alle Standard-CSS-Gruppen vorhanden.
+- UGSo Solar adds stack inverter head, reusable battery and a smaller standalone inverter, center housing snap points, three independently hidden plain-text readings, configurable power direction symbols and selectable line input/output roles. Includes all standard CSS groups.
+
 ## 0.1.275
 
 - SVG Linie: dritter Punkttyp Wert-Koppelpunkt, im Editor als Oktagon mit eigener Einstellungsfarbe. Gibt den Linienwert an Number/String weiter; Punkt und abgehende Verbindung bleiben in der Runtime unsichtbar. Reiner Ausgang, unabhängig von normalen Sammelpunkten.

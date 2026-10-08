@@ -1,0 +1,26 @@
+# UGSo Solar 0.1.0
+
+Requires HA Grafik Visual Studio **0.1.276 or later**. Import `ugso.solar.wg` in the widget package manager.
+
+Three original, brand-neutral SVG widgets: stack inverter head, one reusable battery module, and a smaller standalone inverter with cooling fins. Transparent graphics contain no brand names or embedded raster images.
+
+## Deutsch
+
+- **Stapel-Kopfteil:** 256 × 64 px, Grafik mittig und unten bündig; Gehäusekoppelpunkt unten mittig. Linienpunkte links, rechts und oben.
+- **Batteriemodul:** 256 × 169 px, Grafik oben/unten bündig; Gehäusekoppelpunkte oben und unten mittig. Füge für einen Stapel 1–6 unabhängige Instanzen hinzu. Linienpunkte links/rechts.
+- **Wechselrichter Solo:** 144 × 103,3 px; sichtbares Gehäuse etwa ein Drittel schmaler als das Kopfteil. Linienpunkte auf allen vier Seiten.
+- Pro Linienpunkt: Aus / Eingang / Ausgang und Leistung / Temperatur / SoC wählen. Ein Eingang ersetzt für diesen Wert die Entität; höchstens ein Eingang pro Wert. Ausgänge liefern auch bei ausgeblendeter Anzeige Daten. Keine Schreibzugriffe auf HA-Entitäten.
+- Drei Entitätsauswahlen: Leistung in W (kW wird umgerechnet), Temperatur in °C, Ladezustand in %. Vorschauwerte gelten nur ohne eingetragene Entität. Unbekannte Zustände erscheinen als Strich.
+- Batterieanzeigen stehen als Text ohne Rahmen ab der ersten Drittellinie untereinander. Jede Anzeige ist einzeln abschaltbar; Entität und Datenfluss bleiben aktiv.
+- Optionales Richtungssymbol: positive Leistung = hinein oder heraus, Symbole frei eingebbar. Bei 0 und unbekannten Werten kein Richtungssymbol.
+- Gehäusekoppelpunkte sind unabhängig von Linienpunkten und standardmäßig aktiv mit Abstand 0. Batterie und Solo behalten beim Skalieren ihre Proportionen. Standard-CSS-Gruppen sind vorhanden, optionale zunächst aus.
+
+## English
+
+The head is bottom-aligned; each reusable battery touches its top and bottom widget edges. Center housing snap points join 1–6 battery instances without gaps. Each instance has its own three entities. The solo inverter is visually about one-third narrower than the head.
+
+Each line port can be disabled, used as an input, or used as an output, with power, temperature or SoC assigned independently. One input per channel replaces that channel's entity; outputs remain active when its display is hidden. All operations are read-only. Battery values appear as plain text below the first-third seam, packed vertically without blank rows. Direction symbols and positive power interpretation are configurable. All standard CSS groups are available.
+
+## License / artwork
+
+MIT. Original UGSo vector artwork inspired by generic inverter and battery enclosures. No vendor integration, trademark or logo is included; Home Assistant entities are selected independently of manufacturer.

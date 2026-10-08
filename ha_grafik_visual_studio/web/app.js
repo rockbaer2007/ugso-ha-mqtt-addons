@@ -55,7 +55,7 @@ import { renderDropdown } from "./dropdown.js";
 import { renderPackageChart, chartBindings } from "./package-chart.js";
 import { isGauge, renderGauge, gaugeEntityIds } from "./gauges.js";
 import { industrialModel, industrialQuantize, renderIndustrialGauge } from "./industrial-gauge.js";
-import { housingPoints, housingActive, housingSnapGroupFor, isIndustrial, snapHousing } from "./housing-snap.js";
+import { housingPoints, housingActive, housingSnapGroupFor, isIndustrial, isHousingWidget, snapHousing } from "./housing-snap.js";
 import { squareLocked, industrialSize, industrialResize } from "./industrial-size.js";
 import { isIndustrialSwitch, switchCount, switchSize, switchAnchors, switchBindings, renderIndustrialSwitch } from "./industrial-switch.js";
 import { isIndustrialLcd, lcdSize, lcdDimensions, lcdAnchors, lcdBindings, renderIndustrialLcd } from "./industrial-lcd.js";
@@ -68,6 +68,7 @@ import { isIndustrialSection, sectionRows, sectionSize, renderIndustrialSection 
 import { isIndustrialHeating, heatingSize, heatingBindings, heatingReturnGroup, renderIndustrialHeating } from "./industrial-heating.js";
 import { isEnergy, energyBindings, renderEnergy } from "./energy.js";
 import { isPrinter, cartridgeCount, printerSupplyStyle, printerBindings, printerWebUrl, renderPrinter } from "./printer.js";
+import { isSolar, solarAnchors, solarPortRole, solarBindings, solarSize, solarPortGroups, renderSolar } from "./solar.js";
 import { isCalendarPlus, calendarPlusCatalog, calendarPlusKey, calendarPlusSources, renderCalendarPlus, cleanupCalendarPlus } from "./calendar-plus.js";
 import { applyIndustrialBackground, INDUSTRIAL_BACKGROUND } from "./industrial-housing.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
@@ -198,7 +199,7 @@ const CONNECTION_ANCHORS = [
   ["bottom-quarter", "Unten 1/4", 0.25, 1], ["bottom-center", "Unten Mitte", 0.5, 1], ["bottom-three-quarter", "Unten 3/4", 0.75, 1],
 ];
 const CONNECTION_ANCHOR_IDS = CONNECTION_ANCHORS.map(([id]) => id);
-const widgetAnchors = widget => isIndustrialSection(widget) || isIndustrialHeating(widget) ? [] : isIndustrialWeather(widget) ? weatherAnchors : isIndustrialClock(widget) ? clockAnchors : isIndustrialSegment(widget) ? segmentAnchors : isIndustrialOdometer(widget) ? odometerAnchors : isIndustrialLcd(widget) ? lcdAnchors : isIndustrialSwitch(widget) ? switchAnchors(widget) : widget.type === "linebox-math" ? MATH_ANCHORS : CONNECTION_ANCHORS;
+const widgetAnchors = widget => isSolar(widget) ? solarAnchors(widget) : isIndustrialSection(widget) || isIndustrialHeating(widget) ? [] : isIndustrialWeather(widget) ? weatherAnchors : isIndustrialClock(widget) ? clockAnchors : isIndustrialSegment(widget) ? segmentAnchors : isIndustrialOdometer(widget) ? odometerAnchors : isIndustrialLcd(widget) ? lcdAnchors : isIndustrialSwitch(widget) ? switchAnchors(widget) : widget.type === "linebox-math" ? MATH_ANCHORS : CONNECTION_ANCHORS;
 const widgetAnchorIds = widget => widgetAnchors(widget).map(([id]) => id);
 const connectionAnchorGroup = { id: "dock-points", label: "Andockpunkte", masterKey: "dockPointsEnabled", defaultEnabled: false, hint: "Der Haken in der Überschrift aktiviert den Bereich. Alle Punkte sind zunächst aus und lassen sich gemeinsam oder einzeln einschalten.", fields: [
   ...CONNECTION_ANCHORS.map(([id, label]) => ({ label, key: dockPointKey(id), type: "checkbox", default: false })),
@@ -225,7 +226,7 @@ const commonWidgetGroups = [
 
 function widgetPropertyGroups(widget) {
   let styleEntryGroups = [];
-  if (isIndustrial(widget)) styleEntryGroups.push(housingSnapGroupFor(widget));
+  if (isHousingWidget(widget)) styleEntryGroups.push(housingSnapGroupFor(widget));
   if (widget.type === "interactive-table") styleEntryGroups = tableEntryGroups(widget);
   if (widget.type === "dropdown") styleEntryGroups = dropdownEntryGroups(widget);
   if (isGauge(widget)) styleEntryGroups = gaugeEntryGroups(widget);
@@ -237,7 +238,8 @@ function widgetPropertyGroups(widget) {
     { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
   ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
-  groups=completeCssGroups(groups,cssGroups(),{industrial:getWidgetDefinition(widget.type).render?.kind?.startsWith('industrial-')===true,card:isCalendarPlus(widget)||isPrinter(widget)});
+  groups=completeCssGroups(groups,cssGroups(),{industrial:getWidgetDefinition(widget.type).render?.kind?.startsWith('industrial-')===true,card:isCalendarPlus(widget)||isPrinter(widget)||isSolar(widget)});
+  if(isSolar(widget))groups=groups.map(group=>({...group,fields:group.fields.map(field=>field.key==='positivePowerDirection'?{...field,options:[{value:'in',label:'Energie hinein'},{value:'out',label:'Energie heraus'}]}:field)}));
   if (isCalendarPlus(widget)) {
     if (!groups.some(group=>group.fields.some(field=>field.key==='calendarIconSize'))) groups=groups.map(group=>group.label==='Farben'?{...group,fields:[...group.fields,{key:'calendarIconSize',label:'Kalenderkachelgröße',type:'select',options:['small','medium','large'],default:'medium'}]}:group);
     groups = groups.map(group=>({...group,id:group.label==='Farben'?'calendar-plus-tile-settings':group.id,label:group.label==='Farben'?'Kacheleinstellungen':group.label,fields:[...group.fields.map(field=>field.key==='calendarIconSize'?{...field,options:[{value:'tiny',label:'Sehr klein (36 × 44 px)'},{value:'small',label:'Klein (44 × 52 px)'},{value:'medium',label:'Mittel (58 × 64 px)'},{value:'large',label:'Groß (76 × 82 px)'}]}:field),...(group.label==='Konfiguration'?[{key:'calendarAutoRefresh',label:'Automatisch aktualisieren (60 s)',type:'checkbox',default:true}]:[])]}));
@@ -337,6 +339,7 @@ function widgetPropertyGroups(widget) {
     });
     return [...commonWidgetGroups, dockGroup, { id: "linebox-ports", label: "Anschlüsse", hint: "Nur aktive Andockpunkte erhalten eine Rolle. Eingänge werden mit Vorzeichen summiert; Ausgänge geben den Wert nur bei aktiviertem Haken weiter.", fields: portFields }, ...groups];
   }
+  if(isSolar(widget))return [...commonWidgetGroups,...groups,...solarPortGroups(widget),...styleEntryGroups];
   return widget.type === "svg-connection" || isSeparator(widget) || isCalendarPlus(widget) ? [...commonWidgetGroups, ...groups] : [...commonWidgetGroups, ...groups, connectionAnchorGroup, ...(widget.type === "value-converter" ? [] : [dataGroup]), ...styleEntryGroups];
 }
 
@@ -783,6 +786,7 @@ function editorLiveEntityIds() {
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...(isEnergy(widget) ? energyBindings(widget) : []),
     ...(isPrinter(widget) ? printerBindings(widget) : []),
+    ...(isSolar(widget) ? solarBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
     ...gaugeEntityIds(widget),
     ...(isIndustrialSwitch(widget) ? switchBindings(widget) : []),
@@ -838,6 +842,7 @@ function runtimeLiveEntityIds() {
   // Energy sources must also be polled on the read-only runtime surface.
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...(isPrinter(widget) ? printerBindings(widget) : []),
+    ...(isSolar(widget) ? solarBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
     ...gaugeEntityIds(widget),
     ...(isIndustrialSwitch(widget) ? switchBindings(widget) : []),
@@ -3017,6 +3022,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   if (!pageFilters.has(filterKey)) pageFilters.set(filterKey, defaultFilters(activePage.widgets.find(widget => widget.type === "filter-dropdown") || {}));
   const selectedFilters = pageFilters.get(filterKey);
   for (const widget of activePage.widgets) {
+    if (isSolar(widget)) Object.assign(widget,solarSize(widget));
     if (isIndustrialSwitch(widget)) Object.assign(widget,switchSize(widget));
     if (isIndustrialLcd(widget)) Object.assign(widget,lcdSize(widget));
     if (isIndustrialLinear(widget)) Object.assign(widget,linearSize(widget));
@@ -3127,6 +3133,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (isCalendarPlus(widget)) {
       element.classList.add('calendar-plus-host');element.dataset.dashboardSurface=dashboardSurfaceKey;element.dataset.calendarSignature=calendarSignature;
       const card=renderCalendarPlus(widget, document, {locale:document.documentElement.lang||"de",runtime:runtimeMode,key:`${dashboardSurfaceKey}:${widget.id}`,onCatalogChange:()=>{if(!runtimeMode)renderProperties();}});
+      applyCardCss(widget,content,card,element);content.append(card);
+    } else if (isSolar(widget)) {
+      const card=renderSolar(widget,document,{states:state.entityStates,locale:document.documentElement.lang||'de',input:anchor=>widgetInputPacket({...widget,dataInputAnchor:anchor},activePage.widgets,state.entityStates)});
       applyCardCss(widget,content,card,element);content.append(card);
     } else if (isPrinter(widget)) {
       const card=renderPrinter(widget, document, {states:state.entityStates, locale:document.documentElement.lang||"de", imageSource:safeUrl(widget.printerImageSrc,true), webSource:safeUrl(printerWebUrl(widget,state.entityStates))});
@@ -3922,16 +3931,16 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       tab.append(select, edit); element.append(tab);
     }
     const hasConnections = activePage.widgets.some(item => item.type === "svg-connection" && item.visible !== false);
-    if (!runtimeMode && isIndustrial(widget) && (selected || widget.housingSnapAlwaysVisible)) for (const [id, label, x, y] of housingPoints(widget)) {
+    if (!runtimeMode && isHousingWidget(widget) && (selected || widget.housingSnapAlwaysVisible)) for (const [id, label, x, y] of housingPoints(widget)) {
       if (!housingActive(widget, id)) continue;
       const point = document.createElement("span"); point.className = "housing-snap-point"; point.dataset.housingCorner = id; point.style.left = `${x * 100}%`; point.style.top = `${y * 100}%`; point.title = `Gehäuse-Snappunkt: ${label}`; element.append(point);
     }
-    const showDockPoints = !runtimeMode && !isConnection && !isSeparator(widget) && (isIndustrialSection(widget) || isIndustrialWeather(widget) || isIndustrialClock(widget) || isIndustrialSegment(widget) || isIndustrialOdometer(widget) || isIndustrialLcd(widget) || isIndustrialSwitch(widget) || widget.dockPointsEnabled === true || widget.dataOutputEnabled === true || hasSimpleInput(widget) && widget.dataInputEnabled === true) && (selected || widget.dockAlwaysVisible || hasConnections);
+    const showDockPoints = !runtimeMode && !isConnection && !isSeparator(widget) && (isSolar(widget) || isIndustrialSection(widget) || isIndustrialWeather(widget) || isIndustrialClock(widget) || isIndustrialSegment(widget) || isIndustrialOdometer(widget) || isIndustrialLcd(widget) || isIndustrialSwitch(widget) || widget.dockPointsEnabled === true || widget.dataOutputEnabled === true || hasSimpleInput(widget) && widget.dataInputEnabled === true) && (selected || widget.dockAlwaysVisible || hasConnections);
     if (showDockPoints) {
       for (const [anchorId, label, x, y] of widgetAnchors(widget)) {
         if (!dockPointActive(widget, anchorId)) continue;
         const marker = document.createElement("span"); marker.className = "widget-dock-point"; marker.style.left = `${x * 100}%`; marker.style.top = `${y * 100}%`; marker.dataset.anchorId = anchorId; marker.dataset.widgetId = widget.id;
-        const isOutput = isIndustrialSwitch(widget) && anchorId.startsWith("output-") || outputDockActive(widget, anchorId) || widget.type === "value-converter" && anchorId === (widget.dataOutputAnchor || "right-center") || widget.type === "linebox" && lineboxPortRole(widget, anchorId) === "output" || widget.type === "linebox-math" && mathPortRole(widget, anchorId) === "output";
+        const isOutput = isSolar(widget) && solarPortRole(widget,anchorId)==='output' || isIndustrialSwitch(widget) && anchorId.startsWith("output-") || outputDockActive(widget, anchorId) || widget.type === "value-converter" && anchorId === (widget.dataOutputAnchor || "right-center") || widget.type === "linebox" && lineboxPortRole(widget, anchorId) === "output" || widget.type === "linebox-math" && mathPortRole(widget, anchorId) === "output";
         if (isOutput) { marker.classList.add("output-dock-point"); marker.style.setProperty("--dock-color", "var(--output-dock-color)"); }
         if(inputDockActive(widget,anchorId))marker.classList.add('input-dock-point');
         const occupied = activePage.widgets.filter(item => item.type === "svg-connection" && [[item.startWidgetId, item.startAnchor], [item.endWidgetId, item.endAnchor]].some(([id, anchor]) => id === widget.id && (anchor || "right-center") === anchorId)).length;
@@ -4121,7 +4130,7 @@ function makeDraggable(element, widget) {
         continue;
       }
       member.x = position.x; member.y = position.y;
-      if (origin.members.length === 1 && isIndustrial(member)) {
+      if (origin.members.length === 1 && isHousingWidget(member)) {
         const snap = snapHousing(member, currentPage().widgets, 8 / scale);
         if (snap) { member.x = snap.x; member.y = snap.y; }
       }
@@ -4172,6 +4181,12 @@ function makeResizable(element, handle, widget) {
     if (direction.includes("s")) widget.height = Math.max(16, Math.round(origin.height + dy));
     if (direction.includes("w")) { widget.width = Math.max(16, Math.round(origin.width - dx)); widget.x = Math.max(0, Math.round(origin.left + origin.width - widget.width)); }
     if (direction.includes("n")) { widget.height = Math.max(16, Math.round(origin.height - dy)); widget.y = Math.max(0, Math.round(origin.top + origin.height - widget.height)); }
+    if(isSolar(widget)) {
+      Object.assign(widget,solarSize(widget,/[ew]/.test(direction)?'width':'height'));
+      if(direction.includes('w'))widget.x=Math.max(0,origin.left+origin.width-widget.width);
+      if(direction.includes('n'))widget.y=Math.max(0,origin.top+origin.height-widget.height);
+      syncIndustrialSizeFields(widget);
+    }
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") {
       Object.assign(widget, industrialResize(origin, direction, dx, dy, squareLocked(widget)));
       syncIndustrialSizeFields(widget);
@@ -4719,6 +4734,7 @@ function field(descriptor, widget) {
     const previousClockMode=isIndustrialClock(widget)?clockMode(widget):null;
     const previousSectionCell=isIndustrialSection(widget)?(widget.height-2*Math.max(0,Math.min(64,Number(widget.housingSpace??1)||0))*(sectionRows(widget)-1))/sectionRows(widget):null;
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    if(isSolar(widget)&&['width','height'].includes(descriptor.key)){Object.assign(widget,solarSize(widget,descriptor.key));syncIndustrialSizeFields(widget,descriptor.key);}
     if (isPrinter(widget) && descriptor.key === "printerImageSrc" && input.value.trim()) {
       widget.printerImageMode = "custom";
       const mode = $("#properties [data-property-key='printerImageMode']"); if (mode) mode.value = "custom";
@@ -4787,6 +4803,7 @@ function field(descriptor, widget) {
     if (renderKind === "heating-params" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (isEnergy(widget) && (/EntityId$/.test(descriptor.key) || descriptor.key === "pricesAttribute")) void refreshEditorLiveStates();
     if (isPrinter(widget) && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || descriptor.key === "cartridgeCount")) void refreshEditorLiveStates();
+    if (isSolar(widget) && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (renderKind === "technic-window" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (renderKind === "technic-switch" && descriptor.key === "entityId") void refreshEditorLiveStates();
     if (renderKind === "technic-light" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
@@ -4812,6 +4829,7 @@ function field(descriptor, widget) {
     }
   };
   input.addEventListener(input.tagName === "SELECT" ? "change" : "input", update);
+  if (isSolar(widget) && ['width','height'].includes(descriptor.key)) input.addEventListener('change',()=>{input.value=String(widget[descriptor.key]);syncIndustrialSizeFields(widget);});
   if (isIndustrialLinear(widget) && ["entityId","dataInputEnabled"].includes(descriptor.key)) input.addEventListener("change", renderProperties);
   if (["industrial-gauge","industrial-switch","industrial-lcd","industrial-linear","industrial-odometer","industrial-segment","industrial-clock","industrial-weather","industrial-section","industrial-heating"].includes(getWidgetDefinition(widget.type).render?.kind) && ["width", "height"].includes(descriptor.key)) input.addEventListener("change", () => { input.value = String(widget[descriptor.key]); syncIndustrialSizeFields(widget); });
   if (descriptor.refreshProperties && input.tagName === "TEXTAREA") input.addEventListener("change", renderProperties);

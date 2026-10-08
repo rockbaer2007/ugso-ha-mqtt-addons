@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="264" viewBox="0 4 400 264" role="img" aria-labelledby="title desc">
+  <title id="title">Akkupack</title>
+  <desc id="desc">Markenunabhängiges stapelbares Akkumodul mit silbernem Metallgehäuse, schwarzem oberen Anschlussband, türkisen Seitenteilen und transparentem Hintergrund.</desc>
+  <defs>
+    <linearGradient id="bat-metal" x1="0" x2="1">
+      <stop stop-color="#606a6e"/><stop offset=".025" stop-color="#edf0f1"/>
+      <stop offset=".07" stop-color="#aeb5b8"/><stop offset=".48" stop-color="#d2d7da"/>
+      <stop offset=".88" stop-color="#a2a9ad"/><stop offset=".97" stop-color="#e0e5e7"/>
+      <stop offset="1" stop-color="#576166"/>
+    </linearGradient>
+    <linearGradient id="bat-shade" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#000" stop-opacity=".11"/><stop offset=".12" stop-color="#fff" stop-opacity=".03"/>
+      <stop offset=".65" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".1"/>
+    </linearGradient>
+    <linearGradient id="bat-black" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#596164"/><stop offset=".35" stop-color="#293134"/><stop offset="1" stop-color="#101719"/>
+    </linearGradient>
+    <linearGradient id="bat-accent" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#9af6ee"/><stop offset=".18" stop-color="var(--accent, #21c8bd)"/>
+      <stop offset=".78" stop-color="#13a99e"/><stop offset="1" stop-color="#086b62"/>
+    </linearGradient>
+  </defs>
+  <path d="M8 8H40V34H8Q4 34 4 30V12Q4 8 8 8Z" fill="url(#bat-accent)" stroke="#397b76" stroke-width="1.5"/>
+  <path d="M360 8H392Q396 8 396 12V30Q396 34 392 34H360Z" fill="url(#bat-accent)" stroke="#397b76" stroke-width="1.5"/>
+  <path d="M7 11V30H34M393 11V30H366" fill="none" stroke="#d0fff9" stroke-opacity=".75"/>
+  <path d="M36 15H364V260Q364 266 358 267H42Q36 266 36 260Z" fill="url(#bat-metal)" stroke="#465155" stroke-width="2"/>
+  <path d="M43 20H357V260H43Z" fill="url(#bat-shade)"/>
+  <path d="M42 23V257M358 23V257" stroke="#f0f3f4" stroke-opacity=".65"/>
+  <path d="M45 87H355" stroke="#7e888d" stroke-width="2"/>
+  <path d="M45 89H355" stroke="#edf0f2" stroke-opacity=".55"/>
+  <path d="M44 194H356" stroke="#f3f5f6" stroke-opacity=".65" stroke-width="1.5"/>
+  <path d="M43 260H357" stroke="#6c777d"/>
+  <path d="M44 263H356" stroke="#e5e9eb" stroke-opacity=".65"/>
+  <rect x="20" y="5" width="360" height="14" rx="2" fill="url(#bat-black)" stroke="#11191b"/>
+  <path d="M24 7H376" stroke="#b2babd" stroke-opacity=".5"/>
+  <path d="M24 19H376" stroke="#0c1315" stroke-width="2"/>
+</svg>

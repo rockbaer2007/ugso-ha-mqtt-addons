@@ -3,6 +3,7 @@ import { stringEntityValue } from "./string-display.js";
 import { numericWidgetInput, numericConnectionValue, lineboxInputSum, lineboxPortRole } from "./linebox.js";
 import { mathBoxResult, mathPortRole } from "./linebox-math.js";
 import { isIndustrialSwitch, switchChannel } from "./industrial-switch.js";
+import { isSolar, solarPortKey, solarReading } from "./solar.js";
 
 export const CONVERSIONS = [
   ["number-text", "Zahl → Text"], ["text-number", "Text → Zahl"],
@@ -63,6 +64,10 @@ export function widgetValuePacket(widget, widgets, states, visited = new Set(), 
   if (visited.has(`data:${widget.id}`)) return fail("Rückkopplung im Datenfluss");
   const next = new Set(visited).add(`data:${widget.id}`);
   if (!activeDock(widget, anchor, "start") || hasSimpleOutput(widget) && widget.dataOutputEnabled === false) return fail("Ausgangs-Dockpunkt ist nicht aktiv");
+  if (isSolar(widget)) {
+    const result=solarReading(widget,widget[solarPortKey(anchor,'value')]||'power',states,inputAnchor=>widgetInputPacket({...widget,dataInputAnchor:inputAnchor},widgets,states,next));
+    return result.error ? fail(result.error) : packet(result.value,result.unit);
+  }
   if (isIndustrialSwitch(widget)) {
     const n=Number(anchor.split("-")[1]);
     const input=widget[`inputDock${n}`]===true ? widgetInputPacket({...widget,dataInputAnchor:`input-${n}`},widgets,states,next).value : undefined;
@@ -100,7 +105,7 @@ export function lineValuePacket(line, widgets, states, visited = new Set()) {
     if (!parent?.connectionPoints?.some(point => point.id === pointId && (point.collectorEnabled === true || point.valueOutputEnabled === true))) return fail("Sammelpunkt ist nicht aktiv");
     const point = parent.connectionPoints.find(point => point.id === pointId);
     const source = widgets.find(widget => widget.id === parent.startWidgetId);
-    if (point.valueOutputEnabled && parent.dataFlowVariant !== "value-connection" && !parent.startCollector && source?.dataOutputEnabled === undefined && source?.type !== "value-converter") {
+    if (point.valueOutputEnabled && parent.dataFlowVariant !== "value-connection" && !parent.startCollector && !isSolar(source) && source?.dataOutputEnabled === undefined && source?.type !== "value-converter") {
       const value = numericConnectionValue(parent, widgets, states, next);
       const entity = parent.animationSource === "number" ? parent.animationNumberEntityId : source?.entityId;
       return value === null ? fail("Quelle hat keinen verfügbaren Wert") : packet(value, states[entity]?.attributes?.unit_of_measurement || source?.unit || "");

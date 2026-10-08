@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="396" height="284" viewBox="2 3 396 284" role="img" aria-labelledby="title desc">
+  <title id="title">Wechselrichter mit Kühlrippen</title>
+  <desc id="desc">Neutrales silbernes Wechselrichtergehäuse mit senkrechten Kühlrippen und unbeschriftetem mittleren Feld, ohne Montagehalter und mit transparentem Hintergrund.</desc>
+  <defs>
+    <linearGradient id="rib-body" x1="0" x2="1">
+      <stop stop-color="#717674"/><stop offset=".025" stop-color="#e1e3df"/>
+      <stop offset=".12" stop-color="#b8bcb8"/><stop offset=".48" stop-color="#cdd0ca"/>
+      <stop offset=".9" stop-color="#b1b5af"/><stop offset=".975" stop-color="#dadcd6"/>
+      <stop offset="1" stop-color="#676d67"/>
+    </linearGradient>
+    <linearGradient id="rib-profile" x1="0" x2="1">
+      <stop stop-color="#767e77"/><stop offset=".22" stop-color="#a5ada4"/>
+      <stop offset=".48" stop-color="#e3e6de"/><stop offset=".68" stop-color="#c7cdc2"/>
+      <stop offset=".9" stop-color="#949e91"/><stop offset="1" stop-color="#737e70"/>
+    </linearGradient>
+    <linearGradient id="rib-edge" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#f1f2eb"/><stop offset=".08" stop-color="#c9cdc3"/>
+      <stop offset=".88" stop-color="#969e92"/><stop offset="1" stop-color="#646f61"/>
+    </linearGradient>
+    <linearGradient id="rib-plate" x1="0" x2="1">
+      <stop stop-color="#c5c8c0"/><stop offset=".18" stop-color="#b0b6aa"/>
+      <stop offset=".65" stop-color="#565e53"/><stop offset="1" stop-color="#454e43"/>
+    </linearGradient>
+    <pattern id="rib-pattern" width="14" height="290" patternUnits="userSpaceOnUse">
+      <rect x="3" y="4" width="8" height="282" rx="3.5" fill="url(#rib-profile)"/>
+      <path d="M6 8V281" stroke="#eff1e9" stroke-opacity=".38"/>
+    </pattern>
+    <clipPath id="rib-clip"><rect x="10" y="4" width="380" height="282" rx="13"/></clipPath>
+  </defs>
+  <rect x="2" y="3" width="396" height="284" rx="17" fill="url(#rib-body)" stroke="#6d766b" stroke-width="2"/>
+  <rect x="5" y="5" width="390" height="279" rx="14" fill="none" stroke="url(#rib-edge)" stroke-width="3"/>
+  <rect x="10" y="4" width="380" height="282" fill="url(#rib-pattern)" clip-path="url(#rib-clip)"/>
+  <path d="M16 7H384" stroke="#eff1e9" stroke-opacity=".65" stroke-width="1.5"/>
+  <path d="M16 283H384" stroke="#5e6a5a" stroke-opacity=".6" stroke-width="1.5"/>
+  <path d="M109 156H291Q303 156 304 169L307 199Q307 213 292 214H108Q93 213 93 199L96 169Q97 156 109 156Z" fill="#b6bdb0" stroke="#727e69" stroke-width="1.5"/>
+  <path d="M110 161H290Q299 161 299 171L302 199Q302 209 291 209H109Q98 209 98 199L101 171Q101 161 110 161Z" fill="url(#rib-plate)" stroke="#e2e6da" stroke-width="1.5"/>
+  <path d="M111 164H288" stroke="#edf0e7" stroke-opacity=".5"/>
+</svg>
