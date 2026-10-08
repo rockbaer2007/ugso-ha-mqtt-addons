@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.268
+
+- Calendar +: „Farben“ heißt „Kacheleinstellungen“. Vierte Kachelgröße „Sehr klein“ mit 36 × 44 px und weiterhin mindestens 12/24 px Text. Automatische Aktualisierung (60 s) abschaltbar; beim Runtime-Seitenaufruf werden Kalender und Termine frisch geladen. Andere Live-Widgets bauen den unveränderten Kalender nicht mehr neu auf; Popup und Scrollposition bleiben erhalten.
+- Calendar + adds extra-small tiles and optional automatic refresh. Runtime page entry fetches fresh data; unrelated live updates preserve the calendar DOM, popup and scroll position.
+
 ## 0.1.267
 
 - Kalender ohne Datenfluss- und Anschluss-Einstellungen. / Calendar properties omit data-flow and connection settings.

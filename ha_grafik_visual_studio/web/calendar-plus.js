@@ -102,7 +102,7 @@ export function renderCalendarPlus(widget,doc,{locale='de',runtime=false,key=wid
   const root=doc.createElement('section');root.className='calendar-plus';root.dataset.theme=['dark','light'].includes(widget.calendarTheme)?widget.calendarTheme:'auto';
   root.style.setProperty('--cp-accent',widget.calendarAccent||'#e85b64');
   root.style.setProperty('--cp-font-size',`${Math.min(24,Math.max(10,Number(widget.calendarFontSize)||14))}px`);
-  const iconSize={small:[44,52,12,24],medium:[58,64,13,30],large:[76,82,15,40]}[widget.calendarIconSize]||[58,64,13,30];
+  const iconSize={tiny:[36,44,12,24],small:[44,52,12,24],medium:[58,64,13,30],large:[76,82,15,40]}[widget.calendarIconSize]||[58,64,13,30];
   ['width','height','month','day'].forEach((name,index)=>root.style.setProperty(`--cp-icon-${name}`,`${iconSize[index]}px`));
   if(widget.showDivider===false)root.classList.add('no-dividers');
   const node=(tag,cls,text)=>{const el=doc.createElement(tag);el.className=cls;if(text!=null)el.textContent=text;return el;};
@@ -156,7 +156,9 @@ export function renderCalendarPlus(widget,doc,{locale='de',runtime=false,key=wid
         for(const {date,event} of entries){const day=calendarIso(date);if(grouped&&day!==lastDay){target.append(node('h4','cp-group',new Intl.DateTimeFormat(locale,{dateStyle:'full'}).format(date)));lastSource='';}if(event){if(grouped&&widget.groupByCalendar&&event.source.entityId!==lastSource)target.append(node('div','cp-group-source',event.source.label));target.append(row(event,full));lastSource=event.source.entityId;}else target.append(node('div','cp-empty-day',lang.empty));lastDay=day;}
       };
       if(widget.groupByCalendar)events.sort((a,b)=>calendarIso(a.start).localeCompare(calendarIso(b.start))||a.source.label.localeCompare(b.source.label)||a.start-b.start);
+      const listScroll=list.scrollTop,detailScroll=details.scrollTop;
       populate(list,events.slice(0,limit),false);populate(details,events.slice(0,100),true);
+      list.scrollTop=listScroll;details.scrollTop=detailScroll;
       notice.textContent=events.length?'':lang.empty;
       footer.hidden=!runtime||widget.popupEnabled===false||!events.length;footer.textContent=`${lang.all} (${Math.min(events.length,100)})`;
       if(openViews.has(key)&&!dialog.open&&runtime)dialog.showModal();
@@ -165,6 +167,6 @@ export function renderCalendarPlus(widget,doc,{locale='de',runtime=false,key=wid
     } finally {loading=false;refresh.disabled=false;}
   };
   refresh.onclick=event=>{event.stopPropagation();void update(true);};
-  queueMicrotask(()=>{if(root.isConnected){void update();const timer=setInterval(()=>{if(!doc.hidden&&root.isConnected)void update();},60000);controllers.set(root,timer);}});
+  queueMicrotask(()=>{if(root.isConnected){void update(runtime);if(widget.calendarAutoRefresh!==false){const timer=setInterval(()=>{if(!doc.hidden&&root.isConnected)void update(true);},60000);controllers.set(root,timer);}}});
   return root;
 }

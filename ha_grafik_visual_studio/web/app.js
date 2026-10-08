@@ -236,7 +236,7 @@ function widgetPropertyGroups(widget) {
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
   if (isCalendarPlus(widget)) {
     if (!groups.some(group=>group.fields.some(field=>field.key==='calendarIconSize'))) groups=groups.map(group=>group.label==='Farben'?{...group,fields:[...group.fields,{key:'calendarIconSize',label:'Kalenderkachelgröße',type:'select',options:['small','medium','large'],default:'medium'}]}:group);
-    groups = groups.map(group=>({...group,fields:group.fields.map(field=>field.key==='calendarIconSize'?{...field,options:[{value:'small',label:'Klein (44 × 52 px)'},{value:'medium',label:'Mittel (58 × 64 px)'},{value:'large',label:'Groß (76 × 82 px)'}]}:field)}));
+    groups = groups.map(group=>({...group,id:group.label==='Farben'?'calendar-plus-tile-settings':group.id,label:group.label==='Farben'?'Kacheleinstellungen':group.label,fields:[...group.fields.map(field=>field.key==='calendarIconSize'?{...field,options:[{value:'tiny',label:'Sehr klein (36 × 44 px)'},{value:'small',label:'Klein (44 × 52 px)'},{value:'medium',label:'Mittel (58 × 64 px)'},{value:'large',label:'Groß (76 × 82 px)'}]}:field),...(group.label==='Konfiguration'?[{key:'calendarAutoRefresh',label:'Automatisch aktualisieren (60 s)',type:'checkbox',default:true}]:[])]}));
     groups = groups.map(group => ({...group, required:true, fields:group.fields.map(field => field.key==='calendarTheme'?{...field,options:[{value:'auto',label:'Auto'},{value:'dark',label:'Dunkel'},{value:'light',label:'Hell'}]}:field)}));
     groups.splice(groups.length - 1, 0, {id:'calendar-plus-sources',label:'Meine Kalender',required:true,hint:'Alle Kalender werden automatisch erkannt und sind zunächst eingeblendet.',fields:[]}, ...calendarPlusSources(widget, calendarPlusCatalog(), true).map(source => ({
       id: `calendar-plus-${source.entityId}`, label: source.label, hint: source.entityId,
@@ -2984,6 +2984,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const dashboardSurfaceKey = `${state.projectId}:${activePage.id}`;
   const retainedDashboards = new Map();
   for (const child of [...stage.children]) {
+    if (runtimeMode && child.classList.contains('calendar-plus-host') && child.dataset.dashboardSurface === dashboardSurfaceKey) {retainedDashboards.set(child.dataset.widgetId,child);continue;}
     if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8") || child.classList.contains("widget-iframe") || child.classList.contains("widget-iframe-8") || child.classList.contains("widget-image") || child.classList.contains("widget-image-8")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
     else if (runtimeMode && (child.classList.contains("meteored-host") || child.classList.contains("notification-host")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
     else child.remove();
@@ -3032,6 +3033,12 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       const junction = renderLineboxJunction(widget, activePage.widgets);
       if (junction) stage.append(junction);
       continue;
+    }
+    const calendarSignature=isCalendarPlus(widget)?JSON.stringify([widget,document.documentElement.lang,visibilityDisabled]):'';
+    if (isCalendarPlus(widget) && retainedDashboards.has(widget.id)) {
+      const retained=retainedDashboards.get(widget.id);retainedDashboards.delete(widget.id);
+      if(retained.dataset.calendarSignature===calendarSignature)continue;
+      retained.remove();
     }
     const element = retainedDashboards.get(widget.id) || document.createElement("div");
     retainedDashboards.delete(widget.id);
@@ -3095,6 +3102,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (isGauge(widget)) {
       content.append(renderGauge(widget, document, { states: state.entityStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
     } else if (isCalendarPlus(widget)) {
+      element.classList.add('calendar-plus-host');element.dataset.dashboardSurface=dashboardSurfaceKey;element.dataset.calendarSignature=calendarSignature;
       content.style.padding = "0"; content.style.border = "0";
       content.append(renderCalendarPlus(widget, document, {locale:document.documentElement.lang||"de",runtime:runtimeMode,key:`${dashboardSurfaceKey}:${widget.id}`,onCatalogChange:()=>{if(!runtimeMode)renderProperties();}}));
     } else if (isPrinter(widget)) {
@@ -3954,6 +3962,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (element.parentElement !== stage) stage.append(element);
   }
   for (const element of retainedDashboards.values()) element.remove();
+  cleanupCalendarPlus();
   if (!embedded) syncTechnicControls(dashboardSurfaceKey, [...stage.querySelectorAll(".technic-window")].map(element => element.closest("[data-widget-id]")?.dataset.widgetId));
   if (!embedded) syncTechnicRoom(dashboardSurfaceKey, [...stage.querySelectorAll(".technic-room")].map(element => element.closest("[data-widget-id]")?.dataset.widgetId));
   if (!embedded) syncMaterialDialogs(dashboardSurfaceKey, [...stage.querySelectorAll(".material-dialog-trigger")].map(element => element.dataset.dialogWidgetId));

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {readFile,mkdir} from 'node:fs/promises';
 import {join} from 'node:path';
+import '../web/widget-sets/core.js';
+import {getWidgetDefinition} from '../web/widget-registry.js';
 const url=process.env.STUDIO_TEST_URL;
 
 test('Calendar + discovers all sources, persists visibility/colors, renders events and details in DE/EN', {skip:!url},async()=>{
@@ -19,9 +21,10 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
     const def=catalog.packages.find(p=>p.id==='ugso.calendar-plus').widgets[0];
     const fixture=await(await page.request.get(new URL('api/project',url).href)).json();
     fixture.pages[0].widgets=[{...def.defaults,type:def.type,id:'calendar-test',x:320,y:120,width:520,height:620,showCalendarName:true,showDate:true,showLocation:true}];
+    fixture.pages[0].widgets.push({...getWidgetDefinition('sensor').defaults,id:'live-sensor',type:'sensor',entityId:'sensor.calendar_test',x:900,y:80,width:160,height:100});
     fixture.currentPageId=fixture.pages[0].id;fixture.settings={...fixture.settings,autoSave:false};
     Object.assign(fixture.pages[0].page,{width:1350,height:950});
-    let saved,fail=false,empty=false,extra=false,discoverFail=false;
+    let saved,fail=false,empty=false,extra=false,discoverFail=false,sensorValue='1';
     const calendars={
       'calendar.family':[{summary:'Familienausflug',start:'2026-10-09',end:'2026-10-10',location:'Stadtpark',description:'Picknick mit der Familie'},{summary:'<img src=x onerror=alert(1)>',start:'2026-10-10',end:'2026-10-11'}],
       'calendar.garden':[{summary:'Garten bewässern',start:'2026-10-08T18:00:00+02:00',end:'2026-10-08T19:00:00+02:00'}],
@@ -30,7 +33,7 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
     };
     await page.route('**/api/entities*',route=>route.fulfill(discoverFail?{status:503,json:{error:'discovery failed'}}:{json:{entities:[{entity_id:'calendar.family',name:'Familie'},{entity_id:'calendar.garden',name:'Garten'},...(extra?[{entity_id:'calendar.new',name:'Neu'}]:[])],states:[{entity_id:'calendar.waste',state:'off',attributes:{friendly_name:'Müllabfuhr'}}]}}));
     await page.route('**/api/project*',route=>{if(route.request().method()==='PUT')saved=route.request().postDataJSON();return route.fulfill({json:saved||fixture});});
-    await page.route('**/api/states*',route=>route.fulfill({json:{states:[]}}));
+    await page.route('**/api/states*',route=>route.fulfill({json:{states:[{entity_id:'sensor.calendar_test',state:sensorValue,attributes:{}}]}}));
     await page.route('**/api/calendar-events*',route=>{
       const ids=new URL(route.request().url()).searchParams.getAll('entity_id');requests.push(ids);
       return route.fulfill(fail?{status:503,json:{error:'test unavailable'}}:{json:{calendars:Object.fromEntries(ids.map(id=>[id,empty?[]:calendars[id]||[]]))}});
@@ -47,13 +50,15 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
     assert.equal(await family.locator('summary input[type="checkbox"]').isChecked(),true);
     assert.equal(await family.locator('summary input[type="checkbox"]').isVisible(),true);
     assert.equal(await family.locator('summary button').count(),0);
-    for(const [size,width,height] of [['small',44,52],['medium',58,64],['large',76,82]]){
+    assert.equal(await page.locator('#properties summary').getByText('Kacheleinstellungen',{exact:true}).count(),1);
+    for(const [size,width,height] of [['tiny',36,44],['small',44,52],['medium',58,64],['large',76,82]]){
       await page.locator('#properties [data-property-key="calendarIconSize"]').selectOption(size);
       await page.waitForFunction(([width,height])=>{const tile=document.querySelector('#calendar-test .cp-date');return tile&&tile.offsetWidth===width&&tile.offsetHeight===height;},[width,height]);
       const fonts=await page.locator('#calendar-test .cp-date').first().evaluate(tile=>[parseFloat(getComputedStyle(tile.querySelector('.cp-month')).fontSize),parseFloat(getComputedStyle(tile.querySelector('.cp-day')).fontSize)]);
       assert.ok(fonts[0]>=12&&fonts[1]>=24,'smallest tile remains readable');
     }
     await page.locator('#properties [data-property-key="calendarIconSize"]').selectOption('small');
+    await page.locator('#properties [data-property-key="calendarAutoRefresh"]').uncheck();
     assert.equal(await page.locator('[data-property-key="calendarCount"]').count(),0,'no manual calendar count');
     assert.equal(await page.locator('#properties [data-property-key="dataOutputEnabled"], #properties [data-property-key="dataInputEnabled"]').count(),0,'calendar has no data-flow settings');
     await family.locator('[data-property-key="cpColor_calendar_family"]').fill('#ffe52b');
@@ -66,6 +71,7 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
     assert.equal(saved.pages[0].widgets[0].cpEnabled_calendar_garden,false);
     assert.equal(saved.pages[0].widgets[0].cpColor_calendar_family,'#ffe52b');
     assert.equal(saved.pages[0].widgets[0].calendarIconSize,'small');
+    assert.equal(saved.pages[0].widgets[0].calendarAutoRefresh,false);
     const projectUrl=new URL('api/project?project=calendar-plus-integration-test',url).href;
     assert.ok((await page.request.put(projectUrl,{data:saved})).ok(),'backend accepts dynamic per-calendar settings');
     const persisted=await(await page.request.get(projectUrl)).json();
@@ -73,6 +79,12 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
     assert.equal(persisted.pages[0].widgets[0].cpColor_calendar_family,'#ffe52b');
     await page.goto(new URL('runtime',url).href);
     await page.waitForFunction(()=>document.querySelectorAll('#calendar-test .cp-list .cp-event').length===3);
+    await page.evaluate(()=>window.calendarRoot=document.querySelector('#calendar-test .calendar-plus'));
+    const beforeDisabled=requests.length;sensorValue='2';
+    await page.clock.runFor(125000);
+    await page.waitForFunction(()=>document.querySelector('#live-sensor')?.textContent.includes('2'));
+    assert.equal(requests.length,beforeDisabled,'disabled automatic refresh performs no further event reads');
+    assert.equal(await page.evaluate(()=>window.calendarRoot===document.querySelector('#calendar-test .calendar-plus')),true,'unrelated sensor updates retain calendar DOM');
     assert.equal(await page.locator('#calendar-test').evaluate(node=>parseFloat(node.style.left)),320);
     assert.equal(await page.locator('#calendar-test').evaluate(node=>parseFloat(node.style.top)),120);
     assert.equal(await page.locator('#calendar-test .cp-list .cp-event').first().evaluate(node=>node.style.getPropertyValue('--cp-event-color')),'#ffe52b');
@@ -103,6 +115,17 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
     empty=false;discoverFail=true;await page.locator('#calendar-test .calendar-plus > .cp-header button').click();
     await page.waitForFunction(()=>document.querySelector('#calendar-test .cp-notice').textContent.includes('konnten nicht'));
     discoverFail=false;
+    saved.pages[0].widgets[0].calendarAutoRefresh=true;
+    await page.reload();await page.waitForFunction(()=>document.querySelectorAll('#calendar-test .cp-list .cp-event').length===4);
+    await page.evaluate(()=>window.calendarRoot=document.querySelector('#calendar-test .calendar-plus'));
+    await page.locator('#calendar-test .cp-footer').click();
+    const beforeEnabled=requests.length;
+    await page.clock.runFor(61000);
+    await page.waitForFunction(()=>!document.querySelector('#calendar-test .calendar-plus > .cp-header button').disabled);
+    assert.ok(requests.length>beforeEnabled,'enabled automatic refresh fetches new events');
+    assert.equal(await page.evaluate(()=>window.calendarRoot===document.querySelector('#calendar-test .calendar-plus')),true);
+    assert.equal(await page.locator('#calendar-test dialog').evaluate(node=>node.open),true,'refresh keeps popup open');
+    await page.keyboard.press('Escape');
     await page.goto(url);await page.waitForFunction(()=>document.querySelectorAll('#calendar-test .cp-list .cp-event').length===4);
     await page.locator('#calendar-test').click({position:{x:10,y:10}});
     await page.locator('#properties details').evaluateAll(nodes=>nodes.forEach(node=>node.open=true));
@@ -128,6 +151,7 @@ test('all 43 calendars are queried in supported batches and hidden-all remains d
   const browser=await chromium.launch({headless:true,channel:process.env.STUDIO_THEME_BROWSER||undefined});
   try {
     const page=await browser.newPage(),requests=[];
+    await page.addInitScript(()=>localStorage.setItem('ha_grafik_visual_studio_language','de'));
     const packages=await(await page.request.get(new URL('api/widget-packages',url).href)).json();
     const def=packages.packages.find(p=>p.id==='ugso.calendar-plus').widgets[0];
     const fixture=await(await page.request.get(new URL('api/project',url).href)).json();

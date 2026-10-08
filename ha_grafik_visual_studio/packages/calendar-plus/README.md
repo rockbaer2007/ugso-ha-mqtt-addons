@@ -1,5 +1,9 @@
 # UGSo Calendar +
 
+Ab Studio **0.1.268** heißt „Farben“ **Kacheleinstellungen**. Vierte Größe: **Sehr klein 36 × 44 px** (weiterhin mindestens 12/24 px Text). Unter Konfiguration ist **Automatisch aktualisieren (60 s)** abschaltbar. Beim Runtime-Seitenaufruf werden die Termine frisch geladen; manuelles Aktualisieren bleibt möglich. Andere Live-Widgets bauen den Kalender nicht neu auf. Vorhandenes Paket 0.1.1 weiterverwenden; kein Paket-Update erforderlich.
+
+Studio **0.1.268** adds **Tile settings**, an extra-small **36 × 44 px** size and an optional automatic refresh. Runtime page entry loads fresh events; manual refresh remains available. Unrelated live updates retain the calendar widget. Existing package 0.1.1 remains compatible.
+
 Eigenständiges externes Widgetset **0.1.1**, benötigt **HA Grafik Visual Studio 0.1.267+**.
 
 Kalender-Sichtbarkeit als Checkbox rechts oben. Kalenderkacheln: Klein **44 × 52 px**, Mittel **58 × 64 px** (Standard), Groß **76 × 82 px**. Kopftext mindestens **12 px**, Tagesziffer mindestens **24 px**, unabhängig von der allgemeinen Schriftgröße. Die Auswahl gilt für Liste und Popup. Vorhandene Pakete 0.1.0 erhalten die Einstellung ebenfalls mit Studio 0.1.267.
