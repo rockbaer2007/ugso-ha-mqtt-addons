@@ -1,0 +1,37 @@
+.printer-widget { box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;padding:clamp(6px,3%,18px);display:flex;flex-direction:column;gap:6px;overflow:hidden;border:1px solid #839bab38;border-radius:14px;background:var(--printer-bg);color:var(--printer-text);font-family:system-ui,sans-serif;text-align:left;container-type:inline-size; }
+.printer-widget * { box-sizing:border-box;min-width:0; }
+.printer-header { display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none; }
+.printer-title { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(12px,4cqw,20px); }
+.printer-status { flex:none;white-space:nowrap;font-size:clamp(9px,2.8cqw,12px);padding:4px 8px;border-radius:20px;background:#91aab51f;color:#b4c5d0; }
+.printer-widget[data-status=ready] .printer-status { color:#8fe0ad;background:#72d19c20; }
+.printer-widget[data-status=printing] .printer-status { color:var(--printer-accent);background:#61c5ef20; }
+.printer-widget[data-status=warning] .printer-status,.printer-widget[data-status=stopped] .printer-status { color:#ffbd59;background:#ffbd5920; }
+.printer-figure { flex:1 1 44%;min-height:65px;display:flex;align-items:center;justify-content:center;color:#7ddaa4;overflow:hidden; }
+.printer-drawing { width:100%;height:100%;max-width:360px;display:block; }
+.printer-widget[data-status=offline] .printer-machine { opacity:.4; }
+.printer-widget[data-status=printing] .printer-figure { color:var(--printer-accent); }
+.printer-widget[data-status=stopped] .printer-figure,.printer-widget[data-status=warning] .printer-figure { color:#ffbd59; }
+.printer-widget[data-status=unknown] .printer-figure,.printer-widget[data-status=sleep] .printer-figure { color:#8e9eaa; }
+.printer-widget[data-status=printing] .printer-sheet { animation:ugso-printer-feed 2.4s ease-in-out infinite; }
+.printer-widget[data-status=printing] .printer-led { animation:ugso-printer-blink 1s step-end infinite; }
+.printer-message { flex:none;min-height:0;max-height:2.8em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:clamp(10px,3cqw,13px);opacity:.8;text-align:center;overflow-wrap:anywhere; }
+.printer-message:empty { display:none; }
+.printer-metrics { flex:none;display:flex;justify-content:center;gap:16px;font-size:clamp(10px,3cqw,13px); }
+.printer-metric { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.printer-supplies { flex:0 1 36%;min-height:90px;display:grid;grid-template-columns:repeat(var(--printer-columns),minmax(0,1fr));gap:clamp(4px,2cqw,14px);align-items:stretch; }
+.printer-cartridge { display:flex;flex-direction:column;align-items:center;gap:5px; }
+.printer-ink-name { width:100%;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-size:clamp(9px,2.8cqw,12px);opacity:.85; }
+.printer-cartridge-shell { position:relative;flex:1 1 auto;min-height:35px;width:min(78%,58px);margin-top:5px;border:2px solid #9aabb670;border-radius:7px 7px 10px 10px;background:#9aabb618;box-shadow:inset 0 0 0 3px #0e1a2220; }
+.printer-cartridge-shell::before { content:"";position:absolute;width:56%;height:6px;top:-7px;left:22%;border-radius:3px 3px 0 0;background:#9aabb680; }
+.printer-cartridge-shell::after { content:"";position:absolute;inset:6px auto 6px 15%;width:8%;border-radius:5px;background:#fff3; }
+.printer-cartridge-shell[data-style=toner] { width:94%;max-width:90px;border-radius:8px; }
+.printer-ink-fill { position:absolute;bottom:0;left:0;right:0;max-height:100%;border-radius:4px 4px 7px 7px;background:var(--ink-color);box-shadow:inset 0 1px 0 #ffffff70;transition:height .4s ease; }
+.printer-cartridge[data-unknown=true] .printer-cartridge-shell { background:repeating-linear-gradient(135deg,#91aab514 0 4px,transparent 4px 8px); }
+.printer-cartridge[data-low=true] .printer-cartridge-shell { border-color:#ffbd59; }
+.printer-ink-level { flex:none;font-size:clamp(10px,3.1cqw,15px);white-space:nowrap; }
+.printer-cartridge[data-low=true] .printer-ink-level,.printer-low-alert { color:#ffbd59; }
+.printer-low-alert { flex:none;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:clamp(9px,2.8cqw,12px);text-align:center; }
+.printer-low-alert:empty { display:none; }
+@keyframes ugso-printer-feed { 0% { transform:translateY(-5px);opacity:0; } 20% { opacity:1; } 75% { transform:translateY(10px);opacity:1; } 100% { transform:translateY(17px);opacity:0; } }
+@keyframes ugso-printer-blink { 50% { opacity:.2; } }
+@media (prefers-reduced-motion:reduce) { .printer-widget .printer-sheet,.printer-widget .printer-led { animation:none!important; } .printer-ink-fill { transition:none; } }

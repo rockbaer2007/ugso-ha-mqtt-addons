@@ -1,5 +1,7 @@
 # HA Grafik Visual Studio
 
+Studio **0.1.261** unterstützt das eigenständige externe [UGSo Printer-Set](packages/printer/README.md): Druckerstatus mit Animation, bis zu sechs gleichmäßig verteilte Patronen-/Tonergrafiken, Entitätenauswahl, Farben und Warnschwelle. Vorbild: [ADNPolymerase/ha-printer-card](https://github.com/ADNPolymerase/ha-printer-card), MIT. / Independent printer widget set with up to six evenly spaced cartridges and read-only Home Assistant entity bindings.
+
 Studio **0.1.255** unterstützt das optionale externe [UGSo Energy-Set](packages/energy/README.md) mit acht Energie-Widgets und lesendem HA-Recorder-Zugriff. Vorbild: [ioBroker.vis-2-widgets-energy](https://github.com/ioBroker/ioBroker.vis-2-widgets-energy), MIT, bluefox und Mitwirkende. Eigenständige Anpassung von rockbaer2007. / Optional independent eight-widget Energy set with read-only Home Assistant history, inspired by the MIT-licensed ioBroker project.
 
 Studio **0.1.224** adds the housing snap point color in Settings, individual Industrial corner snap points with shared spacing, and CSS corner radius support for the housing. The existing Industrial 0.1.0 package remains usable. / Studio **0.1.224** ergänzt die Gehäuse-Snappunktfarbe in den Einstellungen, einzeln aktivierbare Industrie-Eckpunkte mit gemeinsamem Abstand und den CSS-Eckenradius am Gehäuse. Das vorhandene Industrie-Paket 0.1.0 bleibt verwendbar.

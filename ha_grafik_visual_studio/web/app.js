@@ -64,6 +64,7 @@ import { isIndustrialWeather, weatherSize, weatherAnchors, weatherBindings, rend
 import { isIndustrialSection, sectionRows, sectionSize, renderIndustrialSection } from "./industrial-section.js";
 import { isIndustrialHeating, heatingSize, heatingBindings, heatingReturnGroup, renderIndustrialHeating } from "./industrial-heating.js";
 import { isEnergy, energyBindings, renderEnergy } from "./energy.js";
+import { isPrinter, printerBindings, renderPrinter } from "./printer.js";
 import { applyIndustrialBackground, INDUSTRIAL_BACKGROUND } from "./industrial-housing.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
@@ -232,6 +233,11 @@ function widgetPropertyGroups(widget) {
     { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
   ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
+  if (isPrinter(widget)) {
+    const labels = { mfp: "Multifunktionsdrucker", inkjet: "Tintenstrahldrucker", office: "Bürodrucker", ink: "Tintenpatrone", toner: "Toner" };
+    groups = groups.map(group => ({ ...group, fields: group.fields.map(field => ["printerModel", "supplyStyle"].includes(field.key)
+      ? { ...field, options: field.options.map(value => ({ value, label: labels[value] || value })) } : field) }));
+  }
   if (["industrial-gauge", "industrial-switch", "industrial-lcd", "industrial-linear", "industrial-odometer", "industrial-segment", "industrial-clock", "industrial-weather", "industrial-section", "industrial-heating"].includes(getWidgetDefinition(widget.type).render?.kind)) {
     groups = groups.map(group => group.label === "Größe" ? { ...group, fields: [{ label: "Verhältnis 1:1", key: "aspectRatio1to1", type: "checkbox", default: true, refreshProperties: true }, ...group.fields] } : { ...group, fields: group.fields.filter(field => !["showValue", "unit"].includes(field.key)) });
     groups = groups.map(group => group.label === "Gehäuse und Farben" ? { ...group, fields: [...group.fields.flatMap(field => field.key === "industrialStyle" ? [{ ...field, refreshProperties: true }, { label: "Schrauben aktivieren", key: "industrialScrewsEnabled", type: "checkbox", default: true, disabled: widget.industrialStyle === false }] : [field]),
@@ -728,6 +734,7 @@ function editorLiveEntityIds() {
   // Include the external industrial output in live state polling.
   return [...new Set(visibleWidgets().flatMap((widget) => [
     ...(isEnergy(widget) ? energyBindings(widget) : []),
+    ...(isPrinter(widget) ? printerBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
     ...gaugeEntityIds(widget),
     ...(isIndustrialSwitch(widget) ? switchBindings(widget) : []),
@@ -782,6 +789,7 @@ async function refreshEditorLiveStates() {
 function runtimeLiveEntityIds() {
   // Energy sources must also be polled on the read-only runtime surface.
   return [...new Set(visibleWidgets().flatMap((widget) => [
+    ...(isPrinter(widget) ? printerBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
     ...gaugeEntityIds(widget),
     ...(isIndustrialSwitch(widget) ? switchBindings(widget) : []),
@@ -3047,6 +3055,9 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(renderSeparator(widget, document));
     } else if (isGauge(widget)) {
       content.append(renderGauge(widget, document, { states: state.entityStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
+    } else if (isPrinter(widget)) {
+      content.style.padding="0"; content.style.border="0";
+      content.append(renderPrinter(widget, document, {states:state.entityStates, locale:document.documentElement.lang||"de"}));
     } else if (isEnergy(widget)) {
       content.style.padding="0"; content.style.border="0";
       content.append(renderEnergy(widget, document, {states:state.entityStates, locale:document.documentElement.lang||"de", widgets:activePage.widgets, runtime:runtimeMode, refresh:()=>renderStage(), history:async request=>{
@@ -4673,6 +4684,7 @@ function field(descriptor, widget) {
     if (isGauge(widget) && (descriptor.key === "entityId" || /EntityId\d*$/.test(descriptor.key))) void refreshEditorLiveStates();
     if (renderKind === "heating-params" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (isEnergy(widget) && (/EntityId$/.test(descriptor.key) || descriptor.key === "pricesAttribute")) void refreshEditorLiveStates();
+    if (isPrinter(widget) && (descriptor.key === "entityId" || /EntityId$/.test(descriptor.key) || descriptor.key === "cartridgeCount")) void refreshEditorLiveStates();
     if (renderKind === "technic-window" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();
     if (renderKind === "technic-switch" && descriptor.key === "entityId") void refreshEditorLiveStates();
     if (renderKind === "technic-light" && /EntityId$/.test(descriptor.key)) void refreshEditorLiveStates();

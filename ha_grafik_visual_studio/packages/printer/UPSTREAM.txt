@@ -1,0 +1,8 @@
+Inspiration: https://github.com/ADNPolymerase/ha-printer-card
+Original author: ADNPolymerase
+Original license: MIT, Copyright (c) 2026 ADNPolymerase
+Inspected: 2026-10-08 (README and LICENSE, main)
+UGSo Printer is an independent Studio widget set by rockbaer2007.
+No original source or original artwork is bundled. Rendering and Home Assistant
+entity binding are implemented independently. The original is a Lovelace card;
+this package uses Studio's declarative package format and requires its host renderer.

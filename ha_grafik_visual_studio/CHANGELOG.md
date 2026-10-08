@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.261
+
+- Neues eigenständiges externes Set UGSo Printer 0.1.0: Status mit Druckanimation und 1–6 Patronen-/Tonergrafiken, automatisch gleichmäßig über die Breite verteilt. Entitätenauswahl, Name und Farbe je Patrone, Warnschwelle und optionale Statusmeldung, Leistung und Seitenzähler. Eigene SVG-Zeichnung; Verweis auf HA Printer Card von ADNPolymerase (MIT).
+- Independent UGSo Printer 0.1.0 set: printing animation, 1–6 evenly spaced ink/toner cartridges, explicit entity selection, names/colors, low-supply warning and optional message/power/page sensors. Inspired by ADNPolymerase/ha-printer-card; original rendering, read-only integration.
+
 ## 0.1.260
 
 - Heizungswidget verwendet die neue transparente Grafik mit höherem roten Anschluss und orangefarbenem Rücklauf mit Knick. Rücklauftemperatur mit Home-Assistant-Entitätsauswahl, Textfarbe und ausblendbarer Anzeige unter dem Rohr; separater Pfeil links im Rohr zeigt zum Kessel. Standard-Tankfüllstand rosa; individuelle Farben bleiben erhalten. Auch bestehende Widgets erhalten die Eigenschaften. Industrial 0.11.6 bewahrt die Paketverträge und ergänzt die Anleitung.
