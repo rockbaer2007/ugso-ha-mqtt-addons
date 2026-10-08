@@ -13,7 +13,7 @@ button.cp-event { cursor:pointer; }
 button.cp-event:disabled { opacity:1;cursor:default; }
 button.cp-event:not(:disabled):hover { background:var(--cp-line);border-radius:10px; }
 .calendar-plus.no-dividers .cp-event { border:0; }
-.cp-date { width:var(--cp-icon-width,58px);height:var(--cp-icon-height,64px);display:flex;flex-direction:column;flex:none;text-align:center;border-radius:10px;background:var(--cp-tile);overflow:hidden;box-shadow:0 2px 5px #0002; }
+.cp-date { width:var(--cp-icon-width,58px);height:var(--cp-icon-height,64px);display:flex;flex-direction:column;flex:none;text-align:center;border-radius:var(--cp-tile-radius,10px);background:var(--cp-tile);overflow:hidden;box-shadow:0 2px 5px #0002; }
 .cp-month { display:block;flex:none;height:var(--cp-icon-header,16px);max-height:33.333333%;background:var(--cp-event-color,var(--cp-accent));color:var(--cp-event-ink,#fff);font-size:var(--cp-icon-month,13px);line-height:1.05;font-weight:700;padding:1px 2px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .cp-day { display:grid;place-items:center;flex:1;min-height:0;padding:0 2px;font-size:var(--cp-icon-day,30px);line-height:1.2;font-weight:500; }
 .cp-event-body { flex:1;min-width:0; }
@@ -36,3 +36,5 @@ button.cp-event:not(:disabled):hover { background:var(--cp-line);border-radius:1
 .cp-empty-day { font-size:.8em;color:var(--cp-muted);padding:10px 0; }
 @container(max-width:350px) { .cp-event { gap:8px; }.cp-relative { max-width:23%;font-size:.72em; } }
 .calendar-source-summary .property-section-title { flex:1;overflow-wrap:anywhere; }
+.calendar-plus.card-css-font .cp-event { text-align:var(--card-text-align,left); }
+.calendar-plus.card-css-font .cp-title,.calendar-plus.card-css-font .cp-event-title { font-weight:inherit; }

@@ -58,6 +58,10 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
       assert.ok(fonts[0]>=12&&fonts[1]>=24,'smallest tile remains readable');
     }
     await page.locator('#properties [data-property-key="calendarIconSize"]').selectOption('small');
+    await page.locator('#properties [data-property-key="calendarTileRadius"]').fill('0');
+    assert.equal(await page.locator('#calendar-test .cp-date').first().evaluate(node=>getComputedStyle(node).borderRadius),'0px');
+    await page.locator('#properties [data-property-key="calendarTileRadius"]').fill('6');
+    assert.equal(await page.locator('#calendar-test .cp-date').first().evaluate(node=>getComputedStyle(node).borderRadius),'6px');
     await page.locator('#properties [data-property-key="calendarTileTopFontSize"]').fill('72');
     await page.locator('#properties [data-property-key="calendarTileBottomFontSize"]').fill('120');
     for(const size of ['tiny','small','medium','large']){
@@ -108,6 +112,7 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
     await page.locator('#calendar-test .cp-footer').click();
     assert.equal(await page.locator('#calendar-test dialog').evaluate(node=>node.open),true);
     assert.equal(await page.locator('#calendar-test .cp-details .cp-date').first().evaluate(node=>node.offsetWidth),44);
+    assert.equal(await page.locator('#calendar-test .cp-details .cp-date').first().evaluate(node=>getComputedStyle(node).borderRadius),'6px');
     assert.equal(await page.locator('#calendar-test .cp-details .cp-day').first().evaluate(node=>getComputedStyle(node).fontSize),'20px');
     assert.match(await page.locator('#calendar-test .cp-details').textContent(),/Picknick mit der Familie/);
     assert.match(await page.locator('#calendar-test .cp-details').textContent(),/Stadtpark/);

@@ -112,6 +112,7 @@ export function renderCalendarPlus(widget,doc,{locale='de',runtime=false,key=wid
   const root=doc.createElement('section');root.className='calendar-plus';root.dataset.theme=['dark','light'].includes(widget.calendarTheme)?widget.calendarTheme:'auto';
   root.style.setProperty('--cp-accent',widget.calendarAccent||'#e85b64');
   root.style.setProperty('--cp-font-size',`${Math.min(24,Math.max(10,Number(widget.calendarFontSize)||14))}px`);
+  root.style.setProperty('--cp-tile-radius',`${Number.isFinite(Number(widget.calendarTileRadius))?Math.max(0,Math.min(100,Number(widget.calendarTileRadius))):10}px`);
   const tile=calendarPlusTileLayout(widget);
   for(const [name,value] of Object.entries({width:tile.width,height:tile.height,month:tile.top,day:tile.bottom,header:tile.headerHeight}))root.style.setProperty(`--cp-icon-${name}`,`${value}px`);
   if(widget.showDivider===false)root.classList.add('no-dividers');

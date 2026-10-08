@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.270
+
+- Calendar +: gemeinsamer Kachel-Eckenradius (0 = eckig, Standard 10 px). Kalender und Drucker erhalten die fehlenden CSS-Gruppen für Font/Text, Hintergrund, Ränder sowie Schatten/Abstand. Optionale Gruppen sind zunächst deaktiviert; aktivierte CSS-Werte gestalten die sichtbare Karte statt einer verdeckten Fläche dahinter. Kachelradius und äußerer CSS-Radius bleiben getrennt.
+- Calendar + adds a tile corner radius. Calendar and Printer expose optional shared CSS font/text, background, border, shadow/spacing groups, applied to the actual card surface. Existing appearance stays unchanged until a group is enabled.
+
 ## 0.1.269
 
 - Calendar +: getrennte Schriftgrößen oben/unten in den Kacheleinstellungen (0 = automatische Vorgabe je Kachelgröße). Der farbige Kopf passt sich mit Innenabstand an, bleibt höchstens ein Drittel der Kachelhöhe hoch; Schrift wird bei Platzmangel begrenzt. Gleiches Verhalten in Liste und Detail-Popup, ohne Paket-Neuinstallation.
