@@ -68,7 +68,7 @@ import { isIndustrialSection, sectionRows, sectionSize, renderIndustrialSection 
 import { isIndustrialHeating, heatingSize, heatingBindings, heatingReturnGroup, renderIndustrialHeating } from "./industrial-heating.js";
 import { isEnergy, energyBindings, renderEnergy } from "./energy.js";
 import { isPrinter, cartridgeCount, printerSupplyStyle, printerBindings, printerWebUrl, renderPrinter } from "./printer.js";
-import { isSolar, solarAnchors, solarPortRole, solarBindings, solarSize, solarPortGroups, renderSolar } from "./solar.js";
+import { isSolar, solarAnchors, solarPortRole, solarBindings, solarSize, solarPortGroups, solarPropertyGroups, renderSolar } from "./solar.js";
 import { isCalendarPlus, calendarPlusCatalog, calendarPlusKey, calendarPlusSources, renderCalendarPlus, cleanupCalendarPlus } from "./calendar-plus.js";
 import { applyIndustrialBackground, INDUSTRIAL_BACKGROUND } from "./industrial-housing.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
@@ -339,7 +339,7 @@ function widgetPropertyGroups(widget) {
     });
     return [...commonWidgetGroups, dockGroup, { id: "linebox-ports", label: "Anschlüsse", hint: "Nur aktive Andockpunkte erhalten eine Rolle. Eingänge werden mit Vorzeichen summiert; Ausgänge geben den Wert nur bei aktiviertem Haken weiter.", fields: portFields }, ...groups];
   }
-  if(isSolar(widget))return [...commonWidgetGroups,...groups,...solarPortGroups(widget),...styleEntryGroups];
+  if(isSolar(widget))return [...commonWidgetGroups,...solarPropertyGroups(widget,groups),...solarPortGroups(widget),...styleEntryGroups];
   return widget.type === "svg-connection" || isSeparator(widget) || isCalendarPlus(widget) ? [...commonWidgetGroups, ...groups] : [...commonWidgetGroups, ...groups, connectionAnchorGroup, ...(widget.type === "value-converter" ? [] : [dataGroup]), ...styleEntryGroups];
 }
 

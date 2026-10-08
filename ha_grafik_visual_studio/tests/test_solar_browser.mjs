@@ -50,6 +50,16 @@ test('Solar installs, aligns a six-battery stack, packs unframed values, routes 
     assert.ok(await page.locator('#properties [data-property-key="powerEntityId"]').locator('..').locator('button').count());
     assert.equal(await page.locator('#battery-0 .housing-snap-point').count(),2);
     assert.ok(await page.locator('#properties').getByText('CSS Schatten und Abstand',{exact:true}).count());
+    const originalPath=await page.locator('#value-line .connection-base').getAttribute('d');
+    await page.locator('#properties [data-property-key="solarRightCenterPosition"]').selectOption('housing');
+    assert.notEqual(await page.locator('#value-line .connection-base').getAttribute('d'),originalPath);
+    const batteryBox=await rect('#battery-0'),port=await rect('#battery-0 .output-dock-point');
+    assert.ok(Math.abs(port.x+port.width/2-batteryBox.x-batteryBox.width*.91)<1);
+    assert.ok(Math.abs(port.y+port.height/2-batteryBox.y-batteryBox.height*190/264)<1);
+    for(const [key,color,rgb] of [['power','#cc3300','rgb(204, 51, 0)'],['temperature','#0044cc','rgb(0, 68, 204)'],['soc','#228844','rgb(34, 136, 68)']]) {
+      await page.locator(`#properties [data-property-key="${key}TextColor"]`).fill(color);
+      assert.equal(await page.locator(`#battery-0 .solar-reading[data-channel="${key}"]`).evaluate(node=>getComputedStyle(node).color),rgb);
+    }
     for(const key of ['showPower','showTemperature'])await page.locator(`#properties [data-property-key="${key}"]`).uncheck();
     assert.equal(await page.locator('#battery-0 .solar-reading').count(),1);
     const box=await rect('#battery-0'),reading=await rect('#battery-0 .solar-reading');
@@ -67,13 +77,23 @@ test('Solar installs, aligns a six-battery stack, packs unframed values, routes 
       await page.locator(`input[name="solo-solar${side}CenterRole"][value="output"]`).check();await open();
     }
     assert.equal(await page.locator('#solo .output-dock-point').count(),4);
+    await page.locator('#head').click({position:{x:40,y:20}});await open();
+    assert.equal(await page.locator('#head .solar-reading').count(),0,'legacy head value flags never show readings');
+    assert.equal(await page.locator('#properties [data-property-key="powerEntityId"],#properties [data-property-key="showPowerDirection"]').count(),0);
+    assert.equal(await page.locator('#head .widget-dock-point[data-anchor-id^="pv-"]').count(),4);
+    assert.equal(await page.locator('#head .widget-dock-point[data-anchor-id="top-center"]').count(),0);
+    await page.locator('#properties [data-property-key="solarPvLeftUpperEnabled"]').uncheck();
+    assert.equal(await page.locator('#head .widget-dock-point[data-anchor-id^="pv-"]').count(),3);
     if(process.env.STUDIO_SOLAR_ARTIFACTS){await mkdir(process.env.STUDIO_SOLAR_ARTIFACTS,{recursive:true});await page.locator('#stage').screenshot({path:process.env.STUDIO_SOLAR_ARTIFACTS+'/solar-editor.png'});}
     await page.locator('#save').click();await page.waitForFunction(()=>document.querySelector('#status')?.textContent.includes('gespeichert'));
     assert.equal(saved.pages[0].widgets[1].showSoc,false);assert.equal(saved.pages[0].widgets[1].socEntityId,'sensor.soc');
+    assert.equal(saved.pages[0].widgets[1].powerTextColor,'#cc3300');
+    assert.equal(saved.pages[0].widgets[1].solarRightCenterPosition,'housing');
     await page.reload();await page.waitForFunction(()=>document.querySelector('#number .value')?.textContent.includes('78'));
     await page.goto(new URL('runtime',url).href);await page.waitForFunction(()=>document.querySelector('#number .value')?.textContent.includes('78'));
     assert.equal(await page.locator('.housing-snap-point,.widget-dock-point').count(),0);
     assert.equal(await page.locator('#value-line').count(),0);assert.equal(await page.locator('.solar-battery').count(),6);
+    assert.equal(await page.locator('#battery-0 .solar-reading[data-channel="power"]').evaluate(node=>getComputedStyle(node).color),'rgb(204, 51, 0)');
     if(process.env.STUDIO_SOLAR_ARTIFACTS)await page.locator('#stage').screenshot({path:process.env.STUDIO_SOLAR_ARTIFACTS+'/solar-runtime.png'});
     assert.deepEqual(errors,[]);
   } finally {await browser.close();}

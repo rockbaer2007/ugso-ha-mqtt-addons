@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.279
+
+- UGSo Solar 0.1.2: Batterie-Linienpunkte wahlweise an der Widgetkante oder an der unteren Gehäusenaht, links/rechts getrennt einstellbar. Eigene Schriftfarben für Leistung, Temperatur und SoC. Kopfteil mit vier optischen Solarpanel-Eingängen (je zwei links/rechts); oberer Linienpunkt sowie Wertanzeigen und deren Eigenschaftsgruppen entfallen. Solo-Wechselrichter unverändert.
+- Solar battery line ports can move to the enclosure seam; each reading has its own color. The stack head adds four dedicated PV inputs instead of the top line port.
+
 ## 0.1.278
 
 - UGSo Solar 0.1.1: Solarpanel als eigene SVG-Grafik mit Standrohr und Fuß, wie Vorlage oder gespiegelt. Eingangsentität für Leistung mit Entitätsauswahl; optionaler Textwert ohne Rahmen. Ein Ausgang für SVG-Linien, wahlweise am Standrohr knapp über dem Fuß oder an der linken/rechten Widgetkante. Bestehende Verbindungen folgen der umgestellten Position.

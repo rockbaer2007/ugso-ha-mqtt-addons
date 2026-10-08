@@ -7,7 +7,7 @@ import {widgetValuePacket} from '../web/dataflow.js';
 const battery=(id,x,y)=>({id,type:'ugso.solar/battery',x,y,width:256,height:169,housingSnapEnabled:true,housingTopCenter:true,housingBottomCenter:true,housingSpace:0});
 
 test('Solar shapes keep proportions and expose only the intended signal and housing sides',()=>{
-  for(const [kind,count,housing] of [['head',3,1],['battery',2,2],['solo',4,0],['panel',1,0]]) {
+  for(const [kind,count,housing] of [['head',6,1],['battery',2,2],['solo',4,0],['panel',1,0]]) {
     const widget={type:'ugso.solar/'+kind,width:256,height:64};
     assert.equal(solarAnchors(widget).length,count);
     assert.equal(housingPoints(widget).length,housing);
@@ -16,6 +16,31 @@ test('Solar shapes keep proportions and expose only the intended signal and hous
     if(kind==='head')assert.equal(size.height,64);
     if(kind!=='head')assert.ok(Math.abs(solarSize({...widget,height:size.height},'height').width-256)<.2);
   }
+});
+
+test('battery ports move independently to the lower enclosure seam without changing roles',()=>{
+  const widget={...battery('battery',0,0),solarLeftCenterRole:'input',solarRightCenterRole:'output',solarLeftCenterPosition:'housing'};
+  assert.deepEqual(solarAnchors(widget).map(p=>p.slice(2)),[[.09,190/264],[1,.5]]);
+  widget.solarRightCenterPosition='housing';
+  assert.deepEqual(solarAnchors(widget).map(p=>p.slice(2)),[[.09,190/264],[.91,190/264]]);
+  assert.equal(dockPointActive(widget,'left-center','end'),true);
+  assert.equal(dockPointActive(widget,'right-center','start'),true);
+});
+
+test('head PV ports are four independent inputs aligned to the bottom-aligned graphic',()=>{
+  const head={type:'ugso.solar/head',width:400,height:120};
+  assert.equal(solarAnchors(head).some(([id])=>id==='top-center'),false);
+  const ports=solarAnchors(head).filter(([id])=>id.startsWith('pv-'));
+  assert.equal(ports.length,4);
+  for(const [id,,x,y] of ports) {
+    assert.ok([.0925,.9075].includes(x));
+    assert.ok(Math.abs(y*120-(id.endsWith('upper')?66:99))<.001);
+    assert.equal(dockPointActive(head,id,'end'),true);
+    assert.equal(dockPointActive(head,id,'start'),false);
+  }
+  head.solarPvLeftUpperEnabled=false;
+  assert.equal(dockPointActive(head,'pv-left-upper','end'),false);
+  assert.equal(dockPointActive(head,'pv-left-lower','end'),true);
 });
 
 test('panel has one entity-powered output whose stable anchor moves between pipe and widget edges',()=>{
