@@ -10,6 +10,13 @@ export function printerNumber(value) {
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
+export function printerWebUrl(widget, states = {}) {
+  const configured = String(widget.printerWebUrl ?? 'auto').trim();
+  if (configured.toLowerCase() !== 'auto') return configured;
+  const attributes = states[widget.entityId]?.attributes || {};
+  return [attributes.configuration_url, attributes.web_url, attributes.url, attributes.device_url, attributes.printer_uri]
+    .find(value => typeof value === 'string' && /^https?:\/\//i.test(value.trim())) || '';
+}
 export function printerStatus(value, reason = '') {
   const text = String(value ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[_-]+/g, ' ');
   if (!text || /^(unknown|unavailable|offline|unreachable|off|aus|inconnu|indisponible)$/.test(text)) return text && text !== 'unknown' && text !== 'inconnu' ? 'offline' : 'unknown';
@@ -78,11 +85,12 @@ function printerDrawing(doc, model, status, label) {
   }
   return svg;
 }
-export function renderPrinter(widget, doc, {states = {}, locale = 'de'} = {}) {
+export function renderPrinter(widget, doc, {states = {}, locale = 'de', imageSource = '', webSource = ''} = {}) {
   const lang = words[locale.slice(0, 2)] || words.de, state = states[widget.entityId];
   const reason = state?.attributes?.state_reason, status = printerStatus(state?.state, reason);
   const cartridges = printerCartridges(widget, states), lows = cartridges.filter(c => c.low);
   const root = doc.createElement('div'); root.className = 'printer-widget'; root.dataset.status = status;
+  root.dataset.cartridgeSize = widget.printerCartridgeSize === 'full' ? 'full' : 'half';
   root.style.setProperty('--printer-bg', widget.printerBackground || '#17242d');
   root.style.setProperty('--printer-text', widget.printerText || '#e7edf2');
   root.style.setProperty('--printer-accent', widget.accentColor || '#61c5ef');
@@ -92,7 +100,16 @@ export function renderPrinter(widget, doc, {states = {}, locale = 'de'} = {}) {
   title.title = title.textContent;
   const badge = make('span','printer-status',lang[status]); badge.title = String(state?.state ?? '—');
   header.append(title, badge); root.append(header);
-  const figure = make('div', 'printer-figure'); figure.append(printerDrawing(doc, widget.printerModel, status, title.textContent + ': ' + lang[status])); root.append(figure);
+  if (widget.printerModelName) {
+    const model = make('div', 'printer-model-name', widget.printerModelName); model.title = model.textContent; root.append(model);
+  }
+  const figure = make('div', 'printer-figure');
+  const fallback = () => figure.replaceChildren(printerDrawing(doc, widget.printerModel, status, title.textContent + ': ' + lang[status]));
+  if (widget.printerImageMode === 'custom' && imageSource) {
+    const image = make('img', 'printer-custom-image'); image.alt = widget.printerModelName || title.textContent;
+    image.addEventListener('error', fallback, {once:true}); image.src = imageSource; figure.append(image);
+  } else fallback();
+  root.append(figure);
   if (widget.showMessage !== false) {
     const value = widget.messageEntityId ? states[widget.messageEntityId]?.state : state?.attributes?.state_message || reason;
     const message = make('div','printer-message',Array.isArray(value) ? value.join(', ') : value || ''); message.title = message.textContent; root.append(message);
@@ -103,6 +120,10 @@ export function renderPrinter(widget, doc, {states = {}, locale = 'de'} = {}) {
     const sensor = states[widget[key]], value = printerNumber(sensor?.state);
     const text = value == null ? '—' : new Intl.NumberFormat(locale, {maximumFractionDigits:key === 'pagesEntityId' ? 0 : 1}).format(value);
     metrics.append(make('span','printer-metric', [label, text, sensor?.attributes?.unit_of_measurement || unit].filter(Boolean).join(' ')));
+  }
+  if (webSource) {
+    const link = make('a','printer-web-link','Web ↗'); link.href = webSource; link.target = '_blank'; link.rel = 'noopener noreferrer';
+    link.title = webSource; link.addEventListener('click', event => event.stopPropagation()); metrics.append(link);
   }
   if (metrics.childNodes.length) root.append(metrics);
   const supplies = make('div','printer-supplies'); supplies.setAttribute('role','list'); supplies.setAttribute('aria-label',lang[widget.supplyStyle === 'toner' ? 'toner' : 'ink']);

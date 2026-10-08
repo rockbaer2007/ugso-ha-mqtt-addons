@@ -64,7 +64,7 @@ import { isIndustrialWeather, weatherSize, weatherAnchors, weatherBindings, rend
 import { isIndustrialSection, sectionRows, sectionSize, renderIndustrialSection } from "./industrial-section.js";
 import { isIndustrialHeating, heatingSize, heatingBindings, heatingReturnGroup, renderIndustrialHeating } from "./industrial-heating.js";
 import { isEnergy, energyBindings, renderEnergy } from "./energy.js";
-import { isPrinter, printerBindings, renderPrinter } from "./printer.js";
+import { isPrinter, printerBindings, printerWebUrl, renderPrinter } from "./printer.js";
 import { applyIndustrialBackground, INDUSTRIAL_BACKGROUND } from "./industrial-housing.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
@@ -237,6 +237,13 @@ function widgetPropertyGroups(widget) {
     const labels = { mfp: "Multifunktionsdrucker", inkjet: "Tintenstrahldrucker", office: "Bürodrucker", ink: "Tintenpatrone", toner: "Toner" };
     groups = groups.map(group => ({ ...group, fields: group.fields.map(field => ["printerModel", "supplyStyle"].includes(field.key)
       ? { ...field, options: field.options.map(value => ({ value, label: labels[value] || value })) } : field) }));
+    groups.splice(1, 0, { label: "Druckermodell und Bild", fields: [
+      { label: "Modellbezeichnung", key: "printerModelName", default: "" },
+      { label: "Druckerbild", key: "printerImageMode", type: "select", default: "standard", options: [{ value: "standard", label: "Standardgrafik" }, { value: "custom", label: "Eigenes Bild" }] },
+      { label: "Foto Ihres Druckers (URL oder /local/... Pfad)", key: "printerImageSrc", default: "", previewImage: true },
+      { label: "Patronengröße", key: "printerCartridgeSize", type: "select", default: "half", options: [{ value: "full", label: "Volle Größe" }, { value: "half", label: "Halbe Größe" }] },
+      { label: "URL der Weboberfläche (auto = vom Drucker)", key: "printerWebUrl", default: "auto" },
+    ] });
   }
   if (["industrial-gauge", "industrial-switch", "industrial-lcd", "industrial-linear", "industrial-odometer", "industrial-segment", "industrial-clock", "industrial-weather", "industrial-section", "industrial-heating"].includes(getWidgetDefinition(widget.type).render?.kind)) {
     groups = groups.map(group => group.label === "Größe" ? { ...group, fields: [{ label: "Verhältnis 1:1", key: "aspectRatio1to1", type: "checkbox", default: true, refreshProperties: true }, ...group.fields] } : { ...group, fields: group.fields.filter(field => !["showValue", "unit"].includes(field.key)) });
@@ -3057,7 +3064,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.append(renderGauge(widget, document, { states: state.entityStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
     } else if (isPrinter(widget)) {
       content.style.padding="0"; content.style.border="0";
-      content.append(renderPrinter(widget, document, {states:state.entityStates, locale:document.documentElement.lang||"de"}));
+      content.append(renderPrinter(widget, document, {states:state.entityStates, locale:document.documentElement.lang||"de", imageSource:safeUrl(widget.printerImageSrc,true), webSource:safeUrl(printerWebUrl(widget,state.entityStates))}));
     } else if (isEnergy(widget)) {
       content.style.padding="0"; content.style.border="0";
       content.append(renderEnergy(widget, document, {states:state.entityStates, locale:document.documentElement.lang||"de", widgets:activePage.widgets, runtime:runtimeMode, refresh:()=>renderStage(), history:async request=>{
@@ -4595,6 +4602,22 @@ function field(descriptor, widget) {
     picker.title = "Icon oder Bild auswählen"; picker.setAttribute("aria-label", "Icon oder Bild auswählen");
     picker.addEventListener("click", (event) => { event.preventDefault(); event.stopPropagation(); openIconPicker(input); });
     row.append(preview, aliasPreview, input, picker); wrapper.append(row); void updatePreview();
+    if (isPrinter(widget) && descriptor.key === "printerImageSrc") {
+      const upload = document.createElement("button"); upload.type = "button"; upload.textContent = "Bild hochladen";
+      const file = document.createElement("input"); file.type = "file"; file.accept = "image/png,image/jpeg,image/webp,image/gif,image/svg+xml"; file.hidden = true;
+      upload.addEventListener("click", () => file.click());
+      file.addEventListener("change", async () => {
+        const selected = file.files[0]; if (!selected) return;
+        if (selected.size > 2_000_000 || !/^image\/(png|jpeg|webp|gif|svg\+xml)$/.test(selected.type)) { $("#status").textContent = "Bitte eine Bilddatei bis 2 MB auswählen."; file.value = ""; return; }
+        upload.disabled = true;
+        try {
+          const source = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(new Error("Bild konnte nicht gelesen werden.")); reader.readAsDataURL(selected); });
+          widget.printerImageMode = "custom"; input.value = source; input.dispatchEvent(new Event("input", { bubbles: true })); renderProperties();
+        } catch (error) { $("#status").textContent = error.message; }
+        finally { upload.disabled = false; file.value = ""; }
+      });
+      wrapper.append(upload, file);
+    }
   } else if (descriptor.type === "dashboard") {
     const row = document.createElement("span"); row.className = "property-input-row";
     const picker = document.createElement("button"); picker.type = "button"; picker.className = "property-icon-picker-button"; picker.textContent = "…"; picker.setAttribute("aria-label", "HA-Dashboard auswählen");
@@ -4621,6 +4644,10 @@ function field(descriptor, widget) {
     const previousClockMode=isIndustrialClock(widget)?clockMode(widget):null;
     const previousSectionCell=isIndustrialSection(widget)?(widget.height-2*Math.max(0,Math.min(64,Number(widget.housingSpace??1)||0))*(sectionRows(widget)-1))/sectionRows(widget):null;
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    if (isPrinter(widget) && descriptor.key === "printerImageSrc" && input.value.trim()) {
+      widget.printerImageMode = "custom";
+      const mode = $("#properties [data-property-key='printerImageMode']"); if (mode) mode.value = "custom";
+    }
     if (["industrial-gauge","industrial-switch","industrial-lcd","industrial-linear","industrial-odometer","industrial-segment","industrial-clock","industrial-weather","industrial-section","industrial-heating"].includes(getWidgetDefinition(widget.type).render?.kind) && descriptor.key === "industrialStyle" && input.checked) widget.industrialScrewsEnabled = true;
     if(isIndustrialSection(widget) && ["width","height","sectionCount","sectionRows","housingSpace"].includes(descriptor.key)) {
       if(["sectionCount","sectionRows","housingSpace"].includes(descriptor.key)) widget.height=previousSectionCell*sectionRows(widget)+2*Math.max(0,Math.min(64,Number(widget.housingSpace??1)||0))*(sectionRows(widget)-1);

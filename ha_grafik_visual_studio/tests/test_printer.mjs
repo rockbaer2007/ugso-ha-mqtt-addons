@@ -1,6 +1,15 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cartridgeCount, printerBindings, printerNumber, printerStatus, printerCartridges} from '../web/printer.js';
+import {cartridgeCount, printerBindings, printerNumber, printerStatus, printerCartridges, printerWebUrl} from '../web/printer.js';
+
+test('web interface uses explicit URL, optional auto attributes, or stays hidden', () => {
+  const states = {'sensor.printer':{attributes:{configuration_url:'http://printer.local/',printer_uri:'ipp://printer.local/ipp'}}};
+  assert.equal(printerWebUrl({entityId:'sensor.printer'},states),'http://printer.local/');
+  assert.equal(printerWebUrl({entityId:'sensor.printer',printerWebUrl:'https://example.org/'} ,states),'https://example.org/');
+  assert.equal(printerWebUrl({entityId:'sensor.printer',printerWebUrl:''},states),'');
+  assert.equal(printerWebUrl({entityId:'sensor.other'},states),'');
+  assert.equal(printerWebUrl({entityId:'sensor.printer'}, {'sensor.printer':{attributes:{printer_uri:'ipp://printer.local/ipp'}}}),'');
+});
 
 test('supplies clamp percentages, preserve unknowns and warn at the configured threshold', () => {
   const widget = {cartridgeCount:6, lowThreshold:20};

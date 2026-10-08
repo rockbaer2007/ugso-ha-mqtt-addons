@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.262
+
+- Optionale Weboberfläche als Web-Link im Widget; URL manuell oder auto aus URL-Attributen der Statusentität, leer blendet den Link aus.
+- Patronen- und Tonergrafiken wahlweise in voller oder halber Größe (Standard); Beschriftungen und Prozentwerte bleiben lesbar.
+- UGSo Printer: Modellbezeichnung und Auswahl Standardgrafik/eigenes Bild. Bilddateien bis 2 MB werden im Projekt gespeichert; alternativ Bildpfad. Proportionale Darstellung und Rückfall auf Standardgrafik bei Ladefehler. Auch für bereits installierte Printer-Pakete.
+- UGSo Printer: model label and standard/custom image selection with embedded uploads up to 2 MB or image URL. Aspect ratio preserved, standard artwork fallback on load failure. Existing packages receive these settings without reinstallation.
+
 ## 0.1.261
 
 - Neues eigenständiges externes Set UGSo Printer 0.1.0: Status mit Druckanimation und 1–6 Patronen-/Tonergrafiken, automatisch gleichmäßig über die Breite verteilt. Entitätenauswahl, Name und Farbe je Patrone, Warnschwelle und optionale Statusmeldung, Leistung und Seitenzähler. Eigene SVG-Zeichnung; Verweis auf HA Printer Card von ADNPolymerase (MIT).

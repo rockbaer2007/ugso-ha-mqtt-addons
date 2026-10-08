@@ -8,6 +8,9 @@
 .printer-widget[data-status=warning] .printer-status,.printer-widget[data-status=stopped] .printer-status { color:#ffbd59;background:#ffbd5920; }
 .printer-figure { flex:1 1 44%;min-height:65px;display:flex;align-items:center;justify-content:center;color:#7ddaa4;overflow:hidden; }
 .printer-drawing { width:100%;height:100%;max-width:360px;display:block; }
+.printer-model-name { flex:none;text-align:center;font-size:clamp(10px,3cqw,14px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.8; }
+.printer-custom-image { display:block;width:100%;height:100%;object-fit:contain; }
+.printer-widget[data-status=offline] .printer-custom-image { opacity:.4; }
 .printer-widget[data-status=offline] .printer-machine { opacity:.4; }
 .printer-widget[data-status=printing] .printer-figure { color:var(--printer-accent); }
 .printer-widget[data-status=stopped] .printer-figure,.printer-widget[data-status=warning] .printer-figure { color:#ffbd59; }
@@ -18,13 +21,17 @@
 .printer-message:empty { display:none; }
 .printer-metrics { flex:none;display:flex;justify-content:center;gap:16px;font-size:clamp(10px,3cqw,13px); }
 .printer-metric { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.printer-web-link { color:var(--printer-accent);white-space:nowrap;text-decoration:none; }
+.printer-web-link:hover,.printer-web-link:focus-visible { text-decoration:underline; }
 .printer-supplies { flex:0 1 36%;min-height:90px;display:grid;grid-template-columns:repeat(var(--printer-columns),minmax(0,1fr));gap:clamp(4px,2cqw,14px);align-items:stretch; }
-.printer-cartridge { display:flex;flex-direction:column;align-items:center;gap:5px; }
+.printer-cartridge { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px; }
 .printer-ink-name { width:100%;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-size:clamp(9px,2.8cqw,12px);opacity:.85; }
-.printer-cartridge-shell { position:relative;flex:1 1 auto;min-height:35px;width:min(78%,58px);margin-top:5px;border:2px solid #9aabb670;border-radius:7px 7px 10px 10px;background:#9aabb618;box-shadow:inset 0 0 0 3px #0e1a2220; }
+.printer-cartridge-shell { position:relative;flex:0 1 auto;height:calc((100% - 45px)/2);min-height:18px;width:min(39%,29px);margin-top:5px;border:1px solid #9aabb670;border-radius:4px 4px 5px 5px;background:#9aabb618;box-shadow:inset 0 0 0 2px #0e1a2220; }
 .printer-cartridge-shell::before { content:"";position:absolute;width:56%;height:6px;top:-7px;left:22%;border-radius:3px 3px 0 0;background:#9aabb680; }
 .printer-cartridge-shell::after { content:"";position:absolute;inset:6px auto 6px 15%;width:8%;border-radius:5px;background:#fff3; }
-.printer-cartridge-shell[data-style=toner] { width:94%;max-width:90px;border-radius:8px; }
+.printer-cartridge-shell[data-style=toner] { width:47%;max-width:45px;border-radius:4px; }
+.printer-widget[data-cartridge-size=full] .printer-cartridge-shell { height:calc(100% - 45px);min-height:35px;width:min(78%,58px);border-width:2px;border-radius:7px 7px 10px 10px; }
+.printer-widget[data-cartridge-size=full] .printer-cartridge-shell[data-style=toner] { width:94%;max-width:90px;border-radius:8px; }
 .printer-ink-fill { position:absolute;bottom:0;left:0;right:0;max-height:100%;border-radius:4px 4px 7px 7px;background:var(--ink-color);box-shadow:inset 0 1px 0 #ffffff70;transition:height .4s ease; }
 .printer-cartridge[data-unknown=true] .printer-cartridge-shell { background:repeating-linear-gradient(135deg,#91aab514 0 4px,transparent 4px 8px); }
 .printer-cartridge[data-low=true] .printer-cartridge-shell { border-color:#ffbd59; }
