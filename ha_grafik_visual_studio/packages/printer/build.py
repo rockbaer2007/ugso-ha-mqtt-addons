@@ -1,4 +1,4 @@
-"""Build the declarative UGSo Printer 0.1.0 package for Studio 0.1.261+."""
+"""Build the declarative UGSo Printer 0.1.1 package for Studio 0.1.273+."""
 import json
 import sys
 from pathlib import Path
@@ -22,6 +22,7 @@ def manifest():
         field('showMessage', 'Statusmeldung anzeigen', 'checkbox'), field('messageEntityId', 'Statusmeldung: Entität (optional)'),
         field('powerEntityId', 'Leistung: Entität (optional)'), field('pagesEntityId', 'Seitenzähler: Entität (optional)')]),
         dict(label='Patronen', fields=[field('cartridgeCount', 'Anzahl der Patronen', 'number', min=1, max=6, step=1),
+        # Keep the installed contract; Studio 0.1.273 supplies the corrected style control.
         field('supplyStyle', 'Darstellung', 'select', options=['ink', 'toner']),
         field('lowThreshold', 'Warnschwelle (%)', 'number', min=0, max=100, step=1)])]
     colors = ['#263442', '#21bce4', '#e9539c', '#f3d34f', '#9daab9', '#7ed6e8']
@@ -36,7 +37,7 @@ def manifest():
         dict(label='Größe', fields=[field('width', 'Breite (px)', 'number', min=240, max=3000),
         field('height', 'Höhe (px)', 'number', min=280, max=2000)])]
     return dict(format='ha-grafik-widget-package', apiVersion='0.2', id='ugso.printer', name='UGSo Printer',
-        version='0.1.0', license='MIT', icon='icons/printer.svg', widgets=[dict(type='ugso.printer/printer',
+        version='0.1.1', license='MIT', icon='icons/printer.svg', widgets=[dict(type='ugso.printer/printer',
         label='Drucker', icon='icons/printer.svg', defaults=defaults, propertyGroups=groups,
         render=dict(kind='printer-widget', valueKey='heading'))])
 

@@ -66,7 +66,7 @@ import { isIndustrialWeather, weatherSize, weatherAnchors, weatherBindings, rend
 import { isIndustrialSection, sectionRows, sectionSize, renderIndustrialSection } from "./industrial-section.js";
 import { isIndustrialHeating, heatingSize, heatingBindings, heatingReturnGroup, renderIndustrialHeating } from "./industrial-heating.js";
 import { isEnergy, energyBindings, renderEnergy } from "./energy.js";
-import { isPrinter, cartridgeCount, printerBindings, printerWebUrl, renderPrinter } from "./printer.js";
+import { isPrinter, cartridgeCount, printerSupplyStyle, printerBindings, printerWebUrl, renderPrinter } from "./printer.js";
 import { isCalendarPlus, calendarPlusCatalog, calendarPlusKey, calendarPlusSources, renderCalendarPlus, cleanupCalendarPlus } from "./calendar-plus.js";
 import { applyIndustrialBackground, INDUSTRIAL_BACKGROUND } from "./industrial-housing.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
@@ -258,7 +258,7 @@ function widgetPropertyGroups(widget) {
     const labels = { mfp: "Multifunktionsdrucker", inkjet: "Tintenstrahldrucker", office: "Bürodrucker", ink: "Tintenpatrone", toner: "Toner" };
     groups = groups.map((group, index) => ({ ...group, id: propertyGroupKey(group, index + commonWidgetGroups.length + (index > 0 ? 1 : 0)) }))
       .filter(group => !/^Patrone [1-6]$/.test(group.label) || Number(group.label.match(/\d+$/)[0]) <= cartridgeCount(widget));
-    groups = groups.map(group => ({ ...group, fields: group.fields.map(field => field.key === "cartridgeCount" ? { ...field, refreshProperties: true } : ["printerModel", "supplyStyle"].includes(field.key)
+    groups = groups.map(group => ({ ...group, fields: group.fields.map(field => field.key === "supplyStyle" ? {...field,label:"Stil",options:[{value:"ink",label:"Patronen"},{value:"bars",label:"Balken"}]} : field.key === "cartridgeCount" ? { ...field, refreshProperties: true } : ["printerModel"].includes(field.key)
       ? { ...field, options: field.options.map(value => ({ value, label: labels[value] || value })) } : field) }));
     groups.splice(1, 0, { label: "Druckermodell und Bild", fields: [
       { label: "Modellbezeichnung", key: "printerModelName", default: "" },
@@ -579,6 +579,7 @@ function ensureWidgetNames(page) {
   const used = new Set(page.widgets.map(widget => String(widget.name || "").trim().toLocaleLowerCase("de")).filter(Boolean));
   for (const widget of page.widgets) {
     initializeWidgetCaption(widget);
+    if(isPrinter(widget))widget.supplyStyle=printerSupplyStyle(widget);
     if (String(widget.name || "").trim()) continue;
     let base = String(widget.title || "").trim();
     if (!base) { try { base = getWidgetDefinition(widget.type).label; } catch { base = "Widget"; } }

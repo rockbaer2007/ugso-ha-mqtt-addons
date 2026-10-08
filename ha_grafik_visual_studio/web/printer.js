@@ -1,5 +1,6 @@
 // Independent implementation; inspiration: ADNPolymerase/ha-printer-card (MIT).
 export const isPrinter = widget => widget.type === 'ugso.printer/printer';
+export const printerSupplyStyle = widget => ['bars','toner'].includes(widget.supplyStyle) ? 'bars' : 'ink';
 export const cartridgeCount = widget => Math.min(6, Math.max(1, Math.trunc(Number(widget.cartridgeCount) || 4)));
 export function printerBindings(widget) {
   return [...new Set([widget.entityId, widget.messageEntityId, widget.powerEntityId, widget.pagesEntityId,
@@ -91,6 +92,7 @@ export function renderPrinter(widget, doc, {states = {}, locale = 'de', imageSou
   const cartridges = printerCartridges(widget, states), lows = cartridges.filter(c => c.low);
   const root = doc.createElement('div'); root.className = 'printer-widget'; root.dataset.status = status;
   root.dataset.cartridgeSize = widget.printerCartridgeSize === 'full' ? 'full' : 'half';
+  root.dataset.supplyStyle = printerSupplyStyle(widget);
   root.style.setProperty('--printer-bg', widget.printerBackground || '#17242d');
   root.style.setProperty('--printer-text', widget.printerText || '#e7edf2');
   root.style.setProperty('--printer-accent', widget.accentColor || '#61c5ef');
@@ -126,7 +128,7 @@ export function renderPrinter(widget, doc, {states = {}, locale = 'de', imageSou
     link.title = webSource; link.addEventListener('click', event => event.stopPropagation()); metrics.append(link);
   }
   if (metrics.childNodes.length) root.append(metrics);
-  const supplies = make('div','printer-supplies'); supplies.setAttribute('role','list'); supplies.setAttribute('aria-label',lang[widget.supplyStyle === 'toner' ? 'toner' : 'ink']);
+  const supplies = make('div','printer-supplies'); supplies.setAttribute('role','list'); supplies.setAttribute('aria-label',lang.ink);
   for (const supply of cartridges) {
     const item = make('div','printer-cartridge'); item.dataset.low = String(supply.low); item.dataset.unknown = String(supply.level == null);
     item.setAttribute('role','listitem'); item.style.setProperty('--ink-color', supply.color);
@@ -134,8 +136,12 @@ export function renderPrinter(widget, doc, {states = {}, locale = 'de', imageSou
     item.title = `${supply.name}: ${value}${supply.low ? ' · ' + lang.low : ''}`;
     item.setAttribute('aria-label',item.title);
     const name = make('span','printer-ink-name',supply.name), shell = make('div','printer-cartridge-shell');
-    shell.dataset.style = widget.supplyStyle === 'toner' ? 'toner' : 'ink';
-    const fill = make('div','printer-ink-fill'); fill.style.height = (supply.level ?? 0) + '%';
+    shell.dataset.style = printerSupplyStyle(widget);
+    shell.setAttribute('role','progressbar');shell.setAttribute('aria-label',supply.name);
+    shell.setAttribute('aria-valuemin','0');shell.setAttribute('aria-valuemax','100');
+    if(supply.level!=null)shell.setAttribute('aria-valuenow',String(supply.level));
+    else shell.setAttribute('aria-valuetext',value);
+    const fill = make('div','printer-ink-fill'); fill.style[printerSupplyStyle(widget)==='bars'?'width':'height'] = (supply.level ?? 0) + '%';
     shell.append(fill); item.append(name, shell, make('strong','printer-ink-level',value)); supplies.append(item);
   }
   root.append(supplies);

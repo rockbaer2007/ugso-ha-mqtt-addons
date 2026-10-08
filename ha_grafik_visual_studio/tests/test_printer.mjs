@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cartridgeCount, printerBindings, printerNumber, printerStatus, printerCartridges, printerWebUrl} from '../web/printer.js';
+import {cartridgeCount, printerSupplyStyle, printerBindings, printerNumber, printerStatus, printerCartridges, printerWebUrl} from '../web/printer.js';
+
+test('legacy toner choice becomes bars and unset style retains cartridges',()=>{
+  assert.equal(printerSupplyStyle({supplyStyle:'toner'}),'bars');
+  assert.equal(printerSupplyStyle({supplyStyle:'bars'}),'bars');
+  assert.equal(printerSupplyStyle({}),'ink');
+});
 
 test('web interface uses explicit URL, optional auto attributes, or stays hidden', () => {
   const states = {'sensor.printer':{attributes:{configuration_url:'http://printer.local/',printer_uri:'ipp://printer.local/ipp'}}};

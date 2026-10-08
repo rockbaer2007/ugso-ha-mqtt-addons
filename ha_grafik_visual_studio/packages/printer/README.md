@@ -1,4 +1,4 @@
-# UGSo Printer 0.1.0
+# UGSo Printer 0.1.1
 
 Eigenständiges externes Widgetset von **rockbaer2007** für Grafik Visual Studio **0.1.261 oder neuer**.
 Unter **Einstellungen → Widget-Pakete → Lokal** die Datei `ugso.printer.wg` installieren.
@@ -15,12 +15,12 @@ Dies ist ein Studio-Widgetset, keine Lovelace-Karte und kein Teil von Industrial
 - Je aktiver Patrone: Füllstandsentität in Prozent, frei wählbare Beschriftung und Farbe. Die ersten N Patronen sind aktiv. Nicht verwendete spätere Bindungen bleiben gespeichert, werden aber nicht abgefragt.
 - Warnschwelle 0–100 %, Standard 20 %. Bei gleichem oder niedrigerem Füllstand werden Patrone und Wert markiert.
 - Unbekannte/nicht verfügbare Füllstände erscheinen als **—**, nicht als 0 %. Numerische Anzeigen werden auf 0–100 % begrenzt.
-- Auswahl Tintenpatrone/Toner, Druckermodell Multifunktion (`mfp`), Tintenstrahl (`inkjet`) oder Bürodrucker (`office`), Hintergrund-, Text- und Druckstatusfarbe.
+- Ab Studio 0.1.273: **Patronen → Stil → Patronen / Balken**. Patronen zeigt die Grafiken nebeneinander; Balken zeigt pro Zeile Name, farbigen Füllstand und Prozentwert. Die frühere Toner-Auswahl wird als Balken übernommen. Entitäten, Farben und Warnschwelle gelten für beide Stile. Druckermodell Multifunktion (`mfp`), Tintenstrahl (`inkjet`) oder Bürodrucker (`office`), Hintergrund-, Text- und Druckstatusfarbe bleiben separat einstellbar.
 - Optionale Entitäten für Statusmeldung, Leistung und Seitenzähler. Ohne separate Meldungsentität werden `state_message` bzw. `state_reason` der Statusentität verwendet. Meldung ausblendbar.
 
 Standardgröße **480 × 440 px**, Mindestgröße **240 × 280 px**. Text wird bei knappem Platz gekürzt; vollständige Namen und Werte stehen im Tooltip. Editor und Runtime verwenden dieselben aktuellen Home-Assistant-Werte. Keine erfundenen Vorschauwerte.
 
-Diese erste Version liest ausdrücklich ausgewählte Entitäten. Sie bietet keine automatische Geräte-/Patronensuche, Verschleißteile, Steckdosensteuerung, Testdruck oder Drucker-Weblinks. Die Originalkarte ist separat nutzbar und bietet weitere Funktionen.
+Das Widget liest ausdrücklich ausgewählte Entitäten. Es bietet keine automatische Geräte-/Patronensuche, Verschleißteile, Steckdosensteuerung oder Testdruck. Drucker-Weblinks sind über „URL der Weboberfläche“ verfügbar. Die Originalkarte ist separat nutzbar und bietet weitere Funktionen.
 
 ## English
 

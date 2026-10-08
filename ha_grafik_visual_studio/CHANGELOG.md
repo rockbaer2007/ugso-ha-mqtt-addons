@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.273
+
+- Printer: Auswahl „Stil → Patronen / Balken“ ersetzt Tintenpatrone/Toner. Balken zeigt je Patrone Beschriftung, horizontalen farbigen Füllstand und Prozentwert. Unbekannte Werte und Warnschwelle bleiben erhalten; frühere Toner-Auswahl wird als Balken übernommen. Printer-Paket 0.1.1.
+- Printer: Style now selects Cartridges or Bars. Horizontal bars retain per-supply colors, unknown states and low-level warnings. Legacy toner selection maps to bars. Printer package 0.1.1.
 ## 0.1.272
 
 - Überflüssige Widgets-Schaltfläche aus der oberen Leiste entfernt. Die Widget-Palette bleibt direkt erreichbar.
