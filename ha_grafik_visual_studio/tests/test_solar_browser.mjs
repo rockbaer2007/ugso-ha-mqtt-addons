@@ -77,6 +77,17 @@ test('Solar installs, aligns a six-battery stack, packs unframed values, routes 
       await page.locator(`input[name="solo-solar${side}CenterRole"][value="output"]`).check();await open();
     }
     assert.equal(await page.locator('#solo .output-dock-point').count(),4);
+    for(const anchor of ['BottomLeft','BottomLeftOuter','BottomLeftInner','BottomRightInner','BottomRightOuter','BottomRight']) {
+      await page.locator(`input[name="solo-solar${anchor}Role"][value="output"]`).check();await open();
+    }
+    assert.equal(await page.locator('#solo .output-dock-point').count(),10);
+    const soloBox=await rect('#solo');
+    const bottomPorts=await page.locator('#solo .widget-dock-point[data-anchor-id^="bottom-"]').evaluateAll(nodes=>nodes.map(node=>{const box=node.getBoundingClientRect();return {x:box.x+box.width/2,y:box.y+box.height/2};}).sort((a,b)=>a.x-b.x));
+    assert.equal(bottomPorts.length,7);
+    for(const [index,port] of bottomPorts.entries()) {
+      assert.ok(Math.abs(port.x-soloBox.x-soloBox.width*index/6)<1);
+      assert.ok(Math.abs(port.y-soloBox.y-soloBox.height)<1);
+    }
     await page.locator('#head').click({position:{x:40,y:20}});await open();
     assert.equal(await page.locator('#head .solar-reading').count(),0,'legacy head value flags never show readings');
     assert.equal(await page.locator('#properties [data-property-key="powerEntityId"],#properties [data-property-key="showPowerDirection"]').count(),0);
@@ -89,7 +100,10 @@ test('Solar installs, aligns a six-battery stack, packs unframed values, routes 
     assert.equal(saved.pages[0].widgets[1].showSoc,false);assert.equal(saved.pages[0].widgets[1].socEntityId,'sensor.soc');
     assert.equal(saved.pages[0].widgets[1].powerTextColor,'#cc3300');
     assert.equal(saved.pages[0].widgets[1].solarRightCenterPosition,'housing');
+    assert.equal(saved.pages[0].widgets.find(widget=>widget.id==='solo').solarBottomLeftOuterRole,'output');
     await page.reload();await page.waitForFunction(()=>document.querySelector('#number .value')?.textContent.includes('78'));
+    await page.locator('#solo').click({position:{x:12,y:12}});
+    assert.equal(await page.locator('#solo .widget-dock-point[data-anchor-id^="bottom-"]').count(),7);
     await page.goto(new URL('runtime',url).href);await page.waitForFunction(()=>document.querySelector('#number .value')?.textContent.includes('78'));
     assert.equal(await page.locator('.housing-snap-point,.widget-dock-point').count(),0);
     assert.equal(await page.locator('#value-line').count(),0);assert.equal(await page.locator('.solar-battery').count(),6);

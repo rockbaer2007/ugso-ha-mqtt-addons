@@ -7,7 +7,7 @@ import {widgetValuePacket} from '../web/dataflow.js';
 const battery=(id,x,y)=>({id,type:'ugso.solar/battery',x,y,width:256,height:169,housingSnapEnabled:true,housingTopCenter:true,housingBottomCenter:true,housingSpace:0});
 
 test('Solar shapes keep proportions and expose only the intended signal and housing sides',()=>{
-  for(const [kind,count,housing] of [['head',6,1],['battery',2,2],['solo',4,0],['panel',1,0]]) {
+  for(const [kind,count,housing] of [['head',6,1],['battery',2,2],['solo',10,0],['panel',1,0]]) {
     const widget={type:'ugso.solar/'+kind,width:256,height:64};
     assert.equal(solarAnchors(widget).length,count);
     assert.equal(housingPoints(widget).length,housing);
@@ -16,6 +16,25 @@ test('Solar shapes keep proportions and expose only the intended signal and hous
     if(kind==='head')assert.equal(size.height,64);
     if(kind!=='head')assert.ok(Math.abs(solarSize({...widget,height:size.height},'height').width-256)<.2);
   }
+});
+
+test('solo has seven distinct bottom ports including corners, with independent roles and values',()=>{
+  const widget={id:'solo',type:'ugso.solar/solo',powerEntityId:'sensor.power',socEntityId:'sensor.soc'};
+  const bottom=solarAnchors(widget).filter(([, , ,y])=>y===1).sort((a,b)=>a[2]-b[2]);
+  assert.deepEqual(bottom.map(p=>p[2]),[0,1/6,2/6,.5,4/6,5/6,1]);
+  const states={'sensor.power':{state:'320'},'sensor.soc':{state:'74'}};
+  for(const [index,[id]] of bottom.entries()) {
+    assert.equal(dockPointActive(widget,id),false);
+    widget[solarPortKey(id,'role')]=index%2?'input':'output';
+    widget[solarPortKey(id,'value')]=index===6?'soc':'power';
+    assert.equal(dockPointActive(widget,id,'start'),index%2===0);
+    assert.equal(dockPointActive(widget,id,'end'),index%2===1);
+  }
+  // The input ports use a different channel so that each output reads its own entity.
+  for(const [id] of bottom.filter((_,index)=>index%2))widget[solarPortKey(id,'value')]='temperature';
+  assert.equal(widgetValuePacket(widget,[widget],states,new Set(),'bottom-left').value,320);
+  assert.equal(widgetValuePacket(widget,[widget],states,new Set(),'bottom-right').value,74);
+  assert.equal(solarReading({type:'ugso.solar/solo',solarBottomLeftOuterRole:'input'},'power',{},()=>({value:12,unit:'W'})).value,12,'a newly enabled input uses its displayed default power channel');
 });
 
 test('battery ports move independently to the lower enclosure seam without changing roles',()=>{

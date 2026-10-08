@@ -11,6 +11,10 @@ export function solarAnchors(widget) {
     return [...SIDES.slice(0,2),...PV_PORTS.map(([id,label,x,y])=>[id,label,x,(height-graphicHeight+graphicHeight*y)/height])];
   }
   if(kind==='battery')return SIDES.slice(0,2).map(([id,label,x,y])=>widget[solarPortKey(id,'position')]==='housing'?[id,label,x===0?.09:.91,190/264]:[id,label,x,y]);
+  if(kind==='solo')return [...SIDES,
+    ['bottom-left','Unten Ecke links',0,1],['bottom-left-outer','Unten links außen',1/6,1],['bottom-left-inner','Unten links innen',2/6,1],
+    ['bottom-right-inner','Unten rechts innen',4/6,1],['bottom-right-outer','Unten rechts außen',5/6,1],['bottom-right','Unten Ecke rechts',1,1]
+  ];
   return SIDES;
 }
 export const solarPortKey = (anchor, suffix) => `solar${anchor.split('-').map(part=>part[0].toUpperCase()+part.slice(1)).join('')}${suffix[0].toUpperCase()+suffix.slice(1)}`;
@@ -25,7 +29,7 @@ export function solarSize(widget, changed='width') {
 export function solarReading(widget, channel, states, input) {
   const unit=SOLAR_CHANNELS.find(([key])=>key===channel)?.[2];
   if(!unit)return {value:null,unit:'',error:'Unbekannter Solar-Wert'};
-  const ports=solarAnchors(widget).filter(([id])=>solarPortRole(widget,id)==='input' && widget[solarPortKey(id,'value')]===channel);
+  const ports=solarAnchors(widget).filter(([id])=>!id.startsWith('pv-') && solarPortRole(widget,id)==='input' && (widget[solarPortKey(id,'value')]||'power')===channel);
   if(ports.length>1)return {value:null,unit,error:'Genau ein Eingang pro Solar-Wert erlaubt'};
   let raw, sourceUnit;
   if(ports.length) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.280
+
+- UGSo Solar 0.1.3: Solo-Wechselrichter mit sieben getrennt konfigurierbaren Linienpunkten an der Unterkante, einschließlich Mitte und beiden Ecken. Je zwei weitere Punkte links/rechts der Mitte. Pro Punkt Aus/Eingang/Ausgang und Wertzuordnung; neue Punkte zunächst aus. Bestehende Anschlüsse bleiben erhalten.
+- Standalone inverter adds six bottom line ports for seven bottom positions in total. Each supports independent input/output roles and value assignment; new ports start disabled.
+
 ## 0.1.279
 
 - UGSo Solar 0.1.2: Batterie-Linienpunkte wahlweise an der Widgetkante oder an der unteren Gehäusenaht, links/rechts getrennt einstellbar. Eigene Schriftfarben für Leistung, Temperatur und SoC. Kopfteil mit vier optischen Solarpanel-Eingängen (je zwei links/rechts); oberer Linienpunkt sowie Wertanzeigen und deren Eigenschaftsgruppen entfallen. Solo-Wechselrichter unverändert.
