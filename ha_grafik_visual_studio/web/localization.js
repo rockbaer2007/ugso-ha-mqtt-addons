@@ -2,6 +2,13 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Drucker": "Printer", "Druckermodell": "Printer model", "Multifunktionsdrucker": "Multifunction printer", "Tintenstrahldrucker": "Inkjet printer", "Bürodrucker": "Office printer",
+"Status: Entität": "Status entity", "Statusmeldung anzeigen": "Show status message", "Statusmeldung: Entität (optional)": "Status message entity (optional)", "Leistung: Entität (optional)": "Power entity (optional)", "Seitenzähler: Entität (optional)": "Page counter entity (optional)",
+"Patronen": "Cartridges", "Anzahl der Patronen": "Number of cartridges", "Tintenpatrone": "Ink cartridge", "Warnschwelle (%)": "Warning threshold (%)", "Füllstand: Entität (%)": "Supply level entity (%)", "Druckstatus: Farbe": "Printing status color",
+"Patrone 1": "Cartridge 1", "Patrone 2": "Cartridge 2", "Patrone 3": "Cartridge 3", "Patrone 4": "Cartridge 4", "Patrone 5": "Cartridge 5", "Patrone 6": "Cartridge 6",
+"Druckermodell und Bild": "Printer model and image", "Modellbezeichnung": "Model name", "Druckerbild": "Printer image", "Standardgrafik": "Standard graphic", "Eigenes Bild": "Custom image",
+"Foto Ihres Druckers (URL oder /local/... Pfad)": "Photo of your printer (URL or /local/... path)", "Bild hochladen": "Upload image", "Bitte eine Bilddatei bis 2 MB auswählen.": "Please select an image file up to 2 MB.", "Bild konnte nicht gelesen werden.": "Could not read image file.",
+"Patronengröße": "Cartridge size", "Volle Größe": "Full size", "Halbe Größe": "Half size", "URL der Weboberfläche (auto = vom Drucker)": "Web interface URL (auto = from printer)",
 "Vorlauf": "Supply", "Vorlauftemperatur": "Supply temperature", "Rücklauf": "Return", "Flusspfeil anzeigen": "Show flow arrow",
 "Projektseiten": "Project pages",
 "Heizung – Kessel und Öltank": "Heating – boiler and oil tank", "Heizung": "Heating system",

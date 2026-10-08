@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.263
+
+- Automatische DE/EN-Sprache gemäß Studio für Status, Hinweise und Drucker-Eigenschaften; keine eigene Widget-Sprachauswahl. Benutzertexte und Entitätsmeldungen bleiben unverändert.
+- UGSo Printer: Eigenschaften zeigen nur die gewählte Anzahl Patronen (1–6). Ausgeblendete Einstellungen bleiben gespeichert und erscheinen beim Erhöhen wieder.
+- UGSo Printer properties now show only the selected cartridge count (1–6), preserving hidden cartridge settings for later reuse.
+
 ## 0.1.262
 
 - Optionale Weboberfläche als Web-Link im Widget; URL manuell oder auto aus URL-Attributen der Statusentität, leer blendet den Link aus.

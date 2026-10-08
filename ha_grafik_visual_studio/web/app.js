@@ -64,7 +64,7 @@ import { isIndustrialWeather, weatherSize, weatherAnchors, weatherBindings, rend
 import { isIndustrialSection, sectionRows, sectionSize, renderIndustrialSection } from "./industrial-section.js";
 import { isIndustrialHeating, heatingSize, heatingBindings, heatingReturnGroup, renderIndustrialHeating } from "./industrial-heating.js";
 import { isEnergy, energyBindings, renderEnergy } from "./energy.js";
-import { isPrinter, printerBindings, printerWebUrl, renderPrinter } from "./printer.js";
+import { isPrinter, cartridgeCount, printerBindings, printerWebUrl, renderPrinter } from "./printer.js";
 import { applyIndustrialBackground, INDUSTRIAL_BACKGROUND } from "./industrial-housing.js";
 import { dropdownEntryGroups } from "./widget-sets/dropdown.js";
 import { renderEventCalendar, cleanupEventCalendars, eventSources, EVENT_STYLES } from "./event-calendar.js";
@@ -235,7 +235,9 @@ function widgetPropertyGroups(widget) {
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
   if (isPrinter(widget)) {
     const labels = { mfp: "Multifunktionsdrucker", inkjet: "Tintenstrahldrucker", office: "Bürodrucker", ink: "Tintenpatrone", toner: "Toner" };
-    groups = groups.map(group => ({ ...group, fields: group.fields.map(field => ["printerModel", "supplyStyle"].includes(field.key)
+    groups = groups.map((group, index) => ({ ...group, id: propertyGroupKey(group, index + commonWidgetGroups.length + (index > 0 ? 1 : 0)) }))
+      .filter(group => !/^Patrone [1-6]$/.test(group.label) || Number(group.label.match(/\d+$/)[0]) <= cartridgeCount(widget));
+    groups = groups.map(group => ({ ...group, fields: group.fields.map(field => field.key === "cartridgeCount" ? { ...field, refreshProperties: true } : ["printerModel", "supplyStyle"].includes(field.key)
       ? { ...field, options: field.options.map(value => ({ value, label: labels[value] || value })) } : field) }));
     groups.splice(1, 0, { label: "Druckermodell und Bild", fields: [
       { label: "Modellbezeichnung", key: "printerModelName", default: "" },
@@ -4863,7 +4865,7 @@ function renderProperties() {
   }
   for (const [index, group] of groups.entries()) {
     const details = document.createElement("details"); details.className = "property-section";
-    const sectionKey = `widget:${widget.id}:${group.label}:${index}`;
+    const sectionKey = isPrinter(widget) ? `widget:${widget.id}:${propertyGroupKey(group,index)}` : `widget:${widget.id}:${group.label}:${index}`;
     details.open = state.expandedPropertySections.has(sectionKey);
     details.addEventListener("toggle", () => { if (details.open) state.expandedPropertySections.add(sectionKey); else state.expandedPropertySections.delete(sectionKey); });
     const summary = document.createElement("summary");

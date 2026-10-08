@@ -54,8 +54,20 @@ test('Printer installs, binds entities, evenly distributes 1–6 supplies, resiz
     for(const [key,value] of [['width','240'],['height','280']])await page.locator(`#properties [data-property-key="${key}"]`).fill(value);
     assert.ok(await page.locator('#printer-6 .printer-widget').evaluate(root=>root.scrollWidth<=root.clientWidth+1&&root.scrollHeight<=root.clientHeight+1),'minimum size fits without overflow');
     await page.locator('#properties [data-property-key="cartridgeCount"]').fill('1');
+    await page.locator('#properties [data-property-key="cartridgeCount"]').press('Tab');
     await page.waitForFunction(()=>document.querySelectorAll('#printer-6 .printer-cartridge').length===1);
-    for(const [key,value] of [['cartridgeCount','6'],['width','480'],['height','440']])await page.locator(`#properties [data-property-key="${key}"]`).fill(value);
+    assert.equal(await page.locator('#properties [data-property-key="cartridge2EntityId"]').count(),0);
+    for (const count of [4,5]) {
+      await page.locator('#properties [data-property-key="cartridgeCount"]').fill(String(count));
+      await page.locator('#properties [data-property-key="cartridgeCount"]').press('Tab');
+      assert.equal(await page.locator(`#properties [data-property-key="cartridge${count}EntityId"]`).count(),1);
+      assert.equal(await page.locator(`#properties [data-property-key="cartridge${count+1}EntityId"]`).count(),0);
+    }
+    await page.locator('#properties [data-property-key="cartridgeCount"]').fill('6');
+    await page.locator('#properties [data-property-key="cartridgeCount"]').press('Tab');
+    await page.locator('#properties details').evaluateAll(items=>items.forEach(item=>item.open=true));
+    for(const [key,value] of [['width','480'],['height','440']])await page.locator(`#properties [data-property-key="${key}"]`).fill(value);
+    assert.equal(await page.locator('#properties [data-property-key="cartridge6EntityId"]').inputValue(),'sensor.ink6');
     const photo='https://cdn.media.amplience.net/i/canon/pixma_ts705-fra_0b7279e209c248fc959a93611e2b5a73';
     const half=await page.locator('#printer-6 .printer-cartridge-shell').first().boundingBox();
     await page.locator('#properties [data-property-key="printerCartridgeSize"]').selectOption('full');
@@ -92,6 +104,15 @@ test('Printer installs, binds entities, evenly distributes 1–6 supplies, resiz
     const folder=process.env.STUDIO_TEST_ARTIFACTS||join(process.env.TEMP,'studio-printer-artifacts');await mkdir(folder,{recursive:true});
     await page.locator('#printer-6').screenshot({path:join(folder,'printer-six.png')});
     await page.locator('#printer-1').screenshot({path:join(folder,'printer-one.png')});
+    await page.addInitScript(()=>localStorage.setItem('ha_grafik_visual_studio_language','en'));
+    await page.reload();
+    await page.waitForFunction(()=>document.querySelector('#printer-6 .printer-status')?.textContent==='Printing');
+    assert.match(await page.locator('#printer-6 .printer-low-alert').textContent(),/Low supply/);
+    assert.match(await page.locator('#printer-6 .printer-metrics').textContent(),/Pages/);
+    await page.goto(url);
+    await page.locator('#printer-6').click({position:{x:10,y:10}});
+    await page.waitForFunction(()=>document.querySelector('#properties')?.textContent.includes('Printer model and image'));
+    assert.equal(await page.locator('#properties [data-property-key="printerModelName"]').inputValue(),'Canon PIXMA TS705');
     assert.deepEqual(errors,[]);
   } finally {await browser.close();}
 });
