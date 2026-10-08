@@ -2,6 +2,7 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Kalender anzeigen":"Show calendar", "Kalenderkachelgröße":"Calendar tile size", "Klein (44 × 52 px)":"Small (44 × 52 px)", "Mittel (58 × 64 px)":"Medium (58 × 64 px)", "Groß (76 × 82 px)":"Large (76 × 82 px)",
 "Kalender +": "Calendar +", "Konfiguration": "Configuration", "Meine Kalender": "My calendars",
 "Vorschau (Tage)": "Lookahead (days)", "Maximale Termine": "Maximum events", "Ereignisse ausklappen": "Expand events",
 "Detail-Popup aktivieren": "Enable details popup", "Nach Tag gruppieren": "Group by day", "Nach Tag und Kalender gruppieren": "Group by day and calendar",

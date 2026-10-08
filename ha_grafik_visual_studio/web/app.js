@@ -235,6 +235,8 @@ function widgetPropertyGroups(widget) {
   ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
   if (isCalendarPlus(widget)) {
+    if (!groups.some(group=>group.fields.some(field=>field.key==='calendarIconSize'))) groups=groups.map(group=>group.label==='Farben'?{...group,fields:[...group.fields,{key:'calendarIconSize',label:'Kalenderkachelgröße',type:'select',options:['small','medium','large'],default:'medium'}]}:group);
+    groups = groups.map(group=>({...group,fields:group.fields.map(field=>field.key==='calendarIconSize'?{...field,options:[{value:'small',label:'Klein (44 × 52 px)'},{value:'medium',label:'Mittel (58 × 64 px)'},{value:'large',label:'Groß (76 × 82 px)'}]}:field)}));
     groups = groups.map(group => ({...group, required:true, fields:group.fields.map(field => field.key==='calendarTheme'?{...field,options:[{value:'auto',label:'Auto'},{value:'dark',label:'Dunkel'},{value:'light',label:'Hell'}]}:field)}));
     groups.splice(groups.length - 1, 0, {id:'calendar-plus-sources',label:'Meine Kalender',required:true,hint:'Alle Kalender werden automatisch erkannt und sind zunächst eingeblendet.',fields:[]}, ...calendarPlusSources(widget, calendarPlusCatalog(), true).map(source => ({
       id: `calendar-plus-${source.entityId}`, label: source.label, hint: source.entityId,
@@ -326,7 +328,7 @@ function widgetPropertyGroups(widget) {
     });
     return [...commonWidgetGroups, dockGroup, { id: "linebox-ports", label: "Anschlüsse", hint: "Nur aktive Andockpunkte erhalten eine Rolle. Eingänge werden mit Vorzeichen summiert; Ausgänge geben den Wert nur bei aktiviertem Haken weiter.", fields: portFields }, ...groups];
   }
-  return widget.type === "svg-connection" || isSeparator(widget) ? [...commonWidgetGroups, ...groups] : [...commonWidgetGroups, ...groups, connectionAnchorGroup, ...(widget.type === "value-converter" ? [] : [dataGroup]), ...styleEntryGroups];
+  return widget.type === "svg-connection" || isSeparator(widget) || isCalendarPlus(widget) ? [...commonWidgetGroups, ...groups] : [...commonWidgetGroups, ...groups, connectionAnchorGroup, ...(widget.type === "value-converter" ? [] : [dataGroup]), ...styleEntryGroups];
 }
 
 async function loadMdiIcons() {
@@ -4941,9 +4943,9 @@ function renderProperties() {
     });
     summary.append(enabled);
     if (isCalendarPlus(widget) && group.masterKey) {
-      const toggle=document.createElement('button');toggle.type='button';toggle.textContent=uiText(enabled.checked?'Ausblenden':'Einblenden');
-      toggle.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();enabled.checked=!enabled.checked;enabled.dispatchEvent(new Event('change'));renderProperties();});
-      enabled.hidden=true;summary.append(toggle);
+      summary.classList.add('calendar-source-summary');
+      enabled.setAttribute('aria-label', `${group.label}: ${uiText('Kalender anzeigen')}`);
+      enabled.title=uiText('Kalender anzeigen');
     }
     const body = document.createElement("div"); body.className = "property-fields";
     let updateDockAll = null;

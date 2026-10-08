@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.267
+
+- Kalender ohne Datenfluss- und Anschluss-Einstellungen. / Calendar properties omit data-flow and connection settings.
+
+- UGSo Calendar +: Kalender-Sichtbarkeit als Checkbox rechts oben; Kalendernamen bleiben lesbar. Drei feste Kachelgrößen: 44 × 52, 58 × 64 (Standard), 76 × 82 px. Auch kleine Kacheln verwenden mindestens 12 px Kopftext und 24 px Tagesziffern. Gilt ebenfalls für vorhandene Pakete 0.1.0; Paket 0.1.1 enthält die aktualisierte Anleitung bei unverändertem Paketvertrag.
+- Calendar visibility uses a top-right checkbox. Date tiles offer small/medium/large sizes with readable minimum text sizes, in both list and popup. Existing 0.1.0 installations receive the setting through the updated host.
+
 ## 0.1.266
 
 - Neues externes Widgetset UGSo Calendar +, inspiriert von xBourner/calendar-card-plus (MIT): automatische Erkennung aller Home-Assistant-Kalender, standardmäßig alle eingeblendet, individuelle Farben und Hintergründe, Tages-/Kalendergruppen, kompakte oder ausgeklappte Terminliste und Detail-Popup. Automatische DE/EN-Sprache; Termine werden ausschließlich gelesen.

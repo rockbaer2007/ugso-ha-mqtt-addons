@@ -1,4 +1,4 @@
-"""Build the independent declarative UGSo Calendar + package (Studio 0.1.266+)."""
+"""Build the independent declarative UGSo Calendar + package (Studio 0.1.267+)."""
 import json
 import sys
 from pathlib import Path
@@ -38,7 +38,7 @@ def manifest():
         dict(label='Größe', fields=[field('width', 'Breite (px)', 'number', min=260, max=3000),
         field('height', 'Höhe (px)', 'number', min=180, max=3000)])]
     return dict(format='ha-grafik-widget-package', apiVersion='0.2', id='ugso.calendar-plus',
-        name='UGSo Calendar +', version='0.1.0', license='MIT', icon='icons/calendar.svg',
+        name='UGSo Calendar +', version='0.1.1', license='MIT', icon='icons/calendar.svg',
         widgets=[dict(type='ugso.calendar-plus/calendar', label='Kalender +', icon='icons/calendar.svg',
         defaults=defaults, propertyGroups=groups, render=dict(kind='calendar-plus', valueKey='heading'))])
 

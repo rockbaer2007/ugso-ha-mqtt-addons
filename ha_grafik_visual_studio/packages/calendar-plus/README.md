@@ -1,6 +1,8 @@
 # UGSo Calendar +
 
-Eigenständiges externes Widgetset **0.1.0**, benötigt **HA Grafik Visual Studio 0.1.266+**.
+Eigenständiges externes Widgetset **0.1.1**, benötigt **HA Grafik Visual Studio 0.1.267+**.
+
+Kalender-Sichtbarkeit als Checkbox rechts oben. Kalenderkacheln: Klein **44 × 52 px**, Mittel **58 × 64 px** (Standard), Groß **76 × 82 px**. Kopftext mindestens **12 px**, Tagesziffer mindestens **24 px**, unabhängig von der allgemeinen Schriftgröße. Die Auswahl gilt für Liste und Popup. Vorhandene Pakete 0.1.0 erhalten die Einstellung ebenfalls mit Studio 0.1.267.
 
 `ugso.calendar-plus.wg` über Einstellungen → Widget-Pakete → Lokal installieren. Danach „Kalender +“ aus der Palette auf die Seite ziehen.
 
@@ -17,4 +19,4 @@ Termine werden ausschließlich gelesen. „Neuer Termin“, Bearbeiten und Lösc
 
 Inspiriert von **[xBourner/calendar-card-plus](https://github.com/xBourner/calendar-card-plus)**, MIT, Copyright (c) 2026 xBourner. Eigenständige Studio-Implementierung; kein Originalquellcode und keine Originalgrafiken übernommen. Dieses Paket enthält nur deklarative Daten; sein Renderer wird von Studio bereitgestellt. Eigene Implementierung: MIT, Copyright (c) 2026 rockbaer2007.
 
-Independent external widget set inspired by the original above. Requires Studio 0.1.266+. Install the `.wg` under Settings → Widget packages → Local. Automatically discovers **all** Home Assistant calendars, enabled by default, with per-calendar show/hide and colors/backgrounds. Upcoming event list and details popup, all-day events, grouping, configurable text, automatic DE/EN language and light/dark theme. Read-only: event creation/editing/deletion is not included. No original source code or images were copied.
+Independent external widget set inspired by the original above. Requires Studio 0.1.267+. Install the `.wg` under Settings → Widget packages → Local. Automatically discovers **all** Home Assistant calendars, enabled by default, with per-calendar show/hide checkboxes and colors/backgrounds. Three date-tile sizes: 44 × 52, 58 × 64 (default), 76 × 82 px. No data-flow settings. Upcoming event list and details popup, all-day events, grouping, configurable text, automatic DE/EN language and light/dark theme. Read-only: event creation/editing/deletion is not included. No original source code or images were copied.

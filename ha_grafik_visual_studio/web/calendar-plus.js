@@ -102,6 +102,8 @@ export function renderCalendarPlus(widget,doc,{locale='de',runtime=false,key=wid
   const root=doc.createElement('section');root.className='calendar-plus';root.dataset.theme=['dark','light'].includes(widget.calendarTheme)?widget.calendarTheme:'auto';
   root.style.setProperty('--cp-accent',widget.calendarAccent||'#e85b64');
   root.style.setProperty('--cp-font-size',`${Math.min(24,Math.max(10,Number(widget.calendarFontSize)||14))}px`);
+  const iconSize={small:[44,52,12,24],medium:[58,64,13,30],large:[76,82,15,40]}[widget.calendarIconSize]||[58,64,13,30];
+  ['width','height','month','day'].forEach((name,index)=>root.style.setProperty(`--cp-icon-${name}`,`${iconSize[index]}px`));
   if(widget.showDivider===false)root.classList.add('no-dividers');
   const node=(tag,cls,text)=>{const el=doc.createElement(tag);el.className=cls;if(text!=null)el.textContent=text;return el;};
   const header=node('header','cp-header'),title=node('strong','cp-title',widget.heading||'UGSo Calendar +');title.title=title.textContent;
@@ -121,7 +123,7 @@ export function renderCalendarPlus(widget,doc,{locale='de',runtime=false,key=wid
     const item=node(full?'article':'button','cp-event');if(!full)item.type='button';item.style.setProperty('--cp-event-color',event.source.color);item.style.setProperty('--cp-event-ink',calendarPlusInk(event.source.color));
     if(event.source.background)item.style.backgroundColor=event.source.background;
     const weekday=widget.longWeekday? 'long':'short';
-    const date=node('div','cp-date');date.append(node('span','cp-month',new Intl.DateTimeFormat(locale,widget.swapMonthWeekday?{weekday}:{month:'short'}).format(event.start)),node('strong','cp-day',String(event.start.getDate())));
+    const date=node('div','cp-date');date.title=new Intl.DateTimeFormat(locale,{dateStyle:'full'}).format(event.start);date.append(node('span','cp-month',new Intl.DateTimeFormat(locale,widget.swapMonthWeekday?{weekday}:{month:'short'}).format(event.start)),node('strong','cp-day',String(event.start.getDate())));
     const body=node('div','cp-event-body'),name=node('strong','cp-event-title',event.title);name.title=event.title;body.append(name);
     const time=event.allDay?lang.allDay:new Intl.DateTimeFormat(locale,{hour:'2-digit',minute:'2-digit',hour12:false}).format(event.start)+'–'+new Intl.DateTimeFormat(locale,{hour:'2-digit',minute:'2-digit',hour12:false}).format(event.end);
     const dateText=new Intl.DateTimeFormat(locale,{...(widget.showWeekday!==false?{weekday}:{}),day:'2-digit',month:'2-digit'}).format(event.start);

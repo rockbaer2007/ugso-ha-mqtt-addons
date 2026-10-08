@@ -44,17 +44,28 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
     await page.locator('#properties details').evaluateAll(nodes=>nodes.forEach(node=>node.open=true));
     const family=page.locator('#properties details').filter({has:page.locator('summary .property-section-title').getByText('Familie',{exact:true})});
     const garden=page.locator('#properties details').filter({has:page.locator('summary .property-section-title').getByText('Garten',{exact:true})});
-    assert.equal(await family.getByRole('button',{name:'Ausblenden',exact:true}).count(),1);
+    assert.equal(await family.locator('summary input[type="checkbox"]').isChecked(),true);
+    assert.equal(await family.locator('summary input[type="checkbox"]').isVisible(),true);
+    assert.equal(await family.locator('summary button').count(),0);
+    for(const [size,width,height] of [['small',44,52],['medium',58,64],['large',76,82]]){
+      await page.locator('#properties [data-property-key="calendarIconSize"]').selectOption(size);
+      await page.waitForFunction(([width,height])=>{const tile=document.querySelector('#calendar-test .cp-date');return tile&&tile.offsetWidth===width&&tile.offsetHeight===height;},[width,height]);
+      const fonts=await page.locator('#calendar-test .cp-date').first().evaluate(tile=>[parseFloat(getComputedStyle(tile.querySelector('.cp-month')).fontSize),parseFloat(getComputedStyle(tile.querySelector('.cp-day')).fontSize)]);
+      assert.ok(fonts[0]>=12&&fonts[1]>=24,'smallest tile remains readable');
+    }
+    await page.locator('#properties [data-property-key="calendarIconSize"]').selectOption('small');
     assert.equal(await page.locator('[data-property-key="calendarCount"]').count(),0,'no manual calendar count');
+    assert.equal(await page.locator('#properties [data-property-key="dataOutputEnabled"], #properties [data-property-key="dataInputEnabled"]').count(),0,'calendar has no data-flow settings');
     await family.locator('[data-property-key="cpColor_calendar_family"]').fill('#ffe52b');
     await family.locator('[data-property-key="cpColor_calendar_family"]').dispatchEvent('input');
-    await garden.getByRole('button',{name:'Ausblenden',exact:true}).click();
+    await garden.locator('summary input[type="checkbox"]').uncheck();
     await page.waitForFunction(()=>document.querySelectorAll('#calendar-test .cp-list .cp-event').length===3);
-    assert.equal(await garden.getByRole('button',{name:'Einblenden',exact:true}).count(),1);
+    assert.equal(await garden.locator('summary input[type="checkbox"]').isChecked(),false);
     await page.locator('#save').click();
     await page.waitForFunction(()=>document.querySelector('#status').textContent.includes('gespeichert'));
     assert.equal(saved.pages[0].widgets[0].cpEnabled_calendar_garden,false);
     assert.equal(saved.pages[0].widgets[0].cpColor_calendar_family,'#ffe52b');
+    assert.equal(saved.pages[0].widgets[0].calendarIconSize,'small');
     const projectUrl=new URL('api/project?project=calendar-plus-integration-test',url).href;
     assert.ok((await page.request.put(projectUrl,{data:saved})).ok(),'backend accepts dynamic per-calendar settings');
     const persisted=await(await page.request.get(projectUrl)).json();
@@ -67,6 +78,7 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
     assert.equal(await page.locator('#calendar-test .cp-list .cp-event').first().evaluate(node=>node.style.getPropertyValue('--cp-event-color')),'#ffe52b');
     await page.locator('#calendar-test .cp-footer').click();
     assert.equal(await page.locator('#calendar-test dialog').evaluate(node=>node.open),true);
+    assert.equal(await page.locator('#calendar-test .cp-details .cp-date').first().evaluate(node=>node.offsetWidth),44);
     assert.match(await page.locator('#calendar-test .cp-details').textContent(),/Picknick mit der Familie/);
     assert.match(await page.locator('#calendar-test .cp-details').textContent(),/Stadtpark/);
     assert.equal(await page.locator('#calendar-test .cp-details img').count(),0);

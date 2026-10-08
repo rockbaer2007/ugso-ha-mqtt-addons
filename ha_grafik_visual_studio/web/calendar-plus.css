@@ -13,9 +13,9 @@ button.cp-event { cursor:pointer; }
 button.cp-event:disabled { opacity:1;cursor:default; }
 button.cp-event:not(:disabled):hover { background:var(--cp-line);border-radius:10px; }
 .calendar-plus.no-dividers .cp-event { border:0; }
-.cp-date { width:58px;flex:none;text-align:center;border-radius:10px;background:var(--cp-tile);overflow:hidden;box-shadow:0 2px 5px #0002; }
-.cp-month { display:block;background:var(--cp-event-color,var(--cp-accent));color:var(--cp-event-ink,#fff);font-size:.72em;font-weight:700;padding:3px;text-transform:uppercase; }
-.cp-day { display:block;font-size:1.8em;line-height:1.5;font-weight:500; }
+.cp-date { width:var(--cp-icon-width,58px);height:var(--cp-icon-height,64px);display:flex;flex-direction:column;flex:none;text-align:center;border-radius:10px;background:var(--cp-tile);overflow:hidden;box-shadow:0 2px 5px #0002; }
+.cp-month { display:block;flex:none;background:var(--cp-event-color,var(--cp-accent));color:var(--cp-event-ink,#fff);font-size:var(--cp-icon-month,13px);line-height:1.2;font-weight:700;padding:3px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.cp-day { display:grid;place-items:center;flex:1;font-size:var(--cp-icon-day,30px);line-height:1;font-weight:500; }
 .cp-event-body { flex:1;min-width:0; }
 .cp-event-title { display:block;font-size:1.05em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .cp-time,.cp-source,.cp-location,.cp-full-date { font-size:.86em;color:var(--cp-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
@@ -34,4 +34,5 @@ button.cp-event:not(:disabled):hover { background:var(--cp-line);border-radius:1
 .cp-group { font-size:.9em;margin:12px 0 0;color:var(--cp-muted); }
 .cp-group-source { font-size:.8em;font-weight:700;margin-top:8px; }
 .cp-empty-day { font-size:.8em;color:var(--cp-muted);padding:10px 0; }
-@container(max-width:350px) { .cp-event { gap:8px; }.cp-date { width:44px; }.cp-relative { max-width:23%;font-size:.72em; } }
+@container(max-width:350px) { .cp-event { gap:8px; }.cp-relative { max-width:23%;font-size:.72em; } }
+.calendar-source-summary .property-section-title { flex:1;overflow-wrap:anywhere; }
