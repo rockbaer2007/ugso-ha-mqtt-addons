@@ -24,7 +24,7 @@ const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
 import { connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings } from "./connection-animation.js";
-import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection, OUTPUT_SIDES, outputDockActive, dockPointActive, hasSimpleOutput, setOutputAnchor } from "./dock-points.js";
+import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection, OUTPUT_SIDES, outputDockActive, inputDockActive, hasSimpleInput, setInputAnchor, dockPointActive, hasSimpleOutput, setOutputAnchor } from "./dock-points.js";
 import { MATH_ANCHORS, MATH_IDS, mathPortRole, mathBoxResults, mathCalculations, validateMathAssignments, mathLeadPoint, evaluateMathExpression } from "./linebox-math.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
@@ -302,8 +302,8 @@ function widgetPropertyGroups(widget) {
   const dataGroup = { label: "Datenfluss", hint: "Wertausgabe am gewählten aktiven Dockpunkt. Wert-Verbindungen laufen vom Start zum Ziel; ein Konverter-Eingang erlaubt genau eine Quelle.", fields: [
     { label: "Ausgangspunkt aktivieren", key: "dataOutputEnabled", type: "checkbox", default: false, refreshProperties: true },
     { label: "Ausgangspunkt", key: "dataOutputAnchor", type: "radio", options: OUTPUT_SIDES.map(([value, label]) => ({ value, label })), default: "right-center" },
-    { label: "Wert vom Datenfluss übernehmen", key: "dataInputEnabled", type: "checkbox", default: false },
-    { label: "Eingangs-Dockpunkt", key: "dataInputAnchor", type: "select", options: CONNECTION_ANCHORS.map(([value, label]) => ({ value, label })), default: "left-center" },
+    { label: hasSimpleInput(widget) ? "Eingangspunkt aktivieren" : "Wert vom Datenfluss übernehmen", key: "dataInputEnabled", type: "checkbox", default: false, refreshProperties:hasSimpleInput(widget) },
+    { label: hasSimpleInput(widget) ? "Eingangspunkt" : "Eingangs-Dockpunkt", key: "dataInputAnchor", type: hasSimpleInput(widget) ? "radio" : "select", options: (hasSimpleInput(widget) ? OUTPUT_SIDES : CONNECTION_ANCHORS).map(([value, label]) => ({ value, label })), default: "left-center" },
   ] };
   if (isIndustrialSegment(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1").map(field=>field.key==="segmentUnit"?{...field,options:[{value:"off",label:"Aus"},{value:"W",label:"W"},{value:"A",label:"A"},{value:"V",label:"V"}]}:field)})),...styleEntryGroups];
   if (isIndustrialClock(widget)) return [...commonWidgetGroups,...groups.filter(group=>group.label!=="Wertanzeige").map(group=>({...group,fields:group.fields.filter(field=>field.key!=="aspectRatio1to1" && (field.key!=="clockLedColor" || clockMode(widget)==="led") && (!["clockLcdColor","clockLcdBackground"].includes(field.key) || clockMode(widget)==="lcd")).map(field=>field.key==="clockMode"?{...field,refreshProperties:true,options:[{value:"nixie",label:"Nixieröhre"},{value:"led",label:"LED"},{value:"lcd",label:"LCD"}]}:field.key==="height"?{...field,min:clockMode(widget)==="nixie"?64:32}:field.key==="clockZone"?{...field,options:[{value:"local",label:"Browser-Ortszeit"},{value:"UTC",label:"UTC"},{value:"Europe/Berlin",label:"Europe/Berlin"}]}:field)})),...styleEntryGroups];
@@ -3914,13 +3914,14 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       if (!housingActive(widget, id)) continue;
       const point = document.createElement("span"); point.className = "housing-snap-point"; point.dataset.housingCorner = id; point.style.left = `${x * 100}%`; point.style.top = `${y * 100}%`; point.title = `Gehäuse-Snappunkt: ${label}`; element.append(point);
     }
-    const showDockPoints = !runtimeMode && !isConnection && !isSeparator(widget) && (isIndustrialSection(widget) || isIndustrialWeather(widget) || isIndustrialClock(widget) || isIndustrialSegment(widget) || isIndustrialOdometer(widget) || isIndustrialLcd(widget) || isIndustrialSwitch(widget) || widget.dockPointsEnabled === true || widget.dataOutputEnabled === true) && (selected || widget.dockAlwaysVisible || hasConnections);
+    const showDockPoints = !runtimeMode && !isConnection && !isSeparator(widget) && (isIndustrialSection(widget) || isIndustrialWeather(widget) || isIndustrialClock(widget) || isIndustrialSegment(widget) || isIndustrialOdometer(widget) || isIndustrialLcd(widget) || isIndustrialSwitch(widget) || widget.dockPointsEnabled === true || widget.dataOutputEnabled === true || hasSimpleInput(widget) && widget.dataInputEnabled === true) && (selected || widget.dockAlwaysVisible || hasConnections);
     if (showDockPoints) {
       for (const [anchorId, label, x, y] of widgetAnchors(widget)) {
         if (!dockPointActive(widget, anchorId)) continue;
         const marker = document.createElement("span"); marker.className = "widget-dock-point"; marker.style.left = `${x * 100}%`; marker.style.top = `${y * 100}%`; marker.dataset.anchorId = anchorId; marker.dataset.widgetId = widget.id;
         const isOutput = isIndustrialSwitch(widget) && anchorId.startsWith("output-") || outputDockActive(widget, anchorId) || widget.type === "value-converter" && anchorId === (widget.dataOutputAnchor || "right-center") || widget.type === "linebox" && lineboxPortRole(widget, anchorId) === "output" || widget.type === "linebox-math" && mathPortRole(widget, anchorId) === "output";
         if (isOutput) { marker.classList.add("output-dock-point"); marker.style.setProperty("--dock-color", "var(--output-dock-color)"); }
+        if(inputDockActive(widget,anchorId))marker.classList.add('input-dock-point');
         const occupied = activePage.widgets.filter(item => item.type === "svg-connection" && [[item.startWidgetId, item.startAnchor], [item.endWidgetId, item.endAnchor]].some(([id, anchor]) => id === widget.id && (anchor || "right-center") === anchorId)).length;
         marker.dataset.count = String(occupied); marker.title = `${label}${occupied ? ` · ${occupied} Verbindung${occupied === 1 ? "" : "en"}` : ""}`; element.append(marker);
         if (isIndustrialSwitch(widget)) { marker.classList.add("industrial-switch-port"); const caption = document.createElement("span"); caption.className = "industrial-switch-port-label"; caption.textContent = label; marker.append(caption); }
@@ -4561,7 +4562,7 @@ function field(descriptor, widget) {
       const label = document.createElement("label"); label.className = "property-radio-option";
       const input = document.createElement("input"); input.type = "radio"; input.name = `${widget.id}-${descriptor.key}`;
       input.value = option.value; input.checked = selected === option.value; input.disabled = descriptor.disabled === true;
-      input.addEventListener("change", () => { if (!input.checked) return; if (descriptor.key === "dataOutputAnchor") setOutputAnchor(widget, currentPage().widgets, input.value); else widget[descriptor.key] = input.value; renderStage(); renderProperties(); });
+      input.addEventListener("change", () => { if (!input.checked) return; if (descriptor.key === "dataOutputAnchor") setOutputAnchor(widget, currentPage().widgets, input.value); else if(descriptor.key==='dataInputAnchor' && hasSimpleInput(widget))setInputAnchor(widget,currentPage().widgets,input.value); else widget[descriptor.key] = input.value; renderStage(); renderProperties(); });
       label.append(input, document.createTextNode(option.label)); choices.append(label);
     }
     return choices;

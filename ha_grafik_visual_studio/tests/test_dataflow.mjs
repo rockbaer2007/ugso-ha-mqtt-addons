@@ -10,6 +10,22 @@ import { dockPointKey } from "../web/dock-points.js";
 const enable = (widget, ...ids) => Object.assign(widget, { dockPointsEnabled: true }, Object.fromEntries(ids.map(id => [dockPointKey(id), true])));
 const link = (id, start, end, endAnchor = "left-center") => ({ id, type: "svg-connection", dataFlowVariant: "value-connection", startWidgetId: start, startAnchor: "right-center", endWidgetId: end, endAnchor });
 
+test("Basic Number and String receive and forward values without general docking points", () => {
+  for (const [type, value] of [["sensor", 23.5], ["string", "Heating running"]]) {
+    const source = { id: "source", type, state: value, dataOutputEnabled: true, dockPointsEnabled: false };
+    const target = { id: "target", type, dataInputEnabled: true, dataOutputEnabled: true, dockPointsEnabled: false };
+    const line = link("line", source.id, target.id), widgets = [source, target, line];
+    assert.equal(widgetInputPacket(target, widgets, {}).value, value);
+    assert.equal(widgetValuePacket(target, widgets, {}).value, value);
+    target.dataInputAnchor = "top-center";
+    assert.ok(widgetInputPacket(target, widgets, {}).error);
+    line.endAnchor = "top-center";
+    assert.equal(widgetInputPacket(target, widgets, {}).value, value);
+    target.dataInputEnabled = false;
+    assert.ok(widgetInputPacket(target, widgets, {}).error);
+  }
+});
+
 test("independent output forwards live units on either line type and stops when disabled", () => {
   const source = { id: "source", type: "sensor", entityId: "sensor.temp", dataOutputEnabled: true, dataOutputAnchor: "top-center", dockPointsEnabled: false };
   const line = { id: "line", type: "svg-connection", startWidgetId: source.id, startAnchor: "top-center" };

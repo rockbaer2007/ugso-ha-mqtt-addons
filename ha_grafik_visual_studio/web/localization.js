@@ -4,6 +4,8 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 const ENGLISH = {
 "CSS-Stil aktivieren/deaktivieren":"Enable/disable CSS styling",
 "Stil":"Style",
+"Eingangspunkt aktivieren":"Enable input point",
+"Eingangspunkt":"Input point",
 "Kachel-Eckenradius (px)":"Tile corner radius (px)",
 "Schriftgröße oben (px, 0 = automatisch)":"Top font size (px, 0 = automatic)", "Schriftgröße unten (px, 0 = automatisch)":"Bottom font size (px, 0 = automatic)",
 "Kacheleinstellungen":"Tile settings", "Sehr klein (36 × 44 px)":"Extra small (36 × 44 px)", "Automatisch aktualisieren (60 s)":"Refresh automatically (60 s)",

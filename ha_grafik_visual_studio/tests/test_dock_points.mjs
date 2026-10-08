@@ -1,6 +1,44 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection, dockPointActive, setOutputAnchor } from "../web/dock-points.js";
+import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection, dockPointActive, setOutputAnchor, setInputAnchor, OUTPUT_SIDES } from "../web/dock-points.js";
+
+test("Number and String inputs are independent and directional on all four sides", () => {
+  for (const type of ["sensor", "string"]) {
+    const widget = { id: "target", type, dockPointsEnabled: false, dataInputEnabled: true };
+    assert.equal(dockPointActive(widget, "left-center", "end"), true);
+    for (const [anchor] of OUTPUT_SIDES) {
+      setInputAnchor(widget, [], anchor);
+      for (const [other] of OUTPUT_SIDES) {
+        assert.equal(dockPointActive(widget, other, "end"), other === anchor);
+        assert.equal(dockPointActive(widget, other, "start"), false);
+      }
+    }
+    widget.dataOutputEnabled = true;
+    widget.dataOutputAnchor = widget.dataInputAnchor;
+    assert.equal(dockPointActive(widget, widget.dataInputAnchor, "start"), true);
+    widget.dataInputEnabled = false;
+    assert.equal(dockPointActive(widget, widget.dataInputAnchor, "end"), false);
+  }
+});
+
+test("moving an input follows its incoming lines without moving unrelated ports", () => {
+  const widget = { id: "target", type: "sensor", dataInputEnabled: true };
+  const lines = [
+    { type: "svg-connection", endWidgetId: "target" },
+    { type: "svg-connection", endWidgetId: "target", endAnchor: "top-center" },
+    { type: "svg-connection", endWidgetId: "other", endAnchor: "left-center" },
+    { type: "svg-connection", startWidgetId: "target", startAnchor: "left-center" }
+  ];
+  setInputAnchor(widget, lines, "bottom-center");
+  assert.deepEqual(lines.map(line => line.endAnchor), ["bottom-center", "top-center", "left-center", undefined]);
+  assert.equal(lines[3].startAnchor, "left-center");
+  setInputAnchor(widget, lines, "invalid");
+  assert.equal(widget.dataInputAnchor, "bottom-center");
+  widget.dataInputEnabled = false;
+  setInputAnchor(widget, lines, "right-center");
+  assert.equal(lines[0].endAnchor, "bottom-center");
+  assert.equal(dockPointActive({ type: "button", dataInputEnabled: true }, "left-center", "end"), false);
+});
 
 const anchors = ["left-top", "left-center", "right-bottom"];
 

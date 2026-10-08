@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.274
+
+- Basic Number und String: eigenständiger Eingangspunkt unter Datenfluss mit Aktivierung und Oben/Unten/Rechts/Links wie beim Ausgang. Standard links, unabhängig von allgemeinen Andockpunkten. Beim Versetzen folgen eingehende Verbindungen dem Punkt; Werteübernahme und Weitergabe funktionieren in Editor und Runtime.
+- Basic Number and String add independent input points with the same four side choices as outputs. Incoming connections follow input position changes; data reception and forwarding remain active in editor and runtime.
+
 ## 0.1.273
 
 - Printer: Auswahl „Stil → Patronen / Balken“ ersetzt Tintenpatrone/Toner. Balken zeigt je Patrone Beschriftung, horizontalen farbigen Füllstand und Prozentwert. Unbekannte Werte und Warnschwelle bleiben erhalten; frühere Toner-Auswahl wird als Balken übernommen. Printer-Paket 0.1.1.

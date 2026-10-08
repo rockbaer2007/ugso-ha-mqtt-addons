@@ -13,6 +13,17 @@ export function dockPointKey(anchorId) {
 }
 
 export const OUTPUT_SIDES = [["top-center", "Oben"], ["bottom-center", "Unten"], ["right-center", "Rechts"], ["left-center", "Links"]];
+export const hasSimpleInput = widget => ['sensor','string'].includes(widget?.type);
+export function inputDockActive(widget, anchor) {
+  return hasSimpleInput(widget) && widget.dataInputEnabled === true && anchor === (widget.dataInputAnchor || 'left-center');
+}
+export function setInputAnchor(widget, widgets, anchor) {
+  if(!hasSimpleInput(widget) || !OUTPUT_SIDES.some(([id])=>id===anchor))return;
+  const previous=widget.dataInputAnchor || 'left-center';
+  widget.dataInputAnchor=anchor;
+  if(widget.dataInputEnabled!==true)return;
+  for(const line of widgets)if(line.type==='svg-connection' && line.endWidgetId===widget.id && (line.endAnchor || 'left-center')===previous)line.endAnchor=anchor;
+}
 export function hasSimpleOutput(widget) {
   if (isIndustrialHeating(widget)) return false;
   return !!widget && !isIndustrialSwitch(widget) && !isIndustrialLcd(widget) && !isIndustrialOdometer(widget) && !isIndustrialSegment(widget) && !isIndustrialClock(widget) && !isIndustrialWeather(widget) && !isIndustrialSection(widget) && !isSeparator(widget) && !["svg-connection", "linebox", "linebox-math", "value-converter"].includes(widget.type);
@@ -39,7 +50,9 @@ export function dockPointActive(widget, anchor, side = "") {
   if (isIndustrialWeather(widget)) return weatherPortActive(widget, anchor, side);
   if (isIndustrialSection(widget)) return false;
   if (widget && isSeparator(widget)) return false;
-  if (outputDockActive(widget, anchor)) return side !== "end";
+  if (inputDockActive(widget, anchor) || outputDockActive(widget, anchor)) {
+    return side==='start' ? outputDockActive(widget,anchor) : side==='end' ? inputDockActive(widget,anchor) : true;
+  }
   return widget?.dockPointsEnabled === true && widget[dockPointKey(anchor)] === true;
 }
 
