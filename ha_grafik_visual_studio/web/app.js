@@ -571,6 +571,7 @@ let observedProjectSnapshot = "";
 let projectChangedAt = 0;
 let projectSavePending = false;
 let projectSaveCompletion = Promise.resolve();
+let projectSaveRetryAt = 0;
 
 function rawProjectSnapshot() { return state.project ? JSON.stringify(state.project) : ""; }
 
@@ -599,6 +600,8 @@ function restoreHistorySnapshot(snapshot) {
   state.selectedId = state.selectedIds[0] || (available.has(state.selectedId) ? state.selectedId : null);
   state.nextId = Math.max(0, ...allProjectWidgets(state.project).map(widget => Number(widget.id.replace(/\D/g, "")) || 0)) + 1;
   observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
+  projectChangedAt = Date.now();
+  projectSaveRetryAt = 0;
   render();
 }
 
@@ -615,24 +618,31 @@ function redoWidgetChange() {
 }
 
 async function saveProject(automatic = false) {
-  if (projectSavePending) return false;
+  if (projectSavePending) {
+    if (automatic) return false;
+    await projectSaveCompletion;
+    return saveProject(false);
+  }
   projectSavePending = true;
   let completeSave;
   projectSaveCompletion = new Promise(resolve => { completeSave = resolve; });
   const projectId = state.projectId;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
   try {
     const snapshot = JSON.stringify(projectForSave(state.project));
-    const response = await fetch(`api/project?project=${encodeURIComponent(projectId)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: snapshot });
+    const response = await fetch(`api/project?project=${encodeURIComponent(projectId)}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: snapshot, signal: controller.signal });
     if (!response.ok) throw new Error("Speichern fehlgeschlagen");
-    if (state.projectId === projectId) savedProjectSnapshot = snapshot;
+    if (state.projectId === projectId) { savedProjectSnapshot = snapshot; projectSaveRetryAt = 0; }
     $("#status").textContent = automatic ? "Projekt automatisch gespeichert" : "Projekt lokal gespeichert";
     return true;
   } catch {
-    $("#status").textContent = "Speichern fehlgeschlagen – bitte erneut speichern";
-    // Retry only after another change or a manual save.
-    if (automatic) projectChangedAt = Infinity;
+    $("#status").textContent = controller.signal.aborted ? "Speichern fehlgeschlagen – Zeitüberschreitung" : "Speichern fehlgeschlagen – bitte erneut speichern";
+    // Keep dirty changes eligible for retry, including edits made during this request.
+    if (state.projectId === projectId) projectSaveRetryAt = Date.now() + 5000;
     return false;
   } finally {
+    clearTimeout(timeout);
     projectSavePending = false;
     completeSave();
   }
@@ -667,6 +677,7 @@ async function loadProject() {
   document.documentElement.classList.remove("embedded-loading");
   if (params.get("embedded") === "1") parent.postMessage({ type: "gvs-surface-ready" }, location.origin);
   savedProjectSnapshot = observedProjectSnapshot = JSON.stringify(projectForSave(state.project));
+  projectSaveRetryAt = 0;
   if (runtimeMode) void refreshRuntimeStates();
   else void refreshEditorLiveStates();
 }
@@ -1088,10 +1099,11 @@ if (!runtimeMode) setInterval(() => {
   if (snapshot !== observedProjectSnapshot) {
     observedProjectSnapshot = snapshot;
     projectChangedAt = Date.now();
+    projectSaveRetryAt = 0;
   }
   const settings = state.project.settings || {};
   const delay = Math.max(1, Math.min(300, Number(settings.autoSaveDelaySeconds) || 5)) * 1000;
-  if (settings.autoSave !== false && snapshot !== savedProjectSnapshot && Date.now() - projectChangedAt >= delay) void saveProject(true);
+  if (settings.autoSave !== false && snapshot !== savedProjectSnapshot && Date.now() - projectChangedAt >= delay && Date.now() >= projectSaveRetryAt) void saveProject(true);
 }, 250);
 
 function renderPalette() {

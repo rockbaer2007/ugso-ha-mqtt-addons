@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.265
+
+- Autosave erholt sich nach Speicherfehlern: Wiederholung nach fünf Sekunden statt dauerhaftem Anhalten bis zur nächsten Änderung. Speicheranfragen werden nach 15 Sekunden abgebrochen und geben die Speichersperre frei. Änderungen während einer laufenden Anfrage bleiben für die nächste Speicherung erhalten; manuelles Speichern wartet bei Bedarf auf die laufende Anfrage. Zwei-Sekunden-Autosave mit Verschieben und Verbindungsfehlern im Browser geprüft.
+- Autosave retries failed saves after five seconds and releases stuck requests after a 15-second timeout. Changes during pending requests remain eligible for saving; manual save waits for an ongoing request. Browser coverage includes two-second drag autosave, transient failure and hung requests.
+
 ## 0.1.264
 
 - Runtime und Neuer Tab speichern vor dem Öffnen das aktuelle Projekt, einschließlich zuletzt verschobener Widgets. Laufende Speichervorgänge werden abgewartet; bei Speicherfehler bleibt der Editor geöffnet. Allgemeiner Fix für alle Widgetsets.
