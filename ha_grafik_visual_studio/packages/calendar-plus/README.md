@@ -1,5 +1,7 @@
 # UGSo Calendar +
 
+Studio **0.1.269** ergänzt getrennte Kachel-Schriftgrößen oben/unten (0 = automatisch). Der farbige Kopf passt sich an und bleibt maximal ein Drittel der Kachelhöhe hoch. Zu große Wunschwerte werden passend dargestellt, ohne die Kachelgröße zu ändern; gilt auch im Popup. / Studio 0.1.269 adds separate top/bottom tile font sizes (zero = automatic), with a colored header capped at one third of tile height and fonts constrained to available space.
+
 Ab Studio **0.1.268** heißt „Farben“ **Kacheleinstellungen**. Vierte Größe: **Sehr klein 36 × 44 px** (weiterhin mindestens 12/24 px Text). Unter Konfiguration ist **Automatisch aktualisieren (60 s)** abschaltbar. Beim Runtime-Seitenaufruf werden die Termine frisch geladen; manuelles Aktualisieren bleibt möglich. Andere Live-Widgets bauen den Kalender nicht neu auf. Vorhandenes Paket 0.1.1 weiterverwenden; kein Paket-Update erforderlich.
 
 Studio **0.1.268** adds **Tile settings**, an extra-small **36 × 44 px** size and an optional automatic refresh. Runtime page entry loads fresh events; manual refresh remains available. Unrelated live updates retain the calendar widget. Existing package 0.1.1 remains compatible.

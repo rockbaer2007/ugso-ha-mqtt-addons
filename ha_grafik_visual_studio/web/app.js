@@ -238,6 +238,10 @@ function widgetPropertyGroups(widget) {
     if (!groups.some(group=>group.fields.some(field=>field.key==='calendarIconSize'))) groups=groups.map(group=>group.label==='Farben'?{...group,fields:[...group.fields,{key:'calendarIconSize',label:'Kalenderkachelgröße',type:'select',options:['small','medium','large'],default:'medium'}]}:group);
     groups = groups.map(group=>({...group,id:group.label==='Farben'?'calendar-plus-tile-settings':group.id,label:group.label==='Farben'?'Kacheleinstellungen':group.label,fields:[...group.fields.map(field=>field.key==='calendarIconSize'?{...field,options:[{value:'tiny',label:'Sehr klein (36 × 44 px)'},{value:'small',label:'Klein (44 × 52 px)'},{value:'medium',label:'Mittel (58 × 64 px)'},{value:'large',label:'Groß (76 × 82 px)'}]}:field),...(group.label==='Konfiguration'?[{key:'calendarAutoRefresh',label:'Automatisch aktualisieren (60 s)',type:'checkbox',default:true}]:[])]}));
     groups = groups.map(group => ({...group, required:true, fields:group.fields.map(field => field.key==='calendarTheme'?{...field,options:[{value:'auto',label:'Auto'},{value:'dark',label:'Dunkel'},{value:'light',label:'Hell'}]}:field)}));
+    groups=groups.map(group=>group.id==='calendar-plus-tile-settings'?{...group,fields:[...group.fields,
+      {key:'calendarTileTopFontSize',label:'Schriftgröße oben (px, 0 = automatisch)',type:'number',default:0,min:0,max:72,step:1},
+      {key:'calendarTileBottomFontSize',label:'Schriftgröße unten (px, 0 = automatisch)',type:'number',default:0,min:0,max:120,step:1},
+    ]}:group);
     groups.splice(groups.length - 1, 0, {id:'calendar-plus-sources',label:'Meine Kalender',required:true,hint:'Alle Kalender werden automatisch erkannt und sind zunächst eingeblendet.',fields:[]}, ...calendarPlusSources(widget, calendarPlusCatalog(), true).map(source => ({
       id: `calendar-plus-${source.entityId}`, label: source.label, hint: source.entityId,
       masterKey: calendarPlusKey(source.entityId, 'Enabled'), defaultEnabled: true, fields: [

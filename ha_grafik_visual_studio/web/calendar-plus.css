@@ -14,8 +14,8 @@ button.cp-event:disabled { opacity:1;cursor:default; }
 button.cp-event:not(:disabled):hover { background:var(--cp-line);border-radius:10px; }
 .calendar-plus.no-dividers .cp-event { border:0; }
 .cp-date { width:var(--cp-icon-width,58px);height:var(--cp-icon-height,64px);display:flex;flex-direction:column;flex:none;text-align:center;border-radius:10px;background:var(--cp-tile);overflow:hidden;box-shadow:0 2px 5px #0002; }
-.cp-month { display:block;flex:none;background:var(--cp-event-color,var(--cp-accent));color:var(--cp-event-ink,#fff);font-size:var(--cp-icon-month,13px);line-height:1.2;font-weight:700;padding:3px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-.cp-day { display:grid;place-items:center;flex:1;font-size:var(--cp-icon-day,30px);line-height:1;font-weight:500; }
+.cp-month { display:block;flex:none;height:var(--cp-icon-header,16px);max-height:33.333333%;background:var(--cp-event-color,var(--cp-accent));color:var(--cp-event-ink,#fff);font-size:var(--cp-icon-month,13px);line-height:1.05;font-weight:700;padding:1px 2px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.cp-day { display:grid;place-items:center;flex:1;min-height:0;padding:0 2px;font-size:var(--cp-icon-day,30px);line-height:1.2;font-weight:500; }
 .cp-event-body { flex:1;min-width:0; }
 .cp-event-title { display:block;font-size:1.05em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .cp-time,.cp-source,.cp-location,.cp-full-date { font-size:.86em;color:var(--cp-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }

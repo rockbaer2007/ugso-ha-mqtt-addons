@@ -1,6 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {calendarPlusDiscover,calendarPlusSources,calendarPlusKey,calendarPlusRange,calendarPlusEvents,calendarPlusWhen} from '../web/calendar-plus.js';
+import {calendarPlusDiscover,calendarPlusSources,calendarPlusKey,calendarPlusRange,calendarPlusEvents,calendarPlusWhen,calendarPlusTileLayout} from '../web/calendar-plus.js';
+
+test('tile fonts adapt to header third and remaining body without changing tile size',()=>{
+  for(const size of ['tiny','small','medium','large']){
+    const automatic=calendarPlusTileLayout({calendarIconSize:size});
+    const large=calendarPlusTileLayout({calendarIconSize:size,calendarTileTopFontSize:72,calendarTileBottomFontSize:120});
+    assert.equal(large.width,automatic.width);assert.equal(large.height,automatic.height);
+    assert.ok(large.headerHeight<=large.height/3);
+    assert.ok(large.top*1.05+2<=large.headerHeight+.001);
+    assert.ok(large.bottom*1.2<=large.height-large.headerHeight+.001);
+    assert.ok(large.bottom*1.3+4<=large.width+.001);
+    assert.deepEqual(calendarPlusTileLayout({calendarIconSize:size,calendarTileTopFontSize:0,calendarTileBottomFontSize:0}),automatic);
+  }
+  const small=calendarPlusTileLayout({calendarTileTopFontSize:8,calendarTileBottomFontSize:16});
+  assert.equal(small.top,8);assert.equal(small.bottom,16);
+  assert.equal(small.headerHeight,10.4);
+});
 
 test('discovery includes registry and state-only calendars; all enabled by default, saved IDs stable',()=>{
   const entities=calendarPlusDiscover({entities:[{entity_id:'calendar.b',name:'B'},{entity_id:'calendar.disabled',disabled_by:'user'}],states:[{entity_id:'calendar.a',attributes:{friendly_name:'Familie'}},{entity_id:'calendar.disabled'},{entity_id:'sensor.no'}]});

@@ -1,6 +1,16 @@
 // Independent Studio implementation inspired by xBourner/calendar-card-plus (MIT).
 import {calendarDate, calendarIso} from './calendar-widget.js';
 export const isCalendarPlus = widget => widget.type === 'ugso.calendar-plus/calendar';
+export function calendarPlusTileLayout(widget) {
+  const [width,height,defaultTop,defaultBottom]={tiny:[36,44,12,24],small:[44,52,12,24],medium:[58,64,13,30],large:[76,82,15,40]}[widget.calendarIconSize]||[58,64,13,30];
+  const requested=(value,fallback,max)=>Number.isFinite(Number(value))&&Number(value)>0?Math.max(8,Math.min(max,Number(value))):fallback;
+  const top=Math.min(requested(widget.calendarTileTopFontSize,defaultTop,72),(height/3-2)/1.05);
+  const headerHeight=Math.min(height/3,top*1.05+2);
+  const bodyHeight=height-headerHeight;
+  // Leave glyph overhang space for larger digits while retaining readable 24px tiny defaults.
+  const bottom=Math.min(requested(widget.calendarTileBottomFontSize,defaultBottom,120),bodyHeight/1.2,Math.max(24,(bodyHeight-3)/1.2),(width-4)/1.3);
+  return {width,height,top,bottom,headerHeight};
+}
 export function calendarPlusInk(color) {
   const hex=/^#([0-9a-f]{6})$/i.exec(color||'');
   if(!hex)return '#fff';
@@ -102,8 +112,8 @@ export function renderCalendarPlus(widget,doc,{locale='de',runtime=false,key=wid
   const root=doc.createElement('section');root.className='calendar-plus';root.dataset.theme=['dark','light'].includes(widget.calendarTheme)?widget.calendarTheme:'auto';
   root.style.setProperty('--cp-accent',widget.calendarAccent||'#e85b64');
   root.style.setProperty('--cp-font-size',`${Math.min(24,Math.max(10,Number(widget.calendarFontSize)||14))}px`);
-  const iconSize={tiny:[36,44,12,24],small:[44,52,12,24],medium:[58,64,13,30],large:[76,82,15,40]}[widget.calendarIconSize]||[58,64,13,30];
-  ['width','height','month','day'].forEach((name,index)=>root.style.setProperty(`--cp-icon-${name}`,`${iconSize[index]}px`));
+  const tile=calendarPlusTileLayout(widget);
+  for(const [name,value] of Object.entries({width:tile.width,height:tile.height,month:tile.top,day:tile.bottom,header:tile.headerHeight}))root.style.setProperty(`--cp-icon-${name}`,`${value}px`);
   if(widget.showDivider===false)root.classList.add('no-dividers');
   const node=(tag,cls,text)=>{const el=doc.createElement(tag);el.className=cls;if(text!=null)el.textContent=text;return el;};
   const header=node('header','cp-header'),title=node('strong','cp-title',widget.heading||'UGSo Calendar +');title.title=title.textContent;

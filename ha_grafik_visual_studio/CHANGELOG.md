@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.269
+
+- Calendar +: getrennte Schriftgrößen oben/unten in den Kacheleinstellungen (0 = automatische Vorgabe je Kachelgröße). Der farbige Kopf passt sich mit Innenabstand an, bleibt höchstens ein Drittel der Kachelhöhe hoch; Schrift wird bei Platzmangel begrenzt. Gleiches Verhalten in Liste und Detail-Popup, ohne Paket-Neuinstallation.
+- Calendar + adds independent top/bottom date-tile font sizes. The colored header adapts up to one third of the tile height; rendered fonts are constrained to available space. Zero preserves automatic size defaults.
+
 ## 0.1.268
 
 - Calendar +: „Farben“ heißt „Kacheleinstellungen“. Vierte Kachelgröße „Sehr klein“ mit 36 × 44 px und weiterhin mindestens 12/24 px Text. Automatische Aktualisierung (60 s) abschaltbar; beim Runtime-Seitenaufruf werden Kalender und Termine frisch geladen. Andere Live-Widgets bauen den unveränderten Kalender nicht mehr neu auf; Popup und Scrollposition bleiben erhalten.

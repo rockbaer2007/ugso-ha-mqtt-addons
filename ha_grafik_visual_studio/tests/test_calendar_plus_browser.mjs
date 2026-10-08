@@ -58,6 +58,21 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
       assert.ok(fonts[0]>=12&&fonts[1]>=24,'smallest tile remains readable');
     }
     await page.locator('#properties [data-property-key="calendarIconSize"]').selectOption('small');
+    await page.locator('#properties [data-property-key="calendarTileTopFontSize"]').fill('72');
+    await page.locator('#properties [data-property-key="calendarTileBottomFontSize"]').fill('120');
+    for(const size of ['tiny','small','medium','large']){
+      await page.locator('#properties [data-property-key="calendarIconSize"]').selectOption(size);
+      const geometry=await page.locator('#calendar-test .cp-date').first().evaluate(tile=>{
+        const header=tile.querySelector('.cp-month'),day=tile.querySelector('.cp-day');
+        return {height:tile.getBoundingClientRect().height,header:header.getBoundingClientRect().height,dayHeight:day.clientHeight,dayScroll:day.scrollHeight,headerFont:parseFloat(getComputedStyle(header).fontSize)};
+      });
+      assert.ok(geometry.header<=geometry.height/3+.1,'colored header is at most one third');
+      assert.ok(geometry.headerFont*1.05+2<=geometry.header+.1,'top font fits header');
+      assert.ok(geometry.dayScroll<=geometry.dayHeight+1,`bottom font fits remaining tile: ${size} ${JSON.stringify(geometry)}`);
+    }
+    await page.locator('#properties [data-property-key="calendarIconSize"]').selectOption('small');
+    await page.locator('#properties [data-property-key="calendarTileTopFontSize"]').fill('12');
+    await page.locator('#properties [data-property-key="calendarTileBottomFontSize"]').fill('20');
     await page.locator('#properties [data-property-key="calendarAutoRefresh"]').uncheck();
     assert.equal(await page.locator('[data-property-key="calendarCount"]').count(),0,'no manual calendar count');
     assert.equal(await page.locator('#properties [data-property-key="dataOutputEnabled"], #properties [data-property-key="dataInputEnabled"]').count(),0,'calendar has no data-flow settings');
@@ -71,6 +86,8 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
     assert.equal(saved.pages[0].widgets[0].cpEnabled_calendar_garden,false);
     assert.equal(saved.pages[0].widgets[0].cpColor_calendar_family,'#ffe52b');
     assert.equal(saved.pages[0].widgets[0].calendarIconSize,'small');
+    assert.equal(saved.pages[0].widgets[0].calendarTileTopFontSize,12);
+    assert.equal(saved.pages[0].widgets[0].calendarTileBottomFontSize,20);
     assert.equal(saved.pages[0].widgets[0].calendarAutoRefresh,false);
     const projectUrl=new URL('api/project?project=calendar-plus-integration-test',url).href;
     assert.ok((await page.request.put(projectUrl,{data:saved})).ok(),'backend accepts dynamic per-calendar settings');
@@ -91,6 +108,7 @@ test('Calendar + discovers all sources, persists visibility/colors, renders even
     await page.locator('#calendar-test .cp-footer').click();
     assert.equal(await page.locator('#calendar-test dialog').evaluate(node=>node.open),true);
     assert.equal(await page.locator('#calendar-test .cp-details .cp-date').first().evaluate(node=>node.offsetWidth),44);
+    assert.equal(await page.locator('#calendar-test .cp-details .cp-day').first().evaluate(node=>getComputedStyle(node).fontSize),'20px');
     assert.match(await page.locator('#calendar-test .cp-details').textContent(),/Picknick mit der Familie/);
     assert.match(await page.locator('#calendar-test .cp-details').textContent(),/Stadtpark/);
     assert.equal(await page.locator('#calendar-test .cp-details img').count(),0);
