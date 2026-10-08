@@ -1,7 +1,7 @@
 import { getWidgetSets, getWidgetDefinition, registerWidgetSet, unregisterExternalWidgetSets, initializeWidgetCaption } from "./widget-registry.js";
 import { mountPackageBrowser, packageIcon } from "./package-browser.js";
 import {cssGroups} from './widget-sets/core.js';
-import {CARD_CSS_IDS,cardCssEnabled,applyCardCss} from './card-css.js';
+import {completeCssGroups,cardCssEnabled,applyCardCss} from './card-css.js';
 import { entitySearchMatches } from "./entity-search.js";
 import { PALETTE_COLORS, allocatePaletteColors } from "./palette-colors.js";
 import { renderWeather } from "./weather-widget.js";
@@ -236,7 +236,7 @@ function widgetPropertyGroups(widget) {
     { label: "Titel", key: `columnTitle${index + 1}` }, { label: "Breite (CSS)", key: `columnWidth${index + 1}` }, { label: "Attribut", key: `columnAttribute${index + 1}` },
   ] }));
   let groups = getWidgetDefinition(widget.dataFlowVariant || widget.type).propertyGroups.filter((group) => !["Generell", "Sichtbarkeit"].includes(group.label));
-  if(isCalendarPlus(widget)||isPrinter(widget))groups=[...groups,...cssGroups().filter(group=>CARD_CSS_IDS[group.label]&&!groups.some(existing=>existing.label===group.label)).map(group=>({...group,id:CARD_CSS_IDS[group.label],cardCss:true,defaultEnabled:false}))];
+  groups=completeCssGroups(groups,cssGroups(),{industrial:getWidgetDefinition(widget.type).render?.kind?.startsWith('industrial-')===true,card:isCalendarPlus(widget)||isPrinter(widget)});
   if (isCalendarPlus(widget)) {
     if (!groups.some(group=>group.fields.some(field=>field.key==='calendarIconSize'))) groups=groups.map(group=>group.label==='Farben'?{...group,fields:[...group.fields,{key:'calendarIconSize',label:'Kalenderkachelgröße',type:'select',options:['small','medium','large'],default:'medium'}]}:group);
     groups = groups.map(group=>({...group,id:group.label==='Farben'?'calendar-plus-tile-settings':group.id,label:group.label==='Farben'?'Kacheleinstellungen':group.label,fields:[...group.fields.map(field=>field.key==='calendarIconSize'?{...field,options:[{value:'tiny',label:'Sehr klein (36 × 44 px)'},{value:'small',label:'Klein (44 × 52 px)'},{value:'medium',label:'Mittel (58 × 64 px)'},{value:'large',label:'Groß (76 × 82 px)'}]}:field),...(group.label==='Konfiguration'?[{key:'calendarAutoRefresh',label:'Automatisch aktualisieren (60 s)',type:'checkbox',default:true}]:[])]}));
@@ -447,7 +447,7 @@ const pageFilters = new Map();
 const filterPageKey = page => `${state.projectId}:${page.id}`;
 
 function propertyGroupEnabled(widget, group, index) {
-  if(group.cardCss)return cardCssEnabled(widget,group.id);
+  if(group.cardCss||group.sharedCss)return cardCssEnabled(widget,group.id);
   if (group.required || (group.css && group.label === "CSS Allgemein")) return true;
   return widget.enabledPropertyGroups?.[propertyGroupKey(group, index)] !== false;
 }
@@ -4958,7 +4958,7 @@ function renderProperties() {
       } else {
         widget.enabledPropertyGroups ??= {};
         widget.enabledPropertyGroups[propertyGroupKey(group, index)] = enabled.checked;
-        if(group.cardCss)renderStage();
+        if(group.cardCss||group.sharedCss)renderStage();
         if (["iframe-8", "image-8"].includes(widget.type) && group.indexed) renderStage();
       }
     });

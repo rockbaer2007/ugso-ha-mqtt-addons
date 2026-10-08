@@ -1,6 +1,11 @@
 // Optional shared CSS controls for self-contained calendar and printer cards.
 export const CARD_CSS_IDS={'CSS Font & Text':'card-css-font','CSS Hintergrund':'card-css-background','CSS Ränder':'card-css-border','CSS Schatten und Abstand':'card-css-spacing'};
 export const cardCssEnabled=(widget,id)=>widget.enabledPropertyGroups?.[id]===true;
+/** Standard controls for every set except Industrial; keep existing group IDs. */
+export function completeCssGroups(groups,templates,{industrial=false,card=false}={}) {
+  if(industrial)return groups;
+  return [...groups,...templates.filter(group=>!groups.some(existing=>existing.css&&existing.label===group.label)).map(group=>({...structuredClone(group),id:CARD_CSS_IDS[group.label]||'css-general-required',sharedCss:true,cardCss:card,defaultEnabled:false}))];
+}
 export function applyCardCss(widget,content,root,outer) {
   // One visual frame: draw CSS on the actual card, not behind its opaque surface.
   Object.assign(content.style,{padding:'0',paddingLeft:'',paddingTop:'',paddingRight:'',paddingBottom:'',border:'0',borderRadius:'0',background:'transparent',boxShadow:'none'});

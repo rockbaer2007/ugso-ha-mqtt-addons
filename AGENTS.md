@@ -1,5 +1,11 @@
 # AGENTS.md
 
+## HA Grafik Visual Studio
+
+- Alle Widgets und künftig ergänzten Widgetsets erhalten die vollständigen Standard-CSS-Gruppen: Allgemein, Font & Text, Hintergrund, Ränder sowie Schatten und Abstand.
+- Ausnahme: Industrial verwendet seine eigenen Gehäuse-Einstellungen. Keine zusätzlichen Standard-CSS-Gruppen für Industrial ergänzen.
+- Vorhandene CSS-Gruppen und gespeicherte Einstellungen erhalten; neu ergänzte optionale Gruppen zunächst deaktivieren.
+
 ## Parcel to MQTT
 
 - Die Paket-JSON-Ausgabe soll sich fuer alle Provider am ioBroker-Parcel-Adapter orientieren.

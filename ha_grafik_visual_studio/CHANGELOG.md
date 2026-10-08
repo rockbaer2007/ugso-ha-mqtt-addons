@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.271
+
+- Alle Widgets erhalten zentral die vollständigen CSS-Gruppen. Industrial bleibt bei seinen eigenen Gehäuse-Einstellungen. Fehlende optionale Gruppen werden deaktiviert ergänzt; vorhandene Gruppen und deren Einstellungen bleiben erhalten.
+- All widgets now expose complete standard CSS groups, except Industrial, which retains its housing controls. Missing optional groups start disabled; existing groups and settings are preserved.
+
 ## 0.1.270
 
 - Calendar +: gemeinsamer Kachel-Eckenradius (0 = eckig, Standard 10 px). Kalender und Drucker erhalten die fehlenden CSS-Gruppen für Font/Text, Hintergrund, Ränder sowie Schatten/Abstand. Optionale Gruppen sind zunächst deaktiviert; aktivierte CSS-Werte gestalten die sichtbare Karte statt einer verdeckten Fläche dahinter. Kachelradius und äußerer CSS-Radius bleiben getrennt.
