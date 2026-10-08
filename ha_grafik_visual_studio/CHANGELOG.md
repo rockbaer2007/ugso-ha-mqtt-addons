@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.281
+
+- SVG Linie: Wert-Koppelpunkte lassen sich ausschließlich auf dem sichtbaren Linienverlauf verschieben. Auch Kurven und gerundete Pfade werden berücksichtigt; die Linie wird dabei nicht geknickt. Bestehende oder manuell versetzte Wertpunkte werden auf den Pfad gesetzt. Anzeigeverbindungen folgen dem Punkt.
+- SVG line value output points are constrained to the actual rendered path without bending it, including curves and rounded routes. Existing off-path points are projected back onto the line.
+
 ## 0.1.280
 
 - UGSo Solar 0.1.3: Solo-Wechselrichter mit sieben getrennt konfigurierbaren Linienpunkten an der Unterkante, einschließlich Mitte und beiden Ecken. Je zwei weitere Punkte links/rechts der Mitte. Pro Punkt Aus/Eingang/Ausgang und Wertzuordnung; neue Punkte zunächst aus. Bestehende Anschlüsse bleiben erhalten.

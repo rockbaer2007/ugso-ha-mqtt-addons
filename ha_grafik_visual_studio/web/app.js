@@ -28,7 +28,7 @@ import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelectio
 import { MATH_ANCHORS, MATH_IDS, mathPortRole, mathBoxResults, mathCalculations, validateMathAssignments, mathLeadPoint, evaluateMathExpression } from "./linebox-math.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
-import { connectionPointActive, isValuePointConnection } from "./connection-points.js";
+import { connectionPointActive, isValuePointConnection, nearestPointOnPath } from "./connection-points.js";
 import { htmlListEntries, htmlListEntry, styledListCount } from "./value-list.js";
 import { tableRows, tableColumns, updateTableEvent } from "./table-data.js";
 import { boolSelectOn } from "./bool-select.js";
@@ -2276,7 +2276,19 @@ function connectionCollectorPosition(reference, widgets, side = "start") {
   if (separator < 1) return null;
   const connection = widgets.find(item => item.id === reference.slice(0, separator) && item.type === "svg-connection");
   const point = connection?.connectionPoints?.find(item => item.id === reference.slice(separator + 1) && connectionPointActive(item, side));
+  if(point?.valueOutputEnabled)constrainValuePoint(point,connection,widgets);
   return point ? { x: Number(point.x) || 0, y: Number(point.y) || 0 } : null;
+}
+
+const projectingValuePoints = new WeakSet();
+function constrainValuePoint(point, widget, widgets, path) {
+  if(projectingValuePoints.has(point))return;
+  projectingValuePoints.add(point);
+  try {
+    if(!path){path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',connectionPathData(widget,widgets));}
+    const position=nearestPointOnPath(path,{x:Number(point.x)||0,y:Number(point.y)||0});
+    point.x=position.x;point.y=position.y;
+  } finally {projectingValuePoints.delete(point);}
 }
 
 function connectionEndpoint(widget, prefix, widgets) {
@@ -2505,6 +2517,7 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
   };
   for (const point of points) {
     const valuePoint = point.valueOutputEnabled === true;
+    if(valuePoint)constrainValuePoint(point,widget,widgets,base);
     if (valuePoint ? runtimeMode : !selected && (!point.collectorEnabled || point.display === "hidden")) continue;
     const marker = document.createElementNS(ns, valuePoint ? "polygon" : "circle"); marker.classList.add("connection-junction", `is-${point.display || "point"}`); if (point.collectorEnabled) marker.classList.add("is-collector");
     if (valuePoint) { marker.classList.add("is-value-output"); marker.setAttribute("points", "-3,-8 3,-8 8,-3 8,3 3,8 -3,8 -8,3 -8,-3"); }
@@ -2516,7 +2529,7 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
     if (selected) {
       marker.classList.add("is-editable"); let dragging = false;
       marker.addEventListener("pointerdown", event => { event.preventDefault(); event.stopPropagation(); dragging = true; marker.setPointerCapture(event.pointerId); });
-      marker.addEventListener("pointermove", event => { if (!dragging) return; const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height; point.x = Math.round((event.clientX - bounds.left) * scaleX); point.y = Math.round((event.clientY - bounds.top) * scaleY); positionMarker(); update(); });
+      marker.addEventListener("pointermove", event => { if (!dragging) return; const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height; point.x = Math.round((event.clientX - bounds.left) * scaleX); point.y = Math.round((event.clientY - bounds.top) * scaleY); if(valuePoint)constrainValuePoint(point,widget,widgets,base); positionMarker(); update(); });
       marker.addEventListener("pointerup", () => { dragging = false; renderStage(); renderProperties(); });
     }
   }
