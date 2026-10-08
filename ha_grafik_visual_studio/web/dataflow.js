@@ -1,6 +1,6 @@
 import { dockPointActive, hasSimpleOutput } from "./dock-points.js";
 import { stringEntityValue } from "./string-display.js";
-import { numericWidgetInput, lineboxInputSum, lineboxPortRole } from "./linebox.js";
+import { numericWidgetInput, numericConnectionValue, lineboxInputSum, lineboxPortRole } from "./linebox.js";
 import { mathBoxResult, mathPortRole } from "./linebox-math.js";
 import { isIndustrialSwitch, switchChannel } from "./industrial-switch.js";
 
@@ -97,7 +97,14 @@ export function lineValuePacket(line, widgets, states, visited = new Set()) {
   if (line.startCollector) {
     const [id, pointId] = String(line.startCollector).split(":");
     const parent = widgets.find(widget => widget.type === "svg-connection" && widget.id === id && widget.visible !== false);
-    if (!parent?.connectionPoints?.some(point => point.id === pointId && point.collectorEnabled === true)) return fail("Sammelpunkt ist nicht aktiv");
+    if (!parent?.connectionPoints?.some(point => point.id === pointId && (point.collectorEnabled === true || point.valueOutputEnabled === true))) return fail("Sammelpunkt ist nicht aktiv");
+    const point = parent.connectionPoints.find(point => point.id === pointId);
+    const source = widgets.find(widget => widget.id === parent.startWidgetId);
+    if (point.valueOutputEnabled && parent.dataFlowVariant !== "value-connection" && !parent.startCollector && source?.dataOutputEnabled === undefined && source?.type !== "value-converter") {
+      const value = numericConnectionValue(parent, widgets, states, next);
+      const entity = parent.animationSource === "number" ? parent.animationNumberEntityId : source?.entityId;
+      return value === null ? fail("Quelle hat keinen verfügbaren Wert") : packet(value, states[entity]?.attributes?.unit_of_measurement || source?.unit || "");
+    }
     return lineValuePacket(parent, widgets, states, next);
   }
   return widgetValuePacket(widgets.find(widget => widget.id === line.startWidgetId), widgets, states, next, line.startAnchor || "right-center");

@@ -74,7 +74,7 @@ registerWidgetSet({
           { value: "curve", label: "Kurve" }, { value: "zigzag", label: "Manueller Zickzack-/Mehrpunktpfad" },
         ] },
         { label: "Eckenradius", key: "cornerRadius", type: "range", min: 0, max: 80, step: 1 },
-        { label: "Zwischenpunkte und Sammelpunkte", key: "connectionPoints", type: "connection-points" },
+        { label: "Linienpunkte", key: "connectionPoints", type: "connection-points" },
       ] },
       { label: "Linie", fields: [
         { label: "Grundfarbe", key: "baseColor", type: "color" },

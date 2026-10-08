@@ -31,7 +31,7 @@ export function numericWidgetInput(widget, widgets, entityStates, visited = new 
 export function numericConnectionValue(line, widgets, entityStates, visited = new Set()) {
   if (visited.has(`line:${line.id}`)) return null;
   const next = new Set(visited).add(`line:${line.id}`);
-  if (line.dataFlowVariant === "value-connection" || widgets.some(widget => widget.id === line.startWidgetId && (widget.type === "value-converter" || widget.dataOutputEnabled !== undefined))) {
+  if (line.startCollector || line.dataFlowVariant === "value-connection" || widgets.some(widget => widget.id === line.startWidgetId && (widget.type === "value-converter" || widget.dataOutputEnabled !== undefined))) {
     const result = lineValuePacket(line, widgets, entityStates, next);
     try { return result.error || typeof result.value === "boolean" ? null : parseNumberUnit(result.value).value; } catch { return null; }
   }

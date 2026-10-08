@@ -28,6 +28,7 @@ import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelectio
 import { MATH_ANCHORS, MATH_IDS, mathPortRole, mathBoxResults, mathCalculations, validateMathAssignments, mathLeadPoint, evaluateMathExpression } from "./linebox-math.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
+import { connectionPointActive, isValuePointConnection } from "./connection-points.js";
 import { htmlListEntries, htmlListEntry, styledListCount } from "./value-list.js";
 import { tableRows, tableColumns, updateTableEvent } from "./table-data.js";
 import { boolSelectOn } from "./bool-select.js";
@@ -2251,11 +2252,11 @@ function closestConnectionAnchor(clientX, clientY, connection, prefix, widgets, 
   return closest;
 }
 
-function closestConnectionCollector(clientX, clientY, connection, widgets, bounds, width, height) {
+function closestConnectionCollector(clientX, clientY, connection, widgets, bounds, width, height, side = "start") {
   let closest = null;
   for (const target of widgets.filter(item => item.type === "svg-connection" && item.id !== connection.id && item.visible !== false)) {
     for (const point of target.connectionPoints || []) {
-      if (!point.collectorEnabled) continue;
+      if (!connectionPointActive(point, side)) continue;
       const position = { x: Number(point.x) || 0, y: Number(point.y) || 0 };
       const distance = Math.hypot(clientX - (bounds.left + position.x / width * bounds.width), clientY - (bounds.top + position.y / height * bounds.height));
       if (distance <= 24 && (!closest || distance < closest.distance)) closest = { collectorReference: `${target.id}:${point.id}`, position, distance };
@@ -2264,17 +2265,17 @@ function closestConnectionCollector(clientX, clientY, connection, widgets, bound
   return closest;
 }
 
-function connectionCollectorPosition(reference, widgets) {
+function connectionCollectorPosition(reference, widgets, side = "start") {
   if (!reference) return null;
   const separator = reference.indexOf(":");
   if (separator < 1) return null;
   const connection = widgets.find(item => item.id === reference.slice(0, separator) && item.type === "svg-connection");
-  const point = connection?.connectionPoints?.find(item => item.id === reference.slice(separator + 1) && item.collectorEnabled);
+  const point = connection?.connectionPoints?.find(item => item.id === reference.slice(separator + 1) && connectionPointActive(item, side));
   return point ? { x: Number(point.x) || 0, y: Number(point.y) || 0 } : null;
 }
 
 function connectionEndpoint(widget, prefix, widgets) {
-  const collector = connectionCollectorPosition(widget[`${prefix}Collector`], widgets);
+  const collector = connectionCollectorPosition(widget[`${prefix}Collector`], widgets, prefix);
   if (collector) return collector;
   const target = widgets.find(item => item.id === widget[`${prefix}WidgetId`] && item.type !== "svg-connection");
   const anchorId = widget[`${prefix}Anchor`] || (prefix === "start" ? "right-center" : "left-center");
@@ -2351,10 +2352,10 @@ function openConnectionPointDialog(widget, widgets, point) {
   const dialog = document.createElement("dialog"); dialog.className = "studio-dialog connection-point-type-dialog";
   const heading = document.createElement("h2"); heading.textContent = "Punkt auf der Linie erstellen";
   const hint = document.createElement("p"); hint.className = "property-hint";
-  hint.textContent = "Ein Zwischenpunkt teilt den Pfad in weitere Segmente. Nur ein Sammelpunkt kann von anderen Linien gezielt verwendet werden.";
+  hint.textContent = "Ein Zwischenpunkt teilt den Pfad. Ein Sammelpunkt koppelt Linien. Ein Wert-Koppelpunkt gibt den Linienwert über eine in der Runtime unsichtbare Verbindung aus.";
   const choices = document.createElement("fieldset"); const legend = document.createElement("legend"); legend.textContent = "Punkttyp"; choices.append(legend);
   const name = `connection-point-type-${createRandomId()}`;
-  for (const [value, label, checked] of [["click", "Zwischenpunkt", true], ["collector", "Sammelpunkt", false]]) {
+  for (const [value, label, checked] of [["click", "Zwischenpunkt", true], ["collector", "Sammelpunkt", false], ["value", "Wert-Koppelpunkt", false]]) {
     const row = document.createElement("label"); const radio = document.createElement("input"); radio.type = "radio"; radio.name = name; radio.value = value; radio.checked = checked;
     row.append(radio, document.createTextNode(label)); choices.append(row);
   }
@@ -2362,13 +2363,14 @@ function openConnectionPointDialog(widget, widgets, point) {
   const confirm = document.createElement("button"); confirm.type = "button"; confirm.textContent = "OK";
   const cancel = document.createElement("button"); cancel.type = "button"; cancel.textContent = "Abbrechen";
   confirm.addEventListener("click", () => {
-    const collectorEnabled = choices.querySelector("input:checked")?.value === "collector";
+    const kind = choices.querySelector("input:checked")?.value;
+    const collectorEnabled = kind === "collector", valueOutputEnabled = kind === "value";
     const points = widget.connectionPoints ??= [];
     const count = points.length + 1;
     const insertAt = Math.min(points.length, closestConnectionSegmentIndex(widget, widgets, point));
     points.splice(insertAt, 0, {
-      id: createRandomId(), name: `${uiText(collectorEnabled ? "Sammelpunkt" : "Zwischenpunkt")} ${count}`,
-      x: point.x, y: point.y, collectorEnabled, display: collectorEnabled ? "distributor" : "point",
+      id: createRandomId(), name: `${uiText(valueOutputEnabled ? "Wert-Koppelpunkt" : collectorEnabled ? "Sammelpunkt" : "Zwischenpunkt")} ${count}`,
+      x: point.x, y: point.y, collectorEnabled, valueOutputEnabled, display: collectorEnabled ? "distributor" : "point",
     });
     widget.pathMode = "zigzag";
     dialog.close(); render();
@@ -2401,7 +2403,7 @@ function connectionPathData(widget, widgets, reverse = false) {
 }
 
 function effectiveConnectionStyle(widget, widgets, visited = new Set()) {
-  if (widget.dataFlowVariant === "value-connection") return { ...widget, animationEnabled: false };
+  if (widget.dataFlowVariant === "value-connection" || isValuePointConnection(widget, widgets)) return { ...widget, animationEnabled: false };
   const entityId = connectionAnimationEntityId(widget);
   let result = { ...widget, ...resolveConnectionAnimation(widget, state.entityStates[entityId]) };
   const collectorReference = [widget.endCollector, widget.startCollector].find(reference => connectionCollectorPosition(reference, widgets));
@@ -2495,13 +2497,19 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
     for (const motion of svg.querySelectorAll("animateMotion")) motion.setAttribute("path", connectionPathData(widget, widgets, style.animationDirection === "reverse"));
   };
   for (const point of points) {
-    if (!selected && (!point.collectorEnabled || point.display === "hidden")) continue;
-    const marker = document.createElementNS(ns, "circle"); marker.classList.add("connection-junction", `is-${point.display || "point"}`); if (point.collectorEnabled) marker.classList.add("is-collector");
-    marker.setAttribute("cx", String(Number(point.x) || 0)); marker.setAttribute("cy", String(Number(point.y) || 0)); marker.setAttribute("r", point.display === "distributor" ? "7" : "5"); marker.dataset.pointId = point.id; marker.setAttribute("aria-label", `${point.name || "Zwischenpunkt"}${point.collectorEnabled ? ", Sammelpunkt aktiv" : ""}`); svg.append(marker);
+    const valuePoint = point.valueOutputEnabled === true;
+    if (valuePoint ? runtimeMode : !selected && (!point.collectorEnabled || point.display === "hidden")) continue;
+    const marker = document.createElementNS(ns, valuePoint ? "polygon" : "circle"); marker.classList.add("connection-junction", `is-${point.display || "point"}`); if (point.collectorEnabled) marker.classList.add("is-collector");
+    if (valuePoint) { marker.classList.add("is-value-output"); marker.setAttribute("points", "-3,-8 3,-8 8,-3 8,3 3,8 -3,8 -8,3 -8,-3"); }
+    const positionMarker = () => {
+      if (valuePoint) marker.setAttribute("transform", `translate(${Number(point.x) || 0} ${Number(point.y) || 0})`);
+      else { marker.setAttribute("cx", String(Number(point.x) || 0)); marker.setAttribute("cy", String(Number(point.y) || 0)); marker.setAttribute("r", point.display === "distributor" ? "7" : "5"); }
+    };
+    positionMarker(); marker.dataset.pointId = point.id; marker.setAttribute("aria-label", point.name || (valuePoint ? "Wert-Koppelpunkt" : "Zwischenpunkt")); svg.append(marker);
     if (selected) {
       marker.classList.add("is-editable"); let dragging = false;
       marker.addEventListener("pointerdown", event => { event.preventDefault(); event.stopPropagation(); dragging = true; marker.setPointerCapture(event.pointerId); });
-      marker.addEventListener("pointermove", event => { if (!dragging) return; const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height; point.x = Math.round((event.clientX - bounds.left) * scaleX); point.y = Math.round((event.clientY - bounds.top) * scaleY); marker.setAttribute("cx", point.x); marker.setAttribute("cy", point.y); update(); });
+      marker.addEventListener("pointermove", event => { if (!dragging) return; const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height; point.x = Math.round((event.clientX - bounds.left) * scaleX); point.y = Math.round((event.clientY - bounds.top) * scaleY); positionMarker(); update(); });
       marker.addEventListener("pointerup", () => { dragging = false; renderProperties(); });
     }
   }
@@ -2539,7 +2547,7 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
         }
         const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height;
         const anchorTarget = closestConnectionAnchor(event.clientX, event.clientY, widget, prefix, widgets, bounds, width, height);
-        const collectorTarget = closestConnectionCollector(event.clientX, event.clientY, widget, widgets, bounds, width, height);
+        const collectorTarget = closestConnectionCollector(event.clientX, event.clientY, widget, widgets, bounds, width, height, prefix);
         const snapTarget = collectorTarget && (!anchorTarget || collectorTarget.distance <= anchorTarget.distance) ? collectorTarget : anchorTarget;
         for (const marker of document.querySelectorAll(".widget-dock-point.is-snap-target")) marker.classList.remove("is-snap-target");
         for (const marker of document.querySelectorAll(".connection-junction.is-snap-target")) marker.classList.remove("is-snap-target");
@@ -2626,7 +2634,10 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
     for (const origin of lineDrag.points) {
       origin.point.x = origin.x + dx; origin.point.y = origin.y + dy;
       const marker = [...svg.querySelectorAll(".connection-junction")].find(item => item.dataset.pointId === origin.point.id);
-      if (marker) { marker.setAttribute("cx", String(origin.point.x)); marker.setAttribute("cy", String(origin.point.y)); }
+      if (marker) {
+        if (origin.point.valueOutputEnabled) marker.setAttribute("transform", `translate(${origin.point.x} ${origin.point.y})`);
+        else { marker.setAttribute("cx", String(origin.point.x)); marker.setAttribute("cy", String(origin.point.y)); }
+      }
     }
     const startHandle = svg.querySelector(".connection-endpoint.is-start");
     const endHandle = svg.querySelector(".connection-endpoint.is-end");
@@ -2965,6 +2976,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   stage.style.backgroundColor = page.background || "#242729";
   stage.style.setProperty("--stage-background", page.background || "#242729");
   stage.style.setProperty("--dock-color", state.project.settings?.dockColor || "#ffd54f");
+  stage.style.setProperty("--value-point-color", state.project.settings?.valuePointColor || "#ce93d8");
   stage.style.setProperty("--output-dock-color", state.project.settings?.outputDockColor || "#74c0fc");
   stage.style.setProperty("--housing-snap-color", state.project.settings?.housingSnapColor || "#c792ea");
   const backgroundImage = safeUrl(page.backgroundAsset || page.backgroundImage, true);
@@ -3024,7 +3036,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") Object.assign(widget, industrialSize(widget));
     if (widget.visible === false) continue;
-    if (runtimeMode && (widget.hideInRuntime === true || widget.type === "value-converter" || widget.dataFlowVariant === "value-connection")) continue;
+    if (runtimeMode && (widget.hideInRuntime === true || widget.type === "value-converter" || widget.dataFlowVariant === "value-connection" || isValuePointConnection(widget, activePage.widgets))) continue;
     const editorFilterWords = String(widget.generalEnabled === true ? widget.filterWord || "" : "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
     const editorFilterMatches = state.editorWidgetFilter?.words?.some((word) => editorFilterWords.includes(word));
     if (!runtimeMode && state.editorWidgetFilter?.mode === "hide" && editorFilterMatches) continue;
@@ -4497,9 +4509,9 @@ function openFilterEditor(widget) {
 function openConnectionPointsEditor(widget) {
   const draft = Array.isArray(widget.connectionPoints) ? structuredClone(widget.connectionPoints) : [];
   const dialog = document.createElement("dialog"); dialog.className = "studio-dialog connection-points-editor";
-  const heading = document.createElement("h2"); heading.textContent = "Zwischen- und Sammelpunkte";
+  const heading = document.createElement("h2"); heading.textContent = "Linienpunkte";
   const hint = document.createElement("p"); hint.className = "property-hint";
-  hint.textContent = "Nur ausdrücklich aktivierte Sammelpunkte können von anderen Linien gewählt werden. Kreuzungen koppeln sich nie automatisch.";
+  hint.textContent = "Wert-Koppelpunkte sind reine Ausgänge und nur im Editor sichtbar. Ihre Verbindungen bleiben in der Runtime unsichtbar. Kreuzungen koppeln sich nie automatisch.";
   const list = document.createElement("div"); list.className = "connection-points-list";
   const draw = () => {
     list.replaceChildren();
@@ -4513,11 +4525,17 @@ function openConnectionPointsEditor(widget) {
         input.addEventListener("input", () => { point[key] = type === "checkbox" ? input.checked : type === "number" ? Number(input.value) : input.value; });
         wrapper.append(input); return wrapper;
       };
-      row.append(makeInput("Name", "name"), makeInput("X", "x", "number"), makeInput("Y", "y", "number"), makeInput("Als Sammelpunkt aktivieren", "collectorEnabled", "checkbox"));
+      row.append(makeInput("Name", "name"), makeInput("X", "x", "number"), makeInput("Y", "y", "number"));
+      const kindLabel = document.createElement("label"); kindLabel.textContent = "Punkttyp";
+      const kind = document.createElement("select");
+      for (const [value, label] of [["click", "Zwischenpunkt"], ["collector", "Sammelpunkt"], ["value", "Wert-Koppelpunkt"]]) { const option = document.createElement("option"); option.value = value; option.textContent = label; kind.append(option); }
+      kind.value = point.valueOutputEnabled ? "value" : point.collectorEnabled ? "collector" : "click";
+      kind.addEventListener("change", () => { point.valueOutputEnabled = kind.value === "value"; point.collectorEnabled = kind.value === "collector"; draw(); });
+      kindLabel.append(kind); row.append(kindLabel);
       const display = document.createElement("label"); display.textContent = "Darstellung";
       const select = document.createElement("select");
       for (const [value, label] of [["hidden", "Unsichtbar"], ["point", "Punkt"], ["ring", "Ring"], ["distributor", "Verteiler"]]) { const option = document.createElement("option"); option.value = value; option.textContent = label; select.append(option); }
-      select.value = point.display || "point"; select.addEventListener("change", () => { point.display = select.value; }); display.append(select); row.append(display);
+      select.value = point.display || "point"; select.disabled = point.valueOutputEnabled === true; select.addEventListener("change", () => { point.display = select.value; }); display.append(select); row.append(display);
       const actions = document.createElement("span"); actions.className = "connection-point-actions";
       for (const [label, disabled, action] of [
         ["↑", index === 0, () => { [draft[index - 1], draft[index]] = [draft[index], draft[index - 1]]; }],
@@ -4535,6 +4553,7 @@ function openConnectionPointsEditor(widget) {
 }
 
 function field(descriptor, widget) {
+  if (descriptor.key === "startCollector") descriptor = { ...descriptor, label: "Sammel- oder Wert-Koppelpunkt" };
   if (isIndustrialHeating(widget) && descriptor.key === "heatingArrow") descriptor = { ...descriptor, label: "Vorlauf" };
   const renderKind = widget.type ? getWidgetDefinition(widget.type).render?.kind : null;
   if (descriptor.type === "tab-edit") {
@@ -4578,7 +4597,7 @@ function field(descriptor, widget) {
     const choices = descriptor.type === "page" ? [{ value: "", label: "Keine Seite" }, ...state.project.pages.map(page => ({ value: page.id, label: page.name }))]
       : descriptor.type === "widget" ? [{ value: "", label: descriptor.widgetType ? "Eigene Einstellungen" : "Kein Widget / freier Punkt" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type !== "svg-connection" && (!descriptor.widgetType || item.type === descriptor.widgetType)).map(item => ({ value: item.id, label: `${widgetDisplayName(item)} · ${item.id}` }))]
       : descriptor.type === "connection" ? [{ value: "", label: "Keine Hauptlinie" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").map(item => ({ value: item.id, label: `${widgetDisplayName(item)} · ${item.id}` }))]
-      : descriptor.type === "collector" ? [{ value: "", label: "Kein Sammelpunkt" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").flatMap(item => (item.connectionPoints || []).filter(point => point.collectorEnabled).map(point => ({ value: `${item.id}:${point.id}`, label: `${widgetDisplayName(item)} · ${point.name || point.id}` })))]
+      : descriptor.type === "collector" ? [{ value: "", label: "Kein Sammelpunkt" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").flatMap(item => (item.connectionPoints || []).filter(point => connectionPointActive(point, descriptor.key === "endCollector" ? "end" : "start")).map(point => ({ value: `${item.id}:${point.id}`, label: `${widgetDisplayName(item)} · ${point.name || point.id}` })))]
       : descriptor.options || [];
     for (const item of choices) {
       const option = document.createElement("option"); option.value = typeof item === "string" ? item : item.value;
@@ -5390,6 +5409,7 @@ function openSettingsDialog() {
   $("#settings-auto-save-delay").disabled = settings.autoSave === false;
   $("#settings-language").value = getLanguagePreference();
   $("#settings-dock-color").value = /^#[0-9a-f]{6}$/i.test(settings.dockColor || "") ? settings.dockColor : "#ffd54f";
+  $("#settings-value-point-color").value = /^#[0-9a-f]{6}$/i.test(settings.valuePointColor || "") ? settings.valuePointColor : "#ce93d8";
   $("#settings-output-dock-color").value = /^#[0-9a-f]{6}$/i.test(settings.outputDockColor || "") ? settings.outputDockColor : "#74c0fc";
   $("#settings-housing-snap-color").value = /^#[0-9a-f]{6}$/i.test(settings.housingSnapColor || "") ? settings.housingSnapColor : "#c792ea";
   $("#settings-reload").value = settings.reloadMode || "reload";
@@ -5480,6 +5500,7 @@ $("#settings-save").addEventListener("click", async (event) => {
     showMigrationHints: $("#settings-migration-hints").checked,
     autoSaveDelaySeconds: Math.max(1, Math.min(300, Math.round(Number($("#settings-auto-save-delay").value) || 5))),
     dockColor: /^#[0-9a-f]{6}$/i.test($("#settings-dock-color").value) ? $("#settings-dock-color").value : "#ffd54f",
+    valuePointColor: /^#[0-9a-f]{6}$/i.test($("#settings-value-point-color").value) ? $("#settings-value-point-color").value : "#ce93d8",
     outputDockColor: /^#[0-9a-f]{6}$/i.test($("#settings-output-dock-color").value) ? $("#settings-output-dock-color").value : "#74c0fc",
     housingSnapColor: /^#[0-9a-f]{6}$/i.test($("#settings-housing-snap-color").value) ? $("#settings-housing-snap-color").value : "#c792ea",
     reloadMode: $("#settings-reload").value,

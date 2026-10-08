@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.275
+
+- SVG Linie: dritter Punkttyp Wert-Koppelpunkt, im Editor als Oktagon mit eigener Einstellungsfarbe. Gibt den Linienwert an Number/String weiter; Punkt und abgehende Verbindung bleiben in der Runtime unsichtbar. Reiner Ausgang, unabhängig von normalen Sammelpunkten.
+- SVG Line: value output points forward line values through runtime-hidden connections. Editor-only octagonal markers have a separate configurable color.
+
 ## 0.1.274
 
 - Basic Number und String: eigenständiger Eingangspunkt unter Datenfluss mit Aktivierung und Oben/Unten/Rechts/Links wie beim Ausgang. Standard links, unabhängig von allgemeinen Andockpunkten. Beim Versetzen folgen eingehende Verbindungen dem Punkt; Werteübernahme und Weitergabe funktionieren in Editor und Runtime.
