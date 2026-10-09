@@ -2,6 +2,7 @@ import { Blockly, toolbox, knownTypes, workspaceModel, modelWorkspace } from './
 import { examples, toYaml, fromYaml, filename, validateAutomation } from './model.js';
 import './style.css';
 import { version } from '../package.json';
+import { upgradeWorkspace } from './project.js';
 
 document.querySelector('#app').innerHTML = `
 <header class="app-header"><a class="brand" href="/"><span class="brand-icon">▦</span><span>UGSo <strong>Blocks for HA</strong></span></a><div class="header-right"><span class="version">Vorschau 0.1.0</span><button id="about">Über & Lizenzen</button></div></header>
@@ -16,7 +17,7 @@ document.querySelector('#about-dialog p').textContent = `Version ${version} · V
 const $ = id => document.getElementById(id);
 document.querySelector('.brand').href = './';
 document.querySelector('#about-dialog a[href="/licenses/THIRD_PARTY_NOTICES.txt"]').href = './licenses/THIRD_PARTY_NOTICES.txt';
-const compactTheme = Blockly.Theme.defineTheme('ugso_compact', { base: Blockly.Themes.Classic, fontStyle: { family: 'Segoe UI, sans-serif', size: 12, weight: 'normal' } });
+const compactTheme = Blockly.Theme.defineTheme('ugso_compact', { base: Blockly.Themes.Classic, fontStyle: { family: 'Segoe UI, sans-serif', size: 12, weight: 'normal' }, componentStyles: { toolboxBackgroundColour: '#20313c', toolboxForegroundColour: '#f4f7fa', flyoutBackgroundColour: '#eaf0f5', flyoutForegroundColour: '#233a36', flyoutOpacity: 1 } });
 const workspace = Blockly.inject('workspace', { toolbox, theme: compactTheme, media: './media/', renderer: 'geras', grid: { spacing: 24, length: 2, colour: '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: .8, maxScale: 1.6, minScale: .35 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
 function fitCompact() { workspace.zoomToFit(); if (workspace.scale > .8) workspace.setScale(.8); workspace.scrollCenter(); }
 let metadata = {};
@@ -30,7 +31,7 @@ function metaFields() {
   $('max').value = metadata.max || 10; $('max-label').hidden = !['queued', 'parallel'].includes(metadata.mode);
 }
 function setMeta(model) { const { triggers, conditions, actions, ...meta } = model; metadata = meta; metaFields(); }
-function snapshot() { return { format: 'ugso-blocks-for-ha', version: 1, metadata, workspace: Blockly.serialization.workspaces.save(workspace) }; }
+function snapshot() { return { format: 'ugso-blocks-for-ha', version: 2, metadata, workspace: Blockly.serialization.workspaces.save(workspace) }; }
 function update() {
   try {
     currentModel = validateAutomation(workspaceModel(workspace, metadata));
@@ -47,7 +48,8 @@ function update() {
 }
 function loadModel(model) { validateAutomation(model); modelWorkspace(workspace, model); setMeta(model); update(); requestAnimationFrame(fitCompact); }
 function restoreProject(data) {
-  if (data?.format !== 'ugso-blocks-for-ha' || data.version !== 1 || !data.metadata || !data.workspace) throw new Error('Kein unterstütztes Blocks-Projekt.');
+  if (data?.format !== 'ugso-blocks-for-ha' || ![1, 2].includes(data.version) || !data.metadata || !data.workspace) throw new Error('Kein unterstütztes Blocks-Projekt.');
+  if (data.version === 1) data = { ...data, version: 2, workspace: upgradeWorkspace(data.workspace) };
   const temp = new Blockly.Workspace();
   try {
     // Validate types before serialization can skip an unknown block.

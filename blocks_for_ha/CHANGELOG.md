@@ -32,3 +32,13 @@
 - Klassischer Blockly-Geras-Renderer mit Puzzle-Andockformen und Statement-Aussparungen.
 - Einpassen und Laden vergrößern kleine Automationen nicht mehr automatisch über 80 Prozent; manuelles Zoomen bleibt möglich.
 
+# 0.1.5
+
+- Dunkles Kategorienmenü und helle Blockauswahl mit getrennten Gruppenfarben für bessere Erkennbarkeit.
+
+- Bedingungen sind typisierte Boolean-Wertblocks; Falls und Nur-wenn besitzen seitliche Werteingänge.
+- UND/ODER/NICHT mit Zahnrad für 1–100 Bedingungseingänge.
+- Zahlen-Wertblock und ersetzbare Shadow-Zahlen für Grenzen und Wartezeiten.
+- Alte Projektdateien werden auf die neue Anschlussstruktur migriert; YAML bleibt kompatibel.
+- Deaktivierte Blocks werden nicht exportiert, Hilfe verlinkt auf die Dokumentation.
+

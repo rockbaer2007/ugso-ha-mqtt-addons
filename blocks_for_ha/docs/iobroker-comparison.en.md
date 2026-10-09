@@ -1,12 +1,12 @@
 # ioBroker / UGSo Blocks for HA
 
-As of October 9, 2026, prototype 0.1.2. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
+As of October 9, 2026, experimental HA app 0.1.5. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
 
 Every new feature must update its counterpart, behavior, YAML output and implementation status here and in the German version. Categories will be reviewed progressively, starting with **System**. Planned means not implemented.
 
 ## All existing blocks
 
-There are **13 block types**, including the automation root. Dropdown choices within one block count as one type.
+There are **14 block types**, including the automation root. Dropdown choices within one block count as one type.
 
 | ioBroker concept | Our block | Native HA output / behavior |
 | --- | --- | --- |
@@ -23,6 +23,9 @@ There are **13 block types**, including the automation root. Dropdown choices wi
 | Adapter action, not the same sendTo interface | HA action | `action`, optional `target.entity_id`, JSON object for action data |
 | Wait/pause | Wait seconds | `delay`; integer seconds from 0 to 86400 |
 | If / else if / else | Extensible if block with gear icon | `if`/`then`/`else` or multiple `choose` branches with optional `default`; first matching branch wins |
+| Number | Number value block and shadow default | Constant threshold or delay |
+
+Conditions have Boolean outputs for if and automation condition value inputs. AND/OR/NOT supports expandable value inputs via its gear. Disabled blocks are omitted from export; required content remains required. Context menu, trash recovery, help and zoom are available. Text, entity and sensor value blocks will follow later.
 
 ## System: comparison and next steps
 

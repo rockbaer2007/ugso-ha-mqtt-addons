@@ -1,6 +1,6 @@
 # UGSo Blocks for HA
 
-Version 0.1.4: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
+Version 0.1.5: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
 
 Die kompakte Ansicht verwendet den klassischen Blockly-Geras-Renderer und seine Puzzle-Andockformen. Startansicht und Einpassen bleiben für kleine Automationen bei höchstens 80 Prozent; manuelles Zoomen ist weiterhin möglich.
 
@@ -20,8 +20,11 @@ Die vollständige Gegenüberstellung zu ioBroker einschließlich Umsetzungsstatu
 
 - Auslöser: Zustand, Zahl über/unter Grenze, Uhrzeit, Sonne und HA-Start.
 - Bedingungen: Zustand, Zahlenvergleich, UND/ODER/NICHT.
+- Werte: Zahl mit seitlichem Output; Grenzen und Wartezeiten nutzen ersetzbare Shadow-Zahlen.
 - Aktionen: Ein/Aus/Umschalten, generische HA-Aktion mit optionalem Entitätsziel und JSON-Daten, Wartezeit und Wenn/Dann/Sonst.
 - Metadaten: Name, Beschreibung, ID sowie single/restart/queued/parallel; maximale Anzahl bei queued/parallel.
+
+Bedingungen sind Boolean-Wertblocks für seitliche Werteingänge bei Falls und Nur wenn. UND/ODER/NICHT besitzt ein Zahnrad für weitere Bedingungen. Aktionen bleiben vertikale Statement-Ketten. Alte Projekte werden automatisch umgestellt. Deaktivierte Blocks werden beim Export übersprungen; fehlende Pflichtinhalte verhindern den Export. Das Kontextmenü verlinkt Hilfe, der Papierkorb erlaubt das Zurückholen gelöschter Blocks innerhalb der Sitzung.
 
 Entitäten zunächst als IDs eingeben. Eine Live-HA-Verbindung ist noch nicht implementiert. Die backendseitige Supervisor-/Token-Verbindung von UGSo Visual Studio ist als Vorlage für eine spätere Anbindung vorgesehen; hinzu kommen die HA-Aktionsbeschreibungen. Tokens dürfen nicht in Blockprojekte oder YAML exportiert werden.
 

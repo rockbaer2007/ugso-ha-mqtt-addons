@@ -55,6 +55,42 @@ try {
   await page.reload();
   await page.waitForFunction(() => document.getElementById('yaml').textContent.includes('choose:'));
   assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), branching);
+  // Check Blockly's real context menu and trash recovery, rather than a custom substitute.
+  await page.locator('.blocklyDraggable').last().click({ button: 'right' });
+  await page.locator('.blocklyContextMenu').waitFor({ state: 'visible' });
+  assert.match(await page.locator('.blocklyContextMenu').textContent(), /Hilfe/);
+  await page.keyboard.press('Escape');
+  const deletedId = await page.evaluate(async () => {
+    const moduleUrl = performance.getEntriesByType('resource').find(entry => new URL(entry.name).pathname === '/src/blocks.js').name;
+    const { Blockly } = await import(moduleUrl);
+    const workspace = Blockly.getMainWorkspace();
+    workspace.trashcan.emptyContents();
+    const block = workspace.newBlock('ugso_number'); block.initSvg(); block.render(); block.moveBy(40, 40); block.select(); block.getSvgRoot().focus();
+    const id = block.id; block.dispose(true); return id;
+  });
+  await page.waitForFunction(async id => {
+    const moduleUrl = performance.getEntriesByType('resource').find(entry => new URL(entry.name).pathname === '/src/blocks.js').name;
+    const { Blockly } = await import(moduleUrl);
+    return !Blockly.getMainWorkspace().getBlockById(id);
+  }, deletedId);
+  await page.locator('.blocklyTrash').click();
+  const recovered = page.locator('.blocklyTrashcanFlyout .blocklyDraggable').first();
+  await recovered.waitFor({ state: 'visible' });
+  const box = await recovered.boundingBox(); const canvas = await page.locator('#workspace').boundingBox();
+  await page.mouse.move(box.x + 10, box.y + 10); await page.mouse.down();
+  await page.mouse.move(canvas.x + 350, canvas.y + 80, { steps: 20 }); await page.mouse.up();
+  assert.deepEqual(await page.evaluate(async () => {
+    const moduleUrl = performance.getEntriesByType('resource').find(entry => new URL(entry.name).pathname === '/src/blocks.js').name;
+    const { Blockly } = await import(moduleUrl);
+    return Blockly.getMainWorkspace().getTopBlocks(false).map(block => block.type).sort();
+  }), ['ugso_automation', 'ugso_number']);
+  await page.evaluate(async () => {
+    const moduleUrl = performance.getEntriesByType('resource').find(entry => new URL(entry.name).pathname === '/src/blocks.js').name;
+    const { Blockly } = await import(moduleUrl);
+    Blockly.getMainWorkspace().getTopBlocks(false).find(block => block.type === 'ugso_number').dispose(true);
+  });
+  await page.locator('#workspace').click({ position: { x: 600, y: 40 } });
+  await page.waitForFunction(() => document.getElementById('valid-badge').textContent === 'Gültig');
   await page.screenshot({ path: 'artifacts/desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);

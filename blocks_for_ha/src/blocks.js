@@ -6,24 +6,55 @@ const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 Blockly.setLocale(De);
 
 const entityField = (value) => ({ type: 'field_input', name: 'ENTITY', text: value });
-const number = { type: 'field_number', name: 'LIMIT', value: 20 };
+const number = value('LIMIT', 'Number');
 const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'below'], ['über', 'above']] };
 const statement = (name, check) => ({ type: 'input_statement', name, check });
+function value(name, check) { return { type: 'input_value', name, check }; }
 const definitions = [
-  { type: 'ugso_automation', message0: 'Automation %1 Wenn %2 Nur wenn %3 Dann %4', args0: [{ type: 'input_dummy' }, statement('TRIGGERS', 'Trigger'), statement('CONDITIONS', 'Condition'), statement('ACTIONS', 'Action')], colour: '#187b72', tooltip: 'Eine native Home-Assistant-Automation. Name und Modus stehen über der Arbeitsfläche.', deletable: false },
+  { type: 'ugso_number', message0: '%1', args0: [{ type: 'field_number', name: 'NUM', value: 20 }], output: 'Number', colour: '#2e7653' },
+  { type: 'ugso_automation', message0: 'Automation %1 Wenn %2 Nur wenn %3 Dann %4', args0: [{ type: 'input_dummy' }, statement('TRIGGERS', 'Trigger'), value('CONDITIONS', 'Boolean'), statement('ACTIONS', 'Action')], colour: '#187b72', tooltip: 'Eine native Home-Assistant-Automation. Name und Modus stehen über der Arbeitsfläche.', deletable: false },
   { type: 'ugso_state_trigger', message0: 'Wenn %1 den Zustand %2 erreicht', args0: [entityField('binary_sensor.flur_bewegung'), { type: 'field_input', name: 'STATE', text: 'on' }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'Reagiert auf eine Zustandsänderung.' },
   { type: 'ugso_numeric_trigger', message0: 'Wenn %1 %2 %3 fällt / steigt', args0: [entityField('sensor.batterie_ladezustand'), direction, number], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'Startet beim Überschreiten einer Grenze, nicht fortlaufend solange die Bedingung wahr ist.' },
   { type: 'ugso_time_trigger', message0: 'Wenn es %1 Uhr ist', args0: [{ type: 'field_input', name: 'TIME', text: '18:00:00' }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24' },
   { type: 'ugso_sun_trigger', message0: 'Bei %1', args0: [{ type: 'field_dropdown', name: 'EVENT', options: [['Sonnenuntergang', 'sunset'], ['Sonnenaufgang', 'sunrise']] }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24' },
   { type: 'ugso_start_trigger', message0: 'Wenn Home Assistant startet', previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24' },
-  { type: 'ugso_state_condition', message0: '%1 ist %2', args0: [entityField('input_boolean.laden_erlaubt'), { type: 'field_input', name: 'STATE', text: 'on' }], previousStatement: 'Condition', nextStatement: 'Condition', colour: '#6860b5' },
-  { type: 'ugso_numeric_condition', message0: '%1 ist %2 %3', args0: [entityField('sensor.batterie_ladezustand'), direction, number], previousStatement: 'Condition', nextStatement: 'Condition', colour: '#6860b5' },
-  { type: 'ugso_logic_condition', message0: '%1 dieser Bedingungen %2', args0: [{ type: 'field_dropdown', name: 'LOGIC', options: [['Alle', 'and'], ['Mindestens eine', 'or'], ['Keine', 'not']] }, statement('CONDITIONS', 'Condition')], previousStatement: 'Condition', nextStatement: 'Condition', colour: '#6860b5' },
+  { type: 'ugso_state_condition', message0: '%1 ist %2', args0: [entityField('input_boolean.laden_erlaubt'), { type: 'field_input', name: 'STATE', text: 'on' }], output: 'Boolean', colour: '#6860b5' },
+  { type: 'ugso_numeric_condition', message0: '%1 ist %2 %3', args0: [entityField('sensor.batterie_ladezustand'), direction, number], output: 'Boolean', colour: '#6860b5' },
+  { type: 'ugso_logic_condition', message0: '%1', args0: [{ type: 'field_dropdown', name: 'LOGIC', options: [['UND · alle', 'and'], ['ODER · mindestens eine', 'or'], ['NICHT · keine', 'not']] }], output: 'Boolean', colour: '#6860b5', mutator: 'ugso_conditions' },
   { type: 'ugso_switch_action', message0: '%1 %2', args0: [entityField('light.flur'), { type: 'field_dropdown', name: 'SERVICE', options: [['einschalten', 'turn_on'], ['ausschalten', 'turn_off'], ['umschalten', 'toggle']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Erzeugt eine Aktion der Domain der gewählten Entität. Prüfe die Verfügbarkeit in HA.' },
   { type: 'ugso_service_action', message0: 'HA-Aktion %1 Ziel %2 Daten (JSON) %3', args0: [{ type: 'field_input', name: 'SERVICE', text: 'notify.mobile_app_telefon' }, { type: 'field_input', name: 'ENTITY', text: '' }, { type: 'field_input', name: 'DATA', text: '{"message":"Hallo!"}' }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Ziel darf leer bleiben. Daten als JSON-Objekt; Integration muss in HA vorhanden sein.' },
-  { type: 'ugso_delay_action', message0: 'Warte %1 Sekunden', args0: [{ type: 'field_number', name: 'SECONDS', value: 30, min: 0, max: 86400, precision: 1 }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5' },
-  { type: 'ugso_if_action', message0: 'Falls %1 mache %2', args0: [statement('CONDITIONS', 'Condition'), statement('THEN', 'Action')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', mutator: 'ugso_branches' }
+  { type: 'ugso_delay_action', message0: 'Warte %1 Sekunden', args0: [value('SECONDS', 'Number')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5' },
+  { type: 'ugso_if_action', message0: 'Falls %1 mache %2', args0: [value('CONDITIONS', 'Boolean'), statement('THEN', 'Action')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', mutator: 'ugso_branches' }
 ];
+Blockly.defineBlocksWithJsonArray([
+  { type: 'ugso_condition_container', message0: 'Bedingungen %1', args0: [statement('STACK', null)], colour: '#6860b5', enableContextMenu: false },
+  { type: 'ugso_condition_item', message0: 'Bedingung', previousStatement: null, nextStatement: null, colour: '#6860b5', enableContextMenu: false }
+]);
+Blockly.Extensions.registerMutator('ugso_conditions', {
+  itemCount_: 2,
+  saveExtraState() { return { items: this.itemCount_, list: !!this.list_ }; },
+  loadExtraState(state) {
+    if (!Number.isInteger(state.items) || state.items < 1 || state.items > 100) throw new Error('1–100 Bedingungen erforderlich.');
+    this.itemCount_ = state.items; this.list_ = !!state.list; this.updateConditions_();
+  },
+  updateConditions_() {
+    for (let i = 0; i < this.itemCount_; i++) if (!this.getInput(`COND${i}`)) this.appendValueInput(`COND${i}`).setCheck('Boolean').appendField(`Bedingung ${i + 1}`);
+    for (let i = this.itemCount_; this.getInput(`COND${i}`); i++) this.removeInput(`COND${i}`);
+  },
+  decompose(workspace) {
+    const root = workspace.newBlock('ugso_condition_container'); root.initSvg(); let connection = root.getInput('STACK').connection;
+    for (let i = 0; i < this.itemCount_; i++) { const item = workspace.newBlock('ugso_condition_item'); item.initSvg(); connection.connect(item.previousConnection); connection = item.nextConnection; }
+    return root;
+  },
+  saveConnections(root) { let i = 0; for (let item = root.getInputTargetBlock('STACK'); item; item = item.getNextBlock()) { if (!item.isInsertionMarker()) item.valueConnection_ = this.getInput(`COND${i++}`)?.connection.targetConnection; } },
+  compose(root) {
+    const connections = [];
+    for (let item = root.getInputTargetBlock('STACK'); item; item = item.getNextBlock()) if (!item.isInsertionMarker()) connections.push(item.valueConnection_);
+    if (connections.length > 100) throw new Error('Höchstens 100 Bedingungen erlaubt.');
+    for (let i = 0; i < this.itemCount_; i++) { const c = this.getInput(`COND${i}`).connection.targetConnection; if (c) c.disconnect(); }
+    this.itemCount_ = Math.max(1, connections.length); this.updateConditions_(); connections.forEach((c, i) => c?.reconnect(this, `COND${i}`));
+  }
+}, function () { this.updateConditions_(); }, ['ugso_condition_item']);
 Blockly.Extensions.registerMutator('ugso_branches', {
   branchCount_: 0, hasElse_: false,
   saveExtraState() { return { branches: this.branchCount_, hasElse: this.hasElse_, choose: !!this.choose_ }; },
@@ -33,7 +64,7 @@ Blockly.Extensions.registerMutator('ugso_branches', {
   },
   updateBranches_() {
     for (let i = 1; i <= this.branchCount_; i++) {
-      if (!this.getInput(`C${i}`)) this.appendStatementInput(`C${i}`).setCheck('Condition').appendField('sonst falls');
+      if (!this.getInput(`C${i}`)) this.appendValueInput(`C${i}`).setCheck('Boolean').appendField('sonst falls');
       if (!this.getInput(`T${i}`)) this.appendStatementInput(`T${i}`).setCheck('Action').appendField('mache');
     }
     for (let i = this.branchCount_ + 1; this.getInput(`C${i}`); i++) { this.removeInput(`C${i}`); this.removeInput(`T${i}`); }
@@ -73,21 +104,35 @@ Blockly.Extensions.registerMutator('ugso_branches', {
   }
 }, undefined, ['controls_if_elseif', 'controls_if_else']);
 Blockly.defineBlocksWithJsonArray(definitions);
+definitions.forEach(definition => {
+  const original = Blockly.Blocks[definition.type].init;
+  Blockly.Blocks[definition.type].init = function () { original.call(this); this.setHelpUrl('https://opensource.ugso-software.de/projects/blocks-for-ha/#andocken-und-bedienung'); };
+});
 export { Blockly };
 export const knownTypes = new Set(definitions.map(item => item.type));
 export const toolbox = { kind: 'categoryToolbox', contents: [
+  { kind: 'category', name: 'Werte', colour: '#2e7653', contents: [{ kind: 'block', type: 'ugso_number' }] },
   { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: ['state', 'numeric', 'time', 'sun', 'start'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })) },
   { kind: 'category', name: 'Bedingungen', colour: '#6860b5', contents: ['state', 'numeric', 'logic'].map(type => ({ kind: 'block', type: `ugso_${type}_condition` })) },
   { kind: 'category', name: 'Aktionen', colour: '#2682a5', contents: ['switch', 'service', 'delay', 'if'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) }
 ] };
+for (const category of toolbox.contents) for (const block of category.contents) {
+  if (block.type.includes('numeric')) block.inputs = { LIMIT: { shadow: { type: 'ugso_number', fields: { NUM: 20 } } } };
+  if (block.type === 'ugso_delay_action') block.inputs = { SECONDS: { shadow: { type: 'ugso_number', fields: { NUM: 30 } } } };
+}
 const field = (block, name) => block.getFieldValue(name);
 function chain(block, convert, depth = 0) {
   if (depth > 10) throw new Error('Blocks sind zu tief verschachtelt.');
   const items = [];
-  while (block) { items.push(convert(block, depth)); block = block.getNextBlock(); }
+  while (block) { if (block.isEnabled()) items.push(convert(block, depth)); block = block.getNextBlock(); }
   return items;
 }
-const range = (block) => ({ entity_id: field(block, 'ENTITY'), [field(block, 'OP')]: Number(field(block, 'LIMIT')) });
+function readNumber(block, input) {
+  const child = block.getInputTargetBlock(input);
+  if (!child || !child.isEnabled() || child.type !== 'ugso_number') throw new Error(`${input}: Zahlenblock fehlt.`);
+  return Number(field(child, 'NUM'));
+}
+const range = (block) => ({ entity_id: field(block, 'ENTITY'), [field(block, 'OP')]: readNumber(block, 'LIMIT') });
 function readTrigger(block) {
   switch (block.type) {
     case 'ugso_state_trigger': return { trigger: 'state', entity_id: field(block, 'ENTITY'), to: field(block, 'STATE') };
@@ -99,12 +144,26 @@ function readTrigger(block) {
   }
 }
 function readCondition(block, depth) {
+  if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
   switch (block.type) {
     case 'ugso_state_condition': return { condition: 'state', entity_id: field(block, 'ENTITY'), state: field(block, 'STATE') };
     case 'ugso_numeric_condition': return { condition: 'numeric_state', ...range(block) };
-    case 'ugso_logic_condition': return { condition: field(block, 'LOGIC'), conditions: chain(block.getInputTargetBlock('CONDITIONS'), readCondition, depth + 1) };
+    case 'ugso_logic_condition': {
+      const conditions = [];
+      for (let i = 0; i < block.itemCount_; i++) {
+        const child = block.getInputTargetBlock(`COND${i}`);
+        if (!child) throw new Error(`Logik: Bedingung ${i + 1} fehlt.`);
+        if (child.isEnabled()) conditions.push(readCondition(child, depth + 1));
+      }
+      return { condition: field(block, 'LOGIC'), conditions };
+    }
     default: throw new Error('Unbekannte Bedingung.');
   }
+}
+function readConditions(block, depth = 0) {
+  if (!block || !block.isEnabled()) return [];
+  const result = readCondition(block, depth);
+  return block.type === 'ugso_logic_condition' && block.list_ && field(block, 'LOGIC') === 'and' ? result.conditions : [result];
 }
 function readAction(block, depth) {
   switch (block.type) {
@@ -115,24 +174,24 @@ function readAction(block, depth) {
       if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('HA-Aktion: Aktionsdaten müssen ein JSON-Objekt sein.');
       return { action: field(block, 'SERVICE'), ...(field(block, 'ENTITY') ? { target: { entity_id: field(block, 'ENTITY') } } : {}), ...(Object.keys(data || {}).length ? { data } : {}) };
     }
-    case 'ugso_delay_action': return { delay: Number(field(block, 'SECONDS')) };
+    case 'ugso_delay_action': return { delay: readNumber(block, 'SECONDS') };
     case 'ugso_if_action': {
       const otherwise = chain(block.getInputTargetBlock('ELSE'), readAction, depth + 1);
       if (block.branchCount_ || block.choose_) {
-        const choose = [{ conditions: chain(block.getInputTargetBlock('CONDITIONS'), readCondition, depth + 1), sequence: chain(block.getInputTargetBlock('THEN'), readAction, depth + 1) }];
-        for (let i = 1; i <= block.branchCount_; i++) choose.push({ conditions: chain(block.getInputTargetBlock(`C${i}`), readCondition, depth + 1), sequence: chain(block.getInputTargetBlock(`T${i}`), readAction, depth + 1) });
+        const choose = [{ conditions: readConditions(block.getInputTargetBlock('CONDITIONS'), depth + 1), sequence: chain(block.getInputTargetBlock('THEN'), readAction, depth + 1) }];
+        for (let i = 1; i <= block.branchCount_; i++) choose.push({ conditions: readConditions(block.getInputTargetBlock(`C${i}`), depth + 1), sequence: chain(block.getInputTargetBlock(`T${i}`), readAction, depth + 1) });
         return { choose, ...(otherwise.length ? { default: otherwise } : {}) };
       }
-      return { if: chain(block.getInputTargetBlock('CONDITIONS'), readCondition, depth + 1), then: chain(block.getInputTargetBlock('THEN'), readAction, depth + 1), ...(otherwise.length ? { else: otherwise } : {}) };
+      return { if: readConditions(block.getInputTargetBlock('CONDITIONS'), depth + 1), then: chain(block.getInputTargetBlock('THEN'), readAction, depth + 1), ...(otherwise.length ? { else: otherwise } : {}) };
     }
     default: throw new Error('Unbekannte Aktion.');
   }
 }
 export function workspaceModel(workspace, metadata) {
-  const roots = workspace.getTopBlocks(false);
+  const roots = workspace.getTopBlocks(false).filter(block => block.isEnabled());
   if (roots.length !== 1 || roots[0].type !== 'ugso_automation') throw new Error('Alle Blocks müssen mit genau einer Automation verbunden sein.');
   const root = roots[0];
-  return { ...metadata, triggers: chain(root.getInputTargetBlock('TRIGGERS'), readTrigger), conditions: chain(root.getInputTargetBlock('CONDITIONS'), readCondition), actions: chain(root.getInputTargetBlock('ACTIONS'), readAction) };
+  return { ...metadata, triggers: chain(root.getInputTargetBlock('TRIGGERS'), readTrigger), conditions: readConditions(root.getInputTargetBlock('CONDITIONS')), actions: chain(root.getInputTargetBlock('ACTIONS'), readAction) };
 }
 function create(workspace, type, fields = {}) {
   const block = workspace.newBlock(type);
@@ -141,14 +200,25 @@ function create(workspace, type, fields = {}) {
   return block;
 }
 function attach(parent, input, children) {
+  if (parent.getInput(input).type === Blockly.inputs.inputTypes.VALUE) {
+    if (!children.length) return;
+    let block = children[0];
+    if (children.length > 1) {
+      block = create(parent.workspace, 'ugso_logic_condition', { LOGIC: 'and' });
+      block.loadExtraState({ items: children.length, list: true });
+      children.forEach((child, i) => block.getInput(`COND${i}`).connection.connect(child.outputConnection));
+    }
+    parent.getInput(input).connection.connect(block.outputConnection); return;
+  }
   let connection = parent.getInput(input).connection;
   children.forEach(block => { connection.connect(block.previousConnection); connection = block.nextConnection; });
 }
-const fieldsRange = (item) => ({ ENTITY: item.entity_id, OP: Object.hasOwn(item, 'above') ? 'above' : 'below', LIMIT: item.above ?? item.below });
+function numberInput(block, name, num) { block.getInput(name).connection.setShadowState({ type: 'ugso_number', fields: { NUM: num } }); return block; }
+const fieldsRange = (item) => ({ ENTITY: item.entity_id, OP: Object.hasOwn(item, 'above') ? 'above' : 'below' });
 function triggerBlock(workspace, item) {
   switch (item.trigger) {
     case 'state': return create(workspace, 'ugso_state_trigger', { ENTITY: item.entity_id, STATE: item.to });
-    case 'numeric_state': return create(workspace, 'ugso_numeric_trigger', fieldsRange(item));
+    case 'numeric_state': return numberInput(create(workspace, 'ugso_numeric_trigger', fieldsRange(item)), 'LIMIT', item.above ?? item.below);
     case 'time': return create(workspace, 'ugso_time_trigger', { TIME: item.at });
     case 'sun': return create(workspace, 'ugso_sun_trigger', { EVENT: item.event });
     case 'homeassistant': return create(workspace, 'ugso_start_trigger');
@@ -156,9 +226,10 @@ function triggerBlock(workspace, item) {
 }
 function conditionBlock(workspace, item) {
   if (item.condition === 'state') return create(workspace, 'ugso_state_condition', { ENTITY: item.entity_id, STATE: item.state });
-  if (item.condition === 'numeric_state') return create(workspace, 'ugso_numeric_condition', fieldsRange(item));
+  if (item.condition === 'numeric_state') return numberInput(create(workspace, 'ugso_numeric_condition', fieldsRange(item)), 'LIMIT', item.above ?? item.below);
   const block = create(workspace, 'ugso_logic_condition', { LOGIC: item.condition });
-  attach(block, 'CONDITIONS', item.conditions.map(child => conditionBlock(workspace, child))); return block;
+  block.loadExtraState({ items: item.conditions.length });
+  item.conditions.forEach((child, i) => attach(block, `COND${i}`, [conditionBlock(workspace, child)])); return block;
 }
 function actionBlock(workspace, item) {
   if (item.action) {
@@ -166,7 +237,7 @@ function actionBlock(workspace, item) {
     if (!item.data && id && ['turn_on', 'turn_off', 'toggle'].some(service => item.action === `${id.split('.')[0]}.${service}`)) return create(workspace, 'ugso_switch_action', { ENTITY: id, SERVICE: item.action.split('.')[1] });
     return create(workspace, 'ugso_service_action', { SERVICE: item.action, ENTITY: id || '', DATA: JSON.stringify(item.data || {}) });
   }
-  if (Object.hasOwn(item, 'delay')) return create(workspace, 'ugso_delay_action', { SECONDS: item.delay });
+  if (Object.hasOwn(item, 'delay')) return numberInput(create(workspace, 'ugso_delay_action'), 'SECONDS', item.delay);
   const block = create(workspace, 'ugso_if_action');
   if (item.choose) {
     block.loadExtraState({ branches: item.choose.length - 1, hasElse: Object.hasOwn(item, 'default'), choose: true });

@@ -1,12 +1,12 @@
 # ioBroker / UGSo Blocks für HA
 
-Stand: 9. Oktober 2026, Prototyp 0.1.2. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
+Stand: 9. Oktober 2026, experimentelle HA-App 0.1.5. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
 
 Bei jeder neuen Funktion werden Gegenstück, Verhalten, YAML-Ausgabe und Status in dieser Liste und der englischen Fassung aktualisiert. Die Kategorien werden schrittweise geprüft, beginnend mit **System**. Geplant bedeutet noch nicht implementiert.
 
 ## Alle vorhandenen Blocks
 
-Es gibt **13 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswahlmöglichkeiten innerhalb eines Blocks zählen als ein Typ.
+Es gibt **14 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswahlmöglichkeiten innerhalb eines Blocks zählen als ein Typ.
 
 | ioBroker-Konzept | Unser Block | Native HA-Ausgabe / Verhalten |
 | --- | --- | --- |
@@ -23,6 +23,9 @@ Es gibt **13 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswa
 | Adapteraktion, keine identische sendTo-Schnittstelle | HA-Aktion | `action`, optional `target.entity_id`, Aktionsdaten als JSON-Objekt |
 | Warten/Pause | Warte Sekunden | `delay`; ganze Sekunden von 0 bis 86400 |
 | Falls / sonst falls / sonst | Erweiterbarer Falls-Block mit Zahnrad | `if`/`then`/`else` oder mehrere `choose`-Zweige mit optionalem `default`; erster passender Zweig gewinnt |
+| Zahl | Zahlen-Wertblock und Shadow-Standardwert | Konstante für Grenze oder Wartezeit |
+
+Bedingungen besitzen Boolean-Output-Anschlüsse; Falls und Nur wenn passende Werteingänge. UND/ODER/NICHT ist über das Zahnrad um Werteingänge erweiterbar. Deaktivierte Blocks werden nicht exportiert, Pflichtinhalte bleiben erforderlich. Kontextmenü, Papierkorb mit Wiederherstellung, Hilfe und Zoom sind vorhanden. Text-, Entitäts- und Sensor-Wertblocks folgen später.
 
 ## System: Gegenüberstellung und Ausbau
 
