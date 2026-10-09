@@ -16,7 +16,9 @@ document.querySelector('#about-dialog p').textContent = `Version ${version} · V
 const $ = id => document.getElementById(id);
 document.querySelector('.brand').href = './';
 document.querySelector('#about-dialog a[href="/licenses/THIRD_PARTY_NOTICES.txt"]').href = './licenses/THIRD_PARTY_NOTICES.txt';
-const workspace = Blockly.inject('workspace', { toolbox, media: './media/', renderer: 'zelos', grid: { spacing: 24, length: 2, colour: '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: .85, maxScale: 1.6, minScale: .35 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
+const compactTheme = Blockly.Theme.defineTheme('ugso_compact', { base: Blockly.Themes.Classic, fontStyle: { family: 'Segoe UI, sans-serif', size: 12, weight: 'normal' } });
+const workspace = Blockly.inject('workspace', { toolbox, theme: compactTheme, media: './media/', renderer: 'geras', grid: { spacing: 24, length: 2, colour: '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: .8, maxScale: 1.6, minScale: .35 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
+function fitCompact() { workspace.zoomToFit(); if (workspace.scale > .8) workspace.setScale(.8); workspace.scrollCenter(); }
 let metadata = {};
 let currentModel;
 let timer;
@@ -43,7 +45,7 @@ function update() {
   }
   try { localStorage.setItem(key, JSON.stringify(snapshot())); } catch { $('validation').textContent += ' Browser-Speicher nicht verfügbar; Projekt bitte sichern.'; }
 }
-function loadModel(model) { validateAutomation(model); modelWorkspace(workspace, model); setMeta(model); update(); requestAnimationFrame(() => workspace.zoomToFit()); }
+function loadModel(model) { validateAutomation(model); modelWorkspace(workspace, model); setMeta(model); update(); requestAnimationFrame(fitCompact); }
 function restoreProject(data) {
   if (data?.format !== 'ugso-blocks-for-ha' || data.version !== 1 || !data.metadata || !data.workspace) throw new Error('Kein unterstütztes Blocks-Projekt.');
   const temp = new Blockly.Workspace();
@@ -55,7 +57,7 @@ function restoreProject(data) {
     validateAutomation(workspaceModel(temp, data.metadata));
   } finally { temp.dispose(); }
   Blockly.serialization.workspaces.load(data.workspace, workspace); metadata = data.metadata; metaFields(); update();
-  requestAnimationFrame(() => workspace.zoomToFit());
+  requestAnimationFrame(fitCompact);
 }
 function download(content, name, type) {
   const url = URL.createObjectURL(new Blob([content], { type })); const link = document.createElement('a'); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 10000);
@@ -66,7 +68,7 @@ $('mode').addEventListener('change', () => { metadata.mode = $('mode').value; if
 $('max').addEventListener('input', () => { metadata.max = Number($('max').value); update(); });
 $('format').addEventListener('change', update);
 $('load-example').addEventListener('click', () => { if (confirm('Aktuelle Blocks durch das Beispiel ersetzen? Speichere vorher deine Änderungen.')) loadModel(structuredClone(examples[$('example').value])); });
-$('undo').addEventListener('click', () => workspace.undo(false)); $('redo').addEventListener('click', () => workspace.undo(true)); $('fit').addEventListener('click', () => workspace.zoomToFit());
+$('undo').addEventListener('click', () => workspace.undo(false)); $('redo').addEventListener('click', () => workspace.undo(true)); $('fit').addEventListener('click', fitCompact);
 $('copy').addEventListener('click', async () => { if (!currentModel) return; try { await navigator.clipboard.writeText($('yaml').textContent); notice('YAML kopiert.'); } catch { notice('Kopieren nicht verfügbar. YAML markieren und mit Strg+C kopieren.'); } });
 $('save').addEventListener('click', () => { if (currentModel) { download($('yaml').textContent, filename(metadata.alias), 'text/yaml;charset=utf-8'); notice('YAML-Datei heruntergeladen.'); } });
 $('open').addEventListener('click', () => $('yaml-file').click());

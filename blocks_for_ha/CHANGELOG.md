@@ -26,3 +26,9 @@
 - Relative Pfade für Skripte, Blockly-Medien und Lizenzhinweise hinter HA-Ingress.
 - Installationsanleitung für den gemeinsamen UGSo-HA-App-Store.
 
+# 0.1.4
+
+- Kompaktere Blocks mit normaler 12-Punkt-Schrift und 80-Prozent-Startansicht.
+- Klassischer Blockly-Geras-Renderer mit Puzzle-Andockformen und Statement-Aussparungen.
+- Einpassen und Laden vergrößern kleine Automationen nicht mehr automatisch über 80 Prozent; manuelles Zoomen bleibt möglich.
+
