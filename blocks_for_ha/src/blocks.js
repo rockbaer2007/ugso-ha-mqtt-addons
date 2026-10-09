@@ -36,7 +36,13 @@ const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'bel
 const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 const definitions = [
-  { type: 'ugso_variable_set', message0: 'Setze %1 auf %2', args0: [{ type: 'field_variable', name: 'VAR', variable: 'wert' }, value('VALUE', ['String', 'Number'])], previousStatement: 'Action', nextStatement: 'Action', colour: '#a54879', tooltip: 'Definiert oder ändert eine HA-Variable für diesen Automationslauf. Vor dem Lesen setzen.' },
+  { type: 'ugso_compare', message0: '%1 %2 %3', args0: [value('LEFT', 'Value'), { type: 'field_dropdown', name: 'OP', options: [['=', '=='], ['≠', '!='], ['<', '<'], ['≤', '<='], ['>', '>'], ['≥', '>=']] }, value('RIGHT', 'Value')], output: ['Boolean', 'Value'], colour: '#6860b5', tooltip: 'Vergleicht zwei Werte in HA. Zahlen und Texte haben unterschiedliche Typen; Sensorwerte im Template bewusst umwandeln.' },
+  { type: 'ugso_boolean', message0: '%1', args0: [{ type: 'field_dropdown', name: 'BOOL', options: [['wahr', 'true'], ['falsch', 'false']] }], output: ['Boolean', 'Value'], colour: '#6860b5' },
+  { type: 'ugso_not', message0: 'NICHT %1', args0: [value('BOOL', 'Boolean')], output: ['Boolean', 'Value'], colour: '#6860b5' },
+  { type: 'ugso_binary_logic', message0: '%1 %2 %3', args0: [value('LEFT', 'Boolean'), { type: 'field_dropdown', name: 'OP', options: [['UND', 'and'], ['ODER', 'or']] }, value('RIGHT', 'Boolean')], output: ['Boolean', 'Value'], colour: '#6860b5' },
+  { type: 'ugso_null', message0: 'kein Wert (null)', output: 'Value', colour: '#6860b5', tooltip: 'Erzeugt YAML null oder Jinja none. Weder Nullzahl noch falsch.' },
+  { type: 'ugso_ternary', message0: 'Wenn %1 dann Wert %2 sonst Wert %3', args0: [value('TEST', 'Boolean'), value('TRUE', 'Value'), value('FALSE', 'Value')], output: ['String', 'Value'], colour: '#6860b5', tooltip: 'Liefert einen Wert, keine Aktionskette. HA wertet den Jinja-Ausdruck aus. Für Variablen, Log-Meldungen oder Vergleiche.' },
+  { type: 'ugso_variable_set', message0: 'Setze %1 auf %2', args0: [{ type: 'field_variable', name: 'VAR', variable: 'wert' }, value('VALUE', ['String', 'Number', 'Boolean', 'Value'])], previousStatement: 'Action', nextStatement: 'Action', colour: '#a54879', tooltip: 'Definiert oder ändert eine HA-Variable für diesen Automationslauf. Vor dem Lesen setzen.' },
   { type: 'ugso_variable_get', message0: 'Variable %1', args0: [{ type: 'field_variable', name: 'VAR', variable: 'wert' }], output: 'String', colour: '#a54879', tooltip: 'Erzeugt {{ variablenname }} für ein HA-Template. Kein dauerhaft gespeicherter Helfer.' },
   { type: 'ugso_template', message0: 'Template %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: "{{ states('sensor.temperatur') | float(0) }}", maxLines: 3 }], output: 'String', colour: '#8a6635', tooltip: 'Jinja-Vorlage einschließlich {{ ... }} oder {% ... %}. Auswertung erst in Home Assistant.' },
   { type: 'ugso_template_condition', message0: 'Template ist wahr %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: "{{ states('sensor.temperatur') | float(0) > 20 }}", maxLines: 3 }], output: 'Boolean', colour: '#6860b5', tooltip: 'HA wertet diese Jinja-Vorlage als Bedingung aus. Löst selbst keine Automation aus.' },
@@ -146,6 +152,7 @@ definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
   Blockly.Blocks[definition.type].init = function () {
     original.call(this); this.setHelpUrl('https://opensource.ugso-software.de/projects/blocks-for-ha/#andocken-und-bedienung');
+    if (this.outputConnection && ['ugso_number', 'ugso_percent', 'ugso_text', 'ugso_template', 'ugso_variable_get'].includes(this.type)) this.setOutput(true, [...this.outputConnection.getCheck(), 'Value']);
     if (['ugso_logic_condition', 'ugso_if_action'].includes(this.type)) addExpansionButtons(this);
   };
 });
@@ -185,9 +192,17 @@ for (const category of toolbox.contents) for (const block of category.contents) 
   if (block.type === 'ugso_colour_action') block.inputs = { COLOUR: { shadow: { type: 'ugso_colour', fields: { COLOUR: '#ff8800' } } }, BRIGHTNESS: { shadow: { type: 'ugso_percent', fields: { NUM: 50 } } } };
 }
 toolbox.contents.push(
+  { kind: 'category', name: 'Logik', colour: '#6860b5', contents: ['ugso_compare', 'ugso_binary_logic', 'ugso_not', 'ugso_boolean', 'ugso_null', 'ugso_ternary'].map(type => ({ kind: 'block', type })) },
   { kind: 'category', name: 'Variablen', colour: '#a54879', custom: 'UGSO_VARIABLES' },
   { kind: 'category', name: 'Templates', colour: '#8a6635', contents: ['ugso_template', 'ugso_template_condition'].map(type => ({ kind: 'block', type })) }
 );
+for (const block of toolbox.contents.find(c => c.name === 'Logik').contents) {
+  const shadow = (type, fields) => ({ shadow: { type, fields } });
+  if (block.type === 'ugso_compare') block.inputs = { LEFT: shadow('ugso_number', { NUM: 1 }), RIGHT: shadow('ugso_number', { NUM: 1 }) };
+  if (block.type === 'ugso_binary_logic') block.inputs = { LEFT: shadow('ugso_boolean', { BOOL: 'true' }), RIGHT: shadow('ugso_boolean', { BOOL: 'false' }) };
+  if (block.type === 'ugso_not') block.inputs = { BOOL: shadow('ugso_boolean', { BOOL: 'true' }) };
+  if (block.type === 'ugso_ternary') block.inputs = { TEST: shadow('ugso_boolean', { BOOL: 'true' }), TRUE: shadow('ugso_text', { TEXT: 'Ja' }), FALSE: shadow('ugso_text', { TEXT: 'Nein' }) };
+}
 export function setupVariables(workspace) {
   workspace.registerButtonCallback('UGSO_CREATE_VARIABLE', () => Blockly.Variables.createVariableButtonHandler(workspace));
   workspace.registerToolboxCategoryCallback('UGSO_VARIABLES', ws => {
@@ -209,9 +224,52 @@ function readValue(block, input) {
   const child = block.getInputTargetBlock(input);
   if (!child?.isEnabled()) throw new Error(`${input}: Wertblock fehlt.`);
   if (['ugso_number', 'ugso_percent'].includes(child.type)) return Number(field(child, 'NUM'));
+  if (child.type === 'ugso_boolean') return field(child, 'BOOL') === 'true';
+  if (child.type === 'ugso_null') return null;
   if (child.type === 'ugso_variable_get') return `{{ ${variableName(child)} }}`;
   if (['ugso_text', 'ugso_template'].includes(child.type)) return field(child, 'TEXT');
+  if (child.type === 'ugso_ternary' || child.outputConnection?.getCheck()?.includes('Boolean')) return `{{ ${expression(child)} }}`;
   throw new Error(`${input}: Wertblock wird nicht unterstützt.`);
+}
+function expression(block, depth = 0) {
+  if (!block?.isEnabled()) throw new Error('Logik: Wert oder Bedingung fehlt.');
+  if (depth > 10) throw new Error('Logik ist zu tief verschachtelt.');
+  const child = name => expression(block.getInputTargetBlock(name), depth + 1);
+  const entity = () => {
+    const id = field(block, 'ENTITY');
+    if (!/^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id)) throw new Error('Logik: Entität im Format domain.name erwartet.');
+    return JSON.stringify(id);
+  };
+  const template = text => {
+    const match = /^\s*\{\{\s*([\s\S]+?)\s*\}\}\s*$/.exec(text);
+    if (!match || /\{[{%]|[%}]\}/.test(match[1])) throw new Error('Logik: Template als einzelnen {{ Ausdruck }} eingeben; Text und Jinja-Anweisungen gehören in den Template-Wertblock außerhalb eines Vergleichs.');
+    return `(${match[1]})`;
+  };
+  switch (block.type) {
+    case 'ugso_number': case 'ugso_percent': return String(Number(field(block, 'NUM')));
+    case 'ugso_text': return JSON.stringify(field(block, 'TEXT'));
+    case 'ugso_boolean': return field(block, 'BOOL');
+    case 'ugso_null': return 'none';
+    case 'ugso_variable_get': return variableName(block);
+    case 'ugso_template': case 'ugso_template_condition': return template(field(block, 'TEXT'));
+    case 'ugso_compare': return `(${child('LEFT')} ${field(block, 'OP')} ${child('RIGHT')})`;
+    case 'ugso_not': return `(not ${child('BOOL')})`;
+    case 'ugso_binary_logic': return `(${child('LEFT')} ${field(block, 'OP')} ${child('RIGHT')})`;
+    case 'ugso_ternary': return `(${child('TRUE')} if ${child('TEST')} else ${child('FALSE')})`;
+    case 'ugso_state_condition': return `is_state(${entity()}, ${JSON.stringify(field(block, 'STATE'))})`;
+    case 'ugso_numeric_condition': {
+      const state = `states(${entity()})`;
+      return `(is_number(${state}) and (${state} | float) ${field(block, 'OP') === 'above' ? '>' : '<'} ${readNumber(block, 'LIMIT')})`;
+    }
+    case 'ugso_date_condition': return template(dateTemplate(field(block, 'DATE'), field(block, 'OP')));
+    case 'ugso_logic_condition': {
+      const items = [];
+      for (let i = 0; i < block.itemCount_; i++) items.push(child(`COND${i}`));
+      const op = field(block, 'LOGIC');
+      return op === 'not' ? `(not (${items.join(' or ')}))` : `(${items.join(` ${op} `)})`;
+    }
+    default: throw new Error('Logik: Dieser Block liefert keinen unterstützten Ausdruck.');
+  }
 }
 const field = (block, name) => block.getFieldValue(name);
 function chain(block, convert, depth = 0) {
@@ -239,6 +297,9 @@ function readTrigger(block) {
 function readCondition(block, depth) {
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
   switch (block.type) {
+    case 'ugso_boolean': case 'ugso_compare': return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
+    case 'ugso_not': return { condition: 'not', conditions: requiredConditions(block, 'BOOL', depth) };
+    case 'ugso_binary_logic': return { condition: field(block, 'OP'), conditions: [...requiredConditions(block, 'LEFT', depth), ...requiredConditions(block, 'RIGHT', depth)] };
     case 'ugso_template_condition': return { condition: 'template', value_template: field(block, 'TEXT') };
     case 'ugso_date_condition': return { condition: 'template', value_template: dateTemplate(field(block, 'DATE'), field(block, 'OP')) };
     case 'ugso_state_condition': return { condition: 'state', entity_id: field(block, 'ENTITY'), state: field(block, 'STATE') };
@@ -254,6 +315,11 @@ function readCondition(block, depth) {
     }
     default: throw new Error('Unbekannte Bedingung.');
   }
+}
+function requiredConditions(block, name, depth) {
+  const child = block.getInputTargetBlock(name);
+  if (!child?.isEnabled()) throw new Error(`Logik: ${name} fehlt oder ist deaktiviert.`);
+  return [readCondition(child, depth + 1)];
 }
 function readConditions(block, depth = 0) {
   if (!block || !block.isEnabled()) return [];
@@ -396,6 +462,9 @@ function actionBlock(workspace, item) {
   if (item.else) attach(block, 'ELSE', item.else.map(child => actionBlock(workspace, child))); return block;
 }
 function valueInput(block, input, val) {
+  if (val === null || typeof val === 'boolean') {
+    block.getInput(input).connection.setShadowState({ type: val === null ? 'ugso_null' : 'ugso_boolean', ...(val === null ? {} : { fields: { BOOL: String(val) } }) }); return;
+  }
   if (typeof val === 'number') { numberInput(block, input, val); return; }
   const match = /^\{\{ ([a-zA-Z_][a-zA-Z0-9_]*) \}\}$/.exec(val);
   if (match) {

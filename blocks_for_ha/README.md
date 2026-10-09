@@ -1,6 +1,8 @@
 # UGSo Blocks for HA
 
-Version 0.1.8: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
+Neu in 0.1.9: **Logik** mit Vergleich (=, ≠, <, ≤, >, ≥), kompaktem UND/ODER, NICHT, wahr/falsch, null und bedingter Wertauswahl. Zahl/Text/Variable/Template an die Werteingänge, Boolean an die Bedingungseingänge anschließen. Variablenzuweisungen unterstützen jetzt Boolean und null. JSON bewahrt Blockformen; YAML-Import erhält komplexe Ausdrücke als Template-Blocks. Vergleiche konvertieren Typen nicht automatisch. Ausdruckseingänge akzeptieren einzelne Jinja-Ausgaben; dynamische Werte sind nicht als feste Grenzen oder Wartezeiten vorgesehen.
+
+Version 0.1.9: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
 
 Die kompakte Ansicht verwendet den klassischen Blockly-Geras-Renderer und seine Puzzle-Andockformen. Startansicht und Einpassen bleiben für kleine Automationen bei höchstens 80 Prozent; manuelles Zoomen ist weiterhin möglich.
 
@@ -29,11 +31,11 @@ Bedingungen sind Boolean-Wertblocks für seitliche Werteingänge bei Falls und N
 
 Entitäten zunächst als IDs eingeben. Eine Live-HA-Verbindung ist noch nicht implementiert. Die backendseitige Supervisor-/Token-Verbindung von UGSo Visual Studio ist als Vorlage für eine spätere Anbindung vorgesehen; hinzu kommen die HA-Aktionsbeschreibungen. Tokens dürfen nicht in Blockprojekte oder YAML exportiert werden.
 
-Suche steht am Ende des Menüs. Plus/Minus ergänzt und entfernt die letzten Bedingungseingänge oder Falls-Zweige; S schaltet Sonst um. Das Zahnrad bleibt zum Umordnen. [Liste aller 27 Blocks mit Bildern und Originalplugin-Links](https://opensource.ugso-software.de/projects/blocks-for-ha/blocks).
+Suche steht am Ende des Menüs. Plus/Minus ergänzt und entfernt die letzten Bedingungseingänge oder Falls-Zweige; S schaltet Sonst um. Das Zahnrad bleibt zum Umordnen. [Liste aller 33 Blocks mit Bildern und Originalplugin-Links](https://opensource.ugso-software.de/projects/blocks-for-ha/blocks).
 
 Variablen: im Menü **Variablen → Variable erstellen** einen Namen anlegen, beispielsweise `leistung`. **Setze** in die Aktionskette hängen und Zahl, Text oder Template anschließen; der Lesen-Block erzeugt `{{ leistung }}` für eine spätere Log-Meldung oder Variablenzuweisung. Im Dropdown sind Umbenennen und Löschen verfügbar. Freie Template-Texte werden beim Umbenennen nicht verändert. Namen benötigen ASCII-Buchstaben, Ziffern und `_`, keine führende Ziffer. Variablen gelten für den jeweiligen HA-Lauf und sind keine persistenten Helfer.
 
-Die Kategorie **Templates** bietet eigene Wert- und Boolean-Bedingungsblocks mit mehrzeiliger Jinja-Eingabe. Vorlagen einschließlich `{{ ... }}`/`{% ... %}` eingeben. Blocks prüft Anschlussformen und YAML, führt Jinja aber nicht lokal aus und prüft keine HA-Entitäten oder Jinja-Syntax. Variablen erst setzen, dann in späteren Aktionen verwenden; Aktionsvariablen stehen nicht in den vorgelagerten Automationsbedingungen bereit. Der Import unterstützt eine Zahl oder einen Text/Template pro Variablen-Aktion; mehrere Einträge, Listen/Objekte und Automationsvariablen auf oberster Ebene werden ausdrücklich abgelehnt. Native Syntax: [HA Define variables](https://www.home-assistant.io/docs/scripts/#define-variables).
+Die Kategorie **Templates** bietet eigene Wert- und Boolean-Bedingungsblocks mit mehrzeiliger Jinja-Eingabe. Vorlagen einschließlich `{{ ... }}`/`{% ... %}` eingeben. Blocks prüft Anschlussformen und YAML, führt Jinja aber nicht lokal aus und prüft keine HA-Entitäten oder Jinja-Syntax. Variablen erst setzen, dann in späteren Aktionen verwenden; Aktionsvariablen stehen nicht in den vorgelagerten Automationsbedingungen bereit. Der Import unterstützt eine Zahl, einen Text/Template, Boolean oder null pro Variablen-Aktion; mehrere Einträge, Listen/Objekte und Automationsvariablen auf oberster Ebene werden ausdrücklich abgelehnt. Native Syntax: [HA Define variables](https://www.home-assistant.io/docs/scripts/#define-variables).
 
 ## Dateien auf dem Rechner
 

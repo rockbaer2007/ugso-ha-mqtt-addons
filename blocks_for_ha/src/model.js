@@ -55,7 +55,7 @@ function checkAction(item, path, depth = 0) {
     if (Object.keys(item.variables).length !== 1) throw new Error(`${path}: Pro Variablen-Aktion wird genau eine Variable unterstützt.`);
     for (const [name, value] of Object.entries(item.variables)) {
       if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) throw new Error(`${path}: Variablenname ungültig.`);
-      if (typeof value !== 'string' && !(typeof value === 'number' && Number.isFinite(value))) throw new Error(`${path}: Variablenwert muss Text, Template oder Zahl sein.`);
+      if (value !== null && !['string', 'boolean'].includes(typeof value) && !(typeof value === 'number' && Number.isFinite(value))) throw new Error(`${path}: Variablenwert muss Text, Template, Zahl, Boolean oder null sein.`);
     }
   } else if (item.action) {
     ownKeys(item, ['action', 'target', 'data'], path); entity(item.action, path);

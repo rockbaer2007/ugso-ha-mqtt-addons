@@ -1,16 +1,21 @@
 # ioBroker / UGSo Blocks für HA
 
-Stand: 9. Oktober 2026, experimentelle HA-App 0.1.8. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
+Stand: 9. Oktober 2026, experimentelle HA-App 0.1.9. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
 
 Bei jeder neuen Funktion werden Gegenstück, Verhalten, YAML-Ausgabe und Status in dieser Liste und der englischen Fassung aktualisiert. Die Kategorien werden schrittweise geprüft, beginnend mit **System**. Geplant bedeutet noch nicht implementiert.
 
 ## Alle vorhandenen Blocks
 
-Es gibt **27 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswahlmöglichkeiten innerhalb eines Blocks zählen als ein Typ.
+Es gibt **33 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswahlmöglichkeiten innerhalb eines Blocks zählen als ein Typ.
 
 | ioBroker-Konzept | Unser Block | Native HA-Ausgabe / Verhalten |
 | --- | --- | --- |
-| Variable erstellen / setzen | Variablen-Menü und Setze-Block | Native `variables`-Aktion, Zahl oder Text/Template; Gültigkeit im HA-Lauf, kein persistenter Datenpunkt |
+| Vergleich | Vergleich mit sechs Operatoren | Boolean-Ergebnis über Jinja; zwei Werteingänge, keine automatische Typumwandlung |
+| UND / ODER / NICHT kompakt | UND/ODER mit zwei Eingängen, NICHT mit einem | Native HA-Gruppen als Bedingungen; Jinja als Variablenwert |
+| wahr / falsch | Boolean-Konstante | Echte YAML-Boolean-Zuweisung oder Template-Bedingung |
+| null | Kein Wert | YAML `null` / Jinja `none`; kein Boolean-Bedingungsblock |
+| test / if true / if false | Wenn → dann Wert → sonst Wert | Bedingte Jinja-Wertauswahl für Variablen, Log-Meldungen und Vergleiche |
+| Variable erstellen / setzen | Variablen-Menü und Setze-Block | Native `variables`-Aktion, Zahl, Text/Template, Boolean oder null; Gültigkeit im HA-Lauf, kein persistenter Datenpunkt |
 | Variable lesen | Variable-Wertblock | `{{ name }}` für Log-Meldung oder nächste Variablenzuweisung |
 | Ausdruck / Berechnung | Template-Wertblock | Frei eingegebene Jinja-Vorlage; Auswertung in HA statt JavaScript |
 | Ausdruck als Bedingung | Template-Bedingung | `condition: template`, `value_template`; Boolean-Anschluss |

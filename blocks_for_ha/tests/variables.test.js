@@ -32,7 +32,7 @@ test('Templates keep their exact text; unsupported variable shapes fail before i
     const model = { ...examples.light, actions: [{ variables: { wert: '{{states("sensor.test")}}' } }] };
     modelWorkspace(ws, model);
     assert.deepEqual(workspaceModel(ws, model), model);
-    for (const variables of [{ 'nicht gültig': 1 }, { x: true }, { x: 1, y: 2 }]) {
+    for (const variables of [{ 'nicht gültig': 1 }, { x: [] }, { x: 1, y: 2 }]) {
       assert.throws(() => toYaml({ ...examples.light, actions: [{ variables }] }), /Variable/);
     }
   } finally { ws.dispose(); }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.9
+
+- Kategorie Logik mit Vergleich (=, ≠, <, ≤, >, ≥), kompaktem UND/ODER, NICHT, wahr/falsch, null und bedingter Wertauswahl.
+- Boolean-/null-Variablen bleiben echte YAML-Typen; Logikwerte können als Variablen-Templates verwendet werden.
+- Jinja-Ausdrücke werden geklammert, Textwerte maskiert und ungültige/leere Ausdruckseingänge abgelehnt. Numerische HA-Bedingungen in Wertauswahlen prüfen auf verfügbare Zahlen.
+- JSON-Projekte erhalten die neuen Blockformen; YAML-Import erhält Ausdrücke als Template-Blocks und native Gruppen als Bedingungsgruppen.
+- 33 Blocks im DE/EN-Katalog mit Bildern und ioBroker-Gegenüberstellung.
+
 ## 0.1.8
 
 - Eigene Kategorie Variablen mit nativem Blockly-Dialog zum Erstellen sowie Umbenennen/Löschen im Variablen-Dropdown.

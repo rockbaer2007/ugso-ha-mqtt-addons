@@ -1,4 +1,4 @@
-UGSo Blocks for HA 0.1.8
+UGSo Blocks for HA 0.1.9
 Copyright 2026 rockbaer2007 / UGSo
 Own application code is licensed under Apache License 2.0; see APP-LICENSE.txt in this directory.
 
