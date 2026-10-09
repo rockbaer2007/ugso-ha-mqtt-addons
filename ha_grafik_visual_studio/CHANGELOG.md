@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.284
+
+- Vertikale SVG-Line/Wert-Verbindung: Rechtwinklige Linien laufen zuerst senkrecht vom Start und biegen erst auf Zielhöhe nach rechts oder links ab. Die Checkbox ist auch bei angedockten Linien verfügbar, ohne deren Anschlüsse zu verändern. Manuelle Zwischenpunkte bleiben erhalten.
+- Vertical orthogonal SVG/value connections leave the start vertically and turn left or right at the target height. The checkbox remains available for docked lines without changing their bindings. Manual route points are preserved.
+
 ## 0.1.283
 
 - SVG-Line und Wert-Verbindung: Unter Linie schaltet die Checkbox „Vertikale Startposition“ eine freie Linie senkrecht; ohne Haken waagerecht. Linienpunkte werden mitgedreht, bestehende Andockverbindungen bleiben erhalten. Die Option ist bei angedockten Linien deaktiviert.

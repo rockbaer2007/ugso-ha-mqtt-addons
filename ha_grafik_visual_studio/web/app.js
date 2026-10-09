@@ -2336,7 +2336,9 @@ function connectionRoute(widget, widgets, reverse = false) {
   let points;
   if (widget.pathMode === "orthogonal" && !intermediate.length) {
     const middleX = start.x + (end.x - start.x) / 2;
-    points = [start, { x: middleX, y: start.y }, { x: middleX, y: end.y }, end];
+    points = widget.verticalStart === true
+      ? [start, { x: start.x, y: end.y }, end]
+      : [start, { x: middleX, y: start.y }, { x: middleX, y: end.y }, end];
   } else points = [start, ...intermediate, end];
   const startBox = widgets.find(item => item.id === widget.startWidgetId);
   const endBox = widgets.find(item => item.id === widget.endWidgetId);
@@ -4649,10 +4651,6 @@ function field(descriptor, widget) {
   if (input.type === "checkbox") input.checked = widget[descriptor.key] ?? descriptor.default ?? true;
   else input.value = (widget.type === "red-number" || descriptor.optionalColor) && descriptor.type === "color" ? filterHex(widget[descriptor.key] ?? descriptor.default ?? "#FFFFFF") : widget[descriptor.key] ?? descriptor.default ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
   input.disabled = descriptor.disabled === true;
-  if (widget.type === "svg-connection" && descriptor.key === "verticalStart" && (widget.startWidgetId || widget.endWidgetId || widget.startCollector || widget.endCollector)) {
-    input.disabled = true;
-    input.title = "Die Startposition lässt sich nur bei einer frei stehenden Linie ändern.";
-  }
   if (widget.type === "note" && htmlField) { input.rows = 2; input.style.minHeight = "36px"; input.style.height = "40px"; }
   if (descriptor.optionalColor) {
     const override = document.createElement("input"); override.type = "checkbox"; override.checked = Boolean(widget[descriptor.key]);
