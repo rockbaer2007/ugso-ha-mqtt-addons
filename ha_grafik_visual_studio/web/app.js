@@ -23,7 +23,7 @@ import { createMeteoredController } from "./meteored.js";
 const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
 import { getLanguagePreference, setLanguagePreference, startLocalization, uiText } from "./localization.js";
-import { connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings } from "./connection-animation.js";
+import { connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings, resolveConnectionValueAnimation } from "./connection-animation.js";
 import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelection, OUTPUT_SIDES, outputDockActive, inputDockActive, hasSimpleInput, setInputAnchor, dockPointActive, hasSimpleOutput, setOutputAnchor } from "./dock-points.js";
 import { MATH_ANCHORS, MATH_IDS, mathPortRole, mathBoxResults, mathCalculations, validateMathAssignments, mathLeadPoint, evaluateMathExpression } from "./linebox-math.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
@@ -92,7 +92,7 @@ import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
 import "./widget-sets/dataflow.js";
 import { gaugeEntryGroups } from "./widget-sets/gauges.js";
-import { CONVERSIONS, convertPacket, widgetInputPacket } from "./dataflow.js";
+import { CONVERSIONS, convertPacket, widgetInputPacket, lineValuePacket } from "./dataflow.js";
 
 const PRESETS = {
   desktop: { width: 1920, height: 1080 },
@@ -2456,6 +2456,11 @@ function effectiveConnectionStyle(widget, widgets, visited = new Set()) {
     const entry = forwarded.value === null ? undefined : { state: String(forwarded.value) };
     Object.assign(result, resolveConnectionAnimation(source, entry));
     result.animationEnabled = widget.animationEnabled === true && forwarded.value !== null && forwarded.value !== 0;
+  } else if (!widget.startCollector && !widget.endCollector) {
+    const source = widgets.find(item => item.id === widget.startWidgetId);
+    if (source?.dataOutputEnabled === true && ["industrial-gauge", "industrial-linear"].includes(getWidgetDefinition(source.type).render?.kind)) {
+      Object.assign(result, resolveConnectionValueAnimation(widget, lineValuePacket(widget, widgets, state.entityStates)));
+    }
   }
   return result;
 }

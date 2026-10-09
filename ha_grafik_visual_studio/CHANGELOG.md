@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.282
+
+- SVG-Line übernimmt Tempo und Richtung direkt vom aktiven Gauge/Poti- oder Linear-Ausgang, ohne zusätzliche Home-Assistant-Entität. Null und fehlende Werte stoppen die Animation. Der gemeinsame Poti-/LineBox-Teiler steuert die Geschwindigkeit; automatische Teiler halten bewusst eine konstante Zielgeschwindigkeit. Wert-Verbindungen bleiben reine Datenleitungen.
+- SVG lines use active industrial rotary/linear output values for animation speed and direction without a separate Home Assistant entity. Zero/unavailable values stop animation. The shared rotary/LineBox divisor controls speed; automatic divisors deliberately maintain a constant target speed.
+
 ## 0.1.281
 
 - SVG Linie: Wert-Koppelpunkte lassen sich ausschließlich auf dem sichtbaren Linienverlauf verschieben. Auch Kurven und gerundete Pfade werden berücksichtigt; die Linie wird dabei nicht geknickt. Bestehende oder manuell versetzte Wertpunkte werden auf den Pfad gesetzt. Anzeigeverbindungen folgen dem Punkt.

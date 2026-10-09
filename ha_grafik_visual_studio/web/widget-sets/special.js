@@ -115,9 +115,9 @@ registerWidgetSet({
         ] },
         { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1, showWhen: { key: "animationSource", value: "manual", default: "manual" } },
         { label: "Dauer (Sekunden)", key: "animationDuration", type: "range", min: 0.2, max: 20, step: 0.1, showWhen: { key: "animationSource", value: "boolean" } },
-        { label: "SVG LineBox-Teiler (bei Übergabe)", key: "lineboxDivisor", type: "number", min: 0.001, step: 0.001, default: 1 },
-        { label: "Teiler automatisch anpassen (SVG LineBox)", key: "lineboxAutoDivisor", type: "checkbox", default: false },
-        { label: "Zielgeschwindigkeit SVG LineBox (Zyklen/s)", key: "lineboxTargetSpeed", type: "number", min: 0.05, max: 5, step: 0.05, default: 1, showWhen: { key: "lineboxAutoDivisor", value: true } },
+        { label: "Poti / SVG LineBox-Teiler (bei Übergabe)", key: "lineboxDivisor", type: "number", min: 0.001, step: 0.001, default: 1 },
+        { label: "Teiler automatisch anpassen (Poti / SVG LineBox)", key: "lineboxAutoDivisor", type: "checkbox", default: false },
+        { label: "Zielgeschwindigkeit Poti / SVG LineBox (Zyklen/s)", key: "lineboxTargetSpeed", type: "number", min: 0.05, max: 5, step: 0.05, default: 1, showWhen: { key: "lineboxAutoDivisor", value: true } },
         { label: "Hauptlinie / Flussgruppe", key: "flowParentId", type: "connection" },
         { label: "Animationstakt der Hauptlinie übernehmen (eigene Farben behalten)", key: "inheritFlow", type: "checkbox", default: true },
         { label: "Synchronisierung", key: "synchronization", type: "select", options: [

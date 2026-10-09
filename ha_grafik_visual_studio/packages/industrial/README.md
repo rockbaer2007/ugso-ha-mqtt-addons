@@ -120,6 +120,10 @@ Ausgabe an `number.*` oder `input_number.*` erfolgt über den vorhandenen Studio
 
 Für Lines im gemeinsamen Bereich **Datenfluss** den Ein- beziehungsweise Ausgangspunkt aktivieren; den Eingang auch unter Dockpunkte aktivieren. Sichtbare und über die Liniengestaltung unsichtbare Wert-Lines verwenden denselben Datenfluss. Ein fehlender Eingang wird nicht durch den Startwert ersetzt. Im Editor sind Schreibaktionen und Poti-Bedienung gesperrt.
 
+Ab Studio **0.1.282** übernimmt eine SVG-Line am aktiven Gauge/Poti- oder Linear-Ausgang den Wert auch für ihre Animation. Keine zusätzliche Zahlen-Entität nötig. Animation aktivieren und den **Poti / SVG LineBox-Teiler** einstellen: Wert 10 mit Teiler 10 ergibt 1 Zyklus/s, Wert 20 ergibt 2 Zyklen/s. Null stoppt die Animation, negative Werte kehren die Richtung um. Die Geschwindigkeit ist auf 0,05–20 Zyklen/s begrenzt; mit Teiler 1 laufen daher alle Werte ab 20 gleich schnell. Für wertabhängiges Tempo **Teiler automatisch anpassen (Poti / SVG LineBox)** ausgeschaltet lassen. Wert-Verbindungen bleiben reine Datenleitungen ohne Animation.
+
+English: Studio **0.1.282** lets SVG lines connected to active industrial rotary/linear outputs use the output value for animation without an extra number entity. Enable animation and set the **rotary / SVG LineBox divisor**: 10 / 10 gives 1 cycle/s, 20 / 10 gives 2 cycles/s. Zero stops animation; negative values reverse direction. Speeds are limited to 0.05–20 cycles/s, so divisor 1 makes all magnitudes of 20 or higher equally fast. Keep the automatic rotary/LineBox divisor disabled for value-dependent speed. Value connections remain non-animated data links.
+
 Industriestyle ergänzt Schrauben in den vier Ecken und einen CSS-Rand von 2 px. Das Widget bleibt quadratisch und mindestens 64 × 64 px groß, auch beim Ändern der Größe. Die neuen Gehäuse-Andockpunkte, automatische Anschlussverlegung und der additive Andockabstand sind weitere Roadmap-Schritte und noch nicht Bestandteil dieser Version.
 
 Build: `python packages/industrial/build.py` im Studio-Ordner.

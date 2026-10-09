@@ -16,6 +16,14 @@ export function connectionAnimationEntityId(widget) {
   return "";
 }
 
+export function resolveConnectionValueAnimation(widget, packet) {
+  const value = !packet?.error && typeof packet?.value === "number" && Number.isFinite(packet.value) ? packet.value : null;
+  return {
+    ...resolveConnectionAnimation(lineboxAnimationSettings(widget), value === null ? undefined : { state: String(value) }),
+    animationEnabled: widget.animationEnabled === true && value !== null && value !== 0,
+  };
+}
+
 export function resolveConnectionAnimation(widget, stateEntry) {
   const source = widget.animationSource || "manual";
   if (source === "manual") return {};

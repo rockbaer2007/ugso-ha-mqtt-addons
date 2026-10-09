@@ -3,6 +3,37 @@ import assert from "node:assert/strict";
 import { connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings } from "../web/connection-animation.js";
 import { getWidgetDefinition } from "../web/widget-registry.js";
 import "../web/widget-sets/special.js";
+import { readFileSync } from "node:fs";
+import { resolveConnectionValueAnimation } from "../web/connection-animation.js";
+import { lineValuePacket } from "../web/dataflow.js";
+
+test("connected Poti output drives the rendered SVG line without an HA entity", () => {
+  const app = readFileSync(new URL("../web/app.js", import.meta.url), "utf8");
+  const body = app.slice(app.indexOf("function effectiveConnectionStyle("), app.indexOf("function appendConnectionMarker("));
+  const effective = new Function("state", "connectionAnimationEntityId", "resolveConnectionAnimation", "lineboxAnimationSettings", "resolveConnectionValueAnimation", "lineValuePacket", "getWidgetDefinition", "isValuePointConnection", "connectionCollectorPosition", "lineboxOutputForConnection", `${body}; return effectiveConnectionStyle;`)(
+    { entityStates: {} }, connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings, resolveConnectionValueAnimation, lineValuePacket,
+    () => ({ render: { kind: "industrial-gauge" } }), () => false, () => null, () => null,
+  );
+  const poti = { id: "poti", type: "ugso.industrial/gauge-poti", state: 10, dataOutputEnabled: true, dockPointsEnabled: true, dock_right_center: true, dataOutputAnchor: "right-center" };
+  const line = { id: "line", type: "svg-connection", startWidgetId: "poti", startAnchor: "right-center", animationEnabled: true, animationSource: "number", animationNumberEntityId: "", lineboxDivisor: 10, baseColor: "#123456" };
+  const widgets = [poti, line];
+  for (const [value, duration, direction] of [[10, 1, "forward"], [20, 0.5, "forward"], [-20, 0.5, "reverse"]]) {
+    poti.state = value;
+    const result = effective(line, widgets);
+    assert.equal(result.animationEnabled, true);
+    assert.equal(result.animationDuration, duration);
+    assert.equal(result.animationDirection, direction);
+    assert.equal(result.baseColor, line.baseColor);
+  }
+  for (const value of [0, "unavailable", undefined]) {
+    poti.state = value;
+    assert.equal(effective(line, widgets).animationEnabled, false);
+  }
+  poti.state = 20;
+  assert.equal(effective({ ...line, animationEnabled: false }, widgets).animationEnabled, false);
+  assert.equal(effective({ ...line, dataFlowVariant: "value-connection" }, widgets).animationEnabled, false);
+  assert.equal(effective({ ...line, lineboxAutoDivisor: true, lineboxTargetSpeed: 0.5 }, widgets).animationDuration, 2);
+});
 
 test("direction sources are one radio group with conditional settings", () => {
   const animation = getWidgetDefinition("svg-connection").propertyGroups.find((group) => group.label === "Animation");
