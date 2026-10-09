@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.286
+
+- Expliziter Z-Index −100 oder kleiner blendet jetzt alle Widgettypen in der Runtime aus. Im Editor bleiben sie bearbeitbar. Berechnungen und Datenfluss werden dadurch nicht deaktiviert.
+- Explicit z-index −100 or below now hides every widget type in runtime while retaining editor visibility, calculations and data flow.
+
 ## 0.1.285
 
 - Linienpunkte: 6 px Bewegungsschwelle gegen versehentliches Ziehen, Zwischenpunkte ohne Sprung zur Mausposition und eigener Abbruchbehandlung. Punkt-Griffe lösen keinen Gruppen-Drag aus. Angedockte Linien lassen sich nur mit Alt als Ganzes ziehen; einzelne Anschlüsse weiterhin gezielt mit Strg lösen.

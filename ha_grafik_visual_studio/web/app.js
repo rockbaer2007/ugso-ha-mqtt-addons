@@ -3087,7 +3087,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") Object.assign(widget, industrialSize(widget));
     if (widget.visible === false) continue;
-    if (runtimeMode && (widget.hideInRuntime === true || widget.type === "value-converter" || widget.dataFlowVariant === "value-connection" || isValuePointConnection(widget, activePage.widgets) || widget.type === "svg-connection" && widget.cssZIndex !== "" && Number(widget.cssZIndex) <= -100)) continue;
+    if (runtimeMode && (widget.hideInRuntime === true || widget.type === "value-converter" || widget.dataFlowVariant === "value-connection" || isValuePointConnection(widget, activePage.widgets) || widget.cssZIndex !== "" && Number(widget.cssZIndex) <= -100)) continue;
     const editorFilterWords = String(widget.generalEnabled === true ? widget.filterWord || "" : "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
     const editorFilterMatches = state.editorWidgetFilter?.words?.some((word) => editorFilterWords.includes(word));
     if (!runtimeMode && state.editorWidgetFilter?.mode === "hide" && editorFilterMatches) continue;
