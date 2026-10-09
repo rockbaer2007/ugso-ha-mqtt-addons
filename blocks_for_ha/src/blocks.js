@@ -36,6 +36,10 @@ const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'bel
 const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 const definitions = [
+  { type: 'ugso_variable_set', message0: 'Setze %1 auf %2', args0: [{ type: 'field_variable', name: 'VAR', variable: 'wert' }, value('VALUE', ['String', 'Number'])], previousStatement: 'Action', nextStatement: 'Action', colour: '#a54879', tooltip: 'Definiert oder ändert eine HA-Variable für diesen Automationslauf. Vor dem Lesen setzen.' },
+  { type: 'ugso_variable_get', message0: 'Variable %1', args0: [{ type: 'field_variable', name: 'VAR', variable: 'wert' }], output: 'String', colour: '#a54879', tooltip: 'Erzeugt {{ variablenname }} für ein HA-Template. Kein dauerhaft gespeicherter Helfer.' },
+  { type: 'ugso_template', message0: 'Template %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: "{{ states('sensor.temperatur') | float(0) }}", maxLines: 3 }], output: 'String', colour: '#8a6635', tooltip: 'Jinja-Vorlage einschließlich {{ ... }} oder {% ... %}. Auswertung erst in Home Assistant.' },
+  { type: 'ugso_template_condition', message0: 'Template ist wahr %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: "{{ states('sensor.temperatur') | float(0) > 20 }}", maxLines: 3 }], output: 'Boolean', colour: '#6860b5', tooltip: 'HA wertet diese Jinja-Vorlage als Bedingung aus. Löst selbst keine Automation aus.' },
   { type: 'ugso_text', message0: 'Text %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: 'Automation gestartet', maxLines: 3 }], output: 'String', colour: '#2e7653' },
   { type: 'ugso_percent', message0: '%1 %%', args0: [{ type: 'field_slider', name: 'NUM', value: 50, min: 0, max: 100, precision: 1 }], output: 'Number', colour: '#2e7653' },
   { type: 'ugso_colour', message0: 'Farbe %1', args0: [{ type: 'field_colour', name: 'COLOUR', colour: '#ff8800' }], output: 'Colour', colour: '#2e7653' },
@@ -180,6 +184,35 @@ for (const category of toolbox.contents) for (const block of category.contents) 
   if (block.type === 'ugso_log_action') block.inputs = { MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'Automation gestartet' } } } };
   if (block.type === 'ugso_colour_action') block.inputs = { COLOUR: { shadow: { type: 'ugso_colour', fields: { COLOUR: '#ff8800' } } }, BRIGHTNESS: { shadow: { type: 'ugso_percent', fields: { NUM: 50 } } } };
 }
+toolbox.contents.push(
+  { kind: 'category', name: 'Variablen', colour: '#a54879', custom: 'UGSO_VARIABLES' },
+  { kind: 'category', name: 'Templates', colour: '#8a6635', contents: ['ugso_template', 'ugso_template_condition'].map(type => ({ kind: 'block', type })) }
+);
+export function setupVariables(workspace) {
+  workspace.registerButtonCallback('UGSO_CREATE_VARIABLE', () => Blockly.Variables.createVariableButtonHandler(workspace));
+  workspace.registerToolboxCategoryCallback('UGSO_VARIABLES', ws => {
+    const items = [{ kind: 'button', text: 'Variable erstellen …', callbackKey: 'UGSO_CREATE_VARIABLE' }];
+    const variables = ws.getVariableMap().getAllVariables().filter(variable => variable.type === '');
+    for (const variable of variables) {
+      items.push({ kind: 'block', type: 'ugso_variable_set', fields: { VAR: { id: variable.getId() } }, inputs: { VALUE: { shadow: { type: 'ugso_number', fields: { NUM: 0 } } } } });
+      items.push({ kind: 'block', type: 'ugso_variable_get', fields: { VAR: { id: variable.getId() } } });
+    }
+    return items;
+  });
+}
+function variableName(block) {
+  const name = block.getField('VAR').getVariable()?.name;
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name || '')) throw new Error('Variable: Name muss mit Buchstabe oder _ beginnen und darf nur Buchstaben, Ziffern und _ enthalten.');
+  return name;
+}
+function readValue(block, input) {
+  const child = block.getInputTargetBlock(input);
+  if (!child?.isEnabled()) throw new Error(`${input}: Wertblock fehlt.`);
+  if (['ugso_number', 'ugso_percent'].includes(child.type)) return Number(field(child, 'NUM'));
+  if (child.type === 'ugso_variable_get') return `{{ ${variableName(child)} }}`;
+  if (['ugso_text', 'ugso_template'].includes(child.type)) return field(child, 'TEXT');
+  throw new Error(`${input}: Wertblock wird nicht unterstützt.`);
+}
 const field = (block, name) => block.getFieldValue(name);
 function chain(block, convert, depth = 0) {
   if (depth > 10) throw new Error('Blocks sind zu tief verschachtelt.');
@@ -206,6 +239,7 @@ function readTrigger(block) {
 function readCondition(block, depth) {
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
   switch (block.type) {
+    case 'ugso_template_condition': return { condition: 'template', value_template: field(block, 'TEXT') };
     case 'ugso_date_condition': return { condition: 'template', value_template: dateTemplate(field(block, 'DATE'), field(block, 'OP')) };
     case 'ugso_state_condition': return { condition: 'state', entity_id: field(block, 'ENTITY'), state: field(block, 'STATE') };
     case 'ugso_numeric_condition': return { condition: 'numeric_state', ...range(block) };
@@ -228,6 +262,7 @@ function readConditions(block, depth = 0) {
 }
 function readAction(block, depth) {
   switch (block.type) {
+    case 'ugso_variable_set': return { variables: { [variableName(block)]: readValue(block, 'VALUE') } };
     case 'ugso_helper_action': {
       const domain = field(block, 'DOMAIN'), id = field(block, 'ENTITY'), service = field(block, 'SERVICE');
       if (!id.startsWith(`${domain}.`) || !helperOptions[domain].some(option => option[1] === service)) throw new Error('Helfer: Entität und Aktion müssen zum gewählten Helfertyp passen.');
@@ -242,10 +277,8 @@ function readAction(block, depth) {
       return { action: 'light.turn_on', target: { entity_id: id }, data: { rgb_color: [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)), brightness_pct: brightness } };
     }
     case 'ugso_log_action': {
-      const child = block.getInputTargetBlock('MESSAGE');
-      if (!child || !child.isEnabled() || child.type !== 'ugso_text') throw new Error('Log: Textblock für Meldung fehlt.');
-      const message = field(child, 'TEXT');
-      if (!message.trim()) throw new Error('Log: Meldung fehlt.');
+      const message = readValue(block, 'MESSAGE');
+      if (typeof message !== 'string' || !message.trim()) throw new Error('Log: Meldung fehlt.');
       return { action: 'system_log.write', data: { message, level: field(block, 'LEVEL') } };
     }
     case 'ugso_script_action': {
@@ -312,7 +345,10 @@ function triggerBlock(workspace, item) {
   }
 }
 function conditionBlock(workspace, item) {
-  if (item.condition === 'template') { const date = parseDateTemplate(item.value_template); return create(workspace, 'ugso_date_condition', { DATE: date.date, OP: date.op }); }
+  if (item.condition === 'template') {
+    try { const date = parseDateTemplate(item.value_template); return create(workspace, 'ugso_date_condition', { DATE: date.date, OP: date.op }); }
+    catch { return create(workspace, 'ugso_template_condition', { TEXT: item.value_template }); }
+  }
   if (item.condition === 'state') return create(workspace, 'ugso_state_condition', { ENTITY: item.entity_id, STATE: item.state });
   if (item.condition === 'numeric_state') return numberInput(create(workspace, 'ugso_numeric_condition', fieldsRange(item)), 'LIMIT', item.above ?? item.below);
   const block = create(workspace, 'ugso_logic_condition', { LOGIC: item.condition });
@@ -320,6 +356,12 @@ function conditionBlock(workspace, item) {
   item.conditions.forEach((child, i) => attach(block, `COND${i}`, [conditionBlock(workspace, child)])); return block;
 }
 function actionBlock(workspace, item) {
+  if (item.variables) {
+    const [name, val] = Object.entries(item.variables)[0];
+    const variable = workspace.getVariableMap().createVariable(name);
+    const block = create(workspace, 'ugso_variable_set', { VAR: variable.getId() });
+    valueInput(block, 'VALUE', val); return block;
+  }
   if (item.action) {
     const id = item.target?.entity_id;
     const domain = id?.split('.')[0], service = item.action.split('.')[1];
@@ -332,7 +374,7 @@ function actionBlock(workspace, item) {
     // Recognize only exact supported shapes. Keep extra parameters in the generic block.
     if (item.action === 'system_log.write' && !item.target && item.data && Object.keys(item.data).length === 2 && typeof item.data.message === 'string' && item.data.message.trim() && ['info', 'warning', 'error', 'debug', 'critical'].includes(item.data.level)) {
       const block = create(workspace, 'ugso_log_action', { LEVEL: item.data.level });
-      block.getInput('MESSAGE').connection.setShadowState({ type: 'ugso_text', fields: { TEXT: item.data.message } }); return block;
+      valueInput(block, 'MESSAGE', item.data.message); return block;
     }
     if (!item.data && id && /^script\.[a-z0-9_]+$/.test(id) && ['script.turn_on', 'script.turn_off'].includes(item.action)) return create(workspace, 'ugso_script_action', { ENTITY: id, MODE: item.action.split('.')[1] });
     if (!item.data && !item.target && /^script\.[a-z0-9_]+$/.test(item.action) && !['script.turn_on', 'script.turn_off', 'script.toggle', 'script.reload'].includes(item.action)) return create(workspace, 'ugso_script_action', { ENTITY: item.action, MODE: 'wait' });
@@ -352,6 +394,15 @@ function actionBlock(workspace, item) {
   attach(block, 'CONDITIONS', item.if.map(child => conditionBlock(workspace, child)));
   attach(block, 'THEN', item.then.map(child => actionBlock(workspace, child)));
   if (item.else) attach(block, 'ELSE', item.else.map(child => actionBlock(workspace, child))); return block;
+}
+function valueInput(block, input, val) {
+  if (typeof val === 'number') { numberInput(block, input, val); return; }
+  const match = /^\{\{ ([a-zA-Z_][a-zA-Z0-9_]*) \}\}$/.exec(val);
+  if (match) {
+    const variable = block.workspace.getVariableMap().createVariable(match[1]);
+    const child = create(block.workspace, 'ugso_variable_get', { VAR: variable.getId() });
+    block.getInput(input).connection.connect(child.outputConnection);
+  } else block.getInput(input).connection.setShadowState({ type: /\{[{%]/.test(val) ? 'ugso_template' : 'ugso_text', fields: { TEXT: val } });
 }
 export function modelWorkspace(workspace, model) {
   Blockly.Events.disable();

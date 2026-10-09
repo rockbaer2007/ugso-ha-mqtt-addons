@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.8
+
+- Eigene Kategorie Variablen mit nativem Blockly-Dialog zum Erstellen sowie Umbenennen/Löschen im Variablen-Dropdown.
+- Setzen- und Lesen-Blocks erzeugen native HA-Variablen-Aktionen und Jinja-Referenzen; keine dauerhaften Helfer.
+- Eigene mehrzeilige Template-Wert- und Template-Bedingungsblocks. Auswertung erfolgt ausschließlich in HA.
+- YAML- und Projektimport behalten Templates und Variablen. Eine Zahl oder ein Text/Template pro Variablen-Aktion; komplexe Variablen-Mappings werden ausdrücklich abgelehnt.
+- 27 Blocks mit Bildern und DE/EN-Dokumentation; Umbenennen aktualisiert Variablen-Blocks, freie Jinja-Texte müssen manuell angepasst werden.
+
 ## 0.1.7
 
 - Suchfeld über der Toolbox mit deutschen Hinweisen; Suchtreffer behalten Auswahlfelder und Shadows.

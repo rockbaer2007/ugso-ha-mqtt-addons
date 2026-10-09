@@ -45,11 +45,11 @@ test('Date, RGB light, dependent helper actions and multiline messages roundtrip
     assert.deepEqual(workspaceModel(copy, model), model);
   } finally { ws.dispose(); copy.dispose(); }
 });
-test('Invalid dates and unrelated templates cannot be silently converted', () => {
+test('Date validation stays strict while general template conditions are supported', () => {
   assert.throws(() => dateTemplate('2027-02-29', '=='), /Datum/);
   assert.throws(() => dateTemplate('2026-10-09', '!='), /Datum/);
   assert.deepEqual(parseDateTemplate(dateTemplate('2026-10-09', '<=')), { date: '2026-10-09', op: '<=' });
-  assert.throws(() => fromYaml(toYaml(examples.light).replace('conditions: []', 'conditions:\n  - condition: template\n    value_template: "{{ true }}"')), /Datumsvorlage/);
+  assert.equal(fromYaml(toYaml(examples.light).replace('conditions: []', 'conditions:\n  - condition: template\n    value_template: "{{ true }}"')).conditions[0].value_template, '{{ true }}');
 });
 test('Helper dropdown updates, enforces matching entity and retains extra parameters', () => {
   const ws = new Blockly.Workspace();

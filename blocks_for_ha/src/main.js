@@ -1,4 +1,4 @@
-import { Blockly, toolbox, knownTypes, workspaceModel, modelWorkspace } from './blocks.js';
+import { Blockly, toolbox, knownTypes, workspaceModel, modelWorkspace, setupVariables } from './blocks.js';
 import { examples, toYaml, fromYaml, filename, validateAutomation } from './model.js';
 import './style.css';
 import { version } from '../package.json';
@@ -22,6 +22,7 @@ document.querySelector('#about-dialog a[href="/licenses/THIRD_PARTY_NOTICES.txt"
 const compactTheme = Blockly.Theme.defineTheme('ugso_compact', { base: Blockly.Themes.Classic, fontStyle: { family: 'Segoe UI, sans-serif', size: 12, weight: 'normal' }, componentStyles: { toolboxBackgroundColour: '#20313c', toolboxForegroundColour: '#f4f7fa', flyoutBackgroundColour: '#eaf0f5', flyoutForegroundColour: '#233a36', flyoutOpacity: 1 } });
 const workspace = Blockly.inject('workspace', { toolbox, theme: compactTheme, media: './media/', renderer: 'geras', grid: { spacing: 24, length: 2, colour: '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: .8, maxScale: 1.6, minScale: .35 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
 function fitCompact() { workspace.zoomToFit(); if (workspace.scale > .8) workspace.setScale(.8); workspace.scrollCenter(); }
+setupVariables(workspace);
 let metadata = {};
 let currentModel;
 let timer;
@@ -56,7 +57,7 @@ function restoreProject(data) {
   try {
     // Validate types before serialization can skip an unknown block.
     const check = value => { if (!value || typeof value !== 'object') return; if (Object.hasOwn(value, 'type') && !knownTypes.has(value.type)) throw new Error(`Blockpaket fehlt: ${value.type}`); if (value.type === 'ugso_if_action' && !value.extraState) value.extraState = { branches: 0, hasElse: !!value.inputs?.ELSE }; Object.values(value).forEach(check); };
-    check(data.workspace);
+    check(data.workspace.blocks);
     Blockly.serialization.workspaces.load(data.workspace, temp);
     validateAutomation(workspaceModel(temp, data.metadata));
   } finally { temp.dispose(); }

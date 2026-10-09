@@ -1,15 +1,19 @@
 # ioBroker / UGSo Blocks for HA
 
-As of October 9, 2026, experimental HA app 0.1.7. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
+As of October 9, 2026, experimental HA app 0.1.8. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
 
 Every new feature must update its counterpart, behavior, YAML output and implementation status here and in the German version. Categories will be reviewed progressively, starting with **System**. Planned means not implemented.
 
 ## All existing blocks
 
-There are **23 block types**, including the automation root. Dropdown choices within one block count as one type.
+There are **27 block types**, including the automation root. Dropdown choices within one block count as one type.
 
 | ioBroker concept | Our block | Native HA output / behavior |
 | --- | --- | --- |
+| Create / set variable | Variables menu and Set block | Native `variables` action, number or text/template; scoped to the HA run, not a persistent state |
+| Read variable | Variable value block | `{{ name }}` for log messages or subsequent assignments |
+| Expression / calculation | Template value block | Free-form Jinja template evaluated in HA instead of JavaScript |
+| Expression as condition | Template condition | `condition: template`, `value_template`; Boolean connector |
 | Script container | Automation | `triggers`, `conditions`, `actions` |
 | State-change trigger | State reached | `trigger: state` with `to` |
 | Trigger with numeric check | Number above/below threshold | `trigger: numeric_state`; fires on threshold crossing |

@@ -1,5 +1,4 @@
 import { parseDocument, stringify } from 'yaml';
-import { parseDateTemplate } from './values.js';
 
 const identifier = /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/;
 const allowedModes = ['single', 'restart', 'queued', 'parallel'];
@@ -39,7 +38,7 @@ function checkRange(item, path) {
 function checkCondition(item, path, depth = 0) {
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
   if (item.condition === 'template') {
-    ownKeys(item, ['condition', 'value_template'], path); parseDateTemplate(item.value_template);
+    ownKeys(item, ['condition', 'value_template'], path); text(item.value_template, path);
   } else if (item.condition === 'state') {
     ownKeys(item, ['condition', 'entity_id', 'state'], path); entity(item.entity_id, path); text(item.state, path);
   } else if (item.condition === 'numeric_state') {
@@ -50,7 +49,15 @@ function checkCondition(item, path, depth = 0) {
 }
 function checkAction(item, path, depth = 0) {
   if (depth > 10) throw new Error('Aktionen sind zu tief verschachtelt.');
-  if (item.action) {
+  if (item.variables) {
+    ownKeys(item, ['variables'], path);
+    ownKeys(item.variables, Object.keys(item.variables), path);
+    if (Object.keys(item.variables).length !== 1) throw new Error(`${path}: Pro Variablen-Aktion wird genau eine Variable unterstützt.`);
+    for (const [name, value] of Object.entries(item.variables)) {
+      if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) throw new Error(`${path}: Variablenname ungültig.`);
+      if (typeof value !== 'string' && !(typeof value === 'number' && Number.isFinite(value))) throw new Error(`${path}: Variablenwert muss Text, Template oder Zahl sein.`);
+    }
+  } else if (item.action) {
     ownKeys(item, ['action', 'target', 'data'], path); entity(item.action, path);
     if (Object.hasOwn(item, 'target')) { ownKeys(item.target, ['entity_id'], path); entity(item.target.entity_id, path); }
     if (Object.hasOwn(item, 'data')) { ownKeys(item.data, item.data && typeof item.data === 'object' ? Object.keys(item.data) : [], path); if (JSON.stringify(item.data).length > 10000) throw new Error(`${path}: Aktionsdaten zu groß.`); }
