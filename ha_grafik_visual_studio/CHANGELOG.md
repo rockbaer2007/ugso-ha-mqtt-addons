@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.287
+
+- Alle Widgets erhalten direkt unter der Überschrift im WIDGET-Reiter die Checkbox „In Runtime verstecken“. Die Einstellung wird im Projekt gespeichert; Editor und Datenfluss bleiben aktiv.
+- Every widget exposes a saved “Hide in runtime” checkbox at the top of its WIDGET properties. Editor visibility and data flow remain active.
+
 ## 0.1.286
 
 - Expliziter Z-Index −100 oder kleiner blendet jetzt alle Widgettypen in der Runtime aus. Im Editor bleiben sie bearbeitbar. Berechnungen und Datenfluss werden dadurch nicht deaktiviert.

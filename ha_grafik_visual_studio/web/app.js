@@ -4975,6 +4975,8 @@ function renderProperties() {
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
   const updateHeading = () => { heading.textContent = `${widgetDisplayName(widget)} — ${getWidgetDefinition(widget.dataFlowVariant || widget.type).label} · ${widget.id}`; };
   updateHeading(); panel.append(heading);
+  panel.append(field({ label: "In Runtime verstecken", key: "hideInRuntime", type: "checkbox", default: false }, widget));
+  groups = groups.map(group => ({ ...group, fields: group.fields.filter(descriptor => descriptor.key !== "hideInRuntime") }));
   if (getWidgetDefinition(widget.type).render?.kind === "material-widget") {
     const fill = document.createElement("button"); fill.type = "button"; fill.className = "property-action";
     fill.textContent = "Felder neu aus der Entität befüllen";
