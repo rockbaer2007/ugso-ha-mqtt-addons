@@ -1,8 +1,8 @@
-# UGSo MQTT Add-ons
+# UGSo HA Apps
 
-Gemeinsames Home-Assistant-Add-on-Repository fuer die MQTT-Projekte von UGSo Software.
+Gemeinsames Repository für alle Home-Assistant-App-Veröffentlichungen von UGSo Software: MQTT-Apps, Grafik Visual Studio, Blocks for HA und zukünftige Apps. Jede App liegt in einem eigenen Unterverzeichnis mit eigener Version und Dokumentation. Die bestehende Repository-URL bleibt erhalten.
 
-Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetragen werden. Danach erscheinen die enthaltenen MQTT-Projekte einzeln in der Add-on-Uebersicht.
+Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetragen werden. Danach erscheinen die installierbaren Apps einzeln in der Add-on-Übersicht. Lokale Prototypen erscheinen dort erst, wenn ihre HA-App-Paketierung fertig ist.
 
 ## Enthaltene Add-ons
 
