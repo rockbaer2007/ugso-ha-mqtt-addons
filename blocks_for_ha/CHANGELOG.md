@@ -13,3 +13,10 @@
 - Drei Beispiele, Projektdateien und automatische Browsersicherung.
 - Original-Blockly-Verweis, Apache-2.0-/ISC-Lizenztexte und unabhängiges Erscheinungsbild.
 - HA-Verbindung, Plugins und Katalog sind noch nicht implementiert.
+# 0.1.2
+
+- Falls-Block mit Zahnrad: zusätzliche sonst-falls-Zweige und optionaler sonst-Zweig.
+- Native HA-choose-Ausgabe, YAML-Import und Projektserialisierung für Verzweigungen.
+- Vorhandene Projektdateien behalten ihre bisherigen Sonst-Aktionen.
+- Eigene Open-Source-Dokumentationsseite unter HA Apps; Gegenüberstellung aktualisiert.
+

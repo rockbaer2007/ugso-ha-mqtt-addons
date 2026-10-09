@@ -53,6 +53,14 @@ function checkAction(item, path, depth = 0) {
     if (Object.hasOwn(item, 'data')) { ownKeys(item.data, item.data && typeof item.data === 'object' ? Object.keys(item.data) : [], path); if (JSON.stringify(item.data).length > 10000) throw new Error(`${path}: Aktionsdaten zu groß.`); }
   } else if (Object.hasOwn(item, 'delay')) {
     ownKeys(item, ['delay'], path); numeric(item.delay, path); if (!Number.isInteger(item.delay) || item.delay < 0 || item.delay > 86400) throw new Error(`${path}: Wartezeit 0–86400 ganze Sekunden.`);
+  } else if (item.choose) {
+    ownKeys(item, ['choose', 'default'], path);
+    checkList(item.choose, path, (branch, p) => {
+      ownKeys(branch, ['conditions', 'sequence'], p);
+      checkList(branch.conditions, p, checkCondition, 1);
+      checkList(branch.sequence, p, (child, cp) => checkAction(child, cp, depth + 1), 1);
+    }, 1);
+    if (Object.hasOwn(item, 'default')) checkList(item.default, path, (child, p) => checkAction(child, p, depth + 1));
   } else if (item.if) {
     ownKeys(item, ['if', 'then', 'else'], path);
     checkList(item.if, path, checkCondition, 1);

@@ -3,6 +3,45 @@ import assert from 'node:assert/strict';
 import { Blockly, workspaceModel, modelWorkspace } from '../src/blocks.js';
 import { examples, toYaml, fromYaml, filename } from '../src/model.js';
 
+test('Expandable branches preserve choose semantics and project serialization', () => {
+  for (const count of [1, 3]) {
+    const model = structuredClone(examples.light);
+    model.actions = [{ choose: Array.from({ length: count }, (_, i) => ({ conditions: [{ condition: 'numeric_state', entity_id: 'sensor.preis', below: i + 1 }], sequence: [{ delay: i + 1 }] })), default: [{ delay: 9 }] }];
+    const workspace = new Blockly.Workspace(); const restored = new Blockly.Workspace();
+    try {
+      modelWorkspace(workspace, model);
+      Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(workspace), restored);
+      const { triggers, conditions, actions, ...metadata } = model;
+      assert.deepEqual(fromYaml(toYaml(workspaceModel(restored, metadata))), model);
+      const block = restored.getBlocksByType('ugso_if_action')[0];
+      assert.equal(block.branchCount_, count - 1); assert.ok(block.getInput('ELSE'));
+    } finally { workspace.dispose(); restored.dispose(); }
+  }
+});
+
+test('Mutator reorders branches, retains connections and detaches removed actions', () => {
+  const workspace = new Blockly.Workspace(); const dialog = new Blockly.Workspace();
+  const originalNewBlock = dialog.newBlock.bind(dialog);
+  dialog.newBlock = (...args) => { const block = originalNewBlock(...args); block.initSvg = () => {}; return block; };
+  try {
+    const model = structuredClone(examples.light);
+    model.actions = [{ choose: [1, 2, 3].map(n => ({ conditions: [{ condition: 'state', entity_id: 'sensor.test', state: String(n) }], sequence: [{ delay: n }] })), default: [{ delay: 9 }] }];
+    modelWorkspace(workspace, model);
+    const block = workspace.getBlocksByType('ugso_if_action')[0];
+    const root = block.decompose(dialog); block.saveConnections(root);
+    const first = root.getNextBlock(); const second = first.getNextBlock(); const otherwise = second.getNextBlock();
+    first.previousConnection.disconnect(); second.previousConnection.disconnect(); otherwise.previousConnection.disconnect();
+    root.nextConnection.connect(second.previousConnection); second.nextConnection.connect(first.previousConnection); first.nextConnection.connect(otherwise.previousConnection);
+    block.compose(root);
+    const { triggers, conditions, actions, ...metadata } = model;
+    assert.deepEqual(workspaceModel(workspace, metadata).actions[0].choose.map(branch => branch.sequence[0].delay), [1, 3, 2]);
+    block.saveConnections(root);
+    otherwise.previousConnection.disconnect(); otherwise.dispose(); block.compose(root);
+    assert.equal(block.getInput('ELSE'), null);
+    assert.throws(() => workspaceModel(workspace, metadata), /verbunden/);
+  } finally { workspace.dispose(); dialog.dispose(); }
+});
+
 for (const [name, example] of Object.entries(examples)) {
   test(`${name}: native YAML survives Blocks and YAML roundtrip`, () => {
     const workspace = new Blockly.Workspace();

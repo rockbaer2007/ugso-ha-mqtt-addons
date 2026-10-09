@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { readFile, mkdir } from 'node:fs/promises';
-import { fromYaml } from '../src/model.js';
+import { fromYaml, toYaml, examples } from '../src/model.js';
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const browser = await chromium.launch({ headless: true, channel: 'msedge' });
 try {
@@ -44,6 +44,17 @@ try {
   await page.getByRole('button', { name: 'Schließen', exact: true }).click();
   assert.equal((await page.request.get('http://127.0.0.1:4180/licenses/BLOCKLY-LICENSE.txt')).status(), 200);
   await mkdir('artifacts', { recursive: true });
+  const branching = structuredClone(examples.light);
+  branching.actions = [{ choose: [1, 2].map(n => ({ conditions: [{ condition: 'state', entity_id: 'sensor.test', state: String(n) }], sequence: [{ delay: n }] })), default: [{ delay: 9 }] }];
+  await page.locator('#yaml-file').setInputFiles({ name: 'zweige.yaml', mimeType: 'text/yaml', buffer: Buffer.from(toYaml(branching)) });
+  await page.waitForFunction(() => document.getElementById('yaml').textContent.includes('choose:'));
+  await page.locator('.blocklyMutatorIcon').click();
+  await page.locator('.blocklyMutatorBackground').waitFor({ state: 'visible' });
+  await page.screenshot({ path: 'artifacts/branches.png', fullPage: true });
+  await page.locator('.blocklyMutatorIcon').click();
+  await page.reload();
+  await page.waitForFunction(() => document.getElementById('yaml').textContent.includes('choose:'));
+  assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), branching);
   await page.screenshot({ path: 'artifacts/desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);

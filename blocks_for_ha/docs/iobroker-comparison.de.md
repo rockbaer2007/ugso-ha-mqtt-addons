@@ -1,6 +1,6 @@
 # ioBroker / UGSo Blocks für HA
 
-Stand: 9. Oktober 2026, Prototyp 0.1.1. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
+Stand: 9. Oktober 2026, Prototyp 0.1.2. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
 
 Bei jeder neuen Funktion werden Gegenstück, Verhalten, YAML-Ausgabe und Status in dieser Liste und der englischen Fassung aktualisiert. Die Kategorien werden schrittweise geprüft, beginnend mit **System**. Geplant bedeutet noch nicht implementiert.
 
@@ -22,7 +22,7 @@ Es gibt **13 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswa
 | Steuere / umschalten | Ein / Aus / Umschalten | `<domain>.turn_on`, `.turn_off`, `.toggle`; Zielentität muss Aktion unterstützen |
 | Adapteraktion, keine identische sendTo-Schnittstelle | HA-Aktion | `action`, optional `target.entity_id`, Aktionsdaten als JSON-Objekt |
 | Warten/Pause | Warte Sekunden | `delay`; ganze Sekunden von 0 bis 86400 |
-| Falls / sonst | Wenn / Dann / Sonst | `if`, `then`, optional `else`; noch kein Zahnrad für zusätzliche Zweige |
+| Falls / sonst falls / sonst | Erweiterbarer Falls-Block mit Zahnrad | `if`/`then`/`else` oder mehrere `choose`-Zweige mit optionalem `default`; erster passender Zweig gewinnt |
 
 ## System: Gegenüberstellung und Ausbau
 
@@ -58,6 +58,6 @@ Es gibt **13 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswa
 - Name, Beschreibung und ID; Ausführungsmodi `single`, `restart`, `queued`, `parallel`, mit maximaler Anzahl für die letzten beiden.
 - Strukturvalidierung und Fehlermeldungen. Keine Prüfung der tatsächlich installierten HA-Aktionen.
 
-Noch keine Live-Verbindung zu HA, kein installierbares HA-Add-on und keine Ausführung im Editor. Katalog, Plugins und erweiterbare Blocks über Zahnrad sind geplant. HA führt die exportierten Automationen aus.
+Noch keine Live-Verbindung zu HA, kein installierbares HA-Add-on und keine Ausführung im Editor. Katalog und Plugins sind geplant. Der Falls-Block ist bereits über das Zahnrad erweiterbar; weitere Mutatoren folgen bei Bedarf. HA führt die exportierten Automationen aus. [Öffentliche Dokumentation](https://opensource.ugso-software.de/projects/blocks-for-ha/).
 
 Referenzen: [ioBroker-Systemdokumentation](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/de/blockly.md#systemblöcke), [System-Blockdefinitionen](https://github.com/ioBroker/ioBroker.javascript/blob/master/src-editor/src/Components/blockly-plugins/blocks/blocks_system.ts), [HA-Aktionen](https://www.home-assistant.io/docs/scripts/perform-actions/), [HA-Script-Syntax](https://www.home-assistant.io/docs/scripts/).

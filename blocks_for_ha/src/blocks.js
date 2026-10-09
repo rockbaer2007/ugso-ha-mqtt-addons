@@ -1,5 +1,6 @@
 import * as BlocklyModule from 'blockly/core';
 import * as De from 'blockly/msg/de';
+import 'blockly/blocks';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 Blockly.setLocale(De);
@@ -21,8 +22,56 @@ const definitions = [
   { type: 'ugso_switch_action', message0: '%1 %2', args0: [entityField('light.flur'), { type: 'field_dropdown', name: 'SERVICE', options: [['einschalten', 'turn_on'], ['ausschalten', 'turn_off'], ['umschalten', 'toggle']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Erzeugt eine Aktion der Domain der gewählten Entität. Prüfe die Verfügbarkeit in HA.' },
   { type: 'ugso_service_action', message0: 'HA-Aktion %1 Ziel %2 Daten (JSON) %3', args0: [{ type: 'field_input', name: 'SERVICE', text: 'notify.mobile_app_telefon' }, { type: 'field_input', name: 'ENTITY', text: '' }, { type: 'field_input', name: 'DATA', text: '{"message":"Hallo!"}' }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Ziel darf leer bleiben. Daten als JSON-Objekt; Integration muss in HA vorhanden sein.' },
   { type: 'ugso_delay_action', message0: 'Warte %1 Sekunden', args0: [{ type: 'field_number', name: 'SECONDS', value: 30, min: 0, max: 86400, precision: 1 }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5' },
-  { type: 'ugso_if_action', message0: 'Wenn %1 Dann %2 Sonst %3', args0: [statement('CONDITIONS', 'Condition'), statement('THEN', 'Action'), statement('ELSE', 'Action')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5' }
+  { type: 'ugso_if_action', message0: 'Falls %1 mache %2', args0: [statement('CONDITIONS', 'Condition'), statement('THEN', 'Action')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', mutator: 'ugso_branches' }
 ];
+Blockly.Extensions.registerMutator('ugso_branches', {
+  branchCount_: 0, hasElse_: false,
+  saveExtraState() { return { branches: this.branchCount_, hasElse: this.hasElse_, choose: !!this.choose_ }; },
+  loadExtraState(state) {
+    if (!Number.isInteger(state.branches) || state.branches < 0 || state.branches > 99 || typeof state.hasElse !== 'boolean') throw new Error('Ungültige Verzweigungen.');
+    this.branchCount_ = state.branches; this.hasElse_ = state.hasElse; this.choose_ = !!state.choose; this.updateBranches_();
+  },
+  updateBranches_() {
+    for (let i = 1; i <= this.branchCount_; i++) {
+      if (!this.getInput(`C${i}`)) this.appendStatementInput(`C${i}`).setCheck('Condition').appendField('sonst falls');
+      if (!this.getInput(`T${i}`)) this.appendStatementInput(`T${i}`).setCheck('Action').appendField('mache');
+    }
+    for (let i = this.branchCount_ + 1; this.getInput(`C${i}`); i++) { this.removeInput(`C${i}`); this.removeInput(`T${i}`); }
+    if (this.hasElse_ && !this.getInput('ELSE')) this.appendStatementInput('ELSE').setCheck('Action').appendField('sonst');
+    if (!this.hasElse_ && this.getInput('ELSE')) this.removeInput('ELSE');
+    if (this.hasElse_) this.moveInputBefore('ELSE', null);
+  },
+  decompose(workspace) {
+    const root = workspace.newBlock('controls_if_if'); root.initSvg(); let connection = root.nextConnection;
+    for (let i = 0; i < this.branchCount_; i++) { const clause = workspace.newBlock('controls_if_elseif'); clause.initSvg(); connection.connect(clause.previousConnection); connection = clause.nextConnection; }
+    if (this.hasElse_) { const clause = workspace.newBlock('controls_if_else'); clause.initSvg(); connection.connect(clause.previousConnection); }
+    return root;
+  },
+  saveConnections(root) {
+    let index = 1;
+    for (let clause = root.getNextBlock(); clause; clause = clause.getNextBlock()) {
+      if (clause.isInsertionMarker()) continue;
+      if (clause.type === 'controls_if_elseif') { clause.conditionConnection_ = this.getInput(`C${index}`)?.connection.targetConnection; clause.actionConnection_ = this.getInput(`T${index++}`)?.connection.targetConnection; }
+      else clause.actionConnection_ = this.getInput('ELSE')?.connection.targetConnection;
+    }
+  },
+  compose(root) {
+    const branches = []; let otherwise = null; let hasElse = false;
+    for (let clause = root.getNextBlock(); clause; clause = clause.getNextBlock()) {
+      if (clause.isInsertionMarker()) continue;
+      if (clause.type === 'controls_if_elseif') branches.push(clause);
+      else if (clause.type === 'controls_if_else') { hasElse = true; otherwise = clause.actionConnection_; }
+    }
+    if (branches.length > 99) throw new Error('Höchstens 100 Zweige erlaubt.');
+    for (let i = 1; this.getInput(`C${i}`); i++) {
+      for (const name of [`C${i}`, `T${i}`]) { const c = this.getInput(name).connection.targetConnection; if (c) c.disconnect(); }
+    }
+    const oldElse = this.getInput('ELSE')?.connection.targetConnection; if (oldElse) oldElse.disconnect();
+    this.branchCount_ = branches.length; this.hasElse_ = hasElse; this.updateBranches_();
+    branches.forEach((clause, i) => { clause.conditionConnection_?.reconnect(this, `C${i + 1}`); clause.actionConnection_?.reconnect(this, `T${i + 1}`); });
+    otherwise?.reconnect(this, 'ELSE');
+  }
+}, undefined, ['controls_if_elseif', 'controls_if_else']);
 Blockly.defineBlocksWithJsonArray(definitions);
 export { Blockly };
 export const knownTypes = new Set(definitions.map(item => item.type));
@@ -69,6 +118,11 @@ function readAction(block, depth) {
     case 'ugso_delay_action': return { delay: Number(field(block, 'SECONDS')) };
     case 'ugso_if_action': {
       const otherwise = chain(block.getInputTargetBlock('ELSE'), readAction, depth + 1);
+      if (block.branchCount_ || block.choose_) {
+        const choose = [{ conditions: chain(block.getInputTargetBlock('CONDITIONS'), readCondition, depth + 1), sequence: chain(block.getInputTargetBlock('THEN'), readAction, depth + 1) }];
+        for (let i = 1; i <= block.branchCount_; i++) choose.push({ conditions: chain(block.getInputTargetBlock(`C${i}`), readCondition, depth + 1), sequence: chain(block.getInputTargetBlock(`T${i}`), readAction, depth + 1) });
+        return { choose, ...(otherwise.length ? { default: otherwise } : {}) };
+      }
       return { if: chain(block.getInputTargetBlock('CONDITIONS'), readCondition, depth + 1), then: chain(block.getInputTargetBlock('THEN'), readAction, depth + 1), ...(otherwise.length ? { else: otherwise } : {}) };
     }
     default: throw new Error('Unbekannte Aktion.');
@@ -114,9 +168,16 @@ function actionBlock(workspace, item) {
   }
   if (Object.hasOwn(item, 'delay')) return create(workspace, 'ugso_delay_action', { SECONDS: item.delay });
   const block = create(workspace, 'ugso_if_action');
+  if (item.choose) {
+    block.loadExtraState({ branches: item.choose.length - 1, hasElse: Object.hasOwn(item, 'default'), choose: true });
+    item.choose.forEach((branch, i) => { attach(block, i ? `C${i}` : 'CONDITIONS', branch.conditions.map(child => conditionBlock(workspace, child))); attach(block, i ? `T${i}` : 'THEN', branch.sequence.map(child => actionBlock(workspace, child))); });
+    if (item.default) attach(block, 'ELSE', item.default.map(child => actionBlock(workspace, child)));
+    return block;
+  }
+  block.loadExtraState({ branches: 0, hasElse: Object.hasOwn(item, 'else') });
   attach(block, 'CONDITIONS', item.if.map(child => conditionBlock(workspace, child)));
   attach(block, 'THEN', item.then.map(child => actionBlock(workspace, child)));
-  attach(block, 'ELSE', (item.else || []).map(child => actionBlock(workspace, child))); return block;
+  if (item.else) attach(block, 'ELSE', item.else.map(child => actionBlock(workspace, child))); return block;
 }
 export function modelWorkspace(workspace, model) {
   Blockly.Events.disable();

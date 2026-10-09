@@ -1,6 +1,6 @@
 # ioBroker / UGSo Blocks for HA
 
-As of October 9, 2026, prototype 0.1.1. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
+As of October 9, 2026, prototype 0.1.2. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
 
 Every new feature must update its counterpart, behavior, YAML output and implementation status here and in the German version. Categories will be reviewed progressively, starting with **System**. Planned means not implemented.
 
@@ -22,7 +22,7 @@ There are **13 block types**, including the automation root. Dropdown choices wi
 | Control / toggle | On / off / toggle | `<domain>.turn_on`, `.turn_off`, `.toggle`; target must support action |
 | Adapter action, not the same sendTo interface | HA action | `action`, optional `target.entity_id`, JSON object for action data |
 | Wait/pause | Wait seconds | `delay`; integer seconds from 0 to 86400 |
-| If / else | If / then / else | `if`, `then`, optional `else`; no mutator for additional branches yet |
+| If / else if / else | Extensible if block with gear icon | `if`/`then`/`else` or multiple `choose` branches with optional `default`; first matching branch wins |
 
 ## System: comparison and next steps
 
@@ -58,6 +58,6 @@ There are **13 block types**, including the automation root. Dropdown choices wi
 - Name, description and ID; `single`, `restart`, `queued`, `parallel` execution modes, with a maximum count for the last two.
 - Structural validation and errors. Installed HA actions are not verified.
 
-No live HA connection, installable HA add-on or execution inside the editor yet. Catalog, plugins and mutator-based extensible Blocks are planned. HA runs the exported automations.
+No live HA connection, installable HA add-on or execution inside the editor yet. Catalog and plugins are planned. The if block already supports a mutator; additional mutators will follow where needed. HA runs the exported automations. [Public documentation](https://opensource.ugso-software.de/en/projects/blocks-for-ha/).
 
 References: [ioBroker System documentation](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/blockly.md#system-blocks), [System block definitions](https://github.com/ioBroker/ioBroker.javascript/blob/master/src-editor/src/Components/blockly-plugins/blocks/blocks_system.ts), [HA actions](https://www.home-assistant.io/docs/scripts/perform-actions/), [HA script syntax](https://www.home-assistant.io/docs/scripts/).

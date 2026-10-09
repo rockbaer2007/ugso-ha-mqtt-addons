@@ -47,7 +47,7 @@ function restoreProject(data) {
   const temp = new Blockly.Workspace();
   try {
     // Validate types before serialization can skip an unknown block.
-    const check = value => { if (!value || typeof value !== 'object') return; if (Object.hasOwn(value, 'type') && !knownTypes.has(value.type)) throw new Error(`Blockpaket fehlt: ${value.type}`); Object.values(value).forEach(check); };
+    const check = value => { if (!value || typeof value !== 'object') return; if (Object.hasOwn(value, 'type') && !knownTypes.has(value.type)) throw new Error(`Blockpaket fehlt: ${value.type}`); if (value.type === 'ugso_if_action' && !value.extraState) value.extraState = { branches: 0, hasElse: !!value.inputs?.ELSE }; Object.values(value).forEach(check); };
     check(data.workspace);
     Blockly.serialization.workspaces.load(data.workspace, temp);
     validateAutomation(workspaceModel(temp, data.metadata));
