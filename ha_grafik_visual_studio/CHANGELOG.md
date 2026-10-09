@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.285
+
+- Linienpunkte: 6 px Bewegungsschwelle gegen versehentliches Ziehen, Zwischenpunkte ohne Sprung zur Mausposition und eigener Abbruchbehandlung. Punkt-Griffe lösen keinen Gruppen-Drag aus. Angedockte Linien lassen sich nur mit Alt als Ganzes ziehen; einzelne Anschlüsse weiterhin gezielt mit Strg lösen.
+- SVG-Linien mit explizitem Z-Index −100 oder kleiner werden nur in der Runtime ausgeblendet. Ihr Datenfluss bleibt erhalten, etwa von Number zu Math. Im Editor bleiben sie bearbeitbar.
+- Line point drags use a 6 px threshold and retain the pointer offset. Handles do not trigger group movement. Moving a docked line as a whole requires Alt. Runtime hides SVG lines at explicit z-index −100 or below while retaining their data flow and editor visibility.
+
 ## 0.1.284
 
 - Vertikale SVG-Line/Wert-Verbindung: Rechtwinklige Linien laufen zuerst senkrecht vom Start und biegen erst auf Zielhöhe nach rechts oder links ab. Die Checkbox ist auch bei angedockten Linien verfügbar, ohne deren Anschlüsse zu verändern. Manuelle Zwischenpunkte bleiben erhalten.

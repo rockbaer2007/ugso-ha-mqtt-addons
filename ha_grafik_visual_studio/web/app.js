@@ -2534,10 +2534,23 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
     };
     positionMarker(); marker.dataset.pointId = point.id; marker.setAttribute("aria-label", point.name || (valuePoint ? "Wert-Koppelpunkt" : "Zwischenpunkt")); svg.append(marker);
     if (selected) {
-      marker.classList.add("is-editable"); let dragging = false;
-      marker.addEventListener("pointerdown", event => { event.preventDefault(); event.stopPropagation(); dragging = true; marker.setPointerCapture(event.pointerId); });
-      marker.addEventListener("pointermove", event => { if (!dragging) return; const bounds = stage.getBoundingClientRect(); const scaleX = width / bounds.width; const scaleY = height / bounds.height; point.x = Math.round((event.clientX - bounds.left) * scaleX); point.y = Math.round((event.clientY - bounds.top) * scaleY); if(valuePoint)constrainValuePoint(point,widget,widgets,base); positionMarker(); update(); });
-      marker.addEventListener("pointerup", () => { dragging = false; renderStage(); renderProperties(); });
+      marker.classList.add("is-editable"); let drag = null;
+      marker.addEventListener("pointerdown", event => { if (event.button !== 0) return; event.preventDefault(); event.stopPropagation(); drag = { clientX: event.clientX, clientY: event.clientY, x: Number(point.x) || 0, y: Number(point.y) || 0, moved: false }; marker.setPointerCapture(event.pointerId); });
+      marker.addEventListener("pointermove", event => {
+        if (!drag) return;
+        const dx = event.clientX - drag.clientX, dy = event.clientY - drag.clientY;
+        if (!drag.moved && Math.hypot(dx, dy) < 6) return;
+        drag.moved = true;
+        const bounds = stage.getBoundingClientRect();
+        point.x = Math.max(0, Math.min(width, Math.round(drag.x + dx * width / bounds.width)));
+        point.y = Math.max(0, Math.min(height, Math.round(drag.y + dy * height / bounds.height)));
+        if(valuePoint)constrainValuePoint(point,widget,widgets,base);
+        positionMarker(); update();
+      });
+      const finishPointDrag = cancel => { if (!drag) return; if (cancel) { point.x = drag.x; point.y = drag.y; } drag = null; renderStage(); renderProperties(); };
+      marker.addEventListener("pointerup", () => finishPointDrag(false));
+      marker.addEventListener("pointercancel", () => finishPointDrag(true));
+      marker.addEventListener("lostpointercapture", () => finishPointDrag(false));
     }
   }
   if (selected) {
@@ -2555,14 +2568,16 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
       svg.append(handle);
       let dragOrigin = null;
       handle.addEventListener("pointerdown", event => {
+        if (event.button !== 0) return;
         event.preventDefault(); event.stopPropagation();
         if (attached && !event.ctrlKey) { $("#status").textContent = "Angedockten Linienpunkt mit Strg + Maustaste ziehen"; return; }
-        dragOrigin = { x: event.clientX, y: event.clientY, detached: !attached, changed: false, snapTarget: null };
+        const position = connectionEndpoint(widget, prefix, widgets);
+        dragOrigin = { x: event.clientX, y: event.clientY, position, widgetId: widget[`${prefix}WidgetId`], collector: widget[`${prefix}Collector`], detached: !attached, changed: false, snapTarget: null };
         handle.setPointerCapture(event.pointerId);
       });
       handle.addEventListener("pointermove", event => {
         if (!dragOrigin) return;
-        if (!dragOrigin.detached && Math.abs(event.clientX - dragOrigin.x) <= 1 && Math.abs(event.clientY - dragOrigin.y) <= 1) return;
+        if (!dragOrigin.changed && Math.hypot(event.clientX - dragOrigin.x, event.clientY - dragOrigin.y) < 6) return;
         if (!dragOrigin.detached) {
           widget[`${prefix}WidgetId`] = "";
           widget[`${prefix}Collector`] = "";
@@ -2585,14 +2600,19 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
         }
         dragOrigin.snapTarget = snapTarget;
         dragOrigin.changed = true;
-        const x = snapTarget ? snapTarget.position.x : Math.max(0, Math.min(width, Math.round((event.clientX - bounds.left) * scaleX)));
-        const y = snapTarget ? snapTarget.position.y : Math.max(0, Math.min(height, Math.round((event.clientY - bounds.top) * scaleY)));
+        const x = snapTarget ? snapTarget.position.x : Math.max(0, Math.min(width, Math.round(dragOrigin.position.x + (event.clientX - dragOrigin.x) * scaleX)));
+        const y = snapTarget ? snapTarget.position.y : Math.max(0, Math.min(height, Math.round(dragOrigin.position.y + (event.clientY - dragOrigin.y) * scaleY)));
         widget[`${prefix}X`] = x; widget[`${prefix}Y`] = y;
         handle.setAttribute("cx", String(x)); handle.setAttribute("cy", String(y)); update();
       });
       const finish = (attach) => {
         if (!dragOrigin) return;
-        const { changed, snapTarget } = dragOrigin; dragOrigin = null;
+        const { changed, snapTarget, position, widgetId, collector } = dragOrigin; dragOrigin = null;
+        if (!attach && changed) {
+          widget[`${prefix}WidgetId`] = widgetId;
+          widget[`${prefix}Collector`] = collector;
+          widget[`${prefix}X`] = position.x; widget[`${prefix}Y`] = position.y;
+        }
         for (const marker of document.querySelectorAll(".widget-dock-point.is-snap-target")) marker.classList.remove("is-snap-target");
         for (const marker of document.querySelectorAll(".connection-junction.is-snap-target")) marker.classList.remove("is-snap-target");
         if (attach && snapTarget) {
@@ -2626,6 +2646,8 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
   hit.addEventListener("pointerdown", event => {
     if (runtimeMode || event.button !== 0) return;
     if (state.selectedIds.includes(widget.id) && selectedWidgets().length > 1) return;
+    // Moving an attached line as a whole must be deliberate; its handles move independently.
+    if ((widget.startWidgetId || widget.endWidgetId || widget.startCollector || widget.endCollector) && !event.altKey) return;
     event.preventDefault(); event.stopPropagation();
     lineDrag = {
       clientX: event.clientX,
@@ -2642,7 +2664,7 @@ function renderSvgConnection(widget, widgets, width, height, selected) {
     const bounds = stage.getBoundingClientRect();
     const dx = Math.round((event.clientX - lineDrag.clientX) * width / bounds.width);
     const dy = Math.round((event.clientY - lineDrag.clientY) * height / bounds.height);
-    if (!lineDrag.moved && Math.abs(dx) <= 2 && Math.abs(dy) <= 2) return;
+    if (!lineDrag.moved && Math.hypot(event.clientX - lineDrag.clientX, event.clientY - lineDrag.clientY) < 6) return;
     if (!lineDrag.moved) {
       lineDrag.moved = true;
       setSingleWidgetSelection(widget.id);
@@ -3065,7 +3087,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (widget.type === "linebox-math") { widget.width = Math.min(2000, Math.max(32, Number(widget.width) || 160)); widget.height = Math.min(2000, Math.max(32, Number(widget.height) || 160)); }
     if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge") Object.assign(widget, industrialSize(widget));
     if (widget.visible === false) continue;
-    if (runtimeMode && (widget.hideInRuntime === true || widget.type === "value-converter" || widget.dataFlowVariant === "value-connection" || isValuePointConnection(widget, activePage.widgets))) continue;
+    if (runtimeMode && (widget.hideInRuntime === true || widget.type === "value-converter" || widget.dataFlowVariant === "value-connection" || isValuePointConnection(widget, activePage.widgets) || widget.type === "svg-connection" && widget.cssZIndex !== "" && Number(widget.cssZIndex) <= -100)) continue;
     const editorFilterWords = String(widget.generalEnabled === true ? widget.filterWord || "" : "").split(/[;,]/).map((tag) => tag.trim()).filter(Boolean);
     const editorFilterMatches = state.editorWidgetFilter?.words?.some((word) => editorFilterWords.includes(word));
     if (!runtimeMode && state.editorWidgetFilter?.mode === "hide" && editorFilterMatches) continue;
@@ -4124,6 +4146,7 @@ function makeDraggable(element, widget) {
     if (runtimeMode) return;
     if (event.button !== 0) return;
     if (event.target.closest(".resize-handle")) return;
+    if (event.target.closest(".connection-endpoint, .connection-junction")) return;
     if (event.target.closest("[data-tab-switch]")) return;
     const members = state.selectedIds.includes(widget.id) ? selectedWidgets() : groupMembers(currentPage().widgets, widget, state.editingGroupId);
     if (widget.type === "svg-connection" && members.length < 2) return;
