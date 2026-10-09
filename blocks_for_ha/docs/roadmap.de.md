@@ -17,5 +17,6 @@ Vorgemerkt am 9. Oktober 2026. Noch nicht umgesetzt; der Nutzer hat die Arbeit f
 Vorgemerkt am 9. Oktober 2026. Noch nicht umgesetzt.
 
 - Farbige Icons im SVG-Format für die Kategorien der Blocks-Seitenleiste vorsehen.
+- Falls farbige Icons technisch nicht möglich sind, einfarbige SVG-Icons mit gutem Kontrast als Alternative verwenden.
 - Kompakte, einheitliche Größen und gut unterscheidbare Motive verwenden; Farben und Kontrast auf den Menü-Hintergrund abstimmen.
 - Kategorienamen neben den Icons beibehalten, damit die Navigation eindeutig bleibt.
