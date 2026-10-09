@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.283
+
+- SVG-Line und Wert-Verbindung: Unter Linie schaltet die Checkbox „Vertikale Startposition“ eine freie Linie senkrecht; ohne Haken waagerecht. Linienpunkte werden mitgedreht, bestehende Andockverbindungen bleiben erhalten. Die Option ist bei angedockten Linien deaktiviert.
+- SVG lines and value connections gain a vertical starting position checkbox in Line settings. Unchecked means horizontal. Free line points rotate together; docked connections are preserved and disable the option.
+
 ## 0.1.282
 
 - SVG-Line übernimmt Tempo und Richtung direkt vom aktiven Gauge/Poti- oder Linear-Ausgang, ohne zusätzliche Home-Assistant-Entität. Null und fehlende Werte stoppen die Animation. Der gemeinsame Poti-/LineBox-Teiler steuert die Geschwindigkeit; automatische Teiler halten bewusst eine konstante Zielgeschwindigkeit. Wert-Verbindungen bleiben reine Datenleitungen.

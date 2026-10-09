@@ -38,7 +38,7 @@ registerWidgetSet({
       title: "Verbindung", comment: "", visible: true,
       startWidgetId: "", startAnchor: "right-center", startCollector: "", startX: 100, startY: 120,
       endWidgetId: "", endAnchor: "left-center", endCollector: "", endX: 420, endY: 120,
-      pathMode: "orthogonal", cornerRadius: 8, connectionPoints: [],
+      pathMode: "orthogonal", cornerRadius: 8, connectionPoints: [], verticalStart: false,
       baseColor: "#607d8b", flowColor: "#29c8b5", lineWidth: 4, lineOpacity: 1,
       lineStyle: "solid", dashLength: 12, gapLength: 8, lineCap: "round",
       markerStart: "none", markerEnd: "arrow", markerSize: 8, markerColor: "#29c8b5",
@@ -77,6 +77,7 @@ registerWidgetSet({
         { label: "Linienpunkte", key: "connectionPoints", type: "connection-points" },
       ] },
       { label: "Linie", fields: [
+        { label: "Vertikale Startposition", key: "verticalStart", type: "checkbox", default: false, refreshProperties: true },
         { label: "Grundfarbe", key: "baseColor", type: "color" },
         { label: "Animationsfarbe", key: "flowColor", type: "color" },
         { label: "Dicke", key: "lineWidth", type: "range", min: 1, max: 40, step: 1 },

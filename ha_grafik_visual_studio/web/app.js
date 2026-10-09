@@ -28,7 +28,7 @@ import { dockPointKey, initializeDockPoints, setAllDockPoints, dockPointSelectio
 import { MATH_ANCHORS, MATH_IDS, mathPortRole, mathBoxResults, mathCalculations, validateMathAssignments, mathLeadPoint, evaluateMathExpression } from "./linebox-math.js";
 import { lineboxHelperOutput, lineboxInputSum, lineboxOutputForConnection, lineboxPortRole, lineboxRuntimeJoinPosition, numericWidgetInput } from "./linebox.js";
 import { numberDisplay } from "./number-display.js";
-import { connectionPointActive, isValuePointConnection, nearestPointOnPath } from "./connection-points.js";
+import { connectionPointActive, isValuePointConnection, nearestPointOnPath, setFreeConnectionOrientation } from "./connection-points.js";
 import { htmlListEntries, htmlListEntry, styledListCount } from "./value-list.js";
 import { tableRows, tableColumns, updateTableEvent } from "./table-data.js";
 import { boolSelectOn } from "./bool-select.js";
@@ -2899,6 +2899,7 @@ function addWidget(definition) {
     widget.startY = Math.min(page.page.height - 40, 100 + (index % 4) * 30);
     widget.endX = Math.min(page.page.width - 40, widget.startX + 260);
     widget.endY = widget.startY;
+    if (widget.verticalStart === true) setFreeConnectionOrientation(widget, true, page.page.width, page.page.height);
   }
   page.widgets.push(widget);
   setSingleWidgetSelection(id);
@@ -4648,6 +4649,10 @@ function field(descriptor, widget) {
   if (input.type === "checkbox") input.checked = widget[descriptor.key] ?? descriptor.default ?? true;
   else input.value = (widget.type === "red-number" || descriptor.optionalColor) && descriptor.type === "color" ? filterHex(widget[descriptor.key] ?? descriptor.default ?? "#FFFFFF") : widget[descriptor.key] ?? descriptor.default ?? (descriptor.type === "color" ? "#29c8b5" : descriptor.type === "select" ? (typeof descriptor.options?.[0] === "string" ? descriptor.options[0] : descriptor.options?.[0]?.value) || "" : "");
   input.disabled = descriptor.disabled === true;
+  if (widget.type === "svg-connection" && descriptor.key === "verticalStart" && (widget.startWidgetId || widget.endWidgetId || widget.startCollector || widget.endCollector)) {
+    input.disabled = true;
+    input.title = "Die Startposition lässt sich nur bei einer frei stehenden Linie ändern.";
+  }
   if (widget.type === "note" && htmlField) { input.rows = 2; input.style.minHeight = "36px"; input.style.height = "40px"; }
   if (descriptor.optionalColor) {
     const override = document.createElement("input"); override.type = "checkbox"; override.checked = Boolean(widget[descriptor.key]);
@@ -4754,6 +4759,9 @@ function field(descriptor, widget) {
     const previousClockMode=isIndustrialClock(widget)?clockMode(widget):null;
     const previousSectionCell=isIndustrialSection(widget)?(widget.height-2*Math.max(0,Math.min(64,Number(widget.housingSpace??1)||0))*(sectionRows(widget)-1))/sectionRows(widget):null;
     widget[descriptor.key] = input.type === "number" || input.type === "range" ? Number(input.value) : input.type === "checkbox" ? input.checked : input.value;
+    if (widget.type === "svg-connection" && descriptor.key === "verticalStart") {
+      setFreeConnectionOrientation(widget, input.checked, currentPage().page.width, currentPage().page.height);
+    }
     if(isSolar(widget)&&['width','height'].includes(descriptor.key)){Object.assign(widget,solarSize(widget,descriptor.key));syncIndustrialSizeFields(widget,descriptor.key);}
     if (isPrinter(widget) && descriptor.key === "printerImageSrc" && input.value.trim()) {
       widget.printerImageMode = "custom";
