@@ -12,7 +12,11 @@ Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetrage
 - [MQTT-Client](mqtt_client/README.md): ausgewählte HA-Zustände an einen externen Broker (z. B. ioBroker) senden, optional mit Ein/Aus-Befehlen zurück an HA.
 - [HA Grafik Visual Studio](ha_grafik_visual_studio/README.md): **experimentelles** Grundgerüst für eine grafische HA-Visualisierung mit getrenntem Editor- und Runtime-Modus.
 
-## Installation
+## Weitere Projekte
+
+- [UGSo Blocks for HA](blocks_for_ha/README.md): visueller Editor für native HA-Automationen mit YAML-Import/-Export. Lokaler Prototyp, noch kein installierbares Add-on. Start im Unterverzeichnis mit `npm install` und `npm run dev` auf Port 4180.
+
+## Add-on-Installation
 
 In Home Assistant:
 

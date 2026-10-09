@@ -1,0 +1,16 @@
+UGSo Blocks for HA 0.1.1
+Copyright 2026 rockbaer2007 / UGSo
+Own application code is licensed under Apache License 2.0; see APP-LICENSE.txt in this directory.
+
+Built with Blockly 13.3.0
+Blockly is an open-source library from the Raspberry Pi Foundation, originally developed at Google.
+https://www.blockly.com/
+https://github.com/RaspberryPiFoundation/blockly
+License: Apache-2.0. Original license: BLOCKLY-LICENSE.txt in this directory.
+Blockly library files are used without manual source modifications. Application block definitions are original UGSo code.
+
+YAML 2.8.3 by Eemeli Aro
+https://github.com/eemeli/yaml
+License: ISC. Original license and copyright: YAML-LICENSE.txt in this directory.
+
+Home Assistant is a separate project. This editor is an independent community project.
