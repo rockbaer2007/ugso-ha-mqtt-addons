@@ -1,6 +1,6 @@
 # UGSo Blocks for HA
 
-Version 0.1.6: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
+Version 0.1.7: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
 
 Die kompakte Ansicht verwendet den klassischen Blockly-Geras-Renderer und seine Puzzle-Andockformen. Startansicht und Einpassen bleiben für kleine Automationen bei höchstens 80 Prozent; manuelles Zoomen ist weiterhin möglich.
 
@@ -19,15 +19,17 @@ Im Verzeichnis `blocks_for_ha/` Node.js 22.12 oder neuer verwenden. `npm install
 Die vollständige Gegenüberstellung zu ioBroker einschließlich Umsetzungsstatus steht in [ioBroker / UGSo Blocks für HA](docs/iobroker-comparison.de.md). Bei jeder Erweiterung wird diese Liste zusammen mit der [englischen Fassung](docs/iobroker-comparison.en.md) aktualisiert.
 
 - Auslöser: Zustand, Zahl über/unter Grenze, Uhrzeit, Sonne und HA-Start.
-- Bedingungen: Zustand, Zahlenvergleich, UND/ODER/NICHT.
-- Werte: Zahl und Text mit typisierten seitlichen Outputs; Grenzen, Wartezeiten und Logmeldungen nutzen ersetzbare Shadows.
-- System: Log-Ausgabe mit Schweregrad, HA-Script starten/stoppen/aufrufen und warten sowie Entität aktualisieren.
-- Aktionen: Ein/Aus/Umschalten, generische HA-Aktion mit optionalem Entitätsziel und JSON-Daten, Wartezeit und Wenn/Dann/Sonst.
+- Bedingungen: Zustand, Zahlenvergleich, UND/ODER/NICHT und Datum heute (ist/ab/bis).
+- Werte: Zahl, Prozent mit Slider, mehrzeiliger Text und Farbe; typisierte Outputs und ersetzbare Shadows.
+- System: Log-Ausgabe, Script-Steuerung, Entität aktualisieren und Helferaktion mit abhängigen Dropdowns.
+- Aktionen: Ein/Aus/Umschalten, generische HA-Aktion mit JSON-Daten, Wartezeit, Falls sowie Licht mit Farbe und Helligkeit.
 - Metadaten: Name, Beschreibung, ID sowie single/restart/queued/parallel; maximale Anzahl bei queued/parallel.
 
 Bedingungen sind Boolean-Wertblocks für seitliche Werteingänge bei Falls und Nur wenn. UND/ODER/NICHT besitzt ein Zahnrad für weitere Bedingungen. Aktionen bleiben vertikale Statement-Ketten. Alte Projekte werden automatisch umgestellt. Deaktivierte Blocks werden beim Export übersprungen; fehlende Pflichtinhalte verhindern den Export. Das Kontextmenü verlinkt Hilfe, der Papierkorb erlaubt das Zurückholen gelöschter Blocks innerhalb der Sitzung.
 
 Entitäten zunächst als IDs eingeben. Eine Live-HA-Verbindung ist noch nicht implementiert. Die backendseitige Supervisor-/Token-Verbindung von UGSo Visual Studio ist als Vorlage für eine spätere Anbindung vorgesehen; hinzu kommen die HA-Aktionsbeschreibungen. Tokens dürfen nicht in Blockprojekte oder YAML exportiert werden.
+
+Suche steht am Ende des Menüs. Plus/Minus ergänzt und entfernt die letzten Bedingungseingänge oder Falls-Zweige; S schaltet Sonst um. Das Zahnrad bleibt zum Umordnen. [Liste aller 23 Blocks mit Bildern und Originalplugin-Links](https://opensource.ugso-software.de/projects/blocks-for-ha/blocks).
 
 ## Dateien auf dem Rechner
 

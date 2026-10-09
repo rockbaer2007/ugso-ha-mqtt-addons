@@ -1,12 +1,12 @@
 # ioBroker / UGSo Blocks für HA
 
-Stand: 9. Oktober 2026, experimentelle HA-App 0.1.6. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
+Stand: 9. Oktober 2026, experimentelle HA-App 0.1.7. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
 
 Bei jeder neuen Funktion werden Gegenstück, Verhalten, YAML-Ausgabe und Status in dieser Liste und der englischen Fassung aktualisiert. Die Kategorien werden schrittweise geprüft, beginnend mit **System**. Geplant bedeutet noch nicht implementiert.
 
 ## Alle vorhandenen Blocks
 
-Es gibt **18 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswahlmöglichkeiten innerhalb eines Blocks zählen als ein Typ.
+Es gibt **23 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswahlmöglichkeiten innerhalb eines Blocks zählen als ein Typ.
 
 | ioBroker-Konzept | Unser Block | Native HA-Ausgabe / Verhalten |
 | --- | --- | --- |
@@ -24,6 +24,11 @@ Es gibt **18 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswa
 | Warten/Pause | Warte Sekunden | `delay`; ganze Sekunden von 0 bis 86400 |
 | Falls / sonst falls / sonst | Erweiterbarer Falls-Block mit Zahnrad | `if`/`then`/`else` oder mehrere `choose`-Zweige mit optionalem `default`; erster passender Zweig gewinnt |
 | Zahl | Zahlen-Wertblock und Shadow-Standardwert | Konstante für Grenze oder Wartezeit |
+| Prozent | Prozent-Wertblock mit Slider | Number-Wert 0–100 |
+| Farbe | Farb-Wertblock | Colour-Wert für Lichtaktion |
+| Lichtfarbe | Licht mit Farbe und Helligkeit | `light.turn_on` mit `rgb_color` und `brightness_pct` |
+| Datum vergleichen | Datum heute ist/ab/bis | Unterstützte HA-Template-Bedingung in HA-Zeitzone |
+| Helfer steuern | Abhängige Helferaktion | Schalter, Zähler oder Timer; passende Aktionen im Dropdown |
 | Text | Text-Wertblock und Shadow-Standardwert | String-Wert für Logmeldung |
 | Debug-Ausgabe | Log mit Info/Warnung/Fehler/Debug/Kritisch | `system_log.write` mit Meldung und Schweregrad |
 | Script steuern | HA-Script starten/stoppen/aufrufen und warten | `script.turn_on`, `script.turn_off` oder direkter `script.name`-Aufruf |
@@ -45,7 +50,7 @@ Bedingungen besitzen Boolean-Output-Anschlüsse; Falls und Nur wenn passende Wer
 | Wert von Objekt-ID, feste/dynamische/asynchrone Varianten | Zustand und Attribute als verwendbare Werte | Geplant; keine eigenen Wertblocks oder Callback-Ausführung |
 | Objekt / Attribut von Objekt | Entitätsattribute und ausgewählte Metadaten | Geplant |
 | Datenpunkt vorhanden | Existenz und Verfügbarkeit getrennt prüfen | Geplant |
-| Aktualisiere State | Entität aktualisieren | Vorhanden; fordert ein Update an, kein Gegenstück zu `ack: true`; Helfer setzen weiterhin geplant |
+| Aktualisiere State | Entität aktualisieren | Vorhanden; fordert ein Update an, kein Gegenstück zu `ack: true`; Helfer steuern umgesetzt; Zahlen-/Texthelfer setzen weiterhin geplant |
 | Binde Objekt | Quelle als Auslöser, Ziel über passende Aktion | Eigener Komfortblock geplant; dynamische Wertweitergabe noch nicht vorhanden |
 | Script steuern | HA-Script starten/stoppen/aufrufen und warten | Vorhanden; Parameter weiterhin über generische HA-Aktion |
 | IDs vom Selektor | Auswahl nach Domain/Bereich/Gerät/Label | Geplant |
@@ -68,3 +73,7 @@ Bedingungen besitzen Boolean-Output-Anschlüsse; Falls und Nur wenn passende Wer
 Seit Version 0.1.3 ist das experimentelle HA-App-Paket mit Ingress vorhanden. Noch keine Live-Entitäts-/Aktionsauswahl aus HA und keine Ausführung im Editor. Katalog und Plugins sind geplant. Der Falls-Block ist bereits über das Zahnrad erweiterbar; weitere Mutatoren folgen bei Bedarf. HA führt die exportierten Automationen aus. [Öffentliche Dokumentation](https://opensource.ugso-software.de/projects/blocks-for-ha/).
 
 Referenzen: [ioBroker-Systemdokumentation](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/de/blockly.md#systemblöcke), [System-Blockdefinitionen](https://github.com/ioBroker/ioBroker.javascript/blob/master/src-editor/src/Components/blockly-plugins/blocks/blocks_system.ts), [HA-Aktionen](https://www.home-assistant.io/docs/scripts/perform-actions/), [HA-Script-Syntax](https://www.home-assistant.io/docs/scripts/).
+
+## Neue Originalplugins und Bedienung
+
+Sechs Originalplugins sind lokal eingebunden. Suche am Menüende, mehrzeiliger Text, Prozent-Slider, Farbfeld, Datumsfeld und abhängige Helfer-Dropdowns sind vorhanden. Plus/Minus in unseren HA-Blocks ist eine eigene Umsetzung des Bedienprinzips; automatische dynamische Anschlüsse sind noch offen. [Blockkatalog mit Bildern und direkten Links zu allen Originalplugins](https://opensource.ugso-software.de/projects/blocks-for-ha/blocks).

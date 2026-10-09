@@ -1,9 +1,34 @@
 import * as BlocklyModule from 'blockly/core';
 import * as De from 'blockly/msg/de';
 import 'blockly/blocks';
+import * as MultilineModule from '@blockly/field-multilineinput';
+import * as ColourModule from '@blockly/field-colour';
+import '@blockly/field-slider';
+import * as DateModule from '@blockly/field-date';
+import '@blockly/field-dependent-dropdown';
+import { dateTemplate, parseDateTemplate, helperOptions } from './values.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 Blockly.setLocale(De);
+const Multiline = Reflect.get(MultilineModule, 'default') || MultilineModule;
+const Colour = Reflect.get(ColourModule, 'default') || ColourModule;
+Multiline.registerFieldMultilineInput(); Colour.registerFieldColour();
+Multiline.FieldMultilineInput.enterCommits = false;
+const DateFields = Reflect.get(DateModule, 'default') || DateModule;
+// Keep the original date field, guarding a picker that was closed before its frame.
+class SafeDateField extends DateFields.FieldDate {
+  showDropdown() {
+    const input = this.htmlInput_;
+    if (!input) return;
+    input.classList.add('blocklyDateInput');
+    requestAnimationFrame(() => {
+      if (input.isConnected && typeof input.showPicker === 'function') {
+        try { input.showPicker(); } catch { /* Native date input remains editable in restricted browser contexts. */ }
+      }
+    });
+  }
+}
+Blockly.fieldRegistry.register('ugso_field_date', SafeDateField);
 
 const entityField = (value) => ({ type: 'field_input', name: 'ENTITY', text: value });
 const number = value('LIMIT', 'Number');
@@ -11,7 +36,12 @@ const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'bel
 const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 const definitions = [
-  { type: 'ugso_text', message0: 'Text %1', args0: [{ type: 'field_input', name: 'TEXT', text: 'Automation gestartet' }], output: 'String', colour: '#2e7653' },
+  { type: 'ugso_text', message0: 'Text %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: 'Automation gestartet', maxLines: 3 }], output: 'String', colour: '#2e7653' },
+  { type: 'ugso_percent', message0: '%1 %%', args0: [{ type: 'field_slider', name: 'NUM', value: 50, min: 0, max: 100, precision: 1 }], output: 'Number', colour: '#2e7653' },
+  { type: 'ugso_colour', message0: 'Farbe %1', args0: [{ type: 'field_colour', name: 'COLOUR', colour: '#ff8800' }], output: 'Colour', colour: '#2e7653' },
+  { type: 'ugso_colour_action', message0: 'Licht %1 Farbe %2 Helligkeit %3 %%', args0: [entityField('light.wohnzimmer'), value('COLOUR', 'Colour'), value('BRIGHTNESS', 'Number')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5' },
+  { type: 'ugso_date_condition', message0: 'Datum heute %1 %2', args0: [{ type: 'field_dropdown', name: 'OP', options: [['ist', '=='], ['ab einschließlich', '>='], ['bis einschließlich', '<=']] }, { type: 'ugso_field_date', name: 'DATE', date: '2026-10-09' }], output: 'Boolean', colour: '#6860b5', tooltip: 'Vergleicht das heutige Datum in der HA-Zeitzone, einschließlich Jahr. Löst selbst keine Automation aus.' },
+  { type: 'ugso_helper_action', message0: 'Helfer %1 %2 %3', args0: [{ type: 'field_dropdown', name: 'DOMAIN', options: [['Schalter', 'input_boolean'], ['Zähler', 'counter'], ['Timer', 'timer']] }, entityField('input_boolean.test'), { type: 'field_dependent_dropdown', name: 'SERVICE', parentName: 'DOMAIN', optionMapping: helperOptions }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Die Aktionsauswahl folgt dem Helfertyp. Entitäts-ID manuell eingeben; keine Live-HA-Auswahl.' },
   { type: 'ugso_log_action', message0: 'Log %1 Meldung %2', args0: [{ type: 'field_dropdown', name: 'LEVEL', options: [['Info', 'info'], ['Warnung', 'warning'], ['Fehler', 'error'], ['Debug', 'debug'], ['Kritisch', 'critical']] }, value('MESSAGE', 'String')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Schreibt bei Ausführung in HA ins Systemprotokoll. Info und Debug können durch die HA-Logkonfiguration ausgefiltert werden.' },
   { type: 'ugso_script_action', message0: 'HA-Script %1 %2', args0: [entityField('script.abendlicht'), { type: 'field_dropdown', name: 'MODE', options: [['starten (ohne Warten)', 'turn_on'], ['stoppen', 'turn_off'], ['aufrufen und warten', 'wait']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Aufrufen und warten setzt die Automation erst nach dem Script fort. Script-Parameter über die generische HA-Aktion übergeben.' },
   { type: 'ugso_update_action', message0: 'Entität %1 aktualisieren', args0: [entityField('sensor.temperatur')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Fordert in HA ein Update der Entität an. Die Integration bestimmt, ob sie eine Aktualisierung unterstützt; setzt keinen Zustand.' },
@@ -110,21 +140,45 @@ Blockly.Extensions.registerMutator('ugso_branches', {
 Blockly.defineBlocksWithJsonArray(definitions);
 definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
-  Blockly.Blocks[definition.type].init = function () { original.call(this); this.setHelpUrl('https://opensource.ugso-software.de/projects/blocks-for-ha/#andocken-und-bedienung'); };
+  Blockly.Blocks[definition.type].init = function () {
+    original.call(this); this.setHelpUrl('https://opensource.ugso-software.de/projects/blocks-for-ha/#andocken-und-bedienung');
+    if (['ugso_logic_condition', 'ugso_if_action'].includes(this.type)) addExpansionButtons(this);
+  };
 });
+function expansion(block, change) {
+  const before = JSON.stringify(block.saveExtraState());
+  Blockly.Events.setGroup(true);
+  try { change(); Blockly.Events.fire(new Blockly.Events.BlockChange(block, 'mutation', null, before, JSON.stringify(block.saveExtraState()))); }
+  finally { Blockly.Events.setGroup(false); }
+}
+function addExpansionButtons(block) {
+  const button = (label, action) => new Blockly.FieldImage(`data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"><rect width="18" height="18" rx="4" fill="white"/><text x="9" y="13" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#20313c">${label}</text></svg>`)}`, 18, 18, label, () => expansion(block, action));
+  const input = block.inputList[0];
+  input.appendField(button('+', () => {
+    if (block.type === 'ugso_logic_condition') { if (block.itemCount_ < 100) { block.itemCount_++; block.updateConditions_(); } }
+    else if (block.branchCount_ < 99) { block.branchCount_++; block.updateBranches_(); }
+  }), 'ADD');
+  input.appendField(button('−', () => {
+    if (block.type === 'ugso_logic_condition') { if (block.itemCount_ > 1) { block.itemCount_--; block.updateConditions_(); } }
+    else if (block.branchCount_ > 0) { block.branchCount_--; block.updateBranches_(); }
+  }), 'REMOVE');
+  if (block.type === 'ugso_if_action') input.appendField(button('S', () => { block.hasElse_ = !block.hasElse_; block.updateBranches_(); }), 'ELSE_TOGGLE');
+}
 export { Blockly };
 export const knownTypes = new Set(definitions.map(item => item.type));
 export const toolbox = { kind: 'categoryToolbox', contents: [
-  { kind: 'category', name: 'System', colour: '#2682a5', contents: ['log', 'script', 'update'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) },
-  { kind: 'category', name: 'Werte', colour: '#2e7653', contents: ['number', 'text'].map(type => ({ kind: 'block', type: `ugso_${type}` })) },
+  { kind: 'category', name: 'System', colour: '#2682a5', contents: ['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) },
+  { kind: 'category', name: 'Werte', colour: '#2e7653', contents: ['number', 'percent', 'text', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}` })) },
+  { kind: 'category', name: 'Datum und Zeit', colour: '#6860b5', contents: [{ kind: 'block', type: 'ugso_date_condition' }] },
   { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: ['state', 'numeric', 'time', 'sun', 'start'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })) },
   { kind: 'category', name: 'Bedingungen', colour: '#6860b5', contents: ['state', 'numeric', 'logic'].map(type => ({ kind: 'block', type: `ugso_${type}_condition` })) },
-  { kind: 'category', name: 'Aktionen', colour: '#2682a5', contents: ['switch', 'service', 'delay', 'if'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) }
+  { kind: 'category', name: 'Aktionen', colour: '#2682a5', contents: ['switch', 'service', 'delay', 'if', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) }
 ] };
 for (const category of toolbox.contents) for (const block of category.contents) {
   if (block.type.includes('numeric')) block.inputs = { LIMIT: { shadow: { type: 'ugso_number', fields: { NUM: 20 } } } };
   if (block.type === 'ugso_delay_action') block.inputs = { SECONDS: { shadow: { type: 'ugso_number', fields: { NUM: 30 } } } };
   if (block.type === 'ugso_log_action') block.inputs = { MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'Automation gestartet' } } } };
+  if (block.type === 'ugso_colour_action') block.inputs = { COLOUR: { shadow: { type: 'ugso_colour', fields: { COLOUR: '#ff8800' } } }, BRIGHTNESS: { shadow: { type: 'ugso_percent', fields: { NUM: 50 } } } };
 }
 const field = (block, name) => block.getFieldValue(name);
 function chain(block, convert, depth = 0) {
@@ -135,7 +189,7 @@ function chain(block, convert, depth = 0) {
 }
 function readNumber(block, input) {
   const child = block.getInputTargetBlock(input);
-  if (!child || !child.isEnabled() || child.type !== 'ugso_number') throw new Error(`${input}: Zahlenblock fehlt.`);
+  if (!child || !child.isEnabled() || !['ugso_number', 'ugso_percent'].includes(child.type)) throw new Error(`${input}: Zahlenblock fehlt.`);
   return Number(field(child, 'NUM'));
 }
 const range = (block) => ({ entity_id: field(block, 'ENTITY'), [field(block, 'OP')]: readNumber(block, 'LIMIT') });
@@ -152,6 +206,7 @@ function readTrigger(block) {
 function readCondition(block, depth) {
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
   switch (block.type) {
+    case 'ugso_date_condition': return { condition: 'template', value_template: dateTemplate(field(block, 'DATE'), field(block, 'OP')) };
     case 'ugso_state_condition': return { condition: 'state', entity_id: field(block, 'ENTITY'), state: field(block, 'STATE') };
     case 'ugso_numeric_condition': return { condition: 'numeric_state', ...range(block) };
     case 'ugso_logic_condition': {
@@ -173,6 +228,19 @@ function readConditions(block, depth = 0) {
 }
 function readAction(block, depth) {
   switch (block.type) {
+    case 'ugso_helper_action': {
+      const domain = field(block, 'DOMAIN'), id = field(block, 'ENTITY'), service = field(block, 'SERVICE');
+      if (!id.startsWith(`${domain}.`) || !helperOptions[domain].some(option => option[1] === service)) throw new Error('Helfer: Entität und Aktion müssen zum gewählten Helfertyp passen.');
+      return { action: `${domain}.${service}`, target: { entity_id: id } };
+    }
+    case 'ugso_colour_action': {
+      const child = block.getInputTargetBlock('COLOUR'), brightness = readNumber(block, 'BRIGHTNESS'), id = field(block, 'ENTITY');
+      if (!id.startsWith('light.')) throw new Error('Licht: Entität im Format light.name erwartet.');
+      if (!child?.isEnabled() || child.type !== 'ugso_colour') throw new Error('Licht: Farbblock fehlt.');
+      const hex = field(child, 'COLOUR');
+      if (!/^#[0-9a-f]{6}$/i.test(hex) || brightness < 0 || brightness > 100) throw new Error('Licht: gültige Farbe und Helligkeit 0–100 erforderlich.');
+      return { action: 'light.turn_on', target: { entity_id: id }, data: { rgb_color: [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)), brightness_pct: brightness } };
+    }
     case 'ugso_log_action': {
       const child = block.getInputTargetBlock('MESSAGE');
       if (!child || !child.isEnabled() || child.type !== 'ugso_text') throw new Error('Log: Textblock für Meldung fehlt.');
@@ -244,6 +312,7 @@ function triggerBlock(workspace, item) {
   }
 }
 function conditionBlock(workspace, item) {
+  if (item.condition === 'template') { const date = parseDateTemplate(item.value_template); return create(workspace, 'ugso_date_condition', { DATE: date.date, OP: date.op }); }
   if (item.condition === 'state') return create(workspace, 'ugso_state_condition', { ENTITY: item.entity_id, STATE: item.state });
   if (item.condition === 'numeric_state') return numberInput(create(workspace, 'ugso_numeric_condition', fieldsRange(item)), 'LIMIT', item.above ?? item.below);
   const block = create(workspace, 'ugso_logic_condition', { LOGIC: item.condition });
@@ -253,6 +322,13 @@ function conditionBlock(workspace, item) {
 function actionBlock(workspace, item) {
   if (item.action) {
     const id = item.target?.entity_id;
+    const domain = id?.split('.')[0], service = item.action.split('.')[1];
+    if (!item.data && helperOptions[domain]?.some(option => option[1] === service) && item.action === `${domain}.${service}`) return create(workspace, 'ugso_helper_action', { DOMAIN: domain, ENTITY: id, SERVICE: service });
+    if (id?.startsWith('light.') && item.action === 'light.turn_on' && item.data && Object.keys(item.data).length === 2 && Array.isArray(item.data.rgb_color) && item.data.rgb_color.length === 3 && item.data.rgb_color.every(n => Number.isInteger(n) && n >= 0 && n <= 255) && Number.isInteger(item.data.brightness_pct) && item.data.brightness_pct >= 0 && item.data.brightness_pct <= 100) {
+      const block = create(workspace, 'ugso_colour_action', { ENTITY: id });
+      block.getInput('COLOUR').connection.setShadowState({ type: 'ugso_colour', fields: { COLOUR: '#' + item.data.rgb_color.map(n => n.toString(16).padStart(2, '0')).join('') } });
+      block.getInput('BRIGHTNESS').connection.setShadowState({ type: 'ugso_percent', fields: { NUM: item.data.brightness_pct } }); return block;
+    }
     // Recognize only exact supported shapes. Keep extra parameters in the generic block.
     if (item.action === 'system_log.write' && !item.target && item.data && Object.keys(item.data).length === 2 && typeof item.data.message === 'string' && item.data.message.trim() && ['info', 'warning', 'error', 'debug', 'critical'].includes(item.data.level)) {
       const block = create(workspace, 'ugso_log_action', { LEVEL: item.data.level });

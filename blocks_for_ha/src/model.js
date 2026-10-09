@@ -1,4 +1,5 @@
 import { parseDocument, stringify } from 'yaml';
+import { parseDateTemplate } from './values.js';
 
 const identifier = /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/;
 const allowedModes = ['single', 'restart', 'queued', 'parallel'];
@@ -37,7 +38,9 @@ function checkRange(item, path) {
 }
 function checkCondition(item, path, depth = 0) {
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
-  if (item.condition === 'state') {
+  if (item.condition === 'template') {
+    ownKeys(item, ['condition', 'value_template'], path); parseDateTemplate(item.value_template);
+  } else if (item.condition === 'state') {
     ownKeys(item, ['condition', 'entity_id', 'state'], path); entity(item.entity_id, path); text(item.state, path);
   } else if (item.condition === 'numeric_state') {
     ownKeys(item, ['condition', 'entity_id', 'above', 'below'], path); entity(item.entity_id, path); checkRange(item, path);

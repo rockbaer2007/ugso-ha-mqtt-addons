@@ -1,4 +1,4 @@
-UGSo Blocks for HA 0.1.1
+UGSo Blocks for HA 0.1.7
 Copyright 2026 rockbaer2007 / UGSo
 Own application code is licensed under Apache License 2.0; see APP-LICENSE.txt in this directory.
 
@@ -12,5 +12,16 @@ Blockly library files are used without manual source modifications. Application 
 YAML 2.8.3 by Eemeli Aro
 https://github.com/eemeli/yaml
 License: ISC. Original license and copyright: YAML-LICENSE.txt in this directory.
+
+Blockly sample plugins 13.2.0 from Raspberry Pi Foundation / Blockly contributors:
+@blockly/toolbox-search, @blockly/field-multilineinput, @blockly/field-slider,
+@blockly/field-colour, @blockly/field-date, @blockly/field-dependent-dropdown,
+and transitive @blockly/field-grid-dropdown.
+https://github.com/raspberrypifoundation/blockly-samples
+License: Apache-2.0; see BLOCKLY-LICENSE.txt. Original source notices remain in bundled libraries.
+Plugin libraries are not manually modified. Search localization and HA block adapters are UGSo code.
+Plus/minus controls are an original implementation inspired by block-plus-minus;
+block-plus-minus and block-dynamic-connection are not installed.
+The house/puzzle icon is an original UGSo vector drawing, not an official HA or Blockly logo.
 
 Home Assistant is a separate project. This editor is an independent community project.

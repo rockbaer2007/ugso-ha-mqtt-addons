@@ -1,12 +1,12 @@
 # ioBroker / UGSo Blocks for HA
 
-As of October 9, 2026, experimental HA app 0.1.6. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
+As of October 9, 2026, experimental HA app 0.1.7. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
 
 Every new feature must update its counterpart, behavior, YAML output and implementation status here and in the German version. Categories will be reviewed progressively, starting with **System**. Planned means not implemented.
 
 ## All existing blocks
 
-There are **18 block types**, including the automation root. Dropdown choices within one block count as one type.
+There are **23 block types**, including the automation root. Dropdown choices within one block count as one type.
 
 | ioBroker concept | Our block | Native HA output / behavior |
 | --- | --- | --- |
@@ -24,6 +24,11 @@ There are **18 block types**, including the automation root. Dropdown choices wi
 | Wait/pause | Wait seconds | `delay`; integer seconds from 0 to 86400 |
 | If / else if / else | Extensible if block with gear icon | `if`/`then`/`else` or multiple `choose` branches with optional `default`; first matching branch wins |
 | Number | Number value block and shadow default | Constant threshold or delay |
+| Percentage | Percentage value block with slider | Number value 0–100 |
+| Colour | Colour value block | Colour value for light action |
+| Light colour | Light with colour and brightness | `light.turn_on` with `rgb_color` and `brightness_pct` |
+| Date comparison | Today equals/on-or-after/on-or-before | Supported HA template condition in HA time zone |
+| Control helper | Dependent helper action | Switch, counter or timer; matching action dropdown |
 | Text | Text value block and shadow default | String value for log message |
 | Debug output | Log with severity dropdown | `system_log.write` with message and level |
 | Control script | Start/stop HA script or call and wait | `script.turn_on`, `script.turn_off` or direct `script.name` call |
@@ -45,7 +50,7 @@ Conditions have Boolean outputs for if and automation condition value inputs. AN
 | Get value, fixed/dynamic/asynchronous variants | State and attributes as usable values | Planned; no dedicated value blocks or callback execution |
 | Object / object attribute | Entity attributes and selected metadata | Planned |
 | State exists | Separate existence and availability checks | Planned |
-| Update state | Refresh entity | Available; requests refresh, no `ack: true` equivalent; setting helpers remains planned |
+| Update state | Refresh entity | Available; requests refresh, no `ack: true` equivalent; controlling helpers available; setting number/text helpers remains planned |
 | Bind states | Source trigger and appropriate target action | Convenience block planned; dynamic value forwarding not available yet |
 | Control script | Start/stop HA script or call and wait | Available; parameters still use generic HA action |
 | Selector IDs | Select by domain/area/device/label | Planned |
@@ -68,3 +73,7 @@ Conditions have Boolean outputs for if and automation condition value inputs. AN
 Version 0.1.3 adds the experimental HA app package with ingress. No live HA entity/action selection or execution inside the editor yet. Catalog and plugins are planned. The if block already supports a mutator; additional mutators will follow where needed. HA runs the exported automations. [Public documentation](https://opensource.ugso-software.de/en/projects/blocks-for-ha/).
 
 References: [ioBroker System documentation](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/blockly.md#system-blocks), [System block definitions](https://github.com/ioBroker/ioBroker.javascript/blob/master/src-editor/src/Components/blockly-plugins/blocks/blocks_system.ts), [HA actions](https://www.home-assistant.io/docs/scripts/perform-actions/), [HA script syntax](https://www.home-assistant.io/docs/scripts/).
+
+## New original plugins and controls
+
+Six original plugins are bundled locally. Search at the end of the menu, multiline text, percentage slider, colour/date fields and dependent helper dropdowns are available. Plus/minus on HA blocks is our own implementation of the interaction; automatic dynamic connections remain pending. [Block catalog with images and direct links to all original plugins](https://opensource.ugso-software.de/en/projects/blocks-for-ha/blocks).

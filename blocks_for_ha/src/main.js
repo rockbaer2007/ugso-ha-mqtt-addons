@@ -3,6 +3,7 @@ import { examples, toYaml, fromYaml, filename, validateAutomation } from './mode
 import './style.css';
 import { version } from '../package.json';
 import { upgradeWorkspace } from './project.js';
+import './search.js';
 
 document.querySelector('#app').innerHTML = `
 <header class="app-header"><a class="brand" href="/"><span class="brand-icon">▦</span><span>UGSo <strong>Blocks for HA</strong></span></a><div class="header-right"><span class="version">Vorschau 0.1.0</span><button id="about">Über & Lizenzen</button></div></header>
@@ -13,6 +14,7 @@ document.querySelector('#app').innerHTML = `
 <input id="yaml-file" type="file" accept=".yaml,.yml,text/yaml" hidden><input id="project-file" type="file" accept=".json,application/json" hidden><div id="toast" role="status" hidden></div>
 <dialog id="about-dialog"><h2>UGSo Blocks for HA</h2><p>Version 0.1.0 · Visueller Editor für native Home-Assistant-Automationen.</p><p>Built with <a href="https://www.blockly.com/" target="_blank" rel="noopener noreferrer">Blockly</a>, der Open-Source-Bibliothek der Raspberry Pi Foundation, ursprünglich bei Google entwickelt. Eigene HA-Blocks; keine ioBroker-Laufzeit.</p><p>Blockly: Apache-2.0 · YAML: ISC · Eigener Code: Apache-2.0.</p><p>Unabhängiges Community-Projekt, kein offizielles Produkt von Home Assistant oder Blockly.</p><a href="/licenses/THIRD_PARTY_NOTICES.txt" target="_blank">Lizenzhinweise öffnen</a><form method="dialog"><button class="primary">Schließen</button></form></dialog>`;
 document.querySelector('.version').textContent = `Vorschau ${version}`;
+document.querySelector('.brand-icon').innerHTML = '<img src="./blocks-icon.svg" alt="" width="34" height="34">';
 document.querySelector('#about-dialog p').textContent = `Version ${version} · Visueller Editor für native Home-Assistant-Automationen.`;
 const $ = id => document.getElementById(id);
 document.querySelector('.brand').href = './';

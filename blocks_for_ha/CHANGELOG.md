@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.7
+
+- Suchfeld über der Toolbox mit deutschen Hinweisen; Suchtreffer behalten Auswahlfelder und Shadows.
+- Mehrzeiliger Text (Enter neue Zeile, Shift+Enter übernehmen), maximal drei sichtbare Zeilen.
+- Prozent-Wertblock mit Slider, Farb-Wertblock und Lichtaktion mit RGB-Farbe und Helligkeit.
+- Datum-Bedingung mit Browser-Datumswahl und Vergleich in der HA-Zeitzone.
+- Helferaktion mit abhängiger Auswahl für input_boolean, counter und timer; IDs weiterhin manuell.
+- Plus/Minus für Bedingungen und Falls-Zweige, Sonst-Schalter S; Zahnrad bleibt zum Umordnen.
+- Eigenes Haus/Puzzle-Icon für Oberfläche, Browser und HA-App.
+- Sechs Original-Blockly-Plugins lokal gebündelt; dynamische automatische Anschlüsse, Farbmischung und Live-Auswahl bleiben geplant.
+
 ## 0.1.6
 
 - Kategorie System mit Log-Ausgabe, Script-Steuerung und Entität aktualisieren.
