@@ -20,3 +20,9 @@
 - Vorhandene Projektdateien behalten ihre bisherigen Sonst-Aktionen.
 - Eigene Open-Source-Dokumentationsseite unter HA Apps; Gegenüberstellung aktualisiert.
 
+# 0.1.3
+
+- HA-App-Paket mit config.yaml, Docker-Build und Nginx-Ingress auf Port 8099.
+- Relative Pfade für Skripte, Blockly-Medien und Lizenzhinweise hinter HA-Ingress.
+- Installationsanleitung für den gemeinsamen UGSo-HA-App-Store.
+

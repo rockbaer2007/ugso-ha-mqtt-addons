@@ -14,7 +14,9 @@ document.querySelector('#app').innerHTML = `
 document.querySelector('.version').textContent = `Vorschau ${version}`;
 document.querySelector('#about-dialog p').textContent = `Version ${version} · Visueller Editor für native Home-Assistant-Automationen.`;
 const $ = id => document.getElementById(id);
-const workspace = Blockly.inject('workspace', { toolbox, media: '/media/', renderer: 'zelos', grid: { spacing: 24, length: 2, colour: '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: .85, maxScale: 1.6, minScale: .35 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
+document.querySelector('.brand').href = './';
+document.querySelector('#about-dialog a[href="/licenses/THIRD_PARTY_NOTICES.txt"]').href = './licenses/THIRD_PARTY_NOTICES.txt';
+const workspace = Blockly.inject('workspace', { toolbox, media: './media/', renderer: 'zelos', grid: { spacing: 24, length: 2, colour: '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: .85, maxScale: 1.6, minScale: .35 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
 let metadata = {};
 let currentModel;
 let timer;

@@ -1,0 +1,18 @@
+name: UGSo Blocks for HA
+version: "0.1.3"
+slug: blocks_for_ha
+description: Native Home-Assistant-Automationen mit visuellen Blocks erstellen
+stage: experimental
+url: https://opensource.ugso-software.de/projects/blocks-for-ha/
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:puzzle
+panel_title: Blocks for HA
+options: {}
+schema: {}

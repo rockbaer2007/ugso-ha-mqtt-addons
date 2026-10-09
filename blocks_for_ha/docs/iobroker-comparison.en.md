@@ -58,6 +58,6 @@ There are **13 block types**, including the automation root. Dropdown choices wi
 - Name, description and ID; `single`, `restart`, `queued`, `parallel` execution modes, with a maximum count for the last two.
 - Structural validation and errors. Installed HA actions are not verified.
 
-No live HA connection, installable HA add-on or execution inside the editor yet. Catalog and plugins are planned. The if block already supports a mutator; additional mutators will follow where needed. HA runs the exported automations. [Public documentation](https://opensource.ugso-software.de/en/projects/blocks-for-ha/).
+Version 0.1.3 adds the experimental HA app package with ingress. No live HA entity/action selection or execution inside the editor yet. Catalog and plugins are planned. The if block already supports a mutator; additional mutators will follow where needed. HA runs the exported automations. [Public documentation](https://opensource.ugso-software.de/en/projects/blocks-for-ha/).
 
 References: [ioBroker System documentation](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/blockly.md#system-blocks), [System block definitions](https://github.com/ioBroker/ioBroker.javascript/blob/master/src-editor/src/Components/blockly-plugins/blocks/blocks_system.ts), [HA actions](https://www.home-assistant.io/docs/scripts/perform-actions/), [HA script syntax](https://www.home-assistant.io/docs/scripts/).

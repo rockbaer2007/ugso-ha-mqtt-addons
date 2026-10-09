@@ -1,12 +1,16 @@
 # UGSo Blocks for HA
 
-Version 0.1.2: lokaler Prototyp für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
+Version 0.1.3: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
+
+## Installation als HA-App
+
+Im HA-App-Store das gemeinsame Repository aktualisieren, **UGSo Blocks for HA** installieren, starten und über **Weboberfläche öffnen** verwenden. [Installationsanleitung](DOCS.md). Das Paket unterstützt amd64 und aarch64 und stellt den Editor über Ingress bereit. Direkte Entitäts-/Aktionsauswahl aus HA folgt später.
 
 [Open-Source-Dokumentation](https://opensource.ugso-software.de/projects/blocks-for-ha/): Falls-Blocks lassen sich über das Zahnrad um sonst-falls-Zweige und einen optionalen sonst-Zweig erweitern. Mehrere Zweige erzeugen native HA-`choose`-Aktionen.
 
 ## Starten
 
-Im Verzeichnis `blocks_for_ha/` Node.js 22.12 oder neuer verwenden. `npm install`, dann `npm run dev`. Oberfläche: http://127.0.0.1:4180/. `npm test` prüft die Erzeugung und den Import; `npm run build` erstellt die auslieferbare Weboberfläche. Noch kein installierbares HA-Add-on.
+Im Verzeichnis `blocks_for_ha/` Node.js 22.12 oder neuer verwenden. `npm install`, dann `npm run dev`. Oberfläche: http://127.0.0.1:4180/. `npm test` prüft die Erzeugung und den Import; `npm run build` erstellt die auslieferbare Weboberfläche.
 
 ## Unterstützte Blocks
 
@@ -29,7 +33,7 @@ Für den nativen HA-Editor das Format „Einzelne Automation“ wählen, Beispie
 
 ## Geplante Erweiterungen
 
-Eigenständige HA-App, Entitäts-/Aktionsauswahl, deklarative Blockpakete und Katalog, weitere native HA-Strukturen. Die Roadmap liegt im ATLAS-Repository unter `docs/UGSO_BLOCKS_FOR_HA_ROADMAP.md`. Der Prototyp ist ein eigenständiges Projekt und kein bereits integriertes ATLAS-Plugin.
+Entitäts-/Aktionsauswahl, deklarative Blockpakete und Katalog, weitere native HA-Strukturen. Die Roadmap liegt im ATLAS-Repository unter `docs/UGSO_BLOCKS_FOR_HA_ROADMAP.md`. Die HA-App ist ein eigenständiges Projekt und kein bereits integriertes ATLAS-Plugin.
 
 ## Original und Lizenzen
 

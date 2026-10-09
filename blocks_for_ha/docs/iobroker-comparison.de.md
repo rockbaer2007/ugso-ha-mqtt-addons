@@ -58,6 +58,6 @@ Es gibt **13 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswa
 - Name, Beschreibung und ID; Ausführungsmodi `single`, `restart`, `queued`, `parallel`, mit maximaler Anzahl für die letzten beiden.
 - Strukturvalidierung und Fehlermeldungen. Keine Prüfung der tatsächlich installierten HA-Aktionen.
 
-Noch keine Live-Verbindung zu HA, kein installierbares HA-Add-on und keine Ausführung im Editor. Katalog und Plugins sind geplant. Der Falls-Block ist bereits über das Zahnrad erweiterbar; weitere Mutatoren folgen bei Bedarf. HA führt die exportierten Automationen aus. [Öffentliche Dokumentation](https://opensource.ugso-software.de/projects/blocks-for-ha/).
+Seit Version 0.1.3 ist das experimentelle HA-App-Paket mit Ingress vorhanden. Noch keine Live-Entitäts-/Aktionsauswahl aus HA und keine Ausführung im Editor. Katalog und Plugins sind geplant. Der Falls-Block ist bereits über das Zahnrad erweiterbar; weitere Mutatoren folgen bei Bedarf. HA führt die exportierten Automationen aus. [Öffentliche Dokumentation](https://opensource.ugso-software.de/projects/blocks-for-ha/).
 
 Referenzen: [ioBroker-Systemdokumentation](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/de/blockly.md#systemblöcke), [System-Blockdefinitionen](https://github.com/ioBroker/ioBroker.javascript/blob/master/src-editor/src/Components/blockly-plugins/blocks/blocks_system.ts), [HA-Aktionen](https://www.home-assistant.io/docs/scripts/perform-actions/), [HA-Script-Syntax](https://www.home-assistant.io/docs/scripts/).
