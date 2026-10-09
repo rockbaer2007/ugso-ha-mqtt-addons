@@ -8,6 +8,8 @@ Im Verzeichnis `blocks_for_ha/` Node.js 22.12 oder neuer verwenden. `npm install
 
 ## Unterstützte Blocks
 
+Die vollständige Gegenüberstellung zu ioBroker einschließlich Umsetzungsstatus steht in [ioBroker / UGSo Blocks für HA](docs/iobroker-comparison.de.md). Bei jeder Erweiterung wird diese Liste zusammen mit der [englischen Fassung](docs/iobroker-comparison.en.md) aktualisiert.
+
 - Auslöser: Zustand, Zahl über/unter Grenze, Uhrzeit, Sonne und HA-Start.
 - Bedingungen: Zustand, Zahlenvergleich, UND/ODER/NICHT.
 - Aktionen: Ein/Aus/Umschalten, generische HA-Aktion mit optionalem Entitätsziel und JSON-Daten, Wartezeit und Wenn/Dann/Sonst.
