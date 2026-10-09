@@ -1,12 +1,12 @@
 # ioBroker / UGSo Blocks for HA
 
-As of October 9, 2026, experimental HA app 0.1.5. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
+As of October 9, 2026, experimental HA app 0.1.6. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
 
 Every new feature must update its counterpart, behavior, YAML output and implementation status here and in the German version. Categories will be reviewed progressively, starting with **System**. Planned means not implemented.
 
 ## All existing blocks
 
-There are **14 block types**, including the automation root. Dropdown choices within one block count as one type.
+There are **18 block types**, including the automation root. Dropdown choices within one block count as one type.
 
 | ioBroker concept | Our block | Native HA output / behavior |
 | --- | --- | --- |
@@ -24,8 +24,12 @@ There are **14 block types**, including the automation root. Dropdown choices wi
 | Wait/pause | Wait seconds | `delay`; integer seconds from 0 to 86400 |
 | If / else if / else | Extensible if block with gear icon | `if`/`then`/`else` or multiple `choose` branches with optional `default`; first matching branch wins |
 | Number | Number value block and shadow default | Constant threshold or delay |
+| Text | Text value block and shadow default | String value for log message |
+| Debug output | Log with severity dropdown | `system_log.write` with message and level |
+| Control script | Start/stop HA script or call and wait | `script.turn_on`, `script.turn_off` or direct `script.name` call |
+| Update state, different semantics | Refresh entity | `homeassistant.update_entity`; requests refresh, does not set state |
 
-Conditions have Boolean outputs for if and automation condition value inputs. AND/OR/NOT supports expandable value inputs via its gear. Disabled blocks are omitted from export; required content remains required. Context menu, trash recovery, help and zoom are available. Text, entity and sensor value blocks will follow later.
+Conditions have Boolean outputs for if and automation condition value inputs. AND/OR/NOT supports expandable value inputs via its gear. Disabled blocks are omitted from export; required content remains required. Context menu, trash recovery, help and zoom are available. Text is implemented; entity and sensor value blocks will follow later.
 
 ## System: comparison and next steps
 
@@ -36,14 +40,14 @@ Conditions have Boolean outputs for if and automation condition value inputs. AN
 | Delayed write | Wait block before action | Existing combination; no dedicated delayed write or expiry field |
 | Universal write | Generic HA action with target and JSON data | Basic support available; no ioBroker `ack` semantics |
 | Comment | Explanation block with preserved export representation | Planned |
-| Debug output | Dedicated log block | Planned; manual HA action already possible |
+| Debug output | Dedicated log block | Available; message as text shadow or text block, severity dropdown |
 | Object ID | Entity value block and picker | Planned; IDs currently entered as text |
 | Get value, fixed/dynamic/asynchronous variants | State and attributes as usable values | Planned; no dedicated value blocks or callback execution |
 | Object / object attribute | Entity attributes and selected metadata | Planned |
 | State exists | Separate existence and availability checks | Planned |
-| Update state | Set helper or refresh entity | Dedicated blocks planned; no direct equivalent of `ack: true` |
+| Update state | Refresh entity | Available; requests refresh, no `ack: true` equivalent; setting helpers remains planned |
 | Bind states | Source trigger and appropriate target action | Convenience block planned; dynamic value forwarding not available yet |
-| Control script | Start/stop HA script | Dedicated block planned; generic HA action already usable |
+| Control script | Start/stop HA script or call and wait | Available; parameters still use generic HA action |
 | Selector IDs | Select by domain/area/device/label | Planned |
 | RegExp | Text matching | Planned |
 | Script name | Automation metadata | Name available; no dedicated value block |

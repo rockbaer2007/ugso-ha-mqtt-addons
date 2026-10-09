@@ -1,12 +1,12 @@
 # ioBroker / UGSo Blocks für HA
 
-Stand: 9. Oktober 2026, experimentelle HA-App 0.1.5. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
+Stand: 9. Oktober 2026, experimentelle HA-App 0.1.6. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
 
 Bei jeder neuen Funktion werden Gegenstück, Verhalten, YAML-Ausgabe und Status in dieser Liste und der englischen Fassung aktualisiert. Die Kategorien werden schrittweise geprüft, beginnend mit **System**. Geplant bedeutet noch nicht implementiert.
 
 ## Alle vorhandenen Blocks
 
-Es gibt **14 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswahlmöglichkeiten innerhalb eines Blocks zählen als ein Typ.
+Es gibt **18 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswahlmöglichkeiten innerhalb eines Blocks zählen als ein Typ.
 
 | ioBroker-Konzept | Unser Block | Native HA-Ausgabe / Verhalten |
 | --- | --- | --- |
@@ -24,8 +24,12 @@ Es gibt **14 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswa
 | Warten/Pause | Warte Sekunden | `delay`; ganze Sekunden von 0 bis 86400 |
 | Falls / sonst falls / sonst | Erweiterbarer Falls-Block mit Zahnrad | `if`/`then`/`else` oder mehrere `choose`-Zweige mit optionalem `default`; erster passender Zweig gewinnt |
 | Zahl | Zahlen-Wertblock und Shadow-Standardwert | Konstante für Grenze oder Wartezeit |
+| Text | Text-Wertblock und Shadow-Standardwert | String-Wert für Logmeldung |
+| Debug-Ausgabe | Log mit Info/Warnung/Fehler/Debug/Kritisch | `system_log.write` mit Meldung und Schweregrad |
+| Script steuern | HA-Script starten/stoppen/aufrufen und warten | `script.turn_on`, `script.turn_off` oder direkter `script.name`-Aufruf |
+| Aktualisiere State, andere Bedeutung | Entität aktualisieren | `homeassistant.update_entity`; fordert Aktualisierung an, setzt keinen Zustand |
 
-Bedingungen besitzen Boolean-Output-Anschlüsse; Falls und Nur wenn passende Werteingänge. UND/ODER/NICHT ist über das Zahnrad um Werteingänge erweiterbar. Deaktivierte Blocks werden nicht exportiert, Pflichtinhalte bleiben erforderlich. Kontextmenü, Papierkorb mit Wiederherstellung, Hilfe und Zoom sind vorhanden. Text-, Entitäts- und Sensor-Wertblocks folgen später.
+Bedingungen besitzen Boolean-Output-Anschlüsse; Falls und Nur wenn passende Werteingänge. UND/ODER/NICHT ist über das Zahnrad um Werteingänge erweiterbar. Deaktivierte Blocks werden nicht exportiert, Pflichtinhalte bleiben erforderlich. Kontextmenü, Papierkorb mit Wiederherstellung, Hilfe und Zoom sind vorhanden. Text ist umgesetzt; Entitäts- und Sensor-Wertblocks folgen später.
 
 ## System: Gegenüberstellung und Ausbau
 
@@ -36,14 +40,14 @@ Bedingungen besitzen Boolean-Output-Anschlüsse; Falls und Nur wenn passende Wer
 | Schreiben mit Verzögerung | Warte-Block vor Aktion | Vorhandene Kombination; kein eigenes zeitversetztes Schreiben oder Ablaufzeitfeld |
 | Universeller Schreibblock | Generische HA-Aktion mit Ziel und JSON-Daten | Vorhandenes Grundgerüst; keine ioBroker-`ack`-Semantik |
 | Kommentar | Erklärungsblock mit erhaltener Exportdarstellung | Geplant |
-| Debug-Ausgabe | Eigener Log-Block | Geplant; manuelle HA-Aktion bereits möglich |
+| Debug-Ausgabe | Eigener Log-Block | Vorhanden; Meldung als Text-Shadow oder Textblock, Schweregrad als Dropdown |
 | Objekt-ID | Eigener Entitäts-Wertblock und Entitätsauswahl | Geplant; derzeit IDs als Textfelder |
 | Wert von Objekt-ID, feste/dynamische/asynchrone Varianten | Zustand und Attribute als verwendbare Werte | Geplant; keine eigenen Wertblocks oder Callback-Ausführung |
 | Objekt / Attribut von Objekt | Entitätsattribute und ausgewählte Metadaten | Geplant |
 | Datenpunkt vorhanden | Existenz und Verfügbarkeit getrennt prüfen | Geplant |
-| Aktualisiere State | Helfer setzen beziehungsweise Entität aktualisieren | Eigene Blocks geplant; kein direktes Gegenstück zu `ack: true` |
+| Aktualisiere State | Entität aktualisieren | Vorhanden; fordert ein Update an, kein Gegenstück zu `ack: true`; Helfer setzen weiterhin geplant |
 | Binde Objekt | Quelle als Auslöser, Ziel über passende Aktion | Eigener Komfortblock geplant; dynamische Wertweitergabe noch nicht vorhanden |
-| Script steuern | HA-Script starten/stoppen | Eigener Block geplant; generische HA-Aktion bereits nutzbar |
+| Script steuern | HA-Script starten/stoppen/aufrufen und warten | Vorhanden; Parameter weiterhin über generische HA-Aktion |
 | IDs vom Selektor | Auswahl nach Domain/Bereich/Gerät/Label | Geplant |
 | RegExp | Textprüfung | Geplant |
 | Scriptname | Automationsmetadaten | Name vorhanden; kein eigener Wertblock |

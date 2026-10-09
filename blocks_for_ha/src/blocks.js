@@ -11,6 +11,10 @@ const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'bel
 const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 const definitions = [
+  { type: 'ugso_text', message0: 'Text %1', args0: [{ type: 'field_input', name: 'TEXT', text: 'Automation gestartet' }], output: 'String', colour: '#2e7653' },
+  { type: 'ugso_log_action', message0: 'Log %1 Meldung %2', args0: [{ type: 'field_dropdown', name: 'LEVEL', options: [['Info', 'info'], ['Warnung', 'warning'], ['Fehler', 'error'], ['Debug', 'debug'], ['Kritisch', 'critical']] }, value('MESSAGE', 'String')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Schreibt bei Ausführung in HA ins Systemprotokoll. Info und Debug können durch die HA-Logkonfiguration ausgefiltert werden.' },
+  { type: 'ugso_script_action', message0: 'HA-Script %1 %2', args0: [entityField('script.abendlicht'), { type: 'field_dropdown', name: 'MODE', options: [['starten (ohne Warten)', 'turn_on'], ['stoppen', 'turn_off'], ['aufrufen und warten', 'wait']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Aufrufen und warten setzt die Automation erst nach dem Script fort. Script-Parameter über die generische HA-Aktion übergeben.' },
+  { type: 'ugso_update_action', message0: 'Entität %1 aktualisieren', args0: [entityField('sensor.temperatur')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Fordert in HA ein Update der Entität an. Die Integration bestimmt, ob sie eine Aktualisierung unterstützt; setzt keinen Zustand.' },
   { type: 'ugso_number', message0: '%1', args0: [{ type: 'field_number', name: 'NUM', value: 20 }], output: 'Number', colour: '#2e7653' },
   { type: 'ugso_automation', message0: 'Automation %1 Wenn %2 Nur wenn %3 Dann %4', args0: [{ type: 'input_dummy' }, statement('TRIGGERS', 'Trigger'), value('CONDITIONS', 'Boolean'), statement('ACTIONS', 'Action')], colour: '#187b72', tooltip: 'Eine native Home-Assistant-Automation. Name und Modus stehen über der Arbeitsfläche.', deletable: false },
   { type: 'ugso_state_trigger', message0: 'Wenn %1 den Zustand %2 erreicht', args0: [entityField('binary_sensor.flur_bewegung'), { type: 'field_input', name: 'STATE', text: 'on' }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'Reagiert auf eine Zustandsänderung.' },
@@ -111,7 +115,8 @@ definitions.forEach(definition => {
 export { Blockly };
 export const knownTypes = new Set(definitions.map(item => item.type));
 export const toolbox = { kind: 'categoryToolbox', contents: [
-  { kind: 'category', name: 'Werte', colour: '#2e7653', contents: [{ kind: 'block', type: 'ugso_number' }] },
+  { kind: 'category', name: 'System', colour: '#2682a5', contents: ['log', 'script', 'update'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) },
+  { kind: 'category', name: 'Werte', colour: '#2e7653', contents: ['number', 'text'].map(type => ({ kind: 'block', type: `ugso_${type}` })) },
   { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: ['state', 'numeric', 'time', 'sun', 'start'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })) },
   { kind: 'category', name: 'Bedingungen', colour: '#6860b5', contents: ['state', 'numeric', 'logic'].map(type => ({ kind: 'block', type: `ugso_${type}_condition` })) },
   { kind: 'category', name: 'Aktionen', colour: '#2682a5', contents: ['switch', 'service', 'delay', 'if'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) }
@@ -119,6 +124,7 @@ export const toolbox = { kind: 'categoryToolbox', contents: [
 for (const category of toolbox.contents) for (const block of category.contents) {
   if (block.type.includes('numeric')) block.inputs = { LIMIT: { shadow: { type: 'ugso_number', fields: { NUM: 20 } } } };
   if (block.type === 'ugso_delay_action') block.inputs = { SECONDS: { shadow: { type: 'ugso_number', fields: { NUM: 30 } } } };
+  if (block.type === 'ugso_log_action') block.inputs = { MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'Automation gestartet' } } } };
 }
 const field = (block, name) => block.getFieldValue(name);
 function chain(block, convert, depth = 0) {
@@ -167,6 +173,19 @@ function readConditions(block, depth = 0) {
 }
 function readAction(block, depth) {
   switch (block.type) {
+    case 'ugso_log_action': {
+      const child = block.getInputTargetBlock('MESSAGE');
+      if (!child || !child.isEnabled() || child.type !== 'ugso_text') throw new Error('Log: Textblock für Meldung fehlt.');
+      const message = field(child, 'TEXT');
+      if (!message.trim()) throw new Error('Log: Meldung fehlt.');
+      return { action: 'system_log.write', data: { message, level: field(block, 'LEVEL') } };
+    }
+    case 'ugso_script_action': {
+      const id = field(block, 'ENTITY');
+      if (!/^script\.[a-z0-9_]+$/.test(id)) throw new Error('HA-Script: Entität im Format script.name erwartet.');
+      return field(block, 'MODE') === 'wait' ? { action: id } : { action: `script.${field(block, 'MODE')}`, target: { entity_id: id } };
+    }
+    case 'ugso_update_action': return { action: 'homeassistant.update_entity', target: { entity_id: field(block, 'ENTITY') } };
     case 'ugso_switch_action': { const id = field(block, 'ENTITY'); return { action: `${id.split('.')[0]}.${field(block, 'SERVICE')}`, target: { entity_id: id } }; }
     case 'ugso_service_action': {
       let data;
@@ -234,6 +253,14 @@ function conditionBlock(workspace, item) {
 function actionBlock(workspace, item) {
   if (item.action) {
     const id = item.target?.entity_id;
+    // Recognize only exact supported shapes. Keep extra parameters in the generic block.
+    if (item.action === 'system_log.write' && !item.target && item.data && Object.keys(item.data).length === 2 && typeof item.data.message === 'string' && item.data.message.trim() && ['info', 'warning', 'error', 'debug', 'critical'].includes(item.data.level)) {
+      const block = create(workspace, 'ugso_log_action', { LEVEL: item.data.level });
+      block.getInput('MESSAGE').connection.setShadowState({ type: 'ugso_text', fields: { TEXT: item.data.message } }); return block;
+    }
+    if (!item.data && id && /^script\.[a-z0-9_]+$/.test(id) && ['script.turn_on', 'script.turn_off'].includes(item.action)) return create(workspace, 'ugso_script_action', { ENTITY: id, MODE: item.action.split('.')[1] });
+    if (!item.data && !item.target && /^script\.[a-z0-9_]+$/.test(item.action) && !['script.turn_on', 'script.turn_off', 'script.toggle', 'script.reload'].includes(item.action)) return create(workspace, 'ugso_script_action', { ENTITY: item.action, MODE: 'wait' });
+    if (!item.data && id && item.action === 'homeassistant.update_entity') return create(workspace, 'ugso_update_action', { ENTITY: id });
     if (!item.data && id && ['turn_on', 'turn_off', 'toggle'].some(service => item.action === `${id.split('.')[0]}.${service}`)) return create(workspace, 'ugso_switch_action', { ENTITY: id, SERVICE: item.action.split('.')[1] });
     return create(workspace, 'ugso_service_action', { SERVICE: item.action, ENTITY: id || '', DATA: JSON.stringify(item.data || {}) });
   }

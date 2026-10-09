@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6
+
+- Kategorie System mit Log-Ausgabe, Script-Steuerung und Entität aktualisieren.
+- Text-Wertblock mit String-Anschluss und editierbarem Shadow für Logmeldungen.
+- Script starten ohne Warten, stoppen oder direkt aufrufen und warten.
+- YAML-Import erkennt passende Systemaktionen; zusätzliche Parameter bleiben in der generischen HA-Aktion erhalten.
+- Deutsche und englische Gegenüberstellung sowie öffentliche Dokumentation aktualisiert.
+
 ## 0.1.1
 
 - Blocks for HA liegt unter `blocks_for_ha/` im gemeinsamen Repository mit HA Grafik Visual Studio.

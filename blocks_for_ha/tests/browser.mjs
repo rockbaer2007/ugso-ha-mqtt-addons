@@ -91,6 +91,21 @@ try {
   });
   await page.locator('#workspace').click({ position: { x: 600, y: 40 } });
   await page.waitForFunction(() => document.getElementById('valid-badge').textContent === 'Gültig');
+  const systemModel = { ...examples.light, actions: [
+    { action: 'system_log.write', data: { message: 'Automation gestartet', level: 'info' } },
+    { action: 'script.abendlicht' },
+    { action: 'homeassistant.update_entity', target: { entity_id: 'sensor.temperatur' } }
+  ] };
+  await page.locator('#yaml-file').setInputFiles({ name: 'system.yaml', mimeType: 'text/yaml', buffer: Buffer.from(toYaml(systemModel)) });
+  await page.waitForFunction(() => document.querySelector('#yaml').textContent.includes('system_log.write'));
+  await page.locator('.blocklyToolboxCategory').filter({ hasText: 'System' }).click();
+  assert.equal(await page.locator('.blocklyFlyout:not(.blocklyTrashcanFlyout) .blocklyDraggable').count() >= 3, true);
+  assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), systemModel);
+  await page.screenshot({ path: 'artifacts/system.png', fullPage: true });
+  await page.locator('#workspace').click({ position: { x: 650, y: 40 } });
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('#yaml')?.textContent.includes('system_log.write'));
+  assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), systemModel);
   await page.screenshot({ path: 'artifacts/desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);

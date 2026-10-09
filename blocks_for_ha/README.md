@@ -1,6 +1,6 @@
 # UGSo Blocks for HA
 
-Version 0.1.5: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
+Version 0.1.6: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
 
 Die kompakte Ansicht verwendet den klassischen Blockly-Geras-Renderer und seine Puzzle-Andockformen. Startansicht und Einpassen bleiben für kleine Automationen bei höchstens 80 Prozent; manuelles Zoomen ist weiterhin möglich.
 
@@ -20,7 +20,8 @@ Die vollständige Gegenüberstellung zu ioBroker einschließlich Umsetzungsstatu
 
 - Auslöser: Zustand, Zahl über/unter Grenze, Uhrzeit, Sonne und HA-Start.
 - Bedingungen: Zustand, Zahlenvergleich, UND/ODER/NICHT.
-- Werte: Zahl mit seitlichem Output; Grenzen und Wartezeiten nutzen ersetzbare Shadow-Zahlen.
+- Werte: Zahl und Text mit typisierten seitlichen Outputs; Grenzen, Wartezeiten und Logmeldungen nutzen ersetzbare Shadows.
+- System: Log-Ausgabe mit Schweregrad, HA-Script starten/stoppen/aufrufen und warten sowie Entität aktualisieren.
 - Aktionen: Ein/Aus/Umschalten, generische HA-Aktion mit optionalem Entitätsziel und JSON-Daten, Wartezeit und Wenn/Dann/Sonst.
 - Metadaten: Name, Beschreibung, ID sowie single/restart/queued/parallel; maximale Anzahl bei queued/parallel.
 
