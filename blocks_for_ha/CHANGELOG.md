@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.23
+
+- Einleitung und Automationseinstellungen in der Höhe verkleinert: kompaktere Überschrift, Abstände und 32-Pixel-Bedienelemente.
+- HA-Verbindungsstatus und Entitätsanzahl in die Automationseinstellungen verschoben; auch auf schmalen Bildschirmen sichtbar.
+- Mobile Umbrüche und Hell-/Dunkel-Darstellung bleiben erhalten.
+
 ## 0.1.22
 
 - App-weite Darstellung Hell/Dunkel/System mit lokaler Speicherung und Live-Systemumschaltung.

@@ -23,3 +23,16 @@
 :root[data-appearance="dark"] #workspace .blockly-ws-search input{background:#152630;color:#edf5f2;border-color:#7e97a4}
 :root[data-appearance="dark"] #workspace .blockly-ws-search button{background-color:#bcd0d8;border-color:#bcd0d8}
 @media(max-width:780px){.app-header{height:auto;min-height:70px;gap:10px;padding-top:10px;padding-bottom:10px;flex-wrap:wrap}.header-right{flex-wrap:wrap;margin-left:auto}.appearance-label{font-size:10px}}
+
+main{padding-top:14px}
+.intro{margin-bottom:12px;gap:12px}
+.eyebrow{font-size:9px;letter-spacing:1.5px}
+h1{font-size:23px;margin:3px 0}
+.intro p{font-size:12px}
+.local-badge{padding:6px 10px}
+.project-bar{padding:9px 14px;gap:10px;margin-bottom:12px}
+.project-bar label{gap:4px}
+.project-bar :is(input,select,button){height:32px}
+.project-bar .local-badge{display:flex;align-self:flex-end;min-height:32px;padding:6px 10px;border-radius:6px;font-size:11px;flex-shrink:0}
+@media(max-width:1100px){main{padding-top:14px}}
+@media(max-width:780px){.intro{margin-bottom:12px}h1{font-size:22px}.project-bar{padding:10px;gap:8px}}
