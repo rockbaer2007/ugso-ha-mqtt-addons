@@ -1,15 +1,16 @@
 # ioBroker / UGSo Blocks für HA
 
-Stand: 9. Oktober 2026, experimentelle HA-App 0.1.9. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
+Stand: 9. Oktober 2026, experimentelle HA-App 0.1.10. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
 
 Bei jeder neuen Funktion werden Gegenstück, Verhalten, YAML-Ausgabe und Status in dieser Liste und der englischen Fassung aktualisiert. Die Kategorien werden schrittweise geprüft, beginnend mit **System**. Geplant bedeutet noch nicht implementiert.
 
 ## Alle vorhandenen Blocks
 
-Es gibt **33 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswahlmöglichkeiten innerhalb eines Blocks zählen als ein Typ.
+Es gibt **34 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswahlmöglichkeiten innerhalb eines Blocks zählen als ein Typ.
 
 | ioBroker-Konzept | Unser Block | Native HA-Ausgabe / Verhalten |
 | --- | --- | --- |
+| Erhöhe Variable um | Erhöhe mit Zahlen-Schritt | Native HA-Variablenzuweisung mit Jinja; Standard `1`, negative Schritte verringern. Variable vorher numerisch setzen. |
 | Vergleich | Vergleich mit sechs Operatoren | Boolean-Ergebnis über Jinja; zwei Werteingänge, keine automatische Typumwandlung |
 | UND / ODER / NICHT kompakt | UND/ODER mit zwei Eingängen, NICHT mit einem | Native HA-Gruppen als Bedingungen; Jinja als Variablenwert |
 | wahr / falsch | Boolean-Konstante | Echte YAML-Boolean-Zuweisung oder Template-Bedingung |

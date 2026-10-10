@@ -36,6 +36,7 @@ const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'bel
 const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 const definitions = [
+  { type: 'ugso_variable_change', message0: 'Erhöhe %1 um %2', args0: [{ type: 'field_variable', name: 'VAR', variable: 'wert' }, value('STEP', 'Number')], previousStatement: 'Action', nextStatement: 'Action', colour: '#a54879', tooltip: 'Addiert eine Zahl zur zuvor gesetzten Zahlenvariable. Negative Schritte verringern. Nicht gesetzte Werte, Texte, Boolean und null werden nicht automatisch in Zahlen umgewandelt.' },
   { type: 'ugso_compare', message0: '%1 %2 %3', args0: [value('LEFT', 'Value'), { type: 'field_dropdown', name: 'OP', options: [['=', '=='], ['≠', '!='], ['<', '<'], ['≤', '<='], ['>', '>'], ['≥', '>=']] }, value('RIGHT', 'Value')], output: ['Boolean', 'Value'], colour: '#6860b5', tooltip: 'Vergleicht zwei Werte in HA. Zahlen und Texte haben unterschiedliche Typen; Sensorwerte im Template bewusst umwandeln.' },
   { type: 'ugso_boolean', message0: '%1', args0: [{ type: 'field_dropdown', name: 'BOOL', options: [['wahr', 'true'], ['falsch', 'false']] }], output: ['Boolean', 'Value'], colour: '#6860b5' },
   { type: 'ugso_not', message0: 'NICHT %1', args0: [value('BOOL', 'Boolean')], output: ['Boolean', 'Value'], colour: '#6860b5' },
@@ -152,6 +153,7 @@ definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
   Blockly.Blocks[definition.type].init = function () {
     original.call(this); this.setHelpUrl('https://opensource.ugso-software.de/projects/blocks-for-ha/#andocken-und-bedienung');
+    if (this.type === 'ugso_variable_change') this.getInput('STEP').connection.setShadowState({ type: 'ugso_number', fields: { NUM: 1 } });
     if (this.outputConnection && ['ugso_number', 'ugso_percent', 'ugso_text', 'ugso_template', 'ugso_variable_get'].includes(this.type)) this.setOutput(true, [...this.outputConnection.getCheck(), 'Value']);
     if (['ugso_logic_condition', 'ugso_if_action'].includes(this.type)) addExpansionButtons(this);
   };
@@ -204,12 +206,13 @@ for (const block of toolbox.contents.find(c => c.name === 'Logik').contents) {
   if (block.type === 'ugso_ternary') block.inputs = { TEST: shadow('ugso_boolean', { BOOL: 'true' }), TRUE: shadow('ugso_text', { TEXT: 'Ja' }), FALSE: shadow('ugso_text', { TEXT: 'Nein' }) };
 }
 export function setupVariables(workspace) {
-  workspace.registerButtonCallback('UGSO_CREATE_VARIABLE', () => Blockly.Variables.createVariableButtonHandler(workspace));
+  workspace.registerButtonCallback('UGSO_CREATE_VARIABLE', () => Blockly.Variables.createVariableButtonHandler(workspace, () => workspace.getToolbox()?.refreshSelection()));
   workspace.registerToolboxCategoryCallback('UGSO_VARIABLES', ws => {
     const items = [{ kind: 'button', text: 'Variable erstellen …', callbackKey: 'UGSO_CREATE_VARIABLE' }];
     const variables = ws.getVariableMap().getAllVariables().filter(variable => variable.type === '');
     for (const variable of variables) {
       items.push({ kind: 'block', type: 'ugso_variable_set', fields: { VAR: { id: variable.getId() } }, inputs: { VALUE: { shadow: { type: 'ugso_number', fields: { NUM: 0 } } } } });
+      items.push({ kind: 'block', type: 'ugso_variable_change', fields: { VAR: { id: variable.getId() } }, inputs: { STEP: { shadow: { type: 'ugso_number', fields: { NUM: 1 } } } } });
       items.push({ kind: 'block', type: 'ugso_variable_get', fields: { VAR: { id: variable.getId() } } });
     }
     return items;
@@ -329,6 +332,11 @@ function readConditions(block, depth = 0) {
 function readAction(block, depth) {
   switch (block.type) {
     case 'ugso_variable_set': return { variables: { [variableName(block)]: readValue(block, 'VALUE') } };
+    case 'ugso_variable_change': {
+      const name = variableName(block), step = readNumber(block, 'STEP');
+      if (!Number.isFinite(step)) throw new Error('Erhöhen: Gültige Zahl erforderlich.');
+      return { variables: { [name]: `{{ (${name} if ${name} is number and ${name} is not boolean else none) + (${step}) }}` } };
+    }
     case 'ugso_helper_action': {
       const domain = field(block, 'DOMAIN'), id = field(block, 'ENTITY'), service = field(block, 'SERVICE');
       if (!id.startsWith(`${domain}.`) || !helperOptions[domain].some(option => option[1] === service)) throw new Error('Helfer: Entität und Aktion müssen zum gewählten Helfertyp passen.');
@@ -425,6 +433,10 @@ function actionBlock(workspace, item) {
   if (item.variables) {
     const [name, val] = Object.entries(item.variables)[0];
     const variable = workspace.getVariableMap().createVariable(name);
+    const change = typeof val === 'string' && /^\{\{ \(([a-zA-Z_]\w*) if \1 is number and \1 is not boolean else none\) \+ \(([-+\w.]+)\) \}\}$/.exec(val);
+    if (change && change[1] === name && Number.isFinite(Number(change[2])) && String(Number(change[2])) === change[2]) {
+      return numberInput(create(workspace, 'ugso_variable_change', { VAR: variable.getId() }), 'STEP', Number(change[2]));
+    }
     const block = create(workspace, 'ugso_variable_set', { VAR: variable.getId() });
     valueInput(block, 'VALUE', val); return block;
   }

@@ -19,9 +19,9 @@ Vorgemerkt am 9. Oktober 2026 anhand des vom Nutzer gezeigten ioBroker-Menüs.
 - Reihenfolge im Flyout: **Variable erstellen …**, **setze [Variable] auf [Wert]**, **erhöhe [Variable] um [Zahl]**, **[Variable] lesen**.
 - Ablauf laut ergänzter Bildreferenz: Der graue Button **Variable erstellen …** öffnet den Namensdialog (später mit Typauswahl). Erst Bestätigen über OK/Haken/Anwenden legt die Variable an und aktualisiert das Flyout dynamisch mit ihren Setzen-, Erhöhen- und Lesen-Blocks. Keine Blocks automatisch auf der Arbeitsfläche platzieren.
 - Erneutes Erstellen mit einem weiteren gültigen Namen ergänzt weitere Variablen-Blocks im Menü und erhält vorhandene Variablen. Abbrechen verändert nichts; leere oder doppelte Namen dürfen keine zusätzlichen Variablen erzeugen.
-- Erstellen, Setzen und Lesen sind bereits vorhanden; den zusätzlichen Erhöhen-Block ergänzen, standardmäßig mit Zahlen-Shadow `1`.
+- Erstellen, Setzen und Lesen sind bereits vorhanden. Erhöhen ist seit 0.1.10 (10. Oktober 2026) umgesetzt, standardmäßig mit Zahlen-Shadow `1`.
 - Variable in Setzen-, Erhöhen- und Lesen-Blocks per Dropdown wählen; kompakte Darstellung und passende Blockly-Anschlussformen wie im Bild beibehalten.
-- Erhöhen für numerische Variablen vorsehen; negative Schritte sollen entsprechend verringern. Verhalten bei nicht initialisierten oder nicht numerischen Werten ausdrücklich festlegen und dokumentieren.
+- Erhöhen setzt eine zuvor gesetzte Zahlenvariable voraus; negative Schritte verringern. Fehlende Werte, Text, Boolean oder null werden nicht automatisch umgewandelt; die Jinja-Auswertung schlägt in HA fehl.
 - In native HA-Variablenzuweisung mit Jinja-Rechnung übersetzen; keine JavaScript-Script-Engine einführen. YAML- und JSON-Wiederöffnen sowie typisierte Variablen berücksichtigen.
 
 ## Farbige SVG-Icons für die Seitenleiste

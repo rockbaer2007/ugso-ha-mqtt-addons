@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.10
+
+- Erhöhen-Block in der dynamischen Variablen-Kategorie zwischen Setzen und Lesen, Standard-Zahlen-Shadow `1`.
+- Negative Schritte verringern; Null und Dezimalschritte unterstützt. Zahlenvariable vorher setzen; keine automatische Umwandlung von Text, Boolean, null oder fehlenden Werten.
+- Erzeugt native HA-Variablenzuweisung mit Jinja. Eigenes Ausgabeformat wird beim YAML-Import wieder als Erhöhen-Block erkannt; JSON erhält Blockform und Variablenauswahl.
+- DE/EN-Katalog mit Bild, Beispiel und ioBroker-Gegenüberstellung auf 34 Blocktypen aktualisiert.
+
 ## 0.1.9
 
 - Kategorie Logik mit Vergleich (=, ≠, <, ≤, >, ≥), kompaktem UND/ODER, NICHT, wahr/falsch, null und bedingter Wertauswahl.

@@ -13,7 +13,14 @@ try {
   await page.waitForFunction(async () => {
     const url = performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name;
     const { Blockly } = await import(url);
-    return !!Blockly.getMainWorkspace().getVariableMap().getVariable('leistung');
+    const ws = Blockly.getMainWorkspace();
+    return !!ws.getVariableMap().getVariable('leistung') && ws.getToolbox().getFlyout().getWorkspace().getBlocksByType('ugso_variable_change').length === 1;
+  });
+  await page.waitForFunction(async () => {
+    const url = performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name;
+    const { Blockly } = await import(url);
+    const ws = Blockly.getMainWorkspace().getToolbox().getFlyout().getWorkspace();
+    return ws.getBlocksByType('ugso_variable_set').length === 1 && ws.getBlocksByType('ugso_variable_get').length === 1 && ws.getBlocksByType('ugso_variable_change')[0]?.getInputTargetBlock('STEP')?.getFieldValue('NUM') === 1;
   });
   const model = { ...examples.light, actions: [{ variables: { leistung: 1250 } }, { action: 'system_log.write', data: { level: 'info', message: '{{ leistung }}' } }] };
   await page.locator('#yaml-file').setInputFiles({ name: 'variablen.yaml', mimeType: 'text/yaml', buffer: Buffer.from(toYaml(model)) });
@@ -21,6 +28,21 @@ try {
   await page.reload();
   await page.waitForFunction(() => document.querySelector('#yaml').textContent.includes('{{ leistung }}'));
   assert.equal(await page.locator('#valid-badge').textContent(), 'Gültig');
+  await page.evaluate(async () => {
+    const url = performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name;
+    const { Blockly } = await import(url);
+    const ws = Blockly.getMainWorkspace(), set = ws.getBlocksByType('ugso_variable_set')[0], log = set.getNextBlock();
+    log.previousConnection.disconnect();
+    const change = Blockly.serialization.blocks.append({ type: 'ugso_variable_change', fields: { VAR: { id: set.getFieldValue('VAR') } } }, ws);
+    set.nextConnection.connect(change.previousConnection); change.nextConnection.connect(log.previousConnection);
+  });
+  await page.waitForFunction(() => document.querySelector('#yaml').textContent.includes('+ (1)'));
+  await page.reload();
+  await page.waitForFunction(async () => {
+    const url = performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name;
+    const { Blockly } = await import(url);
+    return Blockly.getMainWorkspace().getBlocksByType('ugso_variable_change').length === 1;
+  });
   await page.getByRole('treeitem', { name: 'Logik', exact: true }).click();
   await page.evaluate(async () => {
     const url = performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name;
