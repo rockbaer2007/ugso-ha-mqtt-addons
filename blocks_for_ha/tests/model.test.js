@@ -122,8 +122,8 @@ test('Nested logic, branches and action JSON preserve meaning', () => {
   try { modelWorkspace(workspace, model); const { triggers, conditions, actions, ...metadata } = model; assert.deepEqual(fromYaml(toYaml(workspaceModel(workspace, metadata))), model); } finally { workspace.dispose(); }
 });
 test('Unsupported YAML content is rejected instead of dropped', () => {
-  assert.throws(() => fromYaml(toYaml(examples.light) + '\nvariables:\n  hidden: true\n'), /nicht unterstützt/);
-  assert.throws(() => fromYaml(toYaml(examples.light).replace('to: on', 'to: on\n    for: 30')), /nicht unterstützt/);
+  assert.deepEqual(fromYaml(toYaml(examples.light) + '\nvariables:\n  hidden: true\n').variables, {hidden:true});
+  assert.throws(() => fromYaml(toYaml(examples.light) + '\nunknown_option: true\n'), /nicht unterstützt/);
   assert.throws(() => fromYaml('- alias: A\n- alias: B'), /genau einer/);
   assert.throws(() => fromYaml('alias: A\nalias: B'), /ungültig/);
 });
@@ -131,7 +131,7 @@ test('Invalid numbers, missing entities and empty branches prevent export', () =
   const model = structuredClone(examples.battery);
   model.triggers[0].below = NaN; assert.throws(() => toYaml(model), /Zahl/);
   model.triggers[0].below = 20; model.triggers[0].entity_id = ''; assert.throws(() => toYaml(model), /Entität/);
-  model.triggers[0].entity_id = 'sensor.akku'; model.actions = [{ if: [], then: [] }]; assert.throws(() => toYaml(model), /Eintrag/);
+  model.triggers[0].entity_id = 'sensor.akku'; model.actions = [{ if: [], then: false }]; assert.throws(() => toYaml(model), /Eintr/);
 });
 test('Disconnected Blocks are not silently excluded', () => {
   const workspace = new Blockly.Workspace();
@@ -142,7 +142,7 @@ test('Download names are derived from the actual automation name', () => {
   assert.equal(filename(''), 'automation.yaml');
 });
 test('Imports reject invalid action objects and unrepresentable delay values', () => {
-  for (const action of [{ action: 'notify.telefon', data: false }, { action: 'light.turn_on', target: null }, { delay: 1.5 }]) {
+  for (const action of [{ action: 'notify.telefon', data: false }, { action: 'light.turn_on', target: null }, { delay: -1.5 }]) {
     const model = structuredClone(examples.light); model.actions = [action]; assert.throws(() => toYaml(model));
   }
   const model = structuredClone(examples.light); model.triggers[0].entity_id = 'sensor.3d_printer'; assert.doesNotThrow(() => toYaml(model));

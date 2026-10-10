@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.39
+
+- 29 zusätzliche Blocktypen: erweiterte HA-Felder, Integrationsauslöser, Zielwahl, Aktionsgruppen, dynamische Parallelzweige, Warten auf Auslöser, Ereignisse, Assist, Szenen und Jinja.
+- Zustand-/Zahl-/Zeit-/Sonnenauslöser und Bedingungen vervollständigt; MQTT, Webhook, Zone, Gerät, Tag, Sprache, Geolocation und klassischer Kalender ergänzt.
+- Ziele entity/device/area/floor/label, strukturierte Variablen, gemeinsame Schrittoptionen und Automationsoptionen werden unverändert importiert, geprüft und exportiert.
+- Jinja-Dialog analysiert häufige Muster, Entitäten, Filter und Kontrollstrukturen ohne Ausführung oder Umschreiben. Komplexe Templates bleiben editierbar erhalten.
+- 131 Tests einschließlich erweiterten YAML/Blockly/Projekt-Rundläufen; Browserprüfung und aktualisierte DE/EN/FR-Dokumentation mit echten Blockbildern.
+
 ## 0.1.38
 
 - HA-Aktionsziele akzeptieren feste Entitäts-IDs, Jinja-Templates und gemischte Ziellisten. Dynamische Ziele bleiben in der allgemeinen HA-Aktion.

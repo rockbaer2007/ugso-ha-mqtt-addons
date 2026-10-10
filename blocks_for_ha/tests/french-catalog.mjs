@@ -1,5 +1,5 @@
 // Emit a reviewable apply_patch addition from the same definitions as the editor.
-import { definitions, toolbox } from '../src/blocks.js';
+import { definitions, toolbox, knownTypes } from '../src/blocks.js';
 import { localizedDefinition, translateLabel } from '../src/locales.js';
 import { version } from '../package.json' with { type: 'json' };
 const help = {
@@ -37,11 +37,11 @@ const escape = value => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').r
 const row = definition => {
   const d = localizedDefinition(definition, 'fr');
   const name = title[d.type] || d.message0.replace(/%\d+/g, '…').replaceAll('%%', '%');
-  const description = d.tooltip || help[d.type];
+  const description = d.tooltip || help[d.type] || (d.type.startsWith('ugso_ha_') || d.type.startsWith('ugso_jinja') || ['ugso_sequence','ugso_parallel','ugso_wait_trigger','ugso_condition_step','ugso_fire_event','ugso_assist_response'].includes(d.type) ? 'Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier dans HA.' : undefined);
   if (!description) throw new Error('Missing catalog description: ' + d.type);
   return `| **${escape(name)}**<br><code>${d.type}</code> | <img src="/assets/blocks-for-ha/blocks/fr/${d.type}.png" alt="${escape(name)}" style="max-width:280px;max-height:180px"> | ${escape(description)} |`;
 };
-let content = `---\ntitle: Catalogue des blocs\ndescription: Tous les blocs UGSo avec images françaises et fonctions.\n---\n\n# Catalogue des blocs\n\n**${version} · 119 types**. Les images montrent les vrais blocs Blockly en français. Les variantes des menus déroulants ne sont pas des types supplémentaires. Les IDs techniques restent identiques en DE/EN/FR. Les textes et entités d’exemple gardent leurs valeurs d’origine.\n\nDéclencheurs orange, conditions violettes, valeurs vertes, actions bleues avec le thème UGSo Standard. Les autres palettes adaptent les couleurs. [Usage et import](./) · [Paquets personnalisés](./custom-blocks).\n\n`;
+let content = `---\ntitle: Catalogue des blocs\ndescription: Tous les blocs UGSo avec images françaises et fonctions.\n---\n\n# Catalogue des blocs\n\n**${version} · ${knownTypes.size} types**. Les images montrent les vrais blocs Blockly en français. Les variantes des menus déroulants ne sont pas des types supplémentaires. Les IDs techniques restent identiques en DE/EN/FR. Les textes et entités d’exemple gardent leurs valeurs d’origine.\n\nDéclencheurs orange, conditions violettes, valeurs vertes, actions bleues avec le thème UGSo Standard. Les autres palettes adaptent les couleurs. [Usage et import](./) · [Paquets personnalisés](./custom-blocks).\n\n`;
 const used = new Set();
 for (const category of toolbox.contents) {
   const entries = (category.contents || []).map(item => definitions.find(d => d.type === item.type)).filter(d => d && !used.has(d.type));

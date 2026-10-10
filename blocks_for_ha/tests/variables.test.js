@@ -29,8 +29,8 @@ test('HA variables, numbers and arbitrary Jinja survive YAML and project reload'
   ] };
   try {
     modelWorkspace(ws, fromYaml(toYaml(model)));
-    assert.equal(ws.getBlocksByType('ugso_template_condition').length, 1);
-    assert.equal(ws.getBlocksByType('ugso_template').length, 1);
+    assert.equal(ws.getBlocksByType('ugso_jinja_condition').length, 1);
+    assert.equal(ws.getBlocksByType('ugso_jinja_value').length, 1);
     assert.equal(ws.getBlocksByType('ugso_variable_get').length, 1);
     assert.deepEqual(workspaceModel(ws, model), model);
     Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws), copy);
@@ -49,8 +49,8 @@ test('Templates keep their exact text; unsupported variable shapes fail before i
     const model = { ...examples.light, actions: [{ variables: { wert: '{{states("sensor.test")}}' } }] };
     modelWorkspace(ws, model);
     assert.deepEqual(workspaceModel(ws, model), model);
-    for (const variables of [{ 'nicht gültig': 1 }, { x: [] }, {}, Object.fromEntries(Array.from({ length: 101 }, (_, i) => ['v' + i, i]))]) {
-      assert.throws(() => toYaml({ ...examples.light, actions: [{ variables }] }), /Variable/);
+    for (const variables of [{ 'nicht gültig': 1 }, { x: undefined }, {}, Object.fromEntries(Array.from({ length: 101 }, (_, i) => ['v' + i, i]))]) {
+      assert.throws(() => toYaml({ ...examples.light, actions: [{ variables }] }), /Variable|Objekt/);
     }
   } finally { ws.dispose(); }
 });

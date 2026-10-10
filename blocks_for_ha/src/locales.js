@@ -20,6 +20,35 @@ export const documentationPath = page => `https://opensource.ugso-software.de/${
 
 // [English label, French label, English help, French help]. Placeholders stay ordered.
 export const blockTranslations = {
+  ugso_target_action: ['HA action %1 target type %2 target %3 data (JSON) %4 step options (JSON) %5', 'Action HA %1 type de cible %2 cible %3 données (JSON) %4 options d’étape (JSON) %5', 'Choose target type. ID, JSON list or HA template; use the extended HA step for multiple target types.', 'Choisir le type de cible. ID, liste JSON ou modèle HA ; utiliser l’étape HA avancée pour plusieurs types.'],
+  ugso_scene: ['Activate scene %1', 'Activer la scène %1', 'Activate a Home Assistant scene.', 'Activer une scène Home Assistant.'],
+  ugso_integration_trigger: ['HA integration %1 target (JSON) %2 options (JSON) %3 enabled %4', 'Intégration HA %1 cible (JSON) %2 options (JSON) %3 activées %4', 'Native integration trigger. Options must match the selected integration; verify in Home Assistant.', 'Déclencheur natif. Les options doivent correspondre à l’intégration sélectionnée ; vérifier dans Home Assistant.'],
+  ugso_ha_trigger: ["HA trigger (extended) %1", "Déclencheur HA (avancé) %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_condition: ["HA condition (extended) %1", "Condition HA (avancée) %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_action: ["HA step (extended) %1", "Étape HA (avancée) %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_sequence: ["Action group %1", "Groupe d’actions %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_parallel: ["Parallel branch 1 %1 branch 2 %2", "Parallèle branche 1 %1 branche 2 %2", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_wait_trigger: ["Wait for trigger %1 options (JSON) %2", "Attendre un déclencheur %1 options (JSON) %2", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_condition_step: ["Continue only if %1", "Continuer seulement si %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_fire_event: ["Fire event %1 data (JSON) %2", "Émettre un événement %1 données (JSON) %2", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_assist_response: ["Assist responds %1", "Réponse Assist %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_jinja_value: ["Jinja (experimental) %1 %2", "Jinja (expérimental) %1 %2", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_jinja_condition: ["Jinja condition (experimental) %1 %2", "Condition Jinja (expérimentale) %1 %2", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_state_trigger: ["HA state %1", "HA state %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_numeric_state_trigger: ["HA numeric_state %1", "HA numeric_state %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_time_trigger: ["HA time %1", "HA time %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_sun_trigger: ["HA sun %1", "HA sun %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_homeassistant_trigger: ["HA homeassistant %1", "HA homeassistant %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_mqtt_trigger: ["HA mqtt %1", "HA mqtt %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_template_trigger: ["HA template %1", "HA template %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_webhook_trigger: ["HA webhook %1", "HA webhook %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_zone_trigger: ["HA zone %1", "HA zone %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_device_trigger: ["HA device %1", "HA device %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_tag_trigger: ["HA tag %1", "HA tag %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_conversation_trigger: ["HA conversation %1", "HA conversation %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_geo_location_trigger: ["HA geo_location %1", "HA geo_location %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_calendar_trigger: ["HA calendar %1", "HA calendar %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
+  ugso_ha_event_trigger: ["HA event %1", "HA event %1", "Native HA fields or original Jinja. Values are preserved; check integration and runtime behavior in HA.", "Champs HA natifs ou Jinja original. Valeurs conservées ; vérifier l’intégration et l’exécution dans HA."],
   ugso_time_compare: ['Current time is %1 %2', "L’heure actuelle est %1 %2"],
   ugso_time_compare_input: ['Current time %1 is %2 %3', "L’heure actuelle %1 est %2 %3"],
   ugso_time_now: ['Current time as date value', 'Heure actuelle comme date', 'Timezone-aware HA date value for calculations or formatting.', 'Date HA avec fuseau horaire, pour les calculs ou le formatage.'],
@@ -128,6 +157,8 @@ export const blockTranslations = {
 };
 
 export const labels = {
+  'Jinja (experimentell)': ['Jinja (experimental)', 'Jinja (expérimental)'],
+  'HA erweitert': ['HA advanced', 'HA avancé'],
   'System': ['System', 'Système'], 'Werte': ['Values', 'Valeurs'], 'Datum und Zeit': ['Date and time', 'Date et heure'],
   'Konvertierung': ['Conversion', 'Conversion'], 'Auslöser': ['Triggers', 'Déclencheurs'], 'Bedingungen': ['Conditions', 'Conditions'],
   'Aktionen': ['Actions', 'Actions'], 'Logik': ['Logic', 'Logique'], 'Variablen': ['Variables', 'Variables'], 'Funktionen': ['Functions', 'Fonctions'],
@@ -190,6 +221,10 @@ Object.assign(blockTranslations, {
   ugso_trigger_condition: ['Triggered by ID %1 list %2', 'Déclenché par ID %1 liste %2', 'Checks the trigger ID. Enable list to enter IDs as a JSON list.', 'Vérifie l’ID du déclencheur. Activer liste pour saisir les IDs en liste JSON.']
 });
 Object.assign(labels, {
+  'Zweig': ['Branch', 'Branche'],
+  'HA-Optionen': ['HA options', 'Options HA'],
+  'Zusätzliche Automationsoptionen (JSON)': ['Additional automation options (JSON)', 'Options d’automatisation supplémentaires (JSON)'],
+  'Anwenden': ['Apply', 'Appliquer'],
   'Uhrzeiten als JSON-Liste': ['Times as JSON list', 'Heures en liste JSON'],
   'Jede Änderung': ['Any change', 'Tout changement'],
   'Entitäten als JSON-Liste': ['Entities as JSON list', 'Entités en liste JSON'],

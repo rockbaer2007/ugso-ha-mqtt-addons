@@ -19,6 +19,7 @@ import { functionTypes, installFunctions, functionInfo, functionToolbox } from '
 import { themedDefinition, themedCategories } from './themes.js';
 import './entities.js';
 import { installNativeFields, nativeList, nativeObject, nativeTimeExpression } from './native-fields.js';
+import { advancedDefinitions, advancedJSON, equivalent, advancedTriggerType, setupJinjaBlock, setupParallelBlock, setupIntegrationBlock } from './advanced.js';
 import { customDefinition, customExpression, customNative } from './custom-packages.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
@@ -50,6 +51,7 @@ const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'bel
 const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 export const definitions = [
+  ...advancedDefinitions,
   ...timeDefinitions,
   ...conversionDefinitions,
   ...flowDefinitions,
@@ -184,7 +186,8 @@ Blockly.defineBlocksWithJsonArray(definitions.map(definition => localizedDefinit
 definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
   Blockly.Blocks[definition.type].init = function () {
-    original.call(this); installNativeFields(Blockly, this, Multiline.FieldMultilineInput); this.setHelpUrl(documentationPath(this.type.startsWith('ugso_time_') ? 'time' : ''));
+    original.call(this); installNativeFields(Blockly, this, Multiline.FieldMultilineInput); setupJinjaBlock(this); setupParallelBlock(Blockly, this, translateLabel('Zweig')); setupIntegrationBlock(Blockly,this); this.setHelpUrl(documentationPath(this.type.startsWith('ugso_time_') ? 'time' : ''));
+    if (advancedDefinitions.some(d=>d.type===this.type)) this.setHelpUrl(documentationPath('advanced'));
     if (this.type.startsWith('ugso_convert_')) this.setHelpUrl(documentationPath('conversion'));
     if (flowDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('flow'));
     if (collectionDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('collections'));
@@ -215,6 +218,8 @@ function addExpansionButtons(block) {
 export { Blockly };
 export const knownTypes = new Set([...definitions.map(item => item.type), ...functionTypes]);
 export const toolbox = { kind: 'categoryToolbox', contents: [
+  { kind: 'category', name: 'Jinja (experimentell)', colour: '#8a6635', contents: ['ugso_jinja_value','ugso_jinja_condition'].map(type=>({kind:'block',type})) },
+  { kind: 'category', name: 'HA erweitert', colour: '#2682a5', contents: advancedDefinitions.filter(d=>!d.type.startsWith('ugso_jinja')).map(({type})=>({kind:'block',type})) },
   { kind: 'category', name: 'System', colour: '#2682a5', contents: ['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) },
   { kind: 'category', name: 'Werte', colour: '#2e7653', contents: ['number', 'percent', 'text', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}` })) },
   { kind: 'category', name: 'Datum und Zeit', colour: '#8056a1', contents: [{ kind: 'block', type: 'ugso_date_condition' }, ...timeDefinitions.map(({ type }) => ({ kind: 'block', type }))] },
@@ -231,7 +236,7 @@ for (const category of toolbox.contents) for (const block of category.contents) 
   }
   if (['ugso_time_shift', 'ugso_time_format'].includes(block.type)) block.inputs = { BASE: { shadow: { type: 'ugso_time_now' } }, ...(block.type === 'ugso_time_shift' ? { AMOUNT: { shadow: { type: 'ugso_number', fields: { NUM: 1 } } } } : {}) };
   if (block.type === 'ugso_time_sun') block.inputs = { OFFSET: { shadow: { type: 'ugso_number', fields: { NUM: 0 } } } };
-  if (block.type.includes('numeric')) block.inputs = { LIMIT: { shadow: { type: 'ugso_number', fields: { NUM: 20 } } } };
+  if (['ugso_numeric_trigger','ugso_numeric_condition'].includes(block.type)) block.inputs = { LIMIT: { shadow: { type: 'ugso_number', fields: { NUM: 20 } } } };
   if (block.type === 'ugso_delay_action') block.inputs = { SECONDS: { shadow: { type: 'ugso_number', fields: { NUM: 30 } } } };
   if (block.type === 'ugso_log_action') block.inputs = { MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'Automation gestartet' } } } };
   if (block.type === 'ugso_colour_action') block.inputs = { COLOUR: { shadow: { type: 'ugso_colour', fields: { COLOUR: '#ff8800' } } }, BRIGHTNESS: { shadow: { type: 'ugso_percent', fields: { NUM: 50 } } } };
@@ -289,7 +294,7 @@ function readValue(block, input) {
   if (child.type === 'ugso_boolean') return field(child, 'BOOL') === 'true';
   if (child.type === 'ugso_null') return null;
   if (child.type === 'ugso_variable_get') return `{{ ${variableName(child)} }}`;
-  if (['ugso_text', 'ugso_template'].includes(child.type)) return field(child, 'TEXT');
+  if (['ugso_text', 'ugso_template', 'ugso_jinja_value'].includes(child.type)) return field(child, 'TEXT');
   if (flowDefinitions.some(d => d.type === child.type && d.output)) return `{{ ${expression(child)} }}`;
   if (collectionDefinitions.some(d => d.type === child.type && d.output)) return `{{ ${expression(child)} }}`;
   if (child.type === 'ugso_colour' || colourDefinitions.some(d => d.type === child.type) || ['procedures_callreturn', 'variables_get'].includes(child.type)) return `{{ ${expression(child)} }}`;
@@ -336,7 +341,7 @@ function expression(block, depth = 0, scope = { params: new Map(), calls: [] }) 
     case 'ugso_boolean': return field(block, 'BOOL');
     case 'ugso_null': return 'none';
     case 'ugso_variable_get': case 'variables_get': { const name = variableName(block); return scope.params.get(name) || name; }
-    case 'ugso_template': case 'ugso_template_condition': return template(field(block, 'TEXT'));
+    case 'ugso_template': case 'ugso_template_condition': case 'ugso_jinja_value': case 'ugso_jinja_condition': return template(field(block, 'TEXT'));
     case 'ugso_compare': return `(${child('LEFT')} ${field(block, 'OP')} ${child('RIGHT')})`;
     case 'ugso_not': return `(not ${child('BOOL')})`;
     case 'ugso_binary_logic': return `(${child('LEFT')} ${field(block, 'OP')} ${child('RIGHT')})`;
@@ -376,6 +381,8 @@ function readTrigger(block) {
   return id ? { ...result, id } : result;
 }
 function readTriggerBase(block) {
+  if (block.type === 'ugso_integration_trigger') return {trigger:field(block,'TYPE'),target:advancedJSON(block,'TARGET'),...(field(block,'USE_OPTIONS')==='TRUE'?{options:advancedJSON(block,'OPTIONS')}:{})};
+  if (block.type.startsWith('ugso_ha_') && block.type.endsWith('trigger')) return advancedJSON(block);
   const custom = customDefinition(block.type);
   if (custom?.kind === 'trigger') return customNative(custom, block, name => readValue(block, name));
   switch (block.type) {
@@ -398,6 +405,8 @@ function readTriggerBase(block) {
   }
 }
 function readCondition(block, depth) {
+  if (block.type === 'ugso_ha_condition') return advancedJSON(block);
+  if (block.type === 'ugso_jinja_condition') return { condition: 'template', value_template: field(block, 'TEXT') };
   const custom = customDefinition(block.type);
   if (custom && ['value', 'condition'].includes(custom.kind) && custom.output === 'Boolean') return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
   if (block.type === 'procedures_callreturn') return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
@@ -439,6 +448,19 @@ function readConditions(block, depth = 0) {
   return block.type === 'ugso_logic_condition' && block.list_ && field(block, 'LOGIC') === 'and' ? result.conditions : [result];
 }
 function readAction(block, depth) {
+  if (block.type === 'ugso_ha_action') return advancedJSON(block);
+  if (block.type === 'ugso_target_action') {
+    const source=field(block,'TARGET');let id=source;if(source.trim().startsWith('[')){try{id=JSON.parse(source);}catch{throw Error('Ziel: Gültige JSON-Liste erwartet.');}}
+    const options=advancedJSON(block,'OPTIONS');if(!options||typeof options!=='object'||Array.isArray(options)||Object.keys(options).some(k=>!['alias','enabled','continue_on_error','response_variable','metadata'].includes(k)))throw Error('Schrittoptionen: alias, enabled, continue_on_error, response_variable oder metadata erwartet.');
+    return {...options,action:field(block,'SERVICE'),target:{[field(block,'KIND')]:id},data:advancedJSON(block,'DATA')};
+  }
+  if (block.type === 'ugso_sequence') return { sequence: chain(block.getInputTargetBlock('DO'), readAction, (depth || 0) + 1) };
+  if (block.type === 'ugso_parallel') return { parallel: Array.from({length:block.branchCount_},(_,i)=>({sequence:chain(block.getInputTargetBlock(`BRANCH${i}`),readAction,(depth || 0)+1)})) };
+  if (block.type === 'ugso_wait_trigger') return { ...advancedJSON(block,'OPTIONS'), wait_for_trigger: chain(block.getInputTargetBlock('TRIGGERS'),readTrigger) };
+  if (block.type === 'ugso_condition_step') { const c = requiredConditions(block,'CONDITION',depth || 0); return c.length === 1 ? c[0] : {condition:'and',conditions:c}; }
+  if (block.type === 'ugso_fire_event') return {event:field(block,'EVENT'),event_data:advancedJSON(block,'DATA')};
+  if (block.type === 'ugso_assist_response') return {set_conversation_response:field(block,'TEXT')};
+  if (block.type === 'ugso_scene') return {scene:field(block,'SCENE')};
   const custom = customDefinition(block.type);
   if (custom?.kind === 'action') return customNative(custom, block, name => readValue(block, name));
   const collection = collectionAction(block, { child: name => expression(block.getInputTargetBlock(name)), variableName: () => variableName(block), actions: name => chain(block.getInputTargetBlock(name), readAction, depth + 1), number: name => readNumber(block, name) });
@@ -537,6 +559,14 @@ function attach(parent, input, children) {
 function numberInput(block, name, num) { block.getInput(name).connection.setShadowState({ type: 'ugso_number', fields: { NUM: num } }); return block; }
 const fieldsRange = (item) => ({ ENTITY: item.entity_id, OP: Object.hasOwn(item, 'above') ? 'above' : 'below' });
 function triggerBlock(workspace, item) {
+  if(['power.changed','motion.detected','timer.finished'].includes(item.trigger)&&Object.keys(item).every(k=>['trigger','target','options'].includes(k)))return create(workspace,'ugso_integration_trigger',{TYPE:item.trigger,TARGET:JSON.stringify(item.target),OPTIONS:JSON.stringify(item.options||{}),USE_OPTIONS:Object.hasOwn(item,'options')?'TRUE':'FALSE'});
+  const before = new Set(workspace.getAllBlocks(false).map(b=>b.id));
+  let block;
+  try { block = legacyTriggerBlock(workspace,item); if (equivalent(readTrigger(block),item)) return block; } catch {}
+  for (const created of workspace.getAllBlocks(false)) if (!before.has(created.id) && !created.isDisposed()) created.dispose(false);
+  return create(workspace,advancedTriggerType(item),{JSON:JSON.stringify(item)});
+}
+function legacyTriggerBlock(workspace, item) {
   const block = triggerBlockBase(workspace, item);
   if (item.id !== undefined) block.setFieldValue(item.id, 'TRIGGER_ID');
   return block;
@@ -555,11 +585,18 @@ function triggerBlockBase(workspace, item) {
   }
 }
 function conditionBlock(workspace, item) {
+  const before = new Set(workspace.getAllBlocks(false).map(b=>b.id));
+  let block;
+  try { block = legacyConditionBlock(workspace,item); if (equivalent(readCondition(block,0),item)) return block; } catch {}
+  for (const created of workspace.getAllBlocks(false)) if (!before.has(created.id) && !created.isDisposed()) created.dispose(false);
+  return create(workspace,'ugso_ha_condition',{JSON:JSON.stringify(item)});
+}
+function legacyConditionBlock(workspace, item) {
   if (item.condition === 'time') return create(workspace, 'ugso_native_time_condition', { BEFORE: item.before || '', AFTER: item.after || '' });
   if (item.condition === 'trigger') return create(workspace, 'ugso_trigger_condition', { ID: Array.isArray(item.id) ? JSON.stringify(item.id) : item.id, ID_LIST: Array.isArray(item.id) ? 'TRUE' : 'FALSE' });
   if (item.condition === 'template') {
     try { const date = parseDateTemplate(item.value_template); return create(workspace, 'ugso_date_condition', { DATE: date.date, OP: date.op }); }
-    catch { return create(workspace, 'ugso_template_condition', { TEXT: item.value_template }); }
+    catch { return create(workspace, 'ugso_jinja_condition', { TEXT: item.value_template }); }
   }
   if (item.condition === 'state') return create(workspace, 'ugso_state_condition', { ENTITY: item.entity_id, STATE: item.state });
   if (item.condition === 'numeric_state') return numberInput(create(workspace, 'ugso_numeric_condition', fieldsRange(item)), 'LIMIT', item.above ?? item.below);
@@ -568,6 +605,21 @@ function conditionBlock(workspace, item) {
   item.conditions.forEach((child, i) => attach(block, `COND${i}`, [conditionBlock(workspace, child)])); return block;
 }
 function actionBlock(workspace, item) {
+  const before = new Set(workspace.getAllBlocks(false).map(b=>b.id));
+  let block;
+  const simple = !['alias','enabled','continue_on_error'].some(k=>Object.hasOwn(item,k));
+  if(simple && Object.keys(item).length===1 && typeof item.set_conversation_response==='string')return create(workspace,'ugso_assist_response',{TEXT:item.set_conversation_response});
+  if(simple && Object.keys(item).length===1 && item.scene)return create(workspace,'ugso_scene',{SCENE:item.scene});
+  if(simple && item.event && Object.keys(item).every(k=>['event','event_data'].includes(k)) && Object.hasOwn(item,'event_data'))return create(workspace,'ugso_fire_event',{EVENT:item.event,DATA:JSON.stringify(item.event_data)});
+  if (simple && item.sequence) { block=create(workspace,'ugso_sequence');attach(block,'DO',item.sequence.map(x=>actionBlock(workspace,x))); return block; }
+  if (simple && item.parallel?.length && item.parallel.every(b=>b && Object.keys(b).length === 1 && Array.isArray(b.sequence))) {block=create(workspace,'ugso_parallel');block.loadExtraState({branches:item.parallel.length});item.parallel.forEach((b,i)=>attach(block,`BRANCH${i}`,b.sequence.map(x=>actionBlock(workspace,x))));return block;}
+  if (simple && item.wait_for_trigger) {const {wait_for_trigger,...options}=item;block=create(workspace,'ugso_wait_trigger',{OPTIONS:JSON.stringify(options)});attach(block,'TRIGGERS',item.wait_for_trigger.map(x=>triggerBlock(workspace,x)));return block;}
+  if (simple && item.condition) {block=create(workspace,'ugso_condition_step');attach(block,'CONDITION',[conditionBlock(workspace,item)]);return block;}
+  try { block=legacyActionBlock(workspace,item);if(equivalent(readAction(block,0),item))return block; } catch {}
+  for (const created of workspace.getAllBlocks(false)) if (!before.has(created.id) && !created.isDisposed()) created.dispose(false);
+  return create(workspace,'ugso_ha_action',{JSON:JSON.stringify(item)});
+}
+function legacyActionBlock(workspace, item) {
   if (item.variables) {
     if (Object.keys(item.variables).length > 1) {
       for (const name of Object.keys(item.variables)) workspace.getVariableMap().createVariable(name);
@@ -650,7 +702,7 @@ function valueInput(block, input, val) {
     const variable = block.workspace.getVariableMap().createVariable(match[1]);
     const child = create(block.workspace, 'ugso_variable_get', { VAR: variable.getId() });
     block.getInput(input).connection.connect(child.outputConnection);
-  } else block.getInput(input).connection.setShadowState({ type: /\{[{%]/.test(val) ? 'ugso_template' : 'ugso_text', fields: { TEXT: val } });
+  } else block.getInput(input).connection.setShadowState({ type: /\{[{%]/.test(val) ? 'ugso_jinja_value' : 'ugso_text', fields: { TEXT: val } });
 }
 export function modelWorkspace(workspace, model) {
   Blockly.Events.disable();

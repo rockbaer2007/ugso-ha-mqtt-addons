@@ -1,5 +1,7 @@
 import { Blockly, toolbox, knownTypes, workspaceModel, modelWorkspace, setupVariables } from './blocks.js';
 import { examples, toYaml, fromYaml, filename, validateAutomation } from './model.js';
+import { setupJinjaEditor } from './jinja-editor.js';
+import { setupAutomationOptions } from './automation-options.js';
 import './style.css';
 import './appearance.css';
 import { version } from '../package.json';
@@ -48,6 +50,7 @@ function fitCompact() { workspace.zoomToFit(); if (workspace.scale > .8) workspa
 setupVariables(workspace);
 setupWorkspaceTools(workspace);
 setupEntities(workspace);
+setupJinjaEditor(Blockly, workspace);
 let metadata = {};
 let currentModel;
 let timer;
@@ -103,7 +106,7 @@ themeSelect.addEventListener('change', () => {
   try { localStorage.setItem(themeKey, selectedTheme); } catch { notice('Theme geändert; Browser-Speicher nicht verfügbar.'); }
 });
 function metaFields() {
-  $('name').value = metadata.alias; $('description').value = metadata.description || ''; $('mode').value = metadata.mode;
+  $('name').value = metadata.alias || ''; $('description').value = metadata.description || ''; $('mode').value = metadata.mode;
   $('max').value = metadata.max || 10; $('max-label').hidden = !['queued', 'parallel'].includes(metadata.mode);
 }
 function setMeta(model) { const { triggers, conditions, actions, ...meta } = model; metadata = meta; metaFields(); }
@@ -165,7 +168,8 @@ function restoreProject(data) {
 function download(content, name, type) {
   const url = URL.createObjectURL(new Blob([content], { type })); const link = document.createElement('a'); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
-$('name').addEventListener('input', () => { metadata.alias = $('name').value; update(); });
+$('name').addEventListener('input', () => { if ($('name').value.trim()) metadata.alias = $('name').value; else delete metadata.alias; update(); });
+setupAutomationOptions({getMetadata:()=>metadata,apply:next=>{validateAutomation(workspaceModel(workspace,next));metadata=next;update();}});
 $('description').addEventListener('input', () => { metadata.description = $('description').value; update(); });
 $('mode').addEventListener('change', () => { metadata.mode = $('mode').value; if (['queued', 'parallel'].includes(metadata.mode)) metadata.max = Number($('max').value); else delete metadata.max; metaFields(); update(); });
 $('max').addEventListener('input', () => { metadata.max = Number($('max').value); update(); });

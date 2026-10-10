@@ -54,3 +54,4 @@
 #workspace .blockly-ws-search button:focus-visible{outline:2px solid #087fbb;outline-offset:1px}
 #keyboard-help{width:min(510px,90vw);max-height:85vh;overflow:auto}
 #keyboard-help dl{font-size:13px}#keyboard-help dt{font-weight:700;margin-top:10px}#keyboard-help dd{margin:3px 0;line-height:1.5}
+#jinja-dialog{width:min(720px,94vw);max-height:90dvh;overflow:auto}#jinja-dialog textarea,.automation-options textarea{width:100%;font-family:Consolas,monospace;font-size:13px;resize:vertical}#jinja-dialog>label{display:block;margin:12px 0}#jinja-dialog>p{font-size:13px;line-height:1.5}#jinja-dialog .entity-actions{display:flex;gap:8px}#jinja-dialog .entity-actions button{flex:1}.automation-options{margin-top:12px}.automation-options [role=alert]{color:#c63347;overflow-wrap:anywhere}

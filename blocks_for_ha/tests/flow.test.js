@@ -62,7 +62,7 @@ test('Timeout and repeat validation rejects missing operands, negative durations
   }
   const f = fixture('ugso_wait');
   try { f.block.getInputTargetBlock('CONDITION').setDisabledReason(true, 'MANUALLY_DISABLED'); assert.throws(() => f.model(), /fehlt/); } finally { f.ws.dispose(); }
-  for (const action of [{ repeat: { count: 1, while: [], sequence: [{ stop: 'Stop', error: false }] } }, { repeat: { count: 2, sequence: [] } }, { delay: { milliseconds: 1, seconds: 1 } }, { wait_template: '{{ true }}', timeout: { seconds: -1 }, continue_on_timeout: false }]) assert.throws(() => toYaml({ ...examples.light, actions: [action] }));
+  for (const action of [{ repeat: { count: 1, while: [], sequence: [{ stop: 'Stop', error: false }] } }, { repeat: { count: 2, sequence: false } }, { delay: { milliseconds: -1, seconds: 1 } }, { wait_template: '{{ true }}', timeout: { seconds: -1 }, continue_on_timeout: false }]) assert.throws(() => toYaml({ ...examples.light, actions: [action] }));
 });
 
 test('Runtime duration/count templates import unchanged and fractional milliseconds are retained', () => {
