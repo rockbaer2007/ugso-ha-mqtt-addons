@@ -1,4 +1,5 @@
 import { parseDocument, stringify } from 'yaml';
+import { validActionEntity } from './action-targets.js';
 
 const identifier = /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/;
 const allowedModes = ['single', 'restart', 'queued', 'parallel'];
@@ -137,7 +138,10 @@ function checkAction(item, path, depth = 0) {
     ownKeys(item, ['action', 'target', 'data', 'metadata', 'response_variable'], path);
     if (typeof item.action !== 'string' || (!identifier.test(item.action) && !/\{\{[\s\S]*?\S[\s\S]*?\}\}|\{%[\s\S]*?\S[\s\S]*?%\}/.test(item.action))) throw new Error(`${path}: Aktion im Format domain.name oder als HA-Template erwartet.`);
     if (Object.hasOwn(item, 'response_variable') && (typeof item.response_variable !== 'string' || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(item.response_variable))) throw new Error(`${path}: Antwortvariable ungültig.`);
-    if (Object.hasOwn(item, 'target')) { ownKeys(item.target, ['entity_id'], path); oneOrList(item.target.entity_id, path, entity); }
+    if (Object.hasOwn(item, 'target')) {
+      ownKeys(item.target, ['entity_id'], path);
+      oneOrList(item.target.entity_id, path, value => { if (!validActionEntity(value)) throw new Error(`${path}: Ziel benötigt eine Entitäts-ID oder ein HA-Template.`); });
+    }
     if (Object.hasOwn(item, 'metadata')) { ownKeys(item.metadata, Object.keys(item.metadata || {}), path); if (JSON.stringify(item.metadata).length > 10000) throw new Error(`${path}: Metadaten zu groß.`); }
     if (Object.hasOwn(item, 'data')) { ownKeys(item.data, item.data && typeof item.data === 'object' ? Object.keys(item.data) : [], path); if (JSON.stringify(item.data).length > 10000) throw new Error(`${path}: Aktionsdaten zu groß.`); }
   } else if (Object.hasOwn(item, 'delay')) {

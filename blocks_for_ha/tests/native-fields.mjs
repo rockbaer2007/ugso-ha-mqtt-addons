@@ -18,6 +18,25 @@ try {
   assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), fromYaml(source));
   await page.reload(); await page.waitForSelector('.blocklySvg');
   assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), fromYaml(source));
+  if (fromYaml(source).alias === 'Schlafzimmer TV Zeitsteuerung') {
+    const openTarget = async () => page.evaluate(async () => {
+      const url = performance.getEntriesByType('resource').find(entry => new URL(entry.name).pathname === '/src/blocks.js').name;
+      const { Blockly } = await import(url);
+      Blockly.getMainWorkspace().getAllBlocks(false).find(block => block.type === 'ugso_service_action' && block.getFieldValue('SERVICE') === 'switch.turn_on').getField('ENTITY').showEditor_();
+    });
+    await openTarget();
+    assert.equal(await page.locator('#entity-id').evaluate(el => el.tagName), 'TEXTAREA');
+    const target = '{% if true %}\nswitch.one\n{% else %}\nswitch.two\n{% endif %}\n';
+    await page.locator('#entity-id').fill(target);
+    await page.getByRole('button', { name: 'Übernehmen', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('#yaml').textContent.includes('switch.one'));
+    assert.equal(fromYaml(await page.locator('#yaml').textContent()).actions[1].choose[0].sequence[0].target.entity_id, target);
+    await openTarget();
+    await page.locator('#entity-id').fill('{{ ziel_tv }}');
+    await page.getByRole('button', { name: 'Übernehmen', exact: true }).click();
+    await page.waitForFunction(() => !document.querySelector('#yaml').textContent.includes('switch.one'));
+    assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), fromYaml(source));
+  }
   await page.locator('#format').selectOption('list');
   assert.equal(fromYaml(await page.locator('#yaml').textContent()).id, 'existing-id');
   await page.locator('#format').selectOption('single');

@@ -1,4 +1,5 @@
 import * as BlocklyModule from 'blockly/core';
+import { validActionEntity } from './action-targets.js';
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 let openPicker;
 export const entityIdPattern = /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/;
@@ -71,7 +72,14 @@ export function setupEntities(workspace) {
   }
   openPicker = selected => {
     if (selected.getSourceBlock()?.workspace !== workspace) return;
-    field = selected; el('entity-id').value = String(field.getValue()); el('entity-search').value = ''; el('entity-error').textContent = '';
+    field = selected;
+    const input = document.createElement(blockAllowsTemplate(field.getSourceBlock()) ? 'textarea' : 'input');
+    input.id = 'entity-id'; input.autocomplete = 'off'; input.spellcheck = false;
+    if (input.tagName === 'TEXTAREA') input.rows = 3;
+    input.addEventListener('input', () => { el('entity-error').textContent = ''; });
+    el('entity-id').replaceWith(input);
+    input.parentNode.firstChild.textContent = blockAllowsTemplate(field.getSourceBlock()) ? 'Entitäts-ID oder HA-Template' : 'Entitäts-ID';
+    input.value = String(field.getValue()); el('entity-search').value = ''; el('entity-error').textContent = '';
     render(); dialog.showModal(); el('entity-search').focus();
   };
   el('entity-search').addEventListener('input', render);
@@ -80,9 +88,10 @@ export function setupEntities(workspace) {
   el('entity-refresh').addEventListener('click', refresh); loadButton.addEventListener('click', refresh);
   el('entity-form').addEventListener('submit', event => {
     event.preventDefault();
-    const id = el('entity-id').value.trim(), block = field?.getSourceBlock();
+    const raw = el('entity-id').value, block = field?.getSourceBlock();
+    const id = blockAllowsTemplate(block) && raw.trim() && !entityIdPattern.test(raw.trim()) ? raw : raw.trim();
     if (!block || block.isDisposed()) { dialog.close(); return; }
-    if (!entityIdPattern.test(id) && !(id === '' && block.type === 'ugso_service_action')) { el('entity-error').textContent = 'Eine Entitäts-ID wie light.wohnzimmer eingeben.'; return; }
+    if (!(blockAllowsTemplate(block) ? !id.trim() || validActionEntity(id) : entityIdPattern.test(id))) { el('entity-error').textContent = blockAllowsTemplate(block) ? 'Eine Entitäts-ID wie light.wohnzimmer oder ein HA-Template eingeben.' : 'Eine Entitäts-ID wie light.wohnzimmer eingeben.'; return; }
     const domain = entityDomain(block);
     if (id && domain && !id.startsWith(domain + '.')) { el('entity-error').textContent = `Dieser Block benötigt eine ${domain}-Entität.`; return; }
     field.setValue(id); dialog.close();
@@ -90,3 +99,4 @@ export function setupEntities(workspace) {
   dialog.addEventListener('close', () => { field = undefined; });
   refresh();
 }
+const blockAllowsTemplate = block => block?.type === 'ugso_service_action';

@@ -1,0 +1,31 @@
+alias: Schlafzimmer TV Zeitsteuerung
+description: ''
+triggers:
+  - trigger: time
+    at: '21:30:00'
+  - trigger: time
+    at: '00:30:00'
+actions:
+  - variables:
+      ziel_tv: |
+        {% if is_state('input_boolean.sommerbetrieb', 'on') %}
+          switch.nous_a8t_2_esphome_relay
+        {% else %}
+          switch.licht3d_2_relay
+        {% endif %}
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: '{{ now().strftime(''%H:%M:%S'') == ''21:30:00'' }}'
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id: '{{ ziel_tv }}'
+      - conditions:
+          - condition: template
+            value_template: '{{ now().strftime(''%H:%M:%S'') == ''00:30:00'' }}'
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: '{{ ziel_tv }}'
+mode: single

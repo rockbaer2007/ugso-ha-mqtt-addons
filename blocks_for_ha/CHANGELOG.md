@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.38
+
+- HA-Aktionsziele akzeptieren feste Entitäts-IDs, Jinja-Templates und gemischte Ziellisten. Dynamische Ziele bleiben in der allgemeinen HA-Aktion.
+- Allgemeiner Entitätsdialog unterstützt mehrzeilige Zieltemplates und erhält Zeilenumbrüche. Andere Entitätsfelder bleiben auf feste IDs begrenzt.
+- Schlafzimmer-TV-Automation mit Sommerbetrieb, beiden Uhrzeiten und choose-Zweigen vollständig getestet; Dokumentation DE/EN/FR ergänzt.
+
 ## 0.1.37
 
 - Zeitmuster-Auslöser mit Stunden, Minuten und Sekunden als JSON; feste Werte, Wildcard und Teilermuster, optionaler Auslöser-ID.

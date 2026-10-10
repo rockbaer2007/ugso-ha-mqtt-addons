@@ -584,9 +584,10 @@ function actionBlock(workspace, item) {
   }
   if (item.action) {
     const id = item.target?.entity_id;
-    if (Array.isArray(id) || Object.hasOwn(item, 'data') || Object.hasOwn(item, 'metadata') || Object.hasOwn(item, 'response_variable')) {
+    const templateTarget = typeof id === 'string' && /\{[{%]/.test(id);
+    if (templateTarget || Array.isArray(id) || Object.hasOwn(item, 'data') || Object.hasOwn(item, 'metadata') || Object.hasOwn(item, 'response_variable')) {
       // Preserve optional empty objects and target lists exactly in the generic action.
-      if (Array.isArray(id) || Object.hasOwn(item, 'metadata') || Object.hasOwn(item, 'response_variable') || !Object.keys(item.data || {}).length) return create(workspace, 'ugso_service_action', { SERVICE: item.action, ENTITY: Array.isArray(id) ? '' : id || '', ENTITY_LIST: Array.isArray(id) ? 'TRUE' : 'FALSE', ENTITIES: JSON.stringify(Array.isArray(id) ? id : []), DATA: JSON.stringify(item.data || {}), INCLUDE_DATA: Object.hasOwn(item, 'data') ? 'TRUE' : 'FALSE', INCLUDE_METADATA: Object.hasOwn(item, 'metadata') ? 'TRUE' : 'FALSE', METADATA: JSON.stringify(item.metadata || {}), RESPONSE_VARIABLE: item.response_variable || '' });
+      if (templateTarget || Array.isArray(id) || Object.hasOwn(item, 'metadata') || Object.hasOwn(item, 'response_variable') || !Object.keys(item.data || {}).length) return create(workspace, 'ugso_service_action', { SERVICE: item.action, ENTITY: Array.isArray(id) ? '' : id || '', ENTITY_LIST: Array.isArray(id) ? 'TRUE' : 'FALSE', ENTITIES: JSON.stringify(Array.isArray(id) ? id : []), DATA: JSON.stringify(item.data || {}), INCLUDE_DATA: Object.hasOwn(item, 'data') ? 'TRUE' : 'FALSE', INCLUDE_METADATA: Object.hasOwn(item, 'metadata') ? 'TRUE' : 'FALSE', METADATA: JSON.stringify(item.metadata || {}), RESPONSE_VARIABLE: item.response_variable || '' });
     }
     const domain = id?.split('.')[0], service = item.action.split('.')[1];
     if (!item.data && helperOptions[domain]?.some(option => option[1] === service) && item.action === `${domain}.${service}`) return create(workspace, 'ugso_helper_action', { DOMAIN: domain, ENTITY: id, SERVICE: service });
