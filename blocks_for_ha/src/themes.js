@@ -37,7 +37,7 @@ export const themes = Object.fromEntries(themeOptions.map(([id]) => {
   const dark = id === 'dark';
   return [id, Blockly.Theme.defineTheme(`ugso_${id}`, {
     base, blockStyles, categoryStyles,
-    fontStyle: { family: 'Segoe UI, sans-serif', size: 12, weight: 'normal' },
+    fontStyle: { family: 'Segoe UI, sans-serif', size: 16, weight: 'normal' },
     componentStyles: { ...(dark ? {} : { workspaceBackgroundColour: '#fafcfb' }), toolboxBackgroundColour: dark ? '#25313c' : '#20313c', toolboxForegroundColour: '#f4f7fa', flyoutBackgroundColour: dark ? '#151d25' : '#eaf0f5', flyoutForegroundColour: dark ? '#eef4f8' : '#233a36', flyoutOpacity: 1 }
   })];
 }));

@@ -40,13 +40,18 @@ for (const [id, text] of themeOptions) themeSelect.add(new Option(text, id));
 themeLabel.append(themeSelect); document.querySelector('.canvas-actions').prepend(themeLabel);
 let selectedTheme = savedTheme(() => localStorage); themeSelect.value = selectedTheme;
 document.querySelector('#workspace').dataset.theme = selectedTheme;
-const workspace = Blockly.inject('workspace', { toolbox: localizedToolbox(toolbox), theme: themes[selectedTheme], media: './media/', renderer: 'geras', grid: { spacing: 24, length: 2, colour: selectedTheme === 'dark' ? '#45525d' : '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: .8, maxScale: 1.6, minScale: .35 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
+const workspace = Blockly.inject('workspace', { toolbox: localizedToolbox(toolbox), theme: themes[selectedTheme], media: './media/', renderer: 'geras', grid: { spacing: 24, length: 2, colour: selectedTheme === 'dark' ? '#45525d' : '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: 1, maxScale: 2.4, minScale: .5 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
+// Blockly explicitly supports overriding the flyout scale. Palette blocks remain
+// readable even when the user zooms out a large automation.
+workspace.getFlyout().getFlyoutScale = () => 1;
+const nativeZoomToFit = workspace.zoomToFit.bind(workspace);
+workspace.zoomToFit = () => { nativeZoomToFit(); workspace.setScale(Math.max(.85, Math.min(1.2, workspace.scale))); workspace.scrollCenter(); };
 const Zoom = ZoomModule.default || ZoomModule;
 const zoomToFit = new Zoom.ZoomToFitControl(workspace); zoomToFit.init();
 const zoomElement = document.querySelector('#workspace .zoomToFit');
 zoomElement?.setAttribute('aria-label', 'Alle Blocks einpassen');
 zoomElement?.querySelector('title')?.replaceChildren(document.createTextNode('Alle Blocks einpassen'));
-function fitCompact() { workspace.zoomToFit(); if (workspace.scale > .8) workspace.setScale(.8); workspace.scrollCenter(); }
+function fitCompact() { workspace.zoomToFit(); }
 setupVariables(workspace);
 setupWorkspaceTools(workspace);
 setupEntities(workspace);

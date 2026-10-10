@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.40
+
+- Schrift in allen Blockly-Themes auf 16 px vergrößert.
+- Blockmenü bleibt immer bei 100 Prozent, unabhängig von Einpassen und manuellem Editorzoom.
+- Editor startet bei 100 Prozent; Einpassen bleibt zwischen 85 und 120 Prozent, Zoom bis 240 Prozent möglich. Große Automationen sind weiterhin verschiebbar.
+- Echte Schriftgrößen in Full HD, 2560 px und HiDPI für alle vier Themes geprüft; DE/EN/FR-Dokumentation und Blockbilder aktualisiert.
+
 ## 0.1.39
 
 - 29 zusätzliche Blocktypen: erweiterte HA-Felder, Integrationsauslöser, Zielwahl, Aktionsgruppen, dynamische Parallelzweige, Warten auf Auslöser, Ereignisse, Assist, Szenen und Jinja.

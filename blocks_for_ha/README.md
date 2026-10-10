@@ -1,5 +1,7 @@
 # UGSo Blocks for HA
 
+Neu in **0.1.40**: 16-px-Blockschrift in allen Themes, Blockmenü fest auf 100 Prozent unabhängig vom Editorzoom. Einpassen auf 85–120 Prozent begrenzt; große Automationen bleiben verschiebbar und lesbar.
+
 Neu in **0.1.39**: 148 Blocktypen. Erweiterte native HA-Auslöser, Bedingungen, Ziele und Automations-/Schrittoptionen; Warten auf Auslöser, Parallelzweige und Aktionsgruppen. **Jinja (experimentell)** erkennt Muster, Entitäten und Filter, erhält den Originaltext und bietet Wert-/Bedingungsblocks. Keine lokale Jinja-Ausführung. Anleitung und Grenzen: https://opensource.ugso-software.de/projects/blocks-for-ha/advanced
 
 Neu in **0.1.38**: dynamische Zielentitäten als HA-Templates im Ziel der allgemeinen HA-Aktion; mehrzeilig im Entitätsdialog bearbeitbar. Schlafzimmer-TV-Automation mit Sommerbetrieb unverändert importierbar.
@@ -34,7 +36,7 @@ Neu in 0.1.10: **Erhöhe Variable um …** steht im Variablen-Menü zwischen Set
 
 Neu in 0.1.9: **Logik** mit Vergleich (=, ≠, <, ≤, >, ≥), kompaktem UND/ODER, NICHT, wahr/falsch, null und bedingter Wertauswahl. Zahl/Text/Variable/Template an die Werteingänge, Boolean an die Bedingungseingänge anschließen. Variablenzuweisungen unterstützen jetzt Boolean und null. JSON bewahrt Blockformen; YAML-Import erhält komplexe Ausdrücke als Template-Blocks. Vergleiche konvertieren Typen nicht automatisch. Ausdruckseingänge akzeptieren einzelne Jinja-Ausgaben; dynamische Werte sind nicht als feste Grenzen oder Wartezeiten vorgesehen.
 
-Version 0.1.39: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
+Version 0.1.40: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
 
 Seit **0.1.27**: gut lesbare weiße Beschriftung der UGSo-Blocks in Standard/Dark mit mindestens 4,5:1 Kontrast. Mittlere blaue und braune Flächen werden leicht abgedunkelt; originale helle Modern-/Tritanopia-Farben behalten dunkle, kontrastreiche Labels. Die Dokumentationsbilder DE/EN/FR werden mit einer Prüfung der tatsächlich gerenderten Beschriftungen erzeugt.
 
