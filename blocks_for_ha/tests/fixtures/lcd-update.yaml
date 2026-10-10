@@ -1,0 +1,38 @@
+alias: LCD Update alle 30 Sekunden
+description: Aktualisiert das Display alle 30 Sekunden
+triggers:
+  - seconds: /30
+    trigger: time_pattern
+conditions: []
+actions:
+  - target:
+      entity_id: input_text.lcd_zeile_1_2
+    data:
+      value: >
+        {{ ("Solar: " ~ (states('sensor.hyper_2000_gt_solar_input_power') |
+        float(0) | round(0)) ~ " W")[:20].ljust(20) }}
+    action: input_text.set_value
+  - target:
+      entity_id: input_text.lcd_zeile_2_2
+    data:
+      value: >
+        {{ ("W:" ~ ("%0.1f" |
+        format(states('sensor.esphome_pool_wasserstand_pool_lufttemperatur') |
+        float(0))) ~ " C")[:10].ljust(10) }} {{ ("L:" ~ ("%0.1f" |
+        format(states('sensor.esphome_pool_wasserstand_pool_wassertemperatur') |
+        float(0))) ~ " C")[:10].ljust(10) }}
+    action: input_text.set_value
+  - target:
+      entity_id: input_text.lcd_zeile_3_2
+    data:
+      value: >
+        {{ ("Pumpe: " ~ ('AN' if is_state('switch.poolpumpe_relay','on') else
+        'AUS'))[:20].ljust(20) }}
+    action: input_text.set_value
+  - target:
+      entity_id: input_text.lcd_zeile_4_2
+    data:
+      value: |
+        {{ (now().strftime('%H:%M') ~ " Uhr")[:20].ljust(20) }}
+    action: input_text.set_value
+mode: restart

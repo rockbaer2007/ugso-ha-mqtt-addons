@@ -173,6 +173,7 @@ installFlowShape(Blockly);
 installCollectionShape(Blockly);
 definitions.push({ type: 'ugso_trigger_condition', message0: 'Ausgelöst durch ID %1 Liste %2', args0: [{ type: 'field_input', name: 'ID', text: 'button_1' }, { type: 'field_checkbox', name: 'ID_LIST', checked: false }], output: 'Boolean', colour: '#6860b5', tooltip: 'Prüft die ID des Auslösers. Mit Liste: IDs als JSON-Liste eingeben.' });
 definitions.push(
+  { type: 'ugso_time_pattern_trigger', message0: 'Wenn Zeitmuster (JSON) %1', args0: [{ type: 'field_multilinetext', name: 'PATTERN', text: '{"seconds":"/30"}' }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'Stunden, Minuten oder Sekunden: feste Zahl, * oder /n. Home Assistant führt das Zeitmuster aus.' },
   { type: 'ugso_variables_action', message0: 'Variablen setzen (JSON) %1', args0: [{ type: 'field_multilinetext', name: 'VARIABLES', text: '{"h":0,"m":1}' }], previousStatement: 'Action', nextStatement: 'Action', colour: '#a54879', tooltip: 'Mehrere HA-Variablen in einer Aktion. JSON-Objekt mit Namen und Text, Template, Zahl, Boolean oder null. Namen und Templates direkt im JSON bearbeiten.' },
   { type: 'ugso_calendar_trigger', message0: 'Wenn Kalender %1 %2 Ziel (JSON) %3 %4 Optionen (JSON) %5 verwenden %6', args0: [{ type: 'field_dropdown', name: 'EVENT', options: [['Termin beginnt', 'calendar.event_started'], ['Termin endet', 'calendar.event_ended']] }, { type: 'input_dummy' }, { type: 'field_multilinetext', name: 'TARGET', text: '{"entity_id":"calendar.ferien"}' }, { type: 'input_dummy' }, { type: 'field_multilinetext', name: 'OPTIONS', text: '{"offset":{"seconds":0},"offset_type":"before"}' }, { type: 'field_checkbox', name: 'USE_OPTIONS', checked: true }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'Kalendertermin beginnt oder endet. Ziel entity_id als Text oder Liste. Optionaler Offset mit Tagen, Stunden, Minuten und Sekunden oder HH:MM:SS; before oder after.' },
   { type: 'ugso_temperature_trigger', message0: 'Wenn Temperatur sich ändert Ziel (JSON) %1 Schwelle (JSON) %2', args0: [{ type: 'field_multilinetext', name: 'TARGET', text: '{"entity_id":"sensor.pool_temperatur"}' }, { type: 'field_multilinetext', name: 'THRESHOLD', text: '{"type":"any"}' }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'Nativer HA-Auslöser temperature.changed. Ziel mit entity_id (Text oder Liste); Schwelle any, above, below, between oder outside, Zahlen mit °C/°F oder Sensor/Zahlenhelfer.' },
@@ -218,7 +219,7 @@ export const toolbox = { kind: 'categoryToolbox', contents: [
   { kind: 'category', name: 'Werte', colour: '#2e7653', contents: ['number', 'percent', 'text', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}` })) },
   { kind: 'category', name: 'Datum und Zeit', colour: '#8056a1', contents: [{ kind: 'block', type: 'ugso_date_condition' }, ...timeDefinitions.map(({ type }) => ({ kind: 'block', type }))] },
   { kind: 'category', name: 'Konvertierung', colour: '#9463a6', contents: conversionDefinitions.map(({ type }) => ({ kind: 'block', type })) },
-  { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: ['state', 'numeric', 'time', 'sun', 'start', 'event', 'temperature', 'calendar'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })) },
+  { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: ['state', 'numeric', 'time', 'time_pattern', 'sun', 'start', 'event', 'temperature', 'calendar'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })) },
   { kind: 'category', name: 'Bedingungen', colour: '#6860b5', contents: [...['state', 'numeric', 'logic', 'trigger'].map(type => ({ kind: 'block', type: `ugso_${type}_condition` })), { kind: 'block', type: 'ugso_native_time_condition' }] },
   { kind: 'category', name: 'Aktionen', colour: '#2682a5', contents: ['switch', 'service', 'delay', 'if', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) }
 ] };
@@ -378,6 +379,7 @@ function readTriggerBase(block) {
   const custom = customDefinition(block.type);
   if (custom?.kind === 'trigger') return customNative(custom, block, name => readValue(block, name));
   switch (block.type) {
+    case 'ugso_time_pattern_trigger': return { ...nativeObject(block, 'PATTERN'), trigger: 'time_pattern' };
     case 'ugso_calendar_trigger': return { trigger: field(block, 'EVENT'), target: nativeObject(block, 'TARGET'), ...(field(block, 'USE_OPTIONS') === 'TRUE' ? { options: nativeObject(block, 'OPTIONS') } : {}) };
     case 'ugso_temperature_trigger': return { trigger: 'temperature.changed', target: nativeObject(block, 'TARGET'), options: { threshold: nativeObject(block, 'THRESHOLD') } };
     case 'ugso_state_trigger': return { trigger: 'state', entity_id: field(block, 'ENTITY_LIST') === 'TRUE' ? nativeList(block, 'ENTITIES', 'ENTITY_LIST') : field(block, 'ENTITY'), ...(field(block, 'ANY_STATE') === 'TRUE' ? {} : { to: nativeList(block, 'STATE', 'STATE_LIST') }) };
@@ -541,6 +543,7 @@ function triggerBlock(workspace, item) {
 }
 function triggerBlockBase(workspace, item) {
   switch (item.trigger) {
+    case 'time_pattern': return create(workspace, 'ugso_time_pattern_trigger', { PATTERN: JSON.stringify(Object.fromEntries(['hours', 'minutes', 'seconds'].filter(key => Object.hasOwn(item, key)).map(key => [key, item[key]]))) });
     case 'calendar.event_started': case 'calendar.event_ended': return create(workspace, 'ugso_calendar_trigger', { EVENT: item.trigger, TARGET: JSON.stringify(item.target), OPTIONS: JSON.stringify(item.options || {}), USE_OPTIONS: Object.hasOwn(item, 'options') ? 'TRUE' : 'FALSE' });
     case 'temperature.changed': return create(workspace, 'ugso_temperature_trigger', { TARGET: JSON.stringify(item.target), THRESHOLD: JSON.stringify(item.options.threshold) });
     case 'state': return create(workspace, 'ugso_state_trigger', { ENTITY: Array.isArray(item.entity_id) ? '' : item.entity_id, ENTITY_LIST: Array.isArray(item.entity_id) ? 'TRUE' : 'FALSE', ENTITIES: JSON.stringify(Array.isArray(item.entity_id) ? item.entity_id : []), ANY_STATE: Object.hasOwn(item, 'to') ? 'FALSE' : 'TRUE', STATE: Array.isArray(item.to) ? JSON.stringify(item.to) : item.to ?? 'on', STATE_LIST: Array.isArray(item.to) ? 'TRUE' : 'FALSE' });

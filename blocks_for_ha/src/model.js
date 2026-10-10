@@ -46,6 +46,16 @@ function checkTrigger(item, path) {
   } else if (item.trigger === 'numeric_state') {
     ownKeys(item, ['trigger', 'entity_id', 'above', 'below', 'id', 'for'], path); oneOrList(item.entity_id, path, entity); checkRange(item, path);
     if (Object.hasOwn(item, 'for')) checkTriggerDuration(item.for, path);
+  } else if (item.trigger === 'time_pattern') {
+    ownKeys(item, ['trigger', 'hours', 'minutes', 'seconds', 'id'], path);
+    const units = ['hours', 'minutes', 'seconds'].filter(key => Object.hasOwn(item, key));
+    if (!units.length) throw new Error(`${path}: Zeitmuster benötigt Stunden, Minuten oder Sekunden.`);
+    for (const unit of units) {
+      const value = item[unit], limit = unit === 'hours' ? 23 : 59;
+      const literal = typeof value === 'number' ? Number.isInteger(value) && value >= 0 && value <= limit : typeof value === 'string' && /^(0|[1-9]\d*)$/.test(value) && Number(value) <= limit;
+      const divisor = typeof value === 'string' && /^\/[1-9]\d*$/.test(value) && Number(value.slice(1)) <= limit;
+      if (!literal && !divisor && value !== '*') throw new Error(`${path}: ${unit}: Zahl 0–${limit}, * oder /n erwartet (ohne führende Nullen).`);
+    }
   } else if (item.trigger === 'time') {
     ownKeys(item, ['trigger', 'at', 'id'], path); oneOrList(item.at, path, time);
   } else if (item.trigger === 'event') {

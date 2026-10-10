@@ -115,6 +115,7 @@ export const blockTranslations = {
   ugso_automation: ['Automation %1 When %2 Only if %3 Then %4', 'Automatisation %1 Quand %2 Seulement si %3 Alors %4', 'Native Home Assistant automation. Name and mode are above the workspace.', 'Automatisation native Home Assistant. Nom et mode au-dessus de l’espace de travail.'],
   ugso_state_trigger: ['When %1 reaches state %2', 'Quand %1 atteint l’état %2', 'Responds to a state change.', 'Réagit à un changement d’état.'],
   ugso_numeric_trigger: ['When %1 crosses %2 %3', 'Quand %1 franchit %2 %3', 'Starts when crossing a threshold, not continuously while the condition remains true.', 'Démarre au franchissement d’un seuil, pas continuellement tant que la condition reste vraie.'],
+  ugso_time_pattern_trigger: ['When time pattern (JSON) %1', 'Quand le motif horaire (JSON) %1', 'Hours, minutes or seconds: fixed number, * or /n. Home Assistant runs the schedule.', 'Heures, minutes ou secondes : nombre fixe, * ou /n. Home Assistant exécute le planning.'],
   ugso_time_trigger: ['When the time is %1', 'Quand il est %1'],
   ugso_sun_trigger: ['At %1', 'Au %1'],
   ugso_start_trigger: ['When Home Assistant starts', 'Quand Home Assistant démarre'],

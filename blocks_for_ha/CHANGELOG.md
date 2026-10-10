@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.37
+
+- Zeitmuster-Auslöser mit Stunden, Minuten und Sekunden als JSON; feste Werte, Wildcard und Teilermuster, optionaler Auslöser-ID.
+- LCD-Automation alle 30 Sekunden einschließlich aller vier Jinja-Texte bleibt beim Import, Projekt-Neuladen und Export erhalten.
+- DE/EN/FR-Dokumentation und Blockbilder ergänzt; 119 Blocktypen.
+
 ## 0.1.36
 
 - HA-Aktion unterstützt dynamische Aktionsnamen mit Jinja-Ausgaben und Kontrollblöcken; Aktionsfeld ist mehrzeilig editierbar.
