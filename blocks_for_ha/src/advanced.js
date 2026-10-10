@@ -1,5 +1,6 @@
 import { jinjaSummary } from './jinja.js';
 import { language } from './locales.js';
+import { structuredHAJSON } from './ha-fields.js';
 const jsonField = (name, value) => ({ type: 'field_multilinetext', name, text: JSON.stringify(value, null, 2), maxLines: 4 });
 const action = { previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5' };
 const trigger = { previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24' };
@@ -75,6 +76,7 @@ export function setupParallelBlock(Blockly, block, label) {
   block.updateParallel_();
 }
 export function advancedJSON(block, field='JSON') {
+  const structured = structuredHAJSON(block, field); if (structured !== undefined) return structured;
   try { return JSON.parse(block.getFieldValue(field)); } catch { throw Error(`${block.type}: Gültiges JSON erwartet.`); }
 }
 export function equivalent(a,b) {

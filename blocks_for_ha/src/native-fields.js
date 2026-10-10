@@ -1,4 +1,5 @@
 import { translateLabel as t } from './locales.js';
+import { structuredHAJSON } from './ha-fields.js';
 
 export function installNativeFields(Blockly, block, FieldMultilineInput) {
   if (['ugso_state_trigger', 'ugso_numeric_trigger', 'ugso_time_trigger', 'ugso_time_pattern_trigger', 'ugso_sun_trigger', 'ugso_start_trigger', 'ugso_event_trigger', 'ugso_temperature_trigger', 'ugso_calendar_trigger'].includes(block.type)) block.appendDummyInput('TRIGGER_OPTIONS').appendField(t('Auslöser-ID (optional)')).appendField(new Blockly.FieldTextInput(''), 'TRIGGER_ID');
@@ -27,6 +28,7 @@ export function nativeList(block, name, listFlag) {
   return items;
 }
 export function nativeObject(block, name) {
+  const structured = structuredHAJSON(block, name); if (structured !== undefined) return structured;
   let value;
   try { value = JSON.parse(block.getFieldValue(name) || '{}'); } catch { throw new Error(`${name}: Gültiges JSON-Objekt erwartet.`); }
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${name}: JSON-Objekt erwartet.`);

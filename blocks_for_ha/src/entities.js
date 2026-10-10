@@ -73,7 +73,7 @@ export function setupEntities(workspace) {
   openPicker = selected => {
     if (selected.getSourceBlock()?.workspace !== workspace) return;
     field = selected;
-    const input = document.createElement(blockAllowsTemplate(field.getSourceBlock()) ? 'textarea' : 'input');
+    const input = document.createElement(field.haStructured_ || blockAllowsTemplate(field.getSourceBlock()) ? 'textarea' : 'input');
     input.id = 'entity-id'; input.autocomplete = 'off'; input.spellcheck = false;
     if (input.tagName === 'TEXTAREA') input.rows = 3;
     input.addEventListener('input', () => { el('entity-error').textContent = ''; });
@@ -81,6 +81,7 @@ export function setupEntities(workspace) {
     input.parentNode.firstChild.textContent = blockAllowsTemplate(field.getSourceBlock()) ? 'Entitäts-ID oder HA-Template' : 'Entitäts-ID';
     input.value = String(field.getValue()); el('entity-search').value = ''; el('entity-error').textContent = '';
     render(); dialog.showModal(); el('entity-search').focus();
+    if (field.haStructured_) input.parentNode.firstChild.textContent = 'Entitäts-ID, JSON-Liste oder HA-Template';
   };
   el('entity-search').addEventListener('input', render);
   el('entity-id').addEventListener('input', () => { el('entity-error').textContent = ''; });
@@ -89,9 +90,14 @@ export function setupEntities(workspace) {
   el('entity-form').addEventListener('submit', event => {
     event.preventDefault();
     const raw = el('entity-id').value, block = field?.getSourceBlock();
-    const id = blockAllowsTemplate(block) && raw.trim() && !entityIdPattern.test(raw.trim()) ? raw : raw.trim();
+    const id = (field?.haStructured_ || blockAllowsTemplate(block)) && raw.trim() && !entityIdPattern.test(raw.trim()) ? raw : raw.trim();
     if (!block || block.isDisposed()) { dialog.close(); return; }
-    if (!(blockAllowsTemplate(block) ? !id.trim() || validActionEntity(id) : entityIdPattern.test(id))) { el('entity-error').textContent = blockAllowsTemplate(block) ? 'Eine Entitäts-ID wie light.wohnzimmer oder ein HA-Template eingeben.' : 'Eine Entitäts-ID wie light.wohnzimmer eingeben.'; return; }
+    let structuredValid = false;
+    if (field.haStructured_) {
+      structuredValid = !id.trim() || validActionEntity(id);
+      if (!structuredValid) try { const list = JSON.parse(id); structuredValid = Array.isArray(list) && list.length > 0 && list.length <= 100 && list.every(item => typeof item === 'string' && entityIdPattern.test(item)); } catch {}
+    }
+    if (!(field.haStructured_ ? structuredValid : blockAllowsTemplate(block) ? !id.trim() || validActionEntity(id) : entityIdPattern.test(id))) { el('entity-error').textContent = field.haStructured_ ? 'Entitäts-ID, JSON-Liste oder HA-Template erwartet.' : blockAllowsTemplate(block) ? 'Eine Entitäts-ID wie light.wohnzimmer oder ein HA-Template eingeben.' : 'Eine Entitäts-ID wie light.wohnzimmer eingeben.'; return; }
     const domain = entityDomain(block);
     if (id && domain && !id.startsWith(domain + '.')) { el('entity-error').textContent = `Dieser Block benötigt eine ${domain}-Entität.`; return; }
     field.setValue(id); dialog.close();

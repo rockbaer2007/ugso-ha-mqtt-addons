@@ -20,6 +20,7 @@ import { themedDefinition, themedCategories } from './themes.js';
 import './entities.js';
 import { installNativeFields, nativeList, nativeObject, nativeTimeExpression } from './native-fields.js';
 import { advancedDefinitions, advancedJSON, equivalent, advancedTriggerType, setupJinjaBlock, setupParallelBlock, setupIntegrationBlock } from './advanced.js';
+import { setupHAFields } from './ha-fields.js';
 import { jinjaDefinitions, setupJinjaShape, createJinjaBlock, composedJinja, jinjaBlockExpression } from './jinja-blocks.js';
 import { customDefinition, customExpression, customNative } from './custom-packages.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
@@ -190,6 +191,7 @@ definitions.forEach(definition => {
   Blockly.Blocks[definition.type].init = function () {
     original.call(this); installNativeFields(Blockly, this, Multiline.FieldMultilineInput); setupJinjaBlock(this); setupParallelBlock(Blockly, this, translateLabel('Zweig')); setupIntegrationBlock(Blockly,this); this.setHelpUrl(documentationPath(this.type.startsWith('ugso_time_') ? 'time' : ''));
     setupJinjaShape(this);
+    setupHAFields(Blockly, this, Multiline.FieldMultilineInput);
     if (advancedDefinitions.some(d=>d.type===this.type)||jinjaDefinitions.some(d=>d.type===this.type)) this.setHelpUrl(documentationPath('advanced'));
     if (this.type.startsWith('ugso_convert_')) this.setHelpUrl(documentationPath('conversion'));
     if (flowDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('flow'));

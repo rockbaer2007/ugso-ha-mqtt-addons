@@ -1,5 +1,7 @@
 # UGSo Blocks for HA
 
+Neu in **0.1.43**: erweiterte HA-Blöcke mit beschrifteten Einzelwerten statt eines großen JSON-Objekts. Entitäten, Grenzen, Zeiten, IDs, Ziele und Optionen sind direkt bearbeitbar. Alte JSON-Projekte bleiben lesbar; unveränderte Werte einschließlich Listen, `null` und Jinja bleiben erhalten. Komplexe Daten und zusätzliche Optionen bleiben getrennte JSON-Felder. [Anleitung und HA-Originalquellen](https://opensource.ugso-software.de/projects/blocks-for-ha/advanced).
+
 Neu in **0.1.42**: kompakte, gleich große YAML-Importbuttons mit zweizeiligen Beschriftungen. **Eingabefeld leeren** rechts entfernt Einfügetext und Importfehler; die aktuelle Automation und die Ersetzen-Auswahl bleiben erhalten.
 
 Neu in **0.1.41**: Jinja kann in 15 bearbeitbare, verschachtelte Blocktypen zerlegt werden (insgesamt 163 Typen). Entitätsfunktionen, Filterketten, Vergleiche, Berechnungen, Textausgaben, einfache `if/else` und `for` mit Leerfall. **Jinja einlesen → Als bearbeitbare Blocks zerlegen**; passende YAML-Template-Werte/-Bedingungen werden ebenfalls zerlegt. Unverändert bleibt der genaue Originaltext erhalten; Bearbeiten erzeugt Jinja. Nicht vollständig unterstützte Templates bleiben vollständig als Originalblock erhalten. Jinja in JSON-Feldern bleibt JSON-Text. Keine lokale Ausführung. [Anleitung, Grenzen und Originalquellen](https://opensource.ugso-software.de/projects/blocks-for-ha/advanced).

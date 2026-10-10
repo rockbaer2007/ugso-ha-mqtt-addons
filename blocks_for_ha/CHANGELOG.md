@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.43
+
+- Erweiterte HA-JSON-Blöcke mit beschrifteten Eingaben: alle 15 Auslösertypen, allgemeine Auslöser/Bedingungen/Schritte, Integrationsziele und -optionen, Kalender, Temperaturgrenzen, Zeitmuster, Variablen und Warte-/Schrittoptionen.
+- Entitätsauswahl unterstützt IDs, Listen und Templates; passende Ereignis-/Boolean-Dropdowns. Weitere Optionen und komplexe Daten/Zweige bleiben in getrennten JSON-Feldern.
+- Bestehende JSON-Projekte laden automatisch die neuen Eingaben. Unbearbeitete Werte behalten Typ, nicht gesetzte Felder und vollständigen Jinja-Text; Änderungen werden in YAML und Projekten übernommen.
+- DE/EN/FR-Beschriftungen, Dokumentation und Blockbilder aktualisiert; alte Projekte, Bearbeitung, Reload und Undo geprüft.
+
 ## 0.1.42
 
 - YAML-Import: drei kompakte, gleich große Buttons; längere Beschriftungen dürfen zweizeilig sein.

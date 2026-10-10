@@ -29,7 +29,7 @@ try {
     await page.locator('#theme').selectOption('standard');
     await page.evaluate(() => { window.docWorkspace.getToolbox().setVisible(false); window.docWorkspace.setScale(1); });
     await mkdir(resolve(destination, locale), { recursive: true });
-    const selectedTypes=process.env.BLOCK_DOC_PREFIX?types.filter(type=>type.startsWith(process.env.BLOCK_DOC_PREFIX)):types;
+    const selectedTypes=process.env.BLOCK_DOC_TYPES?types.filter(type=>process.env.BLOCK_DOC_TYPES.split(',').includes(type)):process.env.BLOCK_DOC_PREFIX?types.filter(type=>type.startsWith(process.env.BLOCK_DOC_PREFIX)):types;
     for (const type of selectedTypes) {
       const result = await page.evaluate(type => {
         const ws = window.docWorkspace; ws.clear();
