@@ -7,6 +7,29 @@ import { Blockly, modelWorkspace, workspaceModel } from '../src/blocks.js';
 import { fromYaml, toYaml, validateAutomation } from '../src/model.js';
 const fixture = fromYaml(readFileSync(new URL('./fixtures/pc-tv.yaml', import.meta.url), 'utf8'));
 
+test('AWTRIX temperature.changed and all threshold modes retain native targets and MQTT payloads', () => {
+  const model = fromYaml(readFileSync(new URL('./fixtures/awtrix-temperature.yaml', import.meta.url), 'utf8'));
+  const number = { number: 24, unit_of_measurement: '°C' }, reference = { entity: 'input_number.pool_minimum' };
+  for (const threshold of [{ type: 'any' }, { type: 'above', value: number }, { type: 'below', value: reference }, { type: 'between', value_min: reference, value_max: number }, { type: 'outside', value_min: { number: 68, unit_of_measurement: '°F' }, value_max: { entity: 'sensor.pool_maximum' } }]) {
+    const item = structuredClone(model); item.triggers[0].options.threshold = threshold;
+    const ws = new Blockly.Workspace(), restored = new Blockly.Workspace();
+    try {
+      modelWorkspace(ws, item);
+      assert.deepEqual(workspaceModel(ws, item), item);
+      Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws), restored);
+      assert.deepEqual(fromYaml(toYaml(workspaceModel(restored, item))), item);
+      assert.equal(workspaceModel(restored, item).actions[0].data.payload, model.actions[0].data.payload);
+    } finally { ws.dispose(); restored.dispose(); }
+  }
+});
+test('Temperature thresholds reject unknown modes, mixed values, missing units and invalid target entities', () => {
+  const model = fromYaml(readFileSync(new URL('./fixtures/awtrix-temperature.yaml', import.meta.url), 'utf8'));
+  for (const threshold of [{ type: 'unsupported' }, { type: '__proto__' }, { type: 'any', value: { number: 1 } }, { type: 'above', value: { number: 20 } }, { type: 'above', value: { number: 20, entity: 'sensor.pool', unit_of_measurement: '°C' } }, { type: 'below', value: { entity: 'switch.pool' } }, { type: 'between', value_min: { entity: 'input_number.pool' } }]) {
+    const item = structuredClone(model); item.triggers[0].options.threshold = threshold; assert.throws(() => validateAutomation(item));
+  }
+  model.triggers[0].target.entity_id = ['sensor.good', 'bad']; assert.throws(() => validateAutomation(model));
+});
+
 test('Native time expressions preserve inclusive/exclusive and overnight/equal boundaries in HA local time', { skip: process.env.BLOCKS_JINJA_TEST !== '1' }, () => {
   const cases = [
     ['22:00', '06:00', 21, false], ['22:00', '06:00', 22, true], ['22:00', '06:00', 0, true], ['22:00', '06:00', 6, false],

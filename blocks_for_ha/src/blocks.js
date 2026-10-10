@@ -173,6 +173,7 @@ installFlowShape(Blockly);
 installCollectionShape(Blockly);
 definitions.push({ type: 'ugso_trigger_condition', message0: 'Ausgelöst durch ID %1 Liste %2', args0: [{ type: 'field_input', name: 'ID', text: 'button_1' }, { type: 'field_checkbox', name: 'ID_LIST', checked: false }], output: 'Boolean', colour: '#6860b5', tooltip: 'Prüft die ID des Auslösers. Mit Liste: IDs als JSON-Liste eingeben.' });
 definitions.push(
+  { type: 'ugso_temperature_trigger', message0: 'Wenn Temperatur sich ändert Ziel (JSON) %1 Schwelle (JSON) %2', args0: [{ type: 'field_multilinetext', name: 'TARGET', text: '{"entity_id":"sensor.pool_temperatur"}' }, { type: 'field_multilinetext', name: 'THRESHOLD', text: '{"type":"any"}' }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'Nativer HA-Auslöser temperature.changed. Ziel mit entity_id (Text oder Liste); Schwelle any, above, below, between oder outside, Zahlen mit °C/°F oder Sensor/Zahlenhelfer.' },
   { type: 'ugso_event_trigger', message0: 'Wenn Ereignis %1 Datenfilter (JSON) %2 verwenden %3', args0: [{ type: 'field_input', name: 'EVENT_TYPE', text: 'timer.finished' }, { type: 'field_multilinetext', name: 'EVENT_DATA', text: '{"entity_id":"timer.poolpumpe_manuelle_laufzeit"}' }, { type: 'field_checkbox', name: 'FILTER', checked: true }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'HA-Ereignis mit optionalem Datenfilter, etwa timer.finished. Filterwerte als JSON-Objekt.' },
   { type: 'ugso_native_time_condition', message0: 'HA-Uhrzeit nach %1 vor %2', args0: [{ type: 'field_input', name: 'AFTER', text: '' }, { type: 'field_input', name: 'BEFORE', text: '19:00:00' }], output: 'Boolean', colour: '#6860b5', tooltip: 'Native HA-Zeitbedingung: nach inklusive, vor exklusiv. Eine Grenze darf leer bleiben; beide zusammen auch über Mitternacht. Feste Uhrzeiten HH:MM oder HH:MM:SS.' }
 );
@@ -215,7 +216,7 @@ export const toolbox = { kind: 'categoryToolbox', contents: [
   { kind: 'category', name: 'Werte', colour: '#2e7653', contents: ['number', 'percent', 'text', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}` })) },
   { kind: 'category', name: 'Datum und Zeit', colour: '#8056a1', contents: [{ kind: 'block', type: 'ugso_date_condition' }, ...timeDefinitions.map(({ type }) => ({ kind: 'block', type }))] },
   { kind: 'category', name: 'Konvertierung', colour: '#9463a6', contents: conversionDefinitions.map(({ type }) => ({ kind: 'block', type })) },
-  { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: ['state', 'numeric', 'time', 'sun', 'start', 'event'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })) },
+  { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: ['state', 'numeric', 'time', 'sun', 'start', 'event', 'temperature'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })) },
   { kind: 'category', name: 'Bedingungen', colour: '#6860b5', contents: [...['state', 'numeric', 'logic', 'trigger'].map(type => ({ kind: 'block', type: `ugso_${type}_condition` })), { kind: 'block', type: 'ugso_native_time_condition' }] },
   { kind: 'category', name: 'Aktionen', colour: '#2682a5', contents: ['switch', 'service', 'delay', 'if', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) }
 ] };
@@ -375,6 +376,7 @@ function readTriggerBase(block) {
   const custom = customDefinition(block.type);
   if (custom?.kind === 'trigger') return customNative(custom, block, name => readValue(block, name));
   switch (block.type) {
+    case 'ugso_temperature_trigger': return { trigger: 'temperature.changed', target: nativeObject(block, 'TARGET'), options: { threshold: nativeObject(block, 'THRESHOLD') } };
     case 'ugso_state_trigger': return { trigger: 'state', entity_id: field(block, 'ENTITY_LIST') === 'TRUE' ? nativeList(block, 'ENTITIES', 'ENTITY_LIST') : field(block, 'ENTITY'), ...(field(block, 'ANY_STATE') === 'TRUE' ? {} : { to: nativeList(block, 'STATE', 'STATE_LIST') }) };
     case 'ugso_numeric_trigger': return { trigger: 'numeric_state', ...range(block) };
     case 'ugso_time_trigger': return { trigger: 'time', at: nativeList(block, 'TIME', 'TIME_LIST') };
@@ -529,6 +531,7 @@ function triggerBlock(workspace, item) {
 }
 function triggerBlockBase(workspace, item) {
   switch (item.trigger) {
+    case 'temperature.changed': return create(workspace, 'ugso_temperature_trigger', { TARGET: JSON.stringify(item.target), THRESHOLD: JSON.stringify(item.options.threshold) });
     case 'state': return create(workspace, 'ugso_state_trigger', { ENTITY: Array.isArray(item.entity_id) ? '' : item.entity_id, ENTITY_LIST: Array.isArray(item.entity_id) ? 'TRUE' : 'FALSE', ENTITIES: JSON.stringify(Array.isArray(item.entity_id) ? item.entity_id : []), ANY_STATE: Object.hasOwn(item, 'to') ? 'FALSE' : 'TRUE', STATE: Array.isArray(item.to) ? JSON.stringify(item.to) : item.to ?? 'on', STATE_LIST: Array.isArray(item.to) ? 'TRUE' : 'FALSE' });
     case 'numeric_state': return numberInput(create(workspace, 'ugso_numeric_trigger', fieldsRange(item)), 'LIMIT', item.above ?? item.below);
     case 'time': return create(workspace, 'ugso_time_trigger', { TIME: Array.isArray(item.at) ? JSON.stringify(item.at) : item.at, TIME_LIST: Array.isArray(item.at) ? 'TRUE' : 'FALSE' });

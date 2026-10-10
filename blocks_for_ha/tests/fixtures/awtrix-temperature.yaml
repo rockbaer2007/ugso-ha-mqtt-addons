@@ -1,0 +1,42 @@
+alias: AWTRIXNG Pooltemperaturen
+description: AWTRIX NG – Luft- und Wassertemperatur anzeigen
+triggers:
+  - trigger: temperature.changed
+    target:
+      entity_id:
+        - sensor.esphome_pool_wasserstand_pool_lufttemperatur
+        - sensor.esphome_pool_wasserstand_pool_wassertemperatur
+    options:
+      threshold:
+        type: any
+conditions: []
+actions:
+  - action: mqtt.publish
+    data:
+      topic: awtrixng-1/cmd/apps/pushed/luft
+      qos: 0
+      retain: false
+      evaluate_payload: true
+      payload: |-
+        {
+          "text": "Wasser: {{ states('sensor.esphome_pool_wasserstand_pool_lufttemperatur') | float(0) | round(1) }} °C",
+          "icon": "7066",
+          "textColor": "#27F5F5",
+          "durationMs": 5000,
+          "repeat": 1
+        }
+  - action: mqtt.publish
+    data:
+      topic: awtrixng-1/cmd/apps/pushed/wasser
+      qos: 0
+      retain: false
+      evaluate_payload: true
+      payload: |-
+        {
+          "text": "Luft: {{ states('sensor.esphome_pool_wasserstand_pool_wassertemperatur') | float(0) | round(1) }} °C",
+          "icon": "7066ug",
+          "textColor": "#F8FA96",
+          "durationMs": 5000,
+          "repeat": 1
+        }
+mode: single

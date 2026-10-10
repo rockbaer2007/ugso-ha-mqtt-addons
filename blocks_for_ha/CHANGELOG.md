@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.31
+
+- Nativen HA-Auslöser temperature.changed mit entity_id-Zielen, optionaler Trigger-ID und fünf Schwelltypen ergänzt.
+- Zahlen mit °C/°F und Sensor-/Zahlenhelfer-Referenzen; JSON-Ziel und Schwelle im Block bearbeitbar.
+- AWTRIX-Pooltemperaturen-Automation mit unveränderten MQTT-Daten und Jinja-Payloads als Regressionstest.
+- 115 Blocktypen; DE/EN/FR-Dokumentation und Bilder aktualisiert.
+
 ## 0.1.30
 
 - Zeit-Auslöser akzeptiert eine JSON-Liste fester Uhrzeiten. Zustandsauslöser unterstützen Entitätslisten und jede Änderung ohne to-Filter.

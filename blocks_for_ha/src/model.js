@@ -20,7 +20,11 @@ function checkList(items, path, check, min = 0) {
 }
 function checkTrigger(item, path) {
   if (item.id !== undefined) text(item.id, path + ' ID');
-  if (item.trigger === 'state') {
+  if (item.trigger === 'temperature.changed') {
+    ownKeys(item, ['trigger', 'target', 'options', 'id'], path);
+    ownKeys(item.target, ['entity_id'], path); oneOrList(item.target.entity_id, path, entity);
+    ownKeys(item.options, ['threshold'], path); checkTemperatureThreshold(item.options.threshold, path);
+  } else if (item.trigger === 'state') {
     ownKeys(item, ['trigger', 'entity_id', 'to', 'id'], path); oneOrList(item.entity_id, path, entity); if (Object.hasOwn(item, 'to')) oneOrList(item.to, path, text);
   } else if (item.trigger === 'numeric_state') {
     ownKeys(item, ['trigger', 'entity_id', 'above', 'below', 'id'], path); entity(item.entity_id, path); checkRange(item, path);
@@ -39,6 +43,24 @@ function checkRange(item, path) {
   const keys = ['above', 'below'].filter(key => Object.hasOwn(item, key));
   if (keys.length !== 1) throw new Error(`${path}: Genau eine Grenze (above oder below) wird unterstützt.`);
   numeric(item[keys[0]], path);
+}
+function checkTemperatureThreshold(threshold, path) {
+  ownKeys(threshold, ['type', 'value', 'value_min', 'value_max'], path);
+  const modes = { any: [], above: ['value'], below: ['value'], between: ['value_min', 'value_max'], outside: ['value_min', 'value_max'] };
+  const required = typeof threshold.type === 'string' && Object.hasOwn(modes, threshold.type) ? modes[threshold.type] : null;
+  if (!required) throw new Error(`${path}: Temperaturschwelle ungültig.`);
+  ownKeys(threshold, ['type', ...required], path);
+  for (const key of required) {
+    const value = threshold[key];
+    ownKeys(value, ['number', 'unit_of_measurement', 'entity'], path);
+    if (Object.hasOwn(value, 'entity')) {
+      ownKeys(value, ['entity'], path); entity(value.entity, path);
+      if (!/^(sensor|number|input_number)\./.test(value.entity)) throw new Error(`${path}: Schwelle benötigt Sensor oder Zahlenhelfer.`);
+    } else {
+      ownKeys(value, ['number', 'unit_of_measurement'], path); numeric(value.number, path);
+      if (!['°C', '°F'].includes(value.unit_of_measurement)) throw new Error(`${path}: Temperatureinheit °C oder °F erforderlich.`);
+    }
+  }
 }
 function checkCondition(item, path, depth = 0) {
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
