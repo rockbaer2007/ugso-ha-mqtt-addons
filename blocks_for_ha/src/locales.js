@@ -180,9 +180,14 @@ export const labels = {
   'Eigene Wertfunktion. Parameter über das Zahnrad bearbeiten. Beim Export in Jinja aufgelöst; keine Aktionen oder Rekursion.': ['Custom value function. Edit parameters with the cog. Expanded to Jinja during export; no actions or recursion.', 'Fonction de valeur personnalisée. Paramètres via l’engrenage. Développée en Jinja à l’export ; sans actions ni récursion.']
 };
 Object.assign(blockTranslations, {
+  ugso_event_trigger: ['When event %1 data filter (JSON) %2 enabled %3', 'Quand événement %1 filtre (JSON) %2 activé %3', 'HA event with an optional data filter, such as timer.finished. Filter values as a JSON object.', 'Événement HA avec filtre facultatif, par exemple timer.finished. Valeurs du filtre en objet JSON.'],
+  ugso_native_time_condition: ['HA time after %1 before %2', 'Heure HA après %1 avant %2', 'Native HA time condition: after inclusive, before exclusive. One bound may be empty; both can span midnight. Fixed HH:MM or HH:MM:SS.', 'Condition horaire HA native : après inclusif, avant exclusif. Une borne peut être vide ; les deux peuvent traverser minuit. Heures fixes HH:MM ou HH:MM:SS.'],
   ugso_trigger_condition: ['Triggered by ID %1 list %2', 'Déclenché par ID %1 liste %2', 'Checks the trigger ID. Enable list to enter IDs as a JSON list.', 'Vérifie l’ID du déclencheur. Activer liste pour saisir les IDs en liste JSON.']
 });
 Object.assign(labels, {
+  'Uhrzeiten als JSON-Liste': ['Times as JSON list', 'Heures en liste JSON'],
+  'Jede Änderung': ['Any change', 'Tout changement'],
+  'Entitäten als JSON-Liste': ['Entities as JSON list', 'Entités en liste JSON'],
   'Auslöser-ID (optional)': ['Trigger ID (optional)', 'ID du déclencheur (facultatif)'],
   'Zustände als JSON-Liste': ['States as JSON list', 'États en liste JSON'],
   'Ziele als JSON-Liste': ['Targets as JSON list', 'Cibles en liste JSON'],

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.30
+
+- Zeit-Auslöser akzeptiert eine JSON-Liste fester Uhrzeiten. Zustandsauslöser unterstützen Entitätslisten und jede Änderung ohne to-Filter.
+- Neue Blocks für HA-Ereignisse mit optionalem JSON-Datenfilter und native Zeitbedingungen mit before/after.
+- Vollständige Poolpumpen-Automation inklusive mehrzeiligem Timer-Template und verschachtelten Zweigen verlustfrei importieren.
+- 114 Blocktypen, übersetzte DE/EN/FR-Beschriftungen, Dokumentation und Bilder.
+
 ## 0.1.29
 
 - Blockly-Arbeitsfläche füllt die gesamte verfügbare Höhe des Editorbereichs bis zur kompakten Legende. Kein ungenutzter Leerraum unterhalb des Editors bei höherer YAML-Spalte.

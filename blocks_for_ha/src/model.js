@@ -21,11 +21,14 @@ function checkList(items, path, check, min = 0) {
 function checkTrigger(item, path) {
   if (item.id !== undefined) text(item.id, path + ' ID');
   if (item.trigger === 'state') {
-    ownKeys(item, ['trigger', 'entity_id', 'to', 'id'], path); entity(item.entity_id, path); oneOrList(item.to, path, text);
+    ownKeys(item, ['trigger', 'entity_id', 'to', 'id'], path); oneOrList(item.entity_id, path, entity); if (Object.hasOwn(item, 'to')) oneOrList(item.to, path, text);
   } else if (item.trigger === 'numeric_state') {
     ownKeys(item, ['trigger', 'entity_id', 'above', 'below', 'id'], path); entity(item.entity_id, path); checkRange(item, path);
   } else if (item.trigger === 'time') {
-    ownKeys(item, ['trigger', 'at', 'id'], path); time(item.at, path);
+    ownKeys(item, ['trigger', 'at', 'id'], path); oneOrList(item.at, path, time);
+  } else if (item.trigger === 'event') {
+    ownKeys(item, ['trigger', 'event_type', 'event_data', 'id'], path); text(item.event_type, path);
+    if (Object.hasOwn(item, 'event_data')) { ownKeys(item.event_data, Object.keys(item.event_data || {}), path); if (JSON.stringify(item.event_data).length > 10000) throw new Error(`${path}: Ereignisdaten zu groß.`); }
   } else if (item.trigger === 'sun') {
     ownKeys(item, ['trigger', 'event', 'id'], path); if (!['sunrise', 'sunset'].includes(item.event)) throw new Error(`${path}: Sonnenereignis ungültig.`);
   } else if (item.trigger === 'homeassistant') {
@@ -39,7 +42,12 @@ function checkRange(item, path) {
 }
 function checkCondition(item, path, depth = 0) {
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
-  if (item.condition === 'trigger') {
+  if (item.condition === 'time') {
+    ownKeys(item, ['condition', 'before', 'after'], path);
+    const bounds = ['before', 'after'].filter(key => Object.hasOwn(item, key));
+    if (!bounds.length) throw new Error(`${path}: Vor oder nach einer Uhrzeit erforderlich.`);
+    bounds.forEach(key => time(item[key], path));
+  } else if (item.condition === 'trigger') {
     ownKeys(item, ['condition', 'id'], path); oneOrList(item.id, path, text);
   } else if (item.condition === 'template') {
     ownKeys(item, ['condition', 'value_template'], path); text(item.value_template, path);

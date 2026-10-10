@@ -1,0 +1,202 @@
+alias: Poolpumpe Steuerung neu 09/2026
+description: >
+  Poolpumpe läuft automatisch von 10:00 bis 13:00 Uhr bei aktivem Poolkalender.
+  Manuell maximal 3 Stunden, spätestens bis 19:00 Uhr.
+triggers:
+  - trigger: time
+    at:
+      - '10:00:00'
+      - '13:00:00'
+      - '19:00:00'
+    id: zeitsteuerung
+  - trigger: state
+    entity_id:
+      - calendar.poolsteuerung
+      - binary_sensor.pool_kalender_aktiv
+    id: kalender
+  - trigger: state
+    entity_id: binary_sensor.shelly_i3_2_switch_2
+    to: 'on'
+    id: manuell_ein
+  - trigger: state
+    entity_id: binary_sensor.shelly_i3_2_switch_2
+    to: 'off'
+    id: manuell_aus
+  - trigger: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.poolpumpe_manuelle_laufzeit
+    id: timer_abgelaufen
+  - trigger: homeassistant
+    event: start
+    id: ha_start
+conditions: []
+actions:
+  - if:
+      - condition: template
+        value_template: |
+          {{ '10:00:00' <= now().strftime('%H:%M:%S') < '13:00:00' }}
+    then:
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.pooltime1
+    else:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.pooltime1
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: zeitsteuerung
+          - condition: template
+            value_template: |
+              {{ now().strftime('%H:%M:%S') >= '19:00:00' }}
+        sequence:
+          - action: timer.cancel
+            target:
+              entity_id: timer.poolpumpe_manuelle_laufzeit
+          - action: input_boolean.turn_off
+            target:
+              entity_id: input_boolean.pooltime1
+          - action: switch.turn_off
+            target:
+              entity_id:
+                - switch.poolpumpe_relay
+                - switch.licht3d_1_relay
+      - conditions:
+          - condition: trigger
+            id: zeitsteuerung
+          - condition: template
+            value_template: |
+              {{ '10:00:00' <= now().strftime('%H:%M:%S') < '13:00:00' }}
+          - condition: state
+            entity_id: binary_sensor.pool_kalender_aktiv
+            state: 'on'
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id:
+                - switch.poolpumpe_relay
+                - switch.licht3d_1_relay
+      - conditions:
+          - condition: trigger
+            id: zeitsteuerung
+          - condition: template
+            value_template: |
+              {{ '13:00:00' <= now().strftime('%H:%M:%S') < '19:00:00' }}
+          - condition: state
+            entity_id: timer.poolpumpe_manuelle_laufzeit
+            state: idle
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id:
+                - switch.poolpumpe_relay
+                - switch.licht3d_1_relay
+      - conditions:
+          - condition: trigger
+            id: manuell_ein
+          - condition: time
+            before: '19:00:00'
+        sequence:
+          - action: timer.start
+            target:
+              entity_id: timer.poolpumpe_manuelle_laufzeit
+            data:
+              duration: |
+                {% set sekunden_bis_19 =
+                  (today_at('19:00:00') - now()).total_seconds() | int %}
+                {{ [10800, sekunden_bis_19] | min }}
+          - action: switch.turn_on
+            target:
+              entity_id:
+                - switch.poolpumpe_relay
+                - switch.licht3d_1_relay
+      - conditions:
+          - condition: trigger
+            id: manuell_aus
+        sequence:
+          - action: timer.cancel
+            target:
+              entity_id: timer.poolpumpe_manuelle_laufzeit
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: binary_sensor.pool_kalender_aktiv
+                    state: 'on'
+                  - condition: template
+                    value_template: >
+                      {{ '10:00:00' <= now().strftime('%H:%M:%S') < '13:00:00'
+                      }}
+                sequence:
+                  - action: switch.turn_on
+                    target:
+                      entity_id:
+                        - switch.poolpumpe_relay
+                        - switch.licht3d_1_relay
+            default:
+              - action: switch.turn_off
+                target:
+                  entity_id:
+                    - switch.poolpumpe_relay
+                    - switch.licht3d_1_relay
+      - conditions:
+          - condition: trigger
+            id: timer_abgelaufen
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: binary_sensor.pool_kalender_aktiv
+                    state: 'on'
+                  - condition: template
+                    value_template: >
+                      {{ '10:00:00' <= now().strftime('%H:%M:%S') < '13:00:00'
+                      }}
+                sequence:
+                  - action: switch.turn_on
+                    target:
+                      entity_id:
+                        - switch.poolpumpe_relay
+                        - switch.licht3d_1_relay
+            default:
+              - action: switch.turn_off
+                target:
+                  entity_id:
+                    - switch.poolpumpe_relay
+                    - switch.licht3d_1_relay
+      - conditions:
+          - condition: state
+            entity_id: timer.poolpumpe_manuelle_laufzeit
+            state: active
+          - condition: time
+            before: '19:00:00'
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id:
+                - switch.poolpumpe_relay
+                - switch.licht3d_1_relay
+      - conditions:
+          - condition: state
+            entity_id: binary_sensor.pool_kalender_aktiv
+            state: 'on'
+          - condition: template
+            value_template: |
+              {{ '10:00:00' <= now().strftime('%H:%M:%S') < '13:00:00' }}
+        sequence:
+          - action: switch.turn_on
+            target:
+              entity_id:
+                - switch.poolpumpe_relay
+                - switch.licht3d_1_relay
+    default:
+      - action: timer.cancel
+        target:
+          entity_id: timer.poolpumpe_manuelle_laufzeit
+      - action: switch.turn_off
+        target:
+          entity_id:
+            - switch.poolpumpe_relay
+            - switch.licht3d_1_relay
+mode: restart

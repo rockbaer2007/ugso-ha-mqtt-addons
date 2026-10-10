@@ -18,7 +18,7 @@ import { colourDefinitions, colourExpression, colourInput, colourToolbox } from 
 import { functionTypes, installFunctions, functionInfo, functionToolbox } from './functions.js';
 import { themedDefinition, themedCategories } from './themes.js';
 import './entities.js';
-import { installNativeFields, nativeList, nativeObject } from './native-fields.js';
+import { installNativeFields, nativeList, nativeObject, nativeTimeExpression } from './native-fields.js';
 import { customDefinition, customExpression, customNative } from './custom-packages.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
@@ -172,6 +172,10 @@ installConversionShape(Blockly);
 installFlowShape(Blockly);
 installCollectionShape(Blockly);
 definitions.push({ type: 'ugso_trigger_condition', message0: 'Ausgelöst durch ID %1 Liste %2', args0: [{ type: 'field_input', name: 'ID', text: 'button_1' }, { type: 'field_checkbox', name: 'ID_LIST', checked: false }], output: 'Boolean', colour: '#6860b5', tooltip: 'Prüft die ID des Auslösers. Mit Liste: IDs als JSON-Liste eingeben.' });
+definitions.push(
+  { type: 'ugso_event_trigger', message0: 'Wenn Ereignis %1 Datenfilter (JSON) %2 verwenden %3', args0: [{ type: 'field_input', name: 'EVENT_TYPE', text: 'timer.finished' }, { type: 'field_multilinetext', name: 'EVENT_DATA', text: '{"entity_id":"timer.poolpumpe_manuelle_laufzeit"}' }, { type: 'field_checkbox', name: 'FILTER', checked: true }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'HA-Ereignis mit optionalem Datenfilter, etwa timer.finished. Filterwerte als JSON-Objekt.' },
+  { type: 'ugso_native_time_condition', message0: 'HA-Uhrzeit nach %1 vor %2', args0: [{ type: 'field_input', name: 'AFTER', text: '' }, { type: 'field_input', name: 'BEFORE', text: '19:00:00' }], output: 'Boolean', colour: '#6860b5', tooltip: 'Native HA-Zeitbedingung: nach inklusive, vor exklusiv. Eine Grenze darf leer bleiben; beide zusammen auch über Mitternacht. Feste Uhrzeiten HH:MM oder HH:MM:SS.' }
+);
 Blockly.defineBlocksWithJsonArray(definitions.map(definition => localizedDefinition(themedDefinition(definition))));
 definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
@@ -211,8 +215,8 @@ export const toolbox = { kind: 'categoryToolbox', contents: [
   { kind: 'category', name: 'Werte', colour: '#2e7653', contents: ['number', 'percent', 'text', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}` })) },
   { kind: 'category', name: 'Datum und Zeit', colour: '#8056a1', contents: [{ kind: 'block', type: 'ugso_date_condition' }, ...timeDefinitions.map(({ type }) => ({ kind: 'block', type }))] },
   { kind: 'category', name: 'Konvertierung', colour: '#9463a6', contents: conversionDefinitions.map(({ type }) => ({ kind: 'block', type })) },
-  { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: ['state', 'numeric', 'time', 'sun', 'start'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })) },
-  { kind: 'category', name: 'Bedingungen', colour: '#6860b5', contents: ['state', 'numeric', 'logic', 'trigger'].map(type => ({ kind: 'block', type: `ugso_${type}_condition` })) },
+  { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: ['state', 'numeric', 'time', 'sun', 'start', 'event'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })) },
+  { kind: 'category', name: 'Bedingungen', colour: '#6860b5', contents: [...['state', 'numeric', 'logic', 'trigger'].map(type => ({ kind: 'block', type: `ugso_${type}_condition` })), { kind: 'block', type: 'ugso_native_time_condition' }] },
   { kind: 'category', name: 'Aktionen', colour: '#2682a5', contents: ['switch', 'service', 'delay', 'if', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) }
 ] };
 for (const category of toolbox.contents) for (const block of category.contents) {
@@ -335,6 +339,7 @@ function expression(block, depth = 0, scope = { params: new Map(), calls: [] }) 
     case 'ugso_ternary': return `(${child('TRUE')} if ${child('TEST')} else ${child('FALSE')})`;
     case 'ugso_state_condition': return `is_state(${entity()}, ${JSON.stringify(field(block, 'STATE'))})`;
     case 'ugso_trigger_condition': { const ids = nativeList(block, 'ID', 'ID_LIST'); return Array.isArray(ids) ? `(trigger.id in ${JSON.stringify(ids)})` : `(trigger.id == ${JSON.stringify(ids)})`; }
+    case 'ugso_native_time_condition': return nativeTimeExpression(block);
     case 'ugso_numeric_condition': {
       const state = `states(${entity()})`;
       return `(is_number(${state}) and (${state} | float) ${field(block, 'OP') === 'above' ? '>' : '<'} ${readNumber(block, 'LIMIT')})`;
@@ -370,9 +375,10 @@ function readTriggerBase(block) {
   const custom = customDefinition(block.type);
   if (custom?.kind === 'trigger') return customNative(custom, block, name => readValue(block, name));
   switch (block.type) {
-    case 'ugso_state_trigger': return { trigger: 'state', entity_id: field(block, 'ENTITY'), to: nativeList(block, 'STATE', 'STATE_LIST') };
+    case 'ugso_state_trigger': return { trigger: 'state', entity_id: field(block, 'ENTITY_LIST') === 'TRUE' ? nativeList(block, 'ENTITIES', 'ENTITY_LIST') : field(block, 'ENTITY'), ...(field(block, 'ANY_STATE') === 'TRUE' ? {} : { to: nativeList(block, 'STATE', 'STATE_LIST') }) };
     case 'ugso_numeric_trigger': return { trigger: 'numeric_state', ...range(block) };
-    case 'ugso_time_trigger': return { trigger: 'time', at: field(block, 'TIME') };
+    case 'ugso_time_trigger': return { trigger: 'time', at: nativeList(block, 'TIME', 'TIME_LIST') };
+    case 'ugso_event_trigger': return { trigger: 'event', event_type: field(block, 'EVENT_TYPE'), ...(field(block, 'FILTER') === 'TRUE' ? { event_data: nativeObject(block, 'EVENT_DATA') } : {}) };
     case 'ugso_sun_trigger': return { trigger: 'sun', event: field(block, 'EVENT') };
     case 'ugso_start_trigger': return { trigger: 'homeassistant', event: 'start' };
     default: throw new Error('Unbekannter Auslöser.');
@@ -395,6 +401,7 @@ function readCondition(block, depth) {
     case 'ugso_date_condition': return { condition: 'template', value_template: dateTemplate(field(block, 'DATE'), field(block, 'OP')) };
     case 'ugso_state_condition': return { condition: 'state', entity_id: field(block, 'ENTITY'), state: field(block, 'STATE') };
     case 'ugso_trigger_condition': return { condition: 'trigger', id: nativeList(block, 'ID', 'ID_LIST') };
+    case 'ugso_native_time_condition': return { condition: 'time', ...(field(block, 'AFTER') ? { after: field(block, 'AFTER') } : {}), ...(field(block, 'BEFORE') ? { before: field(block, 'BEFORE') } : {}) };
     case 'ugso_numeric_condition': return { condition: 'numeric_state', ...range(block) };
     case 'ugso_logic_condition': {
       const conditions = [];
@@ -522,14 +529,16 @@ function triggerBlock(workspace, item) {
 }
 function triggerBlockBase(workspace, item) {
   switch (item.trigger) {
-    case 'state': return create(workspace, 'ugso_state_trigger', { ENTITY: item.entity_id, STATE: Array.isArray(item.to) ? JSON.stringify(item.to) : item.to, STATE_LIST: Array.isArray(item.to) ? 'TRUE' : 'FALSE' });
+    case 'state': return create(workspace, 'ugso_state_trigger', { ENTITY: Array.isArray(item.entity_id) ? '' : item.entity_id, ENTITY_LIST: Array.isArray(item.entity_id) ? 'TRUE' : 'FALSE', ENTITIES: JSON.stringify(Array.isArray(item.entity_id) ? item.entity_id : []), ANY_STATE: Object.hasOwn(item, 'to') ? 'FALSE' : 'TRUE', STATE: Array.isArray(item.to) ? JSON.stringify(item.to) : item.to ?? 'on', STATE_LIST: Array.isArray(item.to) ? 'TRUE' : 'FALSE' });
     case 'numeric_state': return numberInput(create(workspace, 'ugso_numeric_trigger', fieldsRange(item)), 'LIMIT', item.above ?? item.below);
-    case 'time': return create(workspace, 'ugso_time_trigger', { TIME: item.at });
+    case 'time': return create(workspace, 'ugso_time_trigger', { TIME: Array.isArray(item.at) ? JSON.stringify(item.at) : item.at, TIME_LIST: Array.isArray(item.at) ? 'TRUE' : 'FALSE' });
+    case 'event': return create(workspace, 'ugso_event_trigger', { EVENT_TYPE: item.event_type, EVENT_DATA: JSON.stringify(item.event_data || {}), FILTER: Object.hasOwn(item, 'event_data') ? 'TRUE' : 'FALSE' });
     case 'sun': return create(workspace, 'ugso_sun_trigger', { EVENT: item.event });
     case 'homeassistant': return create(workspace, 'ugso_start_trigger');
   }
 }
 function conditionBlock(workspace, item) {
+  if (item.condition === 'time') return create(workspace, 'ugso_native_time_condition', { BEFORE: item.before || '', AFTER: item.after || '' });
   if (item.condition === 'trigger') return create(workspace, 'ugso_trigger_condition', { ID: Array.isArray(item.id) ? JSON.stringify(item.id) : item.id, ID_LIST: Array.isArray(item.id) ? 'TRUE' : 'FALSE' });
   if (item.condition === 'template') {
     try { const date = parseDateTemplate(item.value_template); return create(workspace, 'ugso_date_condition', { DATE: date.date, OP: date.op }); }

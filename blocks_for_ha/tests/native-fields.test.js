@@ -1,9 +1,47 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { nativeTimeExpression } from '../src/native-fields.js';
 import { Blockly, modelWorkspace, workspaceModel } from '../src/blocks.js';
 import { fromYaml, toYaml, validateAutomation } from '../src/model.js';
 const fixture = fromYaml(readFileSync(new URL('./fixtures/pc-tv.yaml', import.meta.url), 'utf8'));
+
+test('Native time expressions preserve inclusive/exclusive and overnight/equal boundaries in HA local time', { skip: process.env.BLOCKS_JINJA_TEST !== '1' }, () => {
+  const cases = [
+    ['22:00', '06:00', 21, false], ['22:00', '06:00', 22, true], ['22:00', '06:00', 0, true], ['22:00', '06:00', 6, false],
+    ['', '19:00', 18, true], ['', '19:00', 19, false], ['10:00', '', 10, true], ['10:00', '', 9, false], ['10:00', '10:00', 3, true]
+  ].map(([after, before, hour, expected]) => ({ expression: nativeTimeExpression({ getFieldValue: key => ({ AFTER: after, BEFORE: before })[key] }), hour, expected }));
+  const result = spawnSync('python', ['-c', `
+import json,sys
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from jinja2.nativetypes import NativeEnvironment
+env=NativeEnvironment(); zone=ZoneInfo('Europe/Berlin')
+for item in json.load(sys.stdin):
+ env.globals.update(now=lambda:datetime(2026,3,29,item['hour'],tzinfo=zone),today_at=lambda text:datetime.fromisoformat('2026-03-29T'+text).replace(tzinfo=zone))
+ assert env.from_string('{{ '+item['expression']+' }}').render() == item['expected'], item
+`], { input: JSON.stringify(cases), encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('Full pool pump automation retains time lists, unrestricted entity changes, events, time conditions and multiline timer templates', () => {
+  const model = fromYaml(readFileSync(new URL('./fixtures/pool-pump.yaml', import.meta.url), 'utf8'));
+  const ws = new Blockly.Workspace(), restored = new Blockly.Workspace();
+  try {
+    modelWorkspace(ws, model);
+    assert.deepEqual(workspaceModel(ws, model), model);
+    Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws), restored);
+    assert.deepEqual(fromYaml(toYaml(workspaceModel(restored, model))), model);
+    assert.equal(Object.hasOwn(workspaceModel(restored, model).triggers[1], 'to'), false);
+    restored.getBlocksByType('ugso_time_trigger')[0].setFieldValue('["25:00:00"]', 'TIME');
+    assert.throws(() => validateAutomation(workspaceModel(restored, model)), /Uhrzeit/);
+  } finally { ws.dispose(); restored.dispose(); }
+});
+test('Invalid time lists, entity lists, event filters and empty time conditions reject before import', () => {
+  for (const trigger of [{ trigger: 'time', at: [] }, { trigger: 'time', at: ['10:00', 'bad'] }, { trigger: 'state', entity_id: [] }, { trigger: 'event', event_type: 'timer.finished', event_data: [] }]) assert.throws(() => validateAutomation({ ...fixture, triggers: [trigger] }));
+  assert.throws(() => validateAutomation({ ...fixture, conditions: [{ condition: 'time' }] }));
+});
 
 test('PC/TV button automation retains all states, trigger IDs, branches, target lists and empty objects', () => {
   const ws = new Blockly.Workspace(), restored = new Blockly.Workspace();
