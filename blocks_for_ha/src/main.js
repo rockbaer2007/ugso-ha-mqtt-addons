@@ -12,6 +12,7 @@ import { withPackages, installedPackages, usedPackages, customDefinition, packag
 import { setupCustomEditor, refreshCustomToolbox } from './custom-editor.js';
 import { setupWorkspaceTools } from './workspace-tools.js';
 import { setupAppearance } from './appearance.js';
+import { setupOutputPanel } from './output-panel.js';
 
 document.querySelector('#app').innerHTML = `
 <header class="app-header"><a class="brand" href="/"><span class="brand-icon">▦</span><span>UGSo <strong>Blocks for HA</strong></span></a><div class="header-right"><span class="version">Vorschau 0.1.0</span><button id="about">Über & Lizenzen</button></div></header>
@@ -24,6 +25,7 @@ document.querySelector('#app').innerHTML = `
 document.querySelector('.version').textContent = `Vorschau ${version}`;
 document.querySelector('.project-bar').append(document.querySelector('.local-badge'));
 setupAppearance();
+setupOutputPanel(() => { Blockly.svgResize(workspace); workspace.scrollCenter(); });
 document.querySelector('.brand-icon').innerHTML = '<img src="./blocks-icon.svg" alt="" width="34" height="34">';
 document.querySelector('#about-dialog p').textContent = `Version ${version} · Visueller Editor für native Home-Assistant-Automationen.`;
 const $ = id => document.getElementById(id);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.24
+
+- HA-Ausgabepanel nach rechts einklappbar; Blockly nutzt die frei werdende Breite.
+- Zugänglicher Auf-/Zuklappknopf, lokal gespeicherter Zustand und kompakte mobile Zeile.
+- Ausgabe und Projekte bleiben beim Umschalten unverändert; DE/EN-Dokumentation ergänzt.
+
 ## 0.1.23
 
 - Einleitung und Automationseinstellungen in der Höhe verkleinert: kompaktere Überschrift, Abstände und 32-Pixel-Bedienelemente.
