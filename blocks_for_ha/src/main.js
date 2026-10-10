@@ -88,6 +88,12 @@ const importError = document.createElement('p'); importError.id = 'yaml-import-e
 const replaceLabel = document.createElement('label'); replaceLabel.className = 'yaml-replace'; replaceLabel.hidden = true;
 replaceLabel.innerHTML = '<input id="yaml-replace" type="checkbox">Aktuelle Automation vollständig ersetzen'; importError.after(replaceLabel);
 const outputNote = document.querySelector('.output-note').textContent;
+const yamlClear = document.createElement('button');
+yamlClear.id = 'yaml-clear'; yamlClear.type = 'button'; yamlClear.textContent = 'Eingabefeld leeren'; yamlClear.hidden = true;
+document.querySelector('.file-actions').append(yamlClear);
+yamlClear.addEventListener('click', () => {
+  yamlInput.value = ''; importError.textContent = ''; syncYamlMode(); yamlInput.focus();
+});
 function syncYamlMode() {
   const importing = $('yaml-mode').value === 'import';
   $('yaml').hidden = importing; yamlInput.hidden = !importing;
@@ -95,6 +101,7 @@ function syncYamlMode() {
   $('format').closest('label').hidden = importing;
   $('validation').hidden = $('valid-badge').hidden = $('copy').hidden = importing;
   document.querySelector('.file-actions').classList.toggle('import-actions', importing);
+  yamlClear.hidden = !importing; yamlClear.disabled = !yamlInput.value.length;
   $('save').textContent = importing ? 'Importieren' : 'Speichern';
   $('save').disabled = importing ? !yamlInput.value.trim() : !currentModel;
   document.querySelector('.output-panel .panel-heading span').textContent = importing ? 'YAML einfügen und in Blocks übernehmen' : 'Native YAML-Ausgabe';

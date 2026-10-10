@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.42
+
+- YAML-Import: drei kompakte, gleich große Buttons; längere Beschriftungen dürfen zweizeilig sein.
+- Rechts „Eingabefeld leeren“ zum Löschen des Einfügetextes und der Importfehlermeldung. Die aktuelle Automation und die Ersetzen-Auswahl bleiben erhalten.
+
 ## 0.1.41
 
 - 15 neue verschachtelte Jinja-Blocktypen; insgesamt 163 native Typen. Entitätsfunktionen mit Suchfeld, Filterargumente, Literale, Variablen, Berechnungen/Vergleiche, Textausgaben und einfache if/else-/for-Strukturen.
