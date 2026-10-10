@@ -1,5 +1,18 @@
 # UGSo Blocks für HA – vorgemerkte Erweiterungen
 
+## Vorgemerkt: eigene Blocks und Template-Pakete
+
+Am **10. Oktober 2026** vorgemerkt; noch nicht umgesetzt. Die originalen [Blockly Developer Tools](https://raspberrypifoundation.github.io/blockly-samples/examples/developer-tools/index.html) sollen zum Gestalten eigener Blocks dienen.
+
+- Vier UGSo-Vorlagen: **Wertblock**, **Boolean-Bedingung**, **HA-Aktion** und **Container mit Aktionskörper**.
+- JSON-Definitionen für Felder, Dropdowns, Checkboxen, Variablen, Zahlenbegrenzungen, Bilder, Farben und Value-/Statement-/Dummy-/Zeilenumbruch-Inputs übernehmen.
+- Feld-/Eingangszuordnung zum eigenen **HA-YAML-/Jinja-Generator** ergänzen. Die Auswahl JavaScript/Python/PHP/Dart/Lua liefert nur ein Generatorgerüst, keine fertige HA-Funktion.
+- Anschlüsse explizit auf Boolean, Number, String, Value, RuntimeNumber, Time, Action und Trigger abbilden; Array-/Objektanschlüsse mit dem vorhandenen Typmodell abstimmen. Andockprüfung und HA-Laufzeitprüfung getrennt behandeln.
+- **Importdialog mit Block- und Ausgabevorschau**, Feld-/Eingangszuordnung und Validierung planen. Importierte JavaScript-Generatoren nicht ungeprüft ausführen.
+- Mehrere Blocks als **versioniertes Katalog-/Pluginpaket** bündeln: eindeutige Paket-/Block-IDs, Kategorie, Beschreibung, Hilfe, Lizenz, Beispiele und Dokumentation. Abhängigkeiten, Namenskonflikte, Updates, Import/Export und Projektmigration berücksichtigen.
+- Zahnrad/Mutatoren und dynamische Eingänge benötigen zusätzliche Implementierung. Der Originaleditor gestaltet jeweils einen Blocktyp; Pakete bündeln separat erstellte Definitionen.
+- Bei späterer Umsetzung bestehende Projekte erhalten, JSON-/YAML-Verhalten prüfen, passende Paketversion anheben und öffentliche DE/EN-Dokumentation mit Originalquellen aktualisieren.
+
 ## Nach Timeouts, Objekt und Logik (0.1.13)
 
 18 Blocks sind umgesetzt, siehe [öffentliche Gegenüberstellung](https://opensource.ugso-software.de/projects/blocks-for-ha/flow). Offen bleiben persistente Timer mit timer.finished-Auslöser, periodische HA-Auslöser, parallele Zweige, Zählschleifen von/bis/Schritt, lokales break/continue und Listenindex/Zufall/Subliste. Lauf stoppen beendet die ganze HA-Ausführung und ersetzt kein break. Benannte JavaScript-Timer-Handles nicht als HA-Runtimefunktion vortäuschen.
