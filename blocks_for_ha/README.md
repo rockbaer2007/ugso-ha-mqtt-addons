@@ -1,5 +1,7 @@
 # UGSo Blocks for HA
 
+Neu in **0.1.47**: **Funktionen** enthält wiederverwendbare Aktionsfunktionen mit bis zu acht Parametern sowie **Falls / gib zurück / sonst** für Wertfunktionen. Parameter über Variablenblöcke anschließen; Aktionsaufrufe werden als HA-Ablaufgruppen mit eigenen internen Parameterbindungen exportiert. Freie Jinja-Texte bleiben im normalen HA-Kontext. JSON-Projekte bewahren die Definitionen; YAML enthält die aufgelösten Schritte. Keine Rekursion oder JavaScript-Ausführung.
+
 Neu in **0.1.46**: **Sprache → System / DE / EN / FR** übersetzt die gesamte App einschließlich Dialogen, Status, Bestätigungen und Validierungshinweisen. Eigene Namen, HA-Daten, technische IDs sowie YAML/Jinja bleiben unverändert.
 
 Neu in **0.1.45**: Toolbox ohne doppelte Einträge. Zahl unter **Mathematik**, Text unter **Text**, Farbe unter **Farbe**, erweiterbares UND/ODER/NICHT unter **Logik**. **Werte** enthält den Prozentblock. Bestehende Projekte bleiben kompatibel.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.47
+
+- Wiederverwendbare Aktionsfunktionen mit bis zu acht Parametern und dynamischen Aufrufblöcken. Export als native HA-Ablaufgruppen mit eigenen Parameterbindungen je Aufruf; verschachtelte Aufrufe und Projektwiederherstellung bleiben erhalten.
+- Bedingter Rückgabewert in Funktionen: Falls / Rückgabewert / Sonst. Export als Jinja-Ausdruck, nur der ausgewählte Wertzweig wird ausgewertet.
+- Parameter über Variablenblöcke verwenden; freie Jinja-Texte behalten ihren HA-Kontext. Rekursion, fehlende Argumente, leere Aktionskörper und doppelte Funktionsnamen verhindern den Export. Stop bleibt ein Stop des gesamten HA-Laufs.
+- DE/EN/FR-Beschriftungen, Dokumentation und Blockbilder ergänzt; Export, Parameterbindungen, Jinja und Speicherung geprüft.
+
 ## 0.1.46
 
 - Sprachwahl DE/EN/FR/System gilt für die gesamte App: Hauptoberfläche, YAML-Import, HA-Auswahl, Blockpaket-Editor, Tastaturhilfe, Hinweise, Bestätigungen und zugängliche Beschriftungen.

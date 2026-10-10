@@ -287,10 +287,11 @@ export function setupVariables(workspace) {
     return items;
   });
 }
-function variableName(block) {
+let actionScope = { params: new Map(), calls: [] }, functionIndex = 0, functionSource = '';
+function variableName(block, scoped = true) {
   const name = block.getField('VAR').getVariable()?.name;
   if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name || '')) throw new Error('Variable: Name muss mit Buchstabe oder _ beginnen und darf nur Buchstaben, Ziffern und _ enthalten.');
-  return name;
+  return scoped ? actionScope.params.get(name) || name : name;
 }
 function readValue(block, input) {
   const child = block.getInputTargetBlock(input);
@@ -304,11 +305,11 @@ function readValue(block, input) {
   if (['ugso_text', 'ugso_template', 'ugso_jinja_value'].includes(child.type)) return field(child, 'TEXT');
   if (flowDefinitions.some(d => d.type === child.type && d.output)) return `{{ ${expression(child)} }}`;
   if (collectionDefinitions.some(d => d.type === child.type && d.output)) return `{{ ${expression(child)} }}`;
-  if (child.type === 'ugso_colour' || colourDefinitions.some(d => d.type === child.type) || ['procedures_callreturn', 'variables_get'].includes(child.type)) return `{{ ${expression(child)} }}`;
+  if (child.type === 'ugso_colour' || colourDefinitions.some(d => d.type === child.type) || ['procedures_callreturn', 'ugso_function_result', 'variables_get'].includes(child.type)) return `{{ ${expression(child)} }}`;
   if (child.type.startsWith('ugso_convert_') || child.type.startsWith('ugso_time_') || child.type === 'ugso_ternary' || child.outputConnection?.getCheck()?.includes('Boolean')) return `{{ ${expression(child)} }}`;
   throw new Error(`${input}: Wertblock wird nicht unterstützt.`);
 }
-function expression(block, depth = 0, scope = { params: new Map(), calls: [] }) {
+function expression(block, depth = 0, scope = actionScope) {
   if (!block?.isEnabled()) throw new Error('Logik: Wert oder Bedingung fehlt.');
   if (depth > 10) throw new Error('Logik ist zu tief verschachtelt.');
   if (block.type.startsWith('ugso_jinja_composed_')) return jinjaBlockExpression(block);
@@ -348,12 +349,12 @@ function expression(block, depth = 0, scope = { params: new Map(), calls: [] }) 
     case 'ugso_text': return JSON.stringify(field(block, 'TEXT'));
     case 'ugso_boolean': return field(block, 'BOOL');
     case 'ugso_null': return 'none';
-    case 'ugso_variable_get': case 'variables_get': { const name = variableName(block); return scope.params.get(name) || name; }
+    case 'ugso_variable_get': case 'variables_get': { const name = variableName(block, false); return scope.params.get(name) || name; }
     case 'ugso_template': case 'ugso_template_condition': case 'ugso_jinja_value': case 'ugso_jinja_condition': return template(field(block, 'TEXT'));
     case 'ugso_compare': return `(${child('LEFT')} ${field(block, 'OP')} ${child('RIGHT')})`;
     case 'ugso_not': return `(not ${child('BOOL')})`;
     case 'ugso_binary_logic': return `(${child('LEFT')} ${field(block, 'OP')} ${child('RIGHT')})`;
-    case 'ugso_ternary': return `(${child('TRUE')} if ${child('TEST')} else ${child('FALSE')})`;
+    case 'ugso_function_result': case 'ugso_ternary': return `(${child('TRUE')} if ${child('TEST')} else ${child('FALSE')})`;
     case 'ugso_state_condition': return `is_state(${entity()}, ${JSON.stringify(field(block, 'STATE'))})`;
     case 'ugso_trigger_condition': { const ids = nativeList(block, 'ID', 'ID_LIST'); return Array.isArray(ids) ? `(trigger.id in ${JSON.stringify(ids)})` : `(trigger.id == ${JSON.stringify(ids)})`; }
     case 'ugso_native_time_condition': return nativeTimeExpression(block);
@@ -418,7 +419,7 @@ function readCondition(block, depth) {
   if (block.type === 'ugso_jinja_composed_condition') return { condition: 'template', value_template: composedJinja(block) };
   const custom = customDefinition(block.type);
   if (custom && ['value', 'condition'].includes(custom.kind) && custom.output === 'Boolean') return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
-  if (block.type === 'procedures_callreturn') return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
+  if (['procedures_callreturn','ugso_function_result'].includes(block.type)) return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
   if (collectionDefinitions.some(d => d.type === block.type && Array.isArray(d.output) && d.output.includes('Boolean'))) return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
   if (['ugso_object_has', 'ugso_logic_range', 'ugso_list_empty'].includes(block.type)) return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
@@ -457,6 +458,25 @@ function readConditions(block, depth = 0) {
   return block.type === 'ugso_logic_condition' && block.list_ && field(block, 'LOGIC') === 'and' ? result.conditions : [result];
 }
 function readAction(block, depth) {
+  if (block.type === 'procedures_callnoreturn') {
+    const name=block.getProcedureCall();
+    const matches=block.workspace.getBlocksByType('procedures_defnoreturn',false).filter(b=>b.isEnabled()&&b.getFieldValue('NAME')===name);
+    if(matches.length!==1)throw Error('Funktion: eindeutige aktive Definition fehlt.');
+    const {params}=functionInfo(matches[0]);
+    if(actionScope.calls.includes(name))throw Error('Funktion: Rekursion wird nicht unterstützt.');
+    if(!matches[0].getInputTargetBlock('STACK'))throw Error('Funktion: Aktionsablauf fehlt.');
+    const args=params.map((param,i)=>readValue(block,`ARG${i}`));
+    let prefix;
+    do {prefix=`ugso_fn_${++functionIndex}_`;} while(functionSource.includes(prefix));
+    const bindings=new Map(params.map(param=>[param,prefix+param]));
+    const previous=actionScope;
+    actionScope={params:bindings,calls:[...previous.calls,name]};
+    try {
+      const body=chain(matches[0].getInputTargetBlock('STACK'),readAction,(depth||0)+1);
+      if(!body.length)throw Error('Funktion: Aktionsablauf fehlt.');
+      return {sequence:[...(params.length?[{variables:Object.fromEntries(params.map((param,i)=>[bindings.get(param),args[i]]))}]:[]),...body]};
+    } finally {actionScope=previous;}
+  }
   if (block.type === 'ugso_ha_action') return advancedJSON(block);
   if (block.type === 'ugso_target_action') {
     const source=field(block,'TARGET');let id=source;if(source.trim().startsWith('[')){try{id=JSON.parse(source);}catch{throw Error('Ziel: Gültige JSON-Liste erwartet.');}}
@@ -532,16 +552,24 @@ function readAction(block, depth) {
   }
 }
 export function workspaceModel(workspace, metadata) {
+  actionScope={params:new Map(),calls:[]};functionIndex=0;
+  functionSource=JSON.stringify([Blockly.serialization.workspaces.save(workspace),metadata]);
   const roots = workspace.getTopBlocks(false).filter(block => block.isEnabled());
-  const functions = roots.filter(b => b.type === 'procedures_defreturn'), names = new Set();
+  const functions = roots.filter(b => ['procedures_defreturn','procedures_defnoreturn'].includes(b.type)), names = new Set();
   for (const block of functions) {
     const { name, params } = functionInfo(block);
     if (names.has(name)) throw new Error('Funktion: Namen müssen eindeutig sein.');
     names.add(name);
-    expression(block.getInputTargetBlock('RETURN'), 0, { params: new Map(params.map(p => [p, p])), calls: [name] });
+    if(block.type==='procedures_defreturn')expression(block.getInputTargetBlock('RETURN'), 0, { params: new Map(params.map(p => [p, p])), calls: [name] });
+    else {
+      actionScope={params:new Map(params.map(p=>[p,p])),calls:[name]};
+      try {if(!chain(block.getInputTargetBlock('STACK'),readAction).length)throw Error('Funktion: Aktionsablauf fehlt.');}
+      finally {actionScope={params:new Map(),calls:[]};}
+    }
   }
-  const automations = roots.filter(b => b.type !== 'procedures_defreturn');
-  if (automations.length !== 1 || automations[0].type !== 'ugso_automation') throw new Error('Alle Blocks außer Wertfunktionen müssen mit genau einer Automation verbunden sein.');
+  functionIndex=0;
+  const automations = roots.filter(b => !['procedures_defreturn','procedures_defnoreturn'].includes(b.type));
+  if (automations.length !== 1 || automations[0].type !== 'ugso_automation') throw new Error('Alle Blocks außer Funktionsdefinitionen müssen mit genau einer Automation verbunden sein.');
   const root = automations[0];
   return { ...metadata, triggers: chain(root.getInputTargetBlock('TRIGGERS'), readTrigger), conditions: readConditions(root.getInputTargetBlock('CONDITIONS')), actions: chain(root.getInputTargetBlock('ACTIONS'), readAction) };
 }

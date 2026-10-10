@@ -33,8 +33,14 @@ try {
     for (const type of selectedTypes) {
       const result = await page.evaluate(type => {
         const ws = window.docWorkspace; ws.clear();
-        const block = ws.newBlock(type); block.initSvg(); block.render();
-        ws.scrollCenter();
+        if(type==='procedures_callnoreturn'){
+          const definition=ws.newBlock('procedures_defnoreturn');definition.setFieldValue('log_message','NAME');definition.loadExtraState({params:[{name:'message'}]});definition.initSvg();definition.render();definition.moveBy(5000,5000);
+        }
+        const block = ws.newBlock(type);
+        if(type==='procedures_defnoreturn'){block.setFieldValue('log_message','NAME');block.loadExtraState({params:[{name:'message'}]});}
+        if(type==='procedures_callnoreturn')block.loadExtraState({name:'log_message',params:['message']});
+        block.initSvg(); block.render();
+        ws.centerOnBlock(block.id);
         const rect = block.getSvgRoot().getBoundingClientRect();
         const contrasts = [...block.getSvgRoot().querySelectorAll('text.blocklyText')].map(label => {
           const owner = block.getDescendants(false).find(candidate => candidate.getSvgRoot() === label.closest('g[data-id]')) || block;
@@ -53,6 +59,7 @@ try {
         return { clip: { x: Math.max(0, rect.x - 3), y: Math.max(0, rect.y - 3), width: Math.ceil(rect.width + 6), height: Math.ceil(rect.height + 6) }, contrasts };
       }, type);
       assert.ok(result.contrasts.every(contrast => contrast >= 4.5), `${locale}:${type} label contrast`);
+      assert.ok(result.clip.width>20 && result.clip.height>20,`${locale}:${type} visible block`);
       await page.screenshot({ path: resolve(destination, locale, type + '.png'), clip: result.clip });
     }
     const jinjaDestination=resolve(destination,'../jinja');await mkdir(jinjaDestination,{recursive:true});
