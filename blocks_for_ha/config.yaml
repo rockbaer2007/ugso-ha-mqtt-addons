@@ -1,5 +1,5 @@
 name: UGSo Blocks for HA
-version: "0.1.19"
+version: "0.1.20"
 slug: blocks_for_ha
 description: Native Home-Assistant-Automationen mit visuellen Blocks erstellen
 stage: experimental
@@ -13,7 +13,7 @@ init: false
 ingress: true
 ingress_port: 8099
 homeassistant_api: true
-panel_icon: mdi:puzzle
+panel_icon: mdi:toy-brick-outline
 panel_title: Blocks for HA
 options: {}
 schema: {}

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.20
+
+- Home-Assistant-Seitenleiste: einfarbiges Baustein-Icon `mdi:toy-brick-outline` statt des allgemeinen Puzzle-Symbols.
+- Aktivierung, Aktualisierung und Abgrenzung zum farbigen App-Icon dokumentiert.
+
 ## 0.1.19
 
 - Offizielles, unverändertes Built-with-Blockly-Badge im Fußbereich und Lizenzdialog; lokal ausgeliefert, 32 Pixel hoch und mit Abstand.

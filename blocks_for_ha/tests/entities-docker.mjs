@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-const exec = promisify(execFile), image = 'ugso-blocks-for-ha:0.1.19';
+const exec = promisify(execFile), image = 'ugso-blocks-for-ha:0.1.20';
 let redirect = false, requests = 0, container;
 const ha = createServer((req, res) => {
   requests++;

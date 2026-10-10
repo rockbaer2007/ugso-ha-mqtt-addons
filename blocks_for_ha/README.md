@@ -10,7 +10,7 @@ Neu in 0.1.10: **Erhöhe Variable um …** steht im Variablen-Menü zwischen Set
 
 Neu in 0.1.9: **Logik** mit Vergleich (=, ≠, <, ≤, >, ≥), kompaktem UND/ODER, NICHT, wahr/falsch, null und bedingter Wertauswahl. Zahl/Text/Variable/Template an die Werteingänge, Boolean an die Bedingungseingänge anschließen. Variablenzuweisungen unterstützen jetzt Boolean und null. JSON bewahrt Blockformen; YAML-Import erhält komplexe Ausdrücke als Template-Blocks. Vergleiche konvertieren Typen nicht automatisch. Ausdruckseingänge akzeptieren einzelne Jinja-Ausgaben; dynamische Werte sind nicht als feste Grenzen oder Wartezeiten vorgesehen.
 
-Version 0.1.19: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
+Version 0.1.20: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
 
 Neu in 0.1.12: **Konvertierung** mit neun Blocks für Zahl, Logikwert, String, Typ, Datumswert, Datumsformat/-bestandteile, Zeitdifferenz, JSON lesen und JSON schreiben mit Formatierungs-Haken. HA-Konvertierungsregeln, ausdrückliche Unix-/Dauereinheiten, dynamischer Format-Eingang und typisierter Laufzeitzahlen-Anschluss für Vergleiche, Variablen und Zeitrechnung. Feste Auslösergrenzen und Wartezeiten bleiben Konstanten. JSONata ist als offene Erweiterung dokumentiert. [Gegenüberstellung und Beispiele](https://opensource.ugso-software.de/projects/blocks-for-ha/conversion).
 
@@ -72,3 +72,7 @@ Eigener Code: Apache-2.0. Blockly: Apache-2.0. YAML-Bibliothek: ISC. ZIP-Bibliot
 ## Built with Blockly
 
 Blockly ist eine Open-Source-Entwicklerbibliothek der Raspberry Pi Foundation, ursprünglich bei Google entwickelt. Das unveränderte offizielle Badge erscheint im Fußbereich und Lizenzdialog, mit Link zu Blockly, 32 Pixel Höhe und Freiraum. Beide Original-SVGs werden lokal ausgeliefert. [Attributionshinweise](https://docs.blockly.com/guides/app-integration/attribution/).
+
+## Home-Assistant-Seitenleiste
+
+Seit 0.1.20 zeigt der HA-Seitenleisteneintrag das einfarbige Baustein-Symbol `mdi:toy-brick-outline`. Nach dem App-Update und Neustart „In der Seitenleiste anzeigen“ einschalten; bei alter Anzeige die HA-Seite neu laden. Die native App-Konfiguration verwendet MDI-Icons statt einer eigenen farbigen SVG-Datei. Das farbige UGSo-Icon bleibt im App-Store und Editor. [HA-Konfiguration](https://developers.home-assistant.io/docs/apps/configuration/) · [Originalicon](https://pictogrammers.com/library/mdi/icon/toy-brick-outline/).
