@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.45
+
+- Vier doppelte Toolbox-Einträge entfernt: Zahl ausschließlich unter Mathematik, Text unter Text, Farbe unter Farbe und erweiterbares UND/ODER/NICHT unter Logik. Unter Werte bleibt der Prozentblock.
+- Blocktypen, gespeicherte Projekte und YAML-Verhalten bleiben erhalten. Kategorien einschließlich dynamischer Variablen/Funktionen geprüft; DE/EN/FR-Dokumentation aktualisiert.
+
 ## 0.1.44
 
 - Durchsuchbare Auswahl für HA-Aktionsnamen und passende Entitäten in einfachen und erweiterten Blocks; alle 163 Blocktypen geprüft. Szenen, Zahlenreferenzen und Zeithelfer berücksichtigen ihre Feldart.
