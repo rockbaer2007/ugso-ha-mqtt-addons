@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.22
+
+- App-weite Darstellung Hell/Dunkel/System mit lokaler Speicherung und Live-Systemumschaltung.
+- Dunkle Farben für Formulare, Dialoge, Entitätsauswahl, eigenen Editor und Arbeitsbereichssuche; passendes originales Blockly-Badge.
+- Blockly-Palette bleibt unabhängig; DE/EN-Dokumentation ergänzt.
+
 ## 0.1.21
 
 - Originale Arbeitsbereichssuche für platzierte Blocks, deutsche Beschriftung und kompakte Suchleiste.

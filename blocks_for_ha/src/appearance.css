@@ -1,0 +1,25 @@
+:root{color-scheme:light}
+.appearance-label{flex-direction:row;align-items:center;gap:6px;font-size:11px}
+.appearance-label select{width:90px;min-width:0;height:32px;padding:4px 7px}
+:root[data-appearance="dark"]{color-scheme:dark;color:#e3ece9;background:#111b21;--accent:#65d5c5;--border:#40535e}
+:root[data-appearance="dark"] :is(.app-header,.project-bar,.canvas-panel,.output-panel,dialog,#entity-dialog,#custom-editor){background:#1d2a33;color:#e3ece9}
+:root[data-appearance="dark"] :is(button,input,select,textarea){background:#283a46;color:#edf5f2;border-color:#526977}
+:root[data-appearance="dark"] button:hover{background:#354d5d;border-color:#7ca99e}
+:root[data-appearance="dark"] .primary{background:#238d7d;color:#fff;border-color:#238d7d}
+:root[data-appearance="dark"] .primary:hover{background:#2aa18f}
+:root[data-appearance="dark"] :is(.brand,.eyebrow,.ha-hint strong){color:#d1eee5}
+:root[data-appearance="dark"] :is(label,.version,.intro p,.panel-heading span,.canvas-foot,#validation,.output-note,.more p,.more summary,.ha-hint,footer,.custom-help,.custom-body details p){color:#b5c8ce}
+:root[data-appearance="dark"] :is(.ha-hint,.local-badge,.custom-header,.custom-footer){background:#263c46;color:#cce7e1;border-color:#49645e}
+:root[data-appearance="dark"] .local-badge.connected{background:#203f38;color:#a6ead2}
+:root[data-appearance="dark"] .valid-badge{background:#23463a;color:#b1f1cd!important;border-color:#477b61}
+:root[data-appearance="dark"] .valid-badge.invalid{background:#493820;color:#ffdb9f!important;border-color:#876b38}
+:root[data-appearance="dark"] :is(#entity-error,.custom-footer .error){color:#ff9ca8}
+:root[data-appearance="dark"] #entity-results .entity-result{background:#263c46;color:#edf5f2}
+:root[data-appearance="dark"] #entity-results .entity-result span{color:#b5c8ce}
+:root[data-appearance="dark"] #entity-results .entity-result[aria-pressed="true"]{background:#254b42;border-color:#65d5c5}
+:root[data-appearance="dark"] :is(#yaml,.custom-preview pre){background:#0e191e;color:#d5ece2}
+:root[data-appearance="dark"] footer a{color:#65d5c5}
+:root[data-appearance="dark"] #workspace .blockly-ws-search{background:#263c46;color:#edf5f2;border-color:#7e97a4}
+:root[data-appearance="dark"] #workspace .blockly-ws-search input{background:#152630;color:#edf5f2;border-color:#7e97a4}
+:root[data-appearance="dark"] #workspace .blockly-ws-search button{background-color:#bcd0d8;border-color:#bcd0d8}
+@media(max-width:780px){.app-header{height:auto;min-height:70px;gap:10px;padding-top:10px;padding-bottom:10px;flex-wrap:wrap}.header-right{flex-wrap:wrap;margin-left:auto}.appearance-label{font-size:10px}}
