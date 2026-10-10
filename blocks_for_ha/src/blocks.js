@@ -20,6 +20,7 @@ import { themedDefinition, themedCategories } from './themes.js';
 import './entities.js';
 import { installNativeFields, nativeList, nativeObject, nativeTimeExpression } from './native-fields.js';
 import { advancedDefinitions, advancedJSON, equivalent, advancedTriggerType, setupJinjaBlock, setupParallelBlock, setupIntegrationBlock } from './advanced.js';
+import { jinjaDefinitions, setupJinjaShape, createJinjaBlock, composedJinja, jinjaBlockExpression } from './jinja-blocks.js';
 import { customDefinition, customExpression, customNative } from './custom-packages.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
@@ -52,6 +53,7 @@ const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 export const definitions = [
   ...advancedDefinitions,
+  ...jinjaDefinitions,
   ...timeDefinitions,
   ...conversionDefinitions,
   ...flowDefinitions,
@@ -187,7 +189,8 @@ definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
   Blockly.Blocks[definition.type].init = function () {
     original.call(this); installNativeFields(Blockly, this, Multiline.FieldMultilineInput); setupJinjaBlock(this); setupParallelBlock(Blockly, this, translateLabel('Zweig')); setupIntegrationBlock(Blockly,this); this.setHelpUrl(documentationPath(this.type.startsWith('ugso_time_') ? 'time' : ''));
-    if (advancedDefinitions.some(d=>d.type===this.type)) this.setHelpUrl(documentationPath('advanced'));
+    setupJinjaShape(this);
+    if (advancedDefinitions.some(d=>d.type===this.type)||jinjaDefinitions.some(d=>d.type===this.type)) this.setHelpUrl(documentationPath('advanced'));
     if (this.type.startsWith('ugso_convert_')) this.setHelpUrl(documentationPath('conversion'));
     if (flowDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('flow'));
     if (collectionDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('collections'));
@@ -218,7 +221,7 @@ function addExpansionButtons(block) {
 export { Blockly };
 export const knownTypes = new Set([...definitions.map(item => item.type), ...functionTypes]);
 export const toolbox = { kind: 'categoryToolbox', contents: [
-  { kind: 'category', name: 'Jinja (experimentell)', colour: '#8a6635', contents: ['ugso_jinja_value','ugso_jinja_condition'].map(type=>({kind:'block',type})) },
+  { kind: 'category', name: 'Jinja (experimentell)', colour: '#8a6635', contents: [...jinjaDefinitions.map(d=>d.type),'ugso_jinja_value','ugso_jinja_condition'].map(type=>({kind:'block',type})) },
   { kind: 'category', name: 'HA erweitert', colour: '#2682a5', contents: advancedDefinitions.filter(d=>!d.type.startsWith('ugso_jinja')).map(({type})=>({kind:'block',type})) },
   { kind: 'category', name: 'System', colour: '#2682a5', contents: ['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) },
   { kind: 'category', name: 'Werte', colour: '#2e7653', contents: ['number', 'percent', 'text', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}` })) },
@@ -289,6 +292,7 @@ function variableName(block) {
 function readValue(block, input) {
   const child = block.getInputTargetBlock(input);
   if (!child?.isEnabled()) throw new Error(`${input}: Wertblock fehlt.`);
+  if (child.type === 'ugso_jinja_composed_value') return composedJinja(child);
   if (customDefinition(child.type)) return `{{ ${expression(child)} }}`;
   if (['ugso_number', 'ugso_percent'].includes(child.type)) return Number(field(child, 'NUM'));
   if (child.type === 'ugso_boolean') return field(child, 'BOOL') === 'true';
@@ -304,6 +308,7 @@ function readValue(block, input) {
 function expression(block, depth = 0, scope = { params: new Map(), calls: [] }) {
   if (!block?.isEnabled()) throw new Error('Logik: Wert oder Bedingung fehlt.');
   if (depth > 10) throw new Error('Logik ist zu tief verschachtelt.');
+  if (block.type.startsWith('ugso_jinja_composed_')) return jinjaBlockExpression(block);
   const child = name => expression(block.getInputTargetBlock(name), depth + 1, scope);
   const custom = customDefinition(block.type);
   if (custom && ['value', 'condition'].includes(custom.kind)) return customExpression(custom, block, child);
@@ -407,6 +412,7 @@ function readTriggerBase(block) {
 function readCondition(block, depth) {
   if (block.type === 'ugso_ha_condition') return advancedJSON(block);
   if (block.type === 'ugso_jinja_condition') return { condition: 'template', value_template: field(block, 'TEXT') };
+  if (block.type === 'ugso_jinja_composed_condition') return { condition: 'template', value_template: composedJinja(block) };
   const custom = customDefinition(block.type);
   if (custom && ['value', 'condition'].includes(custom.kind) && custom.output === 'Boolean') return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
   if (block.type === 'procedures_callreturn') return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
@@ -596,7 +602,7 @@ function legacyConditionBlock(workspace, item) {
   if (item.condition === 'trigger') return create(workspace, 'ugso_trigger_condition', { ID: Array.isArray(item.id) ? JSON.stringify(item.id) : item.id, ID_LIST: Array.isArray(item.id) ? 'TRUE' : 'FALSE' });
   if (item.condition === 'template') {
     try { const date = parseDateTemplate(item.value_template); return create(workspace, 'ugso_date_condition', { DATE: date.date, OP: date.op }); }
-    catch { return create(workspace, 'ugso_jinja_condition', { TEXT: item.value_template }); }
+    catch { return createJinjaBlock(workspace, item.value_template, true); }
   }
   if (item.condition === 'state') return create(workspace, 'ugso_state_condition', { ENTITY: item.entity_id, STATE: item.state });
   if (item.condition === 'numeric_state') return numberInput(create(workspace, 'ugso_numeric_condition', fieldsRange(item)), 'LIMIT', item.above ?? item.below);
@@ -702,7 +708,8 @@ function valueInput(block, input, val) {
     const variable = block.workspace.getVariableMap().createVariable(match[1]);
     const child = create(block.workspace, 'ugso_variable_get', { VAR: variable.getId() });
     block.getInput(input).connection.connect(child.outputConnection);
-  } else block.getInput(input).connection.setShadowState({ type: /\{[{%]/.test(val) ? 'ugso_jinja_value' : 'ugso_text', fields: { TEXT: val } });
+  } else if (/\{[{%]/.test(val)) block.getInput(input).connection.connect(createJinjaBlock(block.workspace, val).outputConnection);
+  else block.getInput(input).connection.setShadowState({ type: 'ugso_text', fields: { TEXT: val } });
 }
 export function modelWorkspace(workspace, model) {
   Blockly.Events.disable();

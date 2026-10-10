@@ -29,7 +29,8 @@ try {
     await page.locator('#theme').selectOption('standard');
     await page.evaluate(() => { window.docWorkspace.getToolbox().setVisible(false); window.docWorkspace.setScale(1); });
     await mkdir(resolve(destination, locale), { recursive: true });
-    for (const type of types) {
+    const selectedTypes=process.env.BLOCK_DOC_PREFIX?types.filter(type=>type.startsWith(process.env.BLOCK_DOC_PREFIX)):types;
+    for (const type of selectedTypes) {
       const result = await page.evaluate(type => {
         const ws = window.docWorkspace; ws.clear();
         const block = ws.newBlock(type); block.initSvg(); block.render();
@@ -54,6 +55,15 @@ try {
       assert.ok(result.contrasts.every(contrast => contrast >= 4.5), `${locale}:${type} label contrast`);
       await page.screenshot({ path: resolve(destination, locale, type + '.png'), clip: result.clip });
     }
-    await page.close(); console.log(`${locale}: ${types.length} actual block images rendered.`);
+    const jinjaDestination=resolve(destination,'../jinja');await mkdir(jinjaDestination,{recursive:true});
+    const clip=await page.evaluate(async locale=>{
+      const url=performance.getEntriesByType('resource').find(e=>new URL(e.name).pathname==='/src/jinja-blocks.js').name;
+      const {createJinjaBlock}=await import(url),ws=window.docWorkspace;ws.clear();
+      const title={de:'Wasser',en:'Water',fr:'Eau'}[locale];
+      const block=createJinjaBlock(ws,`${title}: {{ states('sensor.pool') | float(0) | round(1) }} °C`);await window.docBlockly.renderManagement.finishQueuedRenders();ws.scrollCenter();
+      const r=block.getSvgRoot().getBoundingClientRect();return{x:Math.max(0,r.x-4),y:Math.max(0,r.y-4),width:Math.ceil(r.width+8),height:Math.ceil(r.height+8)};
+    },locale);
+    await page.screenshot({path:resolve(jinjaDestination,locale+'.png'),clip});
+    await page.close(); console.log(`${locale}: ${selectedTypes.length} actual block images and composed Jinja example rendered.`);
   }
 } finally { await browser.close(); }

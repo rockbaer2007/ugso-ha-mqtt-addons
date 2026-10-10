@@ -35,7 +35,7 @@ try {
   const path = '/assets/blocks-for-ha/packages/ugso_sensor_tools-1.0.0';
   assert.deepEqual(await (await fetch(base + path + '.json')).json(), customExample);
   assert.deepEqual(await readPackageZip(new Uint8Array(await (await fetch(base + path + '.zip')).arrayBuffer())), customExample);
-  for (const suffix of ['', 'time', 'conversion', 'collections', 'flow', 'entities', 'themes', 'custom-blocks', 'blockly-audit', 'catalog/']) {
+  for (const suffix of ['', 'time', 'conversion', 'collections', 'flow', 'entities', 'themes', 'advanced', 'custom-blocks', 'blockly-audit', 'catalog/']) {
     const response = await page.goto(base + '/fr/projects/blocks-for-ha/' + suffix);
     assert.equal(response.status(), 200, suffix);
   }
@@ -44,6 +44,10 @@ try {
     const images = await page.locator(`img[src^="/assets/blocks-for-ha/blocks/${locale}/"]`).evaluateAll(images => images.map(image => ({ src: image.src, width: image.naturalWidth })));
     assert.equal(images.length, knownTypes.size, locale);
     assert.ok(images.every(image => image.width > 0), locale + ' missing image');
+    await page.goto(base + prefix + '/projects/blocks-for-ha/advanced');
+    assert.ok((await page.locator('.vp-doc code').allTextContents()).some(text=>text.includes("{{ states('sensor.water') | float(0) | round(1) }}")),locale+' literal Jinja code');
+    const example=await page.locator(`img[src="/assets/blocks-for-ha/jinja/${locale}.png"]`).evaluate(image=>({width:image.naturalWidth,height:image.naturalHeight}));
+    assert.ok(example.width>500&&example.height>300,locale+' composed Jinja image');
   }
   await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));

@@ -107,7 +107,7 @@ test('Jinja value and condition blocks export complete originals and compose sin
   const source="{% if is_state('sensor.a', 'on') %}ON{% else %}OFF{% endif %}";
   const model={...examples.light,actions:[{variables:{result:source}}]};roundtrip(model);
   const ws=new Blockly.Workspace();try{
-    modelWorkspace(ws,model);assert.equal(ws.getBlocksByType('ugso_jinja_value').length,1);
+    modelWorkspace(ws,model);assert.equal(ws.getBlocksByType('ugso_jinja_composed_value').length,1);
     const condition=ws.newBlock('ugso_jinja_condition');condition.setFieldValue("{{ is_state('sensor.a','on') }}",'TEXT');
     const root=ws.getBlocksByType('ugso_automation')[0];root.getInputTargetBlock('CONDITIONS')?.dispose();root.getInput('CONDITIONS').connection.connect(condition.outputConnection);
     assert.deepEqual(workspaceModel(ws,model).conditions,[{condition:'template',value_template:"{{ is_state('sensor.a','on') }}"}]);

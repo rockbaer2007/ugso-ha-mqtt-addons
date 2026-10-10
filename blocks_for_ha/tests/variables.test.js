@@ -29,8 +29,8 @@ test('HA variables, numbers and arbitrary Jinja survive YAML and project reload'
   ] };
   try {
     modelWorkspace(ws, fromYaml(toYaml(model)));
-    assert.equal(ws.getBlocksByType('ugso_jinja_condition').length, 1);
-    assert.equal(ws.getBlocksByType('ugso_jinja_value').length, 1);
+    assert.equal(ws.getBlocksByType('ugso_jinja_composed_condition').length, 1);
+    assert.equal(ws.getBlocksByType('ugso_jinja_composed_value').length, 1);
     assert.equal(ws.getBlocksByType('ugso_variable_get').length, 1);
     assert.deepEqual(workspaceModel(ws, model), model);
     Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws), copy);

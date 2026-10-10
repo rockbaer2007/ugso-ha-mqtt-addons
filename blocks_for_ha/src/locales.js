@@ -20,6 +20,21 @@ export const documentationPath = page => `https://opensource.ugso-software.de/${
 
 // [English label, French label, English help, French help]. Placeholders stay ordered.
 export const blockTranslations = {
+  ugso_jinja_composed_value: ['Composed Jinja %2 %1', 'Jinja composé %2 %1', 'Editable Jinja structure. Unchanged blocks retain the original; editing generates Jinja.', 'Structure Jinja modifiable. Les blocs inchangés conservent l’original ; les modifications génèrent Jinja.'],
+  ugso_jinja_composed_condition: ['Composed Jinja condition %2 %1', 'Condition Jinja composée %2 %1', 'Editable Jinja structure. Unchanged blocks retain the original; editing generates Jinja.', 'Structure Jinja modifiable. Les blocs inchangés conservent l’original ; les modifications génèrent Jinja.'],
+  ugso_jinja_entity: ['Entity %1 function %2 %3', 'Entité %1 fonction %2 %3'],
+  ugso_jinja_filter: ['Filter %1 arguments %2 %4 value %3', 'Filtre %1 arguments %2 %4 valeur %3'],
+  ugso_jinja_literal: ['Literal (Jinja) %1', 'Littéral (Jinja) %1'],
+  ugso_jinja_variable: ['Jinja variable %1', 'Variable Jinja %1'],
+  ugso_jinja_now: ['Now (Jinja)', 'Maintenant (Jinja)'],
+  ugso_jinja_binary: ['Expression %1 %2 %3', 'Expression %1 %2 %3'],
+  ugso_jinja_unary: ['Expression %1 %2', 'Expression %1 %2'],
+  ugso_jinja_select: ['Value %1 if %2 else %3', 'Valeur %1 si %2 sinon %3'],
+  ugso_jinja_output: ['Output %2 %1', 'Afficher %2 %1'],
+  ugso_jinja_text: ['Jinja text %1', 'Texte Jinja %1'],
+  ugso_jinja_join: ['Template parts %3 %1 %4 then %2', 'Parties du modèle %3 %1 %4 puis %2'],
+  ugso_jinja_if: ['If %1 text %2 else %3', 'Si %1 texte %2 sinon %3'],
+  ugso_jinja_for: ['For %1 in %2 text %3 when empty %4', 'Pour %1 dans %2 texte %3 si vide %4'],
   ugso_target_action: ['HA action %1 target type %2 target %3 data (JSON) %4 step options (JSON) %5', 'Action HA %1 type de cible %2 cible %3 données (JSON) %4 options d’étape (JSON) %5', 'Choose target type. ID, JSON list or HA template; use the extended HA step for multiple target types.', 'Choisir le type de cible. ID, liste JSON ou modèle HA ; utiliser l’étape HA avancée pour plusieurs types.'],
   ugso_scene: ['Activate scene %1', 'Activer la scène %1', 'Activate a Home Assistant scene.', 'Activer une scène Home Assistant.'],
   ugso_integration_trigger: ['HA integration %1 target (JSON) %2 options (JSON) %3 enabled %4', 'Intégration HA %1 cible (JSON) %2 options (JSON) %3 activées %4', 'Native integration trigger. Options must match the selected integration; verify in Home Assistant.', 'Déclencheur natif. Les options doivent correspondre à l’intégration sélectionnée ; vérifier dans Home Assistant.'],

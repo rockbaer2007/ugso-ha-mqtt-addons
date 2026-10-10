@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.41
+
+- 15 neue verschachtelte Jinja-Blocktypen; insgesamt 163 native Typen. Entitätsfunktionen mit Suchfeld, Filterargumente, Literale, Variablen, Berechnungen/Vergleiche, Textausgaben und einfache if/else-/for-Strukturen.
+- Jinja-Dialog mit optionaler Zerlegung und Vorschau; passende Template-Werte und -Bedingungen werden beim YAML-Import zerlegt. Nicht vollständig unterstützte Syntax bleibt als vollständiger Originalblock erhalten.
+- Genauer Originaltext bleibt bis zur Bearbeitung erhalten, auch nach Projekt-Reload. Änderungen erzeugen strukturiertes Jinja mit expliziter Klammerung; keine Ausführung im Browser.
+- DE/EN/FR-Beschriftungen, Dokumentation und echte Blockbilder. Parser-/Import-/Projekt- und Jinja-Laufzeittests sowie Browserprüfung der Bedienung und Undo/Redo.
+
 ## 0.1.40
 
 - Schrift in allen Blockly-Themes auf 16 px vergrößert.

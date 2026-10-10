@@ -1,5 +1,7 @@
 # UGSo Blocks for HA
 
+Neu in **0.1.41**: Jinja kann in 15 bearbeitbare, verschachtelte Blocktypen zerlegt werden (insgesamt 163 Typen). Entitätsfunktionen, Filterketten, Vergleiche, Berechnungen, Textausgaben, einfache `if/else` und `for` mit Leerfall. **Jinja einlesen → Als bearbeitbare Blocks zerlegen**; passende YAML-Template-Werte/-Bedingungen werden ebenfalls zerlegt. Unverändert bleibt der genaue Originaltext erhalten; Bearbeiten erzeugt Jinja. Nicht vollständig unterstützte Templates bleiben vollständig als Originalblock erhalten. Jinja in JSON-Feldern bleibt JSON-Text. Keine lokale Ausführung. [Anleitung, Grenzen und Originalquellen](https://opensource.ugso-software.de/projects/blocks-for-ha/advanced).
+
 Neu in **0.1.40**: 16-px-Blockschrift in allen Themes, Blockmenü fest auf 100 Prozent unabhängig vom Editorzoom. Einpassen auf 85–120 Prozent begrenzt; große Automationen bleiben verschiebbar und lesbar.
 
 Neu in **0.1.39**: 148 Blocktypen. Erweiterte native HA-Auslöser, Bedingungen, Ziele und Automations-/Schrittoptionen; Warten auf Auslöser, Parallelzweige und Aktionsgruppen. **Jinja (experimentell)** erkennt Muster, Entitäten und Filter, erhält den Originaltext und bietet Wert-/Bedingungsblocks. Keine lokale Jinja-Ausführung. Anleitung und Grenzen: https://opensource.ugso-software.de/projects/blocks-for-ha/advanced

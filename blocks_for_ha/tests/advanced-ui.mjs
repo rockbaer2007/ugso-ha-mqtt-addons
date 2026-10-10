@@ -8,10 +8,11 @@ try {
   await page.locator('#jinja-import').click();const source="{% if is_state('sensor.test','on') %}ON{% else %}OFF{% endif %}";
   await page.locator('#jinja-source').fill(source);await page.locator('#jinja-boolean').check();assert.match(await page.locator('#jinja-preview').textContent(),/Wenn \/ Sonst.*sensor.test/);
   await page.locator('#jinja-add').click();
+  await page.waitForFunction(()=>!document.querySelector('#jinja-dialog').open);
   await page.evaluate(async source=>{
     const url=performance.getEntriesByType('resource').find(e=>new URL(e.name).pathname==='/src/blocks.js').name;
-    const {Blockly}=await import(url);const ws=Blockly.getMainWorkspace();const block=ws.getBlocksByType('ugso_jinja_condition')[0];
-    if(block.getFieldValue('TEXT')!==source)throw Error('Original Jinja changed');
+    const {Blockly}=await import(url);const ws=Blockly.getMainWorkspace();const block=ws.getBlocksByType('ugso_jinja_composed_condition')[0];
+    if(block.jinjaOriginal_!==source||!block.getDescendants().some(b=>b.type==='ugso_jinja_if'))throw Error('Jinja decomposition missing');
     const root=ws.getBlocksByType('ugso_automation')[0];root.getInputTargetBlock('CONDITIONS')?.dispose();root.getInput('CONDITIONS').connection.connect(block.outputConnection);
   },source);
   await page.waitForFunction(()=>document.querySelector('#yaml').textContent.includes("{% if is_state"));
