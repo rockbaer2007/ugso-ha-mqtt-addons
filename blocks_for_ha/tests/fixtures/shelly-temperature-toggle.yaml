@@ -1,0 +1,46 @@
+alias: Temperatur Auswahl Toggle via Shelly
+description: ''
+triggers:
+  - entity_id: binary_sensor.shelly_i3_2_switch_1
+    trigger: state
+conditions: []
+actions:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ trigger.from_state.state == 'off' and trigger.to_state.state ==
+              'on' }}
+        sequence:
+          - target:
+              entity_id: input_boolean.temperatur_auswahl_last
+            action: >-
+              input_boolean.turn_{{ states('input_boolean.temperatur_auswahl')
+              }}
+          - target:
+              entity_id: input_boolean.temperatur_auswahl
+            action: input_boolean.turn_off
+      - conditions:
+          - condition: template
+            value_template: >-
+              {{ trigger.from_state.state == 'on' and trigger.to_state.state ==
+              'off' }}
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: input_boolean.temperatur_auswahl_last
+                    state: 'on'
+                sequence:
+                  - target:
+                      entity_id: input_boolean.temperatur_auswahl
+                    action: input_boolean.turn_on
+              - conditions:
+                  - condition: state
+                    entity_id: input_boolean.temperatur_auswahl_last
+                    state: 'off'
+                sequence:
+                  - target:
+                      entity_id: input_boolean.temperatur_auswahl
+                    action: input_boolean.turn_off
+mode: single

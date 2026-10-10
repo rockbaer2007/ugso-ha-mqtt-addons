@@ -121,7 +121,7 @@ export const blockTranslations = {
   ugso_state_condition: ['%1 is %2', '%1 est %2'],
   ugso_numeric_condition: ['%1 is %2 %3', '%1 est %2 %3'],
   ugso_switch_action: [null, null, 'Action for the selected entity’s domain. Check availability in HA.', 'Action du domaine de l’entité choisie. Vérifier sa disponibilité dans HA.'],
-  ugso_service_action: ['HA action %1 target %2 data (JSON) %3', 'Action HA %1 cible %2 données (JSON) %3', 'Target may be empty. Data must be a JSON object; the integration must exist in HA.', 'Cible facultative. Données sous forme d’objet JSON ; l’intégration doit être présente dans HA.'],
+  ugso_service_action: ['HA action %1 target %2 data (JSON) %3', 'Action HA %1 cible %2 données (JSON) %3', 'Action name as domain.name or an HA template, including multiple lines. Target may be empty. Data as a JSON object. HA evaluates templates and validates the action.', 'Nom d’action en domain.name ou modèle HA, même multiligne. Cible facultative. Données en objet JSON. HA évalue les modèles et valide l’action.'],
   ugso_delay_action: ['Wait %1 seconds', 'Attendre %1 secondes'],
   ugso_if_action: ['If %1 do %2', 'Si %1 faire %2']
 };

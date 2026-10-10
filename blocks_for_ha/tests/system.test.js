@@ -1,7 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { Blockly, modelWorkspace, workspaceModel } from '../src/blocks.js';
 import { examples, fromYaml, toYaml } from '../src/model.js';
+
+test('Shelly nested choose and dynamic action names survive Blockly and YAML unchanged', () => {
+  const original = fromYaml(readFileSync(new URL('./fixtures/shelly-temperature-toggle.yaml', import.meta.url), 'utf8'));
+  for (const action of [original.actions[0].choose[0].sequence[0].action, "{{ 'input_boolean.turn_' ~ states('input_boolean.test') }}", "{% if is_state('input_boolean.test', 'on') %}\ninput_boolean.turn_on\n{% else %}\ninput_boolean.turn_off\n{% endif %}\n"]) {
+    const model = structuredClone(original); model.actions[0].choose[0].sequence[0].action = action;
+    const ws = new Blockly.Workspace(), copy = new Blockly.Workspace();
+    try {
+      modelWorkspace(ws, model); assert.deepEqual(workspaceModel(ws, model), model);
+      Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws), copy);
+      assert.deepEqual(fromYaml(toYaml(workspaceModel(copy, model))), model);
+    } finally { ws.dispose(); copy.dispose(); }
+  }
+  for (const action of ['turn_on', 'input_boolean.turn_{{', '{{ }}', '{% %}', 'switch..turn_on', 42]) {
+    assert.throws(() => toYaml({ ...examples.light, actions: [{ action }] }));
+  }
+});
 
 const metadata = { alias: 'System', mode: 'single' };
 const actions = [

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.36
+
+- HA-Aktion unterstützt dynamische Aktionsnamen mit Jinja-Ausgaben und Kontrollblöcken; Aktionsfeld ist mehrzeilig editierbar.
+- Statische Namen bleiben auf domain.name geprüft. Vorlagen werden unverändert an HA übergeben; keine Ausführung im Browser.
+- Shelly-Temperaturauswahl inklusive verschachtelter choose-Zweige und mehrzeilige Aktionsvorlagen als Regression. DE/EN/FR-Dokumentation und HA-Aktionsbilder aktualisiert.
+
 ## 0.1.35
 
 - Native delay-Zeittexte und HA-Ausgabetemplates importieren/exportieren, neuer Block Warte Zeittext / Template in Timeouts.
