@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.27
+
+- Kontrastberechnung verwendet das tatsächliche Verhältnis zwischen Schrift und Blockfarbe statt eines ungeeigneten Helligkeitsgrenzwerts.
+- Blockly-13-Feldselektor korrigiert: editierbare Felder erhalten dunkle Schrift auf ihrer hellen Fläche, einschließlich Dropdown-Pfeilen und Blockvorschau.
+- Eingebettete Schattenblöcke verwenden ihre tatsächlich gerenderte hellere Hintergrundfarbe zur Wahl der Schriftfarbe.
+- UGSo Standard/Dark: mittlere blaue/braune Farben leicht abdunkeln und weiße Labels mit mindestens 4,5:1 Kontrast verwenden. Originale Modern-/Tritanopia-Paletten bleiben erhalten; dort weiße oder ausreichend kontrastreiche dunkle Labels.
+- Dokumentationsbilder für DE/EN/FR neu erzeugt; der Renderer prüft den Kontrast der gerenderten Blockbeschriftungen vor jeder Aufnahme.
+
 ## 0.1.26
 
 - Blockly-Sprachauswahl Systemsprache/Deutsch/Englisch/Französisch, regionaler Browserabgleich und Englisch-Fallback.

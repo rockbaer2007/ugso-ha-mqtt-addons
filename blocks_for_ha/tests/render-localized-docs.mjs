@@ -2,8 +2,9 @@
 import { createRequire } from 'node:module';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import assert from 'node:assert/strict';
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const destination = resolve(process.env.BLOCK_DOC_IMAGES || '../ugso-opensource-docs/docs/public/assets/blocks-for-ha/blocks');
+const destination = resolve(process.env.BLOCK_DOC_IMAGES || '../../ugso-opensource-docs/docs/public/assets/blocks-for-ha/blocks');
 const browser = await chromium.launch({ channel: 'msedge', headless: true });
 try {
   for (const locale of ['de', 'en', 'fr']) {
@@ -13,6 +14,8 @@ try {
     const types = await page.evaluate(async () => {
       const url = performance.getEntriesByType('resource').find(entry => new URL(entry.name).pathname === '/src/blocks.js').name;
       const { Blockly, knownTypes } = await import(url);
+      const themeUrl = performance.getEntriesByType('resource').find(entry => new URL(entry.name).pathname === '/src/themes.js').name;
+      window.docContrast = (await import(themeUrl)).contrastRatio;
       window.docBlockly = Blockly; window.docWorkspace = Blockly.getMainWorkspace();
       return [...knownTypes];
     });
@@ -27,14 +30,29 @@ try {
     await page.evaluate(() => { window.docWorkspace.getToolbox().setVisible(false); window.docWorkspace.setScale(1); });
     await mkdir(resolve(destination, locale), { recursive: true });
     for (const type of types) {
-      const clip = await page.evaluate(type => {
+      const result = await page.evaluate(type => {
         const ws = window.docWorkspace; ws.clear();
         const block = ws.newBlock(type); block.initSvg(); block.render();
         ws.scrollCenter();
         const rect = block.getSvgRoot().getBoundingClientRect();
-        return { x: Math.max(0, rect.x - 3), y: Math.max(0, rect.y - 3), width: Math.ceil(rect.width + 6), height: Math.ceil(rect.height + 6) };
+        const contrasts = [...block.getSvgRoot().querySelectorAll('text.blocklyText')].map(label => {
+          const owner = block.getDescendants(false).find(candidate => candidate.getSvgRoot() === label.closest('g[data-id]')) || block;
+          let background = owner.getSvgRoot().querySelector('.blocklyPath')?.getAttribute('fill') || owner.getColour();
+          const rect = label.closest('.blocklyField')?.querySelector('rect.blocklyFieldRect');
+          if (rect) {
+            const style = getComputedStyle(rect), channels = style.fill.match(/[\d.]+/g)?.map(Number);
+            if (channels) {
+              const alpha = (channels[3] ?? 1) * Number(style.fillOpacity) * Number(style.opacity);
+              const base = [1, 3, 5].map(i => parseInt(background.slice(i, i + 2), 16));
+              background = '#' + base.map((value, i) => Math.round(channels[i] * alpha + value * (1 - alpha)).toString(16).padStart(2, '0')).join('');
+            }
+          }
+          return window.docContrast(getComputedStyle(label).fill, background);
+        });
+        return { clip: { x: Math.max(0, rect.x - 3), y: Math.max(0, rect.y - 3), width: Math.ceil(rect.width + 6), height: Math.ceil(rect.height + 6) }, contrasts };
       }, type);
-      await page.screenshot({ path: resolve(destination, locale, type + '.png'), clip });
+      assert.ok(result.contrasts.every(contrast => contrast >= 4.5), `${locale}:${type} label contrast`);
+      await page.screenshot({ path: resolve(destination, locale, type + '.png'), clip: result.clip });
     }
     await page.close(); console.log(`${locale}: ${types.length} actual block images rendered.`);
   }

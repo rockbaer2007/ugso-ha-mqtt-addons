@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Blockly, knownTypes, toolbox } from '../src/blocks.js';
-import { themes, savedTheme, labelInk } from '../src/themes.js';
+import { themes, savedTheme, labelInk, contrastRatio, readableBlockColour } from '../src/themes.js';
 test('All UGSo blocks and categories have theme styles; original palettes reach own blocks', () => {
   const ws = new Blockly.Workspace();
   globalThis.document = Blockly.utils.xml.createElement('div').ownerDocument;
@@ -24,4 +24,18 @@ test('Saved theme rejects unknown preferences and handles inaccessible storage',
   assert.equal(savedTheme({ getItem: () => 'missing' }), 'standard');
   assert.equal(savedTheme(() => { throw new Error('blocked'); }), 'standard');
   assert.equal(labelInk('#e6da39'), '#10232b'); assert.equal(labelInk('#1e1e1e'), '#ffffff');
+});
+test('UGSo coloured labels use white and all theme labels have at least 4.5:1 contrast', () => {
+  for (const [id, theme] of Object.entries(themes)) for (const [name, style] of Object.entries(theme.blockStyles)) {
+    if (!name.startsWith('ugso_')) continue;
+    const ink = labelInk(style.colourPrimary);
+    assert.ok(contrastRatio(ink, style.colourPrimary) >= 4.5, `${id}:${name}`);
+    if (style.colourSecondary) assert.ok(contrastRatio(labelInk(style.colourSecondary), style.colourSecondary) >= 4.5, `${id}:${name}:shadow`);
+    if (['standard', 'dark'].includes(id)) assert.equal(ink, '#ffffff', `${id}:${name}`);
+  }
+  for (const colour of ['#2682a5', '#b26c24', '#967b44', '#7a8639', '#ad6841']) {
+    assert.ok(contrastRatio('#ffffff', readableBlockColour(colour)) >= 4.5, colour);
+  }
+  assert.equal(readableBlockColour('#187b72'), '#187b72');
+  assert.equal(labelInk('#2682a5'), '#000000');
 });

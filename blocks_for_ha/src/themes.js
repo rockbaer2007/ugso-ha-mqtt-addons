@@ -5,7 +5,7 @@ import * as TritanopiaModule from '@blockly/theme-tritanopia';
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 const unwrap = module => module.default?.default || module.default || module;
 const bases = { standard: Blockly.Themes.Classic, dark: unwrap(DarkModule), modern: unwrap(ModernModule), tritanopia: unwrap(TritanopiaModule) };
-// Preserve original UGSo colours in Standard/Dark; map standard groups to upstream palettes.
+// Keep UGSo hues in Standard/Dark with readable white labels; preserve upstream palettes.
 const groups = {
   '#187b72': ['root', 'logic_blocks', '#24635e'],
   '#2682a5': ['action', 'logic_blocks', '#254e72'],
@@ -30,7 +30,7 @@ export const themeOptions = [['standard', 'UGSo Standard'], ['dark', 'Dark'], ['
 export const themes = Object.fromEntries(themeOptions.map(([id]) => {
   const base = bases[id], blockStyles = {}, categoryStyles = {};
   for (const [colour, [group, upstream, accessible]] of Object.entries(groups)) {
-    const palette = id === 'standard' || id === 'dark' ? { colourPrimary: colour } : id === 'tritanopia' && accessible ? { colourPrimary: accessible } : { ...base.blockStyles[upstream] };
+    const palette = id === 'standard' || id === 'dark' ? { colourPrimary: readableBlockColour(colour) } : id === 'tritanopia' && accessible ? { colourPrimary: accessible } : { ...base.blockStyles[upstream] };
     blockStyles[`ugso_${group}`] = palette;
     categoryStyles[`ugso_${group}_category`] = { colour: palette.colourPrimary };
   }
@@ -56,16 +56,39 @@ export function themedCategories(toolbox) {
 export function savedTheme(storage) {
   try { const id = (typeof storage === 'function' ? storage() : storage).getItem(themeKey); return Object.hasOwn(themes, id) ? id : 'standard'; } catch { return 'standard'; }
 }
-export function labelInk(colour) {
+function luminance(colour) {
   const hex = Blockly.utils.colour.parse(colour);
-  if (!hex) return '#ffffff';
+  if (!hex) throw new Error('Invalid contrast colour');
   const values = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4);
-  const luminance = values[0] * .2126 + values[1] * .7152 + values[2] * .0722;
-  return luminance > .179 ? '#10232b' : '#ffffff';
+  return values[0] * .2126 + values[1] * .7152 + values[2] * .0722;
+}
+export function contrastRatio(first, second) {
+  const a = luminance(first), b = luminance(second);
+  return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
+}
+export function readableBlockColour(colour) {
+  let result = Blockly.utils.colour.parse(colour);
+  const channels = [1, 3, 5].map(i => parseInt(result.slice(i, i + 2), 16));
+  // Darken only UGSo's own medium colours, preserving their hue and group identity.
+  while (contrastRatio('#ffffff', result) < 4.5) {
+    channels.forEach((channel, i) => { channels[i] = Math.floor(channel * .97); });
+    result = '#' + channels.map(channel => channel.toString(16).padStart(2, '0')).join('');
+  }
+  return result;
+}
+export function labelInk(colour) {
+  if (!Blockly.utils.colour.parse(colour)) return '#ffffff';
+  if (contrastRatio('#ffffff', colour) >= 4.5) return '#ffffff';
+  // Dark blue needs more contrast than pure black; the old luminance threshold
+  // treated them as equivalent and put dark text on medium blue/brown blocks.
+  return contrastRatio('#10232b', colour) >= 4.5 ? '#10232b' : '#000000';
 }
 // Application adapter: update only label ink, preserving original plugin palettes.
 const applyColour = Blockly.BlockSvg.prototype.applyColour;
 Blockly.BlockSvg.prototype.applyColour = function () {
   applyColour.call(this);
-  this.getSvgRoot()?.style.setProperty('--ugso-label-ink', labelInk(this.getColour()));
+  const root = this.getSvgRoot();
+  // Shadow blocks render with their lighter secondary colour.
+  const background = root?.querySelector('.blocklyPath')?.getAttribute('fill') || this.getColour();
+  root?.style.setProperty('--ugso-label-ink', labelInk(background));
 };
