@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.19
+
+- Offizielles, unverändertes Built-with-Blockly-Badge im Fußbereich und Lizenzdialog; lokal ausgeliefert, 32 Pixel hoch und mit Abstand.
+- Beide SVG-Varianten und Originalquelle dokumentiert; DE/EN-Dokumentation berücksichtigt helle und dunkle Ansicht.
+
 ## 0.1.18
 
 - Eigener Block-/Template-Editor mit Blockly-Vorschau im 95%-Dialog.

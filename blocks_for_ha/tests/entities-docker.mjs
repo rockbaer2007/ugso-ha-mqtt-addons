@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-const exec = promisify(execFile), image = 'ugso-blocks-for-ha:0.1.18';
+const exec = promisify(execFile), image = 'ugso-blocks-for-ha:0.1.19';
 let redirect = false, requests = 0, container;
 const ha = createServer((req, res) => {
   requests++;
@@ -26,7 +26,7 @@ try {
   assert.equal((await fetch(base + '/api/ha/entities', { method: 'POST' })).status, 405);
   const before = requests; redirect = true;
   assert.equal((await fetch(base + '/api/ha/entities')).status, 502); assert.equal(requests, before + 1);
-  console.log('Docker frontend â†’ nginx â†’ Python â†’ mock HA authenticated GET, metadata reduction, no credentials, rejected writes/redirects verified.');
+  console.log('Docker frontend Ã¢â€ â€™ nginx Ã¢â€ â€™ Python Ã¢â€ â€™ mock HA authenticated GET, metadata reduction, no credentials, rejected writes/redirects verified.');
 } finally {
   if (container) await exec('docker', ['stop', container]);
   await new Promise(resolve => ha.close(resolve));
