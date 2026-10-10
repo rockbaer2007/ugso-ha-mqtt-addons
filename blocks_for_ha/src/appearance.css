@@ -49,3 +49,4 @@ h1{font-size:23px;margin:3px 0}
 @media(max-width:780px){.editor-layout.output-collapsed{grid-template-columns:minmax(0,1fr)}.output-collapsed .output-panel{min-height:42px} .output-collapsed #output-toggle{top:6px}.output-rail-label{writing-mode:horizontal-tb;margin:12px 16px}}
 @media(max-width:1100px){main{padding-top:14px}}
 @media(max-width:780px){.intro{margin-bottom:12px}h1{font-size:22px}.project-bar{padding:10px;gap:8px}}
+#block-language{width:185px;max-width:100%}

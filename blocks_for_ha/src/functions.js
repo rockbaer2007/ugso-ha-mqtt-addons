@@ -1,4 +1,5 @@
 // Original Blockly procedure editor; pure HA expressions are expanded at export.
+import { translateLabel } from './locales.js';
 export const functionTypes = ['procedures_defreturn', 'procedures_callreturn', 'variables_get'];
 const identifier = /^[A-Za-z_][A-Za-z0-9_]*$/;
 export function installFunctions(Blockly) {
@@ -10,7 +11,7 @@ export function installFunctions(Blockly) {
   Blockly.Blocks.procedures_defreturn.init = function () {
     original.call(this);
     this.setStatements_(false);
-    this.setTooltip('Eigene Wertfunktion. Parameter über das Zahnrad bearbeiten. Beim Export in Jinja aufgelöst; keine Aktionen oder Rekursion.');
+    this.setTooltip(translateLabel('Eigene Wertfunktion. Parameter über das Zahnrad bearbeiten. Beim Export in Jinja aufgelöst; keine Aktionen oder Rekursion.'));
     const load = this.loadExtraState, decompose = this.decompose, xml = this.domToMutation;
     this.domToMutation = function (element) { xml.call(this, element); this.setStatements_(false); };
     this.loadExtraState = function (state) {

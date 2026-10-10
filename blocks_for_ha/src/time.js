@@ -1,4 +1,5 @@
 // Original HA/Jinja implementation; ioBroker's Time category is the UI reference.
+import { translateLabel } from './locales.js';
 const dropdown = (name, options) => ({ type: 'field_dropdown', name, options });
 const input = (name, check) => ({ type: 'input_value', name, check: check === 'Number' ? ['Number', 'RuntimeNumber'] : check });
 const text = (name, value) => ({ type: 'field_input', name, text: value });
@@ -19,13 +20,13 @@ export function installTimeShape(Blockly) {
     const shape = (op = this.getFieldValue('OP'), current = this.getFieldValue('CURRENT')) => {
       const range = ['between', 'outside'].includes(op);
       if (range && !this.getInput('END')) {
-        if (dynamic) this.appendValueInput('END').setCheck('String').appendField('und');
-        else this.appendDummyInput('END').appendField('und').appendField(new Blockly.FieldTextInput('18:00'), 'END');
+        if (dynamic) this.appendValueInput('END').setCheck('String').appendField(translateLabel('und'));
+        else this.appendDummyInput('END').appendField(translateLabel('und')).appendField(new Blockly.FieldTextInput('18:00'), 'END');
         if (dynamic) this.getInput('END').connection.setShadowState({ type: 'ugso_text', fields: { TEXT: '18:00' } });
       }
       if (!range && this.getInput('END')) this.removeInput('END');
       if (dynamic && current === 'FALSE' && !this.getInput('TIME')) {
-        this.appendValueInput('TIME').setCheck('Time').appendField('verglichener Datumswert');
+        this.appendValueInput('TIME').setCheck('Time').appendField(translateLabel('verglichener Datumswert'));
         this.getInput('TIME').connection.setShadowState({ type: 'ugso_time_now' });
       }
       if (current !== 'FALSE' && this.getInput('TIME')) this.removeInput('TIME');
@@ -36,7 +37,7 @@ export function installTimeShape(Blockly) {
       this.getInput('START').connection.setShadowState({ type: 'ugso_text', fields: { TEXT: '12:00' } });
     }
     this.setInputsInline(true);
-    this.setTooltip('Uhrzeitvergleich in HA-Ortszeit. Zwischen: Start inklusive, Ende exklusiv; auch über Mitternacht. Gleiche Grenzen ergeben einen leeren Zeitraum. Kein Auslöser.');
+    this.setTooltip(translateLabel('Uhrzeitvergleich in HA-Ortszeit. Zwischen: Start inklusive, Ende exklusiv; auch über Mitternacht. Gleiche Grenzen ergeben einen leeren Zeitraum. Kein Auslöser.'));
   });
 }
 function clock(value) {

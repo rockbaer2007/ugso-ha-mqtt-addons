@@ -6,7 +6,7 @@ import { dateTemplate } from '../src/values.js';
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const browser = await chromium.launch({ headless: true, channel: 'msedge' });
 try {
-  const page = await browser.newPage({ viewport: { width: 1500, height: 1050 } });
+  const page = await browser.newPage({ locale: 'de-DE', viewport: { width: 1500, height: 1050 } });
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   page.on('dialog', dialog => dialog.accept());
   await page.goto('http://127.0.0.1:4180/');

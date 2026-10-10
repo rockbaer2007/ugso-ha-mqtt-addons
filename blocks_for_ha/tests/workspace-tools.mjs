@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const browser = await chromium.launch({ headless: true, channel: 'msedge' });
 try {
-  const page = await browser.newPage({ viewport: { width: 1500, height: 1050 } });
+  const page = await browser.newPage({ locale: 'de-DE', viewport: { width: 1500, height: 1050 } });
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto('http://127.0.0.1:4180/');
   const open = page.getByRole('button', { name: 'Blocks im Arbeitsbereich suchen' });

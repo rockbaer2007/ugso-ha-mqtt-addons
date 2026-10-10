@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const browser = await chromium.launch({ headless: true, channel: 'msedge' });
 try {
-  const page = await browser.newPage({ viewport: { width: 1500, height: 1050 }, colorScheme: 'light' });
+  const page = await browser.newPage({ locale: 'de-DE', viewport: { width: 1500, height: 1050 }, colorScheme: 'light' });
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto('http://127.0.0.1:4180/');
   const select = page.getByRole('combobox', { name: 'Darstellung der App' });
@@ -48,7 +48,7 @@ try {
   // Invalid storage and unavailable storage both fall back safely to System.
   await page.evaluate(() => localStorage.setItem('ugso-blocks-for-ha-appearance', 'unknown'));
   await page.reload(); await select.waitFor(); assert.equal(await select.inputValue(), 'system');
-  const isolated = await browser.newContext({ colorScheme: 'dark' });
+  const isolated = await browser.newContext({ locale: 'de-DE', colorScheme: 'dark' });
   await isolated.addInitScript(() => { Object.defineProperty(window, 'localStorage', { get() { throw new Error('Blocked'); } }); });
   const blocked = await isolated.newPage(); await blocked.goto('http://127.0.0.1:4180/');
   await blocked.getByRole('combobox', { name: 'Darstellung der App' }).selectOption('light');

@@ -25,7 +25,7 @@ try {
   assert.deepEqual(await readdir(temp), []);
   const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
   browser = await chromium.launch({ channel: 'msedge', headless: true });
-  const page = await browser.newPage({ permissions: ['clipboard-read', 'clipboard-write'] }); const errors = [];
+  const page = await browser.newPage({ locale: 'de-DE', permissions: ['clipboard-read', 'clipboard-write'] }); const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   for (const [locale, label] of [['de', 'Code kopieren'], ['en', 'Copy code'], ['fr', 'Copier le code']]) {
     await page.goto(base + '/blocks/ugso_sensor_tools?lang=' + locale);

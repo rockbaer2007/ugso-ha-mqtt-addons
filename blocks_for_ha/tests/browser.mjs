@@ -5,7 +5,7 @@ import { fromYaml, toYaml, examples } from '../src/model.js';
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const browser = await chromium.launch({ headless: true, channel: 'msedge' });
 try {
-  const context = await browser.newContext({ viewport: { width: 1500, height: 1050 }, permissions: ['clipboard-read', 'clipboard-write'] });
+  const context = await browser.newContext({ locale: 'de-DE', viewport: { width: 1500, height: 1050 }, permissions: ['clipboard-read', 'clipboard-write'] });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));

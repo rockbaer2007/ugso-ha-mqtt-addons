@@ -4,7 +4,7 @@ import { examples, toYaml } from '../src/model.js';
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const browser = await chromium.launch({ headless: true, channel: 'msedge' });
 try {
-  const page = await browser.newPage(); const errors = [];
+  const page = await browser.newPage({ locale: 'de-DE' }); const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   page.on('dialog', dialog => dialog.accept('leistung'));
   await page.goto('http://127.0.0.1:4180/');

@@ -21,7 +21,7 @@ const server = createServer(async (req, res) => {
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const browser = await chromium.launch({ headless: true, channel: 'msedge' });
 try {
-  const page = await browser.newPage(); const errors = []; const failures = [];
+  const page = await browser.newPage({ locale: 'de-DE' }); const errors = []; const failures = [];
   page.on('pageerror', e => errors.push(e.message));
   page.on('response', response => { if (response.status() >= 400) failures.push(response.url()); });
   const root = process.env.BLOCKS_TEST_URL || `http://127.0.0.1:${server.address().port}${prefix}`;

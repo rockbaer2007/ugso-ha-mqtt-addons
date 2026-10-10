@@ -26,7 +26,7 @@ const browser = await chromium.launch({ channel: 'msedge', headless: true });
 try {
   const page = await browser.newPage({ permissions: ['clipboard-read', 'clipboard-write'] }), errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  for (const [prefix, label] of [['', 'JSON-Code kopieren'], ['/en', 'Copy JSON code']]) {
+  for (const [prefix, label] of [['', 'JSON-Code kopieren'], ['/en', 'Copy JSON code'], ['/fr', 'Copier le code JSON']]) {
     await page.goto(base + prefix + '/projects/blocks-for-ha/catalog/sensor-light');
     await page.getByRole('button', { name: label }).click();
     assert.deepEqual(JSON.parse(await page.evaluate(() => navigator.clipboard.readText())), customExample);
@@ -34,9 +34,19 @@ try {
   const path = '/assets/blocks-for-ha/packages/ugso_sensor_tools-1.0.0';
   assert.deepEqual(await (await fetch(base + path + '.json')).json(), customExample);
   assert.deepEqual(await readPackageZip(new Uint8Array(await (await fetch(base + path + '.zip')).arrayBuffer())), customExample);
+  for (const suffix of ['', 'time', 'conversion', 'collections', 'flow', 'entities', 'themes', 'custom-blocks', 'blockly-audit', 'catalog/']) {
+    const response = await page.goto(base + '/fr/projects/blocks-for-ha/' + suffix);
+    assert.equal(response.status(), 200, suffix);
+  }
+  for (const [prefix, locale] of [['', 'de'], ['/en', 'en'], ['/fr', 'fr']]) {
+    await page.goto(base + prefix + '/projects/blocks-for-ha/blocks');
+    const images = await page.locator(`img[src^="/assets/blocks-for-ha/blocks/${locale}/"]`).evaluateAll(images => images.map(image => ({ src: image.src, width: image.naturalWidth })));
+    assert.equal(images.length, 111, locale);
+    assert.ok(images.every(image => image.width > 0), locale + ' missing image');
+  }
   await page.setViewportSize({ width: 390, height: 844 });
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
   await page.screenshot({ path: 'artifacts/custom-docs-mobile.png', fullPage: true });
   assert.deepEqual(errors, []);
-  console.log('Built DE/EN documentation copy buttons, JSON/ZIP equality and mobile width verified.');
+  console.log('Built DE/EN/FR documentation copy buttons, JSON/ZIP equality and mobile width verified.');
 } finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }

@@ -1,4 +1,5 @@
 // Native HA control flow and immutable Jinja values; no browser timer runtime.
+import { localizedDefinition, translateLabel } from './locales.js';
 const v = (name, check = 'Value') => ({ type: 'input_value', name, check });
 const s = name => ({ type: 'input_statement', name, check: 'Action' });
 const dropdown = (name, options) => ({ type: 'field_dropdown', name, options });
@@ -36,7 +37,7 @@ export function installFlowShape(Blockly) {
   Blockly.defineBlocksWithJsonArray([
     { type: 'ugso_rows_container', message0: 'Einträge %1', args0: [{ type: 'input_statement', name: 'STACK' }], colour: '#967b44', enableContextMenu: false },
     { type: 'ugso_rows_item', message0: 'Eintrag', previousStatement: null, nextStatement: null, colour: '#967b44', enableContextMenu: false }
-  ]);
+  ].map(definition => localizedDefinition(definition)));
   Blockly.Extensions.registerMutator('ugso_rows', {
     rowCount_: 1,
     saveExtraState() { return { rows: this.rowCount_, ...(this.type === 'ugso_object_new' ? { keys: Array.from({ length: this.rowCount_ }, (_, i) => this.getFieldValue(`KEY${i}`)) } : {}) }; },
@@ -51,13 +52,13 @@ export function installFlowShape(Blockly) {
     updateRows_() {
       for (let i = 0; i < this.rowCount_; i++) if (!this.getInput(`V${i}`)) {
         const input = this.appendValueInput(`V${i}`).setCheck('Value');
-        if (this.type === 'ugso_object_new') input.appendField('Attribut').appendField(new Blockly.FieldTextInput(`attribute${i + 1}`), `KEY${i}`);
-        else input.appendField(this.type === 'ugso_case' ? 'im Falle von' : `Eintrag ${i + 1}`);
-        if (this.type === 'ugso_case') this.appendStatementInput(`DO${i}`).setCheck('Action').appendField('mache');
+        if (this.type === 'ugso_object_new') input.appendField(translateLabel('Attribut')).appendField(new Blockly.FieldTextInput(`attribute${i + 1}`), `KEY${i}`);
+        else input.appendField(translateLabel(this.type === 'ugso_case' ? 'im Falle von' : `Eintrag ${i + 1}`));
+        if (this.type === 'ugso_case') this.appendStatementInput(`DO${i}`).setCheck('Action').appendField(translateLabel('mache'));
       }
       for (let i = this.rowCount_; this.getInput(`V${i}`); i++) { this.removeInput(`V${i}`); if (this.getInput(`DO${i}`)) this.removeInput(`DO${i}`); }
       if (this.type === 'ugso_case') {
-        if (!this.getInput('DEFAULT')) this.appendStatementInput('DEFAULT').setCheck('Action').appendField('sonst');
+        if (!this.getInput('DEFAULT')) this.appendStatementInput('DEFAULT').setCheck('Action').appendField(translateLabel('sonst'));
         this.moveInputBefore('DEFAULT', null);
       }
     },

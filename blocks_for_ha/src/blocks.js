@@ -1,5 +1,8 @@
 import * as BlocklyModule from 'blockly/core';
 import * as De from 'blockly/msg/de';
+import * as En from 'blockly/msg/en';
+import * as Fr from 'blockly/msg/fr';
+import { language, localizedDefinition, translateLabel, documentationPath } from './locales.js';
 import 'blockly/blocks';
 import * as MultilineModule from '@blockly/field-multilineinput';
 import * as ColourModule from '@blockly/field-colour';
@@ -18,7 +21,7 @@ import './entities.js';
 import { customDefinition, customExpression, customNative } from './custom-packages.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
-Blockly.setLocale(De);
+Blockly.setLocale({ de: De, en: En, fr: Fr }[language]);
 installFunctions(Blockly);
 const Multiline = Reflect.get(MultilineModule, 'default') || MultilineModule;
 const Colour = Reflect.get(ColourModule, 'default') || ColourModule;
@@ -45,7 +48,7 @@ const number = value('LIMIT', 'Number');
 const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'below'], ['über', 'above']] };
 const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
-const definitions = [
+export const definitions = [
   ...timeDefinitions,
   ...conversionDefinitions,
   ...flowDefinitions,
@@ -89,7 +92,7 @@ const definitions = [
 Blockly.defineBlocksWithJsonArray([
   { type: 'ugso_condition_container', message0: 'Bedingungen %1', args0: [statement('STACK', null)], colour: '#6860b5', enableContextMenu: false },
   { type: 'ugso_condition_item', message0: 'Bedingung', previousStatement: null, nextStatement: null, colour: '#6860b5', enableContextMenu: false }
-]);
+].map(definition => localizedDefinition(definition)));
 Blockly.Extensions.registerMutator('ugso_conditions', {
   itemCount_: 2,
   saveExtraState() { return { items: this.itemCount_, list: !!this.list_ }; },
@@ -98,7 +101,7 @@ Blockly.Extensions.registerMutator('ugso_conditions', {
     this.itemCount_ = state.items; this.list_ = !!state.list; this.updateConditions_();
   },
   updateConditions_() {
-    for (let i = 0; i < this.itemCount_; i++) if (!this.getInput(`COND${i}`)) this.appendValueInput(`COND${i}`).setCheck('Boolean').appendField(`Bedingung ${i + 1}`);
+    for (let i = 0; i < this.itemCount_; i++) if (!this.getInput(`COND${i}`)) this.appendValueInput(`COND${i}`).setCheck('Boolean').appendField(translateLabel(`Bedingung ${i + 1}`));
     for (let i = this.itemCount_; this.getInput(`COND${i}`); i++) this.removeInput(`COND${i}`);
   },
   decompose(workspace) {
@@ -124,11 +127,11 @@ Blockly.Extensions.registerMutator('ugso_branches', {
   },
   updateBranches_() {
     for (let i = 1; i <= this.branchCount_; i++) {
-      if (!this.getInput(`C${i}`)) this.appendValueInput(`C${i}`).setCheck('Boolean').appendField('sonst falls');
-      if (!this.getInput(`T${i}`)) this.appendStatementInput(`T${i}`).setCheck('Action').appendField('mache');
+      if (!this.getInput(`C${i}`)) this.appendValueInput(`C${i}`).setCheck('Boolean').appendField(translateLabel('sonst falls'));
+      if (!this.getInput(`T${i}`)) this.appendStatementInput(`T${i}`).setCheck('Action').appendField(translateLabel('mache'));
     }
     for (let i = this.branchCount_ + 1; this.getInput(`C${i}`); i++) { this.removeInput(`C${i}`); this.removeInput(`T${i}`); }
-    if (this.hasElse_ && !this.getInput('ELSE')) this.appendStatementInput('ELSE').setCheck('Action').appendField('sonst');
+    if (this.hasElse_ && !this.getInput('ELSE')) this.appendStatementInput('ELSE').setCheck('Action').appendField(translateLabel('sonst'));
     if (!this.hasElse_ && this.getInput('ELSE')) this.removeInput('ELSE');
     if (this.hasElse_) this.moveInputBefore('ELSE', null);
   },
@@ -167,14 +170,14 @@ installTimeShape(Blockly);
 installConversionShape(Blockly);
 installFlowShape(Blockly);
 installCollectionShape(Blockly);
-Blockly.defineBlocksWithJsonArray(definitions.map(themedDefinition));
+Blockly.defineBlocksWithJsonArray(definitions.map(definition => localizedDefinition(themedDefinition(definition))));
 definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
   Blockly.Blocks[definition.type].init = function () {
-    original.call(this); this.setHelpUrl(this.type.startsWith('ugso_time_') ? 'https://opensource.ugso-software.de/projects/blocks-for-ha/time' : 'https://opensource.ugso-software.de/projects/blocks-for-ha/#andocken-und-bedienung');
-    if (this.type.startsWith('ugso_convert_')) this.setHelpUrl('https://opensource.ugso-software.de/projects/blocks-for-ha/conversion');
-    if (flowDefinitions.some(d => d.type === this.type)) this.setHelpUrl('https://opensource.ugso-software.de/projects/blocks-for-ha/flow');
-    if (collectionDefinitions.some(d => d.type === this.type)) this.setHelpUrl('https://opensource.ugso-software.de/projects/blocks-for-ha/collections');
+    original.call(this); this.setHelpUrl(documentationPath(this.type.startsWith('ugso_time_') ? 'time' : ''));
+    if (this.type.startsWith('ugso_convert_')) this.setHelpUrl(documentationPath('conversion'));
+    if (flowDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('flow'));
+    if (collectionDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('collections'));
     if (this.type === 'ugso_variable_change') this.getInput('STEP').connection.setShadowState({ type: 'ugso_number', fields: { NUM: 1 } });
     if (this.outputConnection && ['ugso_number', 'ugso_percent', 'ugso_text', 'ugso_template', 'ugso_variable_get'].includes(this.type)) this.setOutput(true, [...this.outputConnection.getCheck(), 'Value']);
     if (['ugso_logic_condition', 'ugso_if_action'].includes(this.type)) addExpansionButtons(this);
@@ -253,7 +256,7 @@ export function setupVariables(workspace) {
   workspace.registerToolboxCategoryCallback('UGSO_FUNCTIONS', functionToolbox);
   workspace.registerButtonCallback('UGSO_CREATE_VARIABLE', () => Blockly.Variables.createVariableButtonHandler(workspace, () => workspace.getToolbox()?.refreshSelection()));
   workspace.registerToolboxCategoryCallback('UGSO_VARIABLES', ws => {
-    const items = [{ kind: 'button', text: 'Variable erstellen …', callbackKey: 'UGSO_CREATE_VARIABLE' }];
+    const items = [{ kind: 'button', text: translateLabel('Variable erstellen …'), callbackKey: 'UGSO_CREATE_VARIABLE' }];
     const variables = ws.getVariableMap().getAllVariables().filter(variable => variable.type === '');
     for (const variable of variables) {
       items.push({ kind: 'block', type: 'ugso_variable_set', fields: { VAR: { id: variable.getId() } }, inputs: { VALUE: { shadow: { type: 'ugso_number', fields: { NUM: 0 } } } } });

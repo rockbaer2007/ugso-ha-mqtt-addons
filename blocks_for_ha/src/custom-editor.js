@@ -2,6 +2,7 @@ import { stringify } from 'yaml';
 import { validatePackage, packageZip, readPackageZip, blockDefinition, customExpression, customNative, installedPackages, canonical, packageStoreKey, blockType } from './custom-packages.js';
 import { customExample } from './custom-example.js';
 import { validateAutomation } from './model.js';
+import { localizedToolbox } from './locales.js';
 
 export function refreshCustomToolbox(workspace, toolbox) {
   let category = toolbox.contents.find(item => item.name === 'Benutzerdefiniert');
@@ -12,7 +13,7 @@ export function refreshCustomToolbox(workspace, toolbox) {
   }
   category.contents = installedPackages().flatMap(pkg => [{ kind: 'label', text: `${pkg.name} · ${pkg.version}` }, ...pkg.blocks.map(block => ({ kind: 'block', type: blockType(pkg, block) }))]);
   if (!category.contents.length) category.contents = [{ kind: 'label', text: 'Pakete im Block-/Template-Editor erstellen oder importieren.' }];
-  workspace.updateToolbox(toolbox);
+  workspace.updateToolbox(localizedToolbox(toolbox));
 }
 
 export function setupCustomEditor({ Blockly, workspace, install, download, notice }) {

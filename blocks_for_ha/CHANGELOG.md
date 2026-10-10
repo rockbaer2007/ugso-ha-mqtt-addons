@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.26
+
+- Blockly-Sprachauswahl Systemsprache/Deutsch/Englisch/Französisch, regionaler Browserabgleich und Englisch-Fallback.
+- Eigene Blocktexte, Dropdowns, Hilfetexte, dynamische Anschlüsse, Kategorien und originale Blockly-Dialoge übersetzt. Technische IDs und Nutzerdaten unverändert; App-Chrome und Diagnosen bleiben deutsch.
+- Gültiges Projekt vor Sprachwechsel sichern und neu laden; bei unvollständigen Blocks oder blockiertem Speicher ohne Datenverlust in aktueller Sprache bleiben.
+- Französische Open-Source-Anleitungen und Katalog; 111 echte Blockbilder sowie Theme-Bilder je DE/EN/FR. Benutzerdefinierte Pakete behalten die vom Autor definierten Texte.
+
 ## 0.1.25
 
 - YAML-Ausgabe/Code-Import umschaltbar: Einfügefeld und Importieren statt Speichern.

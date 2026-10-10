@@ -13,6 +13,7 @@ import { setupCustomEditor, refreshCustomToolbox } from './custom-editor.js';
 import { setupWorkspaceTools } from './workspace-tools.js';
 import { setupAppearance } from './appearance.js';
 import { setupOutputPanel } from './output-panel.js';
+import { language, languagePreference, languageKey, localizedToolbox, translateLabel } from './locales.js';
 
 document.querySelector('#app').innerHTML = `
 <header class="app-header"><a class="brand" href="/"><span class="brand-icon">▦</span><span>UGSo <strong>Blocks for HA</strong></span></a><div class="header-right"><span class="version">Vorschau 0.1.0</span><button id="about">Über & Lizenzen</button></div></header>
@@ -37,7 +38,7 @@ for (const [id, text] of themeOptions) themeSelect.add(new Option(text, id));
 themeLabel.append(themeSelect); document.querySelector('.canvas-actions').prepend(themeLabel);
 let selectedTheme = savedTheme(() => localStorage); themeSelect.value = selectedTheme;
 document.querySelector('#workspace').dataset.theme = selectedTheme;
-const workspace = Blockly.inject('workspace', { toolbox, theme: themes[selectedTheme], media: './media/', renderer: 'geras', grid: { spacing: 24, length: 2, colour: selectedTheme === 'dark' ? '#45525d' : '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: .8, maxScale: 1.6, minScale: .35 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
+const workspace = Blockly.inject('workspace', { toolbox: localizedToolbox(toolbox), theme: themes[selectedTheme], media: './media/', renderer: 'geras', grid: { spacing: 24, length: 2, colour: selectedTheme === 'dark' ? '#45525d' : '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: .8, maxScale: 1.6, minScale: .35 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
 const Zoom = ZoomModule.default || ZoomModule;
 const zoomToFit = new Zoom.ZoomToFitControl(workspace); zoomToFit.init();
 const zoomElement = document.querySelector('#workspace .zoomToFit');
@@ -52,6 +53,23 @@ let currentModel;
 let timer;
 let toastTimer;
 const key = 'ugso-blocks-for-ha-project-v1';
+const languageLabel = document.createElement('label'); languageLabel.className = 'theme-label'; languageLabel.textContent = translateLabel('Blocks-Sprache');
+const languageSelect = document.createElement('select'); languageSelect.id = 'block-language'; languageSelect.setAttribute('aria-label', translateLabel('Blocks-Sprache'));
+for (const [value, label] of [['system', `${translateLabel('Systemsprache')} (${language.toUpperCase()})`], ['de', 'Deutsch (DE)'], ['en', 'English (EN)'], ['fr', 'Français (FR)']]) languageSelect.add(new Option(label, value));
+languageSelect.value = languagePreference; languageLabel.append(languageSelect); document.querySelector('.header-right').prepend(languageLabel);
+languageSelect.addEventListener('change', () => {
+  try { validateAutomation(workspaceModel(workspace, metadata)); }
+  catch { languageSelect.value = languagePreference; notice('Zum Sprachwechsel die Blocks vervollständigen oder zuerst ein gültiges Projekt öffnen.'); return; }
+  try {
+    // Save the complete workspace before recreating Blockly with a different locale.
+    // Do not reload when browser storage is unavailable: unsaved edits must survive.
+    const project = snapshot();
+    project.languageReload = { yaml: yamlInput.value, mode: $('yaml-mode').value, replace: $('yaml-replace').checked };
+    localStorage.setItem(key, JSON.stringify(project));
+    localStorage.setItem(languageKey, languageSelect.value);
+    location.reload();
+  } catch { languageSelect.value = languagePreference; notice('Sprache nicht geändert: Browser-Speicher nicht verfügbar. Projekt bitte zuerst sichern.'); }
+});
 const yamlModeLabel = document.createElement('label'); yamlModeLabel.className = 'format-label';
 yamlModeLabel.innerHTML = '<span>YAML</span><select id="yaml-mode" aria-label="YAML-Modus"><option value="output">Ausgabe</option><option value="import">Code importieren</option></select>';
 document.querySelector('.format-label').before(yamlModeLabel);
@@ -201,5 +219,14 @@ refreshCustomToolbox(workspace, toolbox);
 setupCustomEditor({ Blockly, workspace, download, notice, install: pkg => {
   withPackages(Blockly, [pkg]); refreshCustomToolbox(workspace, toolbox); update(); return savePackages();
 } });
-try { const saved = localStorage.getItem(key); if (saved) restoreProject(JSON.parse(saved)); else loadModel(structuredClone(examples.light)); }
+try {
+  const saved = localStorage.getItem(key);
+  if (saved) {
+    const project = JSON.parse(saved); restoreProject(project);
+    const draft = project.languageReload;
+    if (draft && typeof draft.yaml === 'string' && ['output', 'import'].includes(draft.mode)) {
+      yamlInput.value = draft.yaml; $('yaml-mode').value = draft.mode; $('yaml-replace').checked = draft.replace === true; syncYamlMode();
+    }
+  } else loadModel(structuredClone(examples.light));
+}
 catch { loadModel(structuredClone(examples.light)); notice('Gesicherter Browserstand konnte nicht geladen werden. Das Beispiel wurde geöffnet.'); }
