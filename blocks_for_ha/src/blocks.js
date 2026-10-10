@@ -13,6 +13,7 @@ import { flowDefinitions, installFlowShape, flowExpression, flowAction, flowTool
 import { collectionDefinitions, installCollectionShape, collectionExpression, collectionAction, collectionToolbox } from './collections.js';
 import { colourDefinitions, colourExpression, colourInput, colourToolbox } from './colour.js';
 import { functionTypes, installFunctions, functionInfo, functionToolbox } from './functions.js';
+import { themedDefinition, themedCategories } from './themes.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 Blockly.setLocale(De);
@@ -164,7 +165,7 @@ installTimeShape(Blockly);
 installConversionShape(Blockly);
 installFlowShape(Blockly);
 installCollectionShape(Blockly);
-Blockly.defineBlocksWithJsonArray(definitions);
+Blockly.defineBlocksWithJsonArray(definitions.map(themedDefinition));
 definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
   Blockly.Blocks[definition.type].init = function () {
@@ -245,6 +246,7 @@ for (const block of toolbox.contents.find(c => c.name === 'Logik').contents) {
   if (block.type === 'ugso_not') block.inputs = { BOOL: shadow('ugso_boolean', { BOOL: 'true' }) };
   if (block.type === 'ugso_ternary') block.inputs = { TEST: shadow('ugso_boolean', { BOOL: 'true' }), TRUE: shadow('ugso_text', { TEXT: 'Ja' }), FALSE: shadow('ugso_text', { TEXT: 'Nein' }) };
 }
+themedCategories(toolbox);
 export function setupVariables(workspace) {
   workspace.registerToolboxCategoryCallback('UGSO_FUNCTIONS', functionToolbox);
   workspace.registerButtonCallback('UGSO_CREATE_VARIABLE', () => Blockly.Variables.createVariableButtonHandler(workspace, () => workspace.getToolbox()?.refreshSelection()));

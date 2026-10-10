@@ -1,5 +1,9 @@
 # ioBroker / UGSo Blocks für HA
 
+## Theme-Auswahl und Zoom seit 0.1.16
+
+UGSo Standard, Dark, Modern und Tritanopia mit lokal gespeicherter Auswahl. Eigene Blocks/Kategorien folgen den Paletten; Anzeigewechsel verändert keine HA-Ausgabe. Originaler Zoom-to-fit-Knopf ergänzt Einpassen. Insgesamt zehn Originalplugins. [Themes](https://opensource.ugso-software.de/projects/blocks-for-ha/themes).
+
 ## Farben, Wertfunktionen und Standardabgleich seit 0.1.15
 
 111 unterstützte Typen: Zufall/RGB/Mischung und originale Wertfunktionen mit bis zu acht Parametern. Eigene HA-Templates statt JavaScript; JSON erhält Definitionen, YAML expandierte Ausdrücke. Textumkehr ist auch im aktuellen ioBroker-Menü enthalten; atan2 ist registriert, aber nicht angeboten. Typisierte Variablen, lokale Aktionsfunktionen und dokumentierte Standardvarianten bleiben offen. [Vollständiger Standardvergleich](https://opensource.ugso-software.de/projects/blocks-for-ha/blockly-audit).
@@ -14,7 +18,7 @@
 
 ioBroker-Timeout-/Intervall-Handles haben keine direkte HA-Entsprechung. Schleifen laufen sequentiell und Stop beendet den aktuellen Lauf; separat gestartete Scripts und Timer-Helfer bleiben über System steuerbar. Objektänderungen erzeugen neue lokale HA-Variablenzuweisungen statt JavaScript-Mutation. Original-Blockly-Grundlogik ist bereits umgesetzt; Listen/Schleifen ergänzen dessen Umfang. Feste ganzzahlige Zählschleifen und Listenbearbeitung folgen in 0.1.14; lokales break/continue bleibt offen. [Vollständige öffentliche Gegenüberstellung mit Originalquellen](https://opensource.ugso-software.de/projects/blocks-for-ha/flow).
 
-Stand: 10. Oktober 2026, experimentelle HA-App 0.1.15. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
+Stand: 10. Oktober 2026, experimentelle HA-App 0.1.16. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
 
 Bei jeder neuen Funktion werden Gegenstück, Verhalten, YAML-Ausgabe und Status in dieser Liste und der englischen Fassung aktualisiert. Die Kategorien werden schrittweise geprüft, beginnend mit **System**. Geplant bedeutet noch nicht implementiert.
 
@@ -104,4 +108,4 @@ Seit **0.1.12**: neun Konvertierungs-Blocks für Zahl, Boolean, String, Typ, Dat
 
 Seit **0.1.11**: sieben zusätzliche Zeit-Blocks. ioBroker `time_compare` → fester Uhrzeitvergleich; `time_compare_ex` → andockbare Grenzen und optionaler Datumswert; `time_get` → aktueller Datumswert plus Formatierung; berechnete Zeit → Kalenderbeginn; Astrozeit → nächstes HA-Sonnenereignis mit Offset; Zeitberechnung → Addition/Subtraktion. Ausführung als HA-Jinja. [Gegenüberstellung mit Bildern](https://opensource.ugso-software.de/projects/blocks-for-ha/time). Insgesamt 41 Blocktypen.
 
-Sechs Originalplugins sind lokal eingebunden. Suche am Menüende, mehrzeiliger Text, Prozent-Slider, Farbfeld, Datumsfeld und abhängige Helfer-Dropdowns sind vorhanden. Plus/Minus in unseren HA-Blocks ist eine eigene Umsetzung des Bedienprinzips; automatische dynamische Anschlüsse sind noch offen. [Blockkatalog mit Bildern und direkten Links zu allen Originalplugins](https://opensource.ugso-software.de/projects/blocks-for-ha/blocks).
+Zehn Originalplugins sind lokal eingebunden. Suche am Menüende, mehrzeiliger Text, Prozent-Slider, Farbfeld, Datumsfeld und abhängige Helfer-Dropdowns sind vorhanden. Plus/Minus in unseren HA-Blocks ist eine eigene Umsetzung des Bedienprinzips; automatische dynamische Anschlüsse sind noch offen. [Blockkatalog mit Bildern und direkten Links zu allen Originalplugins](https://opensource.ugso-software.de/projects/blocks-for-ha/blocks).

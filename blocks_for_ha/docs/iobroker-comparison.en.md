@@ -1,5 +1,9 @@
 # ioBroker / UGSo Blocks for HA
 
+## Theme selection and zoom in 0.1.16
+
+UGSo Standard, Dark, Modern and Tritanopia with locally saved selection. Own blocks/categories follow palettes; display changes preserve HA output. Original zoom-to-fit control supplements Fit. Ten original plugins in total. [Themes](https://opensource.ugso-software.de/en/projects/blocks-for-ha/themes).
+
 ## Colours, value functions and standard comparison in 0.1.15
 
 111 supported types: random/RGB/blend and original value functions with up to eight parameters. Own HA templates instead of JavaScript; JSON retains definitions, YAML expanded expressions. Text reverse is in the current ioBroker menu too; atan2 is registered but not offered. Typed variables, local action functions and documented standard variants remain pending. [Complete standard comparison](https://opensource.ugso-software.de/en/projects/blocks-for-ha/blockly-audit).
@@ -14,7 +18,7 @@
 
 ioBroker timeout/interval handles have no direct HA equivalent. Loops are sequential and Stop ends this run. Separately started scripts and timer helpers remain accessible under System. Object updates are new local HA variable assignments, not JavaScript mutation. Core Blockly logic already exists; loops/lists now extend its coverage. Fixed integer from/to/step loops and list editing follow in 0.1.14; local break/continue remains pending. [Complete public comparison and upstream sources](https://opensource.ugso-software.de/en/projects/blocks-for-ha/flow).
 
-As of October 10, 2026, experimental HA app 0.1.15. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
+As of October 10, 2026, experimental HA app 0.1.16. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
 
 Every new feature must update its counterpart, behavior, YAML output and implementation status here and in the German version. Categories will be reviewed progressively, starting with **System**. Planned means not implemented.
 
@@ -104,4 +108,4 @@ Since **0.1.12**: nine conversion blocks for number, Boolean, string, type, date
 
 Since **0.1.11**: seven additional time blocks. ioBroker `time_compare` → fixed clock comparison; `time_compare_ex` → plugged-in boundaries and optional datetime; `time_get` → current datetime plus formatter; calculated time → calendar start; astro time → next HA sun event with offset; time calculation → addition/subtraction. Runs as HA Jinja. [Comparison with images](https://opensource.ugso-software.de/en/projects/blocks-for-ha/time). Total: 41 block types.
 
-Six original plugins are bundled locally. Search at the end of the menu, multiline text, percentage slider, colour/date fields and dependent helper dropdowns are available. Plus/minus on HA blocks is our own implementation of the interaction; automatic dynamic connections remain pending. [Block catalog with images and direct links to all original plugins](https://opensource.ugso-software.de/en/projects/blocks-for-ha/blocks).
+Ten original plugins are bundled locally. Search at the end of the menu, multiline text, percentage slider, colour/date fields and dependent helper dropdowns are available. Plus/minus on HA blocks is our own implementation of the interaction; automatic dynamic connections remain pending. [Block catalog with images and direct links to all original plugins](https://opensource.ugso-software.de/en/projects/blocks-for-ha/blocks).

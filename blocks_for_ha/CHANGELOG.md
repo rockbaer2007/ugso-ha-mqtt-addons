@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.16
+
+- Gespeicherte Theme-Auswahl: UGSo Standard, originale Dark-/Modern-/Tritanopia-Themes mit eigenen UGSo-Erweiterungsstilen. Anzeigewechsel bewahrt Blocks, Verbindungen und YAML.
+- Eigene Block- und Kategorienfarben folgen Theme-Stilen; adaptive Beschriftungskontraste und lesbare Auswahlhervorhebung. Feste CSS-Hintergründe überdecken die Themes nicht mehr.
+- Originaler Zoom-to-fit-Knopf zusätzlich zum bisherigen kompakten Einpassen-Button. Vier weitere Originalplugins lokal auf 13.3.0 festgelegt, Apache-2.0-Hinweise aktualisiert.
+- Kompakte Theme-Werkzeugleiste mit mobilem Umbruch; Browser-/Speicher-/Palettenprüfungen und DE/EN-Dokumentation mit Bildern und Originalquellen.
+
 ## 0.1.15
 
 - Eigene Kategorie Farbe: Zufallsfarbe, RGB-Prozentanteile und RGB-Mischung mit HA/Jinja-Ausgabe. Berechnete Farben und RGB-Variablen an Lichtaktionen anschließbar.

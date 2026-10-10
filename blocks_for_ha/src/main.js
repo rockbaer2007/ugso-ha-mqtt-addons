@@ -4,6 +4,8 @@ import './style.css';
 import { version } from '../package.json';
 import { upgradeWorkspace } from './project.js';
 import './search.js';
+import { themes, themeOptions, themeKey, savedTheme } from './themes.js';
+import * as ZoomModule from '@blockly/zoom-to-fit';
 
 document.querySelector('#app').innerHTML = `
 <header class="app-header"><a class="brand" href="/"><span class="brand-icon">▦</span><span>UGSo <strong>Blocks for HA</strong></span></a><div class="header-right"><span class="version">Vorschau 0.1.0</span><button id="about">Über & Lizenzen</button></div></header>
@@ -19,8 +21,18 @@ document.querySelector('#about-dialog p').textContent = `Version ${version} · V
 const $ = id => document.getElementById(id);
 document.querySelector('.brand').href = './';
 document.querySelector('#about-dialog a[href="/licenses/THIRD_PARTY_NOTICES.txt"]').href = './licenses/THIRD_PARTY_NOTICES.txt';
-const compactTheme = Blockly.Theme.defineTheme('ugso_compact', { base: Blockly.Themes.Classic, fontStyle: { family: 'Segoe UI, sans-serif', size: 12, weight: 'normal' }, componentStyles: { toolboxBackgroundColour: '#20313c', toolboxForegroundColour: '#f4f7fa', flyoutBackgroundColour: '#eaf0f5', flyoutForegroundColour: '#233a36', flyoutOpacity: 1 } });
-const workspace = Blockly.inject('workspace', { toolbox, theme: compactTheme, media: './media/', renderer: 'geras', grid: { spacing: 24, length: 2, colour: '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: .8, maxScale: 1.6, minScale: .35 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
+const themeLabel = document.createElement('label'); themeLabel.className = 'theme-label'; themeLabel.textContent = 'Theme';
+const themeSelect = document.createElement('select'); themeSelect.id = 'theme'; themeSelect.setAttribute('aria-label', 'Blockly-Theme');
+for (const [id, text] of themeOptions) themeSelect.add(new Option(text, id));
+themeLabel.append(themeSelect); document.querySelector('.canvas-actions').prepend(themeLabel);
+let selectedTheme = savedTheme(() => localStorage); themeSelect.value = selectedTheme;
+document.querySelector('#workspace').dataset.theme = selectedTheme;
+const workspace = Blockly.inject('workspace', { toolbox, theme: themes[selectedTheme], media: './media/', renderer: 'geras', grid: { spacing: 24, length: 2, colour: selectedTheme === 'dark' ? '#45525d' : '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: .8, maxScale: 1.6, minScale: .35 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
+const Zoom = ZoomModule.default || ZoomModule;
+const zoomToFit = new Zoom.ZoomToFitControl(workspace); zoomToFit.init();
+const zoomElement = document.querySelector('#workspace .zoomToFit');
+zoomElement?.setAttribute('aria-label', 'Alle Blocks einpassen');
+zoomElement?.querySelector('title')?.replaceChildren(document.createTextNode('Alle Blocks einpassen'));
 function fitCompact() { workspace.zoomToFit(); if (workspace.scale > .8) workspace.setScale(.8); workspace.scrollCenter(); }
 setupVariables(workspace);
 let metadata = {};
@@ -29,6 +41,12 @@ let timer;
 let toastTimer;
 const key = 'ugso-blocks-for-ha-project-v1';
 function notice(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 6000); }
+themeSelect.addEventListener('change', () => {
+  selectedTheme = Object.hasOwn(themes, themeSelect.value) ? themeSelect.value : 'standard';
+  workspace.setTheme(themes[selectedTheme]);
+  $('workspace').dataset.theme = selectedTheme;
+  try { localStorage.setItem(themeKey, selectedTheme); } catch { notice('Theme geändert; Browser-Speicher nicht verfügbar.'); }
+});
 function metaFields() {
   $('name').value = metadata.alias; $('description').value = metadata.description || ''; $('mode').value = metadata.mode;
   $('max').value = metadata.max || 10; $('max-label').hidden = !['queued', 'parallel'].includes(metadata.mode);
