@@ -1,18 +1,22 @@
 # ioBroker / UGSo Blocks für HA
 
+## Mathematik, Text, Listen und Zählschleifen seit 0.1.14
+
+37 zusätzliche Blocks, insgesamt 105. Abgleich mit Original-Blockly und ioBroker, inklusive atan2 und Textumkehr, eigener nativer HA/Jinja-Ausgabe und unveränderlicher Listenbearbeitung. [Öffentliche Gegenüberstellung mit Funktionszuordnung, Beispielen und offenen Varianten](https://opensource.ugso-software.de/projects/blocks-for-ha/collections). JSON erhält die Formen; YAML erhält die Bedeutung. Lokales break/continue, Primzahl, Modalwert, Standardabweichung und dynamische Zählgrenzen bleiben offen.
+
 ## Timeouts, Objekt, Logik, Schleifen und Listen seit 0.1.13
 
 18 neue Blocktypen: Pause (Einheiten und berechnete Werte), Warten bis mit Timeout, Lauf stoppen, Wiederhole Anzahl, solange/bis und für jeden Eintrag, Neues Objekt, Attribut lesen/prüfen, Schlüsselliste, Attribut in Variable setzen/entfernen, Bereichsvergleich, Ersatzwert mit Null-/Leer-Modus, Fallauswahl, Liste erstellen, Listenlänge und Liste leer. Projekt-JSON erhält Formen und Attributnamen; YAML erhält die Semantik.
 
-ioBroker-Timeout-/Intervall-Handles haben keine direkte HA-Entsprechung. Schleifen laufen sequentiell und Stop beendet den aktuellen Lauf; separat gestartete Scripts und Timer-Helfer bleiben über System steuerbar. Objektänderungen erzeugen neue lokale HA-Variablenzuweisungen statt JavaScript-Mutation. Original-Blockly-Grundlogik ist bereits umgesetzt; Listen/Schleifen ergänzen dessen Umfang. Zählschleifen von/bis/Schritt, break/continue und weitere Listenoperationen bleiben offen. [Vollständige öffentliche Gegenüberstellung mit Originalquellen](https://opensource.ugso-software.de/projects/blocks-for-ha/flow).
+ioBroker-Timeout-/Intervall-Handles haben keine direkte HA-Entsprechung. Schleifen laufen sequentiell und Stop beendet den aktuellen Lauf; separat gestartete Scripts und Timer-Helfer bleiben über System steuerbar. Objektänderungen erzeugen neue lokale HA-Variablenzuweisungen statt JavaScript-Mutation. Original-Blockly-Grundlogik ist bereits umgesetzt; Listen/Schleifen ergänzen dessen Umfang. Feste ganzzahlige Zählschleifen und Listenbearbeitung folgen in 0.1.14; lokales break/continue bleibt offen. [Vollständige öffentliche Gegenüberstellung mit Originalquellen](https://opensource.ugso-software.de/projects/blocks-for-ha/flow).
 
-Stand: 10. Oktober 2026, experimentelle HA-App 0.1.13. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
+Stand: 10. Oktober 2026, experimentelle HA-App 0.1.14. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
 
 Bei jeder neuen Funktion werden Gegenstück, Verhalten, YAML-Ausgabe und Status in dieser Liste und der englischen Fassung aktualisiert. Die Kategorien werden schrittweise geprüft, beginnend mit **System**. Geplant bedeutet noch nicht implementiert.
 
 ## Alle vorhandenen Blocks
 
-Es gibt **68 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswahlmöglichkeiten innerhalb eines Blocks zählen als ein Typ. Zeit und Konvertierung sind unten separat gegenübergestellt.
+Es gibt **105 Blocktypen**, einschließlich des Automationsrahmens. Mehrere Auswahlmöglichkeiten innerhalb eines Blocks zählen als ein Typ. Zeit und Konvertierung sind unten separat gegenübergestellt.
 
 | ioBroker-Konzept | Unser Block | Native HA-Ausgabe / Verhalten |
 | --- | --- | --- |

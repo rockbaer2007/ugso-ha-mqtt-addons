@@ -1,10 +1,12 @@
 # UGSo Blocks for HA
 
+Neu in **0.1.14**: 37 Mathematik-/Text-/Listen-/Schleifenblocks, insgesamt 105. Eigene HA-Templates für Rechnen, Trigonometrie/atan2, Statistik, Unicode-Text, Listenbearbeitung und feste ganzzahlige Zählschleifen. [Original-Blockly/ioBroker-Abgleich, Bedienung und offene Varianten](https://opensource.ugso-software.de/projects/blocks-for-ha/collections). JSON behält die Formen; YAML öffnet komplexe Ausdrücke als Templates. Echte HA-Ausführung bleibt zu prüfen.
+
 Neu in 0.1.10: **Erhöhe Variable um …** steht im Variablen-Menü zwischen Setzen und Lesen. Standard-Schritt `1`, negative Schritte verringern, Dezimalschritte und `0` sind möglich. Die Variable vorher als Zahl setzen. Fehlende Werte, Text, Boolean und null führen bei der Jinja-Auswertung in HA zu einem Fehler; keine automatische Umwandlung oder Null-Initialisierung. Eigenes YAML-Ausgabeformat wird wieder als Erhöhen-Block importiert, JSON erhält die Blockform.
 
 Neu in 0.1.9: **Logik** mit Vergleich (=, ≠, <, ≤, >, ≥), kompaktem UND/ODER, NICHT, wahr/falsch, null und bedingter Wertauswahl. Zahl/Text/Variable/Template an die Werteingänge, Boolean an die Bedingungseingänge anschließen. Variablenzuweisungen unterstützen jetzt Boolean und null. JSON bewahrt Blockformen; YAML-Import erhält komplexe Ausdrücke als Template-Blocks. Vergleiche konvertieren Typen nicht automatisch. Ausdruckseingänge akzeptieren einzelne Jinja-Ausgaben; dynamische Werte sind nicht als feste Grenzen oder Wartezeiten vorgesehen.
 
-Version 0.1.13: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
+Version 0.1.14: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
 
 Neu in 0.1.12: **Konvertierung** mit neun Blocks für Zahl, Logikwert, String, Typ, Datumswert, Datumsformat/-bestandteile, Zeitdifferenz, JSON lesen und JSON schreiben mit Formatierungs-Haken. HA-Konvertierungsregeln, ausdrückliche Unix-/Dauereinheiten, dynamischer Format-Eingang und typisierter Laufzeitzahlen-Anschluss für Vergleiche, Variablen und Zeitrechnung. Feste Auslösergrenzen und Wartezeiten bleiben Konstanten. JSONata ist als offene Erweiterung dokumentiert. [Gegenüberstellung und Beispiele](https://opensource.ugso-software.de/projects/blocks-for-ha/conversion).
 
@@ -39,7 +41,7 @@ Bedingungen sind Boolean-Wertblocks für seitliche Werteingänge bei Falls und N
 
 Entitäten zunächst als IDs eingeben. Eine Live-HA-Verbindung ist noch nicht implementiert. Die backendseitige Supervisor-/Token-Verbindung von UGSo Visual Studio ist als Vorlage für eine spätere Anbindung vorgesehen; hinzu kommen die HA-Aktionsbeschreibungen. Tokens dürfen nicht in Blockprojekte oder YAML exportiert werden.
 
-Suche steht am Ende des Menüs. Plus/Minus ergänzt und entfernt die letzten Bedingungseingänge oder Falls-Zweige; S schaltet Sonst um. Das Zahnrad bleibt zum Umordnen. [Liste aller 68 Blocks mit Bildern und Originalplugin-Links](https://opensource.ugso-software.de/projects/blocks-for-ha/blocks).
+Suche steht am Ende des Menüs. Plus/Minus ergänzt und entfernt die letzten Bedingungseingänge oder Falls-Zweige; S schaltet Sonst um. Das Zahnrad bleibt zum Umordnen. [Liste aller 105 Blocks mit Bildern und Originalplugin-Links](https://opensource.ugso-software.de/projects/blocks-for-ha/blocks).
 
 Variablen: im Menü **Variablen → Variable erstellen** einen Namen anlegen, beispielsweise `leistung`. **Setze** in die Aktionskette hängen und Zahl, Text oder Template anschließen; der Lesen-Block erzeugt `{{ leistung }}` für eine spätere Log-Meldung oder Variablenzuweisung. Im Dropdown sind Umbenennen und Löschen verfügbar. Freie Template-Texte werden beim Umbenennen nicht verändert. Namen benötigen ASCII-Buchstaben, Ziffern und `_`, keine führende Ziffer. Variablen gelten für den jeweiligen HA-Lauf und sind keine persistenten Helfer.
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.14
+
+- 37 weitere Blocks, insgesamt 105: Mathematik, Text, Listen, Zählschleifen und Für-jeden-Schleifen mit benannter Variable.
+- Eigene HA/Jinja-Generatoren für Rechenoperationen, Grad-Trigonometrie einschließlich atan2, Statistik, Runden, Zufall, Unicode-Text und unveränderliche Listenänderungen.
+- Mathematik/Text als kontrastreiche eigene Kategorien, Suche weiterhin zuletzt; Textverknüpfung mit Zahnrad und +/−.
+- Feste ganzzahlige Zählschleifen mit inklusiver Grenze, automatischer Richtung und höchstens 10000 Werten; Schleifenvariablen pro Durchlauf aus repeat.item.
+- JSON-/YAML-Rundlauf für alle neuen Blocks, strikte Jinja-Grenzfalltests und Browserkontrolle. Öffentliche DE/EN-Gegenüberstellung und 105 echte Blockbilder.
+- Dokumentierte Unterschiede zu JavaScript und offene Varianten: lokales break/continue, Primzahl, Modalwert, Standardabweichung, dynamische Zählgrenzen und kombinierte Lesen-/Entfernen-Blocks.
+
 ## 0.1.13
 
 - 18 zusätzliche Blocks: Pause mit Dauereinheit/Laufzeitwert, Warten bis mit Timeout, Lauf stoppen, Wiederhole Anzahl/solange/bis/für jeden Eintrag, Objekt erstellen/lesen/prüfen/Schlüssel/ändern/entfernen, Bereichsvergleich, Ersatzwert, Fallauswahl und Listen erstellen/Länge/leer.

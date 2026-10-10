@@ -15,7 +15,11 @@ Am **10. Oktober 2026** vorgemerkt; noch nicht umgesetzt. Die originalen [Blockl
 
 ## Nach Timeouts, Objekt und Logik (0.1.13)
 
-18 Blocks sind umgesetzt, siehe [öffentliche Gegenüberstellung](https://opensource.ugso-software.de/projects/blocks-for-ha/flow). Offen bleiben persistente Timer mit timer.finished-Auslöser, periodische HA-Auslöser, parallele Zweige, Zählschleifen von/bis/Schritt, lokales break/continue und Listenindex/Zufall/Subliste. Lauf stoppen beendet die ganze HA-Ausführung und ersetzt kein break. Benannte JavaScript-Timer-Handles nicht als HA-Runtimefunktion vortäuschen.
+18 Blocks sind umgesetzt, siehe [öffentliche Gegenüberstellung](https://opensource.ugso-software.de/projects/blocks-for-ha/flow). Seit 0.1.14 folgen 37 Mathematik-/Text-/Listen-/Schleifenblocks: feste ganzzahlige Zählschleife, benannte Für-jeden-Variable, Listenindex/Zufall/Subliste und unveränderliche Listenbearbeitung sind ergänzt. [Umsetzung und Grenzen](https://opensource.ugso-software.de/projects/blocks-for-ha/collections).
+
+Offen bleiben persistente Timer mit timer.finished-Auslöser, periodische HA-Auslöser, parallele Zweige und lokales break/continue. Lauf stoppen beendet die ganze HA-Ausführung und ersetzt kein break. Benannte JavaScript-Timer-Handles nicht als HA-Runtimefunktion vortäuschen.
+
+Weitere Varianten: dynamische/gebrochene Zählgrenzen, Primzahlprüfung, Standardabweichung und Modalwert als Liste aller häufigsten Werte, Lesen-und-Entfernen-Wertblock, Änderung/Teilbereiche vom Ende sowie zufälliges Entfernen. Browser-Prompt nicht als Eingabe zur späteren HA-Ausführung ausgeben. Standard-Textumkehr und atan2 sind bereits umgesetzt; Blockly print ist durch die vorhandene Log-Aktion abgedeckt.
 
 ## JSONata und Objekt-/Listenfunktionen
 

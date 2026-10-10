@@ -10,6 +10,7 @@ import { dateTemplate, parseDateTemplate, helperOptions } from './values.js';
 import { timeDefinitions, installTimeShape, timeExpression } from './time.js';
 import { conversionDefinitions, installConversionShape, conversionExpression } from './conversion.js';
 import { flowDefinitions, installFlowShape, flowExpression, flowAction, flowToolbox } from './flow.js';
+import { collectionDefinitions, installCollectionShape, collectionExpression, collectionAction, collectionToolbox } from './collections.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 Blockly.setLocale(De);
@@ -42,6 +43,7 @@ const definitions = [
   ...timeDefinitions,
   ...conversionDefinitions,
   ...flowDefinitions,
+  ...collectionDefinitions,
   { type: 'ugso_variable_change', message0: 'Erhöhe %1 um %2', args0: [{ type: 'field_variable', name: 'VAR', variable: 'wert' }, value('STEP', 'Number')], previousStatement: 'Action', nextStatement: 'Action', colour: '#a54879', tooltip: 'Addiert eine Zahl zur zuvor gesetzten Zahlenvariable. Negative Schritte verringern. Nicht gesetzte Werte, Texte, Boolean und null werden nicht automatisch in Zahlen umgewandelt.' },
   { type: 'ugso_compare', message0: '%1 %2 %3', args0: [value('LEFT', 'Value'), { type: 'field_dropdown', name: 'OP', options: [['=', '=='], ['≠', '!='], ['<', '<'], ['≤', '<='], ['>', '>'], ['≥', '>=']] }, value('RIGHT', 'Value')], output: ['Boolean', 'Value'], colour: '#6860b5', tooltip: 'Vergleicht zwei Werte in HA. Zahlen und Texte haben unterschiedliche Typen; Sensorwerte im Template bewusst umwandeln.' },
   { type: 'ugso_boolean', message0: '%1', args0: [{ type: 'field_dropdown', name: 'BOOL', options: [['wahr', 'true'], ['falsch', 'false']] }], output: ['Boolean', 'Value'], colour: '#6860b5' },
@@ -157,6 +159,7 @@ Blockly.Extensions.registerMutator('ugso_branches', {
 installTimeShape(Blockly);
 installConversionShape(Blockly);
 installFlowShape(Blockly);
+installCollectionShape(Blockly);
 Blockly.defineBlocksWithJsonArray(definitions);
 definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
@@ -164,6 +167,7 @@ definitions.forEach(definition => {
     original.call(this); this.setHelpUrl(this.type.startsWith('ugso_time_') ? 'https://opensource.ugso-software.de/projects/blocks-for-ha/time' : 'https://opensource.ugso-software.de/projects/blocks-for-ha/#andocken-und-bedienung');
     if (this.type.startsWith('ugso_convert_')) this.setHelpUrl('https://opensource.ugso-software.de/projects/blocks-for-ha/conversion');
     if (flowDefinitions.some(d => d.type === this.type)) this.setHelpUrl('https://opensource.ugso-software.de/projects/blocks-for-ha/flow');
+    if (collectionDefinitions.some(d => d.type === this.type)) this.setHelpUrl('https://opensource.ugso-software.de/projects/blocks-for-ha/collections');
     if (this.type === 'ugso_variable_change') this.getInput('STEP').connection.setShadowState({ type: 'ugso_number', fields: { NUM: 1 } });
     if (this.outputConnection && ['ugso_number', 'ugso_percent', 'ugso_text', 'ugso_template', 'ugso_variable_get'].includes(this.type)) this.setOutput(true, [...this.outputConnection.getCheck(), 'Value']);
     if (['ugso_logic_condition', 'ugso_if_action'].includes(this.type)) addExpansionButtons(this);
@@ -222,6 +226,12 @@ for (const [name, colour] of [['Timeouts', '#7a8639'], ['Objekt', '#967b44'], ['
   toolbox.contents.splice(position, 0, { kind: 'category', name, colour, contents: flowToolbox(name) });
 }
 toolbox.contents.find(c => c.name === 'Logik').contents.push(...flowToolbox('Logik'), { kind: 'block', type: 'ugso_logic_condition' });
+for (const [name, colour] of [['Mathematik', '#5e62a1'], ['Text', '#397b68']]) {
+  toolbox.contents.splice(toolbox.contents.findIndex(c => c.name === 'Listen'), 0, { kind: 'category', name, colour, contents: collectionToolbox(name) });
+}
+for (const name of ['Schleifen', 'Listen']) toolbox.contents.find(c => c.name === name).contents.push(...collectionToolbox(name));
+toolbox.contents.find(c => c.name === 'Mathematik').contents.unshift({ kind: 'block', type: 'ugso_number' });
+toolbox.contents.find(c => c.name === 'Text').contents.unshift({ kind: 'block', type: 'ugso_text' });
 for (const block of toolbox.contents.find(c => c.name === 'Logik').contents) {
   const shadow = (type, fields) => ({ shadow: { type, fields } });
   if (block.type === 'ugso_compare') block.inputs = { LEFT: shadow('ugso_number', { NUM: 1 }), RIGHT: shadow('ugso_number', { NUM: 1 }) };
@@ -256,6 +266,7 @@ function readValue(block, input) {
   if (child.type === 'ugso_variable_get') return `{{ ${variableName(child)} }}`;
   if (['ugso_text', 'ugso_template'].includes(child.type)) return field(child, 'TEXT');
   if (flowDefinitions.some(d => d.type === child.type && d.output)) return `{{ ${expression(child)} }}`;
+  if (collectionDefinitions.some(d => d.type === child.type && d.output)) return `{{ ${expression(child)} }}`;
   if (child.type.startsWith('ugso_convert_') || child.type.startsWith('ugso_time_') || child.type === 'ugso_ternary' || child.outputConnection?.getCheck()?.includes('Boolean')) return `{{ ${expression(child)} }}`;
   throw new Error(`${input}: Wertblock wird nicht unterstützt.`);
 }
@@ -264,6 +275,7 @@ function expression(block, depth = 0) {
   if (depth > 10) throw new Error('Logik ist zu tief verschachtelt.');
   const child = name => expression(block.getInputTargetBlock(name), depth + 1);
   if (flowDefinitions.some(d => d.type === block.type && d.output)) return flowExpression(block, child);
+  if (collectionDefinitions.some(d => d.type === block.type && d.output)) return collectionExpression(block, child);
   if (block.type.startsWith('ugso_convert_')) return conversionExpression(block, child);
   if (block.type.startsWith('ugso_time_')) return timeExpression(block, child, name => {
     const value = block.getInputTargetBlock(name);
@@ -331,6 +343,7 @@ function readTrigger(block) {
 }
 function readCondition(block, depth) {
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
+  if (collectionDefinitions.some(d => d.type === block.type && Array.isArray(d.output) && d.output.includes('Boolean'))) return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
   if (['ugso_object_has', 'ugso_logic_range', 'ugso_list_empty'].includes(block.type)) return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
   switch (block.type) {
     case 'ugso_time_compare': case 'ugso_time_compare_input':
@@ -365,6 +378,8 @@ function readConditions(block, depth = 0) {
   return block.type === 'ugso_logic_condition' && block.list_ && field(block, 'LOGIC') === 'and' ? result.conditions : [result];
 }
 function readAction(block, depth) {
+  const collection = collectionAction(block, { child: name => expression(block.getInputTargetBlock(name)), variableName: () => variableName(block), actions: name => chain(block.getInputTargetBlock(name), readAction, depth + 1), number: name => readNumber(block, name) });
+  if (collection) return collection;
   const flow = flowAction(block, { child: name => expression(block.getInputTargetBlock(name)), actions: name => chain(block.getInputTargetBlock(name), readAction, depth + 1), conditions: name => requiredConditions(block, name, depth), variableName: () => variableName(block), number: name => readNumber(block, name) });
   if (flow) return flow;
   switch (block.type) {
