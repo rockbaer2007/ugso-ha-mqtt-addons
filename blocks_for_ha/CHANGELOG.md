@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.18
+
+- Eigener Block-/Template-Editor mit Blockly-Vorschau im 95%-Dialog.
+- Deklarative Wert-, Bedingungs-, Aktions- und Auslöserpakete mit mehreren Blocks. Kein importierter JavaScript-Generator.
+- Kategorie Benutzerdefiniert vor der Suche; lokale Paketbibliothek und Projektformat 3 mit eingebetteten verwendeten Paketen.
+- JSON-Code kopieren/einfügen und ZIP importieren/exportieren, Format-/Abhängigkeitsprüfung, Konfliktschutz und transaktionaler Projektimport.
+- Öffentliches Beispiel Sensor und Licht, zweisprachige Anleitung und Katalogseiten.
+- fflate 0.8.3 (MIT) lokal eingebunden.
+
 ## 0.1.17
 
 - Entitätsfelder mit Suchdialog, Name/ID-Suche, Zustandsvorschau und passenden Licht-/Script-/Helferfiltern. Auswahl erst bei Übernehmen; manuelle IDs und leeres generisches Ziel bleiben verfügbar.

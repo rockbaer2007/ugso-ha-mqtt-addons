@@ -15,6 +15,7 @@ import { colourDefinitions, colourExpression, colourInput, colourToolbox } from 
 import { functionTypes, installFunctions, functionInfo, functionToolbox } from './functions.js';
 import { themedDefinition, themedCategories } from './themes.js';
 import './entities.js';
+import { customDefinition, customExpression, customNative } from './custom-packages.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 Blockly.setLocale(De);
@@ -270,6 +271,7 @@ function variableName(block) {
 function readValue(block, input) {
   const child = block.getInputTargetBlock(input);
   if (!child?.isEnabled()) throw new Error(`${input}: Wertblock fehlt.`);
+  if (customDefinition(child.type)) return `{{ ${expression(child)} }}`;
   if (['ugso_number', 'ugso_percent'].includes(child.type)) return Number(field(child, 'NUM'));
   if (child.type === 'ugso_boolean') return field(child, 'BOOL') === 'true';
   if (child.type === 'ugso_null') return null;
@@ -285,6 +287,8 @@ function expression(block, depth = 0, scope = { params: new Map(), calls: [] }) 
   if (!block?.isEnabled()) throw new Error('Logik: Wert oder Bedingung fehlt.');
   if (depth > 10) throw new Error('Logik ist zu tief verschachtelt.');
   const child = name => expression(block.getInputTargetBlock(name), depth + 1, scope);
+  const custom = customDefinition(block.type);
+  if (custom && ['value', 'condition'].includes(custom.kind)) return customExpression(custom, block, child);
   if (block.type === 'ugso_colour' || colourDefinitions.some(d => d.type === block.type)) return colourExpression(block, child);
   if (block.type === 'procedures_callreturn') {
     const name = block.getProcedureCall();
@@ -353,6 +357,8 @@ function readNumber(block, input) {
 }
 const range = (block) => ({ entity_id: field(block, 'ENTITY'), [field(block, 'OP')]: readNumber(block, 'LIMIT') });
 function readTrigger(block) {
+  const custom = customDefinition(block.type);
+  if (custom?.kind === 'trigger') return customNative(custom, block, name => readValue(block, name));
   switch (block.type) {
     case 'ugso_state_trigger': return { trigger: 'state', entity_id: field(block, 'ENTITY'), to: field(block, 'STATE') };
     case 'ugso_numeric_trigger': return { trigger: 'numeric_state', ...range(block) };
@@ -363,6 +369,8 @@ function readTrigger(block) {
   }
 }
 function readCondition(block, depth) {
+  const custom = customDefinition(block.type);
+  if (custom && ['value', 'condition'].includes(custom.kind) && custom.output === 'Boolean') return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
   if (block.type === 'procedures_callreturn') return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
   if (collectionDefinitions.some(d => d.type === block.type && Array.isArray(d.output) && d.output.includes('Boolean'))) return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
@@ -400,6 +408,8 @@ function readConditions(block, depth = 0) {
   return block.type === 'ugso_logic_condition' && block.list_ && field(block, 'LOGIC') === 'and' ? result.conditions : [result];
 }
 function readAction(block, depth) {
+  const custom = customDefinition(block.type);
+  if (custom?.kind === 'action') return customNative(custom, block, name => readValue(block, name));
   const collection = collectionAction(block, { child: name => expression(block.getInputTargetBlock(name)), variableName: () => variableName(block), actions: name => chain(block.getInputTargetBlock(name), readAction, depth + 1), number: name => readNumber(block, name) });
   if (collection) return collection;
   const flow = flowAction(block, { child: name => expression(block.getInputTargetBlock(name)), actions: name => chain(block.getInputTargetBlock(name), readAction, depth + 1), conditions: name => requiredConditions(block, name, depth), variableName: () => variableName(block), number: name => readNumber(block, name) });

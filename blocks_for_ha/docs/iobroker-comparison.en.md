@@ -102,7 +102,7 @@ Conditions have Boolean outputs for if and automation condition value inputs. AN
 - Name, description and ID; `single`, `restart`, `queued`, `parallel` execution modes, with a maximum count for the last two.
 - Structural validation and errors. Installed HA actions are not verified.
 
-Version 0.1.3 adds the experimental HA app package with ingress. Entity selection is available since 0.1.17; live action selection and execution inside the editor remain pending. Catalog and plugins are planned. The if block already supports a mutator; additional mutators will follow where needed. HA runs the exported automations. [Public documentation](https://opensource.ugso-software.de/en/projects/blocks-for-ha/).
+Version 0.1.3 adds the experimental HA app package with ingress. Entity selection is available since 0.1.17; live action selection and execution inside the editor remain pending. Declarative block packages, an editor and sample catalog are available since 0.1.18. The if block already supports a mutator; additional mutators will follow where needed. HA runs the exported automations. [Public documentation](https://opensource.ugso-software.de/en/projects/blocks-for-ha/).
 
 References: [ioBroker System documentation](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/blockly.md#system-blocks), [System block definitions](https://github.com/ioBroker/ioBroker.javascript/blob/master/src-editor/src/Components/blockly-plugins/blocks/blocks_system.ts), [HA actions](https://www.home-assistant.io/docs/scripts/perform-actions/), [HA script syntax](https://www.home-assistant.io/docs/scripts/).
 

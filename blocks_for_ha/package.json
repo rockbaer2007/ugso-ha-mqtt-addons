@@ -1,6 +1,6 @@
 {
   "name": "ugso-blocks-for-ha",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
@@ -24,6 +24,7 @@
     "@blockly/toolbox-search": "13.2.0",
     "@blockly/zoom-to-fit": "13.3.0",
     "blockly": "13.3.0",
+    "fflate": "0.8.3",
     "yaml": "2.8.3"
   },
   "devDependencies": {

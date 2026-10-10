@@ -1,4 +1,4 @@
-UGSo Blocks for HA 0.1.17
+UGSo Blocks for HA 0.1.18
 Copyright 2026 rockbaer2007 / UGSo
 Own application code is licensed under Apache License 2.0; see APP-LICENSE.txt in this directory.
 
@@ -27,3 +27,8 @@ block-plus-minus and block-dynamic-connection are not installed.
 The house/puzzle icon is an original UGSo vector drawing, not an official HA or Blockly logo.
 
 Home Assistant is a separate project. This editor is an independent community project.
+
+fflate 0.8.3 by Arjun Barrett
+https://github.com/101arrowz/fflate
+License: MIT. Original license: FFLATE-LICENSE.txt in this directory.
+Used for local block package ZIP import/export; no remote execution.

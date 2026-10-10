@@ -7,6 +7,8 @@ import './search.js';
 import { themes, themeOptions, themeKey, savedTheme } from './themes.js';
 import * as ZoomModule from '@blockly/zoom-to-fit';
 import { setupEntities } from './entities.js';
+import { withPackages, installedPackages, usedPackages, customDefinition, packageStoreKey } from './custom-packages.js';
+import { setupCustomEditor, refreshCustomToolbox } from './custom-editor.js';
 
 document.querySelector('#app').innerHTML = `
 <header class="app-header"><a class="brand" href="/"><span class="brand-icon">▦</span><span>UGSo <strong>Blocks for HA</strong></span></a><div class="header-right"><span class="version">Vorschau 0.1.0</span><button id="about">Über & Lizenzen</button></div></header>
@@ -15,7 +17,7 @@ document.querySelector('#app').innerHTML = `
 <section class="editor-layout"><div class="canvas-panel"><div class="panel-heading"><div><h2>Blocks</h2><span>Wenn → Nur wenn → Dann</span></div><div class="canvas-actions"><button id="undo" title="Rückgängig">↶</button><button id="redo" title="Wiederholen">↷</button><button id="fit">Einpassen</button></div></div><div id="workspace"></div><div class="canvas-foot"><span><i class="dot trigger"></i>Auslöser</span><span><i class="dot condition"></i>Bedingungen</span><span><i class="dot action"></i>Aktionen</span></div></div>
 <aside class="output-panel"><div class="panel-heading"><div><h2>HA-Automation</h2><span>Native YAML-Ausgabe</span></div><span id="valid-badge" class="valid-badge">Gültig</span></div><label class="format-label">Ausgabeformat<select id="format"><option value="single">Einzelne Automation · HA-Editor</option><option value="list">Liste · eine Automation</option></select></label><pre id="yaml" tabindex="0" aria-label="YAML-Ausgabe"></pre><div id="validation" role="status"></div><div class="file-actions"><button id="copy">Kopieren</button><button id="save" class="primary">Speichern</button><button id="open">Öffnen</button></div><p class="output-note">Speichern lädt eine YAML-Datei auf deinen Rechner. Öffnen lädt eine unterstützte Automation zurück in Blocks.</p><details class="more"><summary>Projekt & Beschreibung</summary><label>Beschreibung<textarea id="description" rows="2"></textarea></label><div class="project-actions"><button id="project-save">Projekt sichern</button><button id="project-open">Projekt öffnen</button></div><p>Das Projekt enthält auch die Anordnung der Blocks. Der letzte Stand wird automatisch in diesem Browser gesichert.</p></details><div class="ha-hint"><strong>In Home Assistant verwenden</strong><p>Beispiel-Entitäten durch deine eigenen IDs ersetzen. Für den HA-Editor das Format „Einzelne Automation“ wählen und den Inhalt in „Als YAML bearbeiten“ übernehmen. Speichern und in HA prüfen.</p><a href="https://www.home-assistant.io/docs/automation/yaml/" target="_blank" rel="noopener noreferrer">HA-Dokumentation ↗</a></div></aside></section><footer>UGSo Blocks for HA · Unabhängiges Community-Projekt <span>Built with <a href="https://www.blockly.com/" target="_blank" rel="noopener noreferrer">Blockly</a></span></footer></main>
 <input id="yaml-file" type="file" accept=".yaml,.yml,text/yaml" hidden><input id="project-file" type="file" accept=".json,application/json" hidden><div id="toast" role="status" hidden></div>
-<dialog id="about-dialog"><h2>UGSo Blocks for HA</h2><p>Version 0.1.0 · Visueller Editor für native Home-Assistant-Automationen.</p><p>Built with <a href="https://www.blockly.com/" target="_blank" rel="noopener noreferrer">Blockly</a>, der Open-Source-Bibliothek der Raspberry Pi Foundation, ursprünglich bei Google entwickelt. Eigene HA-Blocks; keine ioBroker-Laufzeit.</p><p>Blockly: Apache-2.0 · YAML: ISC · Eigener Code: Apache-2.0.</p><p>Unabhängiges Community-Projekt, kein offizielles Produkt von Home Assistant oder Blockly.</p><a href="/licenses/THIRD_PARTY_NOTICES.txt" target="_blank">Lizenzhinweise öffnen</a><form method="dialog"><button class="primary">Schließen</button></form></dialog>`;
+<dialog id="about-dialog"><h2>UGSo Blocks for HA</h2><p>Version 0.1.0 · Visueller Editor für native Home-Assistant-Automationen.</p><p>Built with <a href="https://www.blockly.com/" target="_blank" rel="noopener noreferrer">Blockly</a>, der Open-Source-Bibliothek der Raspberry Pi Foundation, ursprünglich bei Google entwickelt. Eigene HA-Blocks; keine ioBroker-Laufzeit.</p><p>Blockly: Apache-2.0 · YAML: ISC · fflate: MIT · Eigener Code: Apache-2.0.</p><p>Unabhängiges Community-Projekt, kein offizielles Produkt von Home Assistant oder Blockly.</p><a href="/licenses/THIRD_PARTY_NOTICES.txt" target="_blank">Lizenzhinweise öffnen</a><form method="dialog"><button class="primary">Schließen</button></form></dialog>`;
 document.querySelector('.version').textContent = `Vorschau ${version}`;
 document.querySelector('.brand-icon').innerHTML = '<img src="./blocks-icon.svg" alt="" width="34" height="34">';
 document.querySelector('#about-dialog p').textContent = `Version ${version} · Visueller Editor für native Home-Assistant-Automationen.`;
@@ -54,7 +56,7 @@ function metaFields() {
   $('max').value = metadata.max || 10; $('max-label').hidden = !['queued', 'parallel'].includes(metadata.mode);
 }
 function setMeta(model) { const { triggers, conditions, actions, ...meta } = model; metadata = meta; metaFields(); }
-function snapshot() { return { format: 'ugso-blocks-for-ha', version: 2, metadata, workspace: Blockly.serialization.workspaces.save(workspace) }; }
+function snapshot() { return { format: 'ugso-blocks-for-ha', version: 3, metadata, packages: usedPackages(workspace), workspace: Blockly.serialization.workspaces.save(workspace) }; }
 function update() {
   try {
     currentModel = validateAutomation(workspaceModel(workspace, metadata));
@@ -71,17 +73,20 @@ function update() {
 }
 function loadModel(model) { validateAutomation(model); modelWorkspace(workspace, model); setMeta(model); update(); requestAnimationFrame(fitCompact); }
 function restoreProject(data) {
-  if (data?.format !== 'ugso-blocks-for-ha' || ![1, 2].includes(data.version) || !data.metadata || !data.workspace) throw new Error('Kein unterstütztes Blocks-Projekt.');
+  if (data?.format !== 'ugso-blocks-for-ha' || ![1, 2, 3].includes(data.version) || !data.metadata || !data.workspace) throw new Error('Kein unterstütztes Blocks-Projekt.');
   if (data.version === 1) data = { ...data, version: 2, workspace: upgradeWorkspace(data.workspace) };
+  withPackages(Blockly, data.packages || [], () => {
   const temp = new Blockly.Workspace();
   try {
     // Validate types before serialization can skip an unknown block.
-    const check = value => { if (!value || typeof value !== 'object') return; if (Object.hasOwn(value, 'type') && !knownTypes.has(value.type)) throw new Error(`Blockpaket fehlt: ${value.type}`); if (value.type === 'ugso_if_action' && !value.extraState) value.extraState = { branches: 0, hasElse: !!value.inputs?.ELSE }; Object.values(value).forEach(check); };
+    const check = value => { if (!value || typeof value !== 'object') return; if (Object.hasOwn(value, 'type') && !knownTypes.has(value.type) && !customDefinition(value.type)) throw new Error(`Blockpaket fehlt: ${value.type}`); if (value.type === 'ugso_if_action' && !value.extraState) value.extraState = { branches: 0, hasElse: !!value.inputs?.ELSE }; Object.values(value).forEach(check); };
     check(data.workspace.blocks);
     Blockly.serialization.workspaces.load(data.workspace, temp);
     validateAutomation(workspaceModel(temp, data.metadata));
   } finally { temp.dispose(); }
+  });
   Blockly.serialization.workspaces.load(data.workspace, workspace); metadata = data.metadata; metaFields(); update();
+  refreshCustomToolbox(workspace, toolbox); savePackages();
   requestAnimationFrame(fitCompact);
 }
 function download(content, name, type) {
@@ -115,5 +120,15 @@ for (const [id, load] of [['yaml-file', source => loadModel(fromYaml(source))], 
 $('about').addEventListener('click', () => $('about-dialog').showModal());
 workspace.addChangeListener(event => { if (event.isUiEvent) return; clearTimeout(timer); timer = setTimeout(update, 120); });
 new ResizeObserver(() => Blockly.svgResize(workspace)).observe($('workspace'));
+function savePackages() {
+  try { localStorage.setItem(packageStoreKey, JSON.stringify(installedPackages())); return ''; }
+  catch { return 'Blockpaket für diese Sitzung übernommen. Browser-Speicher nicht verfügbar; Paket als JSON oder ZIP sichern.'; }
+}
+try { const saved = localStorage.getItem(packageStoreKey); if (saved) withPackages(Blockly, JSON.parse(saved)); }
+catch (error) { notice(`Blockpakete konnten nicht geladen werden: ${error.message}`); }
+refreshCustomToolbox(workspace, toolbox);
+setupCustomEditor({ Blockly, workspace, download, notice, install: pkg => {
+  withPackages(Blockly, [pkg]); refreshCustomToolbox(workspace, toolbox); update(); return savePackages();
+} });
 try { const saved = localStorage.getItem(key); if (saved) restoreProject(JSON.parse(saved)); else loadModel(structuredClone(examples.light)); }
 catch { loadModel(structuredClone(examples.light)); notice('Gesicherter Browserstand konnte nicht geladen werden. Das Beispiel wurde geöffnet.'); }

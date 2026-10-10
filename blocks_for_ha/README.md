@@ -1,5 +1,7 @@
 # UGSo Blocks for HA
 
+Neu in **0.1.18**: eigener Block-/Template-Editor als 95%-Dialog, mehrere Blocks pro deklarativem HA-/Jinja-Paket, Kategorie Benutzerdefiniert, JSON-/ZIP-Import und Export. Projektdateien sichern verwendete Definitionen mit. [Editor und Grenzen](https://opensource.ugso-software.de/projects/blocks-for-ha/custom-blocks), [Paketkatalog mit Code und Downloads](https://opensource.ugso-software.de/projects/blocks-for-ha/catalog/).
+
 Neu in **0.1.17**: Suchdialog in allen Entitätsfeldern, lesende Supervisor-Anbindung, passende Licht-/Script-/Helferfilter und manuelle IDs als Rückfall. [Entitätsauswahl](https://opensource.ugso-software.de/projects/blocks-for-ha/entities).
 
 Neu in **0.1.16**: gespeicherte Theme-Auswahl UGSo Standard/Dark/Modern/Tritanopia und originaler Zoom-to-fit-Knopf. Eigene Blocks und Kategorien folgen den Theme-Paletten; Beschriftungen erhalten passende Kontraste. [Bedienung und Originalquellen](https://opensource.ugso-software.de/projects/blocks-for-ha/themes). Weiterhin 111 Blocktypen; YAML und Projekt bleiben beim Wechsel erhalten.
@@ -8,7 +10,7 @@ Neu in 0.1.10: **Erhöhe Variable um …** steht im Variablen-Menü zwischen Set
 
 Neu in 0.1.9: **Logik** mit Vergleich (=, ≠, <, ≤, >, ≥), kompaktem UND/ODER, NICHT, wahr/falsch, null und bedingter Wertauswahl. Zahl/Text/Variable/Template an die Werteingänge, Boolean an die Bedingungseingänge anschließen. Variablenzuweisungen unterstützen jetzt Boolean und null. JSON bewahrt Blockformen; YAML-Import erhält komplexe Ausdrücke als Template-Blocks. Vergleiche konvertieren Typen nicht automatisch. Ausdruckseingänge akzeptieren einzelne Jinja-Ausgaben; dynamische Werte sind nicht als feste Grenzen oder Wartezeiten vorgesehen.
 
-Version 0.1.17: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
+Version 0.1.18: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
 
 Neu in 0.1.12: **Konvertierung** mit neun Blocks für Zahl, Logikwert, String, Typ, Datumswert, Datumsformat/-bestandteile, Zeitdifferenz, JSON lesen und JSON schreiben mit Formatierungs-Haken. HA-Konvertierungsregeln, ausdrückliche Unix-/Dauereinheiten, dynamischer Format-Eingang und typisierter Laufzeitzahlen-Anschluss für Vergleiche, Variablen und Zeitrechnung. Feste Auslösergrenzen und Wartezeiten bleiben Konstanten. JSONata ist als offene Erweiterung dokumentiert. [Gegenüberstellung und Beispiele](https://opensource.ugso-software.de/projects/blocks-for-ha/conversion).
 
@@ -65,4 +67,4 @@ Live-Aktionsauswahl, Entitäts-Wertblocks, deklarative Blockpakete und Katalog, 
 
 Built with [Blockly](https://www.blockly.com/), der Open-Source-Bibliothek der Raspberry Pi Foundation, ursprünglich entwickelt bei Google. Eigene HA-Blocks auf Basis von Blockly 13.3.0; kein Fork des ioBroker-Adapters.
 
-Eigener Code: Apache-2.0. Blockly: Apache-2.0. YAML-Bibliothek: ISC. Original-Lizenztexte liegen unter `public/licenses/` und werden beim Build mitgeliefert. Das Projekt verwendet ein eigenes Erscheinungsbild und ist kein offizielles Produkt von Home Assistant oder Blockly.
+Eigener Code: Apache-2.0. Blockly: Apache-2.0. YAML-Bibliothek: ISC. ZIP-Bibliothek fflate: MIT. Original-Lizenztexte liegen unter `public/licenses/` und werden beim Build mitgeliefert. Das Projekt verwendet ein eigenes Erscheinungsbild und ist kein offizielles Produkt von Home Assistant oder Blockly.
