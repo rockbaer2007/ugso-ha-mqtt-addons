@@ -1,12 +1,12 @@
 # ioBroker / UGSo Blocks for HA
 
-As of October 10, 2026, experimental HA app 0.1.11. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
+As of October 10, 2026, experimental HA app 0.1.12. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
 
 Every new feature must update its counterpart, behavior, YAML output and implementation status here and in the German version. Categories will be reviewed progressively, starting with **System**. Planned means not implemented.
 
 ## All existing blocks
 
-There are **41 block types**, including the automation root. Dropdown choices within one block count as one type. The seven time blocks are compared separately below.
+There are **50 block types**, including the automation root. Dropdown choices within one block count as one type. Time and conversion are compared separately below.
 
 | ioBroker concept | Our block | Native HA output / behavior |
 | --- | --- | --- |
@@ -85,6 +85,8 @@ Version 0.1.3 adds the experimental HA app package with ingress. No live HA enti
 References: [ioBroker System documentation](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/blockly.md#system-blocks), [System block definitions](https://github.com/ioBroker/ioBroker.javascript/blob/master/src-editor/src/Components/blockly-plugins/blocks/blocks_system.ts), [HA actions](https://www.home-assistant.io/docs/scripts/perform-actions/), [HA script syntax](https://www.home-assistant.io/docs/scripts/).
 
 ## New original plugins and controls
+
+Since **0.1.12**: nine conversion blocks for number, Boolean, string, type, datetime, date format/components, duration and JSON parsing/serialization. HA conversion rules differ from parseFloat/JavaScript truthiness; JSONata remains pending. [Full comparison with images](https://opensource.ugso-software.de/en/projects/blocks-for-ha/conversion).
 
 Since **0.1.11**: seven additional time blocks. ioBroker `time_compare` → fixed clock comparison; `time_compare_ex` → plugged-in boundaries and optional datetime; `time_get` → current datetime plus formatter; calculated time → calendar start; astro time → next HA sun event with offset; time calculation → addition/subtraction. Runs as HA Jinja. [Comparison with images](https://opensource.ugso-software.de/en/projects/blocks-for-ha/time). Total: 41 block types.
 

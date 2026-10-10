@@ -1,5 +1,14 @@
 # UGSo Blocks für HA – vorgemerkte Erweiterungen
 
+## JSONata und Objekt-/Listenfunktionen
+
+Vorgemerkt am 10. Oktober 2026 anhand der ioBroker-Kategorie Konvertierung. Die übrigen neun Konvertierungs-Blocks sind in 0.1.12 umgesetzt.
+
+- JSONata ist keine native HA-Jinja-Funktion. Keine JSONata-Engine im Browser als Ersatz für die spätere HA-Ausführung ausgeben.
+- Zunächst passende Objekt-/Listen-Zugriffe und Jinja-Ausdrücke ergänzen; anschließend einen optionalen Runtime-/Integrationsadapter prüfen, falls echte JSONata-Auswertung benötigt wird.
+- Ausdruck und Eingangsdaten getrennt vorsehen, YAML-Ausführung, Ergebnis-/Fehlerverhalten, Plugins und Lizenzen vor Umsetzung klären.
+- Referenz: [ioBroker-Konvertierungsblocks](https://github.com/ioBroker/ioBroker.javascript/blob/master/src-editor/src/Components/blockly-plugins/blocks/blocks_convert.ts).
+
 ## Typisierte Variablen
 
 Vorgemerkt am 9. Oktober 2026. Noch nicht umgesetzt; der Nutzer hat die Arbeit für heute beendet.

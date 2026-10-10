@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.12
+
+- Kategorie Konvertierung mit neun HA-Blocks: Zahl, Boolean, Text, Typ, ISO-/Unix-Datumswert, Datumsformat/-bestandteile, Dauerformatierung, JSON lesen und schreiben.
+- Ausgabe nach HA/Jinja-Regeln statt JavaScript-Konvertierung. Keine stillen Ersatzwerte bei ungültiger Zahl, Boolean oder JSON.
+- Datumsformat-Auswahl passt den Ausgangstyp an; eigenes strftime-Format blendet ein Textfeld ein. JSON-Formatierung per Checkbox.
+- Laufzeitzahlen passen in Vergleiche, Variablen und Zeitrechnung; feste Grenzwerte/Verzögerungen bleiben von dynamischen Zahlen getrennt.
+- 50 Blocktypen mit Bildern und DE/EN-Gegenüberstellung. JSONata als offene Erweiterung vorgemerkt.
+
 ## 0.1.11
 
 - Sieben Datum-/Zeit-Blocks mit typisierten Datumswert-Anschlüssen und dynamischen Uhrzeitvergleichsfeldern.

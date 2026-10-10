@@ -1,6 +1,6 @@
 // Original HA/Jinja implementation; ioBroker's Time category is the UI reference.
 const dropdown = (name, options) => ({ type: 'field_dropdown', name, options });
-const input = (name, check) => ({ type: 'input_value', name, check });
+const input = (name, check) => ({ type: 'input_value', name, check: check === 'Number' ? ['Number', 'RuntimeNumber'] : check });
 const text = (name, value) => ({ type: 'field_input', name, text: value });
 const operations = [['kleiner als', '<'], ['kleiner/gleich', '<='], ['größer als', '>'], ['größer/gleich', '>='], ['gleich', '=='], ['zwischen', 'between'], ['nicht zwischen', 'outside']];
 const colour = '#8056a1';
@@ -48,7 +48,7 @@ export function timeExpression(block, child, numeric) {
   const base = () => child('BASE');
   const amount = name => {
     const result = numeric(name);
-    if (!Number.isFinite(result)) throw new Error('Zeitberechnung: endliche Zahl erforderlich.');
+    if (typeof result !== 'string' && !Number.isFinite(result)) throw new Error('Zeitberechnung: endliche Zahl erforderlich.');
     return result;
   };
   switch (block.type) {
