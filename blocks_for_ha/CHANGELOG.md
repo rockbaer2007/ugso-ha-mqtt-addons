@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.35
+
+- Native delay-Zeittexte und HA-Ausgabetemplates importieren/exportieren, neuer Block Warte Zeittext / Template in Timeouts.
+- HH:MM, HH:MM:SS und Sekundenbruchteile bleiben als Text erhalten; ungültige Zeittexte verhindern den Export.
+- Timer-Reset mit Reset-Schalter und gemeinsamer Abschaltung von Done/Running als Regression. DE/EN/FR-Dokumentation und echte Blockbilder. 118 Blocktypen.
+
 ## 0.1.34
 
 - Mehrere Einträge in einer nativen variables-Aktion erhalten; neuer Block Variablen setzen (JSON) im Variablen-Menü.

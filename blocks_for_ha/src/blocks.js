@@ -604,6 +604,7 @@ function actionBlock(workspace, item) {
     return create(workspace, 'ugso_service_action', { SERVICE: item.action, ENTITY: id || '', DATA: JSON.stringify(item.data || {}) });
   }
   if (Object.hasOwn(item, 'delay')) {
+    if (typeof item.delay === 'string') return create(workspace, 'ugso_delay_text', { TEXT: item.delay });
     if (typeof item.delay === 'number') return numberInput(create(workspace, 'ugso_delay_action'), 'SECONDS', item.delay);
     const [unit, duration] = Object.entries(item.delay)[0];
     const block = create(workspace, 'ugso_pause', { UNIT: unit }); valueInput(block, 'DURATION', duration); return block;

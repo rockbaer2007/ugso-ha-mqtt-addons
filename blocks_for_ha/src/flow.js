@@ -12,6 +12,7 @@ const bool = { output: ['Boolean', 'Value'] };
 const numeric = ['Number', 'RuntimeNumber'];
 const runtime = ['Number', 'RuntimeNumber', 'Value'];
 export const flowDefinitions = [
+  { type: 'ugso_delay_text', message0: 'Warte Zeittext / Template %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: '00:00:02' }], ...action, colour: '#7a8639', tooltip: 'Native HA-Wartezeit als HH:MM, HH:MM:SS (auch Sekundenbruchteile) oder HA-Ausgabetemplate. Der Zeittext bleibt im YAML erhalten. Home Assistant führt die Wartezeit aus.' },
   { type: 'ugso_pause', message0: 'Pause %1 %2', args0: [v('DURATION', runtime), dropdown('UNIT', units)], ...action, colour: '#7a8639', tooltip: 'Native HA-Wartezeit. Eingang muss eine Zahl liefern; HA prüft Laufzeitwerte bei Ausführung. Millisekunden sind keine Echtzeitgarantie.' },
   { type: 'ugso_wait', message0: 'Warte bis %1 höchstens %2 %3 bei Timeout weiter %4', args0: [v('CONDITION', 'Boolean'), v('DURATION', runtime), dropdown('UNIT', units), { type: 'field_checkbox', name: 'CONTINUE', checked: false }], ...action, colour: '#7a8639', tooltip: 'HA wait_template mit Timeout. Ohne Haken beendet ein Timeout diesen Lauf. Entitätsabhängige Bedingungen verwenden; Zeit allein aktualisiert das Template nicht fortlaufend.' },
   { type: 'ugso_stop', message0: 'Diesen Lauf stoppen %1 als Fehler %2', args0: [text('REASON', 'Lauf beendet'), { type: 'field_checkbox', name: 'ERROR', checked: false }], ...action, colour: '#7a8639', tooltip: 'Stoppt den aktuellen HA-Lauf einschließlich äußerer Wiederholungen. Kein Abbruch eines benannten ioBroker-Timers.' },
@@ -132,6 +133,7 @@ export function flowAction(block, { child, actions, conditions, variableName, nu
     return { [f('UNIT')]: val };
   };
   switch (block.type) {
+    case 'ugso_delay_text': return { delay: f('TEXT') };
     case 'ugso_pause': return { delay: duration() };
     case 'ugso_wait': return { wait_template: template('CONDITION'), timeout: duration(), continue_on_timeout: f('CONTINUE') === 'TRUE' };
     case 'ugso_stop': return { stop: f('REASON'), error: f('ERROR') === 'TRUE' };
@@ -160,7 +162,7 @@ const num = n => shadow('ugso_number', { NUM: n });
 const txt = t => shadow('ugso_text', { TEXT: t });
 const obj = () => ({ shadow: { type: 'ugso_object_new', inputs: { V0: txt('value') } } });
 export function flowToolbox(category) {
-  return flowDefinitions.filter(d => ({ Timeouts: ['ugso_pause', 'ugso_wait', 'ugso_stop'], Schleifen: ['ugso_repeat', 'ugso_repeat_while', 'ugso_foreach'], Objekt: ['ugso_object_new', 'ugso_object_get', 'ugso_object_has', 'ugso_object_keys', 'ugso_object_set', 'ugso_object_remove'], Logik: ['ugso_logic_range', 'ugso_logic_default', 'ugso_case'], Listen: ['ugso_list_new', 'ugso_list_length', 'ugso_list_empty'] }[category]).includes(d.type)).map(({ type }) => {
+  return flowDefinitions.filter(d => ({ Timeouts: ['ugso_pause', 'ugso_delay_text', 'ugso_wait', 'ugso_stop'], Schleifen: ['ugso_repeat', 'ugso_repeat_while', 'ugso_foreach'], Objekt: ['ugso_object_new', 'ugso_object_get', 'ugso_object_has', 'ugso_object_keys', 'ugso_object_set', 'ugso_object_remove'], Logik: ['ugso_logic_range', 'ugso_logic_default', 'ugso_case'], Listen: ['ugso_list_new', 'ugso_list_length', 'ugso_list_empty'] }[category]).includes(d.type)).map(({ type }) => {
     const inputs = {};
     if (['ugso_pause', 'ugso_wait'].includes(type)) inputs.DURATION = num(1000);
     if (['ugso_wait', 'ugso_repeat_while'].includes(type)) inputs.CONDITION = shadow('ugso_state_condition', { ENTITY: 'input_boolean.test', STATE: 'on' });

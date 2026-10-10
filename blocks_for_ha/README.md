@@ -1,5 +1,7 @@
 # UGSo Blocks for HA
 
+Neu in **0.1.35**: **Warte Zeittext / Template** unter Timeouts erhält native delay-Zeittexte (HH:MM, HH:MM:SS, Sekundenbruchteile) und HA-Ausgabetemplates. Timer-Reset mit zwei Zielentitäten vollständig getestet. 118 Blocktypen.
+
 Neu in **0.1.34**: gemeinsamer Block **Variablen setzen (JSON)** für 1–100 skalare Variablen/HA-Templates in einer Aktion. Timer-Eingabe mit h/m und restart wird vollständig importiert. 117 Blocktypen.
 
 Neu in **0.1.33**: numerische Auslöser mit Entitätslisten und optionaler Haltezeit `for`. Kombinierte Dauereinheiten und Nulleinträge bleiben erhalten. Die Hyper-2000-Lüfter-Automation mit vier IDs/Zweigen wird vollständig importiert.
@@ -24,7 +26,7 @@ Neu in 0.1.10: **Erhöhe Variable um …** steht im Variablen-Menü zwischen Set
 
 Neu in 0.1.9: **Logik** mit Vergleich (=, ≠, <, ≤, >, ≥), kompaktem UND/ODER, NICHT, wahr/falsch, null und bedingter Wertauswahl. Zahl/Text/Variable/Template an die Werteingänge, Boolean an die Bedingungseingänge anschließen. Variablenzuweisungen unterstützen jetzt Boolean und null. JSON bewahrt Blockformen; YAML-Import erhält komplexe Ausdrücke als Template-Blocks. Vergleiche konvertieren Typen nicht automatisch. Ausdruckseingänge akzeptieren einzelne Jinja-Ausgaben; dynamische Werte sind nicht als feste Grenzen oder Wartezeiten vorgesehen.
 
-Version 0.1.34: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
+Version 0.1.35: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
 
 Seit **0.1.27**: gut lesbare weiße Beschriftung der UGSo-Blocks in Standard/Dark mit mindestens 4,5:1 Kontrast. Mittlere blaue und braune Flächen werden leicht abgedunkelt; originale helle Modern-/Tritanopia-Farben behalten dunkle, kontrastreiche Labels. Die Dokumentationsbilder DE/EN/FR werden mit einer Prüfung der tatsächlich gerenderten Beschriftungen erzeugt.
 

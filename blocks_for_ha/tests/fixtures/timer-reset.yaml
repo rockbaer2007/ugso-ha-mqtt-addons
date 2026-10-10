@@ -1,0 +1,18 @@
+alias: Timer Reset Status zurücksetzen
+description: Setzt Done und Running nach 2 Sekunden auf AUS wenn Reset gedrückt wird
+triggers:
+  - entity_id: input_boolean.timer_reset
+    to: 'on'
+    trigger: state
+conditions: []
+actions:
+  - target:
+      entity_id: input_boolean.timer_reset
+    action: input_boolean.turn_off
+  - delay: '00:00:02'
+  - target:
+      entity_id:
+        - input_boolean.timer_done
+        - input_boolean.timer_runing
+    action: input_boolean.turn_off
+mode: single

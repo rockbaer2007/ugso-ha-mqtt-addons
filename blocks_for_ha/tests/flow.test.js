@@ -1,9 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { Blockly, modelWorkspace, workspaceModel, toolbox } from '../src/blocks.js';
 import { flowDefinitions } from '../src/flow.js';
 import { examples, fromYaml, toYaml } from '../src/model.js';
+
+test('Timer reset retains duration strings and templates through Blockly and YAML', () => {
+  const original = fromYaml(readFileSync(new URL('./fixtures/timer-reset.yaml', import.meta.url), 'utf8'));
+  for (const delay of ['00:00:02', '01:30', '24:00:00', '00:00:00.250', '{{ states("input_number.timer_delay") | int }}']) {
+    const model = structuredClone(original); model.actions[1].delay = delay;
+    const ws = new Blockly.Workspace(), copy = new Blockly.Workspace();
+    try {
+      modelWorkspace(ws, model); assert.deepEqual(workspaceModel(ws, model), model);
+      Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws), copy);
+      assert.deepEqual(fromYaml(toYaml(workspaceModel(copy, model))), model);
+      const block = copy.getBlocksByType('ugso_delay_text')[0];
+      for (const invalid of ['', '-01:00:00', '00:60:00', '00:00:60', 'abc', '00:00:00.']) {
+        block.setFieldValue(invalid, 'TEXT'); assert.throws(() => toYaml(workspaceModel(copy, model)));
+      }
+    } finally { ws.dispose(); copy.dispose(); }
+  }
+});
 
 function fixture(type) {
   const ws = new Blockly.Workspace();
@@ -19,7 +37,7 @@ function fixture(type) {
   return { ws, block, model: () => workspaceModel(ws, examples.light) };
 }
 
-test('All 18 new flow/value blocks preserve YAML meaning and project shapes', () => {
+test('All 19 flow/value blocks preserve YAML meaning and project shapes', () => {
   for (const { type } of flowDefinitions) {
     const { ws, block, model } = fixture(type), copy = new Blockly.Workspace();
     try {

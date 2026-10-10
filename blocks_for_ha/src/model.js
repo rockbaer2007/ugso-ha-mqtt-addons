@@ -132,7 +132,9 @@ function checkAction(item, path, depth = 0) {
   } else if (Object.hasOwn(item, 'delay')) {
     ownKeys(item, ['delay'], path);
     if (typeof item.delay === 'number') { numeric(item.delay, path); if (!Number.isInteger(item.delay) || item.delay < 0 || item.delay > 86400) throw new Error(`${path}: Wartezeit 0–86400 ganze Sekunden.`); }
-    else checkDuration(item.delay, path);
+    else if (typeof item.delay === 'string') {
+      if (!/^\d+:[0-5]\d(?::[0-5]\d(?:\.\d+)?)?$/.test(item.delay)) checkTemplate(item.delay, path);
+    } else checkDuration(item.delay, path);
   } else if (Object.hasOwn(item, 'stop')) {
     ownKeys(item, ['stop', 'error'], path); text(item.stop, path); if (typeof item.error !== 'boolean') throw new Error(`${path}: error muss Boolean sein.`);
   } else if (Object.hasOwn(item, 'wait_template')) {
