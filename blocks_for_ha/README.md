@@ -1,12 +1,14 @@
 # UGSo Blocks for HA
 
+Neu in **0.1.17**: Suchdialog in allen Entitätsfeldern, lesende Supervisor-Anbindung, passende Licht-/Script-/Helferfilter und manuelle IDs als Rückfall. [Entitätsauswahl](https://opensource.ugso-software.de/projects/blocks-for-ha/entities).
+
 Neu in **0.1.16**: gespeicherte Theme-Auswahl UGSo Standard/Dark/Modern/Tritanopia und originaler Zoom-to-fit-Knopf. Eigene Blocks und Kategorien folgen den Theme-Paletten; Beschriftungen erhalten passende Kontraste. [Bedienung und Originalquellen](https://opensource.ugso-software.de/projects/blocks-for-ha/themes). Weiterhin 111 Blocktypen; YAML und Projekt bleiben beim Wechsel erhalten.
 
 Neu in 0.1.10: **Erhöhe Variable um …** steht im Variablen-Menü zwischen Setzen und Lesen. Standard-Schritt `1`, negative Schritte verringern, Dezimalschritte und `0` sind möglich. Die Variable vorher als Zahl setzen. Fehlende Werte, Text, Boolean und null führen bei der Jinja-Auswertung in HA zu einem Fehler; keine automatische Umwandlung oder Null-Initialisierung. Eigenes YAML-Ausgabeformat wird wieder als Erhöhen-Block importiert, JSON erhält die Blockform.
 
 Neu in 0.1.9: **Logik** mit Vergleich (=, ≠, <, ≤, >, ≥), kompaktem UND/ODER, NICHT, wahr/falsch, null und bedingter Wertauswahl. Zahl/Text/Variable/Template an die Werteingänge, Boolean an die Bedingungseingänge anschließen. Variablenzuweisungen unterstützen jetzt Boolean und null. JSON bewahrt Blockformen; YAML-Import erhält komplexe Ausdrücke als Template-Blocks. Vergleiche konvertieren Typen nicht automatisch. Ausdruckseingänge akzeptieren einzelne Jinja-Ausgaben; dynamische Werte sind nicht als feste Grenzen oder Wartezeiten vorgesehen.
 
-Version 0.1.16: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
+Version 0.1.17: experimentelle HA-App für native Home-Assistant-Automationen aus visuellen Blocks im gemeinsamen Repository mit UGSo Visual Studio unter `blocks_for_ha/`. Home Assistant führt das erzeugte YAML aus; dieser Editor enthält keine JavaScript-Script-Engine und schreibt keine HA-Systemdateien.
 
 Neu in 0.1.12: **Konvertierung** mit neun Blocks für Zahl, Logikwert, String, Typ, Datumswert, Datumsformat/-bestandteile, Zeitdifferenz, JSON lesen und JSON schreiben mit Formatierungs-Haken. HA-Konvertierungsregeln, ausdrückliche Unix-/Dauereinheiten, dynamischer Format-Eingang und typisierter Laufzeitzahlen-Anschluss für Vergleiche, Variablen und Zeitrechnung. Feste Auslösergrenzen und Wartezeiten bleiben Konstanten. JSONata ist als offene Erweiterung dokumentiert. [Gegenüberstellung und Beispiele](https://opensource.ugso-software.de/projects/blocks-for-ha/conversion).
 
@@ -18,7 +20,7 @@ Die kompakte Ansicht verwendet den klassischen Blockly-Geras-Renderer und seine 
 
 Neu in **0.1.13**: 18 Blocks für Timeouts, Objekt, Logik, Schleifen und Listen. Pausen mit Einheiten/Laufzeitwerten, Warten bis mit Timeout, Lauf stoppen, native Wiederholungen, lokale Objektzugriffe/-zuweisungen, Fallauswahl, Bereichsvergleich, Ersatzwert und Listen. [Gegenüberstellung, Originalquellen und Grenzen](https://opensource.ugso-software.de/projects/blocks-for-ha/flow). Benannte JavaScript-Timer werden nicht nachgebildet; HA-Scripts und Timer-Helfer bleiben verfügbar.
 
-Im HA-App-Store das gemeinsame Repository aktualisieren, **UGSo Blocks for HA** installieren, starten und über **Weboberfläche öffnen** verwenden. [Installationsanleitung](DOCS.md). Das Paket unterstützt amd64 und aarch64 und stellt den Editor über Ingress bereit. Direkte Entitäts-/Aktionsauswahl aus HA folgt später.
+Im HA-App-Store das gemeinsame Repository aktualisieren, **UGSo Blocks for HA** installieren, starten und über **Weboberfläche öffnen** verwenden. [Installationsanleitung](DOCS.md). Das Paket unterstützt amd64 und aarch64 und stellt den Editor über Ingress bereit. Entitätsauswahl aus HA ist seit 0.1.17 vorhanden; die Live-Aktionsauswahl folgt später.
 
 [Open-Source-Dokumentation](https://opensource.ugso-software.de/projects/blocks-for-ha/): Falls-Blocks lassen sich über das Zahnrad um sonst-falls-Zweige und einen optionalen sonst-Zweig erweitern. Mehrere Zweige erzeugen native HA-`choose`-Aktionen.
 
@@ -39,7 +41,7 @@ Die vollständige Gegenüberstellung zu ioBroker einschließlich Umsetzungsstatu
 
 Bedingungen sind Boolean-Wertblocks für seitliche Werteingänge bei Falls und Nur wenn. UND/ODER/NICHT besitzt ein Zahnrad für weitere Bedingungen. Aktionen bleiben vertikale Statement-Ketten. Alte Projekte werden automatisch umgestellt. Deaktivierte Blocks werden beim Export übersprungen; fehlende Pflichtinhalte verhindern den Export. Das Kontextmenü verlinkt Hilfe, der Papierkorb erlaubt das Zurückholen gelöschter Blocks innerhalb der Sitzung.
 
-Entitäten zunächst als IDs eingeben. Eine Live-HA-Verbindung ist noch nicht implementiert. Die backendseitige Supervisor-/Token-Verbindung von UGSo Visual Studio ist als Vorlage für eine spätere Anbindung vorgesehen; hinzu kommen die HA-Aktionsbeschreibungen. Tokens dürfen nicht in Blockprojekte oder YAML exportiert werden.
+Entitätsfelder öffnen seit 0.1.17 eine Suche nach Name und ID. Die HA-App lädt die Zustandsliste lesend über den Supervisor; Licht, Scripts und Helfer erhalten passende Filter. Ohne Verbindung bleiben manuelle IDs verfügbar. Tokens bleiben im Server und werden nicht in Blockprojekte oder YAML exportiert. [Bedienung, lokale Anbindung und Grenzen](https://opensource.ugso-software.de/projects/blocks-for-ha/entities).
 
 Suche steht am Ende des Menüs. Plus/Minus ergänzt und entfernt die letzten Bedingungseingänge oder Falls-Zweige; S schaltet Sonst um. Das Zahnrad bleibt zum Umordnen. [Liste aller 111 Blocks mit Bildern und Originalplugin-Links](https://opensource.ugso-software.de/projects/blocks-for-ha/blocks).
 
@@ -57,7 +59,7 @@ Für den nativen HA-Editor das Format „Einzelne Automation“ wählen, Beispie
 
 ## Geplante Erweiterungen
 
-Entitäts-/Aktionsauswahl, deklarative Blockpakete und Katalog, weitere native HA-Strukturen. Die Roadmap liegt im ATLAS-Repository unter `docs/UGSO_BLOCKS_FOR_HA_ROADMAP.md`. Die HA-App ist ein eigenständiges Projekt und kein bereits integriertes ATLAS-Plugin.
+Live-Aktionsauswahl, Entitäts-Wertblocks, deklarative Blockpakete und Katalog, weitere native HA-Strukturen. Die Roadmap liegt im ATLAS-Repository unter `docs/UGSO_BLOCKS_FOR_HA_ROADMAP.md`. Die HA-App ist ein eigenständiges Projekt und kein bereits integriertes ATLAS-Plugin.
 
 ## Original und Lizenzen
 

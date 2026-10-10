@@ -14,6 +14,7 @@ import { collectionDefinitions, installCollectionShape, collectionExpression, co
 import { colourDefinitions, colourExpression, colourInput, colourToolbox } from './colour.js';
 import { functionTypes, installFunctions, functionInfo, functionToolbox } from './functions.js';
 import { themedDefinition, themedCategories } from './themes.js';
+import './entities.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 Blockly.setLocale(De);
@@ -38,7 +39,7 @@ class SafeDateField extends DateFields.FieldDate {
 }
 Blockly.fieldRegistry.register('ugso_field_date', SafeDateField);
 
-const entityField = (value) => ({ type: 'field_input', name: 'ENTITY', text: value });
+const entityField = (value) => ({ type: 'ugso_field_entity', name: 'ENTITY', text: value });
 const number = value('LIMIT', 'Number');
 const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'below'], ['über', 'above']] };
 const statement = (name, check) => ({ type: 'input_statement', name, check });
@@ -65,7 +66,7 @@ const definitions = [
   { type: 'ugso_colour', message0: 'Farbe %1', args0: [{ type: 'field_colour', name: 'COLOUR', colour: '#ff8800' }], output: ['Colour', 'Value'], colour: '#ad6841' },
   { type: 'ugso_colour_action', message0: 'Licht %1 Farbe %2 Helligkeit %3 %%', args0: [entityField('light.wohnzimmer'), value('COLOUR', ['Colour', 'Value']), value('BRIGHTNESS', 'Number')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5' },
   { type: 'ugso_date_condition', message0: 'Datum heute %1 %2', args0: [{ type: 'field_dropdown', name: 'OP', options: [['ist', '=='], ['ab einschließlich', '>='], ['bis einschließlich', '<=']] }, { type: 'ugso_field_date', name: 'DATE', date: '2026-10-09' }], output: 'Boolean', colour: '#6860b5', tooltip: 'Vergleicht das heutige Datum in der HA-Zeitzone, einschließlich Jahr. Löst selbst keine Automation aus.' },
-  { type: 'ugso_helper_action', message0: 'Helfer %1 %2 %3', args0: [{ type: 'field_dropdown', name: 'DOMAIN', options: [['Schalter', 'input_boolean'], ['Zähler', 'counter'], ['Timer', 'timer']] }, entityField('input_boolean.test'), { type: 'field_dependent_dropdown', name: 'SERVICE', parentName: 'DOMAIN', optionMapping: helperOptions }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Die Aktionsauswahl folgt dem Helfertyp. Entitäts-ID manuell eingeben; keine Live-HA-Auswahl.' },
+  { type: 'ugso_helper_action', message0: 'Helfer %1 %2 %3', args0: [{ type: 'field_dropdown', name: 'DOMAIN', options: [['Schalter', 'input_boolean'], ['Zähler', 'counter'], ['Timer', 'timer']] }, entityField('input_boolean.test'), { type: 'field_dependent_dropdown', name: 'SERVICE', parentName: 'DOMAIN', optionMapping: helperOptions }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Die Aktionsauswahl folgt dem Helfertyp. Entität suchen oder ID eingeben; Auswahl folgt dem Helfertyp.' },
   { type: 'ugso_log_action', message0: 'Log %1 Meldung %2', args0: [{ type: 'field_dropdown', name: 'LEVEL', options: [['Info', 'info'], ['Warnung', 'warning'], ['Fehler', 'error'], ['Debug', 'debug'], ['Kritisch', 'critical']] }, value('MESSAGE', 'String')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Schreibt bei Ausführung in HA ins Systemprotokoll. Info und Debug können durch die HA-Logkonfiguration ausgefiltert werden.' },
   { type: 'ugso_script_action', message0: 'HA-Script %1 %2', args0: [entityField('script.abendlicht'), { type: 'field_dropdown', name: 'MODE', options: [['starten (ohne Warten)', 'turn_on'], ['stoppen', 'turn_off'], ['aufrufen und warten', 'wait']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Aufrufen und warten setzt die Automation erst nach dem Script fort. Script-Parameter über die generische HA-Aktion übergeben.' },
   { type: 'ugso_update_action', message0: 'Entität %1 aktualisieren', args0: [entityField('sensor.temperatur')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Fordert in HA ein Update der Entität an. Die Integration bestimmt, ob sie eine Aktualisierung unterstützt; setzt keinen Zustand.' },
@@ -80,7 +81,7 @@ const definitions = [
   { type: 'ugso_numeric_condition', message0: '%1 ist %2 %3', args0: [entityField('sensor.batterie_ladezustand'), direction, number], output: 'Boolean', colour: '#6860b5' },
   { type: 'ugso_logic_condition', message0: '%1', args0: [{ type: 'field_dropdown', name: 'LOGIC', options: [['UND · alle', 'and'], ['ODER · mindestens eine', 'or'], ['NICHT · keine', 'not']] }], output: 'Boolean', colour: '#6860b5', mutator: 'ugso_conditions' },
   { type: 'ugso_switch_action', message0: '%1 %2', args0: [entityField('light.flur'), { type: 'field_dropdown', name: 'SERVICE', options: [['einschalten', 'turn_on'], ['ausschalten', 'turn_off'], ['umschalten', 'toggle']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Erzeugt eine Aktion der Domain der gewählten Entität. Prüfe die Verfügbarkeit in HA.' },
-  { type: 'ugso_service_action', message0: 'HA-Aktion %1 Ziel %2 Daten (JSON) %3', args0: [{ type: 'field_input', name: 'SERVICE', text: 'notify.mobile_app_telefon' }, { type: 'field_input', name: 'ENTITY', text: '' }, { type: 'field_input', name: 'DATA', text: '{"message":"Hallo!"}' }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Ziel darf leer bleiben. Daten als JSON-Objekt; Integration muss in HA vorhanden sein.' },
+  { type: 'ugso_service_action', message0: 'HA-Aktion %1 Ziel %2 Daten (JSON) %3', args0: [{ type: 'field_input', name: 'SERVICE', text: 'notify.mobile_app_telefon' }, entityField(''), { type: 'field_input', name: 'DATA', text: '{"message":"Hallo!"}' }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Ziel darf leer bleiben. Daten als JSON-Objekt; Integration muss in HA vorhanden sein.' },
   { type: 'ugso_delay_action', message0: 'Warte %1 Sekunden', args0: [value('SECONDS', 'Number')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5' },
   { type: 'ugso_if_action', message0: 'Falls %1 mache %2', args0: [value('CONDITIONS', 'Boolean'), statement('THEN', 'Action')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', mutator: 'ugso_branches' }
 ];

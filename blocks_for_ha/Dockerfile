@@ -8,10 +8,13 @@ COPY public/ ./public/
 RUN npm run build
 
 FROM nginx:1.28-alpine
+RUN apk add --no-cache python3
 ARG BUILD_VERSION
 ARG BUILD_ARCH
 LABEL io.hass.version="${BUILD_VERSION}" io.hass.type="app" io.hass.arch="${BUILD_ARCH}"
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY server.py run.sh /app/
+RUN sed -i 's/\r$//' /app/run.sh && chmod +x /app/run.sh
 COPY --from=builder /build/dist/ /usr/share/nginx/html/
 EXPOSE 8099
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/app/run.sh"]

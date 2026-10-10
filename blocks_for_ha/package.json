@@ -1,11 +1,13 @@
 {
   "name": "ugso-blocks-for-ha",
-  "version": "0.1.16",
+  "version": "0.1.17",
   "private": true,
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 4180 --strictPort",
+    "entities": "python server.py",
+    "test:entities": "python -m unittest discover -s tests -p test_entities.py",
     "build": "vite build --base ./",
     "preview": "vite preview --host 127.0.0.1 --port 4180 --strictPort",
     "test": "node --test tests/*.test.js"

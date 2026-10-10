@@ -1,5 +1,9 @@
 # ioBroker / UGSo Blocks für HA
 
+## Entitätsauswahl in 0.1.17
+
+Suchdialog in vorhandenen Entitätsfeldern mit Name/ID, passenden Licht-/Script-/Helferfiltern und manuellen IDs. Lesende HA-Supervisor-Anbindung; Zugangsdaten bleiben serverseitig. Kein neuer Wertblock, keine automatische Aktionsprüfung. [Anleitung und Grenzen](https://opensource.ugso-software.de/projects/blocks-for-ha/entities).
+
 ## Theme-Auswahl und Zoom seit 0.1.16
 
 UGSo Standard, Dark, Modern und Tritanopia mit lokal gespeicherter Auswahl. Eigene Blocks/Kategorien folgen den Paletten; Anzeigewechsel verändert keine HA-Ausgabe. Originaler Zoom-to-fit-Knopf ergänzt Einpassen. Insgesamt zehn Originalplugins. [Themes](https://opensource.ugso-software.de/projects/blocks-for-ha/themes).
@@ -18,7 +22,7 @@ UGSo Standard, Dark, Modern und Tritanopia mit lokal gespeicherter Auswahl. Eige
 
 ioBroker-Timeout-/Intervall-Handles haben keine direkte HA-Entsprechung. Schleifen laufen sequentiell und Stop beendet den aktuellen Lauf; separat gestartete Scripts und Timer-Helfer bleiben über System steuerbar. Objektänderungen erzeugen neue lokale HA-Variablenzuweisungen statt JavaScript-Mutation. Original-Blockly-Grundlogik ist bereits umgesetzt; Listen/Schleifen ergänzen dessen Umfang. Feste ganzzahlige Zählschleifen und Listenbearbeitung folgen in 0.1.14; lokales break/continue bleibt offen. [Vollständige öffentliche Gegenüberstellung mit Originalquellen](https://opensource.ugso-software.de/projects/blocks-for-ha/flow).
 
-Stand: 10. Oktober 2026, experimentelle HA-App 0.1.16. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
+Stand: 10. Oktober 2026, experimentelle HA-App 0.1.17. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
 
 Bei jeder neuen Funktion werden Gegenstück, Verhalten, YAML-Ausgabe und Status in dieser Liste und der englischen Fassung aktualisiert. Die Kategorien werden schrittweise geprüft, beginnend mit **System**. Geplant bedeutet noch nicht implementiert.
 
@@ -74,7 +78,7 @@ Bedingungen besitzen Boolean-Output-Anschlüsse; Falls und Nur wenn passende Wer
 | Universeller Schreibblock | Generische HA-Aktion mit Ziel und JSON-Daten | Vorhandenes Grundgerüst; keine ioBroker-`ack`-Semantik |
 | Kommentar | Erklärungsblock mit erhaltener Exportdarstellung | Geplant |
 | Debug-Ausgabe | Eigener Log-Block | Vorhanden; Meldung als Text-Shadow oder Textblock, Schweregrad als Dropdown |
-| Objekt-ID | Eigener Entitäts-Wertblock und Entitätsauswahl | Geplant; derzeit IDs als Textfelder |
+| Objekt-ID | Eigener Entitäts-Wertblock und Entitätsauswahl | Entitätsauswahl seit 0.1.17 umgesetzt; eigener Entitäts-Wertblock noch geplant |
 | Wert von Objekt-ID, feste/dynamische/asynchrone Varianten | Zustand und Attribute als verwendbare Werte | Geplant; keine eigenen Wertblocks oder Callback-Ausführung |
 | Objekt / Attribut von Objekt | Entitätsattribute und ausgewählte Metadaten | Geplant |
 | Datenpunkt vorhanden | Existenz und Verfügbarkeit getrennt prüfen | Geplant |
@@ -98,7 +102,7 @@ Bedingungen besitzen Boolean-Output-Anschlüsse; Falls und Nur wenn passende Wer
 - Name, Beschreibung und ID; Ausführungsmodi `single`, `restart`, `queued`, `parallel`, mit maximaler Anzahl für die letzten beiden.
 - Strukturvalidierung und Fehlermeldungen. Keine Prüfung der tatsächlich installierten HA-Aktionen.
 
-Seit Version 0.1.3 ist das experimentelle HA-App-Paket mit Ingress vorhanden. Noch keine Live-Entitäts-/Aktionsauswahl aus HA und keine Ausführung im Editor. Katalog und Plugins sind geplant. Der Falls-Block ist bereits über das Zahnrad erweiterbar; weitere Mutatoren folgen bei Bedarf. HA führt die exportierten Automationen aus. [Öffentliche Dokumentation](https://opensource.ugso-software.de/projects/blocks-for-ha/).
+Seit Version 0.1.3 ist das experimentelle HA-App-Paket mit Ingress vorhanden. Entitätsauswahl seit 0.1.17; Live-Aktionsauswahl und Ausführung im Editor bleiben offen. Katalog und Plugins sind geplant. Der Falls-Block ist bereits über das Zahnrad erweiterbar; weitere Mutatoren folgen bei Bedarf. HA führt die exportierten Automationen aus. [Öffentliche Dokumentation](https://opensource.ugso-software.de/projects/blocks-for-ha/).
 
 Referenzen: [ioBroker-Systemdokumentation](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/de/blockly.md#systemblöcke), [System-Blockdefinitionen](https://github.com/ioBroker/ioBroker.javascript/blob/master/src-editor/src/Components/blockly-plugins/blocks/blocks_system.ts), [HA-Aktionen](https://www.home-assistant.io/docs/scripts/perform-actions/), [HA-Script-Syntax](https://www.home-assistant.io/docs/scripts/).
 

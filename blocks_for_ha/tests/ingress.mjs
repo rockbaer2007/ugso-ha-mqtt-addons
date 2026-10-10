@@ -8,6 +8,9 @@ const server = createServer(async (req, res) => {
   const path = new URL(req.url, 'http://localhost').pathname;
   if (!path.startsWith(prefix) || path.includes('..')) { res.writeHead(404).end(); return; }
   const file = path.slice(prefix.length) || 'index.html';
+  if (file === 'api/ha/entities') {
+    res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ entities: [] })); return;
+  }
   try {
     const body = await readFile(new URL(`../dist/${file}`, import.meta.url));
     const ext = file.split('.').pop();
@@ -25,6 +28,7 @@ try {
   await page.goto(root);
   await page.locator('#valid-badge').waitFor();
   assert.equal(await page.locator('#valid-badge').textContent(), 'Gültig');
+  if (!process.env.BLOCKS_TEST_URL) await page.locator('.local-badge').filter({ hasText: '0 Entitäten' }).waitFor();
   assert.equal(await page.locator('.brand').getAttribute('href'), './');
   await page.locator('#about').click();
   const href = await page.locator('#about-dialog a').last().getAttribute('href');

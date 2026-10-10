@@ -1,5 +1,9 @@
 # ioBroker / UGSo Blocks for HA
 
+## Entity selection in 0.1.17
+
+Existing entity fields offer name/ID search, light/script/helper filters and manual IDs. Read-only HA Supervisor bridge keeps credentials server-side. No new value block or automatic action validation. [Usage and limits](https://opensource.ugso-software.de/en/projects/blocks-for-ha/entities).
+
 ## Theme selection and zoom in 0.1.16
 
 UGSo Standard, Dark, Modern and Tritanopia with locally saved selection. Own blocks/categories follow palettes; display changes preserve HA output. Original zoom-to-fit control supplements Fit. Ten original plugins in total. [Themes](https://opensource.ugso-software.de/en/projects/blocks-for-ha/themes).
@@ -18,7 +22,7 @@ UGSo Standard, Dark, Modern and Tritanopia with locally saved selection. Own blo
 
 ioBroker timeout/interval handles have no direct HA equivalent. Loops are sequential and Stop ends this run. Separately started scripts and timer helpers remain accessible under System. Object updates are new local HA variable assignments, not JavaScript mutation. Core Blockly logic already exists; loops/lists now extend its coverage. Fixed integer from/to/step loops and list editing follow in 0.1.14; local break/continue remains pending. [Complete public comparison and upstream sources](https://opensource.ugso-software.de/en/projects/blocks-for-ha/flow).
 
-As of October 10, 2026, experimental HA app 0.1.16. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
+As of October 10, 2026, experimental HA app 0.1.17. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
 
 Every new feature must update its counterpart, behavior, YAML output and implementation status here and in the German version. Categories will be reviewed progressively, starting with **System**. Planned means not implemented.
 
@@ -74,7 +78,7 @@ Conditions have Boolean outputs for if and automation condition value inputs. AN
 | Universal write | Generic HA action with target and JSON data | Basic support available; no ioBroker `ack` semantics |
 | Comment | Explanation block with preserved export representation | Planned |
 | Debug output | Dedicated log block | Available; message as text shadow or text block, severity dropdown |
-| Object ID | Entity value block and picker | Planned; IDs currently entered as text |
+| Object ID | Entity value block and picker | Entity picker implemented in 0.1.17; dedicated entity value block pending |
 | Get value, fixed/dynamic/asynchronous variants | State and attributes as usable values | Planned; no dedicated value blocks or callback execution |
 | Object / object attribute | Entity attributes and selected metadata | Planned |
 | State exists | Separate existence and availability checks | Planned |
@@ -98,7 +102,7 @@ Conditions have Boolean outputs for if and automation condition value inputs. AN
 - Name, description and ID; `single`, `restart`, `queued`, `parallel` execution modes, with a maximum count for the last two.
 - Structural validation and errors. Installed HA actions are not verified.
 
-Version 0.1.3 adds the experimental HA app package with ingress. No live HA entity/action selection or execution inside the editor yet. Catalog and plugins are planned. The if block already supports a mutator; additional mutators will follow where needed. HA runs the exported automations. [Public documentation](https://opensource.ugso-software.de/en/projects/blocks-for-ha/).
+Version 0.1.3 adds the experimental HA app package with ingress. Entity selection is available since 0.1.17; live action selection and execution inside the editor remain pending. Catalog and plugins are planned. The if block already supports a mutator; additional mutators will follow where needed. HA runs the exported automations. [Public documentation](https://opensource.ugso-software.de/en/projects/blocks-for-ha/).
 
 References: [ioBroker System documentation](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/blockly.md#system-blocks), [System block definitions](https://github.com/ioBroker/ioBroker.javascript/blob/master/src-editor/src/Components/blockly-plugins/blocks/blocks_system.ts), [HA actions](https://www.home-assistant.io/docs/scripts/perform-actions/), [HA script syntax](https://www.home-assistant.io/docs/scripts/).
 

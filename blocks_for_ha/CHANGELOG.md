@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.17
+
+- Entitätsfelder mit Suchdialog, Name/ID-Suche, Zustandsvorschau und passenden Licht-/Script-/Helferfiltern. Auswahl erst bei Übernehmen; manuelle IDs und leeres generisches Ziel bleiben verfügbar.
+- Lesende HA-Supervisor-Anbindung mit serverseitigem Token. Docker startet Python-Bridge und nginx gemeinsam; lokale Entwicklung über Vite-Proxy. Keine HA-Aktionsaufrufe, Browser-Zugangsdaten oder vollständigen Entity-Attribute.
+- Projekte/YAML speichern weiterhin nur IDs; Ladefehler verwerfen den Katalog und bewahren Blocks. Browser-/Backend-/Dockerprüfungen gegen simuliertes HA, DE/EN-Dokumentation. Echter HA-Installationstest noch offen.
+
 ## 0.1.16
 
 - Gespeicherte Theme-Auswahl: UGSo Standard, originale Dark-/Modern-/Tritanopia-Themes mit eigenen UGSo-Erweiterungsstilen. Anzeigewechsel bewahrt Blocks, Verbindungen und YAML.
