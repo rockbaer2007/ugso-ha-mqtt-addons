@@ -1,6 +1,6 @@
 # UGSo Blocks for HA
 
-Neu in **0.1.43**: erweiterte HA-Blöcke mit beschrifteten Einzelwerten statt eines großen JSON-Objekts. Entitäten, Grenzen, Zeiten, IDs, Ziele und Optionen sind direkt bearbeitbar. Alte JSON-Projekte bleiben lesbar; unveränderte Werte einschließlich Listen, `null` und Jinja bleiben erhalten. Komplexe Daten und zusätzliche Optionen bleiben getrennte JSON-Felder. [Anleitung und HA-Originalquellen](https://opensource.ugso-software.de/projects/blocks-for-ha/advanced).
+Neu in **0.1.44**: durchsuchbare HA-Aktions- und Zielauswahl in einfachen und erweiterten Blocks. Ziele folgen der gewählten Zielart: Entität, Gerät, Bereich, Etage oder Label. Mehrfachauswahl, freie IDs und Jinja bleiben möglich. **HA-Auswahl laden** aktualisiert die lesenden Kataloge. [Anleitung](https://opensource.ugso-software.de/projects/blocks-for-ha/entities).
 
 Neu in **0.1.42**: kompakte, gleich große YAML-Importbuttons mit zweizeiligen Beschriftungen. **Eingabefeld leeren** rechts entfernt Einfügetext und Importfehler; die aktuelle Automation und die Ersetzen-Auswahl bleiben erhalten.
 
@@ -58,7 +58,7 @@ Die kompakte Ansicht verwendet den klassischen Blockly-Geras-Renderer und seine 
 
 Neu in **0.1.13**: 18 Blocks für Timeouts, Objekt, Logik, Schleifen und Listen. Pausen mit Einheiten/Laufzeitwerten, Warten bis mit Timeout, Lauf stoppen, native Wiederholungen, lokale Objektzugriffe/-zuweisungen, Fallauswahl, Bereichsvergleich, Ersatzwert und Listen. [Gegenüberstellung, Originalquellen und Grenzen](https://opensource.ugso-software.de/projects/blocks-for-ha/flow). Benannte JavaScript-Timer werden nicht nachgebildet; HA-Scripts und Timer-Helfer bleiben verfügbar.
 
-Im HA-App-Store das gemeinsame Repository aktualisieren, **UGSo Blocks for HA** installieren, starten und über **Weboberfläche öffnen** verwenden. [Installationsanleitung](DOCS.md). Das Paket unterstützt amd64 und aarch64 und stellt den Editor über Ingress bereit. Entitätsauswahl aus HA ist seit 0.1.17 vorhanden; die Live-Aktionsauswahl folgt später.
+Im HA-App-Store das gemeinsame Repository aktualisieren, **UGSo Blocks for HA** installieren, starten und über **Weboberfläche öffnen** verwenden. [Installationsanleitung](DOCS.md). Das Paket unterstützt amd64 und aarch64 und stellt den Editor über Ingress bereit. Entitäten, Aktionen und Zielregistrierungen sind über lesende HA-Kataloge auswählbar.
 
 [Open-Source-Dokumentation](https://opensource.ugso-software.de/projects/blocks-for-ha/): Falls-Blocks lassen sich über das Zahnrad um sonst-falls-Zweige und einen optionalen sonst-Zweig erweitern. Mehrere Zweige erzeugen native HA-`choose`-Aktionen.
 
@@ -81,7 +81,7 @@ Bedingungen sind Boolean-Wertblocks für seitliche Werteingänge bei Falls und N
 
 Entitätsfelder öffnen seit 0.1.17 eine Suche nach Name und ID. Die HA-App lädt die Zustandsliste lesend über den Supervisor; Licht, Scripts und Helfer erhalten passende Filter. Ohne Verbindung bleiben manuelle IDs verfügbar. Tokens bleiben im Server und werden nicht in Blockprojekte oder YAML exportiert. [Bedienung, lokale Anbindung und Grenzen](https://opensource.ugso-software.de/projects/blocks-for-ha/entities).
 
-Suche steht am Ende des Menüs. Plus/Minus ergänzt und entfernt die letzten Bedingungseingänge oder Falls-Zweige; S schaltet Sonst um. Das Zahnrad bleibt zum Umordnen. [Liste aller 111 Blocks mit Bildern und Originalplugin-Links](https://opensource.ugso-software.de/projects/blocks-for-ha/blocks).
+Suche steht am Ende des Menüs. Plus/Minus ergänzt und entfernt die letzten Bedingungseingänge oder Falls-Zweige; S schaltet Sonst um. Das Zahnrad bleibt zum Umordnen. [Liste aller 163 Blocks mit Bildern und Originalplugin-Links](https://opensource.ugso-software.de/projects/blocks-for-ha/blocks).
 
 Variablen: im Menü **Variablen → Variable erstellen** einen Namen anlegen, beispielsweise `leistung`. **Setze** in die Aktionskette hängen und Zahl, Text oder Template anschließen; der Lesen-Block erzeugt `{{ leistung }}` für eine spätere Log-Meldung oder Variablenzuweisung. Im Dropdown sind Umbenennen und Löschen verfügbar. Freie Template-Texte werden beim Umbenennen nicht verändert. Namen benötigen ASCII-Buchstaben, Ziffern und `_`, keine führende Ziffer. Variablen gelten für den jeweiligen HA-Lauf und sind keine persistenten Helfer.
 
@@ -97,7 +97,7 @@ Für den nativen HA-Editor das Format „Einzelne Automation“ wählen, Beispie
 
 ## Geplante Erweiterungen
 
-Live-Aktionsauswahl, Entitäts-Wertblocks, deklarative Blockpakete und Katalog, weitere native HA-Strukturen. Die Roadmap liegt im ATLAS-Repository unter `docs/UGSO_BLOCKS_FOR_HA_ROADMAP.md`. Die HA-App ist ein eigenständiges Projekt und kein bereits integriertes ATLAS-Plugin.
+Weitere Verbesserungen an Entitäts-Wertblocks, Blockpaketen, Katalog und nativen HA-Strukturen. Live-Aktionsauswahl ist seit 0.1.44 umgesetzt. Die Roadmap liegt im ATLAS-Repository unter `docs/UGSO_BLOCKS_FOR_HA_ROADMAP.md`. Die HA-App ist ein eigenständiges Projekt und kein bereits integriertes ATLAS-Plugin.
 
 ## Original und Lizenzen
 

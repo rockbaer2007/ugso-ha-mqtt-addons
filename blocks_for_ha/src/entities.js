@@ -3,106 +3,162 @@ import { validActionEntity } from './action-targets.js';
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 let openPicker;
 export const entityIdPattern = /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/;
+const targetKinds = ['entity_id','device_id','area_id','floor_id','label_id'];
+const fallbackActions = ['homeassistant.turn_on','homeassistant.turn_off','homeassistant.toggle','homeassistant.update_entity','light.turn_on','light.turn_off','light.toggle','switch.turn_on','switch.turn_off','switch.toggle','script.turn_on','script.turn_off','scene.turn_on','mqtt.publish','input_boolean.turn_on','input_boolean.turn_off','input_boolean.toggle','input_number.set_value','input_text.set_value','input_datetime.set_datetime','timer.start','timer.cancel','timer.pause','timer.finish','counter.increment','counter.decrement','counter.reset','persistent_notification.create','persistent_notification.dismiss'].map(id=>({id,name:id,domain:id.split('.')[0],domains:[]}));
 
 export function entityDomain(block) {
   if (!block) return '';
-  if (block.type === 'ugso_colour_action') return 'light';
-  if (block.type === 'ugso_script_action') return 'script';
-  if (block.type === 'ugso_helper_action') return block.getFieldValue('DOMAIN');
-  return '';
+  return {ugso_colour_action:'light',ugso_script_action:'script',ugso_scene:'scene'}[block.type] || (block.type === 'ugso_helper_action' ? block.getFieldValue('DOMAIN') : '');
 }
-
 export function matchingEntities(rows, search, domain = '') {
   const words = search.trim().toLocaleLowerCase('de').split(/\s+/).filter(Boolean);
-  return rows.filter(row => (!domain || row.domain === domain) && words.every(word => `${row.name} ${row.entity_id}`.toLocaleLowerCase('de').includes(word)));
+  return rows.filter(row => (!domain || row.domain === domain) && words.every(word => (row.name+' '+row.entity_id).toLocaleLowerCase('de').includes(word)));
+}
+export function choiceForPath(key, path, source) {
+  if (source === 'VARIABLES') return null;
+  if (['action','service'].includes(key) && source === 'JSON') return {kind:'action'};
+  if (targetKinds.includes(key)) return {kind:key,structured:true};
+  if (key === 'zone') return {kind:'entity_id',structured:true,domains:['zone']};
+  if (key === 'scene') return {kind:'entity_id',structured:true,domains:['scene']};
+  if (key === 'entity' && ['THRESHOLD','OPTIONS'].includes(source)) return {kind:'entity_id',structured:true,numeric:true};
+  if (['above','below'].includes(key)) return {kind:'entity_id',structured:true,numeric:true,allowNumber:true};
+  if (key === 'at') return {kind:'entity_id',structured:true,allowTime:true,domains:['input_datetime','sensor']};
+  return null;
+}
+export function fieldChoice(field) {
+  const block = field?.getSourceBlock(), name = field?.name;
+  if (field?.choiceSpec_) return field.choiceSpec_;
+  if (!block) return null;
+  if (['ugso_service_action','ugso_target_action'].includes(block.type) && name === 'SERVICE') return {kind:'action'};
+  if (block.type === 'ugso_target_action' && name === 'TARGET') return {kind:block.getFieldValue('KIND'),structured:true};
+  if (block.type === 'ugso_scene' && name === 'SCENE') return {kind:'entity_id',domains:['scene']};
+  if (block.type === 'ugso_time_trigger' && name === 'TIME') return {kind:'entity_id',structured:true,allowTime:true,domains:['input_datetime','sensor']};
+  if (name === 'ENTITIES' && ['ugso_state_trigger','ugso_numeric_trigger','ugso_service_action'].includes(block.type)) return {kind:'entity_id',structured:true,listOnly:true};
+  if (field instanceof EntityField) return {kind:'entity_id',structured:field.haStructured_ || block.type === 'ugso_service_action',domains:entityDomain(block) ? [entityDomain(block)] : []};
+  return null;
+}
+export function validChoice(text, spec) {
+  const value = text.trim();
+  if (spec.kind === 'action') return validActionEntity(text);
+  if (spec.allowTime) return !!value; // Native HA validation handles clocks, helpers, lists and offsets.
+  if (spec.allowNumber && value && Number.isFinite(Number(value))) return true;
+  if (spec.structured && (!value || /\{\{|\{%/.test(value))) return true;
+  let ids = [value];
+  if (spec.structured && value.startsWith('[')) {
+    try { ids = JSON.parse(value); } catch { return false; }
+    if (!Array.isArray(ids) || ids.length > 100 || ids.some(id=>typeof id!=='string')) return false;
+  } else if (spec.listOnly) return false;
+  return ids.every(id=>spec.kind === 'entity_id' ? (id === 'all' && spec.structured) || entityIdPattern.test(id) : !!id.trim() && id.length <= 256);
+}
+export function matchingChoices(catalog, field, search) {
+  const spec = fieldChoice(field); if (!spec) return [];
+  const block = field.getSourceBlock();
+  let domains = spec.domains || [];
+  const action = block.getFieldValue('SERVICE') || block.getFieldValue('HA_JSON_ACTION') || block.getFieldValue('HA_JSON_SERVICE');
+  const selected = catalog.actions.find(row=>row.id===action);
+  if (!domains.length && !spec.numeric && spec.kind === 'entity_id') {
+    if (selected?.domains?.length) domains = selected.domains;
+    else if (action && !['homeassistant','script','notify'].includes(action.split('.')[0]) && catalog.entities.some(row=>row.domain===action.split('.')[0])) domains = [action.split('.')[0]];
+  }
+  let rows = spec.kind === 'action' ? catalog.actions : spec.kind === 'entity_id' ? catalog.entities.map(row=>({...row,id:row.entity_id})) : catalog.targets[spec.kind] || [];
+  if (spec.kind === 'entity_id') rows = rows.filter(row=>(!domains.length || domains.includes(row.domain)) && (!spec.numeric || ['sensor','input_number','number'].includes(row.domain)));
+  const words = search.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
+  return rows.filter(row=>words.every(word=>(row.name+' '+row.id).toLocaleLowerCase().includes(word)));
 }
 
 class EntityField extends Blockly.FieldTextInput {
   static fromJson(options) { return new EntityField(options.text || ''); }
+  getText() { return super.getText() + ' ▾'; }
   showEditor_() {
     if (openPicker && this.getSourceBlock()?.workspace?.rendered) openPicker(this);
     else super.showEditor_();
   }
 }
+class HAChoiceField extends EntityField {
+  static fromJson(options) {
+    const field = new HAChoiceField(options.text || '');
+    if (options.choice) field.choiceSpec_ = options.choice;
+    return field;
+  }
+}
 Blockly.fieldRegistry.register('ugso_field_entity', EntityField);
-
+Blockly.fieldRegistry.register('ugso_field_ha_choice', HAChoiceField);
+export function installHAChoices(block) {
+  for (const input of block.inputList) for (const field of [...input.fieldRow]) {
+    if (!field.name || field instanceof EntityField || field instanceof Blockly.FieldDropdown || !(field instanceof Blockly.FieldTextInput)) continue;
+    const spec = fieldChoice(field); if (!spec) continue;
+    const index = input.fieldRow.indexOf(field), value = field.getValue(), name = field.name;
+    const replacement = new HAChoiceField(value); replacement.setValidator(field.getValidator());
+    input.removeField(name); input.insertFieldAt(index, replacement, name);
+  }
+}
 export function setupEntities(workspace) {
-  const status = document.querySelector('.local-badge');
-  status.setAttribute('role', 'status');
-  const loadButton = document.createElement('button'); loadButton.id = 'entities-refresh'; loadButton.textContent = 'Entitäten laden';
+  const status = document.querySelector('.local-badge'); status.setAttribute('role','status');
+  const loadButton = document.createElement('button'); loadButton.id='entities-refresh'; loadButton.textContent='HA-Auswahl laden';
   document.querySelector('.canvas-actions').append(loadButton);
-  const dialog = document.createElement('dialog'); dialog.id = 'entity-dialog'; dialog.setAttribute('aria-labelledby', 'entity-title');
-  dialog.innerHTML = `<h2 id="entity-title">Entität auswählen</h2><p id="entity-status" role="status"></p><label>Suche nach Name oder ID<input id="entity-search" type="search" autocomplete="off"></label><div id="entity-results" aria-label="Gefundene Entitäten"></div><p id="entity-count"></p><form id="entity-form"><label>Entitäts-ID<input id="entity-id" autocomplete="off" spellcheck="false"></label><p id="entity-error" role="alert"></p><div class="entity-actions"><button type="button" id="entity-refresh">Neu laden</button><button type="button" id="entity-cancel">Abbrechen</button><button type="submit" class="primary">Übernehmen</button></div></form>`;
+  const dialog = document.createElement('dialog'); dialog.id='entity-dialog'; dialog.setAttribute('aria-labelledby','entity-title');
+  dialog.innerHTML='<h2 id="entity-title">HA-Auswahl</h2><p id="entity-status" role="status"></p><label>Suche nach Name oder ID<input id="entity-search" type="search" autocomplete="off"></label><div id="entity-results" aria-label="Gefundene Einträge"></div><p id="entity-count"></p><form id="entity-form"><label>ID, Liste oder HA-Template<textarea id="entity-id" rows="3" autocomplete="off" spellcheck="false"></textarea></label><label><input id="entity-multiple" type="checkbox">Mehrere Ziele auswählen</label><p id="entity-error" role="alert"></p><div class="entity-actions"><button type="button" id="entity-refresh">Neu laden</button><button type="button" id="entity-cancel">Abbrechen</button><button type="submit" class="primary">Übernehmen</button></div></form>';
   document.body.append(dialog);
-  const el = id => dialog.querySelector(`#${id}`);
-  let rows = [], field, loading = false, message = 'Entitäts-ID kann auch manuell eingegeben werden.';
+  const el=id=>dialog.querySelector('#'+id);
+  const catalog={entities:[],actions:fallbackActions,targets:{}};
+  const messages={entities:'Entitäts-ID kann auch manuell eingegeben werden.',actions:'Gängige Beispielaktionen; HA-Verfügbarkeit prüfen.',targets:'Ziel-ID kann auch manuell eingegeben werden.'};
+  let field, loading=false;
+  function group() {const kind=fieldChoice(field)?.kind;return kind==='action'?'actions':kind==='entity_id'?'entities':'targets';}
+  function selectedIds(){try{const value=JSON.parse(el('entity-id').value);return Array.isArray(value)?value:[];}catch{return [el('entity-id').value];}}
   function render() {
-    el('entity-status').textContent = message;
-    const domain = field ? entityDomain(field.getSourceBlock()) : '';
-    const matches = matchingEntities(rows, el('entity-search').value, domain);
-    el('entity-results').replaceChildren();
-    for (const row of matches.slice(0, 150)) {
-      const button = document.createElement('button'); button.type = 'button'; button.className = 'entity-result';
-      const name = document.createElement('strong'), id = document.createElement('span'), state = document.createElement('small');
-      name.textContent = row.name; id.textContent = row.entity_id; state.textContent = [row.state, row.unit].filter(Boolean).join(' ');
-      button.append(name, id, state); button.dataset.entity = row.entity_id;
-      button.setAttribute('aria-pressed', String(el('entity-id').value === row.entity_id));
-      button.addEventListener('click', () => { el('entity-id').value = row.entity_id; el('entity-error').textContent = ''; render(); });
+    el('entity-status').textContent=messages[group()]; el('entity-results').replaceChildren();
+    const spec=fieldChoice(field), matches=field?matchingChoices(catalog,field,el('entity-search').value):[];
+    const titles={action:'HA-Aktion auswählen',entity_id:'Entität auswählen',device_id:'Gerät auswählen',area_id:'Bereich auswählen',floor_id:'Etage auswählen',label_id:'Label auswählen'};
+    el('entity-title').textContent=titles[spec?.kind]||'HA-Auswahl';
+    for(const row of matches.slice(0,150)) {
+      const button=document.createElement('button');button.type='button';button.className='entity-result';button.dataset.entity=row.id;
+      const name=document.createElement('strong'), id=document.createElement('span'), state=document.createElement('small');name.textContent=row.name;id.textContent=row.id;state.textContent=[row.state,row.unit].filter(Boolean).join(' ');button.append(name,id,state);
+      button.setAttribute('aria-pressed',String(selectedIds().includes(row.id)));
+      button.addEventListener('click',()=>{if(el('entity-multiple').checked){const ids=selectedIds().filter(value=>typeof value==='string'&&value.trim());el('entity-id').value=JSON.stringify(ids.includes(row.id)?ids.filter(id=>id!==row.id):[...ids,row.id]);}else el('entity-id').value=row.id;el('entity-error').textContent='';render();});
       el('entity-results').append(button);
     }
-    el('entity-count').textContent = `${matches.length} Treffer${domain ? ` · ${domain}` : ''}${matches.length > 150 ? ' · erste 150 angezeigt, Suche eingrenzen' : ''}`;
+    el('entity-count').textContent=matches.length+' Treffer'+(matches.length>150?' · erste 150 angezeigt, Suche eingrenzen':'');
   }
   async function refresh() {
-    if (loading) return;
-    loading = true; loadButton.disabled = el('entity-refresh').disabled = true;
-    message = 'Entitäten werden aus Home Assistant geladen …'; render();
-    try {
-      const response = await fetch(new URL('./api/ha/entities', document.baseURI), { cache: 'no-store', signal: AbortSignal.timeout(12000) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(typeof data.error === 'string' ? data.error : 'HA-Verbindung nicht verfügbar.');
-      if (!Array.isArray(data.entities)) throw new Error('Keine gültige Entitätsliste.');
-      rows = data.entities.filter(row => row && entityIdPattern.test(row.entity_id) && ['name', 'domain', 'state', 'unit'].every(key => typeof row[key] === 'string'));
-      message = `${rows.length} Entitäten aus HA geladen. Zustände sind eine Momentaufnahme.`;
-      status.textContent = `HA verbunden · ${rows.length} Entitäten`;
-      status.classList.add('connected');
-    } catch (error) {
-      rows = []; message = error.name === 'TimeoutError' ? 'HA-Abfrage dauert zu lange. Entitäts-ID manuell eingeben.' : (error.message.startsWith('Unexpected') ? 'Keine HA-Verbindung. Entitäts-ID manuell eingeben.' : error.message);
-      status.textContent = 'Lokal · manuelle Entitäts-IDs'; status.classList.remove('connected');
-    } finally { loading = false; loadButton.disabled = el('entity-refresh').disabled = false; render(); }
+    if(loading)return;loading=true;loadButton.disabled=el('entity-refresh').disabled=true;
+    const results=await Promise.allSettled(['entities','actions','targets'].map(async kind=>{
+      const response=await fetch(new URL('./api/ha/'+kind,document.baseURI),{cache:'no-store',signal:AbortSignal.timeout(12000)});
+      const data=await response.json();if(!response.ok)throw Error(typeof data.error==='string'?data.error:'HA-Katalog nicht verfügbar.');
+      if(kind==='entities') {
+        if(!Array.isArray(data.entities))throw Error('Keine gültige Entitätsliste.');
+        catalog.entities=data.entities.filter(row=>row&&entityIdPattern.test(row.entity_id)&&['name','domain','state','unit'].every(key=>typeof row[key]==='string'));
+        messages.entities=catalog.entities.length+' Entitäten aus HA geladen. Zustände sind eine Momentaufnahme.';status.textContent='HA verbunden · '+catalog.entities.length+' Entitäten';status.classList.add('connected');
+      }else if(kind==='actions'){
+        if(!Array.isArray(data.actions))throw Error('Keine gültige Aktionsliste.');
+        catalog.actions=data.actions.filter(row=>row&&entityIdPattern.test(row.id)&&typeof row.name==='string').map(row=>({...row,domains:Array.isArray(row.domains)?row.domains.filter(d=>typeof d==='string'):[]}));messages.actions=catalog.actions.length+' verfügbare HA-Aktionen geladen.';
+      }else{
+        if(!data.targets||typeof data.targets!=='object')throw Error('Kein gültiger Zielkatalog.');
+        for(const kind of targetKinds.filter(k=>k!=='entity_id'))catalog.targets[kind]=(Array.isArray(data.targets[kind])?data.targets[kind]:[]).filter(row=>row&&typeof row.id==='string'&&typeof row.name==='string');
+        messages.targets=data.unavailable?.length?'Einige HA-Zielarten sind nicht verfügbar; fehlende IDs manuell eingeben.':'Geräte, Bereiche, Etagen und Labels aus HA geladen.';
+      }
+    }));
+    ['entities','actions','targets'].forEach((kind,i)=>{if(results[i].status==='rejected'){messages[kind]=kind==='actions'?'HA-Aktionen nicht verfügbar. Gängige Beispiele; eigene Aktion oder Template eingeben.':'HA-Katalog nicht verfügbar. ID, Liste oder Template manuell eingeben.';if(kind==='actions')catalog.actions=fallbackActions;else if(kind==='targets')catalog.targets={};else{catalog.entities=[];status.textContent='Lokal · manuelle Entitäts-IDs';status.classList.remove('connected');}}});
+    loading=false;loadButton.disabled=el('entity-refresh').disabled=false;render();
   }
-  openPicker = selected => {
-    if (selected.getSourceBlock()?.workspace !== workspace) return;
-    field = selected;
-    const input = document.createElement(field.haStructured_ || blockAllowsTemplate(field.getSourceBlock()) ? 'textarea' : 'input');
-    input.id = 'entity-id'; input.autocomplete = 'off'; input.spellcheck = false;
-    if (input.tagName === 'TEXTAREA') input.rows = 3;
-    input.addEventListener('input', () => { el('entity-error').textContent = ''; });
-    el('entity-id').replaceWith(input);
-    input.parentNode.firstChild.textContent = blockAllowsTemplate(field.getSourceBlock()) ? 'Entitäts-ID oder HA-Template' : 'Entitäts-ID';
-    input.value = String(field.getValue()); el('entity-search').value = ''; el('entity-error').textContent = '';
-    render(); dialog.showModal(); el('entity-search').focus();
-    if (field.haStructured_) input.parentNode.firstChild.textContent = 'Entitäts-ID, JSON-Liste oder HA-Template';
+  openPicker=selected=>{
+    if(selected.getSourceBlock()?.workspace!==workspace)return;field=selected;const spec=fieldChoice(field);
+    el('entity-id').value=String(field.getValue());el('entity-search').value='';el('entity-error').textContent='';
+    el('entity-multiple').parentElement.hidden=spec.kind==='action'||!spec.structured||spec.allowNumber||spec.allowTime;
+    el('entity-multiple').checked=!el('entity-multiple').parentElement.hidden&&(!!spec.listOnly||el('entity-id').value.trim().startsWith('['));
+    render();dialog.showModal();el('entity-search').focus();
   };
-  el('entity-search').addEventListener('input', render);
-  el('entity-id').addEventListener('input', () => { el('entity-error').textContent = ''; });
-  el('entity-cancel').addEventListener('click', () => dialog.close());
-  el('entity-refresh').addEventListener('click', refresh); loadButton.addEventListener('click', refresh);
-  el('entity-form').addEventListener('submit', event => {
-    event.preventDefault();
-    const raw = el('entity-id').value, block = field?.getSourceBlock();
-    const id = (field?.haStructured_ || blockAllowsTemplate(block)) && raw.trim() && !entityIdPattern.test(raw.trim()) ? raw : raw.trim();
-    if (!block || block.isDisposed()) { dialog.close(); return; }
-    let structuredValid = false;
-    if (field.haStructured_) {
-      structuredValid = !id.trim() || validActionEntity(id);
-      if (!structuredValid) try { const list = JSON.parse(id); structuredValid = Array.isArray(list) && list.length > 0 && list.length <= 100 && list.every(item => typeof item === 'string' && entityIdPattern.test(item)); } catch {}
+  el('entity-search').addEventListener('input',render);el('entity-id').addEventListener('input',()=>{el('entity-error').textContent='';});
+  el('entity-cancel').addEventListener('click',()=>dialog.close());el('entity-refresh').addEventListener('click',refresh);loadButton.addEventListener('click',refresh);
+  el('entity-form').addEventListener('submit',event=>{
+    event.preventDefault();if(!field||field.getSourceBlock().isDisposed()){dialog.close();return;}
+    const raw=el('entity-id').value,text=/\{\{|\{%/.test(raw)?raw:raw.trim(),spec=fieldChoice(field);
+    if(!validChoice(text,spec)){el('entity-error').textContent=spec.kind==='action'?'Aktionsname wie light.turn_on oder HA-Template erwartet.':'Passende ID, Liste oder HA-Template erwartet.';return;}
+    const domain=entityDomain(field.getSourceBlock());
+    if(domain&&spec.kind==='entity_id'&&text.trim()&&!text.includes('{{')&&!text.includes('{%')) {
+      const ids=text.trim().startsWith('[')?JSON.parse(text):[text.trim()];
+      if(ids.some(id=>!id.startsWith(domain+'.'))){el('entity-error').textContent='Dieser Block benötigt eine '+domain+'-Entität.';return;}
     }
-    if (!(field.haStructured_ ? structuredValid : blockAllowsTemplate(block) ? !id.trim() || validActionEntity(id) : entityIdPattern.test(id))) { el('entity-error').textContent = field.haStructured_ ? 'Entitäts-ID, JSON-Liste oder HA-Template erwartet.' : blockAllowsTemplate(block) ? 'Eine Entitäts-ID wie light.wohnzimmer oder ein HA-Template eingeben.' : 'Eine Entitäts-ID wie light.wohnzimmer eingeben.'; return; }
-    const domain = entityDomain(block);
-    if (id && domain && !id.startsWith(domain + '.')) { el('entity-error').textContent = `Dieser Block benötigt eine ${domain}-Entität.`; return; }
-    field.setValue(id); dialog.close();
+    field.setValue(text);dialog.close();
   });
-  dialog.addEventListener('close', () => { field = undefined; });
-  refresh();
+  dialog.addEventListener('close',()=>{if(!dialog.open)field=undefined;});refresh();
 }
-const blockAllowsTemplate = block => block?.type === 'ugso_service_action';

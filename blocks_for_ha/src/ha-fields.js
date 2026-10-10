@@ -1,4 +1,5 @@
 import { translateLabel as t } from './locales.js';
+import { choiceForPath } from './entities.js';
 
 // Keep the original JSON field for older projects. Visible fields overlay only
 // edited values, preserving absent keys, scalar/list types and template text.
@@ -130,7 +131,9 @@ export function setupHAFields(Blockly, block, Multiline) {
         const input = row.appendField(source === 'VARIABLES' ? key : t(captions[key] || key)); rowSize++;
         let field;
         const options = choices(key, original, source);
+        const choice = choiceForPath(key, path, source);
         if (source === 'VARIABLES') { field = new Multiline(initial); field.setMaxLines(2); }
+        else if (choice) field = Blockly.fieldRegistry.fromJson({type:'ugso_field_ha_choice',text:initial,choice});
         else if (options && typeof value !== 'object') field = new Blockly.FieldDropdown([[t('Nicht gesetzt'), ''], ...options.map(option => [option, option]), ...(initial && !options.includes(initial) ? [[initial,initial]] : [])]);
         else if (boolKeys.has(key) && key !== 'enabled') field = new Blockly.FieldDropdown([[t('Nicht gesetzt'), ''], [t('wahr'), 'true'], [t('falsch'), 'false'], ...(initial && !['true', 'false'].includes(initial) ? [[initial, initial]] : [])]);
         else if (key === 'entity_id') field = Blockly.fieldRegistry.fromJson({type:'ugso_field_entity',text:initial});

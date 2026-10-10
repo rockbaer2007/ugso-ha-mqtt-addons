@@ -1,4 +1,9 @@
-UGSo Blocks for HA 0.1.43
+UGSo Blocks for HA 0.1.44
+
+websocket-client 1.9.2
+https://github.com/websocket-client/websocket-client
+License: Apache-2.0. Original license: WEBSOCKET-CLIENT-LICENSE.txt.
+Used by the read-only server bridge to list Home Assistant target registries.
 Copyright 2026 rockbaer2007 / UGSo
 Own application code is licensed under Apache License 2.0; see APP-LICENSE.txt in this directory.
 

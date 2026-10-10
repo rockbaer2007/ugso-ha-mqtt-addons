@@ -2,6 +2,7 @@
 import json
 import os
 import re
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
@@ -56,7 +57,14 @@ def entity_catalog(states):
 
 
 def load_entities(environ=None):
+    return entity_catalog(load_rest("states", environ))
+
+
+def load_rest(endpoint, environ=None):
+    if endpoint not in ("states", "services"):
+        raise APIError(404, "Unbekannter HA-Katalog.")
     url, token = connection(os.environ if environ is None else environ)
+    url = url.removesuffix("states") + endpoint
     request = Request(url, headers={"Authorization": "Bearer " + token, "Accept": "application/json"}, method="GET")
     try:
         # Fixed server-side endpoint; never forward credentials through a redirect.
@@ -64,12 +72,109 @@ def load_entities(environ=None):
             raw = response.read(MAX_BYTES + 1)
         if len(raw) > MAX_BYTES:
             raise APIError(502, "HA-Entitätsliste ist zu groß.")
-        return entity_catalog(json.loads(raw))
+        return json.loads(raw)
     except HTTPError as error:
         message = "HA-Zugriff abgelehnt. Server-Zugangsdaten prüfen." if error.code in (401, 403) else "HA-Entitätsabfrage fehlgeschlagen."
         raise APIError(502, message) from None
     except (URLError, TimeoutError, OSError, ValueError):
         raise APIError(502, "HA ist nicht erreichbar oder hat ungültige Daten geliefert.") from None
+
+
+def action_catalog(groups):
+    if not isinstance(groups, list):
+        raise APIError(502, "HA hat keine gültige Aktionsliste geliefert.")
+    actions = {}
+    for group in groups:
+        if not isinstance(group, dict) or not isinstance(group.get("domain"), str) or not re.fullmatch(r"[a-z][a-z0-9_]*", group["domain"]):
+            continue
+        services = group.get("services", {})
+        if isinstance(services, list):
+            services = {name: {} for name in services if isinstance(name, str)}
+        if not isinstance(services, dict):
+            continue
+        for name, definition in services.items():
+            action = group["domain"] + "." + name if isinstance(name, str) else ""
+            if not ENTITY_ID.fullmatch(action):
+                continue
+            definition = definition if isinstance(definition, dict) else {}
+            selectors = definition.get("target", {})
+            selectors = selectors.get("entity", []) if isinstance(selectors, dict) else []
+            selectors = selectors if isinstance(selectors, list) else [selectors]
+            domains = set()
+            for selector in selectors:
+                if isinstance(selector, dict):
+                    values = selector.get("domain", [])
+                    values = [values] if isinstance(values, str) else values
+                    if isinstance(values, list):
+                        domains.update(value for value in values if isinstance(value, str) and re.fullmatch(r"[a-z][a-z0-9_]*", value))
+            title = definition.get("name")
+            actions[action] = {"id": action, "name": title[:256] if isinstance(title, str) else action, "domain": group["domain"], "domains": sorted(domains)}
+    return sorted(actions.values(), key=lambda row: row["id"])
+
+
+REGISTRIES = {"device_id": "device", "area_id": "area", "floor_id": "floor", "label_id": "label"}
+
+
+def registry_catalog(registries):
+    result = {}
+    for kind in REGISTRIES:
+        rows = registries.get(kind, [])
+        rows = rows if isinstance(rows, list) else []
+        result[kind] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            value = row.get(kind if kind != "device_id" else "id")
+            if not isinstance(value, str) or not value or len(value) > 256:
+                continue
+            name = row.get("name_by_user") or row.get("name") or value
+            result[kind].append({"id": value, "name": name[:256] if isinstance(name, str) else value})
+        result[kind].sort(key=lambda row: (row["name"].casefold(), row["id"]))
+    return result
+
+
+def load_targets(environ=None):
+    url, token = connection(os.environ if environ is None else environ)
+    url = url.removesuffix("states") + "websocket"
+    url = ("wss" if url.startswith("https:") else "ws") + url[url.index(":"):]
+    try:
+        from websocket import create_connection
+        # Zero redirects: neither handshake headers nor the auth frame may be redirected.
+        ws = create_connection(url, timeout=3, redirect_limit=0, http_no_proxy=[urlsplit(url).hostname], suppress_origin=True)
+        try:
+            deadline = time.monotonic() + 10
+            def receive():
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise TimeoutError()
+                ws.settimeout(min(3, remaining))
+                raw = ws.recv()
+                if len(raw) > MAX_BYTES:
+                    raise ValueError()
+                return json.loads(raw)
+            if receive().get("type") != "auth_required":
+                raise ValueError()
+            ws.send(json.dumps({"type": "auth", "access_token": token}))
+            if receive().get("type") != "auth_ok":
+                raise APIError(502, "HA-Registry-Zugriff abgelehnt.")
+            registries, unavailable = {}, []
+            for request_id, (kind, registry) in enumerate(REGISTRIES.items(), 1):
+                ws.send(json.dumps({"id": request_id, "type": "config/" + registry + "_registry/list"}))
+                reply = receive()
+                if reply.get("type") != "result" or reply.get("id") != request_id:
+                    raise ValueError()
+                if reply.get("success") and isinstance(reply.get("result"), list):
+                    registries[kind] = reply["result"]
+                else:
+                    unavailable.append(kind)
+            return {"targets": registry_catalog(registries), "unavailable": unavailable}
+        finally:
+            ws.close()
+    except APIError:
+        raise
+    except Exception:
+        # Upstream payloads, credentials and connection exceptions stay server-side.
+        raise APIError(502, "HA-Zielkatalog nicht verfügbar. ID manuell eingeben.") from None
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -84,11 +189,16 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if self.path != "/api/ha/entities":
+        if self.path not in ("/api/ha/entities", "/api/ha/actions", "/api/ha/targets"):
             self.reply(404, {"error": "Unbekannter Endpunkt."})
             return
         try:
-            self.reply(200, {"entities": load_entities()})
+            if self.path == "/api/ha/actions":
+                self.reply(200, {"actions": action_catalog(load_rest("services"))})
+            elif self.path == "/api/ha/targets":
+                self.reply(200, load_targets())
+            else:
+                self.reply(200, {"entities": load_entities()})
         except APIError as error:
             self.reply(error.status, {"error": error.message})
 

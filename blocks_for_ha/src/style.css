@@ -25,6 +25,7 @@
 #entity-results .entity-result[aria-pressed="true"]{border-color:#127b72;background:#e4f3ed}
 .entity-actions{display:flex;gap:8px}.entity-actions button{flex:1;min-width:0;padding:0 6px}
 #entity-form{text-align:left}
+#entity-form label:has(#entity-multiple){flex-direction:row;align-items:center;margin:10px 0}#entity-form label[hidden]{display:none}#entity-dialog #entity-multiple{width:16px;height:16px;flex:none}#entity-id{font-family:Consolas,monospace;resize:vertical;max-height:25vh}
 .project-bar .name-field{flex:1 1 260px;max-width:520px}.project-bar #custom-editor-open{align-self:flex-end}
 #custom-editor{width:95vw;height:95vh;max-width:95vw;max-height:95vh;padding:0;border:1px solid var(--border);border-radius:12px;color:#233a36;background:#fff;overflow:hidden}
 #custom-editor::backdrop{background:#10232b99}#custom-editor[open]{display:flex;flex-direction:column}

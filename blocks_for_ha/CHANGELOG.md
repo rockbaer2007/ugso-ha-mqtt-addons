@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.44
+
+- Durchsuchbare Auswahl für HA-Aktionsnamen und passende Entitäten in einfachen und erweiterten Blocks; alle 163 Blocktypen geprüft. Szenen, Zahlenreferenzen und Zeithelfer berücksichtigen ihre Feldart.
+- Zielauswahl folgt entity_id, device_id, area_id, floor_id und label_id. Mehrfachziele, freie IDs und Jinja bleiben editierbar. Fachliche Dropdowns bleiben erhalten.
+- Lesende HA-Kataloge für Aktionen und Zielregistrierungen; Zugangsdaten bleiben im Server. Fehlende Kataloge lassen manuelle Eingaben zu. DE/EN/FR-Anleitung aktualisiert.
+
 ## 0.1.43
 
 - Erweiterte HA-JSON-Blöcke mit beschrifteten Eingaben: alle 15 Auslösertypen, allgemeine Auslöser/Bedingungen/Schritte, Integrationsziele und -optionen, Kalender, Temperaturgrenzen, Zeitmuster, Variablen und Warte-/Schrittoptionen.

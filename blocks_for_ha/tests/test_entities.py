@@ -9,6 +9,40 @@ import server
 
 
 class EntitiesTest(unittest.TestCase):
+    def test_actions_and_registries_expose_only_selection_metadata(self):
+        actions = server.action_catalog([{'domain':'light','services':{'turn_on':{'name':'On','target':{'entity':[{'domain':['light']}]},'secret':'private'}}}, {'domain':'switch','services':['toggle']}])
+        self.assertEqual(actions[0], {'id':'light.turn_on','name':'On','domain':'light','domains':['light']})
+        self.assertEqual(actions[1]['id'], 'switch.toggle')
+        rows = server.registry_catalog({'device_id':[{'id':'abc','name':'Device','secret':'private'}], 'area_id':[{'area_id':'kitchen','name':'Kitchen'}]})
+        self.assertEqual(rows['device_id'], [{'id':'abc','name':'Device'}])
+        self.assertEqual(rows['area_id'][0]['id'], 'kitchen')
+        self.assertNotIn('private', json.dumps([actions,rows]))
+
+    def test_registry_auth_read_commands_partial_denial_and_redaction(self):
+        class Socket:
+            def __init__(self, denied=False):
+                self.sent=[]; self.closed=False
+                self.replies=[{'type':'auth_required'}, {'type':'auth_invalid' if denied else 'auth_ok'}]+[{'id':i,'type':'result','success':i!=3,'result':[]} for i in range(1,5)]
+            def recv(self): return json.dumps(self.replies.pop(0))
+            def send(self, text): self.sent.append(json.loads(text))
+            def settimeout(self, value): pass
+            def close(self): self.closed=True
+        for denied in [False,True]:
+            sock=Socket(denied)
+            with patch('websocket.create_connection', return_value=sock) as connect:
+                env={'BLOCKS_HA_URL':'https://ha.example','BLOCKS_HA_TOKEN':'server-only-secret'}
+                if denied:
+                    with self.assertRaises(server.APIError) as error: server.load_targets(env)
+                    self.assertNotIn('secret',error.exception.message)
+                else:
+                    result=server.load_targets(env)
+                    self.assertEqual(result['unavailable'],['floor_id'])
+                    self.assertNotIn('secret',json.dumps(result))
+                    self.assertEqual([r['type'] for r in sock.sent[1:]],['config/'+v+'_registry/list' for v in server.REGISTRIES.values()])
+                self.assertEqual(connect.call_args.args[0],'wss://ha.example/api/websocket')
+                self.assertEqual(connect.call_args.kwargs['redirect_limit'],0)
+                self.assertTrue(sock.closed)
+
     def test_catalog_omits_attributes_and_secrets(self):
         rows = server.entity_catalog([{"entity_id": "light.kitchen", "state": "on", "attributes": {"friendly_name": "Küche", "token": "secret", "latitude": 52}}, None, {"entity_id": "invalid"}])
         self.assertEqual(rows, [{"entity_id": "light.kitchen", "domain": "light", "state": "on", "name": "Küche", "unit": ""}])
@@ -31,7 +65,8 @@ class EntitiesTest(unittest.TestCase):
                 elif self.server.mode == 'denied':
                     self.send_response(401); self.end_headers(); self.wfile.write(b'secret detail')
                 else:
-                    self.send_response(200); self.end_headers(); self.wfile.write(b'[{"entity_id":"sensor.demo","state":"20","attributes":{"unit_of_measurement":"C"}}]')
+                    self.send_response(200); self.end_headers()
+                    self.wfile.write(b'[{"domain":"light","services":["turn_on"]}]' if self.path == '/api/services' else b'[{"entity_id":"sensor.demo","state":"20","attributes":{"unit_of_measurement":"C"}}]')
             def log_message(self, *args): pass
         ha = ThreadingHTTPServer(('127.0.0.1', 0), FakeHA)
         thread = threading.Thread(target=ha.serve_forever, daemon=True); thread.start()
@@ -40,11 +75,13 @@ class EntitiesTest(unittest.TestCase):
             ha.mode = 'ok'
             self.assertEqual(server.load_entities(env)[0]['entity_id'], 'sensor.demo')
             self.assertEqual(requests[-1], ('/api/states', 'Bearer server-only-test-token'))
+            self.assertEqual(server.action_catalog(server.load_rest('services',env))[0]['id'],'light.turn_on')
+            self.assertEqual(requests[-1],('/api/services','Bearer server-only-test-token'))
             for mode in ('redirect', 'denied'):
                 ha.mode = mode
                 with self.assertRaises(server.APIError) as error: server.load_entities(env)
                 self.assertNotIn('secret', error.exception.message)
-            self.assertEqual(len(requests), 3)
+            self.assertEqual(len(requests), 4)
         finally: ha.shutdown(); ha.server_close(); thread.join()
 
     def test_bridge_only_exposes_read_catalog_and_handles_offline(self):
@@ -56,6 +93,9 @@ class EntitiesTest(unittest.TestCase):
                 with urlopen(base + '/api/ha/entities') as response:
                     self.assertEqual(json.load(response), {'entities': []})
                     self.assertEqual(response.headers['Cache-Control'], 'no-store')
+            with patch.object(server, 'load_rest', return_value=[]), patch.object(server,'load_targets',return_value={'targets':{},'unavailable':[]}):
+                with urlopen(base+'/api/ha/actions') as response: self.assertEqual(json.load(response),{'actions':[]})
+                with urlopen(base+'/api/ha/targets') as response: self.assertEqual(json.load(response),{'targets':{},'unavailable':[]})
             for path, method, expected in [('/api/ha/entities', 'POST', 405), ('/api/states', 'GET', 404), ('/api/ha/entities?url=evil', 'GET', 404)]:
                 with self.assertRaises(HTTPError) as error: urlopen(Request(base + path, method=method))
                 self.assertEqual(error.exception.code, expected)

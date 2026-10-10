@@ -17,7 +17,7 @@ import { collectionDefinitions, installCollectionShape, collectionExpression, co
 import { colourDefinitions, colourExpression, colourInput, colourToolbox } from './colour.js';
 import { functionTypes, installFunctions, functionInfo, functionToolbox } from './functions.js';
 import { themedDefinition, themedCategories } from './themes.js';
-import './entities.js';
+import { installHAChoices } from './entities.js';
 import { installNativeFields, nativeList, nativeObject, nativeTimeExpression } from './native-fields.js';
 import { advancedDefinitions, advancedJSON, equivalent, advancedTriggerType, setupJinjaBlock, setupParallelBlock, setupIntegrationBlock } from './advanced.js';
 import { setupHAFields } from './ha-fields.js';
@@ -192,6 +192,7 @@ definitions.forEach(definition => {
     original.call(this); installNativeFields(Blockly, this, Multiline.FieldMultilineInput); setupJinjaBlock(this); setupParallelBlock(Blockly, this, translateLabel('Zweig')); setupIntegrationBlock(Blockly,this); this.setHelpUrl(documentationPath(this.type.startsWith('ugso_time_') ? 'time' : ''));
     setupJinjaShape(this);
     setupHAFields(Blockly, this, Multiline.FieldMultilineInput);
+    installHAChoices(this);
     if (advancedDefinitions.some(d=>d.type===this.type)||jinjaDefinitions.some(d=>d.type===this.type)) this.setHelpUrl(documentationPath('advanced'));
     if (this.type.startsWith('ugso_convert_')) this.setHelpUrl(documentationPath('conversion'));
     if (flowDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('flow'));
