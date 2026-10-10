@@ -7,6 +7,7 @@ import '@blockly/field-slider';
 import * as DateModule from '@blockly/field-date';
 import '@blockly/field-dependent-dropdown';
 import { dateTemplate, parseDateTemplate, helperOptions } from './values.js';
+import { timeDefinitions, installTimeShape, timeExpression } from './time.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 Blockly.setLocale(De);
@@ -36,6 +37,7 @@ const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'bel
 const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 const definitions = [
+  ...timeDefinitions,
   { type: 'ugso_variable_change', message0: 'Erhöhe %1 um %2', args0: [{ type: 'field_variable', name: 'VAR', variable: 'wert' }, value('STEP', 'Number')], previousStatement: 'Action', nextStatement: 'Action', colour: '#a54879', tooltip: 'Addiert eine Zahl zur zuvor gesetzten Zahlenvariable. Negative Schritte verringern. Nicht gesetzte Werte, Texte, Boolean und null werden nicht automatisch in Zahlen umgewandelt.' },
   { type: 'ugso_compare', message0: '%1 %2 %3', args0: [value('LEFT', 'Value'), { type: 'field_dropdown', name: 'OP', options: [['=', '=='], ['≠', '!='], ['<', '<'], ['≤', '<='], ['>', '>'], ['≥', '>=']] }, value('RIGHT', 'Value')], output: ['Boolean', 'Value'], colour: '#6860b5', tooltip: 'Vergleicht zwei Werte in HA. Zahlen und Texte haben unterschiedliche Typen; Sensorwerte im Template bewusst umwandeln.' },
   { type: 'ugso_boolean', message0: '%1', args0: [{ type: 'field_dropdown', name: 'BOOL', options: [['wahr', 'true'], ['falsch', 'false']] }], output: ['Boolean', 'Value'], colour: '#6860b5' },
@@ -148,11 +150,12 @@ Blockly.Extensions.registerMutator('ugso_branches', {
     otherwise?.reconnect(this, 'ELSE');
   }
 }, undefined, ['controls_if_elseif', 'controls_if_else']);
+installTimeShape(Blockly);
 Blockly.defineBlocksWithJsonArray(definitions);
 definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
   Blockly.Blocks[definition.type].init = function () {
-    original.call(this); this.setHelpUrl('https://opensource.ugso-software.de/projects/blocks-for-ha/#andocken-und-bedienung');
+    original.call(this); this.setHelpUrl(this.type.startsWith('ugso_time_') ? 'https://opensource.ugso-software.de/projects/blocks-for-ha/time' : 'https://opensource.ugso-software.de/projects/blocks-for-ha/#andocken-und-bedienung');
     if (this.type === 'ugso_variable_change') this.getInput('STEP').connection.setShadowState({ type: 'ugso_number', fields: { NUM: 1 } });
     if (this.outputConnection && ['ugso_number', 'ugso_percent', 'ugso_text', 'ugso_template', 'ugso_variable_get'].includes(this.type)) this.setOutput(true, [...this.outputConnection.getCheck(), 'Value']);
     if (['ugso_logic_condition', 'ugso_if_action'].includes(this.type)) addExpansionButtons(this);
@@ -182,12 +185,14 @@ export const knownTypes = new Set(definitions.map(item => item.type));
 export const toolbox = { kind: 'categoryToolbox', contents: [
   { kind: 'category', name: 'System', colour: '#2682a5', contents: ['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) },
   { kind: 'category', name: 'Werte', colour: '#2e7653', contents: ['number', 'percent', 'text', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}` })) },
-  { kind: 'category', name: 'Datum und Zeit', colour: '#6860b5', contents: [{ kind: 'block', type: 'ugso_date_condition' }] },
+  { kind: 'category', name: 'Datum und Zeit', colour: '#8056a1', contents: [{ kind: 'block', type: 'ugso_date_condition' }, ...timeDefinitions.map(({ type }) => ({ kind: 'block', type }))] },
   { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: ['state', 'numeric', 'time', 'sun', 'start'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })) },
   { kind: 'category', name: 'Bedingungen', colour: '#6860b5', contents: ['state', 'numeric', 'logic'].map(type => ({ kind: 'block', type: `ugso_${type}_condition` })) },
   { kind: 'category', name: 'Aktionen', colour: '#2682a5', contents: ['switch', 'service', 'delay', 'if', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) }
 ] };
 for (const category of toolbox.contents) for (const block of category.contents) {
+  if (['ugso_time_shift', 'ugso_time_format'].includes(block.type)) block.inputs = { BASE: { shadow: { type: 'ugso_time_now' } }, ...(block.type === 'ugso_time_shift' ? { AMOUNT: { shadow: { type: 'ugso_number', fields: { NUM: 1 } } } } : {}) };
+  if (block.type === 'ugso_time_sun') block.inputs = { OFFSET: { shadow: { type: 'ugso_number', fields: { NUM: 0 } } } };
   if (block.type.includes('numeric')) block.inputs = { LIMIT: { shadow: { type: 'ugso_number', fields: { NUM: 20 } } } };
   if (block.type === 'ugso_delay_action') block.inputs = { SECONDS: { shadow: { type: 'ugso_number', fields: { NUM: 30 } } } };
   if (block.type === 'ugso_log_action') block.inputs = { MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'Automation gestartet' } } } };
@@ -231,13 +236,14 @@ function readValue(block, input) {
   if (child.type === 'ugso_null') return null;
   if (child.type === 'ugso_variable_get') return `{{ ${variableName(child)} }}`;
   if (['ugso_text', 'ugso_template'].includes(child.type)) return field(child, 'TEXT');
-  if (child.type === 'ugso_ternary' || child.outputConnection?.getCheck()?.includes('Boolean')) return `{{ ${expression(child)} }}`;
+  if (child.type.startsWith('ugso_time_') || child.type === 'ugso_ternary' || child.outputConnection?.getCheck()?.includes('Boolean')) return `{{ ${expression(child)} }}`;
   throw new Error(`${input}: Wertblock wird nicht unterstützt.`);
 }
 function expression(block, depth = 0) {
   if (!block?.isEnabled()) throw new Error('Logik: Wert oder Bedingung fehlt.');
   if (depth > 10) throw new Error('Logik ist zu tief verschachtelt.');
   const child = name => expression(block.getInputTargetBlock(name), depth + 1);
+  if (block.type.startsWith('ugso_time_')) return timeExpression(block, child, name => readNumber(block, name));
   const entity = () => {
     const id = field(block, 'ENTITY');
     if (!/^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id)) throw new Error('Logik: Entität im Format domain.name erwartet.');
@@ -300,6 +306,7 @@ function readTrigger(block) {
 function readCondition(block, depth) {
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
   switch (block.type) {
+    case 'ugso_time_compare': case 'ugso_time_compare_input':
     case 'ugso_boolean': case 'ugso_compare': return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
     case 'ugso_not': return { condition: 'not', conditions: requiredConditions(block, 'BOOL', depth) };
     case 'ugso_binary_logic': return { condition: field(block, 'OP'), conditions: [...requiredConditions(block, 'LEFT', depth), ...requiredConditions(block, 'RIGHT', depth)] };

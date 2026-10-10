@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.11
+
+- Sieben Datum-/Zeit-Blocks mit typisierten Datumswert-Anschlüssen und dynamischen Uhrzeitvergleichsfeldern.
+- Feste/andockbare Uhrzeitvergleiche einschließlich Zeiträumen über Mitternacht, aktuelle HA-Zeit, Kalenderbeginn, nächste Sonnenereignisse mit Minutenoffset, Addition/Subtraktion und Formatierung.
+- HA-Jinja-Ausgabe nutzt die HA-Zeitzone. JSON erhält die Blockformen; YAML-Zeittemplates werden als allgemeine Template-Blocks wieder geöffnet.
+- DE/EN-Doku mit ioBroker-Gegenüberstellung, Grenzen und Bildern; Katalog auf 41 Blocktypen erweitert.
+
 ## 0.1.10
 
 - Erhöhen-Block in der dynamischen Variablen-Kategorie zwischen Setzen und Lesen, Standard-Zahlen-Shadow `1`.
