@@ -1,0 +1,21 @@
+alias: Timer Eingabe Full Hour Mode
+triggers:
+  - entity_id:
+      - input_number.timer_hours
+      - input_number.timer_minutes
+    trigger: state
+actions:
+  - variables:
+      h: '{{ states(''input_number.timer_hours'') | int }}'
+      m: '{{ states(''input_number.timer_minutes'') | int }}'
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: '{{ h == 0 and m == 0 }}'
+        sequence:
+          - target:
+              entity_id: input_number.timer_minutes
+            data:
+              value: 1
+            action: input_number.set_value
+mode: restart

@@ -173,6 +173,7 @@ installFlowShape(Blockly);
 installCollectionShape(Blockly);
 definitions.push({ type: 'ugso_trigger_condition', message0: 'Ausgelöst durch ID %1 Liste %2', args0: [{ type: 'field_input', name: 'ID', text: 'button_1' }, { type: 'field_checkbox', name: 'ID_LIST', checked: false }], output: 'Boolean', colour: '#6860b5', tooltip: 'Prüft die ID des Auslösers. Mit Liste: IDs als JSON-Liste eingeben.' });
 definitions.push(
+  { type: 'ugso_variables_action', message0: 'Variablen setzen (JSON) %1', args0: [{ type: 'field_multilinetext', name: 'VARIABLES', text: '{"h":0,"m":1}' }], previousStatement: 'Action', nextStatement: 'Action', colour: '#a54879', tooltip: 'Mehrere HA-Variablen in einer Aktion. JSON-Objekt mit Namen und Text, Template, Zahl, Boolean oder null. Namen und Templates direkt im JSON bearbeiten.' },
   { type: 'ugso_calendar_trigger', message0: 'Wenn Kalender %1 %2 Ziel (JSON) %3 %4 Optionen (JSON) %5 verwenden %6', args0: [{ type: 'field_dropdown', name: 'EVENT', options: [['Termin beginnt', 'calendar.event_started'], ['Termin endet', 'calendar.event_ended']] }, { type: 'input_dummy' }, { type: 'field_multilinetext', name: 'TARGET', text: '{"entity_id":"calendar.ferien"}' }, { type: 'input_dummy' }, { type: 'field_multilinetext', name: 'OPTIONS', text: '{"offset":{"seconds":0},"offset_type":"before"}' }, { type: 'field_checkbox', name: 'USE_OPTIONS', checked: true }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'Kalendertermin beginnt oder endet. Ziel entity_id als Text oder Liste. Optionaler Offset mit Tagen, Stunden, Minuten und Sekunden oder HH:MM:SS; before oder after.' },
   { type: 'ugso_temperature_trigger', message0: 'Wenn Temperatur sich ändert Ziel (JSON) %1 Schwelle (JSON) %2', args0: [{ type: 'field_multilinetext', name: 'TARGET', text: '{"entity_id":"sensor.pool_temperatur"}' }, { type: 'field_multilinetext', name: 'THRESHOLD', text: '{"type":"any"}' }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'Nativer HA-Auslöser temperature.changed. Ziel mit entity_id (Text oder Liste); Schwelle any, above, below, between oder outside, Zahlen mit °C/°F oder Sensor/Zahlenhelfer.' },
   { type: 'ugso_event_trigger', message0: 'Wenn Ereignis %1 Datenfilter (JSON) %2 verwenden %3', args0: [{ type: 'field_input', name: 'EVENT_TYPE', text: 'timer.finished' }, { type: 'field_multilinetext', name: 'EVENT_DATA', text: '{"entity_id":"timer.poolpumpe_manuelle_laufzeit"}' }, { type: 'field_checkbox', name: 'FILTER', checked: true }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'HA-Ereignis mit optionalem Datenfilter, etwa timer.finished. Filterwerte als JSON-Objekt.' },
@@ -264,7 +265,7 @@ export function setupVariables(workspace) {
   workspace.registerToolboxCategoryCallback('UGSO_FUNCTIONS', functionToolbox);
   workspace.registerButtonCallback('UGSO_CREATE_VARIABLE', () => Blockly.Variables.createVariableButtonHandler(workspace, () => workspace.getToolbox()?.refreshSelection()));
   workspace.registerToolboxCategoryCallback('UGSO_VARIABLES', ws => {
-    const items = [{ kind: 'button', text: translateLabel('Variable erstellen …'), callbackKey: 'UGSO_CREATE_VARIABLE' }];
+    const items = [{ kind: 'button', text: translateLabel('Variable erstellen …'), callbackKey: 'UGSO_CREATE_VARIABLE' }, { kind: 'block', type: 'ugso_variables_action' }];
     const variables = ws.getVariableMap().getAllVariables().filter(variable => variable.type === '');
     for (const variable of variables) {
       items.push({ kind: 'block', type: 'ugso_variable_set', fields: { VAR: { id: variable.getId() } }, inputs: { VALUE: { shadow: { type: 'ugso_number', fields: { NUM: 0 } } } } });
@@ -443,6 +444,7 @@ function readAction(block, depth) {
   const flow = flowAction(block, { child: name => expression(block.getInputTargetBlock(name)), actions: name => chain(block.getInputTargetBlock(name), readAction, depth + 1), conditions: name => requiredConditions(block, name, depth), variableName: () => variableName(block), number: name => readNumber(block, name) });
   if (flow) return flow;
   switch (block.type) {
+    case 'ugso_variables_action': return { variables: nativeObject(block, 'VARIABLES') };
     case 'ugso_variable_set': return { variables: { [variableName(block)]: readValue(block, 'VALUE') } };
     case 'ugso_variable_change': {
       const name = variableName(block), step = readNumber(block, 'STEP');
@@ -564,6 +566,10 @@ function conditionBlock(workspace, item) {
 }
 function actionBlock(workspace, item) {
   if (item.variables) {
+    if (Object.keys(item.variables).length > 1) {
+      for (const name of Object.keys(item.variables)) workspace.getVariableMap().createVariable(name);
+      return create(workspace, 'ugso_variables_action', { VARIABLES: JSON.stringify(item.variables) });
+    }
     const [name, val] = Object.entries(item.variables)[0];
     const variable = workspace.getVariableMap().createVariable(name);
     const change = typeof val === 'string' && /^\{\{ \(([a-zA-Z_]\w*) if \1 is number and \1 is not boolean else none\) \+ \(([-+\w.]+)\) \}\}$/.exec(val);

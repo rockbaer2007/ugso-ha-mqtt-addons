@@ -118,7 +118,7 @@ function checkAction(item, path, depth = 0) {
   if (item.variables) {
     ownKeys(item, ['variables'], path);
     ownKeys(item.variables, Object.keys(item.variables), path);
-    if (Object.keys(item.variables).length !== 1) throw new Error(`${path}: Pro Variablen-Aktion wird genau eine Variable unterstützt.`);
+    if (!Object.keys(item.variables).length || Object.keys(item.variables).length > 100) throw new Error(`${path}: 1–100 Variablen pro Aktion erforderlich.`);
     for (const [name, value] of Object.entries(item.variables)) {
       if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) throw new Error(`${path}: Variablenname ungültig.`);
       if (value !== null && !['string', 'boolean'].includes(typeof value) && !(typeof value === 'number' && Number.isFinite(value))) throw new Error(`${path}: Variablenwert muss Text, Template, Zahl, Boolean oder null sein.`);

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.34
+
+- Mehrere Einträge in einer nativen variables-Aktion erhalten; neuer Block Variablen setzen (JSON) im Variablen-Menü.
+- 1–100 Namen mit Text, Template, Zahl, Boolean oder null; einzelne Zuweisungen behalten ihre bisherigen Blocks.
+- Timer-Eingabe mit h/m, Zustandsliste und restart als Regression getestet. DE/EN/FR-Dokumentation und neue Blockbilder. 117 Blocktypen.
+
 ## 0.1.33
 
 - Numerische Auslöser unterstützen entity_id als Text/Liste und optionales for mit kombinierter Dauer.
