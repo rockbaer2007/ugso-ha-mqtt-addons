@@ -37,13 +37,13 @@ def handler(gateway):
 
         def do_GET(self):
             if self.path == "/health" and self.client_address[0] == "127.0.0.1":
-                return self.reply(200, {"ok": True, "version": "0.1.2"})
+                return self.reply(200, {"ok": True, "version": "0.1.3"})
             if not self.allowed():
                 return self.reply(403, {"error": "forbidden"})
             path = urlsplit(self.path).path
             if path == "/api/state":
                 return self.reply(200, gateway.public() | {"csrf": csrf})
-            file = {"/": ("index.html", "text/html"), "/app.js": ("app.js", "text/javascript"), "/request-id.mjs": ("request-id.mjs", "text/javascript"), "/style.css": ("style.css", "text/css")}.get(path)
+            file = {"/": ("index.html", "text/html"), "/app.js": ("app.js", "text/javascript"), "/request-id.mjs": ("request-id.mjs", "text/javascript"), "/style.css": ("style.css", "text/css"), "/icon.svg": ("icon.svg", "image/svg+xml")}.get(path)
             if not file:
                 return self.reply(404, {"error": "not_found"})
             return self.reply(200, (root / file[0]).read_bytes(), file[1])
@@ -77,7 +77,7 @@ def main():
         connect_mqtt(gateway, options)
     threading.Thread(target=gateway.worker, daemon=True).start()
     host = "0.0.0.0" if os.environ.get("CALLMEBOT_INGRESS") == "1" else "127.0.0.1"
-    print("UGSo CallMeBot 0.1.2 started", flush=True)
+    print("UGSo CallMeBot 0.1.3 started", flush=True)
     ThreadingHTTPServer((host, int(os.environ.get("CALLMEBOT_PORT", "4181"))), handler(gateway)).serve_forever()
 
 

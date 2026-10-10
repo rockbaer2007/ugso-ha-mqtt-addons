@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- App icon combines a blue Home Assistant house with a green WhatsApp overlay. Includes HA store icon/logo, web header and favicon.
+
 ## 0.1.2
 
 - MQTT discovery profile catalog for Blocks for HA 0.1.49: profile IDs, names and default recipient only.

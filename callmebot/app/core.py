@@ -28,7 +28,7 @@ def provider_send(profile, message):
     query = urlencode({"phone": profile["phone"], "text": message,
                        "apikey": profile["api_key"], "source": "ugso"})
     request = Request("https://api.callmebot.com/whatsapp.php?" + query,
-                      headers={"User-Agent": "UGSo-CallMeBot/0.1.2"})
+                      headers={"User-Agent": "UGSo-CallMeBot/0.1.3"})
     try:
         with build_opener(NoRedirect()).open(request, timeout=20) as response:
             body = response.read(16385)
@@ -114,7 +114,7 @@ class Gateway:
         with self.lock:
             return {"profiles": [{k: v for k, v in p.items() if k != "api_key"} | {"key_configured": True} for p in self.settings["profiles"]],
                     "default_profile": self.settings["default_profile"], "connected": self.connected,
-                    "recent": list(self.recent), "topic": TOPIC + "/send", "version": "0.1.2"}
+                    "recent": list(self.recent), "topic": TOPIC + "/send", "version": "0.1.3"}
 
     def submit(self, data, retained=False):
         if retained:
@@ -203,7 +203,7 @@ def connect_mqtt(gateway, options):
                          "state_topic": TOPIC + "/profiles", "value_template": "{{ value_json.count }}",
                          "json_attributes_topic": TOPIC + "/profiles", "availability_topic": TOPIC + "/availability",
                          "entity_category": "diagnostic", "icon": "mdi:account-multiple",
-                         "device": {"identifiers": ["ugso_callmebot"], "name": "UGSo CallMeBot", "manufacturer": "UGSo", "sw_version": "0.1.2"}}
+                         "device": {"identifiers": ["ugso_callmebot"], "name": "UGSo CallMeBot", "manufacturer": "UGSo", "sw_version": "0.1.3"}}
             client.publish("homeassistant/sensor/ugso_callmebot/profiles/config", json.dumps(discovery), retain=True)
             gateway.publish_profiles()
     def disconnected(client, userdata, flags, reason, properties):
