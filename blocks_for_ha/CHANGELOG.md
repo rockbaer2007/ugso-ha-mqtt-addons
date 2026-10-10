@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.25
+
+- YAML-Ausgabe/Code-Import umschaltbar: Einfügefeld und Importieren statt Speichern.
+- Ergänzen erhält aktuelle Einstellungen und Blockformen; vollständiges Ersetzen über Checkbox mit Bestätigung.
+- Geprüfter Import mit Größenlimit und Fehlermeldung am Feld; Rückkehr zur Ausgabe nach Erfolg.
+
 ## 0.1.24
 
 - HA-Ausgabepanel nach rechts einklappbar; Blockly nutzt die frei werdende Breite.

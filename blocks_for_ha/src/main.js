@@ -52,6 +52,31 @@ let currentModel;
 let timer;
 let toastTimer;
 const key = 'ugso-blocks-for-ha-project-v1';
+const yamlModeLabel = document.createElement('label'); yamlModeLabel.className = 'format-label';
+yamlModeLabel.innerHTML = '<span>YAML</span><select id="yaml-mode" aria-label="YAML-Modus"><option value="output">Ausgabe</option><option value="import">Code importieren</option></select>';
+document.querySelector('.format-label').before(yamlModeLabel);
+const yamlInput = document.createElement('textarea'); yamlInput.id = 'yaml-input'; yamlInput.rows = 17; yamlInput.spellcheck = false;
+yamlInput.setAttribute('aria-label', 'YAML-Code zum Importieren'); yamlInput.placeholder = 'YAML einer Home-Assistant-Automation hier einfügen …'; yamlInput.hidden = true;
+$('yaml').after(yamlInput);
+const importError = document.createElement('p'); importError.id = 'yaml-import-error'; importError.setAttribute('role', 'alert'); importError.hidden = true; yamlInput.after(importError);
+const replaceLabel = document.createElement('label'); replaceLabel.className = 'yaml-replace'; replaceLabel.hidden = true;
+replaceLabel.innerHTML = '<input id="yaml-replace" type="checkbox">Aktuelle Automation vollständig ersetzen'; importError.after(replaceLabel);
+const outputNote = document.querySelector('.output-note').textContent;
+function syncYamlMode() {
+  const importing = $('yaml-mode').value === 'import';
+  $('yaml').hidden = importing; yamlInput.hidden = !importing;
+  replaceLabel.hidden = !importing;
+  $('format').closest('label').hidden = importing;
+  $('validation').hidden = $('valid-badge').hidden = $('copy').hidden = importing;
+  document.querySelector('.file-actions').classList.toggle('import-actions', importing);
+  $('save').textContent = importing ? 'Importieren' : 'Speichern';
+  $('save').disabled = importing ? !yamlInput.value.trim() : !currentModel;
+  document.querySelector('.output-panel .panel-heading span').textContent = importing ? 'YAML einfügen und in Blocks übernehmen' : 'Native YAML-Ausgabe';
+  document.querySelector('.output-note').textContent = importing ? 'Ohne Haken: Auslöser, Bedingungen und Aktionen ergänzen; Name und Einstellungen bleiben erhalten. Mit Haken: nach Bestätigung vollständig ersetzen. Vorher das Projekt sichern.' : outputNote;
+  importError.hidden = !importing || !importError.textContent;
+}
+$('yaml-mode').addEventListener('change', syncYamlMode);
+yamlInput.addEventListener('input', () => { importError.textContent = ''; syncYamlMode(); });
 function notice(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 6000); }
 themeSelect.addEventListener('change', () => {
   selectedTheme = Object.hasOwn(themes, themeSelect.value) ? themeSelect.value : 'standard';
@@ -77,9 +102,31 @@ function update() {
     $('validation').textContent = error.message; $('valid-badge').textContent = 'Prüfen'; $('valid-badge').className = 'valid-badge invalid';
     $('copy').disabled = $('save').disabled = true;
   }
+  syncYamlMode();
   try { localStorage.setItem(key, JSON.stringify(snapshot())); } catch { $('validation').textContent += ' Browser-Speicher nicht verfügbar; Projekt bitte sichern.'; }
 }
 function loadModel(model) { validateAutomation(model); modelWorkspace(workspace, model); setMeta(model); update(); requestAnimationFrame(fitCompact); }
+function appendYamlModel(model) {
+  if (!currentModel) throw new Error('Die aktuelle Automation ist unvollständig. Zum Importieren „Aktuelle Automation vollständig ersetzen“ aktivieren oder die Blocks vervollständigen.');
+  const project = snapshot();
+  const temp = new Blockly.Workspace();
+  try {
+    modelWorkspace(temp, model);
+    const incoming = Blockly.serialization.workspaces.save(temp).blocks.blocks.find(b => b.type === 'ugso_automation');
+    const root = project.workspace.blocks.blocks.find(b => b.type === 'ugso_automation');
+    root.inputs ||= {};
+    for (const name of ['TRIGGERS', 'ACTIONS']) {
+      const added = incoming.inputs?.[name]; if (!added) continue;
+      let tail = root.inputs[name]?.block;
+      if (!tail) { root.inputs[name] = added; continue; }
+      while (tail.next?.block) tail = tail.next.block;
+      tail.next = added;
+    }
+    const added = incoming.inputs?.CONDITIONS;
+    if (added) root.inputs.CONDITIONS = root.inputs.CONDITIONS ? { block: { type: 'ugso_logic_condition', fields: { LOGIC: 'and' }, extraState: { items: 2, list: true }, inputs: { COND0: root.inputs.CONDITIONS, COND1: added } } } : added;
+  } finally { temp.dispose(); }
+  restoreProject(project);
+}
 function restoreProject(data) {
   if (data?.format !== 'ugso-blocks-for-ha' || ![1, 2, 3].includes(data.version) || !data.metadata || !data.workspace) throw new Error('Kein unterstütztes Blocks-Projekt.');
   if (data.version === 1) data = { ...data, version: 2, workspace: upgradeWorkspace(data.workspace) };
@@ -108,7 +155,23 @@ $('format').addEventListener('change', update);
 $('load-example').addEventListener('click', () => { if (confirm('Aktuelle Blocks durch das Beispiel ersetzen? Speichere vorher deine Änderungen.')) loadModel(structuredClone(examples[$('example').value])); });
 $('undo').addEventListener('click', () => workspace.undo(false)); $('redo').addEventListener('click', () => workspace.undo(true)); $('fit').addEventListener('click', fitCompact);
 $('copy').addEventListener('click', async () => { if (!currentModel) return; try { await navigator.clipboard.writeText($('yaml').textContent); notice('YAML kopiert.'); } catch { notice('Kopieren nicht verfügbar. YAML markieren und mit Strg+C kopieren.'); } });
-$('save').addEventListener('click', () => { if (currentModel) { download($('yaml').textContent, filename(metadata.alias), 'text/yaml;charset=utf-8'); notice('YAML-Datei heruntergeladen.'); } });
+$('save').addEventListener('click', () => {
+  if ($('yaml-mode').value === 'import') {
+    try {
+      if (new TextEncoder().encode(yamlInput.value).length > 1000000) throw new Error('YAML-Code ist größer als 1 MB.');
+      const imported = fromYaml(yamlInput.value);
+      if ($('yaml-replace').checked) {
+        if (!confirm('Willst du die aktuellen Blocks vollständig ersetzen? Sichere vorher dein Projekt.')) return;
+        loadModel(imported);
+      } else {
+        appendYamlModel(imported);
+      }
+      importError.textContent = ''; $('yaml-mode').value = 'output'; syncYamlMode(); notice('YAML-Code importiert.');
+    } catch (error) { importError.textContent = error.message; importError.hidden = false; }
+    return;
+  }
+  if (currentModel) { download($('yaml').textContent, filename(metadata.alias), 'text/yaml;charset=utf-8'); notice('YAML-Datei heruntergeladen.'); }
+});
 $('open').addEventListener('click', () => $('yaml-file').click());
 $('project-save').addEventListener('click', () => download(JSON.stringify(snapshot(), null, 2), filename(metadata.alias).replace('.yaml', '.blocks.json'), 'application/json'));
 $('project-open').addEventListener('click', () => $('project-file').click());
