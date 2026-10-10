@@ -20,6 +20,8 @@ export const documentationPath = page => `https://opensource.ugso-software.de/${
 
 // [English label, French label, English help, French help]. Placeholders stay ordered.
 export const blockTranslations = {
+  ugso_whatsapp_action: ['WhatsApp integration %1', 'Intégration WhatsApp %1', 'Requires the installed WhatsApp integration. Select number (older), target (current), or notify.whatsapp (if configured). Number with country code without +, or HA template. Optional account for whatsapp.send_message only. No CallMeBot or keys in Blocks.', 'Nécessite l’intégration WhatsApp installée. Choisir number (ancien), target (actuel) ou notify.whatsapp (si configuré). Numéro avec indicatif sans +, ou modèle HA. Compte facultatif uniquement pour whatsapp.send_message. Sans CallMeBot ni clé dans Blocks.'],
+  ugso_callmebot_action: ['WhatsApp · CallMeBot profile %1 message %2 logging %3', 'WhatsApp · CallMeBot profil %1 message %2 journal %3', 'Requires UGSo CallMeBot and MQTT. An empty profile uses the default recipient. Keys stay in the app. CallMeBot sends personal texts to activated numbers only.', 'Nécessite UGSo CallMeBot et MQTT. Un profil vide utilise le destinataire par défaut. Les clés restent dans l’application. CallMeBot envoie uniquement des textes personnels aux numéros activés.'],
   ugso_jinja_composed_value: ['Composed Jinja %2 %1', 'Jinja composé %2 %1', 'Editable Jinja structure. Unchanged blocks retain the original; editing generates Jinja.', 'Structure Jinja modifiable. Les blocs inchangés conservent l’original ; les modifications génèrent Jinja.'],
   ugso_jinja_composed_condition: ['Composed Jinja condition %2 %1', 'Condition Jinja composée %2 %1', 'Editable Jinja structure. Unchanged blocks retain the original; editing generates Jinja.', 'Structure Jinja modifiable. Les blocs inchangés conservent l’original ; les modifications génèrent Jinja.'],
   ugso_jinja_entity: ['Entity %1 function %2 %3', 'Entité %1 fonction %2 %3'],
@@ -283,6 +285,9 @@ export function translateLabel(text, locale = language) {
 }
 export function localizedDefinition(definition, locale = language) {
   const result = structuredClone(definition), index = locale === 'fr' ? 1 : 0;
+  if (result.type === 'ugso_whatsapp_action' && locale !== 'de') { result.message1 = locale === 'fr' ? 'Destinataire %1 message %2' : 'Recipient %1 message %2'; result.message2 = locale === 'fr' ? 'Compte (facultatif) %1' : 'Account (optional) %1'; }
+  if (['ugso_whatsapp_action','ugso_callmebot_action'].includes(result.type)) result.inputsInline = false;
+  if (result.type === 'ugso_callmebot_action') result.args0[2].options = ({de:[['Nur Fehler','errors'],['Keins','none'],['Info','info']],en:[['Errors only','errors'],['None','none'],['Info','info']],fr:[['Erreurs seulement','errors'],['Aucun','none'],['Info','info']]})[locale];
   if (locale === 'de') return result;
   const entry = blockTranslations[result.type];
   result.message0 = entry?.[index] ?? translateLabel(result.message0, locale);
@@ -297,6 +302,6 @@ export function localizedDefinition(definition, locale = language) {
 }
 export function localizedToolbox(source, locale = language) {
   const result = structuredClone(source);
-  for (const category of result.contents) category.name = translateLabel(category.name, locale);
+  for (const category of result.contents) category.name = category.name === 'Nachrichten' ? ({de:'Nachrichten',en:'Messages',fr:'Messages'})[locale] : translateLabel(category.name, locale);
   return result;
 }

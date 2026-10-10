@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.48
+
+- Neue Kategorie Nachrichten mit DE/EN/FR-Bausteinen für UGSo CallMeBot und die vorhandene WhatsApp-Integration.
+- CallMeBot sendet über MQTT an Empfängerprofile; Jinja-Nachrichten werden nach Auswertung als JSON serialisiert. Telefonnummer und API-Schlüssel bleiben in der eigenständigen App im selben Repository.
+- WhatsApp-Integration: whatsapp.send_message mit number oder target sowie notify.whatsapp, optionales Konto und Nachrichten als Text oder Template. Der API-Token gehört in die HA-Integration.
+- JSON-Projekte erhalten die Bausteine. Passende WhatsApp-YAML-Aktionen werden erkannt; CallMeBot-YAML bleibt als allgemeine MQTT-Aktion erhalten.
+
 ## 0.1.47
 
 - Wiederverwendbare Aktionsfunktionen mit bis zu acht Parametern und dynamischen Aufrufblöcken. Export als native HA-Ablaufgruppen mit eigenen Parameterbindungen je Aufruf; verschachtelte Aufrufe und Projektwiederherstellung bleiben erhalten.

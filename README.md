@@ -6,6 +6,8 @@ Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetrage
 
 ## Enthaltene Add-ons
 
+- [UGSo CallMeBot](callmebot/README.md): **experimentelle** WhatsApp-Textnachrichten mit Empfängerprofilen, MQTT und dreisprachigem Blockly-Baustein. Oberfläche: DE/EN/FR.
+
 - FRITZ!Box to MQTT
 - Heizoel to MQTT
 - [Parcel to MQTT](parcel_to_mqtt/README.md): Entwicklung eingestellt, da [Parcel Tracker von SoerenKaiser99](https://github.com/SoerenKaiser99/parcel_tracker) bereits deutlich weiter entwickelt ist. / Development discontinued because Parcel Tracker is already much further along.

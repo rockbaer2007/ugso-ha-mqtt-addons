@@ -53,6 +53,8 @@ const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'bel
 const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 export const definitions = [
+  { type: 'ugso_whatsapp_action', message0: 'WhatsApp Integration %1', args0: [{ type: 'field_dropdown', name: 'MODE', options: [['whatsapp.send_message · number', 'number'], ['whatsapp.send_message · target', 'target'], ['notify.whatsapp', 'notify']] }], message1: 'Empfänger %1 Nachricht %2', args1: [{ type: 'field_input', name: 'NUMBER', text: '40741234567' }, value('MESSAGE', 'String')], message2: 'Konto (optional) %1', args2: [{ type: 'field_input', name: 'ACCOUNT', text: '' }], inputsInline: false, previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Benötigt die installierte WhatsApp-Integration. Passende Variante wählen: number (älter), target (aktuell), notify.whatsapp (falls eingerichtet). Nummer mit Ländervorwahl ohne + oder HA-Template. Optionales Konto nur für whatsapp.send_message. Kein CallMeBot oder Schlüssel in Blocks.' },
+  { type: 'ugso_callmebot_action', message0: 'WhatsApp · CallMeBot Profil %1 Nachricht %2 Protokoll %3', args0: [{ type: 'field_input', name: 'PROFILE', text: '' }, value('MESSAGE', 'String'), { type: 'field_dropdown', name: 'LOGLEVEL', options: [['errors', 'errors'], ['none', 'none'], ['info', 'info']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Benötigt UGSo CallMeBot und MQTT. Leeres Profil verwendet den Standardempfänger. Schlüssel bleiben in der App. CallMeBot sendet nur persönliche Textnachrichten an aktivierte Nummern.' },
   ...advancedDefinitions,
   ...jinjaDefinitions,
   ...timeDefinitions,
@@ -224,6 +226,7 @@ function addExpansionButtons(block) {
 export { Blockly };
 export const knownTypes = new Set([...definitions.map(item => item.type), ...functionTypes]);
 export const toolbox = { kind: 'categoryToolbox', contents: [
+  { kind: 'category', name: 'Nachrichten', colour: '#2682a5', contents: ['ugso_callmebot_action', 'ugso_whatsapp_action'].map(type => ({ kind: 'block', type })) },
   { kind: 'category', name: 'Jinja (experimentell)', colour: '#8a6635', contents: [...jinjaDefinitions.map(d=>d.type),'ugso_jinja_value','ugso_jinja_condition'].map(type=>({kind:'block',type})) },
   { kind: 'category', name: 'HA erweitert', colour: '#2682a5', contents: advancedDefinitions.filter(d=>!d.type.startsWith('ugso_jinja')).map(({type})=>({kind:'block',type})) },
   { kind: 'category', name: 'System', colour: '#2682a5', contents: ['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) },
@@ -244,7 +247,7 @@ for (const category of toolbox.contents) for (const block of category.contents) 
   if (block.type === 'ugso_time_sun') block.inputs = { OFFSET: { shadow: { type: 'ugso_number', fields: { NUM: 0 } } } };
   if (['ugso_numeric_trigger','ugso_numeric_condition'].includes(block.type)) block.inputs = { LIMIT: { shadow: { type: 'ugso_number', fields: { NUM: 20 } } } };
   if (block.type === 'ugso_delay_action') block.inputs = { SECONDS: { shadow: { type: 'ugso_number', fields: { NUM: 30 } } } };
-  if (block.type === 'ugso_log_action') block.inputs = { MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'Automation gestartet' } } } };
+  if (['ugso_log_action', 'ugso_callmebot_action', 'ugso_whatsapp_action'].includes(block.type)) block.inputs = { MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'Automation gestartet' } } } };
   if (block.type === 'ugso_colour_action') block.inputs = { COLOUR: { shadow: { type: 'ugso_colour', fields: { COLOUR: '#ff8800' } } }, BRIGHTNESS: { shadow: { type: 'ugso_percent', fields: { NUM: 50 } } } };
 }
 toolbox.contents.push(
@@ -519,6 +522,26 @@ function readAction(block, depth) {
       if (!/^#[0-9a-f]{6}$/i.test(hex) || brightness < 0 || brightness > 100) throw new Error('Licht: gültige Farbe und Helligkeit 0–100 erforderlich.');
       return { action: 'light.turn_on', target: { entity_id: id }, data: { rgb_color: [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)), brightness_pct: brightness } };
     }
+    case 'ugso_whatsapp_action': {
+      const number = field(block, 'NUMBER').trim(), message = readValue(block, 'MESSAGE');
+      if (!/^[1-9][0-9]{6,14}$/.test(number) && !number.includes('{{') && !number.includes('{%')) throw new Error('WhatsApp: international number without + or HA template required.');
+      if (typeof message !== 'string' || !message.trim()) throw new Error('WhatsApp: message is required.');
+      const mode = field(block, 'MODE'), account = field(block, 'ACCOUNT').trim();
+      return { action: mode === 'notify' ? 'notify.whatsapp' : 'whatsapp.send_message', data: { [mode === 'number' ? 'number' : 'target']: number, message, ...(account && mode !== 'notify' ? {account} : {}) } };
+    }
+    case 'ugso_callmebot_action': {
+      const profile = field(block, 'PROFILE').trim();
+      if (profile && !/^[a-z][a-z0-9_]{0,39}$/.test(profile)) throw new Error('CallMeBot: profile ID must use lowercase letters, digits and underscores.');
+      const child = block.getInputTargetBlock('MESSAGE');
+      if (!child?.isEnabled()) throw new Error('CallMeBot: message is required.');
+      const options = `profile=${JSON.stringify(profile)}, loglevel=${JSON.stringify(field(block, 'LOGLEVEL'))}`;
+      // Serialize after HA renders the message, so quotes/newlines cannot corrupt JSON.
+      const raw = ['ugso_template', 'ugso_jinja_value', 'ugso_jinja_composed_value'].includes(child.type);
+      const payload = raw
+        ? `{% set ugso_callmebot_message %}${readValue(block, 'MESSAGE')}{% endset %}{{ dict(${options}, message=ugso_callmebot_message) | to_json }}`
+        : `{{ dict(${options}, message=(${expression(child)}) | string) | to_json }}`;
+      return { action: 'mqtt.publish', data: { topic: 'ugso/callmebot/send', qos: 0, retain: false, payload } };
+    }
     case 'ugso_log_action': {
       const message = readValue(block, 'MESSAGE');
       if (typeof message !== 'string' || !message.trim()) throw new Error('Log: Meldung fehlt.');
@@ -657,6 +680,13 @@ function actionBlock(workspace, item) {
   return create(workspace,'ugso_ha_action',{JSON:JSON.stringify(item)});
 }
 function legacyActionBlock(workspace, item) {
+  if (['whatsapp.send_message', 'notify.whatsapp'].includes(item.action) && Object.keys(item).every(k => ['action','data'].includes(k)) && item.data && Object.keys(item.data).every(k => ['number','target','message','account'].includes(k))) {
+    const key = Object.hasOwn(item.data, 'number') ? 'number' : 'target';
+    if (!Object.hasOwn(item.data, key === 'number' ? 'target' : 'number') && typeof item.data[key] === 'string' && typeof item.data.message === 'string') {
+      const block = create(workspace, 'ugso_whatsapp_action', {MODE:item.action === 'notify.whatsapp' ? 'notify' : key,NUMBER:item.data[key],ACCOUNT:item.data.account || ''});
+      valueInput(block, 'MESSAGE', item.data.message); return block;
+    }
+  }
   if (item.variables) {
     if (Object.keys(item.variables).length > 1) {
       for (const name of Object.keys(item.variables)) workspace.getVariableMap().createVariable(name);

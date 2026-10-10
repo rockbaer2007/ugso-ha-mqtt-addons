@@ -1,5 +1,7 @@
 # UGSo Blocks for HA
 
+Neu in **0.1.48**: **Nachrichten → WhatsApp · CallMeBot** sendet über die eigenständige [UGSo CallMeBot App](../callmebot/README.md) im selben Repository. DE/EN/FR, Standardprofil oder Profil-ID, Text oder Jinja und Protokollstufe. YAML enthält eine native MQTT-Aktion ohne Telefonnummer oder API-Schlüssel. JSON-Projekte bewahren den Komfortblock; YAML-Import zeigt die MQTT-Aktion als allgemeine HA-Aktion.
+
 Neu in **0.1.47**: **Funktionen** enthält wiederverwendbare Aktionsfunktionen mit bis zu acht Parametern sowie **Falls / gib zurück / sonst** für Wertfunktionen. Parameter über Variablenblöcke anschließen; Aktionsaufrufe werden als HA-Ablaufgruppen mit eigenen internen Parameterbindungen exportiert. Freie Jinja-Texte bleiben im normalen HA-Kontext. JSON-Projekte bewahren die Definitionen; YAML enthält die aufgelösten Schritte. Keine Rekursion oder JavaScript-Ausführung.
 
 Neu in **0.1.46**: **Sprache → System / DE / EN / FR** übersetzt die gesamte App einschließlich Dialogen, Status, Bestätigungen und Validierungshinweisen. Eigene Namen, HA-Daten, technische IDs sowie YAML/Jinja bleiben unverändert.

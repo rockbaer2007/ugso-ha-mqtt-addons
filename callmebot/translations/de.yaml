@@ -1,0 +1,13 @@
+configuration:
+  mqtt:
+    name: MQTT-Broker
+    description: Der interne HA-MQTT-Dienst wird bevorzugt. Diese Einstellungen dienen als Fallback. Keine externe TLS-Verbindung in dieser Vorschau.
+    fields:
+      host:
+        name: Broker-Adresse
+      port:
+        name: Port
+      username:
+        name: Benutzername
+      password:
+        name: Passwort

@@ -1,0 +1,13 @@
+configuration:
+  mqtt:
+    name: Courtier MQTT
+    description: Le service MQTT interne de HA est prioritaire. Ces réglages servent de secours. Les connexions TLS externes ne sont pas disponibles dans cette version expérimentale.
+    fields:
+      host:
+        name: Adresse du courtier
+      port:
+        name: Port
+      username:
+        name: Nom d’utilisateur
+      password:
+        name: Mot de passe
