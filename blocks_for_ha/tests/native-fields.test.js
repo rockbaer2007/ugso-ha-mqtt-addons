@@ -7,6 +7,31 @@ import { Blockly, modelWorkspace, workspaceModel } from '../src/blocks.js';
 import { fromYaml, toYaml, validateAutomation } from '../src/model.js';
 const fixture = fromYaml(readFileSync(new URL('./fixtures/pc-tv.yaml', import.meta.url), 'utf8'));
 
+test('Hyper fan automation retains numeric entity lists, hold times and all trigger-ID branches', () => {
+  const model = fromYaml(readFileSync(new URL('./fixtures/hyper-fans-off.yaml', import.meta.url), 'utf8'));
+  for (const duration of [model.triggers[0].for, undefined, 0, 60, '00:01:00', { days: 1, hours: 0, minutes: 1, seconds: 0, milliseconds: 500 }, '{{ states("input_number.duration") | int }}', { minutes: '{{ states("input_number.duration") | int }}' }]) {
+    const item = structuredClone(model);
+    if (duration === undefined) delete item.triggers[0].for;
+    else item.triggers[0].for = duration;
+    item.triggers[1].entity_id.push('sensor.second_temperature');
+    const ws = new Blockly.Workspace(), restored = new Blockly.Workspace();
+    try {
+      modelWorkspace(ws, item); assert.deepEqual(workspaceModel(ws, item), item);
+      Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws), restored);
+      assert.deepEqual(fromYaml(toYaml(workspaceModel(restored, item))), item);
+    } finally { ws.dispose(); restored.dispose(); }
+  }
+});
+test('Numeric hold times reject malformed durations and invalid entity lists', () => {
+  const model = fromYaml(readFileSync(new URL('./fixtures/hyper-fans-off.yaml', import.meta.url), 'utf8'));
+  for (const duration of [-1, { seconds: -1 }, {}, [], null, { weeks: 1 }, '00:80:00', { minutes: 'abc' }, true]) {
+    const item = structuredClone(model); item.triggers[0].for = duration; assert.throws(() => validateAutomation(item));
+  }
+  for (const ids of [[], ['bad'], [42]]) {
+    const item = structuredClone(model); item.triggers[0].entity_id = ids; assert.throws(() => validateAutomation(item));
+  }
+});
+
 test('Holiday calendar automation retains offsets, response variable and folded Jinja through saved Blockly and YAML', () => {
   const model = fromYaml(readFileSync(new URL('./fixtures/calendar-holiday.yaml', import.meta.url), 'utf8'));
   for (const options of [model.triggers[0].options, undefined, {}, { offset: { days: 1, hours: 2, minutes: 3, seconds: 4 }, offset_type: 'after' }, { offset: '48:30:00' }]) {

@@ -193,6 +193,8 @@ Object.assign(labels, {
   'Termin beginnt': ['Event starts', 'Début du rendez-vous'],
   'Termin endet': ['Event ends', 'Fin du rendez-vous'],
   'Antwortvariable (optional)': ['Response variable (optional)', 'Variable de réponse (facultative)'],
+  'Haltezeit (JSON)': ['Hold duration (JSON)', 'Durée de maintien (JSON)'],
+  'verwenden': ['enabled', 'activée'],
   'Auslöser-ID (optional)': ['Trigger ID (optional)', 'ID du déclencheur (facultatif)'],
   'Zustände als JSON-Liste': ['States as JSON list', 'États en liste JSON'],
   'Ziele als JSON-Liste': ['Targets as JSON list', 'Cibles en liste JSON'],

@@ -1,0 +1,74 @@
+alias: Hyper 2000 Lüfter aus
+description: Schaltet EG/OG/GT Lüfter aus bei <20°C
+triggers:
+  - trigger: numeric_state
+    id: eg
+    entity_id:
+      - sensor.hyper_2000_eg_1_hyper_tmp
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    below: 30
+  - trigger: numeric_state
+    id: eg2
+    entity_id:
+      - sensor.hyper_2000_eg_2_hyper_tmp
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    below: 30
+  - trigger: numeric_state
+    id: og
+    entity_id:
+      - sensor.hyper_2000_og_hyper_tmp
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    below: 30
+  - trigger: numeric_state
+    id: gt
+    entity_id:
+      - sensor.hyper_2000_gt_hyper_tmp
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    below: 30
+conditions: []
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: eg
+        sequence:
+          - action: switch.turn_off
+            data: {}
+            target:
+              entity_id: switch.lufter_hyper_2000_eg_2
+      - conditions:
+          - condition: trigger
+            id: eg2
+        sequence:
+          - action: switch.turn_off
+            data: {}
+            target:
+              entity_id: switch.lufter_hyper_2000_eg_2_2
+      - conditions:
+          - condition: trigger
+            id: og
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.lufter_hyper_2000_og_2
+            data: {}
+      - conditions:
+          - condition: trigger
+            id: gt
+        sequence:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.stecker_sp111
+mode: single

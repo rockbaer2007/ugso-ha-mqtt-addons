@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.33
+
+- Numerische Auslöser unterstützen entity_id als Text/Liste und optionales for mit kombinierter Dauer.
+- Haltezeit als JSON bearbeiten: Sekunden, HH:MM:SS, Einheiten-Objekt oder HA-Ausgabetemplate.
+- Hyper-2000-Lüfter mit vier Auslöser-IDs und choose-Zweigen als Import-/Projekt-/YAML-Regression getestet. DE/EN/FR-Dokumentation und numerische Blockbilder aktualisiert.
+
 ## 0.1.32
 
 - Kalender-Auslöser calendar.event_started/event_ended mit entity_id als Text/Liste und optionalem Offset vor/nach dem Termin.

@@ -7,6 +7,10 @@ export function installNativeFields(Blockly, block, FieldMultilineInput) {
     block.appendDummyInput('STATE_OPTIONS').appendField(t('Zustände als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'STATE_LIST').appendField(t('Jede Änderung')).appendField(new Blockly.FieldCheckbox('FALSE'), 'ANY_STATE');
     block.appendDummyInput('ENTITY_OPTIONS').appendField(t('Entitäten als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'ENTITY_LIST').appendField(new FieldMultilineInput('[]'), 'ENTITIES');
   }
+  if (block.type === 'ugso_numeric_trigger') {
+    block.appendDummyInput('ENTITY_OPTIONS').appendField(t('Entitäten als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'ENTITY_LIST').appendField(new FieldMultilineInput('[]'), 'ENTITIES');
+    block.appendDummyInput('DURATION_OPTIONS').appendField(t('Haltezeit (JSON)')).appendField(new FieldMultilineInput('{"hours":0,"minutes":1,"seconds":0}'), 'FOR').appendField(t('verwenden')).appendField(new Blockly.FieldCheckbox('FALSE'), 'USE_FOR');
+  }
   if (block.type === 'ugso_service_action') {
     block.appendDummyInput('ACTION_RESPONSE').appendField(t('Antwortvariable (optional)')).appendField(new Blockly.FieldTextInput(''), 'RESPONSE_VARIABLE');
     block.appendDummyInput('TARGET_OPTIONS').appendField(t('Ziele als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'ENTITY_LIST').appendField(new FieldMultilineInput('[]'), 'ENTITIES');

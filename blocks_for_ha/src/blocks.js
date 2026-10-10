@@ -380,7 +380,13 @@ function readTriggerBase(block) {
     case 'ugso_calendar_trigger': return { trigger: field(block, 'EVENT'), target: nativeObject(block, 'TARGET'), ...(field(block, 'USE_OPTIONS') === 'TRUE' ? { options: nativeObject(block, 'OPTIONS') } : {}) };
     case 'ugso_temperature_trigger': return { trigger: 'temperature.changed', target: nativeObject(block, 'TARGET'), options: { threshold: nativeObject(block, 'THRESHOLD') } };
     case 'ugso_state_trigger': return { trigger: 'state', entity_id: field(block, 'ENTITY_LIST') === 'TRUE' ? nativeList(block, 'ENTITIES', 'ENTITY_LIST') : field(block, 'ENTITY'), ...(field(block, 'ANY_STATE') === 'TRUE' ? {} : { to: nativeList(block, 'STATE', 'STATE_LIST') }) };
-    case 'ugso_numeric_trigger': return { trigger: 'numeric_state', ...range(block) };
+    case 'ugso_numeric_trigger': {
+      let duration;
+      if (field(block, 'USE_FOR') === 'TRUE') {
+        try { duration = JSON.parse(field(block, 'FOR')); } catch { throw new Error('Haltezeit: Gültiges JSON erwartet.'); }
+      }
+      return { trigger: 'numeric_state', ...range(block), entity_id: field(block, 'ENTITY_LIST') === 'TRUE' ? nativeList(block, 'ENTITIES', 'ENTITY_LIST') : field(block, 'ENTITY'), ...(field(block, 'USE_FOR') === 'TRUE' ? { for: duration } : {}) };
+    }
     case 'ugso_time_trigger': return { trigger: 'time', at: nativeList(block, 'TIME', 'TIME_LIST') };
     case 'ugso_event_trigger': return { trigger: 'event', event_type: field(block, 'EVENT_TYPE'), ...(field(block, 'FILTER') === 'TRUE' ? { event_data: nativeObject(block, 'EVENT_DATA') } : {}) };
     case 'ugso_sun_trigger': return { trigger: 'sun', event: field(block, 'EVENT') };
@@ -536,7 +542,7 @@ function triggerBlockBase(workspace, item) {
     case 'calendar.event_started': case 'calendar.event_ended': return create(workspace, 'ugso_calendar_trigger', { EVENT: item.trigger, TARGET: JSON.stringify(item.target), OPTIONS: JSON.stringify(item.options || {}), USE_OPTIONS: Object.hasOwn(item, 'options') ? 'TRUE' : 'FALSE' });
     case 'temperature.changed': return create(workspace, 'ugso_temperature_trigger', { TARGET: JSON.stringify(item.target), THRESHOLD: JSON.stringify(item.options.threshold) });
     case 'state': return create(workspace, 'ugso_state_trigger', { ENTITY: Array.isArray(item.entity_id) ? '' : item.entity_id, ENTITY_LIST: Array.isArray(item.entity_id) ? 'TRUE' : 'FALSE', ENTITIES: JSON.stringify(Array.isArray(item.entity_id) ? item.entity_id : []), ANY_STATE: Object.hasOwn(item, 'to') ? 'FALSE' : 'TRUE', STATE: Array.isArray(item.to) ? JSON.stringify(item.to) : item.to ?? 'on', STATE_LIST: Array.isArray(item.to) ? 'TRUE' : 'FALSE' });
-    case 'numeric_state': return numberInput(create(workspace, 'ugso_numeric_trigger', fieldsRange(item)), 'LIMIT', item.above ?? item.below);
+    case 'numeric_state': return numberInput(create(workspace, 'ugso_numeric_trigger', { ...fieldsRange(item), ENTITY: Array.isArray(item.entity_id) ? '' : item.entity_id, ENTITY_LIST: Array.isArray(item.entity_id) ? 'TRUE' : 'FALSE', ENTITIES: JSON.stringify(Array.isArray(item.entity_id) ? item.entity_id : []), USE_FOR: Object.hasOwn(item, 'for') ? 'TRUE' : 'FALSE', FOR: JSON.stringify(item.for ?? { hours: 0, minutes: 1, seconds: 0 }) }), 'LIMIT', item.above ?? item.below);
     case 'time': return create(workspace, 'ugso_time_trigger', { TIME: Array.isArray(item.at) ? JSON.stringify(item.at) : item.at, TIME_LIST: Array.isArray(item.at) ? 'TRUE' : 'FALSE' });
     case 'event': return create(workspace, 'ugso_event_trigger', { EVENT_TYPE: item.event_type, EVENT_DATA: JSON.stringify(item.event_data || {}), FILTER: Object.hasOwn(item, 'event_data') ? 'TRUE' : 'FALSE' });
     case 'sun': return create(workspace, 'ugso_sun_trigger', { EVENT: item.event });

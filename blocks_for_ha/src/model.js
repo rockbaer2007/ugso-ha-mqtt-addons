@@ -44,7 +44,8 @@ function checkTrigger(item, path) {
   } else if (item.trigger === 'state') {
     ownKeys(item, ['trigger', 'entity_id', 'to', 'id'], path); oneOrList(item.entity_id, path, entity); if (Object.hasOwn(item, 'to')) oneOrList(item.to, path, text);
   } else if (item.trigger === 'numeric_state') {
-    ownKeys(item, ['trigger', 'entity_id', 'above', 'below', 'id'], path); entity(item.entity_id, path); checkRange(item, path);
+    ownKeys(item, ['trigger', 'entity_id', 'above', 'below', 'id', 'for'], path); oneOrList(item.entity_id, path, entity); checkRange(item, path);
+    if (Object.hasOwn(item, 'for')) checkTriggerDuration(item.for, path);
   } else if (item.trigger === 'time') {
     ownKeys(item, ['trigger', 'at', 'id'], path); oneOrList(item.at, path, time);
   } else if (item.trigger === 'event') {
@@ -55,6 +56,20 @@ function checkTrigger(item, path) {
   } else if (item.trigger === 'homeassistant') {
     ownKeys(item, ['trigger', 'event', 'id'], path); if (item.event !== 'start') throw new Error(`${path}: Nur HA-Start unterstützt.`);
   } else throw new Error(`${path}: Auslöser wird noch nicht unterstützt.`);
+}
+function checkTriggerDuration(value, path) {
+  const amount = value => { numeric(value, path); if (value < 0) throw new Error(`${path}: Haltezeit muss positiv oder null sein.`); };
+  if (typeof value === 'number') return amount(value);
+  if (typeof value === 'string') {
+    if (/^\d+:[0-5]\d:[0-5]\d$/.test(value)) return;
+    return checkTemplate(value, path);
+  }
+  ownKeys(value, ['days', 'hours', 'minutes', 'seconds', 'milliseconds'], path);
+  if (!Object.keys(value).length) throw new Error(`${path}: Haltezeit-Einheit fehlt.`);
+  for (const entry of Object.values(value)) {
+    if (typeof entry === 'string') checkTemplate(entry, path);
+    else amount(entry);
+  }
 }
 function checkRange(item, path) {
   const keys = ['above', 'below'].filter(key => Object.hasOwn(item, key));
