@@ -1,13 +1,14 @@
 import { translateLabel as t } from './locales.js';
 
 export function installNativeFields(Blockly, block, FieldMultilineInput) {
-  if (['ugso_state_trigger', 'ugso_numeric_trigger', 'ugso_time_trigger', 'ugso_sun_trigger', 'ugso_start_trigger', 'ugso_event_trigger', 'ugso_temperature_trigger'].includes(block.type)) block.appendDummyInput('TRIGGER_OPTIONS').appendField(t('Auslöser-ID (optional)')).appendField(new Blockly.FieldTextInput(''), 'TRIGGER_ID');
+  if (['ugso_state_trigger', 'ugso_numeric_trigger', 'ugso_time_trigger', 'ugso_sun_trigger', 'ugso_start_trigger', 'ugso_event_trigger', 'ugso_temperature_trigger', 'ugso_calendar_trigger'].includes(block.type)) block.appendDummyInput('TRIGGER_OPTIONS').appendField(t('Auslöser-ID (optional)')).appendField(new Blockly.FieldTextInput(''), 'TRIGGER_ID');
   if (block.type === 'ugso_time_trigger') block.appendDummyInput('TIME_OPTIONS').appendField(t('Uhrzeiten als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'TIME_LIST');
   if (block.type === 'ugso_state_trigger') {
     block.appendDummyInput('STATE_OPTIONS').appendField(t('Zustände als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'STATE_LIST').appendField(t('Jede Änderung')).appendField(new Blockly.FieldCheckbox('FALSE'), 'ANY_STATE');
     block.appendDummyInput('ENTITY_OPTIONS').appendField(t('Entitäten als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'ENTITY_LIST').appendField(new FieldMultilineInput('[]'), 'ENTITIES');
   }
   if (block.type === 'ugso_service_action') {
+    block.appendDummyInput('ACTION_RESPONSE').appendField(t('Antwortvariable (optional)')).appendField(new Blockly.FieldTextInput(''), 'RESPONSE_VARIABLE');
     block.appendDummyInput('TARGET_OPTIONS').appendField(t('Ziele als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'ENTITY_LIST').appendField(new FieldMultilineInput('[]'), 'ENTITIES');
     block.appendDummyInput('DATA_OPTIONS').appendField(t('Leere Daten ausgeben')).appendField(new Blockly.FieldCheckbox('FALSE'), 'INCLUDE_DATA');
     block.appendDummyInput('ACTION_METADATA').appendField(t('Metadaten ausgeben')).appendField(new Blockly.FieldCheckbox('FALSE'), 'INCLUDE_METADATA').appendField(new FieldMultilineInput('{}'), 'METADATA');

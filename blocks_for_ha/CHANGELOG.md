@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.32
+
+- Kalender-Auslöser calendar.event_started/event_ended mit entity_id als Text/Liste und optionalem Offset vor/nach dem Termin.
+- HA-Aktion mit optionaler Antwortvariable response_variable, auch für calendar.get_events.
+- Feiertage-/Ferien-Beispiel als Regression: Jinja, Variablen, choose/default und queued bleiben erhalten. DE/EN/FR-Dokumentation und Blockbilder aktualisiert.
+
 ## 0.1.31
 
 - Nativen HA-Auslöser temperature.changed mit entity_id-Zielen, optionaler Trigger-ID und fünf Schwelltypen ergänzt.

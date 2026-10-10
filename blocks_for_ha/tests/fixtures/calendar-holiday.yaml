@@ -1,0 +1,60 @@
+alias: Dashboard Feiertage und Ferien
+description: Aktiviert den Holiday-Modus bei laufenden Feiertagen oder Ferien.
+triggers:
+  - trigger: calendar.event_started
+    target:
+      entity_id:
+        - calendar.deutschland_rp
+        - calendar.ferien
+    options:
+      offset:
+        seconds: 0
+      offset_type: before
+  - trigger: calendar.event_ended
+    target:
+      entity_id:
+        - calendar.deutschland_rp
+        - calendar.ferien
+    options:
+      offset:
+        seconds: 0
+      offset_type: before
+  - trigger: homeassistant
+    event: start
+conditions: []
+actions:
+  - variables:
+      zeitpunkt: '{{ now().isoformat() }}'
+  - action: calendar.get_events
+    target:
+      entity_id:
+        - calendar.deutschland_rp
+        - calendar.ferien
+    data:
+      start_date_time: '{{ zeitpunkt }}'
+      end_date_time: '{{ (as_datetime(zeitpunkt) + timedelta(seconds=1)).isoformat() }}'
+    response_variable: termine
+  - variables:
+      termin_aktiv: >-
+        {% set ns = namespace(aktiv=false) %} {% set jetzt =
+        as_timestamp(zeitpunkt) %} {% for kalender in termine.values() %}
+          {% for termin in kalender.events %}
+            {% if as_timestamp(termin.start) <= jetzt
+                  < as_timestamp(termin.end) %}
+              {% set ns.aktiv = true %}
+            {% endif %}
+          {% endfor %}
+        {% endfor %} {{ ns.aktiv }}
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: '{{ termin_aktiv }}'
+        sequence:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.dashboard_holiday
+    default:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.dashboard_holiday
+mode: queued

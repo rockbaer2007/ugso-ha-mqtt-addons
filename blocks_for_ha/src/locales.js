@@ -180,6 +180,7 @@ export const labels = {
   'Eigene Wertfunktion. Parameter über das Zahnrad bearbeiten. Beim Export in Jinja aufgelöst; keine Aktionen oder Rekursion.': ['Custom value function. Edit parameters with the cog. Expanded to Jinja during export; no actions or recursion.', 'Fonction de valeur personnalisée. Paramètres via l’engrenage. Développée en Jinja à l’export ; sans actions ni récursion.']
 };
 Object.assign(blockTranslations, {
+  ugso_calendar_trigger: ['When calendar %1 %2 target (JSON) %3 %4 options (JSON) %5 enabled %6', 'Quand calendrier %1 %2 cible (JSON) %3 %4 options (JSON) %5 activées %6', 'Calendar event starts or ends. Target entity_id as text or list. Optional offset in days, hours, minutes and seconds or HH:MM:SS; before or after.', 'Début ou fin d’un événement calendrier. Cible entity_id en texte ou liste. Décalage facultatif en jours, heures, minutes et secondes ou HH:MM:SS ; before ou after.'],
   ugso_temperature_trigger: ['When temperature changes target (JSON) %1 threshold (JSON) %2', 'Quand température change cible (JSON) %1 seuil (JSON) %2', 'Native HA temperature.changed trigger. Target entity_id (text or list); threshold any, above, below, between or outside; numbers with °C/°F or sensor/number helper.', 'Déclencheur HA natif temperature.changed. Cible entity_id (texte ou liste) ; seuil any, above, below, between ou outside ; nombres avec °C/°F ou capteur/assistant numérique.'],
   ugso_event_trigger: ['When event %1 data filter (JSON) %2 enabled %3', 'Quand événement %1 filtre (JSON) %2 activé %3', 'HA event with an optional data filter, such as timer.finished. Filter values as a JSON object.', 'Événement HA avec filtre facultatif, par exemple timer.finished. Valeurs du filtre en objet JSON.'],
   ugso_native_time_condition: ['HA time after %1 before %2', 'Heure HA après %1 avant %2', 'Native HA time condition: after inclusive, before exclusive. One bound may be empty; both can span midnight. Fixed HH:MM or HH:MM:SS.', 'Condition horaire HA native : après inclusif, avant exclusif. Une borne peut être vide ; les deux peuvent traverser minuit. Heures fixes HH:MM ou HH:MM:SS.'],
@@ -189,6 +190,9 @@ Object.assign(labels, {
   'Uhrzeiten als JSON-Liste': ['Times as JSON list', 'Heures en liste JSON'],
   'Jede Änderung': ['Any change', 'Tout changement'],
   'Entitäten als JSON-Liste': ['Entities as JSON list', 'Entités en liste JSON'],
+  'Termin beginnt': ['Event starts', 'Début du rendez-vous'],
+  'Termin endet': ['Event ends', 'Fin du rendez-vous'],
+  'Antwortvariable (optional)': ['Response variable (optional)', 'Variable de réponse (facultative)'],
   'Auslöser-ID (optional)': ['Trigger ID (optional)', 'ID du déclencheur (facultatif)'],
   'Zustände als JSON-Liste': ['States as JSON list', 'États en liste JSON'],
   'Ziele als JSON-Liste': ['Targets as JSON list', 'Cibles en liste JSON'],

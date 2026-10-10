@@ -20,7 +20,24 @@ function checkList(items, path, check, min = 0) {
 }
 function checkTrigger(item, path) {
   if (item.id !== undefined) text(item.id, path + ' ID');
-  if (item.trigger === 'temperature.changed') {
+  if (['calendar.event_started', 'calendar.event_ended'].includes(item.trigger)) {
+    ownKeys(item, ['trigger', 'target', 'options', 'id'], path);
+    ownKeys(item.target, ['entity_id'], path); oneOrList(item.target.entity_id, path, entity);
+    if (Object.hasOwn(item, 'options')) {
+      ownKeys(item.options, ['offset', 'offset_type'], path);
+      if (Object.hasOwn(item.options, 'offset_type') && !['before', 'after'].includes(item.options.offset_type)) throw new Error(`${path}: Kalender-Offset benötigt before oder after.`);
+      if (Object.hasOwn(item.options, 'offset')) {
+        const offset = item.options.offset;
+        if (typeof offset === 'string') {
+          if (!/^\d+:[0-5]\d:[0-5]\d$/.test(offset)) throw new Error(`${path}: Kalender-Offset HH:MM:SS erwartet.`);
+        } else {
+          ownKeys(offset, ['days', 'hours', 'minutes', 'seconds'], path);
+          if (!Object.keys(offset).length) throw new Error(`${path}: Offset-Einheit fehlt.`);
+          for (const value of Object.values(offset)) { numeric(value, path); if (value < 0) throw new Error(`${path}: Offset muss positiv oder null sein.`); }
+        }
+      }
+    }
+  } else if (item.trigger === 'temperature.changed') {
     ownKeys(item, ['trigger', 'target', 'options', 'id'], path);
     ownKeys(item.target, ['entity_id'], path); oneOrList(item.target.entity_id, path, entity);
     ownKeys(item.options, ['threshold'], path); checkTemperatureThreshold(item.options.threshold, path);
@@ -92,7 +109,8 @@ function checkAction(item, path, depth = 0) {
       if (value !== null && !['string', 'boolean'].includes(typeof value) && !(typeof value === 'number' && Number.isFinite(value))) throw new Error(`${path}: Variablenwert muss Text, Template, Zahl, Boolean oder null sein.`);
     }
   } else if (item.action) {
-    ownKeys(item, ['action', 'target', 'data', 'metadata'], path); entity(item.action, path);
+    ownKeys(item, ['action', 'target', 'data', 'metadata', 'response_variable'], path); entity(item.action, path);
+    if (Object.hasOwn(item, 'response_variable') && (typeof item.response_variable !== 'string' || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(item.response_variable))) throw new Error(`${path}: Antwortvariable ungültig.`);
     if (Object.hasOwn(item, 'target')) { ownKeys(item.target, ['entity_id'], path); oneOrList(item.target.entity_id, path, entity); }
     if (Object.hasOwn(item, 'metadata')) { ownKeys(item.metadata, Object.keys(item.metadata || {}), path); if (JSON.stringify(item.metadata).length > 10000) throw new Error(`${path}: Metadaten zu groß.`); }
     if (Object.hasOwn(item, 'data')) { ownKeys(item.data, item.data && typeof item.data === 'object' ? Object.keys(item.data) : [], path); if (JSON.stringify(item.data).length > 10000) throw new Error(`${path}: Aktionsdaten zu groß.`); }

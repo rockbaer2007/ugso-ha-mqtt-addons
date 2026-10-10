@@ -7,6 +7,35 @@ import { Blockly, modelWorkspace, workspaceModel } from '../src/blocks.js';
 import { fromYaml, toYaml, validateAutomation } from '../src/model.js';
 const fixture = fromYaml(readFileSync(new URL('./fixtures/pc-tv.yaml', import.meta.url), 'utf8'));
 
+test('Holiday calendar automation retains offsets, response variable and folded Jinja through saved Blockly and YAML', () => {
+  const model = fromYaml(readFileSync(new URL('./fixtures/calendar-holiday.yaml', import.meta.url), 'utf8'));
+  for (const options of [model.triggers[0].options, undefined, {}, { offset: { days: 1, hours: 2, minutes: 3, seconds: 4 }, offset_type: 'after' }, { offset: '48:30:00' }]) {
+    const item = structuredClone(model);
+    if (options === undefined) delete item.triggers[0].options;
+    else item.triggers[0].options = options;
+    const ws = new Blockly.Workspace(), restored = new Blockly.Workspace();
+    try {
+      modelWorkspace(ws, item);
+      assert.deepEqual(workspaceModel(ws, item), item);
+      Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws), restored);
+      assert.deepEqual(fromYaml(toYaml(workspaceModel(restored, item))), item);
+    } finally { ws.dispose(); restored.dispose(); }
+  }
+});
+test('Calendar options and response variables reject malformed imports', () => {
+  const model = fromYaml(readFileSync(new URL('./fixtures/calendar-holiday.yaml', import.meta.url), 'utf8'));
+  for (const options of [{ offset_type: 'wrong' }, { offset: { seconds: -1 } }, { offset: {} }, { offset: { weeks: 1 } }, { offset: '12:80:00' }, { offset: [] }]) {
+    const item = structuredClone(model); item.triggers[0].options = options; assert.throws(() => validateAutomation(item));
+  }
+  for (const name of ['', 'two words', '1termine', 42]) {
+    const item = structuredClone(model); item.actions[1].response_variable = name; assert.throws(() => validateAutomation(item));
+  }
+  // A service normally mapped to a specialized block must also retain its response field.
+  const item = structuredClone(model); item.actions = [{ action: 'script.test', response_variable: 'result' }];
+  const ws = new Blockly.Workspace();
+  try { modelWorkspace(ws, item); assert.deepEqual(workspaceModel(ws, item), item); } finally { ws.dispose(); }
+});
+
 test('AWTRIX temperature.changed and all threshold modes retain native targets and MQTT payloads', () => {
   const model = fromYaml(readFileSync(new URL('./fixtures/awtrix-temperature.yaml', import.meta.url), 'utf8'));
   const number = { number: 24, unit_of_measurement: '°C' }, reference = { entity: 'input_number.pool_minimum' };
