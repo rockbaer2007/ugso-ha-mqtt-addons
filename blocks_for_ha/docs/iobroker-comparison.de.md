@@ -1,5 +1,9 @@
 # ioBroker / UGSo Blocks für HA
 
+## Farben, Wertfunktionen und Standardabgleich seit 0.1.15
+
+111 unterstützte Typen: Zufall/RGB/Mischung und originale Wertfunktionen mit bis zu acht Parametern. Eigene HA-Templates statt JavaScript; JSON erhält Definitionen, YAML expandierte Ausdrücke. Textumkehr ist auch im aktuellen ioBroker-Menü enthalten; atan2 ist registriert, aber nicht angeboten. Typisierte Variablen, lokale Aktionsfunktionen und dokumentierte Standardvarianten bleiben offen. [Vollständiger Standardvergleich](https://opensource.ugso-software.de/projects/blocks-for-ha/blockly-audit).
+
 ## Mathematik, Text, Listen und Zählschleifen seit 0.1.14
 
 37 zusätzliche Blocks, insgesamt 105. Abgleich mit Original-Blockly und ioBroker, inklusive atan2 und Textumkehr, eigener nativer HA/Jinja-Ausgabe und unveränderlicher Listenbearbeitung. [Öffentliche Gegenüberstellung mit Funktionszuordnung, Beispielen und offenen Varianten](https://opensource.ugso-software.de/projects/blocks-for-ha/collections). JSON erhält die Formen; YAML erhält die Bedeutung. Lokales break/continue, Primzahl, Modalwert, Standardabweichung und dynamische Zählgrenzen bleiben offen.
@@ -10,7 +14,7 @@
 
 ioBroker-Timeout-/Intervall-Handles haben keine direkte HA-Entsprechung. Schleifen laufen sequentiell und Stop beendet den aktuellen Lauf; separat gestartete Scripts und Timer-Helfer bleiben über System steuerbar. Objektänderungen erzeugen neue lokale HA-Variablenzuweisungen statt JavaScript-Mutation. Original-Blockly-Grundlogik ist bereits umgesetzt; Listen/Schleifen ergänzen dessen Umfang. Feste ganzzahlige Zählschleifen und Listenbearbeitung folgen in 0.1.14; lokales break/continue bleibt offen. [Vollständige öffentliche Gegenüberstellung mit Originalquellen](https://opensource.ugso-software.de/projects/blocks-for-ha/flow).
 
-Stand: 10. Oktober 2026, experimentelle HA-App 0.1.14. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
+Stand: 10. Oktober 2026, experimentelle HA-App 0.1.15. Diese Liste beschreibt den vorhandenen Code. Ähnliche Blocks sind keine Zusage identischen Verhaltens: UGSo erzeugt native HA-Automationen, ioBroker erzeugt JavaScript für seine Script-Engine.
 
 Bei jeder neuen Funktion werden Gegenstück, Verhalten, YAML-Ausgabe und Status in dieser Liste und der englischen Fassung aktualisiert. Die Kategorien werden schrittweise geprüft, beginnend mit **System**. Geplant bedeutet noch nicht implementiert.
 

@@ -11,9 +11,12 @@ import { timeDefinitions, installTimeShape, timeExpression } from './time.js';
 import { conversionDefinitions, installConversionShape, conversionExpression } from './conversion.js';
 import { flowDefinitions, installFlowShape, flowExpression, flowAction, flowToolbox } from './flow.js';
 import { collectionDefinitions, installCollectionShape, collectionExpression, collectionAction, collectionToolbox } from './collections.js';
+import { colourDefinitions, colourExpression, colourInput, colourToolbox } from './colour.js';
+import { functionTypes, installFunctions, functionInfo, functionToolbox } from './functions.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 Blockly.setLocale(De);
+installFunctions(Blockly);
 const Multiline = Reflect.get(MultilineModule, 'default') || MultilineModule;
 const Colour = Reflect.get(ColourModule, 'default') || ColourModule;
 Multiline.registerFieldMultilineInput(); Colour.registerFieldColour();
@@ -44,6 +47,7 @@ const definitions = [
   ...conversionDefinitions,
   ...flowDefinitions,
   ...collectionDefinitions,
+  ...colourDefinitions,
   { type: 'ugso_variable_change', message0: 'Erhöhe %1 um %2', args0: [{ type: 'field_variable', name: 'VAR', variable: 'wert' }, value('STEP', 'Number')], previousStatement: 'Action', nextStatement: 'Action', colour: '#a54879', tooltip: 'Addiert eine Zahl zur zuvor gesetzten Zahlenvariable. Negative Schritte verringern. Nicht gesetzte Werte, Texte, Boolean und null werden nicht automatisch in Zahlen umgewandelt.' },
   { type: 'ugso_compare', message0: '%1 %2 %3', args0: [value('LEFT', 'Value'), { type: 'field_dropdown', name: 'OP', options: [['=', '=='], ['≠', '!='], ['<', '<'], ['≤', '<='], ['>', '>'], ['≥', '>=']] }, value('RIGHT', 'Value')], output: ['Boolean', 'Value'], colour: '#6860b5', tooltip: 'Vergleicht zwei Werte in HA. Zahlen und Texte haben unterschiedliche Typen; Sensorwerte im Template bewusst umwandeln.' },
   { type: 'ugso_boolean', message0: '%1', args0: [{ type: 'field_dropdown', name: 'BOOL', options: [['wahr', 'true'], ['falsch', 'false']] }], output: ['Boolean', 'Value'], colour: '#6860b5' },
@@ -57,8 +61,8 @@ const definitions = [
   { type: 'ugso_template_condition', message0: 'Template ist wahr %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: "{{ states('sensor.temperatur') | float(0) > 20 }}", maxLines: 3 }], output: 'Boolean', colour: '#6860b5', tooltip: 'HA wertet diese Jinja-Vorlage als Bedingung aus. Löst selbst keine Automation aus.' },
   { type: 'ugso_text', message0: 'Text %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: 'Automation gestartet', maxLines: 3 }], output: 'String', colour: '#2e7653' },
   { type: 'ugso_percent', message0: '%1 %%', args0: [{ type: 'field_slider', name: 'NUM', value: 50, min: 0, max: 100, precision: 1 }], output: 'Number', colour: '#2e7653' },
-  { type: 'ugso_colour', message0: 'Farbe %1', args0: [{ type: 'field_colour', name: 'COLOUR', colour: '#ff8800' }], output: 'Colour', colour: '#2e7653' },
-  { type: 'ugso_colour_action', message0: 'Licht %1 Farbe %2 Helligkeit %3 %%', args0: [entityField('light.wohnzimmer'), value('COLOUR', 'Colour'), value('BRIGHTNESS', 'Number')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5' },
+  { type: 'ugso_colour', message0: 'Farbe %1', args0: [{ type: 'field_colour', name: 'COLOUR', colour: '#ff8800' }], output: ['Colour', 'Value'], colour: '#ad6841' },
+  { type: 'ugso_colour_action', message0: 'Licht %1 Farbe %2 Helligkeit %3 %%', args0: [entityField('light.wohnzimmer'), value('COLOUR', ['Colour', 'Value']), value('BRIGHTNESS', 'Number')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5' },
   { type: 'ugso_date_condition', message0: 'Datum heute %1 %2', args0: [{ type: 'field_dropdown', name: 'OP', options: [['ist', '=='], ['ab einschließlich', '>='], ['bis einschließlich', '<=']] }, { type: 'ugso_field_date', name: 'DATE', date: '2026-10-09' }], output: 'Boolean', colour: '#6860b5', tooltip: 'Vergleicht das heutige Datum in der HA-Zeitzone, einschließlich Jahr. Löst selbst keine Automation aus.' },
   { type: 'ugso_helper_action', message0: 'Helfer %1 %2 %3', args0: [{ type: 'field_dropdown', name: 'DOMAIN', options: [['Schalter', 'input_boolean'], ['Zähler', 'counter'], ['Timer', 'timer']] }, entityField('input_boolean.test'), { type: 'field_dependent_dropdown', name: 'SERVICE', parentName: 'DOMAIN', optionMapping: helperOptions }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Die Aktionsauswahl folgt dem Helfertyp. Entitäts-ID manuell eingeben; keine Live-HA-Auswahl.' },
   { type: 'ugso_log_action', message0: 'Log %1 Meldung %2', args0: [{ type: 'field_dropdown', name: 'LEVEL', options: [['Info', 'info'], ['Warnung', 'warning'], ['Fehler', 'error'], ['Debug', 'debug'], ['Kritisch', 'critical']] }, value('MESSAGE', 'String')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Schreibt bei Ausführung in HA ins Systemprotokoll. Info und Debug können durch die HA-Logkonfiguration ausgefiltert werden.' },
@@ -193,7 +197,7 @@ function addExpansionButtons(block) {
   if (block.type === 'ugso_if_action') input.appendField(button('S', () => { block.hasElse_ = !block.hasElse_; block.updateBranches_(); }), 'ELSE_TOGGLE');
 }
 export { Blockly };
-export const knownTypes = new Set(definitions.map(item => item.type));
+export const knownTypes = new Set([...definitions.map(item => item.type), ...functionTypes]);
 export const toolbox = { kind: 'categoryToolbox', contents: [
   { kind: 'category', name: 'System', colour: '#2682a5', contents: ['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) },
   { kind: 'category', name: 'Werte', colour: '#2e7653', contents: ['number', 'percent', 'text', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}` })) },
@@ -219,6 +223,7 @@ for (const category of toolbox.contents) for (const block of category.contents) 
 toolbox.contents.push(
   { kind: 'category', name: 'Logik', colour: '#6860b5', contents: ['ugso_compare', 'ugso_binary_logic', 'ugso_not', 'ugso_boolean', 'ugso_null', 'ugso_ternary'].map(type => ({ kind: 'block', type })) },
   { kind: 'category', name: 'Variablen', colour: '#a54879', custom: 'UGSO_VARIABLES' },
+  { kind: 'category', name: 'Funktionen', colour: '#87579d', custom: 'UGSO_FUNCTIONS' },
   { kind: 'category', name: 'Templates', colour: '#8a6635', contents: ['ugso_template', 'ugso_template_condition'].map(type => ({ kind: 'block', type })) }
 );
 for (const [name, colour] of [['Timeouts', '#7a8639'], ['Objekt', '#967b44'], ['Schleifen', '#3e8054'], ['Listen', '#7658a0']]) {
@@ -230,6 +235,7 @@ for (const [name, colour] of [['Mathematik', '#5e62a1'], ['Text', '#397b68']]) {
   toolbox.contents.splice(toolbox.contents.findIndex(c => c.name === 'Listen'), 0, { kind: 'category', name, colour, contents: collectionToolbox(name) });
 }
 for (const name of ['Schleifen', 'Listen']) toolbox.contents.find(c => c.name === name).contents.push(...collectionToolbox(name));
+toolbox.contents.splice(toolbox.contents.findIndex(c => c.name === 'Variablen'), 0, { kind: 'category', name: 'Farbe', colour: '#ad6841', contents: colourToolbox() });
 toolbox.contents.find(c => c.name === 'Mathematik').contents.unshift({ kind: 'block', type: 'ugso_number' });
 toolbox.contents.find(c => c.name === 'Text').contents.unshift({ kind: 'block', type: 'ugso_text' });
 for (const block of toolbox.contents.find(c => c.name === 'Logik').contents) {
@@ -240,6 +246,7 @@ for (const block of toolbox.contents.find(c => c.name === 'Logik').contents) {
   if (block.type === 'ugso_ternary') block.inputs = { TEST: shadow('ugso_boolean', { BOOL: 'true' }), TRUE: shadow('ugso_text', { TEXT: 'Ja' }), FALSE: shadow('ugso_text', { TEXT: 'Nein' }) };
 }
 export function setupVariables(workspace) {
+  workspace.registerToolboxCategoryCallback('UGSO_FUNCTIONS', functionToolbox);
   workspace.registerButtonCallback('UGSO_CREATE_VARIABLE', () => Blockly.Variables.createVariableButtonHandler(workspace, () => workspace.getToolbox()?.refreshSelection()));
   workspace.registerToolboxCategoryCallback('UGSO_VARIABLES', ws => {
     const items = [{ kind: 'button', text: 'Variable erstellen …', callbackKey: 'UGSO_CREATE_VARIABLE' }];
@@ -267,13 +274,24 @@ function readValue(block, input) {
   if (['ugso_text', 'ugso_template'].includes(child.type)) return field(child, 'TEXT');
   if (flowDefinitions.some(d => d.type === child.type && d.output)) return `{{ ${expression(child)} }}`;
   if (collectionDefinitions.some(d => d.type === child.type && d.output)) return `{{ ${expression(child)} }}`;
+  if (child.type === 'ugso_colour' || colourDefinitions.some(d => d.type === child.type) || ['procedures_callreturn', 'variables_get'].includes(child.type)) return `{{ ${expression(child)} }}`;
   if (child.type.startsWith('ugso_convert_') || child.type.startsWith('ugso_time_') || child.type === 'ugso_ternary' || child.outputConnection?.getCheck()?.includes('Boolean')) return `{{ ${expression(child)} }}`;
   throw new Error(`${input}: Wertblock wird nicht unterstützt.`);
 }
-function expression(block, depth = 0) {
+function expression(block, depth = 0, scope = { params: new Map(), calls: [] }) {
   if (!block?.isEnabled()) throw new Error('Logik: Wert oder Bedingung fehlt.');
   if (depth > 10) throw new Error('Logik ist zu tief verschachtelt.');
-  const child = name => expression(block.getInputTargetBlock(name), depth + 1);
+  const child = name => expression(block.getInputTargetBlock(name), depth + 1, scope);
+  if (block.type === 'ugso_colour' || colourDefinitions.some(d => d.type === block.type)) return colourExpression(block, child);
+  if (block.type === 'procedures_callreturn') {
+    const name = block.getProcedureCall();
+    const matches = block.workspace.getBlocksByType('procedures_defreturn', false).filter(b => b.isEnabled() && b.getFieldValue('NAME') === name);
+    if (matches.length !== 1) throw new Error('Funktion: eindeutige aktive Definition fehlt.');
+    const info = functionInfo(matches[0]);
+    if (scope.calls.includes(name)) throw new Error('Funktion: Rekursion wird nicht unterstützt.');
+    const params = new Map(info.params.map((param, i) => [param, `(${child(`ARG${i}`)})`]));
+    return `(${expression(matches[0].getInputTargetBlock('RETURN'), depth + 1, { params, calls: [...scope.calls, name] })})`;
+  }
   if (flowDefinitions.some(d => d.type === block.type && d.output)) return flowExpression(block, child);
   if (collectionDefinitions.some(d => d.type === block.type && d.output)) return collectionExpression(block, child);
   if (block.type.startsWith('ugso_convert_')) return conversionExpression(block, child);
@@ -297,7 +315,7 @@ function expression(block, depth = 0) {
     case 'ugso_text': return JSON.stringify(field(block, 'TEXT'));
     case 'ugso_boolean': return field(block, 'BOOL');
     case 'ugso_null': return 'none';
-    case 'ugso_variable_get': return variableName(block);
+    case 'ugso_variable_get': case 'variables_get': { const name = variableName(block); return scope.params.get(name) || name; }
     case 'ugso_template': case 'ugso_template_condition': return template(field(block, 'TEXT'));
     case 'ugso_compare': return `(${child('LEFT')} ${field(block, 'OP')} ${child('RIGHT')})`;
     case 'ugso_not': return `(not ${child('BOOL')})`;
@@ -342,6 +360,7 @@ function readTrigger(block) {
   }
 }
 function readCondition(block, depth) {
+  if (block.type === 'procedures_callreturn') return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
   if (collectionDefinitions.some(d => d.type === block.type && Array.isArray(d.output) && d.output.includes('Boolean'))) return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
   if (['ugso_object_has', 'ugso_logic_range', 'ugso_list_empty'].includes(block.type)) return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
@@ -397,7 +416,9 @@ function readAction(block, depth) {
     case 'ugso_colour_action': {
       const child = block.getInputTargetBlock('COLOUR'), brightness = readNumber(block, 'BRIGHTNESS'), id = field(block, 'ENTITY');
       if (!id.startsWith('light.')) throw new Error('Licht: Entität im Format light.name erwartet.');
-      if (!child?.isEnabled() || child.type !== 'ugso_colour') throw new Error('Licht: Farbblock fehlt.');
+      if (!child?.isEnabled()) throw new Error('Licht: Farbblock fehlt.');
+      if (brightness < 0 || brightness > 100) throw new Error('Licht: Helligkeit 0–100 erforderlich.');
+      if (child.type !== 'ugso_colour') return { action: 'light.turn_on', target: { entity_id: id }, data: { rgb_color: `{{ ${colourInput(child, expression(child))} }}`, brightness_pct: brightness } };
       const hex = field(child, 'COLOUR');
       if (!/^#[0-9a-f]{6}$/i.test(hex) || brightness < 0 || brightness > 100) throw new Error('Licht: gültige Farbe und Helligkeit 0–100 erforderlich.');
       return { action: 'light.turn_on', target: { entity_id: id }, data: { rgb_color: [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)), brightness_pct: brightness } };
@@ -435,8 +456,16 @@ function readAction(block, depth) {
 }
 export function workspaceModel(workspace, metadata) {
   const roots = workspace.getTopBlocks(false).filter(block => block.isEnabled());
-  if (roots.length !== 1 || roots[0].type !== 'ugso_automation') throw new Error('Alle Blocks müssen mit genau einer Automation verbunden sein.');
-  const root = roots[0];
+  const functions = roots.filter(b => b.type === 'procedures_defreturn'), names = new Set();
+  for (const block of functions) {
+    const { name, params } = functionInfo(block);
+    if (names.has(name)) throw new Error('Funktion: Namen müssen eindeutig sein.');
+    names.add(name);
+    expression(block.getInputTargetBlock('RETURN'), 0, { params: new Map(params.map(p => [p, p])), calls: [name] });
+  }
+  const automations = roots.filter(b => b.type !== 'procedures_defreturn');
+  if (automations.length !== 1 || automations[0].type !== 'ugso_automation') throw new Error('Alle Blocks außer Wertfunktionen müssen mit genau einer Automation verbunden sein.');
+  const root = automations[0];
   return { ...metadata, triggers: chain(root.getInputTargetBlock('TRIGGERS'), readTrigger), conditions: readConditions(root.getInputTargetBlock('CONDITIONS')), actions: chain(root.getInputTargetBlock('ACTIONS'), readAction) };
 }
 function create(workspace, type, fields = {}) {

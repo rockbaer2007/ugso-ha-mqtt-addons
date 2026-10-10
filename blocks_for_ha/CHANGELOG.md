@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.15
+
+- Eigene Kategorie Farbe: Zufallsfarbe, RGB-Prozentanteile und RGB-Mischung mit HA/Jinja-Ausgabe. Berechnete Farben und RGB-Variablen an Lichtaktionen anschließbar.
+- Originale Blockly-Wertfunktionen mit dynamischen Aufrufblocks und bis zu acht Parametern. Jinja-Expansion, keine Rekursion/Aktionskörper. JSON erhält Definitionen, YAML expandierte Ausdrücke.
+- 111 unterstützte Blocktypen mit echten Blockbildern. Standardkategorien-Abgleich unterscheidet Registrierung, ioBroker-Menü und eigene HA-Unterstützung.
+- DE/EN-Dokumentation, Export-/Sandbox-Tests und Browserprüfung für originales Zahnrad, dynamische Aufrufe, Farben und Projekt-Neuladen.
+
 ## 0.1.14
 
 - 37 weitere Blocks, insgesamt 105: Mathematik, Text, Listen, Zählschleifen und Für-jeden-Schleifen mit benannter Variable.

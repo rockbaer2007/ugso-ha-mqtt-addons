@@ -70,10 +70,11 @@ try {
       await page.evaluate(async type => {
         const url = performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name;
         const { Blockly, toolbox } = await import(url);
-        const ws = window.catalogWorkspace; ws.clear();
-        const info = toolbox.contents.flatMap(c => c.contents || []).find(b => b.type === type) || { type };
+        const ws = window.catalogWorkspace; Blockly.Events.disable(); ws.clear();
+        const info = toolbox.contents.flatMap(c => c.contents || []).find(b => b.type === type) || (type === 'procedures_defreturn' ? { type, fields: { NAME: 'doppelt' }, extraState: { hasStatements: false, params: [{ name: 'x' }] }, inputs: { RETURN: { block: { type: 'variables_get', fields: { VAR: { name: 'x' } } } } } } : type === 'procedures_callreturn' ? { type, extraState: { name: 'doppelt', params: ['x'] }, inputs: { ARG0: { shadow: { type: 'ugso_number', fields: { NUM: 21 } } } } } : { type });
         const block = Blockly.serialization.blocks.append(info, ws); block.moveBy(30, 30);
         await Blockly.renderManagement.finishQueuedRenders(); block.getSvgRoot().setAttribute('data-catalog-block', 'true');
+        Blockly.Events.enable();
       }, type);
       await page.locator('[data-catalog-block="true"]').screenshot({ path: `${process.env.BLOCKS_CATALOG_DIR}/${type}.png` });
     }

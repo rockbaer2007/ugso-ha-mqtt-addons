@@ -1,5 +1,11 @@
 # UGSo Blocks für HA – vorgemerkte Erweiterungen
 
+## Farben und Wertfunktionen seit 0.1.15
+
+111 unterstützte Typen. Zufall/RGB/Mischung in eigener Kategorie Farbe und originale Blockly-Wertfunktionen mit bis zu acht Parametern sind umgesetzt. Keine lokalen Aktionsfunktionen, Rekursion oder frühes return; Aktionswiederverwendung über HA-Scripts. JSON erhält Definitionen, YAML expandierte Ausdrücke. [Abgleich aller Standardkategorien und verbleibende Varianten](https://opensource.ugso-software.de/projects/blocks-for-ha/blockly-audit).
+
+Zusätzlich vorgemerkt: ioBroker-Zahlenformatierung. Textumkehr ist im aktuellen ioBroker-Menü enthalten; atan2 ist über dessen Bibliothek registriert, aber nicht in der Standardtoolbox angeboten. Typisierte Variablen und Developer-Tools-Pakete bleiben eigenständige offene Aufgaben.
+
 ## Vorgemerkt: eigene Blocks und Template-Pakete
 
 Am **10. Oktober 2026** vorgemerkt; noch nicht umgesetzt. Die originalen [Blockly Developer Tools](https://raspberrypifoundation.github.io/blockly-samples/examples/developer-tools/index.html) sollen zum Gestalten eigener Blocks dienen.
