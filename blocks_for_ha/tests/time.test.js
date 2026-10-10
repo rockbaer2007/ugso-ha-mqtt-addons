@@ -41,6 +41,15 @@ test('Clock fields validate; ranges and custom time sockets change dynamically w
     assert.equal(shift.getInput('BASE').connection.getConnectionChecker().canConnect(shift.getInput('BASE').connection, text.outputConnection, false), false);
   } finally { ws.dispose(); }
 });
+test('Infinite datetime amounts and sun offsets fail before YAML generation', () => {
+  for (const [type, input] of [['shift', 'AMOUNT'], ['sun', 'OFFSET']]) {
+    const { ws, block } = fixture(`ugso_time_${type}`);
+    try {
+      block.getInputTargetBlock(input).setFieldValue(Infinity, 'NUM');
+      assert.throws(() => workspaceModel(ws, examples.light), /endliche Zahl/);
+    } finally { ws.dispose(); }
+  }
+});
 // Opt-in integration check: Python/Jinja2 is not a required frontend dependency.
 test('Generated Jinja handles overnight boundaries, HA timezone and spring DST calendar boundaries', { skip: !process.env.BLOCKS_JINJA_TEST }, () => {
   const { ws, block } = fixture('ugso_time_compare');

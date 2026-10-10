@@ -46,14 +46,19 @@ function clock(value) {
 export function timeExpression(block, child, numeric) {
   const field = name => block.getFieldValue(name);
   const base = () => child('BASE');
+  const amount = name => {
+    const result = numeric(name);
+    if (!Number.isFinite(result)) throw new Error('Zeitberechnung: endliche Zahl erforderlich.');
+    return result;
+  };
   switch (block.type) {
     case 'ugso_time_now': return 'now()';
     case 'ugso_time_boundary': {
       const day = "today_at('00:00')";
       return { day, tomorrow: `(${day} + timedelta(days=1))`, week: `(${day} - timedelta(days=now().weekday()))`, month: `${day}.replace(day=1)`, year: `${day}.replace(month=1, day=1)` }[field('PART')];
     }
-    case 'ugso_time_sun': return `(as_local(as_datetime(state_attr('sun.sun', '${field('EVENT')}'))) + timedelta(minutes=${numeric('OFFSET')}))`;
-    case 'ugso_time_shift': return `(${base()} ${field('SIGN')} timedelta(${field('UNIT')}=${numeric('AMOUNT')}))`;
+    case 'ugso_time_sun': return `(as_local(as_datetime(state_attr('sun.sun', '${field('EVENT')}'))) + timedelta(minutes=${amount('OFFSET')}))`;
+    case 'ugso_time_shift': return `(${base()} ${field('SIGN')} timedelta(${field('UNIT')}=${amount('AMOUNT')}))`;
     case 'ugso_time_format': return field('FORMAT') === 'unix' ? `as_timestamp(${base()})` : field('FORMAT') === 'iso' ? `${base()}.isoformat()` : `${base()}.strftime(${JSON.stringify(field('FORMAT'))})`;
     case 'ugso_time_compare': case 'ugso_time_compare_input': {
       const dynamic = block.type === 'ugso_time_compare_input';
