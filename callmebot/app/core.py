@@ -28,7 +28,7 @@ def provider_send(profile, message):
     query = urlencode({"phone": profile["phone"], "text": message,
                        "apikey": profile["api_key"], "source": "ugso"})
     request = Request("https://api.callmebot.com/whatsapp.php?" + query,
-                      headers={"User-Agent": "UGSo-CallMeBot/0.1.0"})
+                      headers={"User-Agent": "UGSo-CallMeBot/0.1.1"})
     try:
         with build_opener(NoRedirect()).open(request, timeout=20) as response:
             body = response.read(16385)
@@ -102,7 +102,7 @@ class Gateway:
         with self.lock:
             return {"profiles": [{k: v for k, v in p.items() if k != "api_key"} | {"key_configured": True} for p in self.settings["profiles"]],
                     "default_profile": self.settings["default_profile"], "connected": self.connected,
-                    "recent": list(self.recent), "topic": TOPIC + "/send", "version": "0.1.0"}
+                    "recent": list(self.recent), "topic": TOPIC + "/send", "version": "0.1.1"}
 
     def submit(self, data, retained=False):
         if retained:

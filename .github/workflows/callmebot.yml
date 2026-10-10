@@ -16,4 +16,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m unittest discover -s callmebot/tests -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test callmebot/tests/request-id.test.mjs
       - run: docker build -t ugso-callmebot:test callmebot

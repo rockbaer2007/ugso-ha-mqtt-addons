@@ -1,6 +1,6 @@
 # UGSo CallMeBot
 
-Experimental Home Assistant App **0.1.0**, in the same repository as Blocks for HA. Original UGSo implementation, inspired by the functionality of [ioBroker.whatsapp-cmb](https://github.com/ioBroker/ioBroker.whatsapp-cmb). No ioBroker runtime required.
+Experimental Home Assistant App **0.1.1**, in the same repository as Blocks for HA. Original UGSo implementation, inspired by the functionality of [ioBroker.whatsapp-cmb](https://github.com/ioBroker/ioBroker.whatsapp-cmb). No ioBroker runtime required. Sending also works without crypto.randomUUID, including HTTP Ingress.
 
 Configure recipient profiles through authenticated Home Assistant Ingress: profile ID, name, international phone number and the matching CallMeBot API key. The interface supports **German, English, French**, system language and light/dark/system appearance. Secrets remain in `/data/profiles.json`, never in Blockly, MQTT commands, logs or browser storage. HA backups contain this private file; protect backups accordingly.
 

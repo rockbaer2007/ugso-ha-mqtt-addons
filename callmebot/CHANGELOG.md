@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Sending works when crypto.randomUUID is unavailable, including HTTP Home Assistant Ingress. Request IDs use getRandomValues when available, with a timestamp/counter fallback for older browsers.
+- Verified native UUID, random-byte and compatibility paths without real sends.
+
 ## 0.1.0
 
 - First experimental HA App in the shared UGSo HA Apps repository.

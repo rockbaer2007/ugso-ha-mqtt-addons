@@ -6,10 +6,15 @@ const browser=await chromium.launch({channel:'msedge',headless:true});
 try {
   for(const locale of ['de','en','fr']) {
     const page=await browser.newPage({locale,viewport:{width:1300,height:1000}});
+    // Simulate HTTP Ingress; FR additionally exercises an older browser without Web Crypto.
+    await page.addInitScript(locale=>{
+      Object.defineProperty(crypto,'randomUUID',{value:undefined,configurable:true});
+      if(locale==='fr')Object.defineProperty(crypto,'getRandomValues',{value:undefined,configurable:true});
+    },locale);
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
     // Never allow a real send request during browser verification.
     let sends=0;
-    await page.route('**/api/send',route=>{sends++;return route.fulfill({status:202,contentType:'application/json',body:'{"status":"queued"}'});});
+    await page.route('**/api/send',route=>{assert.match(route.request().postDataJSON().request_id,/^[A-Za-z0-9_-]{1,100}$/);sends++;return route.fulfill({status:202,contentType:'application/json',body:'{"status":"queued"}'});});
     await page.goto('http://127.0.0.1:4181/');
     await page.waitForFunction(()=>document.querySelector('#profiles').options.length>0);
     await page.locator('#language').selectOption(locale);

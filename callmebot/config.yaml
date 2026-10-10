@@ -1,5 +1,5 @@
 name: UGSo CallMeBot
-version: "0.1.0"
+version: "0.1.1"
 slug: callmebot
 description: WhatsApp-Textnachrichten über CallMeBot mit Empfängerprofilen und MQTT
 stage: experimental
