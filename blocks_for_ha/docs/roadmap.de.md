@@ -1,11 +1,15 @@
 # UGSo Blocks für HA – vorgemerkte Erweiterungen
 
+## Nach Timeouts, Objekt und Logik (0.1.13)
+
+18 Blocks sind umgesetzt, siehe [öffentliche Gegenüberstellung](https://opensource.ugso-software.de/projects/blocks-for-ha/flow). Offen bleiben persistente Timer mit timer.finished-Auslöser, periodische HA-Auslöser, parallele Zweige, Zählschleifen von/bis/Schritt, lokales break/continue und Listenindex/Zufall/Subliste. Lauf stoppen beendet die ganze HA-Ausführung und ersetzt kein break. Benannte JavaScript-Timer-Handles nicht als HA-Runtimefunktion vortäuschen.
+
 ## JSONata und Objekt-/Listenfunktionen
 
 Vorgemerkt am 10. Oktober 2026 anhand der ioBroker-Kategorie Konvertierung. Die übrigen neun Konvertierungs-Blocks sind in 0.1.12 umgesetzt.
 
 - JSONata ist keine native HA-Jinja-Funktion. Keine JSONata-Engine im Browser als Ersatz für die spätere HA-Ausführung ausgeben.
-- Zunächst passende Objekt-/Listen-Zugriffe und Jinja-Ausdrücke ergänzen; anschließend einen optionalen Runtime-/Integrationsadapter prüfen, falls echte JSONata-Auswertung benötigt wird.
+- Objekt-/Listen-Zugriffe und Jinja-Ausdrücke sind seit 0.1.13 ergänzt; anschließend einen optionalen Runtime-/Integrationsadapter prüfen, falls echte JSONata-Auswertung benötigt wird.
 - Ausdruck und Eingangsdaten getrennt vorsehen, YAML-Ausführung, Ergebnis-/Fehlerverhalten, Plugins und Lizenzen vor Umsetzung klären.
 - Referenz: [ioBroker-Konvertierungsblocks](https://github.com/ioBroker/ioBroker.javascript/blob/master/src-editor/src/Components/blockly-plugins/blocks/blocks_convert.ts).
 

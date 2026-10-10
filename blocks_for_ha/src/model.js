@@ -62,7 +62,24 @@ function checkAction(item, path, depth = 0) {
     if (Object.hasOwn(item, 'target')) { ownKeys(item.target, ['entity_id'], path); entity(item.target.entity_id, path); }
     if (Object.hasOwn(item, 'data')) { ownKeys(item.data, item.data && typeof item.data === 'object' ? Object.keys(item.data) : [], path); if (JSON.stringify(item.data).length > 10000) throw new Error(`${path}: Aktionsdaten zu groß.`); }
   } else if (Object.hasOwn(item, 'delay')) {
-    ownKeys(item, ['delay'], path); numeric(item.delay, path); if (!Number.isInteger(item.delay) || item.delay < 0 || item.delay > 86400) throw new Error(`${path}: Wartezeit 0–86400 ganze Sekunden.`);
+    ownKeys(item, ['delay'], path);
+    if (typeof item.delay === 'number') { numeric(item.delay, path); if (!Number.isInteger(item.delay) || item.delay < 0 || item.delay > 86400) throw new Error(`${path}: Wartezeit 0–86400 ganze Sekunden.`); }
+    else checkDuration(item.delay, path);
+  } else if (Object.hasOwn(item, 'stop')) {
+    ownKeys(item, ['stop', 'error'], path); text(item.stop, path); if (typeof item.error !== 'boolean') throw new Error(`${path}: error muss Boolean sein.`);
+  } else if (Object.hasOwn(item, 'wait_template')) {
+    ownKeys(item, ['wait_template', 'timeout', 'continue_on_timeout'], path); text(item.wait_template, path); checkDuration(item.timeout, path);
+    if (typeof item.continue_on_timeout !== 'boolean') throw new Error(`${path}: Timeout-Verhalten fehlt.`);
+  } else if (Object.hasOwn(item, 'repeat')) {
+    ownKeys(item, ['repeat'], path); ownKeys(item.repeat, ['count', 'while', 'until', 'for_each', 'sequence'], path);
+    const r = item.repeat, modes = ['count', 'while', 'until', 'for_each'].filter(k => Object.hasOwn(r, k));
+    if (modes.length !== 1) throw new Error(`${path}: Genau eine Wiederholungsart erforderlich.`);
+    if (modes[0] === 'count') {
+      if (typeof r.count === 'number') { if (!Number.isInteger(r.count) || r.count < 1 || r.count > 10000) throw new Error(`${path}: 1–10000 ganze Durchläufe.`); }
+      else checkTemplate(r.count, path);
+    } else if (modes[0] === 'for_each') checkTemplate(r.for_each, path);
+    else checkList(r[modes[0]], path, (child, p) => checkCondition(child, p, depth + 1), 1);
+    checkList(r.sequence, path, (child, p) => checkAction(child, p, depth + 1), 1);
   } else if (item.choose) {
     ownKeys(item, ['choose', 'default'], path);
     checkList(item.choose, path, (branch, p) => {
@@ -77,6 +94,19 @@ function checkAction(item, path, depth = 0) {
     checkList(item.then, path, (child, p) => checkAction(child, p, depth + 1), 1);
     if (item.else) checkList(item.else, path, (child, p) => checkAction(child, p, depth + 1));
   } else throw new Error(`${path}: Aktion wird noch nicht unterstützt.`);
+}
+function checkTemplate(value, path) {
+  if (typeof value !== 'string' || !/^\s*\{\{[\s\S]+\}\}\s*$/.test(value)) throw new Error(`${path}: Einzelnes HA-Ausgabetemplate erforderlich.`);
+}
+function checkDuration(value, path) {
+  ownKeys(value, ['milliseconds', 'seconds', 'minutes', 'hours'], path);
+  const entries = Object.entries(value);
+  if (entries.length !== 1) throw new Error(`${path}: Genau eine Dauereinheit erforderlich.`);
+  const [unit, amount] = entries[0];
+  if (typeof amount === 'number') {
+    numeric(amount, path);
+    if (amount < 0 || amount * ({ milliseconds: .001, seconds: 1, minutes: 60, hours: 3600 }[unit]) > 86400) throw new Error(`${path}: Dauer 0–86400 Sekunden.`);
+  } else checkTemplate(amount, path);
 }
 export function validateAutomation(model) {
   ownKeys(model, ['id', 'alias', 'description', 'triggers', 'conditions', 'actions', 'mode', 'max'], 'Automation');

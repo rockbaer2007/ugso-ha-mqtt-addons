@@ -1,12 +1,18 @@
 # ioBroker / UGSo Blocks for HA
 
-As of October 10, 2026, experimental HA app 0.1.12. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
+## Timeouts, objects, logic, loops and lists since 0.1.13
+
+18 new types: pause with units/runtime values, wait until with timeout, stop this run, counted/while/until/for-each repeats, new object, get/has attribute, object keys, set/remove attribute in a variable, range comparison, null/empty fallback, case selection, create list, list length and list empty. Project JSON preserves shapes and keys; YAML preserves semantics.
+
+ioBroker timeout/interval handles have no direct HA equivalent. Loops are sequential and Stop ends this run. Separately started scripts and timer helpers remain accessible under System. Object updates are new local HA variable assignments, not JavaScript mutation. Core Blockly logic already exists; loops/lists now extend its coverage. From/to/step, break/continue and further list operations remain pending. [Complete public comparison and upstream sources](https://opensource.ugso-software.de/en/projects/blocks-for-ha/flow).
+
+As of October 10, 2026, experimental HA app 0.1.13. This inventory describes the existing code. Similar blocks do not imply identical behavior: UGSo generates native HA automations; ioBroker generates JavaScript for its script engine.
 
 Every new feature must update its counterpart, behavior, YAML output and implementation status here and in the German version. Categories will be reviewed progressively, starting with **System**. Planned means not implemented.
 
 ## All existing blocks
 
-There are **50 block types**, including the automation root. Dropdown choices within one block count as one type. Time and conversion are compared separately below.
+There are **68 block types**, including the automation root. Dropdown choices within one block count as one type. Time and conversion are compared separately below.
 
 | ioBroker concept | Our block | Native HA output / behavior |
 | --- | --- | --- |

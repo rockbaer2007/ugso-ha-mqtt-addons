@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.13
+
+- 18 zusätzliche Blocks: Pause mit Dauereinheit/Laufzeitwert, Warten bis mit Timeout, Lauf stoppen, Wiederhole Anzahl/solange/bis/für jeden Eintrag, Objekt erstellen/lesen/prüfen/Schlüssel/ändern/entfernen, Bereichsvergleich, Ersatzwert, Fallauswahl und Listen erstellen/Länge/leer.
+- Native HA-delay/wait_template/repeat/stop/choose statt JavaScript-Timer-Handles. Bestehende Script- und Timer-Helferaktionen bleiben für abbrechbare Abläufe verfügbar.
+- Objektzuweisungen verwenden neue Dictionaries statt Mutation in der unveränderlichen HA-Jinja-Sandbox. Zahnrad und Plus/Minus für Objekt-, Listen- und Fall-Einträge, einschließlich Undo der Attributnamen.
+- Projekt-JSON erhält die Formen; YAML importiert HA-Wiederholungen/Warte-/Stop-Aktionen direkt, komplexe Werte als Templates und Fallauswahl als Falls/choose.
+- 68 Blocktypen mit tatsächlichen Editorbildern; öffentliche deutsche/englische Gegenüberstellung einschließlich Grenzen und offener Erweiterungen.
+
 ## 0.1.12
 
 - Kategorie Konvertierung mit neun HA-Blocks: Zahl, Boolean, Text, Typ, ISO-/Unix-Datumswert, Datumsformat/-bestandteile, Dauerformatierung, JSON lesen und schreiben.
