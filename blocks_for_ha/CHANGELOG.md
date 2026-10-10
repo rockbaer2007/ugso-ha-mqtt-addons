@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.21
+
+- Originale Arbeitsbereichssuche für platzierte Blocks, deutsche Beschriftung und kompakte Suchleiste.
+- Zusätzliche Blockly-Navigationstasten aktiviert; Tastaturhilfe in der Werkzeugleiste.
+- DE/EN-Dokumentation und Lizenzhinweise ergänzt.
+
 ## 0.1.20
 
 - Home-Assistant-Seitenleiste: einfarbiges Baustein-Icon `mdi:toy-brick-outline` statt des allgemeinen Puzzle-Symbols.

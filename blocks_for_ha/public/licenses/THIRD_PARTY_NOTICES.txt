@@ -1,4 +1,4 @@
-UGSo Blocks for HA 0.1.20
+UGSo Blocks for HA 0.1.21
 Copyright 2026 rockbaer2007 / UGSo
 Own application code is licensed under Apache License 2.0; see APP-LICENSE.txt in this directory.
 
@@ -18,9 +18,9 @@ Blockly sample plugins 13.2.0 from Raspberry Pi Foundation / Blockly contributor
 @blockly/field-colour, @blockly/field-date, @blockly/field-dependent-dropdown,
 and transitive @blockly/field-grid-dropdown.
 Additional Blockly sample plugins 13.3.0:
-@blockly/theme-dark, @blockly/theme-modern, @blockly/theme-tritanopia, @blockly/zoom-to-fit.
+@blockly/theme-dark, @blockly/theme-modern, @blockly/theme-tritanopia, @blockly/zoom-to-fit, @blockly/plugin-workspace-search.
 https://github.com/raspberrypifoundation/blockly-samples
-License: Apache-2.0; see BLOCKLY-LICENSE.txt. Original source notices remain in bundled libraries.
+License: Apache-2.0; see BLOCKLY-LICENSE.txt. Copyright 2020 Google LLC (workspace-search). Original source notices remain in bundled libraries.
 Plugin libraries are not manually modified. Search localization and HA block adapters are UGSo code.
 Plus/minus controls are an original implementation inspired by block-plus-minus;
 block-plus-minus and block-dynamic-connection are not installed.

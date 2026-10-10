@@ -9,6 +9,7 @@ import * as ZoomModule from '@blockly/zoom-to-fit';
 import { setupEntities } from './entities.js';
 import { withPackages, installedPackages, usedPackages, customDefinition, packageStoreKey } from './custom-packages.js';
 import { setupCustomEditor, refreshCustomToolbox } from './custom-editor.js';
+import { setupWorkspaceTools } from './workspace-tools.js';
 
 document.querySelector('#app').innerHTML = `
 <header class="app-header"><a class="brand" href="/"><span class="brand-icon">▦</span><span>UGSo <strong>Blocks for HA</strong></span></a><div class="header-right"><span class="version">Vorschau 0.1.0</span><button id="about">Über & Lizenzen</button></div></header>
@@ -38,6 +39,7 @@ zoomElement?.setAttribute('aria-label', 'Alle Blocks einpassen');
 zoomElement?.querySelector('title')?.replaceChildren(document.createTextNode('Alle Blocks einpassen'));
 function fitCompact() { workspace.zoomToFit(); if (workspace.scale > .8) workspace.setScale(.8); workspace.scrollCenter(); }
 setupVariables(workspace);
+setupWorkspaceTools(workspace);
 setupEntities(workspace);
 let metadata = {};
 let currentModel;
