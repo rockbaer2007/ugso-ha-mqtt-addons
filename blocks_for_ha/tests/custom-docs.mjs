@@ -5,6 +5,7 @@ import { resolve, sep } from 'node:path';
 import { createRequire } from 'node:module';
 import { customExample } from '../src/custom-example.js';
 import { readPackageZip } from '../src/custom-packages.js';
+import { knownTypes } from '../src/blocks.js';
 const root = resolve(process.env.DOCS_DIST || 'C:/Users/rockb/source/repos/ugso-opensource-docs/docs/.vitepress/dist');
 const server = createServer(async (req, res) => {
   try {
@@ -41,7 +42,7 @@ try {
   for (const [prefix, locale] of [['', 'de'], ['/en', 'en'], ['/fr', 'fr']]) {
     await page.goto(base + prefix + '/projects/blocks-for-ha/blocks');
     const images = await page.locator(`img[src^="/assets/blocks-for-ha/blocks/${locale}/"]`).evaluateAll(images => images.map(image => ({ src: image.src, width: image.naturalWidth })));
-    assert.equal(images.length, 111, locale);
+    assert.equal(images.length, knownTypes.size, locale);
     assert.ok(images.every(image => image.width > 0), locale + ' missing image');
   }
   await page.setViewportSize({ width: 390, height: 844 });

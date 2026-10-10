@@ -179,6 +179,16 @@ export const labels = {
   'Die Auswahl bestimmt den Anschluss: Datumswert, Laufzeitzahl oder Text. Eigenes Format nutzt Python strftime (%Y, %m, %d, %H, %M, %S), keine ioBroker-Formatcodes.': ['Selection determines the connection: date, runtime number or text. Custom format uses Python strftime (%Y, %m, %d, %H, %M, %S), not ioBroker format codes.', 'Le choix détermine le raccord : date, nombre à l’exécution ou texte. Le format personnalisé utilise Python strftime (%Y, %m, %d, %H, %M, %S), pas les codes ioBroker.'],
   'Eigene Wertfunktion. Parameter über das Zahnrad bearbeiten. Beim Export in Jinja aufgelöst; keine Aktionen oder Rekursion.': ['Custom value function. Edit parameters with the cog. Expanded to Jinja during export; no actions or recursion.', 'Fonction de valeur personnalisée. Paramètres via l’engrenage. Développée en Jinja à l’export ; sans actions ni récursion.']
 };
+Object.assign(blockTranslations, {
+  ugso_trigger_condition: ['Triggered by ID %1 list %2', 'Déclenché par ID %1 liste %2', 'Checks the trigger ID. Enable list to enter IDs as a JSON list.', 'Vérifie l’ID du déclencheur. Activer liste pour saisir les IDs en liste JSON.']
+});
+Object.assign(labels, {
+  'Auslöser-ID (optional)': ['Trigger ID (optional)', 'ID du déclencheur (facultatif)'],
+  'Zustände als JSON-Liste': ['States as JSON list', 'États en liste JSON'],
+  'Ziele als JSON-Liste': ['Targets as JSON list', 'Cibles en liste JSON'],
+  'Leere Daten ausgeben': ['Include empty data', 'Inclure les données vides'],
+  'Metadaten ausgeben': ['Include metadata', 'Inclure les métadonnées']
+});
 export function translateLabel(text, locale = language) {
   if (locale === 'de' || typeof text !== 'string') return text;
   const numbered = text.match(/^(Bedingung|Eintrag) (\d+)$/);

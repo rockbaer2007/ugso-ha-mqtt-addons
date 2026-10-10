@@ -1,0 +1,62 @@
+alias: Licht PC/TV
+description: Wohnzimmer PC/TV
+triggers:
+  - entity_id: sensor.4fach_taster_3_action
+    to: [1_single, 1_double]
+    id: button_1
+    trigger: state
+  - entity_id: sensor.4fach_taster_3_action
+    to: [2_single, 2_double]
+    id: button_2
+    trigger: state
+  - entity_id: sensor.4fach_taster_3_action
+    to: [3_single, 3_double]
+    id: button_3
+    trigger: state
+  - entity_id: sensor.4fach_taster_3_action
+    to: [4_single, 4_double]
+    id: button_4
+    trigger: state
+conditions: []
+actions:
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: button_1
+        sequence:
+          - target:
+              entity_id: light.tv_licht_1_2
+            action: light.toggle
+            data: {}
+      - conditions:
+          - condition: trigger
+            id: button_2
+        sequence:
+          - action: light.toggle
+            target:
+              entity_id: light.tv_licht_2_2
+            data: {}
+      - conditions:
+          - condition: trigger
+            id: button_3
+        sequence:
+          - target:
+              entity_id: switch.licht_schrankwand_2
+            action: switch.toggle
+            data: {}
+      - conditions:
+          - condition: trigger
+            id: button_4
+        sequence:
+          - action: switch.turn_off
+            data: {}
+            target:
+              entity_id: switch.licht_schrankwand_2
+          - action: light.turn_off
+            metadata: {}
+            target:
+              entity_id:
+                - light.tv_licht_1_2
+                - light.tv_licht_2_2
+            data: {}
+mode: single

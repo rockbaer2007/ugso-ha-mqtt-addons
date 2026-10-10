@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.28
+
+- Zustandslisten, optionale Trigger-IDs und native Trigger-ID-Bedingung ergänzt (112 Blocktypen).
+- HA-Aktionen mit mehreren Zielentitäten, leeren Datenobjekten und Metadaten verlustfrei importieren.
+- HA-Editor-Ausgabe ohne oberste Automations-ID; Trigger-IDs und Projekt-/Dateilisten-ID bleiben erhalten.
+- PC/TV-Tasterautomation als Regressionstest, aktualisierte DE/EN/FR-Dokumentation und Blockbilder.
+
 ## 0.1.27
 
 - Kontrastberechnung verwendet das tatsächliche Verhältnis zwischen Schrift und Blockfarbe statt eines ungeeigneten Helligkeitsgrenzwerts.

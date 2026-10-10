@@ -111,7 +111,7 @@ function snapshot() { return { format: 'ugso-blocks-for-ha', version: 3, metadat
 function update() {
   try {
     currentModel = validateAutomation(workspaceModel(workspace, metadata));
-    $('yaml').textContent = toYaml(currentModel, $('format').value);
+    $('yaml').textContent = toYaml(currentModel, $('format').value, { omitId: $('format').value === 'single' });
     $('validation').textContent = 'Struktur geprüft · Entitäten und Aktionen in HA prüfen.';
     $('valid-badge').textContent = 'Gültig'; $('valid-badge').className = 'valid-badge';
     $('copy').disabled = $('save').disabled = false;

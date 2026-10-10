@@ -18,6 +18,7 @@ import { colourDefinitions, colourExpression, colourInput, colourToolbox } from 
 import { functionTypes, installFunctions, functionInfo, functionToolbox } from './functions.js';
 import { themedDefinition, themedCategories } from './themes.js';
 import './entities.js';
+import { installNativeFields, nativeList, nativeObject } from './native-fields.js';
 import { customDefinition, customExpression, customNative } from './custom-packages.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
@@ -170,11 +171,12 @@ installTimeShape(Blockly);
 installConversionShape(Blockly);
 installFlowShape(Blockly);
 installCollectionShape(Blockly);
+definitions.push({ type: 'ugso_trigger_condition', message0: 'Ausgelöst durch ID %1 Liste %2', args0: [{ type: 'field_input', name: 'ID', text: 'button_1' }, { type: 'field_checkbox', name: 'ID_LIST', checked: false }], output: 'Boolean', colour: '#6860b5', tooltip: 'Prüft die ID des Auslösers. Mit Liste: IDs als JSON-Liste eingeben.' });
 Blockly.defineBlocksWithJsonArray(definitions.map(definition => localizedDefinition(themedDefinition(definition))));
 definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
   Blockly.Blocks[definition.type].init = function () {
-    original.call(this); this.setHelpUrl(documentationPath(this.type.startsWith('ugso_time_') ? 'time' : ''));
+    original.call(this); installNativeFields(Blockly, this, Multiline.FieldMultilineInput); this.setHelpUrl(documentationPath(this.type.startsWith('ugso_time_') ? 'time' : ''));
     if (this.type.startsWith('ugso_convert_')) this.setHelpUrl(documentationPath('conversion'));
     if (flowDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('flow'));
     if (collectionDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('collections'));
@@ -210,7 +212,7 @@ export const toolbox = { kind: 'categoryToolbox', contents: [
   { kind: 'category', name: 'Datum und Zeit', colour: '#8056a1', contents: [{ kind: 'block', type: 'ugso_date_condition' }, ...timeDefinitions.map(({ type }) => ({ kind: 'block', type }))] },
   { kind: 'category', name: 'Konvertierung', colour: '#9463a6', contents: conversionDefinitions.map(({ type }) => ({ kind: 'block', type })) },
   { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: ['state', 'numeric', 'time', 'sun', 'start'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })) },
-  { kind: 'category', name: 'Bedingungen', colour: '#6860b5', contents: ['state', 'numeric', 'logic'].map(type => ({ kind: 'block', type: `ugso_${type}_condition` })) },
+  { kind: 'category', name: 'Bedingungen', colour: '#6860b5', contents: ['state', 'numeric', 'logic', 'trigger'].map(type => ({ kind: 'block', type: `ugso_${type}_condition` })) },
   { kind: 'category', name: 'Aktionen', colour: '#2682a5', contents: ['switch', 'service', 'delay', 'if', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) }
 ] };
 for (const category of toolbox.contents) for (const block of category.contents) {
@@ -332,6 +334,7 @@ function expression(block, depth = 0, scope = { params: new Map(), calls: [] }) 
     case 'ugso_binary_logic': return `(${child('LEFT')} ${field(block, 'OP')} ${child('RIGHT')})`;
     case 'ugso_ternary': return `(${child('TRUE')} if ${child('TEST')} else ${child('FALSE')})`;
     case 'ugso_state_condition': return `is_state(${entity()}, ${JSON.stringify(field(block, 'STATE'))})`;
+    case 'ugso_trigger_condition': { const ids = nativeList(block, 'ID', 'ID_LIST'); return Array.isArray(ids) ? `(trigger.id in ${JSON.stringify(ids)})` : `(trigger.id == ${JSON.stringify(ids)})`; }
     case 'ugso_numeric_condition': {
       const state = `states(${entity()})`;
       return `(is_number(${state}) and (${state} | float) ${field(block, 'OP') === 'above' ? '>' : '<'} ${readNumber(block, 'LIMIT')})`;
@@ -360,10 +363,14 @@ function readNumber(block, input) {
 }
 const range = (block) => ({ entity_id: field(block, 'ENTITY'), [field(block, 'OP')]: readNumber(block, 'LIMIT') });
 function readTrigger(block) {
+  const result = readTriggerBase(block), id = block.getFieldValue('TRIGGER_ID');
+  return id ? { ...result, id } : result;
+}
+function readTriggerBase(block) {
   const custom = customDefinition(block.type);
   if (custom?.kind === 'trigger') return customNative(custom, block, name => readValue(block, name));
   switch (block.type) {
-    case 'ugso_state_trigger': return { trigger: 'state', entity_id: field(block, 'ENTITY'), to: field(block, 'STATE') };
+    case 'ugso_state_trigger': return { trigger: 'state', entity_id: field(block, 'ENTITY'), to: nativeList(block, 'STATE', 'STATE_LIST') };
     case 'ugso_numeric_trigger': return { trigger: 'numeric_state', ...range(block) };
     case 'ugso_time_trigger': return { trigger: 'time', at: field(block, 'TIME') };
     case 'ugso_sun_trigger': return { trigger: 'sun', event: field(block, 'EVENT') };
@@ -387,6 +394,7 @@ function readCondition(block, depth) {
     case 'ugso_template_condition': return { condition: 'template', value_template: field(block, 'TEXT') };
     case 'ugso_date_condition': return { condition: 'template', value_template: dateTemplate(field(block, 'DATE'), field(block, 'OP')) };
     case 'ugso_state_condition': return { condition: 'state', entity_id: field(block, 'ENTITY'), state: field(block, 'STATE') };
+    case 'ugso_trigger_condition': return { condition: 'trigger', id: nativeList(block, 'ID', 'ID_LIST') };
     case 'ugso_numeric_condition': return { condition: 'numeric_state', ...range(block) };
     case 'ugso_logic_condition': {
       const conditions = [];
@@ -455,7 +463,8 @@ function readAction(block, depth) {
       let data;
       try { data = JSON.parse(field(block, 'DATA') || '{}'); } catch { throw new Error('HA-Aktion: Aktionsdaten sind kein gültiges JSON.'); }
       if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('HA-Aktion: Aktionsdaten müssen ein JSON-Objekt sein.');
-      return { action: field(block, 'SERVICE'), ...(field(block, 'ENTITY') ? { target: { entity_id: field(block, 'ENTITY') } } : {}), ...(Object.keys(data || {}).length ? { data } : {}) };
+      const ids = field(block, 'ENTITY_LIST') === 'TRUE' ? nativeList(block, 'ENTITIES', 'ENTITY_LIST') : field(block, 'ENTITY');
+      return { action: field(block, 'SERVICE'), ...(ids ? { target: { entity_id: ids } } : {}), ...(Object.keys(data).length || field(block, 'INCLUDE_DATA') === 'TRUE' ? { data } : {}), ...(field(block, 'INCLUDE_METADATA') === 'TRUE' ? { metadata: nativeObject(block, 'METADATA') } : {}) };
     }
     case 'ugso_delay_action': return { delay: readNumber(block, 'SECONDS') };
     case 'ugso_if_action': {
@@ -507,8 +516,13 @@ function attach(parent, input, children) {
 function numberInput(block, name, num) { block.getInput(name).connection.setShadowState({ type: 'ugso_number', fields: { NUM: num } }); return block; }
 const fieldsRange = (item) => ({ ENTITY: item.entity_id, OP: Object.hasOwn(item, 'above') ? 'above' : 'below' });
 function triggerBlock(workspace, item) {
+  const block = triggerBlockBase(workspace, item);
+  if (item.id !== undefined) block.setFieldValue(item.id, 'TRIGGER_ID');
+  return block;
+}
+function triggerBlockBase(workspace, item) {
   switch (item.trigger) {
-    case 'state': return create(workspace, 'ugso_state_trigger', { ENTITY: item.entity_id, STATE: item.to });
+    case 'state': return create(workspace, 'ugso_state_trigger', { ENTITY: item.entity_id, STATE: Array.isArray(item.to) ? JSON.stringify(item.to) : item.to, STATE_LIST: Array.isArray(item.to) ? 'TRUE' : 'FALSE' });
     case 'numeric_state': return numberInput(create(workspace, 'ugso_numeric_trigger', fieldsRange(item)), 'LIMIT', item.above ?? item.below);
     case 'time': return create(workspace, 'ugso_time_trigger', { TIME: item.at });
     case 'sun': return create(workspace, 'ugso_sun_trigger', { EVENT: item.event });
@@ -516,6 +530,7 @@ function triggerBlock(workspace, item) {
   }
 }
 function conditionBlock(workspace, item) {
+  if (item.condition === 'trigger') return create(workspace, 'ugso_trigger_condition', { ID: Array.isArray(item.id) ? JSON.stringify(item.id) : item.id, ID_LIST: Array.isArray(item.id) ? 'TRUE' : 'FALSE' });
   if (item.condition === 'template') {
     try { const date = parseDateTemplate(item.value_template); return create(workspace, 'ugso_date_condition', { DATE: date.date, OP: date.op }); }
     catch { return create(workspace, 'ugso_template_condition', { TEXT: item.value_template }); }
@@ -539,6 +554,10 @@ function actionBlock(workspace, item) {
   }
   if (item.action) {
     const id = item.target?.entity_id;
+    if (Array.isArray(id) || Object.hasOwn(item, 'data') || Object.hasOwn(item, 'metadata')) {
+      // Preserve optional empty objects and target lists exactly in the generic action.
+      if (Array.isArray(id) || Object.hasOwn(item, 'metadata') || !Object.keys(item.data || {}).length) return create(workspace, 'ugso_service_action', { SERVICE: item.action, ENTITY: Array.isArray(id) ? '' : id || '', ENTITY_LIST: Array.isArray(id) ? 'TRUE' : 'FALSE', ENTITIES: JSON.stringify(Array.isArray(id) ? id : []), DATA: JSON.stringify(item.data || {}), INCLUDE_DATA: Object.hasOwn(item, 'data') ? 'TRUE' : 'FALSE', INCLUDE_METADATA: Object.hasOwn(item, 'metadata') ? 'TRUE' : 'FALSE', METADATA: JSON.stringify(item.metadata || {}) });
+    }
     const domain = id?.split('.')[0], service = item.action.split('.')[1];
     if (!item.data && helperOptions[domain]?.some(option => option[1] === service) && item.action === `${domain}.${service}`) return create(workspace, 'ugso_helper_action', { DOMAIN: domain, ENTITY: id, SERVICE: service });
     if (id?.startsWith('light.') && item.action === 'light.turn_on' && item.data && Object.keys(item.data).length === 2 && Array.isArray(item.data.rgb_color) && item.data.rgb_color.length === 3 && item.data.rgb_color.every(n => Number.isInteger(n) && n >= 0 && n <= 255) && Number.isInteger(item.data.brightness_pct) && item.data.brightness_pct >= 0 && item.data.brightness_pct <= 100) {

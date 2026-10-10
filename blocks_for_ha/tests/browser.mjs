@@ -54,7 +54,7 @@ try {
   await page.locator('.blocklyMutatorIcon').click();
   await page.reload();
   await page.waitForFunction(() => document.getElementById('yaml').textContent.includes('choose:'));
-  assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), branching);
+  assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), fromYaml(toYaml(branching, 'single', { omitId: true })));
   // Check Blockly's real context menu and trash recovery, rather than a custom substitute.
   await page.locator('.blocklyDraggable').last().click({ button: 'right' });
   await page.locator('.blocklyContextMenu').waitFor({ state: 'visible' });
@@ -100,12 +100,12 @@ try {
   await page.waitForFunction(() => document.querySelector('#yaml').textContent.includes('system_log.write'));
   await page.locator('.blocklyToolboxCategory').filter({ hasText: 'System' }).click();
   assert.equal(await page.locator('.blocklyFlyout:not(.blocklyTrashcanFlyout) .blocklyDraggable').count() >= 3, true);
-  assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), systemModel);
+  assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), fromYaml(toYaml(systemModel, 'single', { omitId: true })));
   await page.screenshot({ path: 'artifacts/system.png', fullPage: true });
   await page.locator('#workspace').click({ position: { x: 650, y: 40 } });
   await page.reload();
   await page.waitForFunction(() => document.querySelector('#yaml')?.textContent.includes('system_log.write'));
-  assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), systemModel);
+  assert.deepEqual(fromYaml(await page.locator('#yaml').textContent()), fromYaml(toYaml(systemModel, 'single', { omitId: true })));
   await page.screenshot({ path: 'artifacts/desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);

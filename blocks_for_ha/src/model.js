@@ -11,6 +11,7 @@ const text = (value, path) => { if (typeof value !== 'string' || !value.trim()) 
 const entity = (value, path) => { if (!identifier.test(value)) throw new Error(`${path}: Entität im Format domain.name erwartet.`); return value; };
 const numeric = (value, path) => { if (typeof value !== 'number' || !Number.isFinite(value)) throw new Error(`${path}: Gültige Zahl erwartet.`); return value; };
 const time = (value, path) => { if (typeof value !== 'string' || !/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)) throw new Error(`${path}: Uhrzeit HH:MM oder HH:MM:SS erwartet.`); return value; };
+const oneOrList = (value, path, check) => Array.isArray(value) ? checkList(value, path, check, 1) : check(value, path);
 
 function checkList(items, path, check, min = 0) {
   if (!Array.isArray(items) || items.length < min) throw new Error(`${path}: Mindestens ${min} Eintrag erforderlich.`);
@@ -18,16 +19,17 @@ function checkList(items, path, check, min = 0) {
   items.forEach((item, i) => check(item, `${path} ${i + 1}`));
 }
 function checkTrigger(item, path) {
+  if (item.id !== undefined) text(item.id, path + ' ID');
   if (item.trigger === 'state') {
-    ownKeys(item, ['trigger', 'entity_id', 'to'], path); entity(item.entity_id, path); text(item.to, path);
+    ownKeys(item, ['trigger', 'entity_id', 'to', 'id'], path); entity(item.entity_id, path); oneOrList(item.to, path, text);
   } else if (item.trigger === 'numeric_state') {
-    ownKeys(item, ['trigger', 'entity_id', 'above', 'below'], path); entity(item.entity_id, path); checkRange(item, path);
+    ownKeys(item, ['trigger', 'entity_id', 'above', 'below', 'id'], path); entity(item.entity_id, path); checkRange(item, path);
   } else if (item.trigger === 'time') {
-    ownKeys(item, ['trigger', 'at'], path); time(item.at, path);
+    ownKeys(item, ['trigger', 'at', 'id'], path); time(item.at, path);
   } else if (item.trigger === 'sun') {
-    ownKeys(item, ['trigger', 'event'], path); if (!['sunrise', 'sunset'].includes(item.event)) throw new Error(`${path}: Sonnenereignis ungültig.`);
+    ownKeys(item, ['trigger', 'event', 'id'], path); if (!['sunrise', 'sunset'].includes(item.event)) throw new Error(`${path}: Sonnenereignis ungültig.`);
   } else if (item.trigger === 'homeassistant') {
-    ownKeys(item, ['trigger', 'event'], path); if (item.event !== 'start') throw new Error(`${path}: Nur HA-Start unterstützt.`);
+    ownKeys(item, ['trigger', 'event', 'id'], path); if (item.event !== 'start') throw new Error(`${path}: Nur HA-Start unterstützt.`);
   } else throw new Error(`${path}: Auslöser wird noch nicht unterstützt.`);
 }
 function checkRange(item, path) {
@@ -37,7 +39,9 @@ function checkRange(item, path) {
 }
 function checkCondition(item, path, depth = 0) {
   if (depth > 10) throw new Error('Bedingungen sind zu tief verschachtelt.');
-  if (item.condition === 'template') {
+  if (item.condition === 'trigger') {
+    ownKeys(item, ['condition', 'id'], path); oneOrList(item.id, path, text);
+  } else if (item.condition === 'template') {
     ownKeys(item, ['condition', 'value_template'], path); text(item.value_template, path);
   } else if (item.condition === 'state') {
     ownKeys(item, ['condition', 'entity_id', 'state'], path); entity(item.entity_id, path); text(item.state, path);
@@ -58,8 +62,9 @@ function checkAction(item, path, depth = 0) {
       if (value !== null && !['string', 'boolean'].includes(typeof value) && !(typeof value === 'number' && Number.isFinite(value))) throw new Error(`${path}: Variablenwert muss Text, Template, Zahl, Boolean oder null sein.`);
     }
   } else if (item.action) {
-    ownKeys(item, ['action', 'target', 'data'], path); entity(item.action, path);
-    if (Object.hasOwn(item, 'target')) { ownKeys(item.target, ['entity_id'], path); entity(item.target.entity_id, path); }
+    ownKeys(item, ['action', 'target', 'data', 'metadata'], path); entity(item.action, path);
+    if (Object.hasOwn(item, 'target')) { ownKeys(item.target, ['entity_id'], path); oneOrList(item.target.entity_id, path, entity); }
+    if (Object.hasOwn(item, 'metadata')) { ownKeys(item.metadata, Object.keys(item.metadata || {}), path); if (JSON.stringify(item.metadata).length > 10000) throw new Error(`${path}: Metadaten zu groß.`); }
     if (Object.hasOwn(item, 'data')) { ownKeys(item.data, item.data && typeof item.data === 'object' ? Object.keys(item.data) : [], path); if (JSON.stringify(item.data).length > 10000) throw new Error(`${path}: Aktionsdaten zu groß.`); }
   } else if (Object.hasOwn(item, 'delay')) {
     ownKeys(item, ['delay'], path);
@@ -120,9 +125,11 @@ export function validateAutomation(model) {
   checkList(model.actions, 'Aktion', checkAction, 1);
   return model;
 }
-export function toYaml(model, format = 'single') {
+export function toYaml(model, format = 'single', { omitId = false } = {}) {
   validateAutomation(model);
-  return stringify(format === 'list' ? [model] : model, { lineWidth: 0, aliasDuplicateObjects: false });
+  const { id, ...editorModel } = model;
+  const output = omitId ? editorModel : model;
+  return stringify(format === 'list' ? [output] : output, { lineWidth: 0, aliasDuplicateObjects: false });
 }
 export function fromYaml(source) {
   if (source.length > 1000000) throw new Error('Datei ist größer als 1 MB.');

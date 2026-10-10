@@ -33,7 +33,7 @@ test('Unsupported parameters remain editable in the generic action without data 
     ] };
     modelWorkspace(ws, model);
     assert.equal(ws.getBlocksByType('ugso_service_action').length, 4);
-    assert.deepEqual(workspaceModel(ws, model), { ...model, actions: model.actions.map(a => Object.keys(a.data).length ? a : { action: a.action, target: a.target }) });
+    assert.deepEqual(workspaceModel(ws, model), model);
   } finally { ws.dispose(); }
 });
 test('Text connectors, missing messages and script domain validation', () => {
