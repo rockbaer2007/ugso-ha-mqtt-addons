@@ -3,7 +3,9 @@ import { validActionEntity } from './action-targets.js';
 import { language } from './locales.js';
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 let openPicker;
-let profileNames = new Map();
+const profileNames = {whatsapp:new Map(),signal:new Map()};
+const profileKind = spec => ['callmebot_profile','callmebot_signal_profile'].includes(spec?.kind);
+const profileChannel = field => fieldChoice(field)?.kind === 'callmebot_signal_profile' ? 'signal' : 'whatsapp';
 const defaultRecipient = () => ({de:'Standardempfänger',en:'Default recipient',fr:'Destinataire par défaut'})[language];
 export const entityIdPattern = /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/;
 const targetKinds = ['entity_id','device_id','area_id','floor_id','label_id'];
@@ -32,7 +34,7 @@ export function fieldChoice(field) {
   const block = field?.getSourceBlock(), name = field?.name;
   if (field?.choiceSpec_) return field.choiceSpec_;
   if (!block) return null;
-  if (block.type === 'ugso_callmebot_action' && name === 'PROFILE') return {kind:'callmebot_profile'};
+  if (['ugso_callmebot_action','ugso_callmebot_signal_action'].includes(block.type) && name === 'PROFILE') return {kind:block.type === 'ugso_callmebot_signal_action' ? 'callmebot_signal_profile' : 'callmebot_profile'};
   if (['ugso_service_action','ugso_target_action'].includes(block.type) && name === 'SERVICE') return {kind:'action'};
   if (block.type === 'ugso_target_action' && name === 'TARGET') return {kind:block.getFieldValue('KIND'),structured:true};
   if (block.type === 'ugso_scene' && name === 'SCENE') return {kind:'entity_id',domains:['scene']};
@@ -43,7 +45,7 @@ export function fieldChoice(field) {
 }
 export function validChoice(text, spec) {
   const value = text.trim();
-  if (spec.kind === 'callmebot_profile') return !value || /^[a-z][a-z0-9_]{0,39}$/.test(value);
+  if (profileKind(spec)) return !value || /^[a-z][a-z0-9_]{0,39}$/.test(value);
   if (spec.kind === 'action') return validActionEntity(text);
   if (spec.allowTime) return !!value; // Native HA validation handles clocks, helpers, lists and offsets.
   if (spec.allowNumber && value && Number.isFinite(Number(value))) return true;
@@ -65,7 +67,7 @@ export function matchingChoices(catalog, field, search) {
     if (selected?.domains?.length) domains = selected.domains;
     else if (action && !['homeassistant','script','notify'].includes(action.split('.')[0]) && catalog.entities.some(row=>row.domain===action.split('.')[0])) domains = [action.split('.')[0]];
   }
-  let rows = spec.kind === 'callmebot_profile' ? [{id:'',name:profileNames.get('') || defaultRecipient()},...(catalog.profiles || [])] : spec.kind === 'action' ? catalog.actions : spec.kind === 'entity_id' ? catalog.entities.map(row=>({...row,id:row.entity_id})) : catalog.targets[spec.kind] || [];
+  let rows = profileKind(spec) ? [{id:'',name:profileNames[profileChannel(field)].get('') || defaultRecipient()},...(catalog[profileChannel(field)==='signal'?'signalProfiles':'profiles'] || [])] : spec.kind === 'action' ? catalog.actions : spec.kind === 'entity_id' ? catalog.entities.map(row=>({...row,id:row.entity_id})) : catalog.targets[spec.kind] || [];
   if (spec.kind === 'entity_id') rows = rows.filter(row=>(!domains.length || domains.includes(row.domain)) && (!spec.numeric || ['sensor','input_number','number'].includes(row.domain)));
   const words = search.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
   return rows.filter(row=>words.every(word=>(row.name+' '+row.id).toLocaleLowerCase().includes(word)));
@@ -73,7 +75,7 @@ export function matchingChoices(catalog, field, search) {
 
 class EntityField extends Blockly.FieldTextInput {
   static fromJson(options) { return new EntityField(options.text || ''); }
-  getText() { return (fieldChoice(this)?.kind === 'callmebot_profile' ? profileNames.get(this.getValue()) || this.getValue() || defaultRecipient() : super.getText()) + ' ▾'; }
+  getText() { return (profileKind(fieldChoice(this)) ? profileNames[profileChannel(this)].get(this.getValue()) || this.getValue() || defaultRecipient() : super.getText()) + ' ▾'; }
   showEditor_() {
     if (openPicker && this.getSourceBlock()?.workspace?.rendered) openPicker(this);
     else super.showEditor_();
@@ -105,34 +107,36 @@ export function setupEntities(workspace) {
   dialog.innerHTML='<h2 id="entity-title">HA-Auswahl</h2><p id="entity-status" role="status"></p><label>Suche nach Name oder ID<input id="entity-search" type="search" autocomplete="off"></label><div id="entity-results" aria-label="Gefundene Einträge"></div><p id="entity-count"></p><form id="entity-form"><label>ID, Liste oder HA-Template<textarea id="entity-id" rows="3" autocomplete="off" spellcheck="false"></textarea></label><label><input id="entity-multiple" type="checkbox">Mehrere Ziele auswählen</label><p id="entity-error" role="alert"></p><div class="entity-actions"><button type="button" id="entity-refresh">Neu laden</button><button type="button" id="entity-cancel">Abbrechen</button><button type="submit" class="primary">Übernehmen</button></div></form>';
   document.body.append(dialog);
   const el=id=>dialog.querySelector('#'+id);
-  const catalog={entities:[],actions:fallbackActions,targets:{},profiles:[]};
+  const catalog={entities:[],actions:fallbackActions,targets:{},profiles:[],signalProfiles:[]};
   const messages={entities:'Entitäts-ID kann auch manuell eingegeben werden.',actions:'Gängige Beispielaktionen; HA-Verfügbarkeit prüfen.',targets:'Ziel-ID kann auch manuell eingegeben werden.'};
   let field, loading=false;
   messages.profiles='CallMeBot-Profile nicht geladen. Profil-ID manuell eingeben oder Standardempfänger verwenden.';
-  function group() {const kind=fieldChoice(field)?.kind;return kind==='callmebot_profile'?'profiles':kind==='action'?'actions':kind==='entity_id'?'entities':'targets';}
-  async function refreshProfiles() {
+  messages.signalProfiles='Signal-Profile nicht geladen. Profil-ID manuell eingeben oder Standardempfänger verwenden.';
+  function group() {const kind=fieldChoice(field)?.kind;return kind==='callmebot_signal_profile'?'signalProfiles':kind==='callmebot_profile'?'profiles':kind==='action'?'actions':kind==='entity_id'?'entities':'targets';}
+  async function refreshProfiles(channel='whatsapp') {
+    const key=channel==='signal'?'signalProfiles':'profiles';
     try {
-      const response=await fetch(new URL('./api/ha/callmebot-profiles',document.baseURI),{cache:'no-store',signal:AbortSignal.timeout(12000)});
+      const response=await fetch(new URL(channel==='signal'?'./api/ha/callmebot-signal-profiles':'./api/ha/callmebot-profiles',document.baseURI),{cache:'no-store',signal:AbortSignal.timeout(12000)});
       const data=await response.json();if(!response.ok||!Array.isArray(data.profiles))throw Error();
-      catalog.profiles=data.profiles.filter(p=>p&&typeof p.id==='string'&&/^[a-z][a-z0-9_]{0,39}$/.test(p.id)&&typeof p.name==='string');
-      profileNames=new Map(catalog.profiles.map(p=>[p.id,p.name]));
-      const defaultProfile=catalog.profiles.find(p=>p.id===data.default_profile);
-      if(defaultProfile)profileNames.set('',defaultRecipient()+' · '+defaultProfile.name);
-      messages.profiles='CallMeBot-Profile geladen. Leere Profil-ID verwendet den Standardempfänger.';
+      catalog[key]=data.profiles.filter(p=>p&&typeof p.id==='string'&&/^[a-z][a-z0-9_]{0,39}$/.test(p.id)&&typeof p.name==='string');
+      profileNames[channel]=new Map(catalog[key].map(p=>[p.id,p.name]));
+      const defaultProfile=catalog[key].find(p=>p.id===data.default_profile);
+      if(defaultProfile)profileNames[channel].set('',defaultRecipient()+' · '+defaultProfile.name);
+      messages[key]=channel==='signal'?'Signal-Profile geladen. Leere Profil-ID verwendet den Standardempfänger.':'CallMeBot-Profile geladen. Leere Profil-ID verwendet den Standardempfänger.';
     } catch {
-      catalog.profiles=[];profileNames=new Map();messages.profiles='CallMeBot-Profile nicht verfügbar. CallMeBot-App aktualisieren, MQTT-Verbindung und HA-Discovery prüfen. Profil-ID kann manuell eingegeben werden.';
+      catalog[key]=[];profileNames[channel]=new Map();messages[key]=channel==='signal'?'Signal-Profile nicht verfügbar. Signal-App, MQTT-Verbindung und HA-Discovery prüfen. Profil-ID kann manuell eingegeben werden.':'CallMeBot-Profile nicht verfügbar. CallMeBot-App aktualisieren, MQTT-Verbindung und HA-Discovery prüfen. Profil-ID kann manuell eingegeben werden.';
     }
-    for(const block of workspace.getBlocksByType('ugso_callmebot_action'))block.getField('PROFILE')?.forceRerender();
-    if(fieldChoice(field)?.kind==='callmebot_profile')render();
+    for(const block of workspace.getBlocksByType(channel==='signal'?'ugso_callmebot_signal_action':'ugso_callmebot_action'))block.getField('PROFILE')?.forceRerender();
+    if(profileKind(fieldChoice(field))&&profileChannel(field)===channel)render();
   }
   function selectedIds(){try{const value=JSON.parse(el('entity-id').value);return Array.isArray(value)?value:[];}catch{return [el('entity-id').value];}}
   function render() {
     el('entity-status').textContent=messages[group()]; el('entity-results').replaceChildren();
     const spec=fieldChoice(field), matches=field?matchingChoices(catalog,field,el('entity-search').value):[];
     const titles={action:'HA-Aktion auswählen',entity_id:'Entität auswählen',device_id:'Gerät auswählen',area_id:'Bereich auswählen',floor_id:'Etage auswählen',label_id:'Label auswählen'};
-    el('entity-title').textContent=spec?.kind==='callmebot_profile'?'CallMeBot-Profil auswählen':titles[spec?.kind]||'HA-Auswahl';
-    el('entity-id').parentElement.firstChild.nodeValue=spec?.kind==='callmebot_profile'?'Profil-ID (leer = Standardempfänger)':'ID, Liste oder HA-Template';
-    el('entity-id').rows=spec?.kind==='callmebot_profile'?1:3;
+    el('entity-title').textContent=profileKind(spec)?(profileChannel(field)==='signal'?'Signal-Profil auswählen':'CallMeBot-Profil auswählen'):titles[spec?.kind]||'HA-Auswahl';
+    el('entity-id').parentElement.firstChild.nodeValue=profileKind(spec)?'Profil-ID (leer = Standardempfänger)':'ID, Liste oder HA-Template';
+    el('entity-id').rows=profileKind(spec)?1:3;
     for(const row of matches.slice(0,150)) {
       const button=document.createElement('button');button.type='button';button.className='entity-result';button.dataset.entity=row.id;
       const name=document.createElement('strong'), id=document.createElement('span'), state=document.createElement('small');name.textContent=row.name;id.textContent=row.id;state.textContent=[row.state,row.unit].filter(Boolean).join(' ');button.append(name,id,state);
@@ -168,14 +172,14 @@ export function setupEntities(workspace) {
     el('entity-id').value=String(field.getValue());el('entity-search').value='';el('entity-error').textContent='';
     el('entity-multiple').parentElement.hidden=spec.kind==='action'||!spec.structured||spec.allowNumber||spec.allowTime;
     el('entity-multiple').checked=!el('entity-multiple').parentElement.hidden&&(!!spec.listOnly||el('entity-id').value.trim().startsWith('['));
-    render();dialog.showModal();el('entity-search').focus();if(spec.kind==='callmebot_profile')refreshProfiles();
+    render();dialog.showModal();el('entity-search').focus();if(profileKind(spec))refreshProfiles(profileChannel(field));
   };
   el('entity-search').addEventListener('input',render);el('entity-id').addEventListener('input',()=>{el('entity-error').textContent='';});
-  el('entity-cancel').addEventListener('click',()=>dialog.close());el('entity-refresh').addEventListener('click',()=>group()==='profiles'?refreshProfiles():refresh());loadButton.addEventListener('click',()=>{refresh();refreshProfiles();});
+  el('entity-cancel').addEventListener('click',()=>dialog.close());el('entity-refresh').addEventListener('click',()=>profileKind(fieldChoice(field))?refreshProfiles(profileChannel(field)):refresh());loadButton.addEventListener('click',()=>{refresh();refreshProfiles();refreshProfiles('signal');});
   el('entity-form').addEventListener('submit',event=>{
     event.preventDefault();if(!field||field.getSourceBlock().isDisposed()){dialog.close();return;}
     const raw=el('entity-id').value,text=/\{\{|\{%/.test(raw)?raw:raw.trim(),spec=fieldChoice(field);
-    if(!validChoice(text,spec)){el('entity-error').textContent=spec.kind==='callmebot_profile'?'Profil-ID: Kleinbuchstaben, Ziffern und _; leer für Standardempfänger.':spec.kind==='action'?'Aktionsname wie light.turn_on oder HA-Template erwartet.':'Passende ID, Liste oder HA-Template erwartet.';return;}
+    if(!validChoice(text,spec)){el('entity-error').textContent=profileKind(spec)?'Profil-ID: Kleinbuchstaben, Ziffern und _; leer für Standardempfänger.':spec.kind==='action'?'Aktionsname wie light.turn_on oder HA-Template erwartet.':'Passende ID, Liste oder HA-Template erwartet.';return;}
     const domain=entityDomain(field.getSourceBlock());
     if(domain&&spec.kind==='entity_id'&&text.trim()&&!text.includes('{{')&&!text.includes('{%')) {
       const ids=text.trim().startsWith('[')?JSON.parse(text):[text.trim()];

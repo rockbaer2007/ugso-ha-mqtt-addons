@@ -6,7 +6,8 @@ Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetrage
 
 ## Enthaltene Add-ons
 
-- [UGSo CallMeBot](callmebot/README.md): **experimentelle** WhatsApp-Textnachrichten mit Empfängerprofilen, MQTT und dreisprachigem Blockly-Baustein. Oberfläche: DE/EN/FR.
+- [UGSo CallMeBot Signal](callmebot_signal/README.md): **experimentelle** Signal-Textnachrichten mit Telefon-/UUID-Profilen, eigenem MQTT-Namensraum und dreisprachigem Blockly-Baustein. Oberfläche: DE/EN/FR.
+- [UGSo CallMeBot Whatsapp](callmebot/README.md): **experimentelle** WhatsApp-Textnachrichten mit Empfängerprofilen, MQTT und dreisprachigem Blockly-Baustein. Oberfläche: DE/EN/FR.
 
 - FRITZ!Box to MQTT
 - Heizoel to MQTT

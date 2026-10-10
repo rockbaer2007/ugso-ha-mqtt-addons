@@ -4,6 +4,10 @@ import { uiErrors } from './ui-errors.js';
 // Application-owned presentation only. Never translate stored values or code.
 export const uiTranslations = Object.fromEntries([
   ['CallMeBot-Profil auswählen','Select CallMeBot profile','Choisir le profil CallMeBot'],
+  ['Signal-Profil auswählen','Select Signal profile','Choisir le profil Signal'],
+  ['Signal-Profile nicht geladen. Profil-ID manuell eingeben oder Standardempfänger verwenden.','Signal profiles not loaded. Enter a profile ID or use the default recipient.','Profils Signal non chargés. Saisir un ID ou utiliser le destinataire par défaut.'],
+  ['Signal-Profile geladen. Leere Profil-ID verwendet den Standardempfänger.','Signal profiles loaded. An empty ID uses the default recipient.','Profils Signal chargés. Un ID vide utilise le destinataire par défaut.'],
+  ['Signal-Profile nicht verfügbar. Signal-App, MQTT-Verbindung und HA-Discovery prüfen. Profil-ID kann manuell eingegeben werden.','Signal profiles unavailable. Check the Signal app, MQTT and HA discovery. You can enter the profile ID manually.','Profils Signal indisponibles. Vérifier l’application Signal, MQTT et la découverte HA. L’ID peut être saisi manuellement.'],
   ['Profil-ID (leer = Standardempfänger)','Profile ID (empty = default recipient)','ID du profil (vide = destinataire par défaut)'],
   ['CallMeBot-Profile nicht geladen. Profil-ID manuell eingeben oder Standardempfänger verwenden.','CallMeBot profiles not loaded. Enter a profile ID or use the default recipient.','Profils CallMeBot non chargés. Saisir un ID ou utiliser le destinataire par défaut.'],
   ['CallMeBot-Profile geladen. Leere Profil-ID verwendet den Standardempfänger.','CallMeBot profiles loaded. An empty ID uses the default recipient.','Profils CallMeBot chargés. Un ID vide utilise le destinataire par défaut.'],

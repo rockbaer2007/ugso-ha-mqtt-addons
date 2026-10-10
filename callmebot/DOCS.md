@@ -1,4 +1,4 @@
-# UGSo CallMeBot — DE / EN / FR
+# UGSo CallMeBot Whatsapp — DE / EN / FR
 
 ## Profile selection / Profilauswahl / Sélection de profil — 0.1.2
 

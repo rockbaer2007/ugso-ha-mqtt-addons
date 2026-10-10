@@ -54,7 +54,8 @@ const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 export const definitions = [
   { type: 'ugso_whatsapp_action', message0: 'WhatsApp Integration %1', args0: [{ type: 'field_dropdown', name: 'MODE', options: [['whatsapp.send_message · number', 'number'], ['whatsapp.send_message · target', 'target'], ['notify.whatsapp', 'notify']] }], message1: 'Empfänger %1 Nachricht %2', args1: [{ type: 'field_input', name: 'NUMBER', text: '40741234567' }, value('MESSAGE', 'String')], message2: 'Konto (optional) %1', args2: [{ type: 'field_input', name: 'ACCOUNT', text: '' }], inputsInline: false, previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Benötigt die installierte WhatsApp-Integration. Passende Variante wählen: number (älter), target (aktuell), notify.whatsapp (falls eingerichtet). Nummer mit Ländervorwahl ohne + oder HA-Template. Optionales Konto nur für whatsapp.send_message. Kein CallMeBot oder Schlüssel in Blocks.' },
-  { type: 'ugso_callmebot_action', message0: 'WhatsApp · CallMeBot Profil %1 Nachricht %2 Protokoll %3', args0: [{ type: 'field_input', name: 'PROFILE', text: '' }, value('MESSAGE', 'String'), { type: 'field_dropdown', name: 'LOGLEVEL', options: [['errors', 'errors'], ['none', 'none'], ['info', 'info']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Benötigt UGSo CallMeBot und MQTT. Leeres Profil verwendet den Standardempfänger. Schlüssel bleiben in der App. CallMeBot sendet nur persönliche Textnachrichten an aktivierte Nummern.' },
+  { type: 'ugso_callmebot_action', message0: 'WhatsApp · CallMeBot Profil %1 Nachricht %2 Protokoll %3', args0: [{ type: 'field_input', name: 'PROFILE', text: '' }, value('MESSAGE', 'String'), { type: 'field_dropdown', name: 'LOGLEVEL', options: [['errors', 'errors'], ['none', 'none'], ['info', 'info']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Benötigt UGSo CallMeBot Whatsapp und MQTT. Leeres Profil verwendet den Standardempfänger. Schlüssel bleiben in der App. CallMeBot sendet nur persönliche Textnachrichten an aktivierte Nummern.' },
+  { type: 'ugso_callmebot_signal_action', message0: 'Signal · CallMeBot Profil %1 Nachricht %2 Protokoll %3', args0: [{ type: 'field_input', name: 'PROFILE', text: '' }, value('MESSAGE', 'String'), { type: 'field_dropdown', name: 'LOGLEVEL', options: [['errors', 'errors'], ['none', 'none'], ['info', 'info']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Benötigt UGSo CallMeBot Signal und MQTT. Leeres Profil verwendet den Standardempfänger. Schlüssel bleiben in der App. CallMeBot sendet nur persönliche Textnachrichten an aktivierte Nummern oder UUIDs.' },
   ...advancedDefinitions,
   ...jinjaDefinitions,
   ...timeDefinitions,
@@ -226,7 +227,7 @@ function addExpansionButtons(block) {
 export { Blockly };
 export const knownTypes = new Set([...definitions.map(item => item.type), ...functionTypes]);
 export const toolbox = { kind: 'categoryToolbox', contents: [
-  { kind: 'category', name: 'Nachrichten', colour: '#2682a5', contents: ['ugso_callmebot_action', 'ugso_whatsapp_action'].map(type => ({ kind: 'block', type })) },
+  { kind: 'category', name: 'Nachrichten', colour: '#2682a5', contents: ['ugso_callmebot_action', 'ugso_callmebot_signal_action', 'ugso_whatsapp_action'].map(type => ({ kind: 'block', type })) },
   { kind: 'category', name: 'Jinja (experimentell)', colour: '#8a6635', contents: [...jinjaDefinitions.map(d=>d.type),'ugso_jinja_value','ugso_jinja_condition'].map(type=>({kind:'block',type})) },
   { kind: 'category', name: 'HA erweitert', colour: '#2682a5', contents: advancedDefinitions.filter(d=>!d.type.startsWith('ugso_jinja')).map(({type})=>({kind:'block',type})) },
   { kind: 'category', name: 'System', colour: '#2682a5', contents: ['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) },
@@ -247,7 +248,7 @@ for (const category of toolbox.contents) for (const block of category.contents) 
   if (block.type === 'ugso_time_sun') block.inputs = { OFFSET: { shadow: { type: 'ugso_number', fields: { NUM: 0 } } } };
   if (['ugso_numeric_trigger','ugso_numeric_condition'].includes(block.type)) block.inputs = { LIMIT: { shadow: { type: 'ugso_number', fields: { NUM: 20 } } } };
   if (block.type === 'ugso_delay_action') block.inputs = { SECONDS: { shadow: { type: 'ugso_number', fields: { NUM: 30 } } } };
-  if (['ugso_log_action', 'ugso_callmebot_action', 'ugso_whatsapp_action'].includes(block.type)) block.inputs = { MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'Automation gestartet' } } } };
+  if (['ugso_log_action', 'ugso_callmebot_action', 'ugso_callmebot_signal_action', 'ugso_whatsapp_action'].includes(block.type)) block.inputs = { MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'Automation gestartet' } } } };
   if (block.type === 'ugso_colour_action') block.inputs = { COLOUR: { shadow: { type: 'ugso_colour', fields: { COLOUR: '#ff8800' } } }, BRIGHTNESS: { shadow: { type: 'ugso_percent', fields: { NUM: 50 } } } };
 }
 toolbox.contents.push(
@@ -529,7 +530,8 @@ function readAction(block, depth) {
       const mode = field(block, 'MODE'), account = field(block, 'ACCOUNT').trim();
       return { action: mode === 'notify' ? 'notify.whatsapp' : 'whatsapp.send_message', data: { [mode === 'number' ? 'number' : 'target']: number, message, ...(account && mode !== 'notify' ? {account} : {}) } };
     }
-    case 'ugso_callmebot_action': {
+    case 'ugso_callmebot_action':
+    case 'ugso_callmebot_signal_action': {
       const profile = field(block, 'PROFILE').trim();
       if (profile && !/^[a-z][a-z0-9_]{0,39}$/.test(profile)) throw new Error('CallMeBot: profile ID must use lowercase letters, digits and underscores.');
       const child = block.getInputTargetBlock('MESSAGE');
@@ -540,7 +542,7 @@ function readAction(block, depth) {
       const payload = raw
         ? `{% set ugso_callmebot_message %}${readValue(block, 'MESSAGE')}{% endset %}{{ dict(${options}, message=ugso_callmebot_message) | to_json }}`
         : `{{ dict(${options}, message=(${expression(child)}) | string) | to_json }}`;
-      return { action: 'mqtt.publish', data: { topic: 'ugso/callmebot/send', qos: 0, retain: false, payload } };
+      return { action: 'mqtt.publish', data: { topic: block.type === 'ugso_callmebot_signal_action' ? 'ugso/callmebot_signal/send' : 'ugso/callmebot/send', qos: 0, retain: false, payload } };
     }
     case 'ugso_log_action': {
       const message = readValue(block, 'MESSAGE');

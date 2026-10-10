@@ -1,4 +1,4 @@
-"""Original UGSo CallMeBot Whatsapp gateway. Provider secrets never enter MQTT payloads."""
+"""Original UGSo CallMeBot Signal gateway. Provider secrets never enter MQTT payloads."""
 import json
 import os
 import queue
@@ -11,7 +11,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import HTTPRedirectHandler, Request, build_opener
 
-TOPIC = "ugso/callmebot"
+TOPIC = "ugso/callmebot_signal"
 PROFILE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 
 
@@ -26,9 +26,9 @@ class NoRedirect(HTTPRedirectHandler):
 
 def provider_send(profile, message):
     query = urlencode({"phone": profile["phone"], "text": message,
-                       "apikey": profile["api_key"], "source": "ugso"})
-    request = Request("https://api.callmebot.com/whatsapp.php?" + query,
-                      headers={"User-Agent": "UGSo-CallMeBot/0.1.4"})
+                       "apikey": profile["api_key"]})
+    request = Request("https://signal.callmebot.com/signal/send.php?" + query,
+                      headers={"User-Agent": "UGSo-CallMeBot/0.1.0"})
     try:
         with build_opener(NoRedirect()).open(request, timeout=20) as response:
             body = response.read(16385)
@@ -73,7 +73,7 @@ class Gateway:
                 raise Failure("invalid_profile")
             if not isinstance(name, str) or not 1 <= len(name.strip()) <= 80:
                 raise Failure("invalid_profile")
-            if not isinstance(phone, str) or not re.fullmatch(r"\+[1-9][0-9]{6,14}", phone):
+            if not isinstance(phone, str) or not (re.fullmatch(r"\+[1-9][0-9]{6,14}", phone) or re.fullmatch(r"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}", phone)):
                 raise Failure("invalid_phone")
             if not isinstance(key, str):
                 raise Failure("invalid_key")
@@ -101,7 +101,7 @@ class Gateway:
 
     def profile_catalog(self):
         with self.lock:
-            return {"source": "ugso_callmebot", "profiles": [{"id": p["id"], "name": p["name"]} for p in self.settings["profiles"]],
+            return {"source": "ugso_callmebot_signal", "profiles": [{"id": p["id"], "name": p["name"]} for p in self.settings["profiles"]],
                     "default_profile": self.settings["default_profile"], "count": len(self.settings["profiles"])}
 
     def publish_profiles(self):
@@ -114,7 +114,7 @@ class Gateway:
         with self.lock:
             return {"profiles": [{k: v for k, v in p.items() if k != "api_key"} | {"key_configured": True} for p in self.settings["profiles"]],
                     "default_profile": self.settings["default_profile"], "connected": self.connected,
-                    "recent": list(self.recent), "topic": TOPIC + "/send", "version": "0.1.4"}
+                    "recent": list(self.recent), "topic": TOPIC + "/send", "version": "0.1.0"}
 
     def submit(self, data, retained=False):
         if retained:
@@ -188,7 +188,7 @@ class Gateway:
 def connect_mqtt(gateway, options):
     import paho.mqtt.client as mqtt
     config = options.get("mqtt", {})
-    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="ugso-callmebot", clean_session=True)
+    client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="ugso-callmebot-signal", clean_session=True)
     username = os.environ.get("MQTT_USERNAME", config.get("username", ""))
     password = os.environ.get("MQTT_PASSWORD", config.get("password", ""))
     if username:
@@ -199,12 +199,12 @@ def connect_mqtt(gateway, options):
         if gateway.connected:
             client.subscribe(TOPIC + "/send", qos=0)
             client.publish(TOPIC + "/availability", "online", retain=True)
-            discovery = {"name": "Profiles", "unique_id": "ugso_callmebot_profiles", "default_entity_id": "sensor.ugso_callmebot_profiles",
+            discovery = {"name": "Profiles", "unique_id": "ugso_callmebot_signal_profiles", "default_entity_id": "sensor.ugso_callmebot_signal_profiles",
                          "state_topic": TOPIC + "/profiles", "value_template": "{{ value_json.count }}",
                          "json_attributes_topic": TOPIC + "/profiles", "availability_topic": TOPIC + "/availability",
                          "entity_category": "diagnostic", "icon": "mdi:account-multiple",
-                         "device": {"identifiers": ["ugso_callmebot"], "name": "UGSo CallMeBot Whatsapp", "manufacturer": "UGSo", "sw_version": "0.1.4"}}
-            client.publish("homeassistant/sensor/ugso_callmebot/profiles/config", json.dumps(discovery), retain=True)
+                         "device": {"identifiers": ["ugso_callmebot_signal"], "name": "UGSo CallMeBot Signal", "manufacturer": "UGSo", "sw_version": "0.1.0"}}
+            client.publish("homeassistant/sensor/ugso_callmebot_signal/profiles/config", json.dumps(discovery), retain=True)
             gateway.publish_profiles()
     def disconnected(client, userdata, flags, reason, properties):
         gateway.connected = False

@@ -17,7 +17,7 @@ test('WhatsApp integration variants match native YAML, without API keys', () => 
 });
 
 test('CallMeBot exports escaped message templates and preserves project/YAML semantics', () => {
-  for (const [type, text, expected] of [
+  for (const actionType of ['ugso_callmebot_action','ugso_callmebot_signal_action']) for (const [type, text, expected] of [
     ['ugso_text', 'Quotes "\nGrüße {{ literal }}', 'Quotes "\nGrüße {{ literal }}'],
     ['ugso_template', 'Water: {{ 21.5 | round(1) }} °C', 'Water: 21.5 °C'],
     ['ugso_template', '{% if true %}A "quoted"\nline{% else %}B{% endif %}', 'A "quoted"\nline']
@@ -25,13 +25,13 @@ test('CallMeBot exports escaped message templates and preserves project/YAML sem
     const ws = new Blockly.Workspace(), copy = new Blockly.Workspace();
     try {
       modelWorkspace(ws, { ...examples.light, actions: [] });
-      const action = ws.newBlock('ugso_callmebot_action'); action.setFieldValue('default', 'PROFILE');
+      const action = ws.newBlock(actionType); action.setFieldValue('default', 'PROFILE');
       const message = ws.newBlock(type); message.setFieldValue(text, 'TEXT');
       action.getInput('MESSAGE').connection.connect(message.outputConnection);
       ws.getBlocksByType('ugso_automation')[0].getInput('ACTIONS').connection.connect(action.previousConnection);
       const model = workspaceModel(ws, examples.light), data = model.actions[0].data;
       assert.equal(model.actions[0].action, 'mqtt.publish');
-      assert.equal(data.topic, 'ugso/callmebot/send'); assert.equal(data.retain, false); assert.equal(data.qos, 0);
+      assert.equal(data.topic, actionType==='ugso_callmebot_signal_action'?'ugso/callmebot_signal/send':'ugso/callmebot/send'); assert.equal(data.retain, false); assert.equal(data.qos, 0);
       assert.ok(!JSON.stringify(model).includes('api_key'));
       Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws), copy);
       assert.deepEqual(workspaceModel(copy, examples.light), model);

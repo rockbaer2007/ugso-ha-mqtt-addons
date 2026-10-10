@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.50
+
+- Added Signal · CallMeBot message block in DE/EN/FR with separate profile selector and MQTT topic for UGSo CallMeBot Signal.
+- WhatsApp and Signal profile names/defaults stay isolated; existing WhatsApp block IDs and exports are preserved.
+
 ## 0.1.49
 
 - CallMeBot-Profilfeld öffnet eine durchsuchbare Auswahl mit Profilnamen und Standardempfänger in DE/EN/FR.

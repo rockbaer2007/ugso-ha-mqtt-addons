@@ -1,0 +1,23 @@
+name: CallMeBot Signal checks
+on:
+  push:
+    paths: [callmebot_signal/**, .github/workflows/callmebot-signal.yml]
+  pull_request:
+    paths: [callmebot_signal/**, .github/workflows/callmebot-signal.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s callmebot_signal/tests -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test callmebot_signal/tests/request-id.test.mjs
+      - run: docker build -t ugso-callmebot-signal:test callmebot_signal

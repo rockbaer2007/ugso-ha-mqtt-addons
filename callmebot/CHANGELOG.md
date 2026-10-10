@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.4
+
+- Renamed the app to UGSo CallMeBot Whatsapp. Existing slug, saved profiles, MQTT topics and entity IDs are preserved.
+- Separate UGSo CallMeBot Signal app can run alongside WhatsApp.
+
 ## 0.1.3
 
 - App icon combines a blue Home Assistant house with a green WhatsApp overlay. Includes HA store icon/logo, web header and favicon.

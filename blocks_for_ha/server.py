@@ -60,14 +60,14 @@ def load_entities(environ=None):
     return entity_catalog(load_rest("states", environ))
 
 
-def callmebot_profiles(states):
+def callmebot_profiles(states, source="ugso_callmebot"):
     if not isinstance(states, list):
         raise APIError(502, "CallMeBot-Katalog nicht verfügbar.")
     for row in states:
         if not isinstance(row, dict) or not str(row.get("entity_id", "")).startswith("sensor."):
             continue
         attrs = row.get("attributes")
-        if not isinstance(attrs, dict) or attrs.get("source") != "ugso_callmebot":
+        if not isinstance(attrs, dict) or attrs.get("source") != source:
             continue
         if row.get("state") in ("unknown", "unavailable"):
             raise APIError(503, "CallMeBot ist nicht verbunden. Profil-ID manuell eingeben.")
@@ -216,12 +216,13 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if self.path not in ("/api/ha/entities", "/api/ha/actions", "/api/ha/targets", "/api/ha/callmebot-profiles"):
+        if self.path not in ("/api/ha/entities", "/api/ha/actions", "/api/ha/targets", "/api/ha/callmebot-profiles", "/api/ha/callmebot-signal-profiles"):
             self.reply(404, {"error": "Unbekannter Endpunkt."})
             return
         try:
-            if self.path == "/api/ha/callmebot-profiles":
-                self.reply(200, callmebot_profiles(load_rest("states")))
+            if self.path in ("/api/ha/callmebot-profiles", "/api/ha/callmebot-signal-profiles"):
+                source = "ugso_callmebot_signal" if self.path.endswith("signal-profiles") else "ugso_callmebot"
+                self.reply(200, callmebot_profiles(load_rest("states"), source))
             elif self.path == "/api/ha/actions":
                 self.reply(200, {"actions": action_catalog(load_rest("services"))})
             elif self.path == "/api/ha/targets":

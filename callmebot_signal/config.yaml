@@ -1,17 +1,17 @@
-name: UGSo CallMeBot Whatsapp
-version: "0.1.4"
-slug: callmebot
-description: WhatsApp-Textnachrichten über CallMeBot mit Empfängerprofilen und MQTT
+name: UGSo CallMeBot Signal
+version: "0.1.0"
+slug: callmebot_signal
+description: Signal-Textnachrichten über CallMeBot mit Empfängerprofilen und MQTT
 stage: experimental
-url: https://opensource.ugso-software.de/projects/callmebot/
+url: https://opensource.ugso-software.de/projects/callmebot-signal/
 arch: [amd64, aarch64]
 startup: application
 boot: auto
 init: false
 ingress: true
 ingress_port: 8099
-panel_icon: mdi:message-text-outline
-panel_title: CallMeBot Whatsapp
+panel_icon: mdi:message-outline
+panel_title: CallMeBot Signal
 services: [mqtt:need]
 options:
   mqtt:

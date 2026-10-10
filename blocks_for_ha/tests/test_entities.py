@@ -16,6 +16,16 @@ class EntitiesTest(unittest.TestCase):
         self.assertNotIn('private', json.dumps(result))
         for states in [[], [{'entity_id':'sensor.renamed_catalog','state':'unavailable','attributes':attrs}]]:
             with self.assertRaises(server.APIError): server.callmebot_profiles(states)
+    def test_signal_and_whatsapp_catalogs_are_isolated(self):
+        states = [
+            {'entity_id':'sensor.whatsapp', 'state':'1', 'attributes':{'source':'ugso_callmebot', 'profiles':[{'id':'home','name':'WhatsApp home'}], 'default_profile':'home'}},
+            {'entity_id':'sensor.signal', 'state':'1', 'attributes':{'source':'ugso_callmebot_signal', 'profiles':[{'id':'home','name':'Signal home','phone':'private','api_key':'private'}], 'default_profile':'home'}}
+        ]
+        self.assertEqual(server.callmebot_profiles(states)['profiles'][0]['name'], 'WhatsApp home')
+        signal = server.callmebot_profiles(states, 'ugso_callmebot_signal')
+        self.assertEqual(signal['profiles'][0]['name'], 'Signal home')
+        self.assertNotIn('private', json.dumps(signal))
+
     def test_actions_and_registries_expose_only_selection_metadata(self):
         actions = server.action_catalog([{'domain':'light','services':{'turn_on':{'name':'On','target':{'entity':[{'domain':['light']}]},'secret':'private'}}}, {'domain':'switch','services':['toggle']}])
         self.assertEqual(actions[0], {'id':'light.turn_on','name':'On','domain':'light','domains':['light']})
