@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.49
+
+- CallMeBot-Profilfeld öffnet eine durchsuchbare Auswahl mit Profilnamen und Standardempfänger in DE/EN/FR.
+- Liest nur Profil-IDs, Namen und Standardprofil aus dem HA-MQTT-Katalog der CallMeBot-App 0.1.2. Telefonnummern und API-Schlüssel bleiben im App-Backend.
+- Neu laden aktualisiert die Auswahl; unbekannte oder gelöschte Profil-IDs bleiben im Projekt erhalten. Manuelle ID-Eingabe und leerer Standardempfänger sind weiterhin möglich.
+
 ## 0.1.48
 
 - Neue Kategorie Nachrichten mit DE/EN/FR-Bausteinen für UGSo CallMeBot und die vorhandene WhatsApp-Integration.

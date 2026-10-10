@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2
+
+- MQTT discovery profile catalog for Blocks for HA 0.1.49: profile IDs, names and default recipient only.
+- Retained catalog is updated on profile changes and MQTT reconnection. No phone numbers, messages or API keys in catalog/discovery payloads.
+
 ## 0.1.1
 
 - Sending works when crypto.randomUUID is unavailable, including HTTP Home Assistant Ingress. Request IDs use getRandomValues when available, with a timestamp/counter fallback for older browsers.

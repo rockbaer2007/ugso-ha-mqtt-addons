@@ -60,6 +60,33 @@ def load_entities(environ=None):
     return entity_catalog(load_rest("states", environ))
 
 
+def callmebot_profiles(states):
+    if not isinstance(states, list):
+        raise APIError(502, "CallMeBot-Katalog nicht verfügbar.")
+    for row in states:
+        if not isinstance(row, dict) or not str(row.get("entity_id", "")).startswith("sensor."):
+            continue
+        attrs = row.get("attributes")
+        if not isinstance(attrs, dict) or attrs.get("source") != "ugso_callmebot":
+            continue
+        if row.get("state") in ("unknown", "unavailable"):
+            raise APIError(503, "CallMeBot ist nicht verbunden. Profil-ID manuell eingeben.")
+        profiles, seen = [], set()
+        rows = attrs.get("profiles", [])
+        if not isinstance(rows, list) or len(rows) > 16:
+            raise APIError(502, "CallMeBot-Katalog nicht verfügbar.")
+        for item in rows:
+            if not isinstance(item, dict):
+                continue
+            pid, name = item.get("id"), item.get("name")
+            if isinstance(pid, str) and re.fullmatch(r"[a-z][a-z0-9_]{0,39}", pid) and isinstance(name, str) and pid not in seen:
+                profiles.append({"id": pid, "name": name[:80]})
+                seen.add(pid)
+        default = attrs.get("default_profile", "")
+        return {"profiles": sorted(profiles, key=lambda p: (p["name"].casefold(), p["id"])), "default_profile": default if isinstance(default, str) and default in seen else ""}
+    raise APIError(503, "CallMeBot-App aktualisieren, starten und MQTT-Discovery aktivieren. Profil-ID manuell eingeben.")
+
+
 def load_rest(endpoint, environ=None):
     if endpoint not in ("states", "services"):
         raise APIError(404, "Unbekannter HA-Katalog.")
@@ -189,11 +216,13 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if self.path not in ("/api/ha/entities", "/api/ha/actions", "/api/ha/targets"):
+        if self.path not in ("/api/ha/entities", "/api/ha/actions", "/api/ha/targets", "/api/ha/callmebot-profiles"):
             self.reply(404, {"error": "Unbekannter Endpunkt."})
             return
         try:
-            if self.path == "/api/ha/actions":
+            if self.path == "/api/ha/callmebot-profiles":
+                self.reply(200, callmebot_profiles(load_rest("states")))
+            elif self.path == "/api/ha/actions":
                 self.reply(200, {"actions": action_catalog(load_rest("services"))})
             elif self.path == "/api/ha/targets":
                 self.reply(200, load_targets())

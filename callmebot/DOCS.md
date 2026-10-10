@@ -1,5 +1,13 @@
 # UGSo CallMeBot — DE / EN / FR
 
+## Profile selection / Profilauswahl / Sélection de profil — 0.1.2
+
+**DE:** Mit Blocks for HA 0.1.49 das Profilfeld anklicken, Namen suchen und übernehmen. Standardempfänger oder manuelle ID bleiben möglich. Beide Apps aktualisieren/neustarten. HA-Verbindung und MQTT-Discovery mit Präfix `homeassistant` sind erforderlich. Die App veröffentlicht nur Profil-ID, Name, Standardprofil und Anzahl auf `ugso/callmebot/profiles` und erstellt einen HA-Diagnose-Sensor. Änderungen und MQTT-Neuverbindungen aktualisieren den retained Katalog. Keine Telefonnummern, Nachrichten oder Schlüssel. Profilnamen sind in HA/MQTT sichtbar.
+
+**EN:** In Blocks for HA 0.1.49 click the profile field, search by name and apply. Default recipient and manual IDs remain available. Update/restart both apps. HA connectivity and MQTT discovery with prefix `homeassistant` are required. The app publishes profile ID, name, default and count only on `ugso/callmebot/profiles` and discovers a diagnostic sensor. Changes and MQTT reconnections refresh the retained catalog. No phone numbers, messages or keys. Names are visible in HA/MQTT.
+
+**FR :** Dans Blocks for HA 0.1.49, cliquer sur le champ de profil, rechercher un nom et appliquer. Destinataire par défaut et saisie manuelle restent disponibles. Mettre à jour/redémarrer les deux applications. Connexion HA et découverte MQTT avec préfixe `homeassistant` requises. L’application publie uniquement ID, nom, profil par défaut et nombre sur `ugso/callmebot/profiles`, avec un capteur de diagnostic. Modifications et reconnexions actualisent le catalogue retenu. Sans numéros, messages ni clés. Noms visibles dans HA/MQTT.
+
 ## Einrichtung / Setup / Configuration
 
 **DE:** Aktuelle Bot-Nummer aus der [offiziellen Aktivierungsanleitung](https://www.callmebot.com/blog/free-api-whatsapp-messages/) verwenden. Dem Bot genau `I allow callmebot to send me messages` senden und auf den API-Schlüssel warten. Eigene aktivierte Empfängernummer mit Ländervorwahl und passenden Schlüssel als Profil speichern. Standardprofil auswählen. Die Testschaltfläche sendet wirklich. Die Schlüssel werden nie wieder an die Oberfläche zurückgegeben; ein leeres Schlüsselfeld beim Speichern behält den vorhandenen Schlüssel.

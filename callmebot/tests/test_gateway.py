@@ -35,6 +35,18 @@ class GatewayTests(unittest.TestCase):
         self.g.save({'profiles': [], 'default_profile': ''})
         self.assertEqual(Gateway(self.temp.name).public()['profiles'], [])
 
+    def test_profile_catalog_is_retained_and_contains_no_private_data(self):
+        published = []
+        self.g.publish = lambda topic, payload, **options: published.append((topic,json.loads(payload),options))
+        self.g.publish_profiles()
+        topic, data, options = published[-1]
+        self.assertEqual(topic, 'ugso/callmebot/profiles')
+        self.assertEqual(data, {'source':'ugso_callmebot','profiles':[{'id':'default','name':'Test'}],'default_profile':'default','count':1})
+        self.assertTrue(options['retain'])
+        self.assertNotIn('phone', json.dumps(data)); self.assertNotIn('dummy_secret',json.dumps(data))
+        self.g.save({'profiles':[],'default_profile':''})
+        self.assertEqual(published[-1][1]['profiles'],[])
+
     def test_provider_encoding_and_safe_errors(self):
         response = MagicMock()
         response.__enter__.return_value = response

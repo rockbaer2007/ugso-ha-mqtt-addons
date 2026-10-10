@@ -16,10 +16,14 @@ with tempfile.TemporaryDirectory() as directory:
     connection = connect_mqtt(gateway, {'mqtt':{'host':'127.0.0.1','port':18890}})
     observer = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
     replies = []
+    catalogs, discoveries = [], []
     subscribed = threading.Event()
-    observer.on_connect = lambda client, *args: client.subscribe('ugso/callmebot/result')
+    observer.on_connect = lambda client, *args: client.subscribe([('ugso/callmebot/result',0),('ugso/callmebot/profiles',0),('homeassistant/sensor/ugso_callmebot/profiles/config',0)])
     observer.on_subscribe = lambda *args: subscribed.set()
-    observer.on_message = lambda client, userdata, message: replies.append(json.loads(message.payload))
+    def receive(client, userdata, message):
+        target = catalogs if message.topic.endswith('/profiles') else discoveries if message.topic.endswith('/config') else replies
+        target.append(json.loads(message.payload))
+    observer.on_message = receive
     observer.connect('127.0.0.1',18890); observer.loop_start()
     try:
         assert subscribed.wait(5)
@@ -38,6 +42,19 @@ with tempfile.TemporaryDirectory() as directory:
         assert replies[0]['status']=='accepted', replies
         assert sent==['Mock only "quotes"\nGrüße']
         assert 'dummy_secret' not in json.dumps(replies)
+        for _ in range(100):
+            if catalogs and discoveries: break
+            time.sleep(.05)
+        assert catalogs[-1]['profiles']==[{'id':'default','name':'Test'}]
+        assert discoveries[-1]['json_attributes_topic']=='ugso/callmebot/profiles'
+        assert 'dummy_secret' not in json.dumps(catalogs+discoveries)
+        assert '+49123456789' not in json.dumps(catalogs+discoveries)
+        gateway.save({'profiles':[],'default_profile':''})
+        for _ in range(100):
+            if catalogs[-1]['count']==0: break
+            time.sleep(.05)
+        assert catalogs[-1]['profiles']==[]
+        print('Retained catalog, discovery, updates and secret redaction: passed')
         print('MQTT send -> queue -> mock provider -> result: passed')
     finally:
         observer.disconnect(); observer.loop_stop(); connection.disconnect(); connection.loop_stop()

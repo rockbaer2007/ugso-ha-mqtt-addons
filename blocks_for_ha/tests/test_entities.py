@@ -9,6 +9,13 @@ import server
 
 
 class EntitiesTest(unittest.TestCase):
+    def test_callmebot_profiles_strip_private_fields_and_handle_offline(self):
+        attrs = {'source':'ugso_callmebot','default_profile':'home','profiles':[{'id':'home','name':'Home','phone':'private-phone','api_key':'private-key'},{'id':'bad id','name':'Bad'}],'api_key':'private-key'}
+        result = server.callmebot_profiles([{'entity_id':'sensor.renamed_catalog','state':'1','attributes':attrs}])
+        self.assertEqual(result, {'profiles':[{'id':'home','name':'Home'}],'default_profile':'home'})
+        self.assertNotIn('private', json.dumps(result))
+        for states in [[], [{'entity_id':'sensor.renamed_catalog','state':'unavailable','attributes':attrs}]]:
+            with self.assertRaises(server.APIError): server.callmebot_profiles(states)
     def test_actions_and_registries_expose_only_selection_metadata(self):
         actions = server.action_catalog([{'domain':'light','services':{'turn_on':{'name':'On','target':{'entity':[{'domain':['light']}]},'secret':'private'}}}, {'domain':'switch','services':['toggle']}])
         self.assertEqual(actions[0], {'id':'light.turn_on','name':'On','domain':'light','domains':['light']})

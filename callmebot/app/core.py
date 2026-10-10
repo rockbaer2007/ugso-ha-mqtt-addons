@@ -28,7 +28,7 @@ def provider_send(profile, message):
     query = urlencode({"phone": profile["phone"], "text": message,
                        "apikey": profile["api_key"], "source": "ugso"})
     request = Request("https://api.callmebot.com/whatsapp.php?" + query,
-                      headers={"User-Agent": "UGSo-CallMeBot/0.1.1"})
+                      headers={"User-Agent": "UGSo-CallMeBot/0.1.2"})
     try:
         with build_opener(NoRedirect()).open(request, timeout=20) as response:
             body = response.read(16385)
@@ -97,12 +97,24 @@ class Gateway:
                 os.fsync(stream.fileno())
             os.replace(temporary, self.path)
             self.settings = clean
+        self.publish_profiles()
+
+    def profile_catalog(self):
+        with self.lock:
+            return {"source": "ugso_callmebot", "profiles": [{"id": p["id"], "name": p["name"]} for p in self.settings["profiles"]],
+                    "default_profile": self.settings["default_profile"], "count": len(self.settings["profiles"])}
+
+    def publish_profiles(self):
+        try:
+            self.publish(TOPIC + "/profiles", json.dumps(self.profile_catalog(), ensure_ascii=False), qos=0, retain=True)
+        except Exception:
+            pass  # The latest catalog is republished when MQTT reconnects.
 
     def public(self):
         with self.lock:
             return {"profiles": [{k: v for k, v in p.items() if k != "api_key"} | {"key_configured": True} for p in self.settings["profiles"]],
                     "default_profile": self.settings["default_profile"], "connected": self.connected,
-                    "recent": list(self.recent), "topic": TOPIC + "/send", "version": "0.1.1"}
+                    "recent": list(self.recent), "topic": TOPIC + "/send", "version": "0.1.2"}
 
     def submit(self, data, retained=False):
         if retained:
@@ -187,6 +199,13 @@ def connect_mqtt(gateway, options):
         if gateway.connected:
             client.subscribe(TOPIC + "/send", qos=0)
             client.publish(TOPIC + "/availability", "online", retain=True)
+            discovery = {"name": "Profiles", "unique_id": "ugso_callmebot_profiles", "default_entity_id": "sensor.ugso_callmebot_profiles",
+                         "state_topic": TOPIC + "/profiles", "value_template": "{{ value_json.count }}",
+                         "json_attributes_topic": TOPIC + "/profiles", "availability_topic": TOPIC + "/availability",
+                         "entity_category": "diagnostic", "icon": "mdi:account-multiple",
+                         "device": {"identifiers": ["ugso_callmebot"], "name": "UGSo CallMeBot", "manufacturer": "UGSo", "sw_version": "0.1.2"}}
+            client.publish("homeassistant/sensor/ugso_callmebot/profiles/config", json.dumps(discovery), retain=True)
+            gateway.publish_profiles()
     def disconnected(client, userdata, flags, reason, properties):
         gateway.connected = False
     def received(client, userdata, message):
