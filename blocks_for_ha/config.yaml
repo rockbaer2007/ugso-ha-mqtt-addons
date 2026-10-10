@@ -1,5 +1,5 @@
 name: UGSo Blocks for HA
-version: "0.1.28"
+version: "0.1.29"
 slug: blocks_for_ha
 description: Native Home-Assistant-Automationen mit visuellen Blocks erstellen
 stage: experimental

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.29
+
+- Blockly-Arbeitsfläche füllt die gesamte verfügbare Höhe des Editorbereichs bis zur kompakten Legende. Kein ungenutzter Leerraum unterhalb des Editors bei höherer YAML-Spalte.
+- Größenanpassung der Blockly-SVG-Fläche, Einklappen der Ausgabe und mobile Breite im Browser geprüft.
+
 ## 0.1.28
 
 - Zustandslisten, optionale Trigger-IDs und native Trigger-ID-Bedingung ergänzt (112 Blocktypen).
