@@ -3,6 +3,7 @@ import { validatePackage, packageZip, readPackageZip, blockDefinition, customExp
 import { customExample } from './custom-example.js';
 import { validateAutomation } from './model.js';
 import { localizedToolbox } from './locales.js';
+import { uiText } from './ui-locales.js';
 
 export function refreshCustomToolbox(workspace, toolbox) {
   let category = toolbox.contents.find(item => item.name === 'Benutzerdefiniert');
@@ -36,11 +37,12 @@ export function setupCustomEditor({ Blockly, workspace, install, download, notic
 <div class="custom-library"><button id="custom-export-json">JSON herunterladen</button><button id="custom-export-zip">Katalog-ZIP herunterladen</button></div><p><a href="https://opensource.ugso-software.de/projects/blocks-for-ha/catalog/" target="_blank" rel="noopener noreferrer">Katalog und Veröffentlichung ↗</a></p></section></div>
 <div class="custom-footer"><p id="custom-status" role="status"></p><div><button id="custom-cancel">Abbrechen</button><button id="custom-apply" class="primary">Übernehmen</button></div></div>`;
   document.body.append(dialog);
+  dialog.querySelector('#custom-installed option').textContent=uiText('Paket wählen …');
   const el = id => dialog.querySelector(`#${id}`);
   let draft, active = 0, baseline, preview, previewTimer, valid, mappingText;
-  const emptyBlock = id => ({ id, label: 'Mein Template', tooltip: '', kind: 'value', output: 'String', fields: [], inputs: [], expression: "'Beispiel'" });
-  const fresh = () => ({ format: 'ugso-ha-block-package', schemaVersion: 1, id: 'meine_blocks', version: '1.0.0', name: 'Meine Blockbausteine', author: 'rockbaer2007', license: 'Apache-2.0', description: 'Eigene Blockbausteine für Home Assistant.', dependencies: [], blocks: [emptyBlock('mein_template')] });
-  function status(text, error = false) { el('custom-status').textContent = text; el('custom-status').classList.toggle('error', error); }
+  const emptyBlock = id => ({ id, label: uiText('Mein Template'), tooltip: '', kind: 'value', output: 'String', fields: [], inputs: [], expression: JSON.stringify(uiText('Beispiel')) });
+  const fresh = () => ({ format: 'ugso-ha-block-package', schemaVersion: 1, id: 'meine_blocks', version: '1.0.0', name: uiText('Meine Blockbausteine'), author: 'rockbaer2007', license: 'Apache-2.0', description: uiText('Eigene Blockbausteine für Home Assistant.'), dependencies: [], blocks: [emptyBlock('mein_template')] });
+  function status(text, error = false) { el('custom-status').textContent = uiText(text); el('custom-status').classList.toggle('error', error); }
   function current() { return draft.blocks[active]; }
   function updateBlockList() {
     el('custom-block').replaceChildren(...draft.blocks.map((block, i) => new Option(`${i + 1}. ${block.label}`, String(i)))); el('custom-block').value = String(active);
@@ -85,7 +87,7 @@ export function setupCustomEditor({ Blockly, workspace, install, download, notic
     selectBlock(); if (clean) baseline = canonical(draft);
   }
   function changed() { try { readForm(); return canonical(draft) !== baseline || !!el('custom-import-code').value; } catch { return true; } }
-  function close() { if (!changed() || confirm('Ungespeicherte Änderungen am Blockpaket verwerfen?')) dialog.close(); }
+  function close() { if (!changed() || confirm(uiText('Ungespeicherte Änderungen am Blockpaket verwerfen?'))) dialog.close(); }
   function renderPreview() {
     try {
       if (el('custom-import-code').value.trim()) throw new Error('Eingefügten Code zuerst mit JSON prüfen laden.');
@@ -121,15 +123,15 @@ export function setupCustomEditor({ Blockly, workspace, install, download, notic
     status('Vorschau wird geprüft …'); previewTimer = setTimeout(renderPreview, 180);
   }
   button.addEventListener('click', () => {
-    el('custom-import-code').value = ''; const packages = installedPackages(); el('custom-installed').replaceChildren(new Option('Paket wählen …', ''), ...packages.map(pkg => new Option(`${pkg.name} · ${pkg.version}`, pkg.id)));
+    el('custom-import-code').value = ''; const packages = installedPackages(); el('custom-installed').replaceChildren(new Option(uiText('Paket wählen …'), ''), ...packages.map(pkg => new Option(`${pkg.name} · ${pkg.version}`, pkg.id)));
     dialog.showModal();
     if (!preview) { preview = Blockly.inject('custom-workspace', { readOnly: true, theme: workspace.getTheme(), renderer: 'geras', media: './media/', scrollbars: true, zoom: { startScale: .9, maxScale: 1, minScale: .35 } }); new ResizeObserver(() => { if (dialog.open) Blockly.svgResize(preview); }).observe(el('custom-workspace')); }
     preview.setTheme(workspace.getTheme()); load(fresh(), true); el('custom-name').focus();
   });
   el('custom-close').addEventListener('click', close); el('custom-cancel').addEventListener('click', close);
   dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
-  el('custom-installed').addEventListener('change', () => { const pkg = installedPackages().find(pkg => pkg.id === el('custom-installed').value); if (pkg && (!changed() || confirm('Entwurf durch das geladene Paket ersetzen?'))) load(pkg, true); });
-  el('custom-example').addEventListener('click', () => { if (!changed() || confirm('Entwurf durch das Beispiel ersetzen?')) load(customExample); });
+  el('custom-installed').addEventListener('change', () => { const pkg = installedPackages().find(pkg => pkg.id === el('custom-installed').value); if (pkg && (!changed() || confirm(uiText('Entwurf durch das geladene Paket ersetzen?')))) load(pkg, true); });
+  el('custom-example').addEventListener('click', () => { if (!changed() || confirm(uiText('Entwurf durch das Beispiel ersetzen?'))) load(customExample); });
   el('custom-block').addEventListener('change', () => { try { readForm(); active = Number(el('custom-block').value); selectBlock(); } catch (error) { el('custom-block').value = String(active); status(error.message, true); } });
   el('custom-kind').addEventListener('change', () => {
     const kind = el('custom-kind').value; el('custom-output-label').hidden = ['action', 'trigger', 'condition'].includes(kind);

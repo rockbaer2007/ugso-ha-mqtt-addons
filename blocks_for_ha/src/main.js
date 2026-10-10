@@ -16,6 +16,8 @@ import { setupWorkspaceTools } from './workspace-tools.js';
 import { setupAppearance } from './appearance.js';
 import { setupOutputPanel } from './output-panel.js';
 import { language, languagePreference, languageKey, localizedToolbox, translateLabel } from './locales.js';
+import { uiText, setupUILanguage } from './ui-locales.js';
+const ask = message => confirm(uiText(message));
 
 document.querySelector('#app').innerHTML = `
 <header class="app-header"><a class="brand" href="/"><span class="brand-icon">▦</span><span>UGSo <strong>Blocks for HA</strong></span></a><div class="header-right"><span class="version">Vorschau 0.1.0</span><button id="about">Über & Lizenzen</button></div></header>
@@ -61,8 +63,8 @@ let currentModel;
 let timer;
 let toastTimer;
 const key = 'ugso-blocks-for-ha-project-v1';
-const languageLabel = document.createElement('label'); languageLabel.className = 'theme-label'; languageLabel.textContent = translateLabel('Blocks-Sprache');
-const languageSelect = document.createElement('select'); languageSelect.id = 'block-language'; languageSelect.setAttribute('aria-label', translateLabel('Blocks-Sprache'));
+const languageLabel = document.createElement('label'); languageLabel.className = 'theme-label'; languageLabel.textContent = uiText('Sprache');
+const languageSelect = document.createElement('select'); languageSelect.id = 'block-language'; languageSelect.setAttribute('aria-label', uiText('Sprache'));
 for (const [value, label] of [['system', `${translateLabel('Systemsprache')} (${language.toUpperCase()})`], ['de', 'Deutsch (DE)'], ['en', 'English (EN)'], ['fr', 'Français (FR)']]) languageSelect.add(new Option(label, value));
 languageSelect.value = languagePreference; languageLabel.append(languageSelect); document.querySelector('.header-right').prepend(languageLabel);
 languageSelect.addEventListener('change', () => {
@@ -110,7 +112,7 @@ function syncYamlMode() {
 }
 $('yaml-mode').addEventListener('change', syncYamlMode);
 yamlInput.addEventListener('input', () => { importError.textContent = ''; syncYamlMode(); });
-function notice(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 6000); }
+function notice(message) { $('toast').textContent = uiText(message); $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 6000); }
 themeSelect.addEventListener('change', () => {
   selectedTheme = Object.hasOwn(themes, themeSelect.value) ? themeSelect.value : 'standard';
   workspace.setTheme(themes[selectedTheme]);
@@ -131,12 +133,12 @@ function update() {
     $('valid-badge').textContent = 'Gültig'; $('valid-badge').className = 'valid-badge';
     $('copy').disabled = $('save').disabled = false;
   } catch (error) {
-    currentModel = undefined; $('yaml').textContent = '# Verbinde und vervollständige deine Blocks.\n# Die YAML-Ausgabe erscheint nach erfolgreicher Prüfung.';
-    $('validation').textContent = error.message; $('valid-badge').textContent = 'Prüfen'; $('valid-badge').className = 'valid-badge invalid';
+    currentModel = undefined; $('yaml').textContent = uiText('# Verbinde und vervollständige deine Blocks.\n# Die YAML-Ausgabe erscheint nach erfolgreicher Prüfung.');
+    $('validation').textContent = uiText(error.message); $('valid-badge').textContent = 'Prüfen'; $('valid-badge').className = 'valid-badge invalid';
     $('copy').disabled = $('save').disabled = true;
   }
   syncYamlMode();
-  try { localStorage.setItem(key, JSON.stringify(snapshot())); } catch { $('validation').textContent += ' Browser-Speicher nicht verfügbar; Projekt bitte sichern.'; }
+  try { localStorage.setItem(key, JSON.stringify(snapshot())); } catch { $('validation').textContent += ' '+uiText('Browser-Speicher nicht verfügbar; Projekt bitte sichern.'); }
 }
 function loadModel(model) { validateAutomation(model); modelWorkspace(workspace, model); setMeta(model); update(); requestAnimationFrame(fitCompact); }
 function appendYamlModel(model) {
@@ -186,7 +188,7 @@ $('description').addEventListener('input', () => { metadata.description = $('des
 $('mode').addEventListener('change', () => { metadata.mode = $('mode').value; if (['queued', 'parallel'].includes(metadata.mode)) metadata.max = Number($('max').value); else delete metadata.max; metaFields(); update(); });
 $('max').addEventListener('input', () => { metadata.max = Number($('max').value); update(); });
 $('format').addEventListener('change', update);
-$('load-example').addEventListener('click', () => { if (confirm('Aktuelle Blocks durch das Beispiel ersetzen? Speichere vorher deine Änderungen.')) loadModel(structuredClone(examples[$('example').value])); });
+$('load-example').addEventListener('click', () => { if (ask('Aktuelle Blocks durch das Beispiel ersetzen? Speichere vorher deine Änderungen.')) loadModel(structuredClone(examples[$('example').value])); });
 $('undo').addEventListener('click', () => workspace.undo(false)); $('redo').addEventListener('click', () => workspace.undo(true)); $('fit').addEventListener('click', fitCompact);
 $('copy').addEventListener('click', async () => { if (!currentModel) return; try { await navigator.clipboard.writeText($('yaml').textContent); notice('YAML kopiert.'); } catch { notice('Kopieren nicht verfügbar. YAML markieren und mit Strg+C kopieren.'); } });
 $('save').addEventListener('click', () => {
@@ -195,13 +197,13 @@ $('save').addEventListener('click', () => {
       if (new TextEncoder().encode(yamlInput.value).length > 1000000) throw new Error('YAML-Code ist größer als 1 MB.');
       const imported = fromYaml(yamlInput.value);
       if ($('yaml-replace').checked) {
-        if (!confirm('Willst du die aktuellen Blocks vollständig ersetzen? Sichere vorher dein Projekt.')) return;
+        if (!ask('Willst du die aktuellen Blocks vollständig ersetzen? Sichere vorher dein Projekt.')) return;
         loadModel(imported);
       } else {
         appendYamlModel(imported);
       }
       importError.textContent = ''; $('yaml-mode').value = 'output'; syncYamlMode(); notice('YAML-Code importiert.');
-    } catch (error) { importError.textContent = error.message; importError.hidden = false; }
+    } catch (error) { importError.textContent = uiText(error.message); importError.hidden = false; }
     return;
   }
   if (currentModel) { download($('yaml').textContent, filename(metadata.alias), 'text/yaml;charset=utf-8'); notice('YAML-Datei heruntergeladen.'); }
@@ -217,7 +219,7 @@ for (const [id, load] of [['yaml-file', source => loadModel(fromYaml(source))], 
       const source = await file.text();
       // Validate a YAML import before asking to replace the current project.
       if (id === 'yaml-file') fromYaml(source);
-      if (confirm('Aktuelle Blocks durch die Datei ersetzen? Speichere vorher deine Änderungen.')) { load(source); notice('Datei geöffnet.'); }
+      if (ask('Aktuelle Blocks durch die Datei ersetzen? Speichere vorher deine Änderungen.')) { load(source); notice('Datei geöffnet.'); }
     } catch (error) { notice(error.message); }
     event.target.value = '';
   });
@@ -246,3 +248,4 @@ try {
   } else loadModel(structuredClone(examples.light));
 }
 catch { loadModel(structuredClone(examples.light)); notice('Gesicherter Browserstand konnte nicht geladen werden. Das Beispiel wurde geöffnet.'); }
+setupUILanguage();

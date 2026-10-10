@@ -2,6 +2,7 @@ import { analyseJinja } from './jinja.js';
 import { parseTemplate, generateTemplate } from './jinja-parser.js';
 import { createJinjaBlock } from './jinja-blocks.js';
 import { language } from './locales.js';
+import { uiText as t } from './ui-locales.js';
 export function setupJinjaEditor(Blockly, workspace) {
   const button=document.createElement('button');button.textContent='Jinja einlesen';button.id='jinja-import';document.querySelector('.canvas-actions').append(button);
   const dialog=document.createElement('dialog');dialog.id='jinja-dialog';
@@ -10,7 +11,7 @@ export function setupJinjaEditor(Blockly, workspace) {
   const texts={de:['Als bearbeitbare Blocks zerlegen','Zerlegbar: Felder, Filter und Template-Teile bearbeiten','Nicht vollständig zerlegbar: Originalblock bleibt erhalten','Unverändert bleibt der Originaltext erhalten. Änderungen an zerlegten Blocks erzeugen Jinja. Home Assistant führt das Template aus. Den neuen Block anschließend verbinden.'],en:['Decompose into editable blocks','Can be decomposed: edit fields, filters and template parts','Cannot be fully decomposed: original block is preserved','Unchanged blocks retain the original text. Editing decomposed blocks generates Jinja. Home Assistant evaluates the template. Connect the new block afterwards.'],fr:['Décomposer en blocs modifiables','Décomposition possible : modifier champs, filtres et parties du modèle','Décomposition incomplète : le bloc original est conservé','Les blocs inchangés conservent le texte original. Modifier les blocs décomposés génère Jinja. Home Assistant évalue le modèle. Relier ensuite le nouveau bloc.']}[language];
   const label=document.createElement('label');label.innerHTML='<input id="jinja-decompose" type="checkbox" checked>';label.append(texts[0]);dialog.querySelector('#jinja-boolean').parentElement.after(label);label.nextElementSibling.textContent=texts[3];
   const el=id=>dialog.querySelector('#'+id);
-  function preview(){try{const a=analyseJinja(el('jinja-source').value);let structural=false;try{generateTemplate(parseTemplate(a.source));structural=true;}catch{}el('jinja-preview').textContent=`${a.kind} · ${a.entities.join(', ')||'Keine festen Entitätsreferenzen'} · Filter: ${a.filters.join(', ')||'keine'} · ${structural?texts[1]:texts[2]}`;el('jinja-add').disabled=!a.source.trim();}catch(e){el('jinja-preview').textContent=e.message;el('jinja-add').disabled=true;}}
+  function preview(){try{const a=analyseJinja(el('jinja-source').value);let structural=false;try{generateTemplate(parseTemplate(a.source));structural=true;}catch{}el('jinja-preview').textContent=`${t(a.kind)} · ${a.entities.join(', ')||t('Keine festen Entitätsreferenzen')} · ${language==='fr'?'Filtres':'Filter'}: ${a.filters.join(', ')||t('keine')} · ${structural?texts[1]:texts[2]}`;el('jinja-add').disabled=!a.source.trim();}catch(e){el('jinja-preview').textContent=t(e.message);el('jinja-add').disabled=true;}}
   button.addEventListener('click',()=>{preview();dialog.showModal();el('jinja-source').focus();});
   el('jinja-source').addEventListener('input',preview);el('jinja-cancel').addEventListener('click',()=>dialog.close());
   el('jinja-add').addEventListener('click',async()=>{

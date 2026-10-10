@@ -1,5 +1,7 @@
 # UGSo Blocks for HA
 
+Neu in **0.1.46**: **Sprache → System / DE / EN / FR** übersetzt die gesamte App einschließlich Dialogen, Status, Bestätigungen und Validierungshinweisen. Eigene Namen, HA-Daten, technische IDs sowie YAML/Jinja bleiben unverändert.
+
 Neu in **0.1.45**: Toolbox ohne doppelte Einträge. Zahl unter **Mathematik**, Text unter **Text**, Farbe unter **Farbe**, erweiterbares UND/ODER/NICHT unter **Logik**. **Werte** enthält den Prozentblock. Bestehende Projekte bleiben kompatibel.
 
 Neu in **0.1.44**: durchsuchbare HA-Aktions- und Zielauswahl in einfachen und erweiterten Blocks. Ziele folgen der gewählten Zielart: Entität, Gerät, Bereich, Etage oder Label. Mehrfachauswahl, freie IDs und Jinja bleiben möglich. **HA-Auswahl laden** aktualisiert die lesenden Kataloge. [Anleitung](https://opensource.ugso-software.de/projects/blocks-for-ha/entities).

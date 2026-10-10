@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.46
+
+- Sprachwahl DE/EN/FR/System gilt für die gesamte App: Hauptoberfläche, YAML-Import, HA-Auswahl, Blockpaket-Editor, Tastaturhilfe, Hinweise, Bestätigungen und zugängliche Beschriftungen.
+- Dynamische Statusanzeigen und Validierungsmeldungen lokalisiert; Dokumentationslinks folgen der Sprache. Eigene Texte, Entitäts-/Paketnamen, IDs, Projekte, YAML und Jinja werden nicht automatisch übersetzt.
+- Sprachwechsel, Dialoge, Bearbeitung und mobile Darstellung in DE/EN/FR geprüft; Dokumentation und Oberflächenbilder aktualisiert.
+
 ## 0.1.45
 
 - Vier doppelte Toolbox-Einträge entfernt: Zahl ausschließlich unter Mathematik, Text unter Text, Farbe unter Farbe und erweiterbares UND/ODER/NICHT unter Logik. Unter Werte bleibt der Prozentblock.

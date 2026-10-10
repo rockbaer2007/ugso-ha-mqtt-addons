@@ -1,4 +1,5 @@
 import { translateLabel as t } from './locales.js';
+import { uiText } from './ui-locales.js';
 export const automationOptionKeys = ['variables','trigger_variables','initial_state','trace','max_exceeded'];
 export function replaceAutomationOptions(metadata, options) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) throw Error('HA-Optionen: JSON-Objekt erwartet.');
@@ -16,5 +17,5 @@ export function setupAutomationOptions({getMetadata,apply}) {
   const button=document.createElement('button');button.id='automation-options-apply';button.textContent=t('Anwenden');box.append(button);
   document.querySelector('.more').append(box);
   box.addEventListener('toggle',()=>{if(box.open){const meta=getMetadata();input.value=JSON.stringify(Object.fromEntries(automationOptionKeys.filter(k=>Object.hasOwn(meta,k)).map(k=>[k,meta[k]])),null,2);error.textContent='';}});
-  button.addEventListener('click',()=>{try{apply(replaceAutomationOptions(getMetadata(),JSON.parse(input.value)));error.textContent='';}catch(e){error.textContent=e.message;}});
+  button.addEventListener('click',()=>{try{apply(replaceAutomationOptions(getMetadata(),JSON.parse(input.value)));error.textContent='';}catch(e){error.textContent=uiText(e.message);}});
 }
