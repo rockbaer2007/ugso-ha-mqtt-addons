@@ -11,9 +11,13 @@
 #workspace .blocklyEditableField text.blocklyText{fill:#10232b}
 #workspace .blocklyEditableField text.blocklyText tspan{fill:#10232b!important}
 #workspace .blocklyToolboxSelected{background:#405e72!important;color:#fff!important}
-#workspace pattern line{stroke:#d4dfdc}#workspace[data-theme="dark"] pattern line{stroke:#45525d}
+:root{--editor-background:#fafcfb;--editor-grid:#98aaa5}
+:root[data-appearance="dark"]{--editor-background:#0c151d;--editor-grid:#60717d}
+#workspace .blocklySvg{background-color:var(--editor-background)!important}
+#workspace pattern[id^="blocklyGridPattern"] line{stroke:var(--editor-grid);stroke-width:1;stroke-linecap:round}
 #workspace[data-theme="dark"] .blocklyToolboxCategorySelected{background:#496274!important}
 #workspace[data-theme="dark"] .blocklyZoom image,#workspace[data-theme="dark"] .blocklyTrash image,#workspace[data-theme="dark"] .zoomToFitIcon{filter:brightness(2)}
+:root[data-appearance="dark"] #workspace :is(.blocklyZoom image,.blocklyTrash image,.zoomToFitIcon){filter:brightness(2)}
 .local-badge.connected{color:#176959;background:#e4f3ed}
 #entity-dialog{width:min(620px,calc(100% - 24px));max-height:90vh;padding:22px;border:1px solid var(--border);border-radius:12px;color:#233a36;background:#fff}
 #entity-dialog::backdrop{background:#10232b88}#entity-dialog h2{margin:0 0 12px;font-size:20px}

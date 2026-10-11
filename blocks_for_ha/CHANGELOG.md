@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.51
+
+- Clear native Blockly dot grid with 25-unit spacing and snapping, inspired by the ioBroker editor.
+- Workspace background and grid follow light/dark/system appearance immediately, independently of the Blockly block palette. Zoom and panning keep the native grid aligned.
+
 ## 0.1.50
 
 - Added Signal · CallMeBot message block in DE/EN/FR with separate profile selector and MQTT topic for UGSo CallMeBot Signal.

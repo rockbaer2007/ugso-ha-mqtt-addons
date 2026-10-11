@@ -42,7 +42,7 @@ for (const [id, text] of themeOptions) themeSelect.add(new Option(text, id));
 themeLabel.append(themeSelect); document.querySelector('.canvas-actions').prepend(themeLabel);
 let selectedTheme = savedTheme(() => localStorage); themeSelect.value = selectedTheme;
 document.querySelector('#workspace').dataset.theme = selectedTheme;
-const workspace = Blockly.inject('workspace', { toolbox: localizedToolbox(toolbox), theme: themes[selectedTheme], media: './media/', renderer: 'geras', grid: { spacing: 24, length: 2, colour: selectedTheme === 'dark' ? '#45525d' : '#d4dfdc', snap: true }, zoom: { controls: true, wheel: true, startScale: 1, maxScale: 2.4, minScale: .5 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
+const workspace = Blockly.inject('workspace', { toolbox: localizedToolbox(toolbox), theme: themes[selectedTheme], media: './media/', renderer: 'geras', grid: { spacing: 25, length: 1, colour: '#98aaa5', snap: true }, zoom: { controls: true, wheel: true, startScale: 1, maxScale: 2.4, minScale: .5 }, move: { scrollbars: true, drag: true, wheel: true }, trashcan: true, sounds: false });
 // Blockly explicitly supports overriding the flyout scale. Palette blocks remain
 // readable even when the user zooms out a large automation.
 workspace.getFlyout().getFlyoutScale = () => 1;
