@@ -63,10 +63,65 @@ print(json.dumps(e.from_string(sys.stdin.read()).render()))`],{input:source,enco
     assert.equal(result.status,0,result.stderr);assert.equal(JSON.parse(result.stdout),'Temperature {{ literal }}: 21.6\nno');
     }
     Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws),copy);assert.deepEqual(model(copy),model(ws));
-    assert.deepEqual(copy.getBlocksByType('ugso_number_format')[0].saveExtraState(),{options:['FALLBACK']});
-    format.loadExtraState({options:[]});assert.doesNotMatch(model(ws).actions[0].data.message,/n\/a/);
+    assert.deepEqual(copy.getBlocksByType('ugso_number_format')[0].saveExtraState(),{});
+    format.getInputTargetBlock('FALLBACK').dispose(false);assert.doesNotMatch(model(ws).actions[0].data.message,/n\/a/);
   } finally {ws.dispose();copy.dispose();}
 });
 test('Fallback retains zero and false rather than using truthiness', () => {
   const ws=base();try {const b=make(ws,'ugso_value_fallback');plug(b,'VALUE',make(ws,'ugso_number',{NUM:0}));plug(b,'FALLBACK',make(ws,'ugso_text',{TEXT:'missing'}));message(ws,b);assert.match(model(ws).actions[0].data.message,/in \[none, 'unknown', 'unavailable', ''\]/);} finally {ws.dispose();}
+});
+test('Direct template sockets retain types, stable order, empty positions and project reload without gears',()=>{
+  const ws=base(),copy=new Blockly.Workspace();try{
+    const b=make(ws,'ugso_template_builder');message(ws,b);
+    plug(b,'PART0',make(ws,'ugso_text',{TEXT:'Temperature: '}));
+    plug(b,'PART1',make(ws,'ugso_number',{NUM:21.5}));b.refreshTemplateInputs_();
+    plug(b,'PART2',make(ws,'ugso_template_linebreak'));b.refreshTemplateInputs_();
+    assert.equal(b.getInput('PART0').connection.type,Blockly.ConnectionType.INPUT_VALUE);
+    assert.ok(b.getInput('PART3'));assert.equal(b.decompose,undefined);
+    const source=model(ws).actions[0].data.message;
+    assert.match(source,/Temperature: .*21.5.*\\n/);
+    Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws),copy);assert.deepEqual(model(copy),model(ws));
+    const last=b.getInputTargetBlock('PART2');last.dispose(false);b.refreshTemplateInputs_();assert.ok(b.getInput('PART3'),'empty sockets retain stable IDs for undo');
+  }finally{ws.dispose();copy.dispose();}
+});
+test('Legacy output chains migrate to direct values without losing branches, fallback or disabled outputs',()=>{
+  const ws=base();try{
+    const b=make(ws,'ugso_template_builder');message(ws,b);
+    const out=make(ws,'ugso_template_output');plug(out,'VALUE',make(ws,'ugso_text',{TEXT:'literal {{ text }}'}));plug(b,'PARTS',out);
+    const conditional=make(ws,'ugso_template_if');out.nextConnection.connect(conditional.previousConnection);plug(conditional,'TEST',make(ws,'ugso_boolean',{BOOL:'false'}));
+    const no=make(ws,'ugso_template_output');plug(no,'VALUE',make(ws,'ugso_text',{TEXT:'no'}));plug(conditional,'ELSE',no);
+    const newline=make(ws,'ugso_template_newline');conditional.nextConnection.connect(newline.previousConnection);newline.setDisabledReason(true,'MANUALLY_DISABLED');
+    b.migrateTemplate_();assert.equal(b.getInputTargetBlock('PARTS'),null);assert.equal(ws.getBlocksByType('ugso_template_output').length,0);
+    assert.equal(b.getInputTargetBlock('PART1').type,'ugso_template_conditional');assert.equal(b.getInputTargetBlock('PART2').isEnabled(),false);
+    assert.match(model(ws).actions[0].data.message,/literal \{\{ text \}\}.*if false.*no/);
+  }finally{ws.dispose();}
+});
+test('User time-window and guarded solar-difference templates retain exact source through YAML and projects',()=>{
+  const templates=["{{ '10:00:00' <= now().strftime('%H:%M:%S') < '13:00:00' }}",`{% if trigger.from_state is none or trigger.from_state.state in ['unavailable', 'unknown', 'none'] %}
+  false
+{% else %}
+  {% set diff = (trigger.to_state.state | float(0)) - (trigger.from_state.state | float(0)) %}
+  {{ diff > 10 or diff < -20 }}
+{% endif %}`];
+  for(const source of templates){
+    const ws=new Blockly.Workspace(),copy=new Blockly.Workspace();try{
+      const input={...examples.light,conditions:[{condition:'template',value_template:source}]};modelWorkspace(ws,input);
+      assert.equal(model(ws).conditions[0].value_template,source);
+      assert.equal(fromYaml(toYaml(model(ws))).conditions[0].value_template,source);
+      Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws),copy);assert.equal(model(copy).conditions[0].value_template,source);
+    }finally{ws.dispose();copy.dispose();}
+  }
+  if(process.env.BLOCKS_JINJA_TEST){
+    const result=spawnSync('python',['-c',`import sys,json,datetime,types
+from jinja2.sandbox import ImmutableSandboxedEnvironment
+sources=json.load(sys.stdin);e=ImmutableSandboxedEnvironment()
+for time,wanted in [('09:59:59',False),('10:00:00',True),('12:59:59',True),('13:00:00',False)]:
+ e.globals['now']=lambda:datetime.datetime.fromisoformat('2026-10-11T'+time)
+ assert (e.from_string(sources[0]).render().strip().lower()=='true')==wanted
+for old,new,wanted in [(None,'100',False),('unknown','100',False),('unavailable','100',False),('none','100',False),('100','111',True),('100','79',True),('100','110',False),('100','80',False),('100','not numeric',True)]:
+ trigger=types.SimpleNamespace(from_state=None if old is None else types.SimpleNamespace(state=old),to_state=types.SimpleNamespace(state=new))
+ assert (e.from_string(sources[1]).render(trigger=trigger).strip().lower()=='true')==wanted
+print('ok')`],{input:JSON.stringify(templates),encoding:'utf8'});
+    assert.equal(result.status,0,result.stderr);assert.equal(result.stdout.trim(),'ok');
+  }
 });

@@ -319,6 +319,7 @@ for (const category of toolbox.contents) for (const entry of category.contents |
   if (entry.type === 'ugso_number_format') entry.inputs = { VALUE: shadow('ugso_number', { NUM: 21.56 }), DECIMALS: shadow('ugso_number', { NUM: 1 }) };
   if (entry.type === 'ugso_value_fallback') entry.inputs = { VALUE: shadow('ugso_entity_value', { ENTITY: 'sensor.test' }), FALLBACK: shadow('ugso_text', { TEXT: '—' }) };
   if (entry.type === 'ugso_template_if') entry.inputs = { TEST: shadow('ugso_boolean', { BOOL: 'true' }) };
+  if (entry.type === 'ugso_template_conditional') entry.inputs = { TEST: shadow('ugso_boolean', { BOOL: 'true' }) };
 }
 export function setupVariables(workspace) {
   workspace.registerToolboxCategoryCallback('UGSO_FUNCTIONS', functionToolbox);

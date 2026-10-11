@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.63
+
+- Template uses direct, typed value sockets in vertical rows, like ioBroker's Write file block. A new socket appears automatically when the last one is filled; names remain stable for undo/redo.
+- New line and conditional template outputs connect as values. Conditions accept Boolean inputs, values accept text, numbers and shared System entity values.
+- Template blocks have no gear. Number format exposes its optional fallback directly; conditional output exposes then/else directly.
+- Legacy output chains migrate to direct sockets, retaining order, branches and disabled parts. Project JSON and native Jinja remain compatible. DE/EN/FR documentation updated.
+
 ## 0.1.62
 
 - Shared entity ID, fixed/dynamic entity value and read-once snapshot blocks in System.

@@ -22,22 +22,41 @@ export const systemTemplateDefinitions = [
   { type: 'ugso_entity_snapshot', message0: text('%1 von Entität %2 einmal lesen in %3', 'Read %1 of entity %2 once into %3', 'Lire %1 de l’entité %2 une fois dans %3'), args0: [property, entity, { type: 'field_variable', name: 'VAR', variable: 'entity_value' }], message1: text('mache %1', 'do %1', 'faire %1'), args1: [{ type: 'input_statement', name: 'DO', check: 'Action' }], ...action, tooltip: text('Momentaufnahme in einer HA-Variable; kein Auslöser. Die folgenden Aktionen verwenden denselben gespeicherten Wert.', 'Snapshot in an HA variable, not a trigger. Following actions use the same saved value.', 'Instantané dans une variable HA, pas un déclencheur. Les actions suivantes utilisent la même valeur enregistrée.') },
   { type: 'ugso_automation_control', message0: text('Automation steuern %1 Aktion %2', 'Control automation %1 action %2', 'Contrôler l’automatisation %1 action %2'), args0: [{ ...entity, text: 'automation.test' }, { type: 'field_dropdown', name: 'MODE', options: [[text('aktivieren', 'enable', 'activer'), 'turn_on'], [text('deaktivieren', 'disable', 'désactiver'), 'turn_off'], [text('umschalten', 'toggle', 'basculer'), 'toggle'], [text('jetzt ausführen', 'run now', 'exécuter maintenant'), 'trigger']] }], ...action },
   { type: 'ugso_app_control', message0: text('App steuern %1 Aktion %2', 'Control app %1 action %2', 'Contrôler l’application %1 action %2'), args0: [{ type: 'ugso_field_ha_choice', name: 'APP', text: 'core_mosquitto', choice: { kind: 'app' } }, { type: 'field_dropdown', name: 'MODE', options: [[text('starten', 'start', 'démarrer'), 'start'], [text('stoppen', 'stop', 'arrêter'), 'stop'], [text('neustarten', 'restart', 'redémarrer'), 'restart']] }], ...action, tooltip: text('Benötigt HA Supervisor. App-Kennung aus der HA-Auswahl oder manuell eingeben.', 'Requires HA Supervisor. Choose an app slug from HA or enter it manually.', 'Nécessite HA Supervisor. Choisir l’identifiant de l’application dans HA ou le saisir.') },
-  { type: 'ugso_template_builder', message0: 'Template %1', args0: [body('PARTS')], output: ['Value', 'String'], colour: '#8a6635', tooltip: text('Ausgabeteile von oben nach unten verbinden. Text-, Entitätswert-, Mathematik- und Variablenblocks an Ausgeben anschließen.', 'Connect output parts from top to bottom. Attach text, entity value, math and variable blocks to Output.', 'Relier les parties de haut en bas. Brancher texte, valeur d’entité, mathématiques et variables sur Afficher.') },
+  { type: 'ugso_template_builder', message0: 'Template', output: ['Value', 'String'], colour: '#8a6635', inputsInline: false, tooltip: text('Text, Entitätswerte und weitere Werte direkt an Teil 1, Teil 2 usw. anschließen. Ein weiterer Andockpunkt erscheint automatisch. Ausgabe von oben nach unten.', 'Connect text, entity values and other values directly to Part 1, Part 2, etc. A further socket appears automatically. Output is top to bottom.', 'Brancher texte, valeurs d’entités et autres valeurs sur Partie 1, Partie 2, etc. Une entrée supplémentaire apparaît automatiquement. Sortie de haut en bas.') },
   { type: 'ugso_template_output', message0: text('Ausgeben %1', 'Output %1', 'Afficher %1'), args0: [input('VALUE')], ...part },
   { type: 'ugso_template_newline', message0: text('Zeilenumbruch', 'New line', 'Nouvelle ligne'), ...part },
   { type: 'ugso_template_if', message0: text('falls %1', 'if %1', 'si %1'), args0: [input('TEST', 'Boolean')], message1: text('ausgeben %1', 'output %1', 'afficher %1'), args1: [body('THEN')], ...part },
   { type: 'ugso_number_format', message0: text('Zahlenformat %1 Nachkommastellen %2', 'Number format %1 decimal places %2', 'Format du nombre %1 décimales %2'), args0: [input('VALUE'), input('DECIMALS', 'Number')], output: ['Value', 'String'], colour: '#8a6635', inputsInline: true, tooltip: text('0 bis 10 Nachkommastellen. Ungültige Zahlen ergeben ohne Ersatzwert einen leeren Text.', '0 to 10 decimal places. Invalid numbers produce empty text unless a fallback is supplied.', '0 à 10 décimales. Un nombre invalide donne un texte vide sauf si une valeur de remplacement est fournie.') },
-  { type: 'ugso_value_fallback', message0: text('Wert %1 sonst %2', 'Value %1 otherwise %2', 'Valeur %1 sinon %2'), args0: [input('VALUE'), input('FALLBACK')], output: ['Value', 'String'], colour: '#8a6635', inputsInline: true, tooltip: text('Ersatz für unknown, unavailable, null und leeren Text. 0 und falsch bleiben erhalten.', 'Fallback for unknown, unavailable, null and empty text. Keeps 0 and false.', 'Remplacement pour unknown, unavailable, null et texte vide. Conserve 0 et faux.') }
+  { type: 'ugso_value_fallback', message0: text('Wert %1 sonst %2', 'Value %1 otherwise %2', 'Valeur %1 sinon %2'), args0: [input('VALUE'), input('FALLBACK')], output: ['Value', 'String'], colour: '#8a6635', inputsInline: true, tooltip: text('Ersatz für unknown, unavailable, null und leeren Text. 0 und falsch bleiben erhalten.', 'Fallback for unknown, unavailable, null and empty text. Keeps 0 and false.', 'Remplacement pour unknown, unavailable, null et texte vide. Conserve 0 et faux.') },
+  { type: 'ugso_template_linebreak', message0: text('Zeilenumbruch', 'New line', 'Nouvelle ligne'), output: ['Value','String'], colour: '#8a6635' },
+  { type: 'ugso_template_conditional', message0: text('falls %1', 'if %1', 'si %1'), args0: [input('TEST','Boolean')], message1: text('dann %1', 'then %1', 'alors %1'), args1: [input('THEN')], message2: text('sonst %1', 'else %1', 'sinon %1'), args2: [input('ELSE')], output: ['Value','String'], colour: '#8a6635', inputsInline: false }
 ];
 export const systemTypes = systemTemplateDefinitions.slice(0, 6).map(d => d.type);
-export const templateTypes = systemTemplateDefinitions.slice(6).map(d => d.type);
+export const templateTypes = ['ugso_template_builder','ugso_template_linebreak','ugso_template_conditional','ugso_number_format','ugso_value_fallback'];
 for (const d of systemTemplateDefinitions) blockTranslations[d.type] = [...(labels[d.message0] || [d.message0, d.message0]), ...(d.tooltip ? labels[d.tooltip] : [])];
 defining = false;
 
 // Permanent named rows preserve fields and connections during project loading.
 // A native gear selects optional rows; no additional shortcut buttons.
 export function setupSystemTemplate(Blockly, block, previewSource) {
-  if (block.type === 'ugso_template_builder') block.customContextMenu = menu => menu.push({ text: text('Template-Vorschau / Jinja', 'Template preview / Jinja', 'Aperçu du template / Jinja'), enabled: true, callback: () => showPreview(previewSource) });
+  if (block.type === 'ugso_template_builder') {
+    setupTemplateSockets(Blockly, block);
+    block.customContextMenu = menu => menu.push({ text: text('Template-Vorschau / Jinja', 'Template preview / Jinja', 'Aperçu du template / Jinja'), enabled: true, callback: () => showPreview(previewSource) });
+    return;
+  }
+  if (block.type === 'ugso_template_if') {
+    block.appendStatementInput('ELSE').setCheck('TemplatePart').appendField(text('sonst','else','sinon'));
+    block.optionEnabled_ = () => true;block.saveExtraState = () => ({});block.loadExtraState = () => {};
+    return;
+  }
+  if (block.type === 'ugso_number_format') {
+    block.getInput('DECIMALS').connection.setShadowState({ type: 'ugso_number', fields: { NUM: 1 } });
+    block.appendValueInput('FALLBACK').appendField(text('Ersatzwert (optional)','Fallback (optional)','Remplacement (facultatif)'));
+    block.setInputsInline(false);
+    block.optionEnabled_ = () => !!block.getInputTargetBlock('FALLBACK');
+    block.saveExtraState = () => ({});block.loadExtraState = () => {};
+    return;
+  }
   const options = [];
   const option = (key, label, create, used = () => false) => {
     const row = create(); options.push({ key, label, row, used });
@@ -47,11 +66,6 @@ export function setupSystemTemplate(Blockly, block, previewSource) {
     option('CONDITIONS', text('Bedingungen berücksichtigen', 'Check conditions', 'Vérifier les conditions'), () => block.appendDummyInput('CONDITIONS').appendField(text('Bedingungen berücksichtigen', 'Check conditions', 'Vérifier les conditions')).appendField(new Blockly.FieldCheckbox('TRUE'), 'CHECK_CONDITIONS'));
     option('STOP', text('Laufende Aktionen stoppen', 'Stop running actions', 'Arrêter les actions en cours'), () => block.appendDummyInput('STOP').appendField(text('Laufende Aktionen stoppen', 'Stop running actions', 'Arrêter les actions en cours')).appendField(new Blockly.FieldCheckbox('TRUE'), 'STOP_ACTIONS'));
     option('TARGET', text('Entitäts-ID anschließen', 'Connect entity ID', 'Brancher l’ID d’entité'), () => block.appendValueInput('TARGET').appendField(text('Entitäts-ID', 'Entity ID', 'ID de l’entité')));
-  }
-  if (block.type === 'ugso_template_if') option('ELSE', text('sonst', 'else', 'sinon'), () => block.appendStatementInput('ELSE').setCheck('TemplatePart').appendField(text('sonst', 'else', 'sinon')));
-  if (block.type === 'ugso_number_format') {
-    block.getInput('DECIMALS').connection.setShadowState({ type: 'ugso_number', fields: { NUM: 1 } });
-    option('FALLBACK', text('Ersatzwert', 'Fallback', 'Valeur de remplacement'), () => block.appendValueInput('FALLBACK').appendField(text('Ersatzwert', 'Fallback', 'Valeur de remplacement')));
   }
   if (!options.length) return;
   let selected = new Set();
@@ -83,6 +97,58 @@ export function setupSystemTemplate(Blockly, block, previewSource) {
   block.saveConnections = () => {};
   refresh();
   if (block instanceof Blockly.BlockSvg) block.setMutator(new Blockly.icons.MutatorIcon(types, block));
+}
+
+function setupTemplateSockets(Blockly, block) {
+  // Retain the old statement input for loading 0.1.62 project JSON. It is
+  // migrated to ordinary value inputs once Blockly has loaded its children.
+  const legacy=block.appendStatementInput('PARTS').setCheck('TemplatePart');
+  if(block.workspace.rendered)legacy.setVisible(false);else legacy.visible_=false;
+  let count=0, migrating=false;
+  const resize = size => {
+    while(count<size)block.appendValueInput(`PART${count++}`).setCheck(['Value','String','Number','Boolean','Colour','Array','Object','DateTime','RuntimeNumber']).appendField(text('Teil','Part','Partie')+' '+count);
+    while(count>size)block.removeInput(`PART${--count}`);
+  };
+  block.refreshTemplateInputs_ = () => {
+    let last=-1;for(let i=0;i<count;i++)if(block.getInputTargetBlock(`PART${i}`))last=i;
+    // Keep empty sockets stable so undo/redo can reconnect to the same name.
+    resize(Math.min(1000,Math.max(count,2,last+2)));
+  };
+  block.saveExtraState = () => ({ parts: count });
+  block.loadExtraState = state => { const n=state?.parts;resize(Number.isInteger(n)&&n>=2&&n<=1000?n:2); };
+  resize(2);
+  block.migrateTemplate_ = () => {
+    if(migrating||!block.getInputTargetBlock('PARTS'))return;
+    const old=[];for(let b=block.getInputTargetBlock('PARTS');b;b=b.getNextBlock())old.push(b);
+    if(old.some(b=>!['ugso_template_output','ugso_template_newline','ugso_template_if'].includes(b.type)))return;
+    migrating=true;
+    try {
+      let index=0;while(index<count&&block.getInputTargetBlock(`PART${index}`))index++;
+      resize(Math.max(count,index+old.length+1));
+      for(const b of old){if(b.previousConnection?.isConnected())b.previousConnection.disconnect();if(b.nextConnection?.isConnected())b.nextConnection.disconnect();}
+      const make = type => {const b=block.workspace.newBlock(type);if(block.workspace.rendered){b.initSvg();b.render();}return b;};
+      const detach = (b,name) => {const value=b.getInputTargetBlock(name);value?.outputConnection?.disconnect();return value;};
+      for(const b of old){
+        let value;
+        if(b.type==='ugso_template_output')value=detach(b,'VALUE');
+        else if(b.type==='ugso_template_newline')value=make('ugso_template_linebreak');
+        else {
+          value=make('ugso_template_conditional');const test=detach(b,'TEST');if(test)value.getInput('TEST').connection.connect(test.outputConnection);
+          for(const name of ['THEN','ELSE']){
+            const first=b.getInputTargetBlock(name);if(!first)continue;
+            first.previousConnection.disconnect();const nested=make('ugso_template_builder');nested.getInput('PARTS').connection.connect(first.previousConnection);nested.migrateTemplate_();value.getInput(name).connection.connect(nested.outputConnection);
+          }
+        }
+        if(value){if(!b.isEnabled())value.setDisabledReason(true,'MANUALLY_DISABLED');block.getInput(`PART${index}`).connection.connect(value.outputConnection);}
+        index++;b.dispose(false);
+      }
+      block.refreshTemplateInputs_();
+    }finally{migrating=false;}
+  };
+  block.setOnChange(event=>{
+    if(block.isDisposed())return;
+    if(event.type===Blockly.Events.BLOCK_CREATE||event.type===Blockly.Events.BLOCK_MOVE){block.migrateTemplate_();block.refreshTemplateInputs_();}
+  });
 }
 
 async function showPreview(source) {
@@ -128,7 +194,14 @@ export function systemTemplateExpression(block, child, expression) {
     return JSON.stringify(f(block, 'ENTITY'));
   }
   if (['ugso_entity_value', 'ugso_entity_value_dynamic'].includes(block.type)) return entityValueExpression(block, child);
-  if (block.type === 'ugso_template_builder') return templateParts(block.getInputTargetBlock('PARTS'), expression);
+  if (block.type === 'ugso_template_builder') {
+    const parts=[];
+    if(block.getInputTargetBlock('PARTS'))parts.push(templateParts(block.getInputTargetBlock('PARTS'),expression));
+    for(const row of block.inputList)if(/^PART\d+$/.test(row.name)&&block.getInputTargetBlock(row.name)?.isEnabled())parts.push(`((${child(row.name)}) | string)`);
+    return parts.length?`(${parts.join(' ~ ')})`:"''";
+  }
+  if (block.type === 'ugso_template_linebreak') return JSON.stringify('\n');
+  if (block.type === 'ugso_template_conditional') return `((${block.getInputTargetBlock('THEN')?child('THEN'):"''"}) if ${child('TEST')} else (${block.getInputTargetBlock('ELSE')?child('ELSE'):"''"}))`;
   if (block.type === 'ugso_value_fallback') { const v = child('VALUE'); return `(${child('FALLBACK')} if (${v}) in [none, 'unknown', 'unavailable', ''] else (${v}))`; }
   if (block.type === 'ugso_number_format') {
     const v = child('VALUE'), decimals = child('DECIMALS');
