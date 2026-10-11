@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.15
+
+- MQTT.org symbol added as Home Assistant app icon/logo, web header icon and favicon.
+- Relative icon URL supports Home Assistant Ingress; source attribution included.
+
 ## 0.1.14
 
 - Published states and attributes before subscribing device/value `/set` command topics, so ioBroker receives the value tree before return-command branches.

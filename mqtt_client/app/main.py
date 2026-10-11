@@ -28,7 +28,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.14"
+APP_VERSION = "0.1.15"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -82,11 +82,14 @@ INDEX_HTML = """<!doctype html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MQTT-Client</title>
+  <link rel="icon" type="image/svg+xml" href="./mqtt-icon.svg">
   <style>
     :root { color-scheme: light dark; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
     body { margin: 0; background: var(--primary-background-color, #111827); color: var(--primary-text-color, #f9fafb); }
     main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 32px; }
     h1 { font-size: 1.35rem; margin: 0 0 18px; font-weight: 650; }
+    h1 { display: flex; align-items: center; gap: 10px; }
+    h1 img { width: 36px; height: 36px; flex-shrink: 0; }
     h2 { font-size: 1rem; margin: 0 0 10px; font-weight: 650; }
     form, .panel { border: 1px solid rgba(148, 163, 184, .35); border-radius: 8px; padding: 14px; background: var(--ha-card-background, rgba(15, 23, 42, .38)); }
     form { display: grid; gap: 14px; margin-bottom: 16px; }
@@ -138,7 +141,7 @@ INDEX_HTML = """<!doctype html>
 </head>
 <body>
   <main>
-    <h1>MQTT-Client</h1>
+    <h1><img src="./mqtt-icon.svg" width="36" height="36" alt="">MQTT-Client</h1>
     <div id="status" class="status"><span class="dot"></span><span>Keine Verbindung</span></div>
     <form id="form" autocomplete="off">
       <div class="row">
@@ -1219,6 +1222,14 @@ def make_handler(controller):
             self.wfile.write(body)
 
         def do_GET(self):
+            if self.path.split("?", 1)[0].endswith("/mqtt-icon.svg"):
+                body = (Path(__file__).parent / "mqtt-icon.svg").read_bytes()
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "image/svg+xml")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             if self.path.endswith("/api/config"):
                 try:
                     self.send_json(HTTPStatus.OK, controller.public_config())
