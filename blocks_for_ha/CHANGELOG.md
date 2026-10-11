@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.52
+
+- Start with an empty editor when no saved project exists; examples are loaded only explicitly.
+- Saved projects still resume. Empty projects support reload and language selection; recovery no longer opens an example.
+- Automation root is available in System. YAML import into an empty editor needs no replacement option.
+
 ## 0.1.51
 
 - Clear native Blockly dot grid with 25-unit spacing and snapping, inspired by the ioBroker editor.

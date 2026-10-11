@@ -58,7 +58,7 @@ setupVariables(workspace);
 setupWorkspaceTools(workspace);
 setupEntities(workspace);
 setupJinjaEditor(Blockly, workspace);
-let metadata = {};
+let metadata = { mode: 'single' };
 let currentModel;
 let timer;
 let toastTimer;
@@ -68,7 +68,7 @@ const languageSelect = document.createElement('select'); languageSelect.id = 'bl
 for (const [value, label] of [['system', `${translateLabel('Systemsprache')} (${language.toUpperCase()})`], ['de', 'Deutsch (DE)'], ['en', 'English (EN)'], ['fr', 'Français (FR)']]) languageSelect.add(new Option(label, value));
 languageSelect.value = languagePreference; languageLabel.append(languageSelect); document.querySelector('.header-right').prepend(languageLabel);
 languageSelect.addEventListener('change', () => {
-  try { validateAutomation(workspaceModel(workspace, metadata)); }
+  try { if (workspace.getAllBlocks(false).length) validateAutomation(workspaceModel(workspace, metadata)); }
   catch { languageSelect.value = languagePreference; notice('Zum Sprachwechsel die Blocks vervollständigen oder zuerst ein gültiges Projekt öffnen.'); return; }
   try {
     // Save the complete workspace before recreating Blockly with a different locale.
@@ -126,7 +126,12 @@ function metaFields() {
 function setMeta(model) { const { triggers, conditions, actions, ...meta } = model; metadata = meta; metaFields(); }
 function snapshot() { return { format: 'ugso-blocks-for-ha', version: 3, metadata, packages: usedPackages(workspace), workspace: Blockly.serialization.workspaces.save(workspace) }; }
 function update() {
-  try {
+  if (!workspace.getAllBlocks(false).length) {
+    currentModel = undefined; $('yaml').textContent = '';
+    $('validation').textContent = uiText('Ziehe „Automation“ aus „System“ in den Editor oder importiere YAML.');
+    $('valid-badge').textContent = uiText('Leer'); $('valid-badge').className = 'valid-badge';
+    $('copy').disabled = $('save').disabled = true;
+  } else try {
     currentModel = validateAutomation(workspaceModel(workspace, metadata));
     $('yaml').textContent = toYaml(currentModel, $('format').value, { omitId: $('format').value === 'single' });
     $('validation').textContent = 'Struktur geprüft · Entitäten und Aktionen in HA prüfen.';
@@ -142,6 +147,7 @@ function update() {
 }
 function loadModel(model) { validateAutomation(model); modelWorkspace(workspace, model); setMeta(model); update(); requestAnimationFrame(fitCompact); }
 function appendYamlModel(model) {
+  if (!workspace.getAllBlocks(false).length) { loadModel(model); return; }
   if (!currentModel) throw new Error('Die aktuelle Automation ist unvollständig. Zum Importieren „Aktuelle Automation vollständig ersetzen“ aktivieren oder die Blocks vervollständigen.');
   const project = snapshot();
   const temp = new Blockly.Workspace();
@@ -172,7 +178,7 @@ function restoreProject(data) {
     const check = value => { if (!value || typeof value !== 'object') return; if (Object.hasOwn(value, 'type') && !knownTypes.has(value.type) && !customDefinition(value.type)) throw new Error(`Blockpaket fehlt: ${value.type}`); if (value.type === 'ugso_if_action' && !value.extraState) value.extraState = { branches: 0, hasElse: !!value.inputs?.ELSE }; Object.values(value).forEach(check); };
     check(data.workspace.blocks);
     Blockly.serialization.workspaces.load(data.workspace, temp);
-    validateAutomation(workspaceModel(temp, data.metadata));
+    if (temp.getAllBlocks(false).length) validateAutomation(workspaceModel(temp, data.metadata));
   } finally { temp.dispose(); }
   });
   Blockly.serialization.workspaces.load(data.workspace, workspace); metadata = data.metadata; metaFields(); update();
@@ -245,7 +251,7 @@ try {
     if (draft && typeof draft.yaml === 'string' && ['output', 'import'].includes(draft.mode)) {
       yamlInput.value = draft.yaml; $('yaml-mode').value = draft.mode; $('yaml-replace').checked = draft.replace === true; syncYamlMode();
     }
-  } else loadModel(structuredClone(examples.light));
+  } else { metaFields(); update(); }
 }
-catch { loadModel(structuredClone(examples.light)); notice('Gesicherter Browserstand konnte nicht geladen werden. Das Beispiel wurde geöffnet.'); }
+catch { workspace.clear(); metadata = { mode: 'single' }; metaFields(); update(); notice('Gesicherter Browserstand konnte nicht geladen werden. Der Editor wurde leer geöffnet.'); }
 setupUILanguage();

@@ -230,7 +230,7 @@ export const toolbox = { kind: 'categoryToolbox', contents: [
   { kind: 'category', name: 'Nachrichten', colour: '#2682a5', contents: ['ugso_callmebot_action', 'ugso_callmebot_signal_action', 'ugso_whatsapp_action'].map(type => ({ kind: 'block', type })) },
   { kind: 'category', name: 'Jinja (experimentell)', colour: '#8a6635', contents: [...jinjaDefinitions.map(d=>d.type),'ugso_jinja_value','ugso_jinja_condition'].map(type=>({kind:'block',type})) },
   { kind: 'category', name: 'HA erweitert', colour: '#2682a5', contents: advancedDefinitions.filter(d=>!d.type.startsWith('ugso_jinja')).map(({type})=>({kind:'block',type})) },
-  { kind: 'category', name: 'System', colour: '#2682a5', contents: ['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) },
+  { kind: 'category', name: 'System', colour: '#2682a5', contents: [{ kind: 'block', type: 'ugso_automation' }, ...['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` }))] },
   { kind: 'category', name: 'Werte', colour: '#2e7653', contents: [{ kind: 'block', type: 'ugso_percent' }] },
   { kind: 'category', name: 'Datum und Zeit', colour: '#8056a1', contents: [{ kind: 'block', type: 'ugso_date_condition' }, ...timeDefinitions.map(({ type }) => ({ kind: 'block', type }))] },
   { kind: 'category', name: 'Konvertierung', colour: '#9463a6', contents: conversionDefinitions.map(({ type }) => ({ kind: 'block', type })) },
