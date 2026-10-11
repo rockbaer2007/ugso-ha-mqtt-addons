@@ -25,6 +25,23 @@ test('Saved theme rejects unknown preferences and handles inaccessible storage',
   assert.equal(savedTheme(() => { throw new Error('blocked'); }), 'standard');
   assert.equal(labelInk('#e6da39'), '#10232b'); assert.equal(labelInk('#1e1e1e'), '#ffffff');
 });
+
+test('Expandable If is available once in Logic with blue logic and brown object styles', () => {
+  const categories = toolbox.contents.filter(c => c.contents?.some(b => b.type === 'ugso_if_action'));
+  assert.equal(categories.length, 1);
+  assert.equal(categories[0].categorystyle, 'ugso_logic_category');
+  const ws = new Blockly.Workspace();
+  try {
+    const block = ws.newBlock('ugso_if_action');
+    assert.equal(block.getStyleName(), 'ugso_logic');
+    block.loadExtraState({ branches: 2, hasElse: true });
+    for (const name of ['CONDITIONS', 'THEN', 'C1', 'T1', 'C2', 'T2', 'ELSE']) assert.ok(block.getInput(name), name);
+    for (const id of ['standard', 'dark']) {
+      assert.equal(themes[id].blockStyles.ugso_logic.colourPrimary, readableBlockColour('#5b80a5'));
+      assert.equal(themes[id].blockStyles.ugso_object.colourPrimary, readableBlockColour('#8a614b'));
+    }
+  } finally { ws.dispose(); }
+});
 test('UGSo coloured labels use white and all theme labels have at least 4.5:1 contrast', () => {
   for (const [id, theme] of Object.entries(themes)) for (const [name, style] of Object.entries(theme.blockStyles)) {
     if (!name.startsWith('ugso_')) continue;

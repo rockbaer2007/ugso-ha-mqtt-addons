@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.56
+
+- Added the expandable If / Else if / Else action block to Logic, with its gear and quick expansion controls.
+- Logic is blue and Objects brown in Standard/Dark; Modern/Tritanopia retain their original palettes.
+- Existing projects and conditional-action YAML remain compatible.
+
 ## 0.1.55
 
 - Removed UGSo from the visible application name; existing technical IDs, saved data and MQTT topics remain compatible.

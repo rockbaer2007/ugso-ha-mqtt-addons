@@ -27,10 +27,11 @@ const groups = {
 };
 export const themeKey = 'ugso-blocks-for-ha-theme-v1';
 export const themeOptions = [['standard', 'UGSo Standard'], ['dark', 'Dark'], ['modern', 'Modern'], ['tritanopia', 'Tritanopia']];
+const standardColours = { logic: '#5b80a5', object: '#8a614b' };
 export const themes = Object.fromEntries(themeOptions.map(([id]) => {
   const base = bases[id], blockStyles = {}, categoryStyles = {};
   for (const [colour, [group, upstream, accessible]] of Object.entries(groups)) {
-    const palette = id === 'standard' || id === 'dark' ? { colourPrimary: readableBlockColour(colour) } : id === 'tritanopia' && accessible ? { colourPrimary: accessible } : { ...base.blockStyles[upstream] };
+    const palette = id === 'standard' || id === 'dark' ? { colourPrimary: readableBlockColour(standardColours[group] || colour) } : id === 'tritanopia' && accessible ? { colourPrimary: accessible } : { ...base.blockStyles[upstream] };
     blockStyles[`ugso_${group}`] = palette;
     categoryStyles[`ugso_${group}_category`] = { colour: palette.colourPrimary };
   }
