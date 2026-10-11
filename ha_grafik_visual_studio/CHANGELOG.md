@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.290
+
+- Entf löscht ausgewählte Widgets über denselben Löschdialog wie der Papierkorb, einschließlich Mehrfachauswahl und Rückgängig. Die bestehende freiwillige Unterdrückung der Abfrage gilt auch hier.
+- Delete uses the existing confirmation dialog for selected widgets, including multiple selection and undo. Text editing, open dialogs, held keys and runtime do not trigger widget deletion.
+
 ## 0.1.289
 
 - Der Speichern-Button zeigt laufendes Speichern orange, erfolgreiche Speicherung kurz grün und Fehler kurz rot. Danach gilt wieder die normale Farbe, auch bei Autospeichern.
