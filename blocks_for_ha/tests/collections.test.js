@@ -9,6 +9,12 @@ function fixture(type) {
   const ws = new Blockly.Workspace(), def = collectionDefinitions.find(d => d.type === type);
   modelWorkspace(ws, { ...examples.light, actions: def.output ? [{ variables: { result: 0 } }] : [] });
   const block = Blockly.serialization.blocks.append(toolbox.contents.flatMap(c => c.contents || []).find(b => b.type === type), ws);
+  // Explicit sample data belongs in generator fixtures, not the editor palette.
+  for (const input of block.inputList) {
+    const text = input.connection?.targetBlock();
+    if (text?.type === 'ugso_text' && text.getFieldValue('TEXT') === '') text.setFieldValue(({ TEXT: 'abc abc', FIND: 'abc', REPLACE: 'xyz', VALUE: 'a,b,c' })[input.name] || '', 'TEXT');
+  }
+  if (type === 'ugso_text_join') block.getInput('V0').connection.setShadowState({ type: 'ugso_text', fields: { TEXT: 'Hallo' } });
   if (def.output) ws.getBlocksByType('ugso_variable_set')[0].getInput('VALUE').connection.connect(block.outputConnection);
   else ws.getBlocksByType('ugso_automation')[0].getInput('ACTIONS').connection.connect(block.previousConnection);
   if (block.getInput('DO')) block.getInput('DO').connection.connect(ws.newBlock('ugso_stop').previousConnection);

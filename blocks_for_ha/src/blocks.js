@@ -84,7 +84,7 @@ export const definitions = [
   { type: 'ugso_variable_get', message0: 'Variable %1', args0: [{ type: 'field_variable', name: 'VAR', variable: 'wert' }], output: 'String', colour: '#a54879', tooltip: 'Erzeugt {{ variablenname }} für ein HA-Template. Kein dauerhaft gespeicherter Helfer.' },
   { type: 'ugso_template', message0: 'Template %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: "{{ states('sensor.temperatur') | float(0) }}", maxLines: 3 }], output: 'String', colour: '#8a6635', tooltip: 'Jinja-Vorlage einschließlich {{ ... }} oder {% ... %}. Auswertung erst in Home Assistant.' },
   { type: 'ugso_template_condition', message0: 'Template ist wahr %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: "{{ states('sensor.temperatur') | float(0) > 20 }}", maxLines: 3 }], output: 'Boolean', colour: '#6860b5', tooltip: 'HA wertet diese Jinja-Vorlage als Bedingung aus. Löst selbst keine Automation aus.' },
-  { type: 'ugso_text', message0: 'Text %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: 'Automation gestartet', maxLines: 3 }], output: 'String', colour: '#2e7653' },
+  { type: 'ugso_text', message0: 'Text %1', args0: [{ type: 'field_input', name: 'TEXT', text: '' }], output: 'String', colour: '#2e7653' },
   { type: 'ugso_percent', message0: '%1 %%', args0: [{ type: 'field_slider', name: 'NUM', value: 50, min: 0, max: 100, precision: 1 }], output: 'Number', colour: '#2e7653' },
   { type: 'ugso_colour', message0: 'Farbe %1', args0: [{ type: 'field_colour', name: 'COLOUR', colour: '#ff8800' }], output: ['Colour', 'Value'], colour: '#ad6841' },
   { type: 'ugso_colour_action', message0: 'Licht %1 Farbe %2 Helligkeit %3 %%', args0: [entityField('light.wohnzimmer'), value('COLOUR', ['Colour', 'Value']), value('BRIGHTNESS', 'Number')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5' },
@@ -284,7 +284,7 @@ for (const category of toolbox.contents) for (const block of category.contents) 
   if (block.type === 'ugso_time_sun') block.inputs = { OFFSET: { shadow: { type: 'ugso_number', fields: { NUM: 0 } } } };
   if (['ugso_numeric_trigger','ugso_numeric_condition'].includes(block.type)) block.inputs = { LIMIT: { shadow: { type: 'ugso_number', fields: { NUM: 20 } } } };
   if (block.type === 'ugso_delay_action') block.inputs = { SECONDS: { shadow: { type: 'ugso_number', fields: { NUM: 30 } } } };
-  if (['ugso_log_action', 'ugso_callmebot_action', 'ugso_callmebot_signal_action', 'ugso_whatsapp_action'].includes(block.type)) block.inputs = { MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'Automation gestartet' } } } };
+  if (['ugso_log_action', 'ugso_callmebot_action', 'ugso_callmebot_signal_action', 'ugso_whatsapp_action'].includes(block.type)) block.inputs = { MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: '' } } } };
   if (block.type === 'ugso_colour_action') block.inputs = { COLOUR: { shadow: { type: 'ugso_colour', fields: { COLOUR: '#ff8800' } } }, BRIGHTNESS: { shadow: { type: 'ugso_percent', fields: { NUM: 50 } } } };
 }
 toolbox.contents.push(

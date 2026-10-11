@@ -123,8 +123,7 @@ const list = () => ({ shadow: { type: 'ugso_list_new', extraState: { rows: 3 }, 
 export function collectionToolbox(category) {
   return collectionDefinitions.filter(d => d.category === category).map(def => {
     const inputs = {};
-    for (const input of def.args0.filter(a => a.type === 'input_value')) inputs[input.name] = input.name === 'LIST' ? list() : ['TEXT', 'FIND', 'REPLACE', 'DELIMITER'].includes(input.name) ? txt(({ TEXT: 'abc abc', FIND: 'abc', REPLACE: 'xyz', DELIMITER: ',' })[input.name]) : input.name === 'VALUE' ? txt('a,b,c') : num(({ MIN: 1, MAX: 100, A: 9, B: 2, COUNT: 3, INDEX: 1, START: 1, END: 3, FROM: 1, TO: 10, STEP: 1, X: 1, Y: 1, ITEM: 1 })[input.name] ?? 1);
-    if (def.type === 'ugso_text_join') inputs.V0 = txt('Hallo');
+    for (const input of def.args0.filter(a => a.type === 'input_value')) inputs[input.name] = input.name === 'LIST' ? list() : ['TEXT', 'FIND', 'REPLACE', 'DELIMITER'].includes(input.name) ? txt(input.name === 'DELIMITER' ? ',' : '') : input.name === 'VALUE' ? txt('') : num(({ MIN: 1, MAX: 100, A: 9, B: 2, COUNT: 3, INDEX: 1, START: 1, END: 3, FROM: 1, TO: 10, STEP: 1, X: 1, Y: 1, ITEM: 1 })[input.name] ?? 1);
     return { kind: 'block', type: def.type, inputs };
   });
 }

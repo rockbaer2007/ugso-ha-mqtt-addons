@@ -1,5 +1,7 @@
 # Blocks for HA
 
+Neu in **0.1.65**: Normaler Text als leeres einzeiliges Feld zwischen Anführungszeichen, ohne zusätzliche Hinweiszeile. Text-Beispiele im Menü entfernt; „Erstelle Text aus“ hat einen freien Eingang statt „Hallo“. Bestehende Texte bleiben erhalten.
+
 Neu in **0.1.64**: Zweckbezogene Templates **Text zusammenstellen**, **Uhrzeit im Zeitraum**, **Wertänderung prüfen**, **Wert auswählen – falls/sonst** und **Jinja – eigener Code / eigene Bedingung**. Passende Werteanschlüsse ohne Zahnrad, direkte HA-Bedingungen und vollständige DE/EN/FR-Beschriftungen. Freicode steht einmal unter Templates; **App steuern** und **Automation steuern** unter System. [Anleitung in drei Sprachen](https://opensource.ugso-software.de/projects/blocks-for-ha/system-template).
 
 Neu in **0.1.63**: **Template** hat direkte, passende Werte-Andockpunkte wie „Datei schreiben“ bei ioBroker. Text, Entitätswerte, Zahlenformat, Zeilenumbruch und bedingte Werte direkt anschließen. Neue Eingänge erscheinen automatisch; keine Zahnräder an Template-Bausteinen. Boolesche Bedingungen haben eigene passende Eingänge. Alte Template-Ketten werden beim Laden umgewandelt. [DE/EN/FR-Anleitung](https://opensource.ugso-software.de/projects/blocks-for-ha/system-template).

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.65
+
+- Plain text uses a single-line input between quotation marks, without the multiline editor or its extra keyboard hint row.
+- New text fields and text-operation shadows start empty; Create text from no longer inserts a Hello shadow.
+- Existing text values, including imported multiline strings, remain unchanged in YAML and project serialization. Jinja and code editors keep their multiline inputs.
+
 ## 0.1.64
 
 - Purpose-specific Templates: Compose text, Time within period, Check value change, Select value – if/else and Jinja custom code/condition. No Template gears.

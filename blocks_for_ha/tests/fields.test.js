@@ -33,7 +33,8 @@ test('Date, RGB light, dependent helper actions and multiline messages roundtrip
     assert.equal(ws.getBlocksByType('ugso_colour_action').length, 1);
     assert.equal(ws.getBlocksByType('ugso_helper_action').length, 2);
     assert.equal(ws.getBlocksByType('ugso_date_condition').length, 1);
-    assert.equal(ws.getBlocksByType('ugso_text')[0].getField('TEXT').getMaxLines(), 3);
+    assert.ok(ws.getBlocksByType('ugso_text')[0].getField('TEXT') instanceof Blockly.FieldTextInput);
+    assert.equal(ws.getBlocksByType('ugso_text')[0].getFieldValue('TEXT'), model.actions[3].data.message);
     assert.deepEqual(workspaceModel(ws, model), model);
     Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws), copy);
     assert.deepEqual(workspaceModel(copy, model), model);
