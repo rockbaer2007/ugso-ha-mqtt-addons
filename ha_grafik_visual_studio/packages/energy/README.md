@@ -1,4 +1,4 @@
-# UGSo Energy 0.1.0
+# Energy 0.1.1
 
 Eigenständiges externes Set für Grafik Visual Studio **0.1.255 oder neuer**.
 Installieren: Einstellungen → Widget-Pakete → Lokal → `ugso.energy.wg`.

@@ -1,4 +1,4 @@
-"""Build declarative UGSo Energy 0.1.0 for Studio 0.1.255+."""
+"""Build declarative Energy 0.1.1 for Studio 0.1.255+."""
 import json
 import sys
 from pathlib import Path
@@ -62,7 +62,7 @@ def manifest():
             add('Preisfarben',[f('cheapColor','Günstig','color'),f('expensiveColor','Teuer','color'),f('currentColor','Aktuelle Stunde','color')],dict(cheapColor='#6fd39a',expensiveColor='#f08370',currentColor='#36b7e9'))
         groups.append(dict(label='Größe',fields=[f('width','Breite (px)','number',min=240,max=3000),f('height','Höhe (px)','number',min=80,max=2000)]))
         widgets.append(dict(type='ugso.energy/'+kind,label=label,icon='icons/'+kind+'.svg',defaults=defaults,propertyGroups=groups,render=dict(kind='energy-widget',valueKey='heading')))
-    return dict(format='ha-grafik-widget-package',apiVersion='0.2',id='ugso.energy',name='UGSo Energy',version='0.1.0',license='MIT',icon='icons/distribution.svg',widgets=widgets)
+    return dict(format='ha-grafik-widget-package',apiVersion='0.2',id='ugso.energy',name='Energy',version='0.1.1',license='MIT',icon='icons/distribution.svg',widgets=widgets)
 
 def build():
     data=validate_manifest(manifest())

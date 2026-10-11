@@ -27,11 +27,30 @@ SVG_ATTRIBUTES = {"viewBox", "width", "height", "fill", "stroke", "stroke-width"
 SVG_VALUE = re.compile(r"^[a-zA-Z0-9#.,%+\-\s()]*$")
 ElementTree.register_namespace("", SVG_NS)
 
+PACKAGE_NAMES = {
+    "ugso.industrial": ("UGSo Industrie", "Industrie"),
+    "ugso.technic": ("UGSo Technic", "Technic"),
+    "ugso.energy": ("UGSo Energy", "Energy"),
+    "ugso.solar": ("UGSo Solar", "Solar"),
+    "ugso.printer": ("UGSo Printer", "Printer"),
+    "ugso.calendar-plus": ("UGSo Calendar +", "Calendar +"),
+}
+
+
+def package_display_name(package_id, name):
+    previous, current = PACKAGE_NAMES.get(package_id, (None, name))
+    return current if name == previous else name
+
 
 def validate_additive_update(installed, incoming):
     """Allow added widgets and icon changes without redefining runtime contracts."""
     for key in ("id", "apiVersion", "name", "license", "icon", "iconData"):
-        if installed.get(key) != incoming.get(key):
+        old = installed.get(key)
+        new = incoming.get(key)
+        if key == "name":
+            old = package_display_name(installed.get("id"), old)
+            new = package_display_name(incoming.get("id"), new)
+        if old != new:
             raise ValueError("Paket-Updates dürfen bestehende Paketangaben nicht ändern.")
     if tuple(map(int, incoming["version"].split("."))) <= tuple(map(int, installed["version"].split("."))):
         raise ValueError("Das Paket ist bereits installiert; eine Aktualisierung benötigt eine höhere Version.")
@@ -127,6 +146,7 @@ def validate_manifest(manifest):
             raise ValueError("Anzeigeschlüssel muss als Eigenschaft bearbeitbar sein.")
         if any(not KEY.fullmatch(key) or isinstance(value, (dict, list)) for key, value in widget["defaults"].items()):
             raise ValueError("Standardwerte dürfen nur einfache Werte enthalten.")
+    manifest["name"] = package_display_name(manifest["id"], manifest["name"])
     return manifest
 
 
@@ -253,6 +273,7 @@ def list_packages(directory):
         try:
             manifest = json.loads(path.read_text(encoding="utf-8"))
             validate_manifest({**{key: value for key, value in manifest.items() if key != "iconData"}, "widgets": [{key: value for key, value in widget.items() if key != "iconData"} for widget in manifest["widgets"]]})
+            manifest["name"] = package_display_name(manifest["id"], manifest["name"])
             result.append(manifest)
         except (OSError, ValueError, json.JSONDecodeError):
             continue

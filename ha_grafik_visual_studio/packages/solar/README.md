@@ -1,4 +1,4 @@
-# UGSo Solar 0.1.3
+# Solar 0.1.4
 
 Requires HA Grafik Visual Studio **0.1.280 or later**. Import `ugso.solar.wg` in the widget package manager. Update Studio first, then import the newer package; its existing widget contracts remain compatible with installed packages.
 

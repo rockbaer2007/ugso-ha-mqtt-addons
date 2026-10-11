@@ -1,4 +1,4 @@
-"""Build UGSo Solar 0.1.3 for Studio 0.1.280+."""
+"""Build Solar 0.1.4 for Studio 0.1.280+."""
 import json
 import sys
 from pathlib import Path
@@ -44,8 +44,8 @@ def manifest():
             defaults.update({prefix + 'Role': 'off', prefix + 'Value': 'power'})
         widgets.append(dict(type='ugso.solar/' + kind, label=label, icon=f'icons/{kind}.svg',
             defaults=defaults, propertyGroups=groups, render=dict(kind='solar-widget', valueKey='heading')))
-    return dict(format='ha-grafik-widget-package', apiVersion='0.2', id='ugso.solar', name='UGSo Solar',
-                version='0.1.3', license='MIT', icon='icons/head.svg', widgets=widgets)
+    return dict(format='ha-grafik-widget-package', apiVersion='0.2', id='ugso.solar', name='Solar',
+                version='0.1.4', license='MIT', icon='icons/head.svg', widgets=widgets)
 
 
 def build():

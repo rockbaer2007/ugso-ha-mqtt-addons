@@ -35,12 +35,12 @@ def _base_manifest():
     for n in range(1, 5):
         switch_defaults.update({f"switchLegend{n}": "on-off", f"label{n}": f"Schalter {n}", f"inputEntityId{n}": "", f"outputEntityId{n}": "", f"switchState{n}": False, f"inputDock{n}": False, f"outputDock{n}": False, f"ledOnColor{n}": "#ef5350", f"ledOffColor{n}": "#30383c"})
         switch_groups.append({"label": f"Schalter {n}", "fields": [field(f"label{n}", "Beschriftung"), field(f"switchLegend{n}", "Schildbeschriftung", "select", options=["on-off", "one-zero", "ein-aus"]), field(f"inputEntityId{n}", "Eingang: Entität"), field(f"outputEntityId{n}", "Ausgang: Entität"), field(f"switchState{n}", "Startzustand", "checkbox"), field(f"inputDock{n}", "Eingangs-Koppelpunkt aktivieren", "checkbox"), field(f"outputDock{n}", "Ausgangs-Koppelpunkt aktivieren", "checkbox"), field(f"ledOnColor{n}", "LED-Farbe Ein", "color"), field(f"ledOffColor{n}", "LED-Farbe Aus", "color")]})
-    return {"format": "ha-grafik-widget-package", "apiVersion": "0.2", "id": "ugso.industrial", "name": "UGSo Industrie", "version": "0.2.0", "license": "MIT", "icon": "icons/gauge.svg", "widgets": [{"type": "ugso.industrial/gauge-poti", "label": "Gauge/Poti – 270°", "icon": "icons/gauge.svg", "defaults": defaults, "propertyGroups": groups, "render": {"kind": "industrial-gauge", "valueKey": "state"}}, {"type": "ugso.industrial/switch", "label": "Kippschalter – 1 bis 4", "icon": "icons/switch.svg", "defaults": switch_defaults, "propertyGroups": switch_groups, "render": {"kind": "industrial-switch", "valueKey": "state"}}]}
+    return {"format": "ha-grafik-widget-package", "apiVersion": "0.2", "id": "ugso.industrial", "name": "Industrie", "version": "0.2.0", "license": "MIT", "icon": "icons/gauge.svg", "widgets": [{"type": "ugso.industrial/gauge-poti", "label": "Gauge/Poti – 270°", "icon": "icons/gauge.svg", "defaults": defaults, "propertyGroups": groups, "render": {"kind": "industrial-gauge", "valueKey": "state"}}, {"type": "ugso.industrial/switch", "label": "Kippschalter – 1 bis 4", "icon": "icons/switch.svg", "defaults": switch_defaults, "propertyGroups": switch_groups, "render": {"kind": "industrial-switch", "valueKey": "state"}}]}
 
 
 def manifest():
     data = _base_manifest()
-    data["version"] = "0.11.6"
+    data["version"] = "0.11.7"
     toggle = data["widgets"][1]
     rocker = deepcopy(toggle)
     rocker.update(type="ugso.industrial/rocker-switch", label="Wippschalter – 1 bis 4", icon="icons/rocker-gray.svg")

@@ -1,8 +1,8 @@
-# UGSo Printer 0.1.1
+# Printer 0.1.2
 
 Eigenständiges externes Widgetset von **rockbaer2007** für Grafik Visual Studio **0.1.261 oder neuer**.
 Unter **Einstellungen → Widget-Pakete → Lokal** die Datei `ugso.printer.wg` installieren.
-Danach erscheint **UGSo Printer → Drucker** in der Palette. Das Studio-Update ist für den Renderer erforderlich.
+Danach erscheint **Printer → Drucker** in der Palette. Das Studio-Update ist für den Renderer erforderlich.
 
 Vorbild: [HA Printer Card von ADNPolymerase](https://github.com/ADNPolymerase/ha-printer-card), MIT.
 Eigene Umsetzung und SVG-Zeichnung; kein Originalcode und keine Originalgrafiken enthalten.
@@ -24,7 +24,7 @@ Das Widget liest ausdrücklich ausgewählte Entitäten. Es bietet keine automati
 
 ## English
 
-Independent external **UGSo Printer** set for Studio **0.1.261+**, inspired by
+Independent external **Printer** set for Studio **0.1.261+**, inspired by
 [ADNPolymerase/ha-printer-card](https://github.com/ADNPolymerase/ha-printer-card) (MIT).
 One printer widget, original SVG artwork, animated printing status and 1–6 ink/toner
 cartridges evenly distributed across the available width. Explicit entity pickers,

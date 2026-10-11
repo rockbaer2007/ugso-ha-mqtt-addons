@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.288
+
+- Widgetpakete heißen Industrie, Technic, Energy, Solar, Printer und Calendar +, ohne UGSo-Präfix. Bereits installierte Pakete und Katalogeinträge zeigen die neuen Namen; IDs und Widgetdefinitionen bleiben kompatibel.
+- Widget package display names omit the UGSo prefix. Existing installations, package updates and catalogue entries retain their technical IDs and widget contracts.
+
 ## 0.1.287
 
 - Alle Widgets erhalten direkt unter der Überschrift im WIDGET-Reiter die Checkbox „In Runtime verstecken“. Die Einstellung wird im Projekt gespeichert; Editor und Datenfluss bleiben aktiv.

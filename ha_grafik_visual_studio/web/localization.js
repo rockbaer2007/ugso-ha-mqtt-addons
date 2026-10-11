@@ -60,7 +60,7 @@ const ENGLISH = {
 "Gehäuse-Snappunkte": "Housing snap points", "Gehäuse-Snapping aktivieren": "Enable housing snapping",
 "Abstand rundherum (px)": "Spacing on all sides (px)", "Snappunkte dauerhaft anzeigen": "Always show snap points",
 "Farbe der Gehäuse-Snappunkte": "Housing snap point color",
-"UGSo Industrie": "UGSo Industrial",
+"Industrie": "Industrial",
 "Daten und Bedienung": "Data and control",
 "Eingang: Entität (leer = Poti)": "Input entity (empty = rotary control)",
 "Ausgang: number/input_number-Entität": "Output number/input_number entity",

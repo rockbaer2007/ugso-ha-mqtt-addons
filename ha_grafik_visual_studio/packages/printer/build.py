@@ -1,4 +1,4 @@
-"""Build the declarative UGSo Printer 0.1.1 package for Studio 0.1.273+."""
+"""Build the declarative Printer 0.1.2 package for Studio 0.1.273+."""
 import json
 import sys
 from pathlib import Path
@@ -36,8 +36,8 @@ def manifest():
         field('printerText', 'Schriftfarbe', 'color'), field('accentColor', 'Druckstatus: Farbe', 'color')]),
         dict(label='Größe', fields=[field('width', 'Breite (px)', 'number', min=240, max=3000),
         field('height', 'Höhe (px)', 'number', min=280, max=2000)])]
-    return dict(format='ha-grafik-widget-package', apiVersion='0.2', id='ugso.printer', name='UGSo Printer',
-        version='0.1.1', license='MIT', icon='icons/printer.svg', widgets=[dict(type='ugso.printer/printer',
+    return dict(format='ha-grafik-widget-package', apiVersion='0.2', id='ugso.printer', name='Printer',
+        version='0.1.2', license='MIT', icon='icons/printer.svg', widgets=[dict(type='ugso.printer/printer',
         label='Drucker', icon='icons/printer.svg', defaults=defaults, propertyGroups=groups,
         render=dict(kind='printer-widget', valueKey='heading'))])
 

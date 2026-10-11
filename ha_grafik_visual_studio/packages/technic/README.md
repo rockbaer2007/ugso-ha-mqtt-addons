@@ -1,4 +1,4 @@
-# UGSo Technic 1.6.0
+# Technic 1.6.1
 
 Inspiriert von den ioBroker-Technic-Widgets von Sefina-DS:
 https://github.com/Sefina-DS/ioBroker.vis-2-widgets-technic

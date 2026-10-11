@@ -23,7 +23,7 @@ class PrinterPackageTests(unittest.TestCase):
         self.assertTrue(widget['iconData'].startswith('data:image/svg+xml'))
         fields = {f['key']: f for g in widget['propertyGroups'] for f in g['fields']}
         self.assertEqual(fields['cartridgeCount']['max'], 6)
-        self.assertEqual(package['version'], '0.1.1')
+        self.assertEqual(package['version'], '0.1.2')
         self.assertEqual(fields['supplyStyle']['options'], ['ink', 'toner'])  # Installed contract remains upgradeable.
         self.assertTrue(all(f'cartridge{i}EntityId' in fields for i in range(1, 7)))
         with ZipFile(target) as archive:

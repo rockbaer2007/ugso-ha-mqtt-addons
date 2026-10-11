@@ -3,6 +3,7 @@ import hashlib
 import json
 import os
 import re
+from widget_packages import package_display_name
 from urllib.parse import urljoin, urlparse
 from urllib.request import Request, HTTPRedirectHandler, ProxyHandler, build_opener
 
@@ -61,7 +62,10 @@ def catalog_packages():
         expected = f"/downloads/{area}/{item['id']}-{item['version']}.{suffix}"
         if item.get("download_url") != expected or not re.fullmatch(r"[a-f0-9]{64}", str(item.get("sha256", ""))):
             raise ValueError("Ungültiger Download oder Prüfsumme im Katalog.")
-        packages.append({key: str(item.get(key) or "")[:4000] for key in ["id", "kind", "name", "description", "version", "license", "minimum_studio_version", "download_url", "sha256"]})
+        entry = {key: str(item.get(key) or "")[:4000] for key in ["id", "kind", "name", "description", "version", "license", "minimum_studio_version", "download_url", "sha256"]}
+        if kind == "widget":
+            entry["name"] = package_display_name(entry["id"], entry["name"])
+        packages.append(entry)
     return {"packages": packages, "catalog_url": CATALOG_URL}
 
 
