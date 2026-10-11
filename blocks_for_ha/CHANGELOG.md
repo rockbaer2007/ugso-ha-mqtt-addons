@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.66
+
+- Audited text defaults across all categories: MQTT, objects, lists, conversions, conditional values and fallbacks now use empty text shadows instead of example content.
+- Assist responses and literal Jinja text use empty single-line inputs. Example phone numbers, stop reasons, trigger IDs, conversation phrases, message data and variable assignments are removed.
+- Technical defaults such as separators, valid JSON objects, numeric/time settings and action choices remain. Saved text values and multiline imports remain intact. Verified all categories in DE/EN/FR.
+
 ## 0.1.65
 
 - Plain text uses a single-line input between quotation marks, without the multiline editor or its extra keyboard hint row.

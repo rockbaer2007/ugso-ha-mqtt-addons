@@ -10,6 +10,13 @@ function fixture(type) {
   modelWorkspace(ws, { ...examples.light, actions: [{ variables: { result: 0 } }] });
   const info = toolbox.contents.flatMap(c => c.contents || []).find(b => b.type === type);
   const block = Blockly.serialization.blocks.append(info, ws);
+  // Runtime examples are explicit test data, independent of empty palette fields.
+  const sample = { number: '21.5', boolean: 'on', type: 'Text', datetime: '2026-10-10T12:00:00+02:00', from_json: '{"wert":21.5}', to_json: '{"wert":21.5}' }[type.replace('ugso_convert_', '')];
+  if (sample !== undefined) {
+    let input = block.getInputTargetBlock('VALUE');
+    if (input.type === 'ugso_convert_from_json') input = input.getInputTargetBlock('VALUE');
+    input.setFieldValue(sample, 'TEXT');
+  }
   ws.getBlocksByType('ugso_variable_set')[0].getInput('VALUE').connection.connect(block.outputConnection);
   return { ws, block, template: () => workspaceModel(ws, examples.light).actions[0].variables.result };
 }

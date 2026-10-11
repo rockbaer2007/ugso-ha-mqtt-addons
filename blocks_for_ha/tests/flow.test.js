@@ -29,6 +29,10 @@ function fixture(type) {
   modelWorkspace(ws, { ...examples.light, actions: def.output ? [{ variables: { result: 0 } }] : [] });
   const info = toolbox.contents.flatMap(c => c.contents || []).find(b => b.type === type);
   const block = Blockly.serialization.blocks.append(info, ws);
+  for (const child of block.getDescendants(false)) if (child.type === 'ugso_text' && child.getFieldValue('TEXT') === '') {
+    const parent = child.getParent();
+    child.setFieldValue(parent.type === 'ugso_logic_default' ? 'Ersatz' : parent.type === 'ugso_list_new' ? 'Eintrag' : 'value', 'TEXT');
+  }
   if (def.output) ws.getBlocksByType('ugso_variable_set')[0].getInput('VALUE').connection.connect(block.outputConnection);
   else ws.getBlocksByType('ugso_automation')[0].getInput('ACTIONS').connection.connect(block.previousConnection);
   for (const input of block.inputList.filter(i => i.type === Blockly.inputs.inputTypes.STATEMENT)) {

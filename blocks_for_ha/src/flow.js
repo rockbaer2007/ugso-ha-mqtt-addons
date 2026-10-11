@@ -15,7 +15,7 @@ export const flowDefinitions = [
   { type: 'ugso_delay_text', message0: 'Warte Zeittext / Template %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: '00:00:02' }], ...action, colour: '#7a8639', tooltip: 'Native HA-Wartezeit als HH:MM, HH:MM:SS (auch Sekundenbruchteile) oder HA-Ausgabetemplate. Der Zeittext bleibt im YAML erhalten. Home Assistant führt die Wartezeit aus.' },
   { type: 'ugso_pause', message0: 'Pause %1 %2', args0: [v('DURATION', runtime), dropdown('UNIT', units)], ...action, colour: '#7a8639', tooltip: 'Native HA-Wartezeit. Eingang muss eine Zahl liefern; HA prüft Laufzeitwerte bei Ausführung. Millisekunden sind keine Echtzeitgarantie.' },
   { type: 'ugso_wait', message0: 'Warte bis %1 höchstens %2 %3 bei Timeout weiter %4', args0: [v('CONDITION', 'Boolean'), v('DURATION', runtime), dropdown('UNIT', units), { type: 'field_checkbox', name: 'CONTINUE', checked: false }], ...action, colour: '#7a8639', tooltip: 'HA wait_template mit Timeout. Ohne Haken beendet ein Timeout diesen Lauf. Entitätsabhängige Bedingungen verwenden; Zeit allein aktualisiert das Template nicht fortlaufend.' },
-  { type: 'ugso_stop', message0: 'Diesen Lauf stoppen %1 als Fehler %2', args0: [text('REASON', 'Lauf beendet'), { type: 'field_checkbox', name: 'ERROR', checked: false }], ...action, colour: '#7a8639', tooltip: 'Stoppt den aktuellen HA-Lauf einschließlich äußerer Wiederholungen. Kein Abbruch eines benannten ioBroker-Timers.' },
+  { type: 'ugso_stop', message0: 'Diesen Lauf stoppen %1 als Fehler %2', args0: [text('REASON', ''), { type: 'field_checkbox', name: 'ERROR', checked: false }], ...action, colour: '#7a8639', tooltip: 'Stoppt den aktuellen HA-Lauf einschließlich äußerer Wiederholungen. Kein Abbruch eines benannten ioBroker-Timers.' },
   { type: 'ugso_repeat', message0: 'Wiederhole %1 mal mache %2', args0: [v('COUNT', runtime), s('DO')], ...action, colour: '#3e8054', tooltip: 'Native HA repeat.count. repeat.index enthält den 1-basierten Durchlauf. Laufzeitzahl muss eine positive ganze Zahl liefern.' },
   { type: 'ugso_repeat_while', message0: 'Wiederhole %1 %2 mache %3', args0: [dropdown('MODE', [['solange', 'while'], ['bis', 'until']]), v('CONDITION', 'Boolean'), s('DO')], ...action, colour: '#3e8054', tooltip: 'Solange prüft vor jedem Durchlauf, bis danach und läuft mindestens einmal. Eine Pause im Körper verhindert eine enge Dauerschleife. Kein Hintergrundintervall.' },
   { type: 'ugso_foreach', message0: 'Für jeden Eintrag in %1 mache %2', args0: [v('ITEMS'), s('DO')], ...action, colour: '#3e8054', tooltip: 'HA repeat.for_each. Aktueller Wert: Template {{ repeat.item }}, Index: {{ repeat.index }}. Eingang muss eine Liste ergeben.' },
@@ -176,21 +176,21 @@ export function flowAction(block, { child, actions, conditions, variableName, nu
 const shadow = (type, fields = {}) => ({ shadow: { type, fields } });
 const num = n => shadow('ugso_number', { NUM: n });
 const txt = t => shadow('ugso_text', { TEXT: t });
-const obj = () => ({ shadow: { type: 'ugso_object_new', inputs: { V0: txt('value') } } });
+const obj = () => ({ shadow: { type: 'ugso_object_new', inputs: { V0: txt('') } } });
 export function flowToolbox(category) {
   return flowDefinitions.filter(d => ({ Timeouts: ['ugso_pause', 'ugso_delay_text', 'ugso_wait', 'ugso_stop'], Schleifen: ['ugso_repeat', 'ugso_repeat_while', 'ugso_foreach'], Objekt: ['ugso_object_new', 'ugso_object_get', 'ugso_object_has', 'ugso_object_keys', 'ugso_object_set', 'ugso_object_remove'], Logik: ['ugso_logic_range', 'ugso_logic_default', 'ugso_case'], Listen: ['ugso_list_new', 'ugso_list_length', 'ugso_list_empty'] }[category]).includes(d.type)).map(({ type }) => {
     const inputs = {};
     if (['ugso_pause', 'ugso_wait'].includes(type)) inputs.DURATION = num(1000);
     if (['ugso_wait', 'ugso_repeat_while'].includes(type)) inputs.CONDITION = shadow('ugso_state_condition', { ENTITY: 'input_boolean.test', STATE: 'on' });
     if (type === 'ugso_repeat') inputs.COUNT = num(3);
-    if (type === 'ugso_foreach') inputs.ITEMS = { shadow: { type: 'ugso_list_new', inputs: { V0: txt('Eintrag') } } };
-    if (type === 'ugso_object_new') inputs.V0 = txt('value');
+    if (type === 'ugso_foreach') inputs.ITEMS = { shadow: { type: 'ugso_list_new', inputs: { V0: txt('') } } };
+    if (type === 'ugso_object_new') inputs.V0 = txt('');
     if (['ugso_object_get', 'ugso_object_has', 'ugso_object_keys'].includes(type)) inputs.OBJECT = obj();
-    if (type === 'ugso_object_set') inputs.VALUE = txt('value');
+    if (type === 'ugso_object_set') inputs.VALUE = txt('');
     if (type === 'ugso_logic_range') Object.assign(inputs, { MIN: num(0), VALUE: num(42), MAX: num(100) });
-    if (type === 'ugso_logic_default') Object.assign(inputs, { VALUE: shadow('ugso_null'), DEFAULT: txt('Ersatz') });
+    if (type === 'ugso_logic_default') Object.assign(inputs, { VALUE: shadow('ugso_null'), DEFAULT: txt('') });
     if (type === 'ugso_case') Object.assign(inputs, { TEST: num(1), V0: num(1) });
-    if (type === 'ugso_list_new') inputs.V0 = txt('Eintrag');
+    if (type === 'ugso_list_new') inputs.V0 = txt('');
     if (['ugso_list_length', 'ugso_list_empty'].includes(type)) inputs.LIST = { shadow: { type: 'ugso_list_new', extraState: { rows: 0 } } };
     return { kind: 'block', type, inputs };
   });

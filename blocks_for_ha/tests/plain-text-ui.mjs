@@ -11,6 +11,26 @@ try {
     await page.evaluate(async () => {
       const url = performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name;
       const { Blockly, toolbox } = await import(url), ws = Blockly.getMainWorkspace(); ws.clear();
+      let checked = 0;
+      const audit = (item, inputName = '') => {
+        if (item.type === 'ugso_text') {
+          const value = item.fields?.TEXT || '';
+          if (value !== '' && !(['DELIMITER', 'START', 'END'].includes(inputName) || value === '{}')) throw Error('Unexpected example text: ' + JSON.stringify(item));
+          checked++;
+        }
+        for (const [name, input] of Object.entries(item.inputs || {})) if (input.shadow || input.block) audit(input.shadow || input.block, name);
+        for (const child of item.contents || []) audit(child);
+      };
+      audit(toolbox);
+      if (checked < 20) throw Error('Expected a complete palette text audit');
+      for (const type of ['ugso_assist_response', 'ugso_jinja_text']) {
+        const block = ws.newBlock(type);
+        if (block.getFieldValue('TEXT') !== '' || block.getField('TEXT').constructor !== Blockly.FieldTextInput) throw Error('Plain input required: ' + type);
+        const saved = 'Existing\ntext ä🙂'; block.setFieldValue(saved, 'TEXT');
+        const state = Blockly.serialization.blocks.save(block); block.dispose();
+        if (Blockly.serialization.blocks.append(state, ws).getFieldValue('TEXT') !== saved) throw Error('Text reload failed: ' + type);
+      }
+      ws.clear();
       const entry = toolbox.contents.find(c => c.name === 'Text');
       for (const item of entry.contents) for (const [name, input] of Object.entries(item.inputs || {})) {
         if (input.shadow?.type === 'ugso_text' && name !== 'DELIMITER' && input.shadow.fields.TEXT !== '') throw Error('Text palette must start empty: ' + item.type);
@@ -35,5 +55,5 @@ try {
     });
     assert.deepEqual(errors, []); await page.close();
   }
-  console.log('DE/EN/FR: empty single-line text editor, no hint row or Hello shadow, editing and existing text reload verified.');
+  console.log('DE/EN/FR: all palette text shadows audited; single-line plain/Assist/Jinja text, editing and multiline reload verified.');
 } finally { await browser.close(); }

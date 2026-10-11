@@ -5,7 +5,6 @@ const expr={output:'JinjaExpression',colour:'#8a6635',inputsInline:false},part={
 const header={type:'input_end_row',name:'HEADER'};
 const input=(name,check='JinjaExpression')=>({type:'input_value',name,check});
 const text=(name,value)=>({type:'field_input',name,text:value});
-const multiline=(name,value)=>({type:'field_multilinetext',name,text:value,maxLines:4});
 const dropdown=(name,values)=>({type:'field_dropdown',name,options:values.map(v=>[v,v])});
 export const jinjaDefinitions=[
   ...['value','condition'].map(kind=>({type:`ugso_jinja_composed_${kind}`,message0:kind==='value'?'Jinja zusammengesetzt %2 %1':'Jinja-Bedingung zusammengesetzt %2 %1',args0:[input('BODY','JinjaPart'),header],output:kind==='value'?['String','Value']:'Boolean',colour:'#8a6635',inputsInline:true,tooltip:'Bearbeitbare Jinja-Struktur. Unverändert bleibt der Originaltext erhalten; Änderungen erzeugen Jinja.'})),
@@ -18,7 +17,7 @@ export const jinjaDefinitions=[
   {type:'ugso_jinja_unary',message0:'Ausdruck %1 %2',args0:[dropdown('OP',['not','-','+']),input('VALUE')],...expr},
   {type:'ugso_jinja_select',message0:'Wert %1 wenn %2 sonst %3',args0:[input('YES'),input('TEST'),input('NO')],...expr},
   {type:'ugso_jinja_output',message0:'Ausgeben %2 %1',args0:[input('VALUE'),header],...part,inputsInline:true},
-  {type:'ugso_jinja_text',message0:'Jinja-Text %1',args0:[multiline('TEXT','Text')],...part},
+  {type:'ugso_jinja_text',message0:'Jinja-Text %1',args0:[text('TEXT','')],...part},
   {type:'ugso_jinja_join',message0:'Template-Teile %3 %1 %4 danach %2',args0:[input('FIRST','JinjaPart'),input('NEXT','JinjaPart'),header,{type:'input_end_row',name:'BETWEEN'}],...part,inputsInline:true},
   {type:'ugso_jinja_if',message0:'Wenn %1 Text %2 sonst %3',args0:[input('TEST'),input('YES','JinjaPart'),input('NO','JinjaPart')],...part},
   {type:'ugso_jinja_for',message0:'Für %1 in %2 Text %3 wenn leer %4',args0:[text('NAME','item'),input('ITEMS'),input('BODY','JinjaPart'),input('EMPTY','JinjaPart')],...part},
