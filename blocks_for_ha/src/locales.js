@@ -300,6 +300,7 @@ export function localizedDefinition(definition, locale = language) {
   if (locale === 'de') return alignBlockLabels(result, locale);
   const entry = blockTranslations[result.type];
   result.message0 = entry?.[index] ?? translateLabel(result.message0, locale);
+  for (const key of Object.keys(result)) if (/^message[1-9]\d*$/.test(key)) result[key] = translateLabel(result[key], locale);
   if (result.tooltip) result.tooltip = entry?.[index + 2] ?? result.tooltip;
   for (const [key, args] of Object.entries(result)) if (/^args\d+$/.test(key)) {
     for (const field of args) {

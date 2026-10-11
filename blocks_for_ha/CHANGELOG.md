@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.62
+
+- Shared entity ID, fixed/dynamic entity value and read-once snapshot blocks in System.
+- Dedicated automation and Supervisor app controls with HA selection and optional gear fields.
+- Visual Template builder: ordered output parts, existing text/math/variable blocks, entity values, number formatting, fallback, newline and conditional branches.
+- Template context menu previews generated Jinja with current HA values through a read-only rendering endpoint. Credentials stay on the server.
+- Complete DE/EN/FR labels, gear menus and documentation; native YAML and existing projects remain compatible.
+
 ## 0.1.61
 
 - Split AND and OR into separate expandable palette blocks without an operator selector; NOT retains a single input. Existing combined groups remain compatible. Native YAML imports use separate blocks where equivalent.

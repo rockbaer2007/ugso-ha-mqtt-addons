@@ -9,6 +9,32 @@ import server
 
 
 class EntitiesTest(unittest.TestCase):
+    def test_app_catalog_only_exposes_public_selection_metadata(self):
+        from io import BytesIO
+        from contextlib import closing
+        data = {'data': {'addons': [{'slug':'core_mosquitto','name':'MQTT','options':{'password':'private'}}, {'slug':'bad slug','name':'bad'}]}}
+        with patch('server.build_opener') as factory:
+            factory.return_value.open.return_value = closing(BytesIO(json.dumps(data).encode()))
+            result = server.load_apps({'SUPERVISOR_TOKEN':'private-token'})
+            self.assertEqual(result, [{'id':'core_mosquitto','name':'MQTT'}])
+            request = factory.return_value.open.call_args.args[0]
+            self.assertEqual(request.full_url, 'http://supervisor/supervisor/info')
+            self.assertEqual(request.get_method(), 'GET')
+        with self.assertRaises(server.APIError): server.load_apps({})
+
+    def test_template_preview_only_calls_fixed_ha_render_endpoint(self):
+        from io import BytesIO
+        from contextlib import closing
+        with patch('server.build_opener') as factory:
+            factory.return_value.open.return_value = closing(BytesIO(b'21.6 C'))
+            self.assertEqual(server.render_template('{{ states("sensor.test") }}', {'BLOCKS_HA_URL':'http://ha.local:8123','BLOCKS_HA_TOKEN':'private-token'}), '21.6 C')
+            request = factory.return_value.open.call_args.args[0]
+            self.assertEqual(request.full_url, 'http://ha.local:8123/api/template')
+            self.assertEqual(request.get_method(), 'POST')
+            self.assertEqual(json.loads(request.data), {'template':'{{ states("sensor.test") }}'})
+        for template in ['', None, 'x' * 100_001]:
+            with self.assertRaises(server.APIError): server.render_template(template, {})
+
     def test_callmebot_profiles_strip_private_fields_and_handle_offline(self):
         attrs = {'source':'ugso_callmebot','default_profile':'home','profiles':[{'id':'home','name':'Home','phone':'private-phone','api_key':'private-key'},{'id':'bad id','name':'Bad'}],'api_key':'private-key'}
         result = server.callmebot_profiles([{'entity_id':'sensor.renamed_catalog','state':'1','attributes':attrs}])

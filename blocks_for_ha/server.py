@@ -87,6 +87,29 @@ def callmebot_profiles(states, source="ugso_callmebot"):
     raise APIError(503, "CallMeBot-App aktualisieren, starten und MQTT-Discovery aktivieren. Profil-ID manuell eingeben.")
 
 
+def load_apps(environ=None):
+    token = (os.environ if environ is None else environ).get("SUPERVISOR_TOKEN")
+    if not token:
+        raise APIError(503, "Supervisor unavailable")
+    # The default Supervisor role permits /info endpoints. Its v1 info
+    # response includes installed apps, without requiring a manager role.
+    request = Request("http://supervisor/supervisor/info", headers={"Authorization": "Bearer " + token, "Accept": "application/json"}, method="GET")
+    try:
+        with build_opener(ProxyHandler({}), NoRedirect()).open(request, timeout=8) as response:
+            raw = response.read(MAX_BYTES + 1)
+        if len(raw) > MAX_BYTES:
+            raise ValueError()
+        data = json.loads(raw)
+        rows = data.get("data", {}).get("addons", [])
+        if not isinstance(rows, list):
+            raise ValueError()
+        return [{"id": row["slug"], "name": row["name"]} for row in rows
+                if isinstance(row, dict) and isinstance(row.get("slug"), str)
+                and re.fullmatch(r"[a-z0-9][a-z0-9_-]*", row["slug"]) and isinstance(row.get("name"), str)]
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError, AttributeError):
+        raise APIError(503, "Supervisor app catalog unavailable") from None
+
+
 def load_rest(endpoint, environ=None):
     if endpoint not in ("states", "services"):
         raise APIError(404, "Unbekannter HA-Katalog.")
@@ -105,6 +128,22 @@ def load_rest(endpoint, environ=None):
         raise APIError(502, message) from None
     except (URLError, TimeoutError, OSError, ValueError):
         raise APIError(502, "HA ist nicht erreichbar oder hat ungültige Daten geliefert.") from None
+
+
+def render_template(template, environ=None):
+    if not isinstance(template, str) or not template or len(template) > 100_000:
+        raise APIError(400, "Invalid template")
+    url, token = connection(os.environ if environ is None else environ)
+    request = Request(url.removesuffix("states") + "template", data=json.dumps({"template": template}).encode("utf-8"),
+                      headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"}, method="POST")
+    try:
+        with build_opener(ProxyHandler({}), NoRedirect()).open(request, timeout=8) as response:
+            raw = response.read(MAX_BYTES + 1)
+        if len(raw) > MAX_BYTES:
+            raise ValueError()
+        return raw.decode("utf-8")
+    except (HTTPError, URLError, TimeoutError, OSError, ValueError):
+        raise APIError(502, "HA template preview unavailable") from None
 
 
 def action_catalog(groups):
@@ -216,13 +255,15 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if self.path not in ("/api/ha/entities", "/api/ha/actions", "/api/ha/targets", "/api/ha/callmebot-profiles", "/api/ha/callmebot-signal-profiles"):
+        if self.path not in ("/api/ha/entities", "/api/ha/actions", "/api/ha/targets", "/api/ha/apps", "/api/ha/callmebot-profiles", "/api/ha/callmebot-signal-profiles"):
             self.reply(404, {"error": "Unbekannter Endpunkt."})
             return
         try:
             if self.path in ("/api/ha/callmebot-profiles", "/api/ha/callmebot-signal-profiles"):
                 source = "ugso_callmebot_signal" if self.path.endswith("signal-profiles") else "ugso_callmebot"
                 self.reply(200, callmebot_profiles(load_rest("states"), source))
+            elif self.path == "/api/ha/apps":
+                self.reply(200, {"apps": load_apps()})
             elif self.path == "/api/ha/actions":
                 self.reply(200, {"actions": action_catalog(load_rest("services"))})
             elif self.path == "/api/ha/targets":
@@ -233,9 +274,26 @@ class Handler(BaseHTTPRequestHandler):
             self.reply(error.status, {"error": error.message})
 
     def do_POST(self):
+        if self.path != "/api/ha/template":
+            self.reply(405, {"error": "Nur lesender Zugriff erlaubt."})
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            if not 0 < length <= 500_000:
+                raise ValueError()
+            data = json.loads(self.rfile.read(length))
+            if not isinstance(data, dict) or set(data) != {"template"}:
+                raise ValueError()
+            self.reply(200, {"result": render_template(data["template"])})
+        except (ValueError, UnicodeDecodeError):
+            self.reply(400, {"error": "Invalid template request"})
+        except APIError as error:
+            self.reply(error.status, {"error": error.message})
+
+    def do_PUT(self):
         self.reply(405, {"error": "Nur lesender Zugriff erlaubt."})
 
-    do_PUT = do_PATCH = do_DELETE = do_POST
+    do_PATCH = do_DELETE = do_PUT
 
     def log_message(self, *args):
         pass

@@ -26,6 +26,7 @@ import { setupHAFields } from './ha-fields.js';
 import { setupHAOptions } from './ha-options.js';
 import { jinjaDefinitions, setupJinjaShape, createJinjaBlock, composedJinja, jinjaBlockExpression } from './jinja-blocks.js';
 import { customDefinition, customExpression, customNative } from './custom-packages.js';
+import { systemTemplateDefinitions, systemTypes, templateTypes, setupSystemTemplate, systemTemplateExpression, systemTemplateAction } from './system-template.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 Blockly.setLocale({ de: De, en: En, fr: Fr }[language]);
@@ -230,6 +231,7 @@ definitions.push(
   { type: 'ugso_event_trigger', message0: 'Wenn Ereignis %1 Datenfilter (JSON) %2 verwenden %3', args0: [{ type: 'field_input', name: 'EVENT_TYPE', text: 'timer.finished' }, { type: 'field_multilinetext', name: 'EVENT_DATA', text: '{"entity_id":"timer.poolpumpe_manuelle_laufzeit"}' }, { type: 'field_checkbox', name: 'FILTER', checked: true }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24', tooltip: 'HA-Ereignis mit optionalem Datenfilter, etwa timer.finished. Filterwerte als JSON-Objekt.' },
   { type: 'ugso_native_time_condition', message0: 'HA-Uhrzeit nach %1 vor %2', args0: [{ type: 'field_input', name: 'AFTER', text: '' }, { type: 'field_input', name: 'BEFORE', text: '19:00:00' }], output: 'Boolean', colour: '#6860b5', tooltip: 'Native HA-Zeitbedingung: nach inklusive, vor exklusiv. Eine Grenze darf leer bleiben; beide zusammen auch über Mitternacht. Feste Uhrzeiten HH:MM oder HH:MM:SS.' }
 );
+definitions.push(...systemTemplateDefinitions);
 Blockly.defineBlocksWithJsonArray(definitions.map(definition => localizedDefinition(themedDefinition(definition))));
 definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
@@ -240,6 +242,8 @@ definitions.forEach(definition => {
       this.initSvg = function () { initSvg.call(this); this.getSvgRoot().classList.add('blocklyCommentNote'); };
     }
     setupJinjaShape(this);
+    setupSystemTemplate(Blockly, this, () => `{{ ${expression(this)} }}`);
+    if (systemTemplateDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('system-template'));
     setupHAFields(Blockly, this, Multiline.FieldMultilineInput);
     installHAChoices(this);
     setupHAOptions(Blockly, this);
@@ -266,6 +270,7 @@ export const toolbox = { kind: 'categoryToolbox', contents: [
   { kind: 'category', name: 'Aktionen', colour: '#2682a5', contents: ['switch', 'service', 'delay', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) }
 ] };
 toolbox.contents.find(c => c.name === 'Auslöser').contents.push({ kind: 'block', type: 'ugso_trigger_value' });
+toolbox.contents.find(c => c.name === 'System').contents.push(...systemTypes.map(type => ({ kind: 'block', type })));
 for (const category of toolbox.contents) for (const block of category.contents) {
   if (block.type === 'ugso_mqtt_action') block.inputs = { TOPIC: { shadow: { type: 'ugso_text', fields: { TEXT: 'your/topic/here' } } }, MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'your message' } } } };
   if (block.type.startsWith('ugso_convert_')) {
@@ -306,6 +311,15 @@ for (const block of toolbox.contents.find(c => c.name === 'Logik').contents) {
   if (block.type === 'ugso_ternary') block.inputs = { TEST: shadow('ugso_boolean', { BOOL: 'true' }), TRUE: shadow('ugso_text', { TEXT: 'Ja' }), FALSE: shadow('ugso_text', { TEXT: 'Nein' }) };
 }
 themedCategories(toolbox);
+toolbox.contents.find(c => c.name === 'Templates').contents.push(...templateTypes.map(type => ({ kind: 'block', type })));
+for (const category of toolbox.contents) for (const entry of category.contents || []) {
+  const shadow = (type, fields) => ({ shadow: { type, fields } });
+  if (entry.type === 'ugso_entity_value_dynamic') entry.inputs = { ENTITY_ID: shadow('ugso_entity_id', { ENTITY: 'sensor.test' }) };
+  if (entry.type === 'ugso_template_output') entry.inputs = { VALUE: shadow('ugso_text', { TEXT: 'Text' }) };
+  if (entry.type === 'ugso_number_format') entry.inputs = { VALUE: shadow('ugso_number', { NUM: 21.56 }), DECIMALS: shadow('ugso_number', { NUM: 1 }) };
+  if (entry.type === 'ugso_value_fallback') entry.inputs = { VALUE: shadow('ugso_entity_value', { ENTITY: 'sensor.test' }), FALLBACK: shadow('ugso_text', { TEXT: '—' }) };
+  if (entry.type === 'ugso_template_if') entry.inputs = { TEST: shadow('ugso_boolean', { BOOL: 'true' }) };
+}
 export function setupVariables(workspace) {
   workspace.registerToolboxCategoryCallback('UGSO_FUNCTIONS', functionToolbox);
   workspace.registerButtonCallback('UGSO_CREATE_VARIABLE', () => Blockly.Variables.createVariableButtonHandler(workspace, () => workspace.getToolbox()?.refreshSelection()));
@@ -330,6 +344,7 @@ function readValue(block, input) {
   const child = block.getInputTargetBlock(input);
   if (!child?.isEnabled()) throw new Error(`${input}: Wertblock fehlt.`);
   if (child.type === 'ugso_jinja_composed_value') return composedJinja(child);
+  if (systemTemplateDefinitions.some(d => d.type === child.type && d.output)) return `{{ ${expression(child)} }}`;
   if (customDefinition(child.type)) return `{{ ${expression(child)} }}`;
   if (['ugso_number', 'ugso_percent'].includes(child.type)) return Number(field(child, 'NUM'));
   if (child.type === 'ugso_boolean') return field(child, 'BOOL') === 'true';
@@ -348,6 +363,8 @@ function expression(block, depth = 0, scope = actionScope) {
   if (depth > 10) throw new Error('Logik ist zu tief verschachtelt.');
   if (block.type.startsWith('ugso_jinja_composed_')) return jinjaBlockExpression(block);
   const child = name => expression(block.getInputTargetBlock(name), depth + 1, scope);
+  const systemValue = systemTemplateExpression(block, child, value => expression(value, depth + 1, scope));
+  if (systemValue !== null) return systemValue;
   const custom = customDefinition(block.type);
   if (custom && ['value', 'condition'].includes(custom.kind)) return customExpression(custom, block, child);
   if (block.type === 'ugso_colour' || colourDefinitions.some(d => d.type === block.type)) return colourExpression(block, child);
@@ -528,6 +545,8 @@ function readAction(block, depth) {
   if (block.type === 'ugso_scene') return {scene:field(block,'SCENE')};
   const custom = customDefinition(block.type);
   if (custom?.kind === 'action') return customNative(custom, block, name => readValue(block, name));
+  const systemAction = systemTemplateAction(block, { child: name => expression(block.getInputTargetBlock(name)), actions: name => chain(block.getInputTargetBlock(name), readAction, depth + 1), variableName: () => variableName(block) });
+  if (systemAction) return systemAction;
   const collection = collectionAction(block, { child: name => expression(block.getInputTargetBlock(name)), variableName: () => variableName(block), actions: name => chain(block.getInputTargetBlock(name), readAction, depth + 1), number: name => readNumber(block, name) });
   if (collection) return collection;
   const flow = flowAction(block, { child: name => expression(block.getInputTargetBlock(name)), actions: name => chain(block.getInputTargetBlock(name), readAction, depth + 1), conditions: name => requiredConditions(block, name, depth), variableName: () => variableName(block), number: name => readNumber(block, name) });
@@ -740,6 +759,17 @@ function actionBlock(workspace, item) {
   return create(workspace,'ugso_ha_action',{JSON:JSON.stringify(item)});
 }
 function legacyActionBlock(workspace, item) {
+  if (/^hassio\.app_(start|stop|restart)$/.test(item.action || '') && Object.keys(item).every(k => ['action','data'].includes(k)) && item.data && Object.keys(item.data).length === 1 && typeof item.data.app === 'string') return create(workspace, 'ugso_app_control', { APP: item.data.app, MODE: item.action.slice('hassio.app_'.length) });
+  if (/^automation\.(turn_on|turn_off|toggle|trigger)$/.test(item.action || '') && Object.keys(item).every(k => ['action','target','data'].includes(k)) && Object.keys(item.target || {}).length === 1 && /^automation\.[a-z0-9_]+$/.test(item.target.entity_id)) {
+    const mode = item.action.split('.')[1], data = item.data || {};
+    if (Object.keys(data).every(k => (mode === 'trigger' && k === 'skip_condition' || mode === 'turn_off' && k === 'stop_actions') && typeof data[k] === 'boolean')) {
+      const b = create(workspace, 'ugso_automation_control', { ENTITY: item.target.entity_id, MODE: mode });
+      const options = [];
+      if (Object.hasOwn(data, 'skip_condition')) { options.push('CONDITIONS'); b.setFieldValue(data.skip_condition ? 'FALSE' : 'TRUE', 'CHECK_CONDITIONS'); }
+      if (Object.hasOwn(data, 'stop_actions')) { options.push('STOP'); b.setFieldValue(data.stop_actions ? 'TRUE' : 'FALSE', 'STOP_ACTIONS'); }
+      b.loadExtraState({ options }); return b;
+    }
+  }
   if (['whatsapp.send_message', 'notify.whatsapp'].includes(item.action) && Object.keys(item).every(k => ['action','data'].includes(k)) && item.data && Object.keys(item.data).every(k => ['number','target','message','account'].includes(k))) {
     const key = Object.hasOwn(item.data, 'number') ? 'number' : 'target';
     if (!Object.hasOwn(item.data, key === 'number' ? 'target' : 'number') && typeof item.data[key] === 'string' && typeof item.data.message === 'string') {

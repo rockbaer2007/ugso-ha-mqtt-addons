@@ -13,7 +13,7 @@ const fallbackActions = ['homeassistant.turn_on','homeassistant.turn_off','homea
 
 export function entityDomain(block) {
   if (!block) return '';
-  return {ugso_colour_action:'light',ugso_script_action:'script',ugso_scene:'scene'}[block.type] || (block.type === 'ugso_helper_action' ? block.getFieldValue('DOMAIN') : '');
+  return {ugso_colour_action:'light',ugso_script_action:'script',ugso_scene:'scene',ugso_automation_control:'automation'}[block.type] || (block.type === 'ugso_helper_action' ? block.getFieldValue('DOMAIN') : '');
 }
 export function matchingEntities(rows, search, domain = '') {
   const words = search.trim().toLocaleLowerCase('de').split(/\s+/).filter(Boolean);
@@ -46,6 +46,7 @@ export function fieldChoice(field) {
 export function validChoice(text, spec) {
   const value = text.trim();
   if (profileKind(spec)) return !value || /^[a-z][a-z0-9_]{0,39}$/.test(value);
+  if (spec.kind === 'app') return /^[a-z0-9][a-z0-9_-]*$/.test(value);
   if (spec.kind === 'action') return validActionEntity(text);
   if (spec.allowTime) return !!value; // Native HA validation handles clocks, helpers, lists and offsets.
   if (spec.allowNumber && value && Number.isFinite(Number(value))) return true;
@@ -67,7 +68,7 @@ export function matchingChoices(catalog, field, search) {
     if (selected?.domains?.length) domains = selected.domains;
     else if (action && !['homeassistant','script','notify'].includes(action.split('.')[0]) && catalog.entities.some(row=>row.domain===action.split('.')[0])) domains = [action.split('.')[0]];
   }
-  let rows = profileKind(spec) ? [{id:'',name:profileNames[profileChannel(field)].get('') || defaultRecipient()},...(catalog[profileChannel(field)==='signal'?'signalProfiles':'profiles'] || [])] : spec.kind === 'action' ? catalog.actions : spec.kind === 'entity_id' ? catalog.entities.map(row=>({...row,id:row.entity_id})) : catalog.targets[spec.kind] || [];
+  let rows = profileKind(spec) ? [{id:'',name:profileNames[profileChannel(field)].get('') || defaultRecipient()},...(catalog[profileChannel(field)==='signal'?'signalProfiles':'profiles'] || [])] : spec.kind === 'app' ? catalog.apps || [] : spec.kind === 'action' ? catalog.actions : spec.kind === 'entity_id' ? catalog.entities.map(row=>({...row,id:row.entity_id})) : catalog.targets[spec.kind] || [];
   if (spec.kind === 'entity_id') rows = rows.filter(row=>(!domains.length || domains.includes(row.domain)) && (!spec.numeric || ['sensor','input_number','number'].includes(row.domain)));
   const words = search.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
   return rows.filter(row=>words.every(word=>(row.name+' '+row.id).toLocaleLowerCase().includes(word)));
@@ -107,12 +108,23 @@ export function setupEntities(workspace) {
   dialog.innerHTML='<h2 id="entity-title">HA-Auswahl</h2><p id="entity-status" role="status"></p><label>Suche nach Name oder ID<input id="entity-search" type="search" autocomplete="off"></label><div id="entity-results" aria-label="Gefundene Einträge"></div><p id="entity-count"></p><form id="entity-form"><label>ID, Liste oder HA-Template<textarea id="entity-id" rows="3" autocomplete="off" spellcheck="false"></textarea></label><label><input id="entity-multiple" type="checkbox">Mehrere Ziele auswählen</label><p id="entity-error" role="alert"></p><div class="entity-actions"><button type="button" id="entity-refresh">Neu laden</button><button type="button" id="entity-cancel">Abbrechen</button><button type="submit" class="primary">Übernehmen</button></div></form>';
   document.body.append(dialog);
   const el=id=>dialog.querySelector('#'+id);
-  const catalog={entities:[],actions:fallbackActions,targets:{},profiles:[],signalProfiles:[]};
+  const catalog={entities:[],actions:fallbackActions,targets:{},profiles:[],signalProfiles:[],apps:[]};
+  const appText = (de,en,fr) => ({de,en,fr})[language];
   const messages={entities:'Entitäts-ID kann auch manuell eingegeben werden.',actions:'Gängige Beispielaktionen; HA-Verfügbarkeit prüfen.',targets:'Ziel-ID kann auch manuell eingegeben werden.'};
   let field, loading=false;
   messages.profiles='CallMeBot-Profile nicht geladen. Profil-ID manuell eingeben oder Standardempfänger verwenden.';
   messages.signalProfiles='Signal-Profile nicht geladen. Profil-ID manuell eingeben oder Standardempfänger verwenden.';
-  function group() {const kind=fieldChoice(field)?.kind;return kind==='callmebot_signal_profile'?'signalProfiles':kind==='callmebot_profile'?'profiles':kind==='action'?'actions':kind==='entity_id'?'entities':'targets';}
+  messages.apps=appText('App-Kennung manuell eingeben; Supervisor-Auswahl nicht verfügbar.','Enter app slug manually; Supervisor selection unavailable.','Saisir l’identifiant de l’application ; sélection Supervisor indisponible.');
+  function group() {const kind=fieldChoice(field)?.kind;return kind==='app'?'apps':kind==='callmebot_signal_profile'?'signalProfiles':kind==='callmebot_profile'?'profiles':kind==='action'?'actions':kind==='entity_id'?'entities':'targets';}
+  async function refreshApps() {
+    try {
+      const response=await fetch(new URL('./api/ha/apps',document.baseURI),{cache:'no-store',signal:AbortSignal.timeout(12000)});
+      const data=await response.json();if(!response.ok||!Array.isArray(data.apps))throw Error();
+      catalog.apps=data.apps.filter(row=>row&&typeof row.id==='string'&&/^[a-z0-9][a-z0-9_-]*$/.test(row.id)&&typeof row.name==='string');
+      messages.apps=appText('Installierte Apps aus Supervisor geladen.','Installed apps loaded from Supervisor.','Applications installées chargées depuis Supervisor.');
+    } catch {catalog.apps=[];messages.apps=appText('App-Kennung manuell eingeben; Supervisor-Auswahl nicht verfügbar.','Enter app slug manually; Supervisor selection unavailable.','Saisir l’identifiant de l’application ; sélection Supervisor indisponible.');}
+    if(fieldChoice(field)?.kind==='app')render();
+  }
   async function refreshProfiles(channel='whatsapp') {
     const key=channel==='signal'?'signalProfiles':'profiles';
     try {
@@ -134,6 +146,7 @@ export function setupEntities(workspace) {
     el('entity-status').textContent=messages[group()]; el('entity-results').replaceChildren();
     const spec=fieldChoice(field), matches=field?matchingChoices(catalog,field,el('entity-search').value):[];
     const titles={action:'HA-Aktion auswählen',entity_id:'Entität auswählen',device_id:'Gerät auswählen',area_id:'Bereich auswählen',floor_id:'Etage auswählen',label_id:'Label auswählen'};
+    titles.app=appText('App auswählen','Choose an app','Choisir une application');
     el('entity-title').textContent=profileKind(spec)?(profileChannel(field)==='signal'?'Signal-Profil auswählen':'CallMeBot-Profil auswählen'):titles[spec?.kind]||'HA-Auswahl';
     el('entity-id').parentElement.firstChild.nodeValue=profileKind(spec)?'Profil-ID (leer = Standardempfänger)':'ID, Liste oder HA-Template';
     el('entity-id').rows=profileKind(spec)?1:3;
@@ -172,10 +185,10 @@ export function setupEntities(workspace) {
     el('entity-id').value=String(field.getValue());el('entity-search').value='';el('entity-error').textContent='';
     el('entity-multiple').parentElement.hidden=spec.kind==='action'||!spec.structured||spec.allowNumber||spec.allowTime;
     el('entity-multiple').checked=!el('entity-multiple').parentElement.hidden&&(!!spec.listOnly||el('entity-id').value.trim().startsWith('['));
-    render();dialog.showModal();el('entity-search').focus();if(profileKind(spec))refreshProfiles(profileChannel(field));
+    render();dialog.showModal();el('entity-search').focus();if(profileKind(spec))refreshProfiles(profileChannel(field));if(spec.kind==='app')refreshApps();
   };
   el('entity-search').addEventListener('input',render);el('entity-id').addEventListener('input',()=>{el('entity-error').textContent='';});
-  el('entity-cancel').addEventListener('click',()=>dialog.close());el('entity-refresh').addEventListener('click',()=>profileKind(fieldChoice(field))?refreshProfiles(profileChannel(field)):refresh());loadButton.addEventListener('click',()=>{refresh();refreshProfiles();refreshProfiles('signal');});
+  el('entity-cancel').addEventListener('click',()=>dialog.close());el('entity-refresh').addEventListener('click',()=>fieldChoice(field)?.kind==='app'?refreshApps():profileKind(fieldChoice(field))?refreshProfiles(profileChannel(field)):refresh());loadButton.addEventListener('click',()=>{refresh();refreshApps();refreshProfiles();refreshProfiles('signal');});
   el('entity-form').addEventListener('submit',event=>{
     event.preventDefault();if(!field||field.getSourceBlock().isDisposed()){dialog.close();return;}
     const raw=el('entity-id').value,text=/\{\{|\{%/.test(raw)?raw:raw.trim(),spec=fieldChoice(field);
