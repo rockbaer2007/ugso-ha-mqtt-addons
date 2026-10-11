@@ -7,6 +7,7 @@ const unwrap = module => module.default?.default || module.default || module;
 const bases = { standard: Blockly.Themes.Classic, dark: unwrap(DarkModule), modern: unwrap(ModernModule), tritanopia: unwrap(TritanopiaModule) };
 // Keep UGSo hues in Standard/Dark with readable white labels; preserve upstream palettes.
 const groups = {
+  '#e1c025': ['comment', 'text_blocks', null],
   '#187b72': ['root', 'logic_blocks', '#24635e'],
   '#2682a5': ['action', 'logic_blocks', '#254e72'],
   '#2e7653': ['values', 'text_blocks', null],
@@ -33,6 +34,7 @@ export const themes = Object.fromEntries(themeOptions.map(([id]) => {
   for (const [colour, [group, upstream, accessible]] of Object.entries(groups)) {
     const palette = id === 'standard' || id === 'dark' ? { colourPrimary: readableBlockColour(standardColours[group] || colour) } : id === 'tritanopia' && accessible ? { colourPrimary: accessible } : { ...base.blockStyles[upstream] };
     blockStyles[`ugso_${group}`] = palette;
+    if (group === 'comment') blockStyles.ugso_comment = { colourPrimary: '#fff200', colourSecondary: '#fff885', colourTertiary: '#d5b300' };
     categoryStyles[`ugso_${group}_category`] = { colour: palette.colourPrimary };
   }
   const dark = id === 'dark';

@@ -35,16 +35,24 @@ export const flowDefinitions = [
 
 // Shared original implementation for editable dictionary/list/case rows.
 export function installFlowShape(Blockly) {
+  const itemTypes = { ugso_object_new: 'ugso_object_attribute', ugso_case: 'ugso_case_item', ugso_list_new: 'ugso_list_item', ugso_text_join: 'ugso_text_item' };
   Blockly.defineBlocksWithJsonArray([
-    { type: 'ugso_rows_container', message0: 'Einträge %1', args0: [{ type: 'input_statement', name: 'STACK' }], colour: '#967b44', enableContextMenu: false },
-    { type: 'ugso_rows_item', message0: 'Eintrag', previousStatement: null, nextStatement: null, colour: '#967b44', enableContextMenu: false }
+    { type: 'ugso_rows_container', message0: '%1 %2', args0: [{ type: 'field_label_serializable', name: 'LABEL', text: '' }, { type: 'input_statement', name: 'STACK' }], colour: '#967b44', enableContextMenu: false },
+    { type: 'ugso_rows_item', message0: '%1', args0: [{ type: 'field_label_serializable', name: 'LABEL', text: '' }], previousStatement: null, nextStatement: null, colour: '#967b44', enableContextMenu: false }
   ].map(definition => localizedDefinition(definition)));
+  for (const [type, itemType] of Object.entries(itemTypes)) Blockly.Blocks[itemType] = { init() {
+    const input = this.appendDummyInput().appendField(new Blockly.FieldLabelSerializable(type === 'ugso_object_new' ? translateLabel('Attribut') : type === 'ugso_case' ? translateLabel('im Falle von') : Blockly.Msg.LISTS_CREATE_WITH_ITEM_TITLE), 'LABEL');
+    if (type === 'ugso_object_new') input.appendField(new Blockly.FieldTextInput('attribute1'), 'KEY');
+    this.setPreviousStatement(true); this.setNextStatement(true); this.setStyle(({ ugso_object_new: 'ugso_object', ugso_case: 'ugso_logic', ugso_list_new: 'ugso_list', ugso_text_join: 'ugso_text' })[type]); this.contextMenu = false;
+  } };
+  Blockly.Blocks.ugso_case_default = { init() { this.appendDummyInput().appendField('default'); this.setPreviousStatement(true); this.setStyle('ugso_logic'); this.contextMenu = false; } };
   Blockly.Extensions.registerMutator('ugso_rows', {
     rowCount_: 1,
-    saveExtraState() { return { rows: this.rowCount_, ...(this.type === 'ugso_object_new' ? { keys: Array.from({ length: this.rowCount_ }, (_, i) => this.getFieldValue(`KEY${i}`)) } : {}) }; },
+    hasDefault_: true,
+    saveExtraState() { return { rows: this.rowCount_, ...(this.type === 'ugso_case' ? { hasDefault: this.hasDefault_ } : {}), ...(this.type === 'ugso_object_new' ? { keys: Array.from({ length: this.rowCount_ }, (_, i) => this.getFieldValue(`KEY${i}`)) } : {}) }; },
     loadExtraState(state) {
       if (!Number.isInteger(state.rows) || state.rows < (this.type === 'ugso_case' ? 1 : 0) || state.rows > 100) throw new Error('Ungültige Anzahl Einträge (0–100, Fallauswahl mindestens 1).');
-      this.rowCount_ = state.rows; this.updateRows_();
+      this.rowCount_ = state.rows; this.hasDefault_ = state.hasDefault !== false; this.updateRows_();
       if (this.type === 'ugso_object_new' && state.keys !== undefined) {
         if (!Array.isArray(state.keys) || state.keys.length !== state.rows || state.keys.some(k => typeof k !== 'string')) throw new Error('Ungültige Objektschlüssel.');
         state.keys.forEach((key, i) => this.setFieldValue(key, `KEY${i}`));
@@ -54,38 +62,54 @@ export function installFlowShape(Blockly) {
       for (let i = 0; i < this.rowCount_; i++) if (!this.getInput(`V${i}`)) {
         const input = this.appendValueInput(`V${i}`).setCheck('Value');
         if (this.type === 'ugso_object_new') input.appendField(translateLabel('Attribut')).appendField(new Blockly.FieldTextInput(`attribute${i + 1}`), `KEY${i}`);
-        else input.appendField(translateLabel(this.type === 'ugso_case' ? 'im Falle von' : `Eintrag ${i + 1}`));
-        if (this.type === 'ugso_case') this.appendStatementInput(`DO${i}`).setCheck('Action').appendField(translateLabel('mache'));
+        else if (this.type === 'ugso_case') input.appendField(translateLabel('im Falle von'));
+        if (this.type === 'ugso_case') this.appendStatementInput(`DO${i}`).setCheck('Action').appendField(translateLabel('machen'));
       }
       for (let i = this.rowCount_; this.getInput(`V${i}`); i++) { this.removeInput(`V${i}`); if (this.getInput(`DO${i}`)) this.removeInput(`DO${i}`); }
       if (this.type === 'ugso_case') {
-        if (!this.getInput('DEFAULT')) this.appendStatementInput('DEFAULT').setCheck('Action').appendField(translateLabel('sonst'));
-        this.moveInputBefore('DEFAULT', null);
+        if (this.hasDefault_) {
+          if (!this.getInput('DEFAULT')) this.appendStatementInput('DEFAULT').setCheck('Action').appendField('default');
+          this.moveInputBefore('DEFAULT', null);
+        } else if (this.getInput('DEFAULT')) this.removeInput('DEFAULT');
       }
     },
     decompose(ws) {
-      const root = ws.newBlock('ugso_rows_container'); root.initSvg(); let c = root.getInput('STACK').connection;
-      for (let i = 0; i < this.rowCount_; i++) { const item = ws.newBlock('ugso_rows_item'); item.initSvg(); c.connect(item.previousConnection); c = item.nextConnection; }
+      const titles = this.type === 'ugso_object_new' ? [translateLabel('Attribute'), translateLabel('Attribut')] : this.type === 'ugso_case' ? [translateLabel('der Fall ist'), translateLabel('im Falle von')] : [Blockly.Msg[this.type === 'ugso_text_join' ? 'TEXT_CREATE_JOIN_TITLE_JOIN' : 'LISTS_CREATE_WITH_CONTAINER_TITLE_ADD'], Blockly.Msg.LISTS_CREATE_WITH_ITEM_TITLE];
+      const style = this.getStyleName();
+      const configure = (block, i = 0) => {
+        block.setStyle(style);
+        block.setFieldValue(titles[block.type === 'ugso_rows_container' ? 0 : 1], 'LABEL');
+        if (this.type === 'ugso_object_new' && block.getField('KEY')) block.setFieldValue(this.getFieldValue(`KEY${i}`) || `attribute${i + 1}`, 'KEY');
+      };
+      const root = ws.newBlock('ugso_rows_container'); configure(root); root.initSvg?.(); let c = root.getInput('STACK').connection;
+      for (let i = 0; i < this.rowCount_; i++) { const item = ws.newBlock(itemTypes[this.type]); configure(item, i); item.initSvg?.(); c.connect(item.previousConnection); c = item.nextConnection; }
+      if (this.type === 'ugso_case' && this.hasDefault_) { const item = ws.newBlock('ugso_case_default'); item.initSvg?.(); c.connect(item.previousConnection); }
       return root;
     },
     saveConnections(root) {
       let i = 0;
       for (let item = root.getInputTargetBlock('STACK'); item; item = item.getNextBlock()) if (!item.isInsertionMarker()) {
+        if (item.type === 'ugso_case_default') { item.actionConnection_ = this.getInput('DEFAULT')?.connection.targetConnection; continue; }
         item.valueConnection_ = this.getInput(`V${i}`)?.connection.targetConnection;
         item.actionConnection_ = this.getInput(`DO${i}`)?.connection.targetConnection;
         item.key_ = this.type === 'ugso_object_new' ? this.getFieldValue(`KEY${i}`) : null; i++;
       }
     },
     compose(root) {
-      const rows = [];
-      for (let item = root.getInputTargetBlock('STACK'); item; item = item.getNextBlock()) if (!item.isInsertionMarker()) rows.push(item);
+      const rows = []; let otherwise = null;
+      for (let item = root.getInputTargetBlock('STACK'); item; item = item.getNextBlock()) if (!item.isInsertionMarker()) {
+        if (item.type === 'ugso_case_default') otherwise = item; else rows.push(item);
+      }
       if (rows.length > 100) throw new Error('Höchstens 100 Einträge.');
       for (let i = 0; i < this.rowCount_; i++) for (const n of [`V${i}`, `DO${i}`]) this.getInput(n)?.connection.targetConnection?.disconnect();
+      if (this.type === 'ugso_case') { this.getInput('DEFAULT')?.connection.targetConnection?.disconnect(); this.hasDefault_ = !!otherwise; }
       this.rowCount_ = Math.max(this.type === 'ugso_case' ? 1 : 0, rows.length); this.updateRows_();
-      rows.forEach((row, i) => { row.valueConnection_?.reconnect(this, `V${i}`); row.actionConnection_?.reconnect(this, `DO${i}`); if (this.type === 'ugso_object_new') this.setFieldValue(row.key_ ?? `attribute${i + 1}`, `KEY${i}`); });
+      rows.forEach((row, i) => { row.valueConnection_?.reconnect(this, `V${i}`); row.actionConnection_?.reconnect(this, `DO${i}`); if (this.type === 'ugso_object_new') this.setFieldValue(row.getFieldValue('KEY') ?? row.key_ ?? `attribute${i + 1}`, `KEY${i}`); });
+      otherwise?.actionConnection_?.reconnect(this, 'DEFAULT');
     }
   }, function () {
     this.updateRows_();
+    if (this instanceof Blockly.BlockSvg) this.setMutator(new Blockly.icons.MutatorIcon([itemTypes[this.type], ...(this.type === 'ugso_case' ? ['ugso_case_default'] : [])], this));
   }, ['ugso_rows_item']);
 }
 

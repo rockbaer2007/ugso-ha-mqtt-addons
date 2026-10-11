@@ -153,7 +153,9 @@ function appendYamlModel(model) {
   const temp = new Blockly.Workspace();
   try {
     modelWorkspace(temp, model);
-    const incoming = Blockly.serialization.workspaces.save(temp).blocks.blocks.find(b => b.type === 'ugso_automation');
+    const incomingBlocks = Blockly.serialization.workspaces.save(temp).blocks.blocks;
+    const incoming = incomingBlocks.find(b => b.type === 'ugso_automation');
+    project.workspace.blocks.blocks.push(...incomingBlocks.filter(b => b.type === 'ugso_comment'));
     const root = project.workspace.blocks.blocks.find(b => b.type === 'ugso_automation');
     root.inputs ||= {};
     for (const name of ['TRIGGERS', 'ACTIONS']) {

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.59
+
+- Aligned standard block labels with ioBroker/Blockly in DE/EN/FR; HA-specific inputs and semantics remain explicit.
+- Object, list, text and case gear builders use category-specific labels and colours. Attribute names are editable in the builder; case default branches can be added or removed.
+- Added a yellow Comment block in System. Notes persist in projects, export as YAML header comments and return as comment blocks on YAML import, including append mode.
+- Added MQTT message in Messages: topic, payload, retain and QoS, without an instance selector. Exports native mqtt.publish; supports text and Jinja payloads.
+
 ## 0.1.58
 
 - Removed the compact AND/OR variant from the toolbox; existing projects retain support for it.

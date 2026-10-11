@@ -48,7 +48,7 @@ test('UGSo coloured labels use white and all theme labels have at least 4.5:1 co
     const ink = labelInk(style.colourPrimary);
     assert.ok(contrastRatio(ink, style.colourPrimary) >= 4.5, `${id}:${name}`);
     if (style.colourSecondary) assert.ok(contrastRatio(labelInk(style.colourSecondary), style.colourSecondary) >= 4.5, `${id}:${name}:shadow`);
-    if (['standard', 'dark'].includes(id)) assert.equal(ink, '#ffffff', `${id}:${name}`);
+    if (['standard', 'dark'].includes(id)) assert.equal(ink, name === 'ugso_comment' ? '#10232b' : '#ffffff', `${id}:${name}`);
   }
   for (const colour of ['#2682a5', '#b26c24', '#967b44', '#7a8639', '#ad6841']) {
     assert.ok(contrastRatio('#ffffff', readableBlockColour(colour)) >= 4.5, colour);

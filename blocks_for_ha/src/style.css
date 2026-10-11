@@ -8,6 +8,8 @@
 .canvas-panel>.panel-heading{height:auto;min-height:64px;gap:10px;flex-wrap:wrap}
 .canvas-actions{align-items:center;flex-wrap:wrap}.theme-label{flex-direction:row;align-items:center;font-size:11px;gap:6px}.theme-label select{height:30px;width:135px;min-width:0;padding:4px 7px}
 #workspace text.blocklyText{fill:var(--ugso-label-ink,#fff)}
+.blocklyCommentNote>.blocklyPath{fill:#fff200!important;stroke:#d5b300!important}
+.blocklyCommentNote text.blocklyText,.blocklyCommentNote text.blocklyText tspan{fill:#10232b!important}
 #workspace .blocklyEditableField text.blocklyText{fill:#10232b}
 #workspace .blocklyEditableField text.blocklyText tspan{fill:#10232b!important}
 #workspace .blocklyToolboxSelected{background:#405e72!important;color:#fff!important}

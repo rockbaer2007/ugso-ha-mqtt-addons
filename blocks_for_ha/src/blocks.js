@@ -2,6 +2,7 @@ import * as BlocklyModule from 'blockly/core';
 import * as De from 'blockly/msg/de';
 import * as En from 'blockly/msg/en';
 import * as Fr from 'blockly/msg/fr';
+import { getYamlComments, setYamlComments } from './yaml-comments.js';
 import { language, localizedDefinition, translateLabel, documentationPath } from './locales.js';
 import 'blockly/blocks';
 import * as MultilineModule from '@blockly/field-multilineinput';
@@ -53,6 +54,8 @@ const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'bel
 const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 export const definitions = [
+  { type: 'ugso_comment', message0: 'Kommentar %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: '' }], previousStatement: 'Action', nextStatement: 'Action', colour: '#e1c025', tooltip: 'Nur Dokumentation. Wird als YAML-Kommentar exportiert; keine Home-Assistant-Aktion.' },
+  { type: 'ugso_mqtt_action', message0: 'MQTT-Nachricht %1', args0: [{ type: 'input_dummy', name: 'HEADER' }], message1: 'Thema (Topic) %1', args1: [value('TOPIC', 'String')], message2: 'Nachricht %1', args2: [value('MESSAGE', 'String')], message3: 'Retain %1 QoS %2', args3: [{ type: 'field_checkbox', name: 'RETAIN', checked: false }, { type: 'field_dropdown', name: 'QOS', options: [['0', '0'], ['1', '1'], ['2', '2']] }], previousStatement: 'Action', nextStatement: 'Action', inputsInline: false, colour: '#a54879', tooltip: 'Sendet über die MQTT-Integration von Home Assistant. Nachricht als Text oder Template.' },
   { type: 'ugso_whatsapp_action', message0: 'WhatsApp Integration %1', args0: [{ type: 'field_dropdown', name: 'MODE', options: [['whatsapp.send_message · number', 'number'], ['whatsapp.send_message · target', 'target'], ['notify.whatsapp', 'notify']] }], message1: 'Empfänger %1 Nachricht %2', args1: [{ type: 'field_input', name: 'NUMBER', text: '40741234567' }, value('MESSAGE', 'String')], message2: 'Konto (optional) %1', args2: [{ type: 'field_input', name: 'ACCOUNT', text: '' }], inputsInline: false, previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Benötigt die installierte WhatsApp-Integration. Passende Variante wählen: number (älter), target (aktuell), notify.whatsapp (falls eingerichtet). Nummer mit Ländervorwahl ohne + oder HA-Template. Optionales Konto nur für whatsapp.send_message. Kein CallMeBot oder Schlüssel in Blocks.' },
   { type: 'ugso_callmebot_action', message0: 'WhatsApp · CallMeBot Profil %1 Nachricht %2 Protokoll %3', args0: [{ type: 'field_input', name: 'PROFILE', text: '' }, value('MESSAGE', 'String'), { type: 'field_dropdown', name: 'LOGLEVEL', options: [['errors', 'errors'], ['none', 'none'], ['info', 'info']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Benötigt CallMeBot Whatsapp und MQTT. Leeres Profil verwendet den Standardempfänger. Schlüssel bleiben in der App. CallMeBot sendet nur persönliche Textnachrichten an aktivierte Nummern.' },
   { type: 'ugso_callmebot_signal_action', message0: 'Signal · CallMeBot Profil %1 Nachricht %2 Protokoll %3', args0: [{ type: 'field_input', name: 'PROFILE', text: '' }, value('MESSAGE', 'String'), { type: 'field_dropdown', name: 'LOGLEVEL', options: [['errors', 'errors'], ['none', 'none'], ['info', 'info']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Benötigt CallMeBot Signal und MQTT. Leeres Profil verwendet den Standardempfänger. Schlüssel bleiben in der App. CallMeBot sendet nur persönliche Textnachrichten an aktivierte Nummern oder UUIDs.' },
@@ -222,6 +225,10 @@ definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
   Blockly.Blocks[definition.type].init = function () {
     original.call(this); installNativeFields(Blockly, this, Multiline.FieldMultilineInput); setupJinjaBlock(this); setupParallelBlock(Blockly, this, translateLabel('Zweig')); setupIntegrationBlock(Blockly,this); this.setHelpUrl(documentationPath(this.type.startsWith('ugso_time_') ? 'time' : ''));
+    if (this.type === 'ugso_comment' && this.initSvg) {
+      const initSvg = this.initSvg;
+      this.initSvg = function () { initSvg.call(this); this.getSvgRoot().classList.add('blocklyCommentNote'); };
+    }
     setupJinjaShape(this);
     setupHAFields(Blockly, this, Multiline.FieldMultilineInput);
     installHAChoices(this);
@@ -236,10 +243,10 @@ definitions.forEach(definition => {
 export { Blockly };
 export const knownTypes = new Set([...definitions.map(item => item.type), ...functionTypes]);
 export const toolbox = { kind: 'categoryToolbox', contents: [
-  { kind: 'category', name: 'Nachrichten', colour: '#2682a5', contents: ['ugso_callmebot_action', 'ugso_callmebot_signal_action', 'ugso_whatsapp_action'].map(type => ({ kind: 'block', type })) },
+  { kind: 'category', name: 'Nachrichten', colour: '#2682a5', contents: ['ugso_callmebot_action', 'ugso_callmebot_signal_action', 'ugso_whatsapp_action', 'ugso_mqtt_action'].map(type => ({ kind: 'block', type })) },
   { kind: 'category', name: 'Jinja (experimentell)', colour: '#8a6635', contents: [...jinjaDefinitions.map(d=>d.type),'ugso_jinja_value','ugso_jinja_condition'].map(type=>({kind:'block',type})) },
   { kind: 'category', name: 'HA erweitert', colour: '#2682a5', contents: advancedDefinitions.filter(d=>!d.type.startsWith('ugso_jinja')).map(({type})=>({kind:'block',type})) },
-  { kind: 'category', name: 'System', colour: '#2682a5', contents: [{ kind: 'block', type: 'ugso_automation' }, ...['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` }))] },
+  { kind: 'category', name: 'System', colour: '#2682a5', contents: [{ kind: 'block', type: 'ugso_automation' }, { kind: 'block', type: 'ugso_comment' }, ...['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` }))] },
   { kind: 'category', name: 'Werte', colour: '#2e7653', contents: [{ kind: 'block', type: 'ugso_percent' }] },
   { kind: 'category', name: 'Datum und Zeit', colour: '#8056a1', contents: [{ kind: 'block', type: 'ugso_date_condition' }, ...timeDefinitions.map(({ type }) => ({ kind: 'block', type }))] },
   { kind: 'category', name: 'Konvertierung', colour: '#9463a6', contents: conversionDefinitions.map(({ type }) => ({ kind: 'block', type })) },
@@ -248,6 +255,7 @@ export const toolbox = { kind: 'categoryToolbox', contents: [
   { kind: 'category', name: 'Aktionen', colour: '#2682a5', contents: ['switch', 'service', 'delay', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) }
 ] };
 for (const category of toolbox.contents) for (const block of category.contents) {
+  if (block.type === 'ugso_mqtt_action') block.inputs = { TOPIC: { shadow: { type: 'ugso_text', fields: { TEXT: 'your/topic/here' } } }, MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'your message' } } } };
   if (block.type.startsWith('ugso_convert_')) {
     const defaults = { number: ['ugso_text', { TEXT: '21.5' }], boolean: ['ugso_text', { TEXT: 'on' }], string: ['ugso_number', { NUM: 42 }], type: ['ugso_text', { TEXT: 'Text' }], datetime: ['ugso_text', { TEXT: '2026-10-10T12:00:00+02:00' }], date_format: ['ugso_time_now', {}], duration: ['ugso_number', { NUM: 3661000 }], from_json: ['ugso_text', { TEXT: '{"wert":21.5}' }], to_json: ['ugso_convert_from_json', {}] };
     const [type, fields] = defaults[block.type.slice('ugso_convert_'.length)];
@@ -389,7 +397,7 @@ const field = (block, name) => block.getFieldValue(name);
 function chain(block, convert, depth = 0) {
   if (depth > 10) throw new Error('Blocks sind zu tief verschachtelt.');
   const items = [];
-  while (block) { if (block.isEnabled()) items.push(convert(block, depth)); block = block.getNextBlock(); }
+  while (block) { if (block.isEnabled() && block.type !== 'ugso_comment') items.push(convert(block, depth)); block = block.getNextBlock(); }
   return items;
 }
 function readNumber(block, input) {
@@ -558,6 +566,11 @@ function readAction(block, depth) {
       if (typeof message !== 'string' || !message.trim()) throw new Error('Log: Meldung fehlt.');
       return { action: 'system_log.write', data: { message, level: field(block, 'LEVEL') } };
     }
+    case 'ugso_mqtt_action': {
+      const topic = readValue(block, 'TOPIC'), payload = readValue(block, 'MESSAGE');
+      if (typeof topic !== 'string' || !topic.trim()) throw Error('MQTT: Thema (Topic) fehlt.');
+      return { action: 'mqtt.publish', data: { topic, payload, retain: field(block, 'RETAIN') === 'TRUE', qos: Number(field(block, 'QOS')) } };
+    }
     case 'ugso_script_action': {
       const id = field(block, 'ENTITY');
       if (!/^script\.[a-z0-9_]+$/.test(id)) throw new Error('HA-Script: Entität im Format script.name erwartet.');
@@ -602,10 +615,11 @@ export function workspaceModel(workspace, metadata) {
     }
   }
   functionIndex=0;
-  const automations = roots.filter(b => !['procedures_defreturn','procedures_defnoreturn'].includes(b.type));
+  const automations = roots.filter(b => !['procedures_defreturn','procedures_defnoreturn','ugso_comment'].includes(b.type));
   if (automations.length !== 1 || automations[0].type !== 'ugso_automation') throw new Error('Alle Blocks außer Funktionsdefinitionen müssen mit genau einer Automation verbunden sein.');
   const root = automations[0];
-  return { ...metadata, triggers: chain(root.getInputTargetBlock('TRIGGERS'), readTrigger), conditions: readConditions(root.getInputTargetBlock('CONDITIONS')), actions: chain(root.getInputTargetBlock('ACTIONS'), readAction) };
+  const result = { ...metadata, triggers: chain(root.getInputTargetBlock('TRIGGERS'), readTrigger), conditions: readConditions(root.getInputTargetBlock('CONDITIONS')), actions: chain(root.getInputTargetBlock('ACTIONS'), readAction) };
+  return setYamlComments(result, workspace.getAllBlocks(true).filter(b => b.type === 'ugso_comment' && b.isEnabled()).map(b => field(b, 'TEXT')));
 }
 function create(workspace, type, fields = {}) {
   const block = workspace.newBlock(type);
@@ -679,6 +693,10 @@ function actionBlock(workspace, item) {
   const before = new Set(workspace.getAllBlocks(false).map(b=>b.id));
   let block;
   const simple = !['alias','enabled','continue_on_error'].some(k=>Object.hasOwn(item,k));
+  if (simple && item.action === 'mqtt.publish' && Object.keys(item).length === 2 && item.data && Object.keys(item.data).every(k => ['topic','payload','retain','qos'].includes(k)) && typeof item.data.topic === 'string' && typeof item.data.payload === 'string' && Object.hasOwn(item.data, 'retain') && Object.hasOwn(item.data, 'qos')) {
+    const mqtt = create(workspace, 'ugso_mqtt_action', { RETAIN: item.data.retain ? 'TRUE' : 'FALSE', QOS: item.data.qos });
+    valueInput(mqtt, 'TOPIC', item.data.topic); valueInput(mqtt, 'MESSAGE', item.data.payload); return mqtt;
+  }
   if(simple && Object.keys(item).length===1 && typeof item.set_conversation_response==='string')return create(workspace,'ugso_assist_response',{TEXT:item.set_conversation_response});
   if(simple && Object.keys(item).length===1 && item.scene)return create(workspace,'ugso_scene',{SCENE:item.scene});
   if(simple && item.event && Object.keys(item).every(k=>['event','event_data'].includes(k)) && Object.hasOwn(item,'event_data'))return create(workspace,'ugso_fire_event',{EVENT:item.event,DATA:JSON.stringify(item.event_data)});
@@ -791,6 +809,7 @@ export function modelWorkspace(workspace, model) {
     attach(root, 'TRIGGERS', model.triggers.map(item => triggerBlock(workspace, item)));
     attach(root, 'CONDITIONS', model.conditions.map(item => conditionBlock(workspace, item)));
     attach(root, 'ACTIONS', model.actions.map(item => actionBlock(workspace, item)));
+    getYamlComments(model).forEach((text, i) => { const note = create(workspace, 'ugso_comment', { TEXT: text }); if (workspace.rendered) note.moveBy(38, 180 + i * 90); });
     if (workspace.rendered) root.moveBy(38, 38);
     workspace.clearUndo();
   } finally { Blockly.Events.enable(); }

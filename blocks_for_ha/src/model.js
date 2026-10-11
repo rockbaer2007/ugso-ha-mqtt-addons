@@ -1,4 +1,5 @@
-import { parseDocument, stringify } from 'yaml';
+import { parseDocument, stringify, visit } from 'yaml';
+import { getYamlComments, setYamlComments } from './yaml-comments.js';
 
 import { checkAutomation } from './ha-schema.js';
 
@@ -7,7 +8,8 @@ export function toYaml(model, format = 'single', { omitId = false } = {}) {
   validateAutomation(model);
   const { id, ...editorModel } = model;
   const output = omitId ? editorModel : model;
-  return stringify(format === 'list' ? [output] : output, { lineWidth: 0, aliasDuplicateObjects: false });
+  const notes = getYamlComments(model).flatMap(text => text.split(/\r\n|\r|\n/)).map(line => `# ${line}`).join('\n');
+  return (notes ? notes + '\n' : '') + stringify(format === 'list' ? [output] : output, { lineWidth: 0, aliasDuplicateObjects: false });
 }
 export function fromYaml(source) {
   if (source.length > 1000000) throw new Error('Datei ist größer als 1 MB.');
@@ -17,7 +19,12 @@ export function fromYaml(source) {
   if (Array.isArray(model)) { if (model.length !== 1) throw new Error('Bitte eine Datei mit genau einer Automation öffnen.'); model = model[0]; }
   // Omitted optional fields receive Home Assistant defaults.
   model = { conditions: [], mode: 'single', ...model };
-  return validateAutomation(model);
+  const notes = [];
+  const add = text => { if (text?.trim()) notes.push(text.split('\n').map(line => line.replace(/^ /, '')).join('\n')); };
+  add(doc.commentBefore);
+  visit(doc, { Node(key, node) { add(node.commentBefore); add(node.comment); } });
+  add(doc.comment);
+  return setYamlComments(validateAutomation(model), notes);
 }
 export function filename(alias = 'automation') {
   return (alias.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'automation') + '.yaml';

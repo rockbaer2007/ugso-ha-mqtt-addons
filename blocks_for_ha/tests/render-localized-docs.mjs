@@ -13,7 +13,9 @@ try {
     await page.goto('http://127.0.0.1:4180/'); await page.waitForSelector('.blocklySvg');
     const types = await page.evaluate(async () => {
       const url = performance.getEntriesByType('resource').find(entry => new URL(entry.name).pathname === '/src/blocks.js').name;
-      const { Blockly, knownTypes } = await import(url);
+      const { Blockly, knownTypes, modelWorkspace } = await import(url);
+      const { examples } = await import('/src/model.js');
+      modelWorkspace(Blockly.getMainWorkspace(), examples.light);
       const themeUrl = performance.getEntriesByType('resource').find(entry => new URL(entry.name).pathname === '/src/themes.js').name;
       window.docContrast = (await import(themeUrl)).contrastRatio;
       window.docBlockly = Blockly; window.docWorkspace = Blockly.getMainWorkspace();
@@ -44,7 +46,7 @@ try {
         const rect = block.getSvgRoot().getBoundingClientRect();
         const contrasts = [...block.getSvgRoot().querySelectorAll('text.blocklyText')].map(label => {
           const owner = block.getDescendants(false).find(candidate => candidate.getSvgRoot() === label.closest('g[data-id]')) || block;
-          let background = owner.getSvgRoot().querySelector('.blocklyPath')?.getAttribute('fill') || owner.getColour();
+          let background = window.docBlockly.utils.colour.parse(getComputedStyle(owner.getSvgRoot().querySelector('.blocklyPath')).fill) || owner.getColour();
           const rect = label.closest('.blocklyField')?.querySelector('rect.blocklyFieldRect');
           if (rect) {
             const style = getComputedStyle(rect), channels = style.fill.match(/[\d.]+/g)?.map(Number);

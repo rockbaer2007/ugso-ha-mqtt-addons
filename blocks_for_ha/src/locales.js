@@ -1,4 +1,5 @@
 // Presentation only: never translate IDs, field values, variables or user content.
+import { alignBlockLabels } from './block-labels.js';
 export const languageKey = 'ugso-blocks-for-ha-language';
 export const languages = ['de', 'en', 'fr'];
 export function resolveLanguage(preference = 'system', browserLanguages = ['de']) {
@@ -20,6 +21,8 @@ export const documentationPath = page => `https://opensource.ugso-software.de/${
 
 // [English label, French label, English help, French help]. Placeholders stay ordered.
 export const blockTranslations = {
+  ugso_comment: ['Comment %1', 'Commentaire %1', 'Documentation only. Exported as YAML comments; no Home Assistant action.', 'Documentation uniquement. Exportée en commentaires YAML ; aucune action Home Assistant.'],
+  ugso_mqtt_action: ['MQTT message %1', 'Message MQTT %1', 'Publishes through Home Assistant MQTT. Payload can be text or a template.', 'Publie via MQTT dans Home Assistant. Le message peut être un texte ou un modèle.'],
   ugso_whatsapp_action: ['WhatsApp integration %1', 'Intégration WhatsApp %1', 'Requires the installed WhatsApp integration. Select number (older), target (current), or notify.whatsapp (if configured). Number with country code without +, or HA template. Optional account for whatsapp.send_message only. No CallMeBot or keys in Blocks.', 'Nécessite l’intégration WhatsApp installée. Choisir number (ancien), target (actuel) ou notify.whatsapp (si configuré). Numéro avec indicatif sans +, ou modèle HA. Compte facultatif uniquement pour whatsapp.send_message. Sans CallMeBot ni clé dans Blocks.'],
   ugso_callmebot_action: ['WhatsApp · CallMeBot profile %1 message %2 logging %3', 'WhatsApp · CallMeBot profil %1 message %2 journal %3', 'Requires CallMeBot Whatsapp and MQTT. An empty profile uses the default recipient. Keys stay in the app. CallMeBot sends personal texts to activated numbers only.', 'Nécessite CallMeBot Whatsapp et MQTT. Un profil vide utilise le destinataire par défaut. Les clés restent dans l’application. CallMeBot envoie uniquement des textes personnels aux numéros activés.'],
   ugso_callmebot_signal_action: ['Signal · CallMeBot profile %1 message %2 logging %3', 'Signal · CallMeBot profil %1 message %2 journal %3', 'Requires CallMeBot Signal and MQTT. An empty profile uses the default recipient. Keys stay in the app. CallMeBot sends personal texts to activated numbers or UUIDs only.', 'Nécessite CallMeBot Signal et MQTT. Un profil vide utilise le destinataire par défaut. Les clés restent dans l’application. CallMeBot envoie uniquement des textes personnels aux numéros ou UUID activés.'],
@@ -175,6 +178,7 @@ export const blockTranslations = {
 };
 
 export const labels = {
+  'Attribute': ['Attributes', 'Attributs'], 'der Fall ist': ['switch', 'selon'], 'machen': ['do', 'faire'],
   'Entität': ['Entity', 'Entité'], 'Über': ['Above', 'Au-dessus'], 'Unter': ['Below', 'En dessous'],
   'Uhrzeit': ['Time', 'Heure'],
   'Attribut': ['Attribute', 'Attribut'], 'Dauer': ['Duration', 'Durée'], 'ID (optional)': ['ID (optional)', 'ID (facultatif)'],
@@ -286,10 +290,11 @@ export function translateLabel(text, locale = language) {
 }
 export function localizedDefinition(definition, locale = language) {
   const result = structuredClone(definition), index = locale === 'fr' ? 1 : 0;
+  if (result.type === 'ugso_mqtt_action' && locale !== 'de') { result.message1 = locale === 'fr' ? 'Sujet (Topic) %1' : 'Topic %1'; result.message2 = locale === 'fr' ? 'Message %1' : 'Message %1'; result.message3 = locale === 'fr' ? 'Conserver %1 QoS %2' : 'Retain %1 QoS %2'; }
   if (result.type === 'ugso_whatsapp_action' && locale !== 'de') { result.message1 = locale === 'fr' ? 'Destinataire %1 message %2' : 'Recipient %1 message %2'; result.message2 = locale === 'fr' ? 'Compte (facultatif) %1' : 'Account (optional) %1'; }
   if (['ugso_whatsapp_action','ugso_callmebot_action'].includes(result.type)) result.inputsInline = false;
   if (result.type === 'ugso_callmebot_action') result.args0[2].options = ({de:[['Nur Fehler','errors'],['Keins','none'],['Info','info']],en:[['Errors only','errors'],['None','none'],['Info','info']],fr:[['Erreurs seulement','errors'],['Aucun','none'],['Info','info']]})[locale];
-  if (locale === 'de') return result;
+  if (locale === 'de') return alignBlockLabels(result, locale);
   const entry = blockTranslations[result.type];
   result.message0 = entry?.[index] ?? translateLabel(result.message0, locale);
   if (result.tooltip) result.tooltip = entry?.[index + 2] ?? result.tooltip;
@@ -299,7 +304,7 @@ export function localizedDefinition(definition, locale = language) {
       if (field.optionMapping) field.optionMapping = Object.fromEntries(Object.entries(field.optionMapping).map(([key, options]) => [key, options.map(([label, value]) => [translateLabel(label, locale), value])]));
     }
   }
-  return result;
+  return alignBlockLabels(result, locale);
 }
 export function localizedToolbox(source, locale = language) {
   const result = structuredClone(source);
