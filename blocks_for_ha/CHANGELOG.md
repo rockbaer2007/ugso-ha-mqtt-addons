@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.53
+
+- New automation button with confirmation in German, English and French.
+- Clears blocks, undo history, automation metadata and pending YAML input; saves the empty project for reload.
+
 ## 0.1.52
 
 - Start with an empty editor when no saved project exists; examples are loaded only explicitly.

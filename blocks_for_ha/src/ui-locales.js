@@ -3,6 +3,9 @@ import { uiErrors } from './ui-errors.js';
 
 // Application-owned presentation only. Never translate stored values or code.
 export const uiTranslations = Object.fromEntries([
+  ['Neue Automation','New automation','Nouvelle automatisation'],
+  ['Willst du eine neue Automation beginnen? Alle aktuellen Blocks und Eingaben werden gelöscht. Sichere vorher dein Projekt.','Start a new automation? All current blocks and inputs will be cleared. Save your project first.','Commencer une nouvelle automatisation ? Tous les blocs et champs actuels seront effacés. Enregistrer le projet auparavant.'],
+  ['Neue Automation begonnen.','New automation started.','Nouvelle automatisation commencée.'],
   ['CallMeBot-Profil auswählen','Select CallMeBot profile','Choisir le profil CallMeBot'],
   ['Signal-Profil auswählen','Select Signal profile','Choisir le profil Signal'],
   ['Signal-Profile nicht geladen. Profil-ID manuell eingeben oder Standardempfänger verwenden.','Signal profiles not loaded. Enter a profile ID or use the default recipient.','Profils Signal non chargés. Saisir un ID ou utiliser le destinataire par défaut.'],

@@ -22,7 +22,7 @@ const ask = message => confirm(uiText(message));
 document.querySelector('#app').innerHTML = `
 <header class="app-header"><a class="brand" href="/"><span class="brand-icon">▦</span><span>UGSo <strong>Blocks for HA</strong></span></a><div class="header-right"><span class="version">Vorschau 0.1.0</span><button id="about">Über & Lizenzen</button></div></header>
 <main><section class="intro"><div><span class="eyebrow">AUTOMATIONEN VISUELL BAUEN</span><h1>Deine Idee. Deine Blocks.</h1><p>Auslöser verbinden, Bedingungen prüfen, Aktionen festlegen.</p></div><div class="local-badge"><span></span> Lokal · keine HA-Verbindung</div></section>
-<section class="project-bar" aria-label="Automationseinstellungen"><label class="name-field">Name der Automation<input id="name" maxlength="160"></label><label>Ausführung<select id="mode"><option value="single">Einzeln</option><option value="restart">Neu starten</option><option value="queued">Warteschlange</option><option value="parallel">Parallel</option></select></label><label id="max-label" hidden>Maximal<input id="max" type="number" min="1" max="100" value="10"></label><label>Beispiel<select id="example"><option value="light">Licht bei Bewegung</option><option value="battery">Batterie laden</option><option value="evening">Abendlicht</option></select></label><button id="load-example">Beispiel laden</button></section>
+<section class="project-bar" aria-label="Automationseinstellungen"><label class="name-field">Name der Automation<input id="name" maxlength="160"></label><label>Ausführung<select id="mode"><option value="single">Einzeln</option><option value="restart">Neu starten</option><option value="queued">Warteschlange</option><option value="parallel">Parallel</option></select></label><label id="max-label" hidden>Maximal<input id="max" type="number" min="1" max="100" value="10"></label><label>Beispiel<select id="example"><option value="light">Licht bei Bewegung</option><option value="battery">Batterie laden</option><option value="evening">Abendlicht</option></select></label><div class="project-bar-actions"><button id="load-example">Beispiel laden</button><button id="new-automation" type="button">Neue Automation</button></div></section>
 <section class="editor-layout"><div class="canvas-panel"><div class="panel-heading"><div><h2>Blocks</h2><span>Wenn → Nur wenn → Dann</span></div><div class="canvas-actions"><button id="undo" title="Rückgängig">↶</button><button id="redo" title="Wiederholen">↷</button><button id="fit">Einpassen</button></div></div><div id="workspace"></div><div class="canvas-foot"><span><i class="dot trigger"></i>Auslöser</span><span><i class="dot condition"></i>Bedingungen</span><span><i class="dot action"></i>Aktionen</span></div></div>
 <aside class="output-panel"><div class="panel-heading"><div><h2>HA-Automation</h2><span>Native YAML-Ausgabe</span></div><span id="valid-badge" class="valid-badge">Gültig</span></div><label class="format-label">Ausgabeformat<select id="format"><option value="single">Einzelne Automation · HA-Editor</option><option value="list">Liste · eine Automation</option></select></label><pre id="yaml" tabindex="0" aria-label="YAML-Ausgabe"></pre><div id="validation" role="status"></div><div class="file-actions"><button id="copy">Kopieren</button><button id="save" class="primary">Speichern</button><button id="open">Öffnen</button></div><p class="output-note">Speichern lädt eine YAML-Datei auf deinen Rechner. Öffnen lädt eine unterstützte Automation zurück in Blocks.</p><details class="more"><summary>Projekt & Beschreibung</summary><label>Beschreibung<textarea id="description" rows="2"></textarea></label><div class="project-actions"><button id="project-save">Projekt sichern</button><button id="project-open">Projekt öffnen</button></div><p>Das Projekt enthält auch die Anordnung der Blocks. Der letzte Stand wird automatisch in diesem Browser gesichert.</p></details><div class="ha-hint"><strong>In Home Assistant verwenden</strong><p>Beispiel-Entitäten durch deine eigenen IDs ersetzen. Für den HA-Editor das Format „Einzelne Automation“ wählen und den Inhalt in „Als YAML bearbeiten“ übernehmen. Speichern und in HA prüfen.</p><a href="https://www.home-assistant.io/docs/automation/yaml/" target="_blank" rel="noopener noreferrer">HA-Dokumentation ↗</a></div></aside></section><footer>UGSo Blocks for HA · Unabhängiges Community-Projekt <a class="blockly-attribution" href="https://www.blockly.com/" target="_blank" rel="noopener noreferrer"><img src="./branding/built-with-blockly-badge-white.svg" alt="Built with Blockly" width="87" height="32"></a></footer></main>
 <input id="yaml-file" type="file" accept=".yaml,.yml,text/yaml" hidden><input id="project-file" type="file" accept=".json,application/json" hidden><div id="toast" role="status" hidden></div>
@@ -194,6 +194,25 @@ $('description').addEventListener('input', () => { metadata.description = $('des
 $('mode').addEventListener('change', () => { metadata.mode = $('mode').value; if (['queued', 'parallel'].includes(metadata.mode)) metadata.max = Number($('max').value); else delete metadata.max; metaFields(); update(); });
 $('max').addEventListener('input', () => { metadata.max = Number($('max').value); update(); });
 $('format').addEventListener('change', update);
+$('new-automation').addEventListener('click', () => {
+  if (!ask('Willst du eine neue Automation beginnen? Alle aktuellen Blocks und Eingaben werden gelöscht. Sichere vorher dein Projekt.')) return;
+  clearTimeout(timer);
+  workspace.clear();
+  workspace.clearUndo();
+  metadata = { mode: 'single' };
+  metaFields();
+  yamlInput.value = '';
+  importError.textContent = '';
+  importError.hidden = true;
+  $('yaml-replace').checked = false;
+  $('yaml-mode').value = 'output';
+  $('format').value = 'single';
+  $('automation-options').value = '{}';
+  document.querySelector('.automation-options [role="alert"]').textContent = '';
+  update();
+  workspace.scrollCenter();
+  notice('Neue Automation begonnen.');
+});
 $('load-example').addEventListener('click', () => { if (ask('Aktuelle Blocks durch das Beispiel ersetzen? Speichere vorher deine Änderungen.')) loadModel(structuredClone(examples[$('example').value])); });
 $('undo').addEventListener('click', () => workspace.undo(false)); $('redo').addEventListener('click', () => workspace.undo(true)); $('fit').addEventListener('click', fitCompact);
 $('copy').addEventListener('click', async () => { if (!currentModel) return; try { await navigator.clipboard.writeText($('yaml').textContent); notice('YAML kopiert.'); } catch { notice('Kopieren nicht verfügbar. YAML markieren und mit Strg+C kopieren.'); } });
