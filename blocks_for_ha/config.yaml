@@ -1,5 +1,5 @@
 name: Blocks for HA
-version: "0.1.60"
+version: "0.1.61"
 slug: blocks_for_ha
 description: Native Home-Assistant-Automationen mit visuellen Blocks erstellen
 stage: experimental

@@ -114,21 +114,17 @@ export function setupHAFields(Blockly, block, Multiline) {
       for (const name of previous?.inputs || []) block.removeInput(name);
       delete block.haSources_[source]; rawField.setVisible(true);
       let original;
-      try { original = JSON.parse(text); } catch { return; }
-      if (!original || typeof original !== 'object' || Array.isArray(original)) return;
+      try { original = JSON.parse(text); } catch { block.refreshHAOptions_?.(); return; }
+      if (!original || typeof original !== 'object' || Array.isArray(original)) { block.refreshHAOptions_?.(); return; }
       const selected = paths(block, original, source), inputNames = [], fields = [];
-      let row, rowSize = 0;
       const remainder = structuredClone(original);
       // The typed trigger already supplies its discriminator in its heading.
       if (source === 'JSON' && block.type !== 'ugso_ha_trigger' && block.type.endsWith('trigger')) delete remainder.trigger;
       for (let i = 0; i < selected.length; i++) {
         const path = selected[i], key = path.split('.').at(-1), name = source === 'VARIABLES' ? 'HA_VARIABLES_' + path : fieldName(source + '.' + path);
         const value = get(original, path), initial = display(value);
-        const wide = jsonKeys.has(key) || initial.includes('\n') || typeof value === 'object';
-        if (!row || rowSize >= 3 || wide) {
-          const inputName = `HA_ROW_${source}_${i}`; row = block.appendDummyInput(inputName); inputNames.push(inputName); rowSize = 0;
-        }
-        const input = row.appendField(source === 'VARIABLES' ? key : t(captions[key] || key)); rowSize++;
+        const inputName = `HA_ROW_${source}_${i}`, row = block.appendDummyInput(inputName); inputNames.push(inputName);
+        const input = row.appendField(source === 'VARIABLES' ? key : t(captions[key] || key));
         let field;
         const options = choices(key, original, source);
         const choice = choiceForPath(key, path, source);
@@ -143,7 +139,6 @@ export function setupHAFields(Blockly, block, Multiline) {
         if (key === 'entity_id') field.haStructured_ = true;
         fields.push({path, key, name, initial});
         put(remainder, path, undefined);
-        if (wide) row = undefined;
       }
       if (remainder.target && !Object.keys(remainder.target).length) delete remainder.target;
       const extraName = `HA_EXTRA_${source}`, extraInput = `HA_ROW_${source}_EXTRA`;
@@ -151,7 +146,15 @@ export function setupHAFields(Blockly, block, Multiline) {
       block.haSources_[source] = { original, fields, extraName, remainder, inputs: inputNames };
       // Hide only the legacy field, retaining its heading and serialization.
       rawField.setVisible(false);
+      const owner = block.inputList.find(input => input.fieldRow.includes(rawField));
+      const heading = owner?.fieldRow[owner.fieldRow.indexOf(rawField) - 1];
+      if (heading && !heading.name && /\(JSON\)/.test(heading.getText())) {
+        const text = heading.getText();
+        const title = text.replace(/(?:Ziel|Optionen|Schwelle|Schrittoptionen|target|options|threshold|step options|cible|options|seuil)\s*\(JSON\)/gi, '').trim();
+        if (title) heading.setValue(title); else heading.setVisible(false);
+      }
       block.setInputsInline(false);
+      block.hydrateHAOptions_?.(source);
     };
     hydrate(rawField.getValue());
     rawField.setValidator(value => { hydrate(value); return value; });

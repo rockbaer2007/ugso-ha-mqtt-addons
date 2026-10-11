@@ -7,7 +7,8 @@ export function installNativeFields(Blockly, block, FieldMultilineInput) {
   if (['ugso_state_trigger', 'ugso_numeric_trigger', 'ugso_time_trigger', 'ugso_time_pattern_trigger', 'ugso_sun_trigger', 'ugso_start_trigger', 'ugso_event_trigger', 'ugso_temperature_trigger', 'ugso_calendar_trigger'].includes(block.type)) block.appendDummyInput('TRIGGER_OPTIONS').appendField(t('Auslöser-ID (optional)')).appendField(new Blockly.FieldTextInput(''), 'TRIGGER_ID');
   if (block.type === 'ugso_time_trigger') block.appendDummyInput('TIME_OPTIONS').appendField(t('Uhrzeiten als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'TIME_LIST');
   if (block.type === 'ugso_state_trigger') {
-    block.appendDummyInput('STATE_OPTIONS').appendField(t('Zustände als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'STATE_LIST').appendField(t('Jede Änderung')).appendField(new Blockly.FieldCheckbox('FALSE'), 'ANY_STATE');
+    block.appendDummyInput('STATE_OPTIONS').appendField(t('Zustände als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'STATE_LIST');
+    block.appendDummyInput('ANY_STATE_OPTIONS').appendField(t('Jede Änderung')).appendField(new Blockly.FieldCheckbox('FALSE'), 'ANY_STATE');
     block.appendDummyInput('ENTITY_OPTIONS').appendField(t('Entitäten als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'ENTITY_LIST').appendField(new FieldMultilineInput('[]'), 'ENTITIES');
   }
   if (block.type === 'ugso_numeric_trigger') {

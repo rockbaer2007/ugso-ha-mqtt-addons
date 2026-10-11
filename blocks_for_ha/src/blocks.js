@@ -23,6 +23,7 @@ import { installHAChoices } from './entities.js';
 import { installNativeFields, nativeList, nativeObject, nativeTimeExpression } from './native-fields.js';
 import { advancedDefinitions, advancedJSON, equivalent, advancedTriggerType, setupJinjaBlock, setupParallelBlock, setupIntegrationBlock } from './advanced.js';
 import { setupHAFields } from './ha-fields.js';
+import { setupHAOptions } from './ha-options.js';
 import { jinjaDefinitions, setupJinjaShape, createJinjaBlock, composedJinja, jinjaBlockExpression } from './jinja-blocks.js';
 import { customDefinition, customExpression, customNative } from './custom-packages.js';
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
@@ -56,6 +57,7 @@ const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'bel
 const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 export const definitions = [
+  ...['and', 'or'].map(operator => ({ type: 'ugso_' + operator, message0: '%1 %2 %3', args0: [value('COND0', 'Boolean'), { type: 'field_dropdown', name: 'LOGIC', options: [[translateLabel(operator === 'and' ? 'und' : 'oder'), operator]] }, value('COND1', 'Boolean')], inputsInline: true, output: 'Boolean', colour: '#6860b5', mutator: 'ugso_conditions' })),
   { type: 'ugso_trigger_value', message0: '↪ %1', args0: [{ type: 'field_dropdown', name: 'DATA', options: [['Wert', 'value'], ['Alter Wert', 'old'], ['Entitäts-ID', 'entity'], ['Auslöser-ID', 'id'], ['Auslösertyp', 'platform'], ['Meldung', 'payload'], ['Meldung (JSON)', 'json'], ['Ereignisdaten', 'event']] }], output: ['Value', 'String'], colour: '#a54879', tooltip: 'Daten des aktuellen HA-Auslösers. Fehlende Daten ergeben null. Zahlenwerte bei Bedarf mit nach Zahl umwandeln.' },
   { type: 'ugso_schedule_trigger', message0: 'Zeitplan %1', args0: [{ type: 'field_schedule', name: 'CRON', text: '* * * * *' }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#a54879', tooltip: 'Feld anklicken: Wizard, Einfach oder CRON. Native HA-Zeitmuster und Uhrzeiten mit Wochentagen.' },
   { type: 'ugso_comment', message0: 'Kommentar %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: '' }], previousStatement: 'Action', nextStatement: 'Action', colour: '#e1c025', tooltip: 'Nur Dokumentation. Wird als YAML-Kommentar exportiert; keine Home-Assistant-Aktion.' },
@@ -127,6 +129,7 @@ Blockly.Extensions.registerMutator('ugso_conditions', {
     const owner = this.inputList.find(input => input.fieldRow.includes(dropdown));
     const target = this.itemCount_ > 1 ? 'COND1' : 'COND0';
     const options = dropdown.getOptions(false);
+    dropdown.setVisible(false);
     if (owner?.name !== target) owner?.removeField('LOGIC');
     for (let i = 0; i < this.itemCount_; i++) if (!this.getInput(`COND${i}`)) this.appendValueInput(`COND${i}`).setCheck('Boolean');
     for (let i = this.itemCount_; this.getInput(`COND${i}`); i++) this.removeInput(`COND${i}`);
@@ -134,8 +137,11 @@ Blockly.Extensions.registerMutator('ugso_conditions', {
       const replacement = new Blockly.FieldDropdown(options);
       replacement.setValue(operator);
       this.getInput(target).appendField(replacement, 'LOGIC');
+      replacement.setVisible(false);
       replacement.setValidator(value => { this.updateConditions_(value); return value; });
     }
+    for (const input of this.inputList) if (input.fieldRow.some(field => field.name === 'OPERATOR1')) input.removeField('OPERATOR1');
+    this.getInput(target).appendField(logicLabel(operator), 'OPERATOR1');
     for (let i = 2; i < this.itemCount_; i++) {
       const name = `OPERATOR${i}`, input = this.getInput(`COND${i}`);
       if (!this.getField(name)) input.appendField(logicLabel(operator), name);
@@ -236,6 +242,7 @@ definitions.forEach(definition => {
     setupJinjaShape(this);
     setupHAFields(Blockly, this, Multiline.FieldMultilineInput);
     installHAChoices(this);
+    setupHAOptions(Blockly, this);
     if (advancedDefinitions.some(d=>d.type===this.type)||jinjaDefinitions.some(d=>d.type===this.type)) this.setHelpUrl(documentationPath('advanced'));
     if (this.type.startsWith('ugso_convert_')) this.setHelpUrl(documentationPath('conversion'));
     if (flowDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('flow'));
@@ -274,7 +281,7 @@ for (const category of toolbox.contents) for (const block of category.contents) 
   if (block.type === 'ugso_colour_action') block.inputs = { COLOUR: { shadow: { type: 'ugso_colour', fields: { COLOUR: '#ff8800' } } }, BRIGHTNESS: { shadow: { type: 'ugso_percent', fields: { NUM: 50 } } } };
 }
 toolbox.contents.push(
-  { kind: 'category', name: 'Logik', colour: '#6860b5', contents: ['ugso_if_action', 'ugso_compare', 'ugso_not', 'ugso_boolean', 'ugso_null', 'ugso_ternary'].map(type => ({ kind: 'block', type })) },
+  { kind: 'category', name: 'Logik', colour: '#6860b5', contents: ['ugso_if_action', 'ugso_and', 'ugso_or', 'ugso_not', 'ugso_compare', 'ugso_boolean', 'ugso_null', 'ugso_ternary'].map(type => ({ kind: 'block', type })) },
   { kind: 'category', name: 'Variablen', colour: '#a54879', custom: 'UGSO_VARIABLES' },
   { kind: 'category', name: 'Funktionen', colour: '#87579d', custom: 'UGSO_FUNCTIONS' },
   { kind: 'category', name: 'Templates', colour: '#8a6635', contents: ['ugso_template', 'ugso_template_condition'].map(type => ({ kind: 'block', type })) }
@@ -283,7 +290,7 @@ for (const [name, colour] of [['Timeouts', '#7a8639'], ['Objekt', '#967b44'], ['
   const position = toolbox.contents.findIndex(c => c.name === (['Timeouts', 'Objekt'].includes(name) ? 'Auslöser' : 'Variablen'));
   toolbox.contents.splice(position, 0, { kind: 'category', name, colour, contents: flowToolbox(name) });
 }
-toolbox.contents.find(c => c.name === 'Logik').contents.push(...flowToolbox('Logik'), { kind: 'block', type: 'ugso_logic_condition' });
+toolbox.contents.find(c => c.name === 'Logik').contents.push(...flowToolbox('Logik'));
 for (const [name, colour] of [['Mathematik', '#5e62a1'], ['Text', '#397b68']]) {
   toolbox.contents.splice(toolbox.contents.findIndex(c => c.name === 'Listen'), 0, { kind: 'category', name, colour, contents: collectionToolbox(name) });
 }
@@ -391,7 +398,7 @@ function expression(block, depth = 0, scope = actionScope) {
       return `(is_number(${state}) and (${state} | float) ${field(block, 'OP') === 'above' ? '>' : '<'} ${readNumber(block, 'LIMIT')})`;
     }
     case 'ugso_date_condition': return template(dateTemplate(field(block, 'DATE'), field(block, 'OP')));
-    case 'ugso_logic_condition': {
+    case 'ugso_and': case 'ugso_or': case 'ugso_logic_condition': {
       const items = [];
       for (let i = 0; i < block.itemCount_; i++) items.push(child(`COND${i}`));
       const op = field(block, 'LOGIC');
@@ -464,7 +471,7 @@ function readCondition(block, depth) {
     case 'ugso_trigger_condition': return { condition: 'trigger', id: nativeList(block, 'ID', 'ID_LIST') };
     case 'ugso_native_time_condition': return { condition: 'time', ...(field(block, 'AFTER') ? { after: field(block, 'AFTER') } : {}), ...(field(block, 'BEFORE') ? { before: field(block, 'BEFORE') } : {}) };
     case 'ugso_numeric_condition': return { condition: 'numeric_state', ...range(block) };
-    case 'ugso_logic_condition': {
+    case 'ugso_and': case 'ugso_or': case 'ugso_logic_condition': {
       const conditions = [];
       for (let i = 0; i < block.itemCount_; i++) {
         const child = block.getInputTargetBlock(`COND${i}`);
@@ -484,7 +491,7 @@ function requiredConditions(block, name, depth) {
 function readConditions(block, depth = 0) {
   if (!block || !block.isEnabled()) return [];
   const result = readCondition(block, depth);
-  return block.type === 'ugso_logic_condition' && block.list_ && field(block, 'LOGIC') === 'and' ? result.conditions : [result];
+  return ['ugso_and', 'ugso_or', 'ugso_logic_condition'].includes(block.type) && block.list_ && field(block, 'LOGIC') === 'and' ? result.conditions : [result];
 }
 function readAction(block, depth) {
   if (block.type === 'procedures_callnoreturn') {
@@ -640,7 +647,7 @@ function attach(parent, input, children) {
     if (!children.length) return;
     let block = children[0];
     if (children.length > 1) {
-      block = create(parent.workspace, 'ugso_logic_condition', { LOGIC: 'and' });
+      block = create(parent.workspace, 'ugso_and');
       block.loadExtraState({ items: children.length, list: true });
       children.forEach((child, i) => block.getInput(`COND${i}`).connection.connect(child.outputConnection));
     }
@@ -706,7 +713,10 @@ function legacyConditionBlock(workspace, item) {
   }
   if (item.condition === 'state') return create(workspace, 'ugso_state_condition', { ENTITY: item.entity_id, STATE: item.state });
   if (item.condition === 'numeric_state') return numberInput(create(workspace, 'ugso_numeric_condition', fieldsRange(item)), 'LIMIT', item.above ?? item.below);
-  const block = create(workspace, 'ugso_logic_condition', { LOGIC: item.condition });
+  if (item.condition === 'not' && item.conditions.length === 1) {
+    const block = create(workspace, 'ugso_not'); attach(block, 'BOOL', [conditionBlock(workspace, item.conditions[0])]); return block;
+  }
+  const block = create(workspace, ['and','or'].includes(item.condition) ? 'ugso_' + item.condition : 'ugso_logic_condition', { LOGIC: item.condition });
   block.loadExtraState({ items: item.conditions.length });
   item.conditions.forEach((child, i) => attach(block, `COND${i}`, [conditionBlock(workspace, child)])); return block;
 }

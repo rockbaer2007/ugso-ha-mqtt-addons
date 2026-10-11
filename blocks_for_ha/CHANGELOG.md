@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.61
+
+- Split AND and OR into separate expandable palette blocks without an operator selector; NOT retains a single input. Existing combined groups remain compatible. Native YAML imports use separate blocks where equivalent.
+- Added native gear builders for optional fields on extended HA triggers/conditions/actions, targets, waits, time patterns and simple HA trigger/action options. Required fields remain visible; used values appear automatically.
+- Individual optional rows can be added, removed and reordered. Removing a field clears its value; imported false/zero/templates and manually selected empty rows persist across project reloads.
+- Reviewed/rendered all block definitions in DE/EN/FR; simple blocks and existing branch/collection builders retain their appropriate controls.
+
 ## 0.1.60
 
 - Added Schedule with a localized Wizard / Simple / CRON popup, component tabs and optional seconds. Supported rules generate native HA time/time_pattern triggers, including weekday selections. Unsupported calendar fields are explicitly rejected.
