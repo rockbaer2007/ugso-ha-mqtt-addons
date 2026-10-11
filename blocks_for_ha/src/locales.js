@@ -21,6 +21,8 @@ export const documentationPath = page => `https://opensource.ugso-software.de/${
 
 // [English label, French label, English help, French help]. Placeholders stay ordered.
 export const blockTranslations = {
+  ugso_trigger_value: ['↪ %1', '↪ %1', 'Current HA trigger data. Missing data returns null. Convert numeric states with to number when needed.', 'Données du déclencheur HA actuel. Les données absentes renvoient null. Convertir les états numériques avec en nombre si nécessaire.'],
+  ugso_schedule_trigger: ['Schedule %1', 'Horaire %1', 'Click the field: Wizard, Simple or CRON. Native HA time patterns and times with weekdays.', 'Cliquer sur le champ : assistant, simple ou CRON. Motifs horaires et heures avec jours HA natifs.'],
   ugso_comment: ['Comment %1', 'Commentaire %1', 'Documentation only. Exported as YAML comments; no Home Assistant action.', 'Documentation uniquement. Exportée en commentaires YAML ; aucune action Home Assistant.'],
   ugso_mqtt_action: ['MQTT message %1', 'Message MQTT %1', 'Publishes through Home Assistant MQTT. Payload can be text or a template.', 'Publie via MQTT dans Home Assistant. Le message peut être un texte ou un modèle.'],
   ugso_whatsapp_action: ['WhatsApp integration %1', 'Intégration WhatsApp %1', 'Requires the installed WhatsApp integration. Select number (older), target (current), or notify.whatsapp (if configured). Number with country code without +, or HA template. Optional account for whatsapp.send_message only. No CallMeBot or keys in Blocks.', 'Nécessite l’intégration WhatsApp installée. Choisir number (ancien), target (actuel) ou notify.whatsapp (si configuré). Numéro avec indicatif sans +, ou modèle HA. Compte facultatif uniquement pour whatsapp.send_message. Sans CallMeBot ni clé dans Blocks.'],
@@ -178,6 +180,7 @@ export const blockTranslations = {
 };
 
 export const labels = {
+  'Wert': ['Value', 'Valeur'], 'Alter Wert': ['Previous value', 'Ancienne valeur'], 'Entitäts-ID': ['Entity ID', 'ID d’entité'], 'Auslöser-ID': ['Trigger ID', 'ID du déclencheur'], 'Auslösertyp': ['Trigger type', 'Type de déclencheur'], 'Meldung': ['Message', 'Message'], 'Meldung (JSON)': ['Message (JSON)', 'Message (JSON)'], 'Versatz (Minuten)': ['Offset (minutes)', 'Décalage (minutes)'],
   'Attribute': ['Attributes', 'Attributs'], 'der Fall ist': ['switch', 'selon'], 'machen': ['do', 'faire'],
   'Entität': ['Entity', 'Entité'], 'Über': ['Above', 'Au-dessus'], 'Unter': ['Below', 'En dessous'],
   'Uhrzeit': ['Time', 'Heure'],

@@ -1,5 +1,7 @@
 # Blocks for HA
 
+Neu in **0.1.60**: **Auslöser → Zeitplan** öffnet beim Klick auf die CRON-Regel einen Dialog mit **Wizard / Einfach / CRON**, Feldreitern und optionalen Sekunden. Intervalle, feste Uhrzeiten und Wochentage werden als native HA-Auslöser exportiert. Schritte folgen den Uhrzeitfeldern, nicht einem durchlaufenden Timer. Monat und Monatstag müssen `*` bleiben; andere Kalenderregeln werden ausdrücklich abgewiesen. Erweiterte HA-Auslöser sind jetzt direkt unter **Auslöser** verfügbar. Ein neuer Wertblock liefert Auslöserdaten; Sonne unterstützt einen optionalen Minutenversatz. Oberfläche und Hinweise in DE/EN/FR. [Vergleich mit ioBroker und Grenzen](https://opensource.ugso-software.de/projects/blocks-for-ha/time).
+
 Neu in **0.1.49**: Das CallMeBot-Profilfeld öffnet die Profilauswahl mit Namen und Standardempfänger. Benötigt CallMeBot 0.1.2, HA-MQTT-Discovery und die HA-Verbindung von Blocks. Auswahl aktualisieren über **Neu laden**; manuelle IDs bleiben möglich.
 
 Neu in **0.1.48**: **Nachrichten → WhatsApp · CallMeBot** sendet über die eigenständige [CallMeBot App](../callmebot/README.md) im selben Repository. DE/EN/FR, Standardprofil oder Profil-ID, Text oder Jinja und Protokollstufe. YAML enthält eine native MQTT-Aktion ohne Telefonnummer oder API-Schlüssel. JSON-Projekte bewahren den Komfortblock; YAML-Import zeigt die MQTT-Aktion als allgemeine HA-Aktion.

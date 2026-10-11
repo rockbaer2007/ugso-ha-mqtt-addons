@@ -2,6 +2,8 @@ import { translateLabel as t } from './locales.js';
 import { structuredHAJSON } from './ha-fields.js';
 
 export function installNativeFields(Blockly, block, FieldMultilineInput) {
+  if (block.type === 'ugso_schedule_trigger') block.appendDummyInput('TRIGGER_OPTIONS').appendField(t('Auslöser-ID (optional)')).appendField(new Blockly.FieldTextInput(''), 'TRIGGER_ID');
+  if (block.type === 'ugso_sun_trigger') block.appendDummyInput('SUN_OFFSET').appendField(t('Versatz (Minuten)')).appendField(new Blockly.FieldCheckbox('FALSE'), 'USE_OFFSET').appendField(new Blockly.FieldNumber(0, -1440, 1440, 1), 'OFFSET_MINUTES');
   if (['ugso_state_trigger', 'ugso_numeric_trigger', 'ugso_time_trigger', 'ugso_time_pattern_trigger', 'ugso_sun_trigger', 'ugso_start_trigger', 'ugso_event_trigger', 'ugso_temperature_trigger', 'ugso_calendar_trigger'].includes(block.type)) block.appendDummyInput('TRIGGER_OPTIONS').appendField(t('Auslöser-ID (optional)')).appendField(new Blockly.FieldTextInput(''), 'TRIGGER_ID');
   if (block.type === 'ugso_time_trigger') block.appendDummyInput('TIME_OPTIONS').appendField(t('Uhrzeiten als JSON-Liste')).appendField(new Blockly.FieldCheckbox('FALSE'), 'TIME_LIST');
   if (block.type === 'ugso_state_trigger') {

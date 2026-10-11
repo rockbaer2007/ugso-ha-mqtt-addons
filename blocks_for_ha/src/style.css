@@ -10,6 +10,14 @@
 #workspace text.blocklyText{fill:var(--ugso-label-ink,#fff)}
 .blocklyCommentNote>.blocklyPath{fill:#fff200!important;stroke:#d5b300!important}
 .blocklyCommentNote text.blocklyText,.blocklyCommentNote text.blocklyText tspan{fill:#10232b!important}
+#schedule-dialog{width:min(720px,95vw);max-width:95vw;max-height:90vh;overflow:auto}
+#schedule-dialog label{font-size:14px;font-weight:400;display:flex;flex-direction:column;gap:6px;margin:10px 0}
+#schedule-dialog .schedule-modes label,#schedule-dialog label:has(>input[type=checkbox]){flex-direction:row;align-items:center;margin:0}
+#schedule-dialog input[type=radio],#schedule-dialog input[type=checkbox]{width:16px;height:16px;flex:0 0 16px;margin:0;padding:0}
+#schedule-dialog input[type=number]{width:80px}#schedule-dialog input[type=time]{width:140px}
+#schedule-dialog [hidden]{display:none!important}#schedule-preview{overflow-wrap:anywhere;max-height:160px;overflow:auto}
+.schedule-modes{display:flex;gap:20px;margin:16px 0}.schedule-modes label{display:flex;align-items:center;gap:6px}
+.schedule-tabs{display:flex;flex-wrap:wrap;gap:4px;margin:12px 0}.schedule-tabs button{flex:1;min-width:85px}#schedule-dialog .schedule-tabs button[aria-selected="true"]{border-color:var(--accent);color:var(--accent)}
 #workspace .blocklyEditableField text.blocklyText{fill:#10232b}
 #workspace .blocklyEditableField text.blocklyText tspan{fill:#10232b!important}
 #workspace .blocklyToolboxSelected{background:#405e72!important;color:#fff!important}

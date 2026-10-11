@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.60
+
+- Added Schedule with a localized Wizard / Simple / CRON popup, component tabs and optional seconds. Supported rules generate native HA time/time_pattern triggers, including weekday selections. Unsupported calendar fields are explicitly rejected.
+- Moved extended native HA triggers into Triggers, without duplicate toolbox entries. Added a trigger-data value block for current/previous state, entity/trigger IDs, MQTT payloads and event data.
+- Astro sunrise/sunset supports optional minute offsets. Projects and YAML retain trigger IDs and rule semantics. Interval steps follow clock fields, not elapsed timers.
+- DE/EN/FR popup, save/cancel, validation and project/YAML round trips verified; documented ioBroker equivalents and limits.
+
 ## 0.1.59
 
 - Aligned standard block labels with ioBroker/Blockly in DE/EN/FR; HA-specific inputs and semantics remain explicit.

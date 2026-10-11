@@ -1,5 +1,8 @@
 // Error presentation; internal validation and exported data remain unchanged.
 export const uiErrors=Object.fromEntries([
+ ['Zeitplan: Ungültiger CRON-Ausdruck.','Schedule: Invalid CRON expression.','Horaire : expression CRON invalide.'],
+ ['Zeitplan: Monat und Monatstag müssen * sein. Kalenderregeln werden noch nicht unterstützt.','Schedule: Month and day of month must be *. Calendar rules are not supported yet.','Horaire : mois et jour du mois doivent être *. Règles calendaires non prises en charge.'],
+ ['Zeitplan: Zu viele einzelne Uhrzeiten. Intervall vereinfachen.','Schedule: Too many individual times. Simplify the interval.','Horaire : trop d’heures individuelles. Simplifier l’intervalle.'],
  ['MQTT: Thema (Topic) fehlt.','MQTT: Topic is required.','MQTT : le sujet (Topic) est requis.'],
  ['Aktionsablauf fehlt.','Action body missing.','Suite d’actions manquante.'],
  ['Alle Blocks außer Funktionsdefinitionen müssen mit genau einer Automation verbunden sein.','All blocks except function definitions must connect to exactly one automation.','Tous les blocs sauf les définitions de fonction doivent être reliés à une seule automatisation.'],

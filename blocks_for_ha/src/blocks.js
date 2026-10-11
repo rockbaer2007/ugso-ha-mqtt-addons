@@ -3,6 +3,7 @@ import * as De from 'blockly/msg/de';
 import * as En from 'blockly/msg/en';
 import * as Fr from 'blockly/msg/fr';
 import { getYamlComments, setYamlComments } from './yaml-comments.js';
+import { installScheduleField, scheduleTrigger } from './schedule.js';
 import { language, localizedDefinition, translateLabel, documentationPath } from './locales.js';
 import 'blockly/blocks';
 import * as MultilineModule from '@blockly/field-multilineinput';
@@ -27,6 +28,7 @@ import { customDefinition, customExpression, customNative } from './custom-packa
 // Blockly exposes ESM in the browser and CommonJS for Node's headless tests.
 const Blockly = Reflect.get(BlocklyModule, 'default') || BlocklyModule;
 Blockly.setLocale({ de: De, en: En, fr: Fr }[language]);
+installScheduleField(Blockly);
 installFunctions(Blockly);
 const Multiline = Reflect.get(MultilineModule, 'default') || MultilineModule;
 const Colour = Reflect.get(ColourModule, 'default') || ColourModule;
@@ -54,6 +56,8 @@ const direction = { type: 'field_dropdown', name: 'OP', options: [['unter', 'bel
 const statement = (name, check) => ({ type: 'input_statement', name, check });
 function value(name, check) { return { type: 'input_value', name, check }; }
 export const definitions = [
+  { type: 'ugso_trigger_value', message0: '↪ %1', args0: [{ type: 'field_dropdown', name: 'DATA', options: [['Wert', 'value'], ['Alter Wert', 'old'], ['Entitäts-ID', 'entity'], ['Auslöser-ID', 'id'], ['Auslösertyp', 'platform'], ['Meldung', 'payload'], ['Meldung (JSON)', 'json'], ['Ereignisdaten', 'event']] }], output: ['Value', 'String'], colour: '#a54879', tooltip: 'Daten des aktuellen HA-Auslösers. Fehlende Daten ergeben null. Zahlenwerte bei Bedarf mit nach Zahl umwandeln.' },
+  { type: 'ugso_schedule_trigger', message0: 'Zeitplan %1', args0: [{ type: 'field_schedule', name: 'CRON', text: '* * * * *' }], previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#a54879', tooltip: 'Feld anklicken: Wizard, Einfach oder CRON. Native HA-Zeitmuster und Uhrzeiten mit Wochentagen.' },
   { type: 'ugso_comment', message0: 'Kommentar %1', args0: [{ type: 'field_multilinetext', name: 'TEXT', text: '' }], previousStatement: 'Action', nextStatement: 'Action', colour: '#e1c025', tooltip: 'Nur Dokumentation. Wird als YAML-Kommentar exportiert; keine Home-Assistant-Aktion.' },
   { type: 'ugso_mqtt_action', message0: 'MQTT-Nachricht %1', args0: [{ type: 'input_dummy', name: 'HEADER' }], message1: 'Thema (Topic) %1', args1: [value('TOPIC', 'String')], message2: 'Nachricht %1', args2: [value('MESSAGE', 'String')], message3: 'Retain %1 QoS %2', args3: [{ type: 'field_checkbox', name: 'RETAIN', checked: false }, { type: 'field_dropdown', name: 'QOS', options: [['0', '0'], ['1', '1'], ['2', '2']] }], previousStatement: 'Action', nextStatement: 'Action', inputsInline: false, colour: '#a54879', tooltip: 'Sendet über die MQTT-Integration von Home Assistant. Nachricht als Text oder Template.' },
   { type: 'ugso_whatsapp_action', message0: 'WhatsApp Integration %1', args0: [{ type: 'field_dropdown', name: 'MODE', options: [['whatsapp.send_message · number', 'number'], ['whatsapp.send_message · target', 'target'], ['notify.whatsapp', 'notify']] }], message1: 'Empfänger %1 Nachricht %2', args1: [{ type: 'field_input', name: 'NUMBER', text: '40741234567' }, value('MESSAGE', 'String')], message2: 'Konto (optional) %1', args2: [{ type: 'field_input', name: 'ACCOUNT', text: '' }], inputsInline: false, previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Benötigt die installierte WhatsApp-Integration. Passende Variante wählen: number (älter), target (aktuell), notify.whatsapp (falls eingerichtet). Nummer mit Ländervorwahl ohne + oder HA-Template. Optionales Konto nur für whatsapp.send_message. Kein CallMeBot oder Schlüssel in Blocks.' },
@@ -245,15 +249,16 @@ export const knownTypes = new Set([...definitions.map(item => item.type), ...fun
 export const toolbox = { kind: 'categoryToolbox', contents: [
   { kind: 'category', name: 'Nachrichten', colour: '#2682a5', contents: ['ugso_callmebot_action', 'ugso_callmebot_signal_action', 'ugso_whatsapp_action', 'ugso_mqtt_action'].map(type => ({ kind: 'block', type })) },
   { kind: 'category', name: 'Jinja (experimentell)', colour: '#8a6635', contents: [...jinjaDefinitions.map(d=>d.type),'ugso_jinja_value','ugso_jinja_condition'].map(type=>({kind:'block',type})) },
-  { kind: 'category', name: 'HA erweitert', colour: '#2682a5', contents: advancedDefinitions.filter(d=>!d.type.startsWith('ugso_jinja')).map(({type})=>({kind:'block',type})) },
+  { kind: 'category', name: 'HA erweitert', colour: '#2682a5', contents: advancedDefinitions.filter(d=>!d.type.startsWith('ugso_jinja') && d.previousStatement !== 'Trigger').map(({type})=>({kind:'block',type})) },
   { kind: 'category', name: 'System', colour: '#2682a5', contents: [{ kind: 'block', type: 'ugso_automation' }, { kind: 'block', type: 'ugso_comment' }, ...['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` }))] },
   { kind: 'category', name: 'Werte', colour: '#2e7653', contents: [{ kind: 'block', type: 'ugso_percent' }] },
   { kind: 'category', name: 'Datum und Zeit', colour: '#8056a1', contents: [{ kind: 'block', type: 'ugso_date_condition' }, ...timeDefinitions.map(({ type }) => ({ kind: 'block', type }))] },
   { kind: 'category', name: 'Konvertierung', colour: '#9463a6', contents: conversionDefinitions.map(({ type }) => ({ kind: 'block', type })) },
-  { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: ['state', 'numeric', 'time', 'time_pattern', 'sun', 'start', 'event', 'temperature', 'calendar'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })) },
+  { kind: 'category', name: 'Auslöser', colour: '#b26c24', contents: [{ kind: 'block', type: 'ugso_schedule_trigger' }, ...['state', 'numeric', 'time', 'time_pattern', 'sun', 'start', 'event', 'temperature', 'calendar'].map(type => ({ kind: 'block', type: `ugso_${type}_trigger` })), ...advancedDefinitions.filter(d => d.previousStatement === 'Trigger').map(({type}) => ({kind:'block',type}))] },
   { kind: 'category', name: 'Bedingungen', colour: '#6860b5', contents: [...['state', 'numeric', 'trigger'].map(type => ({ kind: 'block', type: `ugso_${type}_condition` })), { kind: 'block', type: 'ugso_native_time_condition' }] },
   { kind: 'category', name: 'Aktionen', colour: '#2682a5', contents: ['switch', 'service', 'delay', 'colour'].map(type => ({ kind: 'block', type: `ugso_${type}_action` })) }
 ] };
+toolbox.contents.find(c => c.name === 'Auslöser').contents.push({ kind: 'block', type: 'ugso_trigger_value' });
 for (const category of toolbox.contents) for (const block of category.contents) {
   if (block.type === 'ugso_mqtt_action') block.inputs = { TOPIC: { shadow: { type: 'ugso_text', fields: { TEXT: 'your/topic/here' } } }, MESSAGE: { shadow: { type: 'ugso_text', fields: { TEXT: 'your message' } } } };
   if (block.type.startsWith('ugso_convert_')) {
@@ -323,6 +328,7 @@ function readValue(block, input) {
   if (child.type === 'ugso_boolean') return field(child, 'BOOL') === 'true';
   if (child.type === 'ugso_null') return null;
   if (child.type === 'ugso_variable_get') return `{{ ${variableName(child)} }}`;
+  if (child.type === 'ugso_trigger_value') return `{{ ${expression(child)} }}`;
   if (['ugso_text', 'ugso_template', 'ugso_jinja_value'].includes(child.type)) return field(child, 'TEXT');
   if (flowDefinitions.some(d => d.type === child.type && d.output)) return `{{ ${expression(child)} }}`;
   if (collectionDefinitions.some(d => d.type === child.type && d.output)) return `{{ ${expression(child)} }}`;
@@ -368,6 +374,7 @@ function expression(block, depth = 0, scope = actionScope) {
   switch (block.type) {
     case 'ugso_number': case 'ugso_percent': return String(Number(field(block, 'NUM')));
     case 'ugso_text': return JSON.stringify(field(block, 'TEXT'));
+    case 'ugso_trigger_value': return ({ value: '(trigger.to_state.state if trigger.to_state is defined and trigger.to_state is not none else none)', old: '(trigger.from_state.state if trigger.from_state is defined and trigger.from_state is not none else none)', entity: '(trigger.entity_id | default(none))', id: '(trigger.id | default(none))', platform: '(trigger.platform | default(none))', payload: '(trigger.payload | default(none))', json: '(trigger.payload_json | default(none))', event: '(trigger.event.data if trigger.event is defined else none)' })[field(block, 'DATA')];
     case 'ugso_boolean': return field(block, 'BOOL');
     case 'ugso_null': return 'none';
     case 'ugso_variable_get': case 'variables_get': { const name = variableName(block, false); return scope.params.get(name) || name; }
@@ -416,6 +423,7 @@ function readTriggerBase(block) {
   const custom = customDefinition(block.type);
   if (custom?.kind === 'trigger') return customNative(custom, block, name => readValue(block, name));
   switch (block.type) {
+    case 'ugso_schedule_trigger': return scheduleTrigger(field(block, 'CRON'));
     case 'ugso_time_pattern_trigger': return { ...nativeObject(block, 'PATTERN'), trigger: 'time_pattern' };
     case 'ugso_calendar_trigger': return { trigger: field(block, 'EVENT'), target: nativeObject(block, 'TARGET'), ...(field(block, 'USE_OPTIONS') === 'TRUE' ? { options: nativeObject(block, 'OPTIONS') } : {}) };
     case 'ugso_temperature_trigger': return { trigger: 'temperature.changed', target: nativeObject(block, 'TARGET'), options: { threshold: nativeObject(block, 'THRESHOLD') } };
@@ -429,7 +437,7 @@ function readTriggerBase(block) {
     }
     case 'ugso_time_trigger': return { trigger: 'time', at: nativeList(block, 'TIME', 'TIME_LIST') };
     case 'ugso_event_trigger': return { trigger: 'event', event_type: field(block, 'EVENT_TYPE'), ...(field(block, 'FILTER') === 'TRUE' ? { event_data: nativeObject(block, 'EVENT_DATA') } : {}) };
-    case 'ugso_sun_trigger': return { trigger: 'sun', event: field(block, 'EVENT') };
+    case 'ugso_sun_trigger': return { trigger: 'sun', event: field(block, 'EVENT'), ...(field(block, 'USE_OFFSET') === 'TRUE' ? { offset: Number(field(block, 'OFFSET_MINUTES')) * 60 } : {}) };
     case 'ugso_start_trigger': return { trigger: 'homeassistant', event: 'start' };
     default: throw new Error('Unbekannter Auslöser.');
   }
@@ -644,6 +652,19 @@ function attach(parent, input, children) {
 function numberInput(block, name, num) { block.getInput(name).connection.setShadowState({ type: 'ugso_number', fields: { NUM: num } }); return block; }
 const fieldsRange = (item) => ({ ENTITY: item.entity_id, OP: Object.hasOwn(item, 'above') ? 'above' : 'below' });
 function triggerBlock(workspace, item) {
+  if (Object.keys(item).every(k => ['trigger','hours','minutes','seconds','at','weekday','id'].includes(k))) {
+    let cron;
+    if (item.trigger === 'time_pattern' && ['hours','minutes','seconds'].every(k => Object.hasOwn(item, k))) cron = [item.seconds, item.minutes, item.hours].map(x => String(x).replace(/^\//, '*/')).join(' ') + ' * * *';
+    if (item.trigger === 'time' && typeof item.at === 'string' && /^\d\d:\d\d:\d\d$/.test(item.at)) {
+      const [h,m,s] = item.at.split(':').map(Number), days = ['sun','mon','tue','wed','thu','fri','sat'];
+      cron = `${s} ${m} ${h} * * ${item.weekday ? item.weekday.map(day => days.indexOf(day)).join(',') : '*'}`;
+    }
+    if (cron) {
+      const block = create(workspace, 'ugso_schedule_trigger', { CRON: cron, TRIGGER_ID: item.id || '' });
+      try { if (equivalent(readTrigger(block), item)) return block; } catch {}
+      block.dispose();
+    }
+  }
   if(['power.changed','motion.detected','timer.finished'].includes(item.trigger)&&Object.keys(item).every(k=>['trigger','target','options'].includes(k)))return create(workspace,'ugso_integration_trigger',{TYPE:item.trigger,TARGET:JSON.stringify(item.target),OPTIONS:JSON.stringify(item.options||{}),USE_OPTIONS:Object.hasOwn(item,'options')?'TRUE':'FALSE'});
   const before = new Set(workspace.getAllBlocks(false).map(b=>b.id));
   let block;
@@ -665,7 +686,7 @@ function triggerBlockBase(workspace, item) {
     case 'numeric_state': return numberInput(create(workspace, 'ugso_numeric_trigger', { ...fieldsRange(item), ENTITY: Array.isArray(item.entity_id) ? '' : item.entity_id, ENTITY_LIST: Array.isArray(item.entity_id) ? 'TRUE' : 'FALSE', ENTITIES: JSON.stringify(Array.isArray(item.entity_id) ? item.entity_id : []), USE_FOR: Object.hasOwn(item, 'for') ? 'TRUE' : 'FALSE', FOR: JSON.stringify(item.for ?? { hours: 0, minutes: 1, seconds: 0 }) }), 'LIMIT', item.above ?? item.below);
     case 'time': return create(workspace, 'ugso_time_trigger', { TIME: Array.isArray(item.at) ? JSON.stringify(item.at) : item.at, TIME_LIST: Array.isArray(item.at) ? 'TRUE' : 'FALSE' });
     case 'event': return create(workspace, 'ugso_event_trigger', { EVENT_TYPE: item.event_type, EVENT_DATA: JSON.stringify(item.event_data || {}), FILTER: Object.hasOwn(item, 'event_data') ? 'TRUE' : 'FALSE' });
-    case 'sun': return create(workspace, 'ugso_sun_trigger', { EVENT: item.event });
+    case 'sun': return create(workspace, 'ugso_sun_trigger', { EVENT: item.event, ...(typeof item.offset === 'number' && item.offset % 60 === 0 ? { USE_OFFSET: 'TRUE', OFFSET_MINUTES: item.offset / 60 } : {}) });
     case 'homeassistant': return create(workspace, 'ugso_start_trigger');
   }
 }
