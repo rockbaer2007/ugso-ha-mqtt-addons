@@ -599,6 +599,17 @@ let projectChangedAt = 0;
 let projectSavePending = false;
 let projectSaveCompletion = Promise.resolve();
 let projectSaveRetryAt = 0;
+let saveFeedbackTimer;
+
+function showSaveFeedback(value) {
+  const button = $("#save");
+  clearTimeout(saveFeedbackTimer);
+  button.dataset.saveState = value;
+  button.setAttribute("aria-busy", String(value === "saving"));
+  if (value !== "saving") saveFeedbackTimer = setTimeout(() => {
+    delete button.dataset.saveState;
+  }, 1400);
+}
 
 function rawProjectSnapshot() { return state.project ? JSON.stringify(state.project) : ""; }
 
@@ -651,6 +662,7 @@ async function saveProject(automatic = false) {
     return saveProject(false);
   }
   projectSavePending = true;
+  showSaveFeedback("saving");
   let completeSave;
   projectSaveCompletion = new Promise(resolve => { completeSave = resolve; });
   const projectId = state.projectId;
@@ -662,8 +674,10 @@ async function saveProject(automatic = false) {
     if (!response.ok) throw new Error("Speichern fehlgeschlagen");
     if (state.projectId === projectId) { savedProjectSnapshot = snapshot; projectSaveRetryAt = 0; }
     $("#status").textContent = automatic ? "Projekt automatisch gespeichert" : "Projekt lokal gespeichert";
+    showSaveFeedback("saved");
     return true;
   } catch {
+    showSaveFeedback("error");
     $("#status").textContent = controller.signal.aborted ? "Speichern fehlgeschlagen – Zeitüberschreitung" : "Speichern fehlgeschlagen – bitte erneut speichern";
     // Keep dirty changes eligible for retry, including edits made during this request.
     if (state.projectId === projectId) projectSaveRetryAt = Date.now() + 5000;

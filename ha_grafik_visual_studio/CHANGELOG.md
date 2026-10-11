@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.289
+
+- Der Speichern-Button zeigt laufendes Speichern orange, erfolgreiche Speicherung kurz grün und Fehler kurz rot. Danach gilt wieder die normale Farbe, auch bei Autospeichern.
+- Save button feedback shows pending requests in amber and briefly shows success in green or failure in red; the original colour returns after 1.4 seconds.
+
 ## 0.1.288
 
 - Widgetpakete heißen Industrie, Technic, Energy, Solar, Printer und Calendar +, ohne UGSo-Präfix. Bereits installierte Pakete und Katalogeinträge zeigen die neuen Namen; IDs und Widgetdefinitionen bleiben kompatibel.
