@@ -37,7 +37,7 @@ def handler(gateway):
 
         def do_GET(self):
             if self.path == "/health" and self.client_address[0] == "127.0.0.1":
-                return self.reply(200, {"ok": True, "version": "0.1.0"})
+                return self.reply(200, {"ok": True, "version": "0.1.1"})
             if not self.allowed():
                 return self.reply(403, {"error": "forbidden"})
             path = urlsplit(self.path).path
@@ -77,7 +77,7 @@ def main():
         connect_mqtt(gateway, options)
     threading.Thread(target=gateway.worker, daemon=True).start()
     host = "0.0.0.0" if os.environ.get("CALLMEBOT_INGRESS") == "1" else "127.0.0.1"
-    print("UGSo CallMeBot Signal 0.1.0 started", flush=True)
+    print("CallMeBot Signal 0.1.1 started", flush=True)
     ThreadingHTTPServer((host, int(os.environ.get("CALLMEBOT_PORT", "4183"))), handler(gateway)).serve_forever()
 
 

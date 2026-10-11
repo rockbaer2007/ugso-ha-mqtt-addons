@@ -1,4 +1,4 @@
-UGSo Blocks for HA 0.1.54
+Blocks for HA 0.1.55
 
 websocket-client 1.9.2
 https://github.com/websocket-client/websocket-client

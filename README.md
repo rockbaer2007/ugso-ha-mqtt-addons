@@ -6,15 +6,15 @@ Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetrage
 
 ## Enthaltene Add-ons
 
-- [UGSo CallMeBot Signal](callmebot_signal/README.md): **experimentelle** Signal-Textnachrichten mit Telefon-/UUID-Profilen, eigenem MQTT-Namensraum und dreisprachigem Blockly-Baustein. Oberfläche: DE/EN/FR.
-- [UGSo CallMeBot Whatsapp](callmebot/README.md): **experimentelle** WhatsApp-Textnachrichten mit Empfängerprofilen, MQTT und dreisprachigem Blockly-Baustein. Oberfläche: DE/EN/FR.
+- [CallMeBot Signal](callmebot_signal/README.md): **experimentelle** Signal-Textnachrichten mit Telefon-/UUID-Profilen, eigenem MQTT-Namensraum und dreisprachigem Blockly-Baustein. Oberfläche: DE/EN/FR.
+- [CallMeBot Whatsapp](callmebot/README.md): **experimentelle** WhatsApp-Textnachrichten mit Empfängerprofilen, MQTT und dreisprachigem Blockly-Baustein. Oberfläche: DE/EN/FR.
 
 - FRITZ!Box to MQTT
 - Heizoel to MQTT
 - [Parcel to MQTT](parcel_to_mqtt/README.md): Entwicklung eingestellt, da [Parcel Tracker von SoerenKaiser99](https://github.com/SoerenKaiser99/parcel_tracker) bereits deutlich weiter entwickelt ist. / Development discontinued because Parcel Tracker is already much further along.
 - [MQTT-Client](mqtt_client/README.md): ausgewählte HA-Zustände an einen externen Broker (z. B. ioBroker) senden, optional mit Ein/Aus-Befehlen zurück an HA.
 - [HA Grafik Visual Studio](ha_grafik_visual_studio/README.md): **experimentelles** Grundgerüst für eine grafische HA-Visualisierung mit getrenntem Editor- und Runtime-Modus.
-- [UGSo Blocks for HA](blocks_for_ha/DOCS.md): **experimentelle** HA-App für native Automationen aus visuellen Blocks, mit YAML-Import/-Export und HA-Ingress.
+- [Blocks for HA](blocks_for_ha/DOCS.md): **experimentelle** HA-App für native Automationen aus visuellen Blocks, mit YAML-Import/-Export und HA-Ingress.
 
 ## Weitere Projekte
 

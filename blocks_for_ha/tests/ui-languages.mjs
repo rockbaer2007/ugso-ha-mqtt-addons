@@ -17,6 +17,9 @@ try {
     await page.goto('http://127.0.0.1:4180/');await page.waitForSelector('.blocklySvg');
     assert.equal(await page.locator('html').getAttribute('lang'),locale);
     assert.equal(await page.locator('h1').textContent(),title);assert.equal(await page.locator('#copy').textContent(),copy);
+    assert.equal(await page.title(),'Blocks for HA');
+    assert.equal(await page.locator('.brand').innerText(),'Blocks for HA');
+    await page.locator('#load-example').click();
     await page.locator('#name').fill('Öffnen / Eigener Name');await page.waitForFunction(()=>document.querySelector('#yaml').textContent.includes('Öffnen / Eigener Name'));
     const before=await page.locator('#yaml').textContent();
     await page.locator('#about').click();assert.ok(!(await page.locator('#about-dialog').textContent()).includes('Eigener Code')||locale==='de');await page.locator('#about-dialog button').click();

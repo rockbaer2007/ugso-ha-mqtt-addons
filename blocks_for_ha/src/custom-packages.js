@@ -178,7 +178,7 @@ export function customNative(definition, block, inputValue) {
 }
 export function packageZip(source) {
   const pkg = validatePackage(source);
-  return zipSync({ 'block-package.json': strToU8(JSON.stringify(pkg, null, 2)), 'README.md': strToU8(`# ${pkg.name}\n\n${pkg.description}\n\nVersion: ${pkg.version}\nAutor: ${pkg.author}\nLizenz: ${pkg.license}\n\nIn UGSo Blocks for HA ab 0.1.18: Block-/Template-Editor > ZIP einlesen > Prüfen > Übernehmen.\nJinja wird erst in Home Assistant ausgewertet.\n`) }, { level: 6 });
+  return zipSync({ 'block-package.json': strToU8(JSON.stringify(pkg, null, 2)), 'README.md': strToU8(`# ${pkg.name}\n\n${pkg.description}\n\nVersion: ${pkg.version}\nAutor: ${pkg.author}\nLizenz: ${pkg.license}\n\nIn Blocks for HA ab 0.1.18: Block-/Template-Editor > ZIP einlesen > Prüfen > Übernehmen.\nJinja wird erst in Home Assistant ausgewertet.\n`) }, { level: 6 });
 }
 export async function readPackageZip(bytes) {
   if (!(bytes instanceof Uint8Array) || bytes.length > 1000000) fail('ZIP: höchstens 1 MB.');

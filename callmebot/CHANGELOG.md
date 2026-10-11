@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.5
+
+- Removed UGSo from the visible application name; existing technical IDs, saved data and MQTT topics remain compatible.
+- Verified German, English and French application messages.
+
 ## 0.1.4
 
 - Renamed the app to UGSo CallMeBot Whatsapp. Existing slug, saved profiles, MQTT topics and entity IDs are preserved.

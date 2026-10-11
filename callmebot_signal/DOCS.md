@@ -1,5 +1,5 @@
 <!-- DE -->
-# UGSo CallMeBot Signal
+# CallMeBot Signal
 
 Experimentelle **HA-App 0.1.0** im [gemeinsamen Repository mit Blocks for HA](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/callmebot_signal). Vollständig **DE/EN/FR**, Systemsprache und Hell/Dunkel/System. Eigenständige UGSo-Implementierung, inspiriert von [ioBroker.signal-cmb](https://github.com/derAlff/ioBroker.signal-cmb).
 
@@ -7,7 +7,7 @@ Experimentelle **HA-App 0.1.0** im [gemeinsamen Repository mit Blocks for HA](ht
 
 ## Einrichtung
 
-1. Repository `https://github.com/rockbaer2007/ugso-ha-mqtt-addons` im HA-App-Store hinzufügen und **UGSo CallMeBot Signal** installieren.
+1. Repository `https://github.com/rockbaer2007/ugso-ha-mqtt-addons` im HA-App-Store hinzufügen und **CallMeBot Signal** installieren.
 2. MQTT in HA einrichten, App starten und Oberfläche über Ingress öffnen. Der interne MQTT-Dienst liefert bevorzugt die Zugangsdaten; App-Optionen dienen als Fallback.
 3. Den aktuellen Bot-Kontakt aus der [offiziellen Signal-Aktivierungsanleitung](https://www.callmebot.com/blog/free-api-signal-send-messages/) verwenden. In **Signal** die dort angegebene Freischaltnachricht senden und den **Signal-API-Schlüssel** abwarten.
 4. Profil-ID, Anzeigename, eigene internationale Telefonnummer **mit +** oder **Signal-UUID** sowie den passenden Schlüssel speichern. Bei verborgener Telefonnummer kann der Bot eine UUID liefern. Den Wert aus dem Aktivierungslink unverändert übernehmen.
@@ -51,7 +51,7 @@ Backend, UUID-/Nummernvalidierung, MQTT-Protokoll, Blockly/Jinja-Export, DE/EN/F
 ---
 
 <!-- EN -->
-# UGSo CallMeBot Signal
+# CallMeBot Signal
 
 Experimental **HA app 0.1.0** in the [shared Blocks for HA repository](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/callmebot_signal). Complete **DE/EN/FR**, system language and light/dark/system appearance. Original UGSo implementation inspired by [ioBroker.signal-cmb](https://github.com/derAlff/ioBroker.signal-cmb).
 
@@ -59,7 +59,7 @@ Experimental **HA app 0.1.0** in the [shared Blocks for HA repository](https://g
 
 ## Setup
 
-1. Add `https://github.com/rockbaer2007/ugso-ha-mqtt-addons` to the HA app store and install **UGSo CallMeBot Signal**.
+1. Add `https://github.com/rockbaer2007/ugso-ha-mqtt-addons` to the HA app store and install **CallMeBot Signal**.
 2. Configure HA MQTT, start the app and open its Ingress UI. Supervisor MQTT credentials take priority; app options are the fallback.
 3. Use the current bot contact from the [official Signal activation guide](https://www.callmebot.com/blog/free-api-signal-send-messages/). Send its activation phrase in **Signal** and wait for your **Signal API key**.
 4. Save a profile ID, display name, your international phone number **with +** or **Signal UUID**, and matching key. When your number is hidden, the bot may provide a UUID. Copy the recipient value from the activation link unchanged.
@@ -103,7 +103,7 @@ Backend, UUID/number validation, MQTT protocol, Blockly/Jinja export, DE/EN/FR a
 ---
 
 <!-- FR -->
-# UGSo CallMeBot Signal
+# CallMeBot Signal
 
 **Application HA 0.1.0 expérimentale** dans le [dépôt commun de Blocks for HA](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/callmebot_signal). Entièrement **DE/EN/FR**, langue système et apparence claire/sombre/système. Implémentation UGSo originale inspirée de [ioBroker.signal-cmb](https://github.com/derAlff/ioBroker.signal-cmb).
 
@@ -111,7 +111,7 @@ Backend, UUID/number validation, MQTT protocol, Blockly/Jinja export, DE/EN/FR a
 
 ## Configuration
 
-1. Ajouter `https://github.com/rockbaer2007/ugso-ha-mqtt-addons` au magasin HA et installer **UGSo CallMeBot Signal**.
+1. Ajouter `https://github.com/rockbaer2007/ugso-ha-mqtt-addons` au magasin HA et installer **CallMeBot Signal**.
 2. Configurer MQTT dans HA, démarrer l’application et ouvrir son interface Ingress. Les identifiants MQTT du Supervisor sont prioritaires ; les options servent de secours.
 3. Utiliser le contact actuel du bot indiqué dans le [guide officiel Signal](https://www.callmebot.com/blog/free-api-signal-send-messages/). Envoyer la phrase d’activation dans **Signal** et attendre la **clé API Signal**.
 4. Enregistrer l’ID du profil, son nom, votre numéro international **avec +** ou **UUID Signal**, et la clé correspondante. Si le numéro est masqué, le bot peut fournir un UUID. Copier le destinataire du lien d’activation sans le modifier.

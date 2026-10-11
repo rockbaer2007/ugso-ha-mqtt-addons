@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.55
+
+- Removed UGSo from the visible application name; existing technical IDs, saved data and MQTT topics remain compatible.
+- Verified German, English and French application messages.
+
 ## 0.1.54
 
 - New automation offers project backup, clearing without backup, or cancellation in DE/EN/FR.

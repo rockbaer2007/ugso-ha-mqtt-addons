@@ -1,6 +1,6 @@
-# UGSo CallMeBot Signal
+# CallMeBot Signal
 
-Experimental Home Assistant app **0.1.0**, in the same repository as UGSo CallMeBot Whatsapp and Blocks for HA. Original UGSo implementation inspired by [ioBroker.signal-cmb](https://github.com/derAlff/ioBroker.signal-cmb). No ioBroker runtime required.
+Experimental Home Assistant app **0.1.1**, in the same repository as CallMeBot Whatsapp and Blocks for HA. Original UGSo implementation inspired by [ioBroker.signal-cmb](https://github.com/derAlff/ioBroker.signal-cmb). No ioBroker runtime required.
 
 DE/EN/FR Ingress UI, recipient profiles with international phone numbers or Signal UUIDs, separate Signal API keys and MQTT namespace. Matching **Signal · CallMeBot** block and profile picker in Blocks for HA **0.1.50**. WhatsApp profiles/keys are not reused.
 

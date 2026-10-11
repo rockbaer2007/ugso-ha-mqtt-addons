@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1
+
+- Removed UGSo from the visible application name; existing technical IDs, saved data and MQTT topics remain compatible.
+- Verified German, English and French application messages.
+
 ## 0.1.0
 
 - First experimental UGSo CallMeBot Signal app, alongside UGSo CallMeBot Whatsapp.

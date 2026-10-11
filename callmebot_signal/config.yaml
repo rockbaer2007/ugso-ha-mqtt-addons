@@ -1,5 +1,5 @@
-name: UGSo CallMeBot Signal
-version: "0.1.0"
+name: CallMeBot Signal
+version: "0.1.1"
 slug: callmebot_signal
 description: Signal-Textnachrichten über CallMeBot mit Empfängerprofilen und MQTT
 stage: experimental
