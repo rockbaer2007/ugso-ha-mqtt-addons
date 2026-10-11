@@ -66,13 +66,33 @@ export function setupParallelBlock(Blockly, block, label) {
   };
   // Keep the JSON definition's two placeholders stable for localized catalogs.
   block.removeInput('A'); block.removeInput('B');
-  const header = block.appendDummyInput('HEADER').appendField('Parallel');
-  for (const [sign, delta] of [['+', 1], ['−', -1]]) header.appendField(new Blockly.FieldImage(`data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"><rect width="18" height="18" rx="3" fill="white"/><text x="9" y="14" text-anchor="middle" fill="#20313c">${sign}</text></svg>`)}`, 18, 18, sign, () => {
-    if (block.branchCount_ + delta < 1 || block.branchCount_ + delta > 100) return;
-    const before = JSON.stringify(block.saveExtraState()); Blockly.Events.setGroup(true);
-    try { block.branchCount_ += delta; block.updateParallel_(); Blockly.Events.fire(new Blockly.Events.BlockChange(block,'mutation',null,before,JSON.stringify(block.saveExtraState()))); }
-    finally { Blockly.Events.setGroup(false); }
-  }));
+  block.appendDummyInput('HEADER').appendField('Parallel');
+  if (!Blockly.Blocks.ugso_parallel_item) Blockly.defineBlocksWithJsonArray([
+    { type: 'ugso_parallel_container', message0: 'Parallel %1', args0: [{ type: 'input_statement', name: 'STACK' }], style: 'ugso_action', enableContextMenu: false },
+    { type: 'ugso_parallel_item', message0: label, previousStatement: null, nextStatement: null, style: 'ugso_action', enableContextMenu: false }
+  ]);
+  block.decompose = function (workspace) {
+    const root = workspace.newBlock('ugso_parallel_container'); root.initSvg();
+    let connection = root.getInput('STACK').connection;
+    for (let i = 0; i < this.branchCount_; i++) {
+      const item = workspace.newBlock('ugso_parallel_item'); item.initSvg();
+      connection.connect(item.previousConnection); connection = item.nextConnection;
+    }
+    return root;
+  };
+  block.saveConnections = function (root) {
+    let i = 0;
+    for (let item = root.getInputTargetBlock('STACK'); item; item = item.getNextBlock()) if (!item.isInsertionMarker()) item.actionConnection_ = this.getInput(`BRANCH${i++}`)?.connection.targetConnection;
+  };
+  block.compose = function (root) {
+    const connections = [];
+    for (let item = root.getInputTargetBlock('STACK'); item; item = item.getNextBlock()) if (!item.isInsertionMarker()) connections.push(item.actionConnection_);
+    if (connections.length > 100) throw Error('Parallel: 1–100 Zweige erwartet.');
+    for (let i = 0; i < this.branchCount_; i++) this.getInput(`BRANCH${i}`)?.connection.targetConnection?.disconnect();
+    this.branchCount_ = Math.max(1, connections.length); this.updateParallel_();
+    connections.forEach((connection, i) => connection?.reconnect(this, `BRANCH${i}`));
+  };
+  if (block instanceof Blockly.BlockSvg) block.setMutator(new Blockly.icons.MutatorIcon(['ugso_parallel_item'], block));
   block.updateParallel_();
 }
 export function advancedJSON(block, field='JSON') {

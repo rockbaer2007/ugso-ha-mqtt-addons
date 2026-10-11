@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.58
+
+- Removed the compact AND/OR variant from the toolbox; existing projects retain support for it.
+- Removed additional +/minus/S expansion buttons from every block. Use the original gear builder for conditions, branches, objects, lists, text and cases.
+- Parallel branches now have a localized gear builder with connection-preserving reordering and 1–100 branches.
+
 ## 0.1.57
 
 - Expandable AND/OR groups use inline Boolean inputs with the operator between them, following the ioBroker layout.

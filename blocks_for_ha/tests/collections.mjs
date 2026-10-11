@@ -17,7 +17,7 @@ try {
       return toolbox.contents.find(c => c.name === category).contents.every(d => ws.getBlocksByType(d.type).length > 0);
     }, category));
   }
-  const point = await page.evaluate(async () => {
+  await page.evaluate(async () => {
     const url = performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name;
     const { Blockly, modelWorkspace, toolbox } = await import(url);
     const { examples } = await import('/src/model.js');
@@ -25,9 +25,12 @@ try {
     const block = Blockly.serialization.blocks.append(toolbox.contents.find(c => c.name === 'Text').contents.find(d => d.type === 'ugso_text_join'), ws);
     ws.getBlocksByType('ugso_variable_set')[0].getInput('VALUE').connection.connect(block.outputConnection);
     ws.getToolbox().clearSelection(); ws.zoomToFit(); await Blockly.renderManagement.finishQueuedRenders();
-    const r = block.getField('ADD').getSvgRoot().getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    const icon = block.getIcon(Blockly.icons.MutatorIcon.TYPE); await icon.setBubbleVisible(true);
+    const builder = icon.getWorkspace(), root = builder.getBlocksByType('ugso_rows_container')[0];
+    const item = builder.newBlock('ugso_rows_item'); item.initSvg(); item.render();
+    root.getInputTargetBlock('STACK').nextConnection.connect(item.previousConnection);
+    await new Promise(resolve => setTimeout(resolve, 150)); await icon.setBubbleVisible(false);
   });
-  await page.mouse.click(point.x, point.y);
   assert.equal(await page.evaluate(async () => {
     const url = performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name;
     const { Blockly } = await import(url); return Blockly.getMainWorkspace().getBlocksByType('ugso_text_join')[0].rowCount_;
@@ -44,5 +47,5 @@ try {
   await page.locator('.blocklyToolboxCategory').filter({ hasText: /^Mathematik$/ }).click();
   await mkdir('artifacts', { recursive: true }); await page.screenshot({ path: 'artifacts/collections.png', fullPage: true });
   assert.deepEqual(errors, []);
-  console.log('Math/text/list/loop flyouts, text join + button, typed values and rendered JSON reload verified.');
+  console.log('Math/text/list/loop flyouts, text join gear, typed values and rendered JSON reload verified.');
 } finally { await browser.close(); }

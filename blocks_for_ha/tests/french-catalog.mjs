@@ -10,7 +10,7 @@ const help = {
   ugso_convert_date_format: 'Le format détermine le raccord : date, nombre à l’exécution ou texte. Format personnalisé Python strftime.',
   ugso_object_has: 'Vérifier la présence d’une clé dans un dictionnaire, y compris une clé dont la valeur est null.',
   ugso_logic_range: 'Tester un nombre entre deux bornes, avec comparaisons strictes ou inclusives indépendantes.',
-  ugso_list_new: 'Créer une liste de 0–100 valeurs ; l’engrenage ou +/− modifie le nombre d’entrées.',
+  ugso_list_new: 'Créer une liste de 0–100 valeurs ; l’engrenage modifie le nombre d’entrées.',
   ugso_boolean: 'Constante vrai/faux, pour conditions et variables. L’export conserve le type booléen YAML.',
   ugso_not: 'Nier une condition : groupe not natif HA ou expression not Jinja lorsqu’utilisé comme valeur.',
   ugso_binary_logic: 'Combiner deux booléens avec ET/OU ; groupe natif HA ou expression Jinja selon l’usage.',
@@ -24,9 +24,9 @@ const help = {
   ugso_start_trigger: 'Déclencher au démarrage de Home Assistant.',
   ugso_state_condition: 'Vérifier si l’entité possède l’état indiqué. Les valeurs on/off restent les IDs HA.',
   ugso_numeric_condition: 'Comparer l’état numérique d’une entité avec une borne fixe, au-dessus ou en dessous.',
-  ugso_logic_condition: 'Groupe ET, OU ou NON extensible jusqu’à 100 conditions. Engrenage ou +/− pour modifier les entrées.',
+  ugso_logic_condition: 'Groupe ET, OU ou NON extensible jusqu’à 100 conditions. Engrenage pour modifier les entrées.',
   ugso_delay_action: 'Attendre un nombre de secondes via une action delay native HA.',
-  ugso_if_action: 'Branche if native HA avec actions, sinon si et sinon. Engrenage et +/− pour étendre les branches.'
+  ugso_if_action: 'Branche if native HA avec actions, sinon si et sinon. Engrenage pour étendre les branches.'
 };
 const title = {
   ugso_math_arithmetic: 'Calcul arithmétique', ugso_math_single: 'Fonction numérique', ugso_math_trig: 'Trigonométrie', ugso_math_constant: 'Constante',

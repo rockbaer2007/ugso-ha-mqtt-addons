@@ -4,7 +4,9 @@ const {chromium}=createRequire(import.meta.url)(process.env.PLAYWRIGHT_MODULE||'
 const browser=await chromium.launch({channel:'msedge',headless:true});
 try {
   const page=await browser.newPage({viewport:{width:1500,height:1000},locale:'de'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  page.on('dialog', dialog => dialog.accept());
   await page.goto('http://127.0.0.1:4180/');await page.waitForSelector('.blocklySvg');
+  await page.locator('#load-example').click();
   await page.locator('#jinja-import').click();const source="{% if is_state('sensor.test','on') %}ON{% else %}OFF{% endif %}";
   await page.locator('#jinja-source').fill(source);await page.locator('#jinja-boolean').check();assert.match(await page.locator('#jinja-preview').textContent(),/Wenn \/ Sonst.*sensor.test/);
   await page.locator('#jinja-add').click();
@@ -25,14 +27,17 @@ try {
   await page.reload();await page.waitForSelector('.blocklySvg');await page.waitForFunction(()=>document.querySelector('#yaml').textContent.includes('stored_traces: 10'));
   assert.equal(await page.locator('#yaml').textContent(),yaml);
   await page.locator('#jinja-import').click();await page.locator('#jinja-source').fill('');assert.equal(await page.locator('#jinja-add').isDisabled(),true);await page.locator('#jinja-cancel').click();
-  const plus=await page.evaluate(async()=>{
+  await page.evaluate(async()=>{
     const url=performance.getEntriesByType('resource').find(e=>new URL(e.name).pathname==='/src/blocks.js').name;const {Blockly}=await import(url);const ws=Blockly.getMainWorkspace();
     const root=ws.getBlocksByType('ugso_automation')[0];root.getInputTargetBlock('ACTIONS')?.dispose();const block=ws.newBlock('ugso_parallel');block.initSvg();block.render();root.getInput('ACTIONS').connection.connect(block.previousConnection);ws.zoomToFit();
-    const rect=block.getInput('HEADER').fieldRow.find(f=>f instanceof Blockly.FieldImage).getSvgRoot().getBoundingClientRect();return{x:rect.x+rect.width/2,y:rect.y+rect.height/2};
+    const icon=block.getIcon(Blockly.icons.MutatorIcon.TYPE);await icon.setBubbleVisible(true);
+    const builder=icon.getWorkspace(),container=builder.getBlocksByType('ugso_parallel_container')[0];
+    const item=builder.newBlock('ugso_parallel_item');item.initSvg();item.render();
+    let connection=container.getInput('STACK').connection;while(connection.targetBlock())connection=connection.targetBlock().nextConnection;
+    connection.connect(item.previousConnection);await new Promise(resolve=>setTimeout(resolve,150));await icon.setBubbleVisible(false);
   });
-  await page.mouse.click(plus.x,plus.y);
   await page.waitForFunction(async()=>{const url=performance.getEntriesByType('resource').find(e=>new URL(e.name).pathname==='/src/blocks.js').name;const {Blockly}=await import(url);return Blockly.getMainWorkspace().getBlocksByType('ugso_parallel')[0].branchCount_===3;});
   await page.waitForFunction(()=>document.querySelector('#yaml').textContent.includes('parallel:'));
   const parallelYaml=await page.locator('#yaml').textContent();await page.reload();await page.waitForSelector('.blocklySvg');await page.waitForFunction(()=>document.querySelector('#yaml').textContent.includes('parallel:'));assert.equal(await page.locator('#yaml').textContent(),parallelYaml);
-  assert.deepEqual(errors,[]);console.log('Advanced UI: Jinja recognition/connection, root options, rejected mutation, parallel + button, reload and empty dialog verified.');
+  assert.deepEqual(errors,[]);console.log('Advanced UI: Jinja recognition/connection, root options, rejected mutation, parallel gear, reload and empty dialog verified.');
 } finally {await browser.close();}

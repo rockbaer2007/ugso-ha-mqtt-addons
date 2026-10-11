@@ -20,7 +20,7 @@ export const collectionDefinitions = [
   define('math_random_fraction', 'Mathematik', 'Zufallszahl 0 bis kleiner 1', [], number, 'Zufallswert in Schritten von 0,00001. Kein kryptografischer Zufall; bei jeder Auswertung neu.'),
   define('math_atan2', 'Mathematik', 'Winkel atan2 y %1 x %2 in Grad', [v('Y'), v('X')], number, 'Vierquadranten-Winkelfunktion aus dem Blockly-Standard, zusätzlich zu den gezeigten Bildern.'),
   define('text_newline', 'Text', 'Neue Zeile %1', [d('MODE', [['LF (Unix)', 'lf'], ['CRLF (Windows)', 'crlf'], ['CR', 'cr']])], value, 'Liefert einen echten Zeilenumbruch für Textverknüpfung.'),
-  define('text_join', 'Text', 'Erstelle Text aus %1', [{ type: 'input_dummy', name: 'HEADER' }], { ...value, mutator: 'ugso_rows' }, 'Verknüpft 0–100 Werte als Text. Zahnrad und +/− ändern die Anzahl der Eingänge.'),
+  define('text_join', 'Text', 'Erstelle Text aus %1', [{ type: 'input_dummy', name: 'HEADER' }], { ...value, mutator: 'ugso_rows' }, 'Verknüpft 0–100 Werte als Text. Das Zahnrad ändert die Anzahl der Eingänge.'),
   define('text_append', 'Text', 'An Variable %1 Text %2 anhängen', [variable, v('TEXT')], action, 'Weist der vorher initialisierten Textvariable einen neuen Text zu. Kein Schreiben einer HA-Entität.'),
   define('text_length', 'Text', 'Länge von Text %1', [v('TEXT')], number, 'Anzahl Unicode-Codepunkte, nicht JavaScript-UTF-16-Codeeinheiten.'),
   define('text_empty', 'Text', 'Text %1 ist leer', [v('TEXT')], bool, 'Prüft einen Text auf Länge 0.'),

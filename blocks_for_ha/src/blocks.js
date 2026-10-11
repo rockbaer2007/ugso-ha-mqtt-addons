@@ -231,28 +231,8 @@ definitions.forEach(definition => {
     if (collectionDefinitions.some(d => d.type === this.type)) this.setHelpUrl(documentationPath('collections'));
     if (this.type === 'ugso_variable_change') this.getInput('STEP').connection.setShadowState({ type: 'ugso_number', fields: { NUM: 1 } });
     if (this.outputConnection && ['ugso_number', 'ugso_percent', 'ugso_text', 'ugso_template', 'ugso_variable_get'].includes(this.type)) this.setOutput(true, [...this.outputConnection.getCheck(), 'Value']);
-    if (['ugso_logic_condition', 'ugso_if_action'].includes(this.type)) addExpansionButtons(this);
   };
 });
-function expansion(block, change) {
-  const before = JSON.stringify(block.saveExtraState());
-  Blockly.Events.setGroup(true);
-  try { change(); Blockly.Events.fire(new Blockly.Events.BlockChange(block, 'mutation', null, before, JSON.stringify(block.saveExtraState()))); }
-  finally { Blockly.Events.setGroup(false); }
-}
-function addExpansionButtons(block) {
-  const button = (label, action) => new Blockly.FieldImage(`data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18"><rect width="18" height="18" rx="4" fill="white"/><text x="9" y="13" text-anchor="middle" font-family="sans-serif" font-size="15" fill="#20313c">${label}</text></svg>`)}`, 18, 18, label, () => expansion(block, action));
-  const input = block.inputList[0];
-  input.appendField(button('+', () => {
-    if (block.type === 'ugso_logic_condition') { if (block.itemCount_ < 100) { block.itemCount_++; block.updateConditions_(); } }
-    else if (block.branchCount_ < 99) { block.branchCount_++; block.updateBranches_(); }
-  }), 'ADD');
-  input.appendField(button('−', () => {
-    if (block.type === 'ugso_logic_condition') { if (block.itemCount_ > 1) { block.itemCount_--; block.updateConditions_(); } }
-    else if (block.branchCount_ > 0) { block.branchCount_--; block.updateBranches_(); }
-  }), 'REMOVE');
-  if (block.type === 'ugso_if_action') input.appendField(button('S', () => { block.hasElse_ = !block.hasElse_; block.updateBranches_(); }), 'ELSE_TOGGLE');
-}
 export { Blockly };
 export const knownTypes = new Set([...definitions.map(item => item.type), ...functionTypes]);
 export const toolbox = { kind: 'categoryToolbox', contents: [
@@ -281,7 +261,7 @@ for (const category of toolbox.contents) for (const block of category.contents) 
   if (block.type === 'ugso_colour_action') block.inputs = { COLOUR: { shadow: { type: 'ugso_colour', fields: { COLOUR: '#ff8800' } } }, BRIGHTNESS: { shadow: { type: 'ugso_percent', fields: { NUM: 50 } } } };
 }
 toolbox.contents.push(
-  { kind: 'category', name: 'Logik', colour: '#6860b5', contents: ['ugso_if_action', 'ugso_compare', 'ugso_binary_logic', 'ugso_not', 'ugso_boolean', 'ugso_null', 'ugso_ternary'].map(type => ({ kind: 'block', type })) },
+  { kind: 'category', name: 'Logik', colour: '#6860b5', contents: ['ugso_if_action', 'ugso_compare', 'ugso_not', 'ugso_boolean', 'ugso_null', 'ugso_ternary'].map(type => ({ kind: 'block', type })) },
   { kind: 'category', name: 'Variablen', colour: '#a54879', custom: 'UGSO_VARIABLES' },
   { kind: 'category', name: 'Funktionen', colour: '#87579d', custom: 'UGSO_FUNCTIONS' },
   { kind: 'category', name: 'Templates', colour: '#8a6635', contents: ['ugso_template', 'ugso_template_condition'].map(type => ({ kind: 'block', type })) }

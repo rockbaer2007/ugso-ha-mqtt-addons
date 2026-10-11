@@ -1,5 +1,12 @@
 # AGENTS.md
 
+## Blocks for HA
+
+- Match ioBroker's Blockly appearance, block layout, labels and native gear builders as closely as possible so switching users recognize the controls.
+- Keep Home Assistant automation coverage and existing YAML/project compatibility; visual simplification must not remove supported HA features.
+- Use gear builders for expandable blocks. Do not add separate +/minus/S shortcut buttons or duplicate compact AND/OR entries.
+- Keep all user-facing block and builder labels complete in German, English and French.
+
 ## HA Grafik Visual Studio
 
 - Alle Widgets und künftig ergänzten Widgetsets erhalten die vollständigen Standard-CSS-Gruppen: Allgemein, Font & Text, Hintergrund, Ränder sowie Schatten und Abstand.

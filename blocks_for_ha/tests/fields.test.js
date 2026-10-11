@@ -1,28 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Blockly, modelWorkspace, workspaceModel } from '../src/blocks.js';
+import { Blockly, modelWorkspace, workspaceModel, knownTypes, toolbox } from '../src/blocks.js';
 import { examples, fromYaml, toYaml } from '../src/model.js';
 import { dateTemplate, parseDateTemplate } from '../src/values.js';
 // The original colour palette creates HTML swatches even for headless Blocks.
 globalThis.document = Blockly.utils.xml.createElement('div').ownerDocument;
 globalThis.HTMLElement = document.defaultView.HTMLElement;
 
-test('Plus/minus preserves connected children and undo restores removed inputs', async () => {
+test('All blocks omit expansion shortcuts and compact legacy logic is absent from the toolbox', () => {
   const ws = new Blockly.Workspace();
   try {
-    modelWorkspace(ws, { ...examples.light, conditions: [{ condition: 'and', conditions: [{ condition: 'state', entity_id: 'input_boolean.a', state: 'on' }, { condition: 'state', entity_id: 'input_boolean.b', state: 'on' }] }] });
-    const logic = ws.getBlocksByType('ugso_logic_condition')[0];
-    const removed = logic.getInputTargetBlock('COND1');
-    ws.clearUndo(); logic.getField('REMOVE').showEditor_();
-    await new Promise(resolve => setTimeout(resolve, 20));
-    assert.equal(logic.itemCount_, 1); assert.equal(removed.getParent(), null);
-    ws.undo(false); assert.equal(logic.itemCount_, 2); assert.equal(logic.getInputTargetBlock('COND1'), removed);
-    ws.undo(true); assert.equal(logic.itemCount_, 1);
-    logic.getField('ADD').showEditor_(); assert.equal(logic.itemCount_, 2);
-    const conditional = ws.newBlock('ugso_if_action');
-    conditional.getField('ELSE_TOGGLE').showEditor_(); assert.ok(conditional.getInput('ELSE'));
-    conditional.getField('ADD').showEditor_(); assert.ok(conditional.getInput('C1'));
-    conditional.getField('REMOVE').showEditor_(); assert.equal(conditional.getInput('C1'), null);
+    for (const type of knownTypes) {
+      const block = ws.newBlock(type);
+      for (const name of ['ADD', 'REMOVE', 'ELSE_TOGGLE']) assert.equal(block.getField(name), null, `${type}:${name}`);
+      assert.ok(block.inputList.every(input => input.fieldRow.every(field => !(field instanceof Blockly.FieldImage))), type);
+    }
+    assert.ok(!toolbox.contents.flatMap(category => category.contents || []).some(block => block.type === 'ugso_binary_logic'));
+    assert.ok(ws.getBlocksByType('ugso_binary_logic').length, 'Legacy blocks still load');
   } finally { ws.dispose(); }
 });
 

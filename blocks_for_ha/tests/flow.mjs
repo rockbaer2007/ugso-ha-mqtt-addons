@@ -23,18 +23,29 @@ try {
   });
   await page.locator('#fit').click();
   async function clickField(name) {
-    const rect = await page.evaluate(async name => {
+    await page.evaluate(async name => {
       const { Blockly } = await import(performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name);
-      const r = Blockly.getMainWorkspace().getBlocksByType('ugso_object_new')[0].getField(name).getSvgRoot().getBoundingClientRect();
-      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+      const block = Blockly.getMainWorkspace().getBlocksByType('ugso_object_new')[0];
+      const icon = block.getIcon(Blockly.icons.MutatorIcon.TYPE); await icon.setBubbleVisible(true);
+      const ws = icon.getWorkspace(), root = ws.getBlocksByType('ugso_rows_container')[0];
+      if (name === 'ADD') {
+        const item = ws.newBlock('ugso_rows_item'); item.initSvg(); item.render();
+        let connection = root.getInput('STACK').connection;
+        while (connection.targetBlock()) connection = connection.targetBlock().nextConnection;
+        connection.connect(item.previousConnection);
+      } else {
+        let item = root.getInputTargetBlock('STACK'); while (item.getNextBlock()) item = item.getNextBlock(); item.dispose();
+      }
+      await new Promise(resolve => setTimeout(resolve, 150)); await icon.setBubbleVisible(false);
     }, name);
-    await page.mouse.click(rect.x, rect.y);
   }
   await clickField('ADD');
   await page.evaluate(async () => {
     const { Blockly } = await import(performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name);
     const b = Blockly.getMainWorkspace().getBlocksByType('ugso_object_new')[0];
-    b.setFieldValue('zweites', 'KEY1'); b.getInput('V1').connection.setShadowState({ type: 'ugso_number', fields: { NUM: 42 } });
+    b.setFieldValue('zweites', 'KEY1');
+    const number = Blockly.getMainWorkspace().newBlock('ugso_number'); number.setFieldValue(42, 'NUM'); number.initSvg(); number.render();
+    b.getInput('V1').connection.connect(number.outputConnection);
   });
   await page.waitForFunction(() => document.querySelector('#yaml').textContent.includes('zweites'));
   // Open the real native gear bubble and verify that its row blocks render.
@@ -51,11 +62,15 @@ try {
   await clickField('REMOVE');
   await page.evaluate(async () => {
     const { Blockly } = await import(performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name);
-    const ws = Blockly.getMainWorkspace(); ws.undo(false);
+    const ws = Blockly.getMainWorkspace();
+    const object = ws.getBlocksByType('ugso_object_new')[0];
+    for (let i = 0; i < 5 && (object.getFieldValue('KEY1') !== 'zweites' || !object.getInputTargetBlock('V1')); i++) {
+      ws.undo(false); await new Promise(resolve => setTimeout(resolve, 50));
+    }
   });
   await page.waitForFunction(() => document.querySelector('#yaml').textContent.includes('zweites'));
   await page.reload();
   await page.waitForFunction(() => document.querySelector('#yaml').textContent.includes('zweites'));
   assert.deepEqual(errors, []);
-  console.log('New categories, object plus/minus and native gear, undo with renamed keys, YAML and project reload verified.');
+  console.log('New categories, object native gear, undo with renamed keys, YAML and project reload verified.');
 } finally { await browser.close(); }

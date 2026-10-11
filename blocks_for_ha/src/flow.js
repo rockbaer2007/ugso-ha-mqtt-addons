@@ -19,7 +19,7 @@ export const flowDefinitions = [
   { type: 'ugso_repeat', message0: 'Wiederhole %1 mal mache %2', args0: [v('COUNT', runtime), s('DO')], ...action, colour: '#3e8054', tooltip: 'Native HA repeat.count. repeat.index enthält den 1-basierten Durchlauf. Laufzeitzahl muss eine positive ganze Zahl liefern.' },
   { type: 'ugso_repeat_while', message0: 'Wiederhole %1 %2 mache %3', args0: [dropdown('MODE', [['solange', 'while'], ['bis', 'until']]), v('CONDITION', 'Boolean'), s('DO')], ...action, colour: '#3e8054', tooltip: 'Solange prüft vor jedem Durchlauf, bis danach und läuft mindestens einmal. Eine Pause im Körper verhindert eine enge Dauerschleife. Kein Hintergrundintervall.' },
   { type: 'ugso_foreach', message0: 'Für jeden Eintrag in %1 mache %2', args0: [v('ITEMS'), s('DO')], ...action, colour: '#3e8054', tooltip: 'HA repeat.for_each. Aktueller Wert: Template {{ repeat.item }}, Index: {{ repeat.index }}. Eingang muss eine Liste ergeben.' },
-  { type: 'ugso_object_new', message0: 'Neues Objekt %1', args0: [{ type: 'input_dummy', name: 'HEADER' }], ...output, colour: '#967b44', mutator: 'ugso_rows', tooltip: 'Lokales Dictionary mit benannten Attributen. Zahnrad oder +/− erweitert es. Keine HA-Entität und kein ioBroker-Datenpunkt.' },
+  { type: 'ugso_object_new', message0: 'Neues Objekt %1', args0: [{ type: 'input_dummy', name: 'HEADER' }], ...output, colour: '#967b44', mutator: 'ugso_rows', tooltip: 'Lokales Dictionary mit benannten Attributen. Das Zahnrad erweitert es. Keine HA-Entität und kein ioBroker-Datenpunkt.' },
   { type: 'ugso_object_get', message0: 'Attribut %1 von Objekt %2', args0: [text('KEY', 'attribute1'), v('OBJECT')], ...output, colour: '#967b44', tooltip: 'Liest einen Dictionary-Schlüssel, auch keys/items. Fehlender Schlüssel ergibt null; ungültiger Objekttyp einen HA-Templatefehler.' },
   { type: 'ugso_object_has', message0: 'Objekt %1 hat Attribut %2', args0: [v('OBJECT'), text('KEY', 'attribute1')], ...bool, colour: '#967b44' },
   { type: 'ugso_object_keys', message0: 'Attribute des Objekts %1', args0: [v('OBJECT')], ...output, colour: '#967b44', tooltip: 'Liste der Dictionary-Schlüssel. Für Für-jeden-Eintrag oder JSON-Ausgabe.' },
@@ -86,14 +86,6 @@ export function installFlowShape(Blockly) {
     }
   }, function () {
     this.updateRows_();
-    const change = delta => {
-      const before = JSON.stringify(this.saveExtraState());
-      const count = Math.max(this.type === 'ugso_case' ? 1 : 0, Math.min(100, this.rowCount_ + delta));
-      Blockly.Events.setGroup(true);
-      try { this.rowCount_ = count; this.updateRows_(); Blockly.Events.fire(new Blockly.Events.BlockChange(this, 'mutation', null, before, JSON.stringify(this.saveExtraState()))); }
-      finally { Blockly.Events.setGroup(false); }
-    };
-    for (const [label, delta] of [['+', 1], ['−', -1]]) this.getInput('HEADER').appendField(new Blockly.FieldImage(`data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" rx="4" fill="#fff"/><text x="10" y="15" text-anchor="middle" font-size="18" fill="#263746">${label}</text></svg>`)}`, 20, 20, label, () => change(delta)), delta > 0 ? 'ADD' : 'REMOVE');
   }, ['ugso_rows_item']);
 }
 

@@ -33,6 +33,7 @@ try {
       elseIf.nextConnection.connect(added.previousConnection);
       added.nextConnection.connect(otherwise.previousConnection);
       block.compose(root);
+      await Blockly.renderManagement.finishQueuedRenders();
       await icon.setBubbleVisible(false);
       const saved = Blockly.serialization.blocks.save(block);
       block.dispose();
@@ -40,7 +41,7 @@ try {
       return { branches: restored.branchCount_, hasElse: restored.hasElse_, style: restored.getStyleName(), fields: restored.inputList.flatMap(i => i.fieldRow.map(f => f.name)).filter(Boolean) };
     });
     assert.equal(result.branches, 2); assert.equal(result.hasElse, true); assert.equal(result.style, 'ugso_logic');
-    assert.ok(result.fields.includes('ELSE_TOGGLE'));
+    assert.ok(!result.fields.includes('ELSE_TOGGLE'));
     for (const [operator, label] of [['and', { de: 'und', en: 'and', fr: 'et' }[language]], ['or', { de: 'oder', en: 'or', fr: 'ou' }[language]]]) {
       const layout = await page.evaluate(async operator => {
         const url = performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name;
@@ -55,6 +56,7 @@ try {
         await icon.setBubbleVisible(false);
         const result = { inline: block.getInputsInline(), option: block.getField('LOGIC').getText(), repeated: block.getFieldValue('OPERATOR2'), labels, inputs: [0, 1, 2].map(i => block.getInput(`COND${i}`).connection.getCheck()) };
         block.loadExtraState({ items: 1 }); block.loadExtraState({ items: 3 });
+        await Blockly.renderManagement.finishQueuedRenders();
         if (block.getFieldValue('LOGIC') !== operator) throw Error('Operator lost when resizing group');
         return result;
       }, operator);
@@ -62,6 +64,26 @@ try {
       assert.equal(layout.labels.length, 4); assert.ok(layout.labels.every(text => text === label));
       assert.ok(layout.inputs.every(check => check.includes('Boolean')));
     }
+    const parallel = await page.evaluate(async () => {
+      const url = performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name;
+      const { Blockly } = await import(url), ws = Blockly.getMainWorkspace(); ws.clear();
+      const block = ws.newBlock('ugso_parallel'); block.initSvg(); block.render();
+      const children = [0, 1].map(() => { const child = ws.newBlock('ugso_stop'); child.initSvg(); child.render(); return child; });
+      children.forEach((child, i) => block.getInput(`BRANCH${i}`).connection.connect(child.previousConnection));
+      await Blockly.renderManagement.finishQueuedRenders();
+      const icon = block.getIcon(Blockly.icons.MutatorIcon.TYPE); await icon.setBubbleVisible(true);
+      const builder = icon.getWorkspace(), root = builder.getBlocksByType('ugso_parallel_container')[0];
+      block.saveConnections(root);
+      const first = root.getInputTargetBlock('STACK'), second = first.getNextBlock();
+      first.nextConnection.disconnect(); first.previousConnection.disconnect();
+      root.getInput('STACK').connection.connect(second.previousConnection); second.nextConnection.connect(first.previousConnection);
+      block.compose(root); await Blockly.renderManagement.finishQueuedRenders();
+      const label = first.toString();
+      const reordered = block.getInputTargetBlock('BRANCH0') === children[1] && block.getInputTargetBlock('BRANCH1') === children[0];
+      await icon.setBubbleVisible(false);
+      return { label, reordered };
+    });
+    assert.equal(parallel.label, { de: 'Zweig', en: 'Branch', fr: 'Branche' }[language]); assert.equal(parallel.reordered, true);
     assert.deepEqual(errors, []);
     await page.close();
   }
