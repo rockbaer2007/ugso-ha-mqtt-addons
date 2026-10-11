@@ -55,4 +55,8 @@ h1{font-size:23px;margin:3px 0}
 @media(max-width:780px){.intro{margin-bottom:12px}h1{font-size:22px}.project-bar{padding:10px;gap:8px}}
 #block-language{width:185px;max-width:100%}
 .project-bar-actions{display:flex;gap:8px}
+.new-automation-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.new-automation-actions button{min-height:48px;white-space:normal}
+#new-automation-dialog{width:580px;max-width:calc(100vw - 32px)}
+@media(max-width:480px){.new-automation-actions{grid-template-columns:1fr}}
 .project-bar-actions button{width:132px;padding:2px 8px;white-space:normal;line-height:14px;font-size:12px}

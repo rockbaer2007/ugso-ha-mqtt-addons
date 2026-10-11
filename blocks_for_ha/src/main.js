@@ -182,6 +182,10 @@ function restoreProject(data) {
   } finally { temp.dispose(); }
   });
   Blockly.serialization.workspaces.load(data.workspace, workspace); metadata = data.metadata; metaFields(); update();
+  const draft = data.languageReload;
+  if (draft && typeof draft.yaml === 'string' && ['output', 'import'].includes(draft.mode)) {
+    yamlInput.value = draft.yaml; $('yaml-mode').value = draft.mode; $('yaml-replace').checked = draft.replace === true; syncYamlMode();
+  }
   refreshCustomToolbox(workspace, toolbox); savePackages();
   requestAnimationFrame(fitCompact);
 }
@@ -194,8 +198,19 @@ $('description').addEventListener('input', () => { metadata.description = $('des
 $('mode').addEventListener('change', () => { metadata.mode = $('mode').value; if (['queued', 'parallel'].includes(metadata.mode)) metadata.max = Number($('max').value); else delete metadata.max; metaFields(); update(); });
 $('max').addEventListener('input', () => { metadata.max = Number($('max').value); update(); });
 $('format').addEventListener('change', update);
-$('new-automation').addEventListener('click', () => {
-  if (!ask('Willst du eine neue Automation beginnen? Alle aktuellen Blocks und Eingaben werden gelöscht. Sichere vorher dein Projekt.')) return;
+const newAutomationDialog = document.createElement('dialog');
+newAutomationDialog.id = 'new-automation-dialog';
+newAutomationDialog.innerHTML = '<h2></h2><p></p><div class="new-automation-actions"><button id="backup-and-new" class="primary"></button><button id="discard-and-new"></button><button id="cancel-new"></button></div>';
+newAutomationDialog.querySelector('h2').textContent = uiText('Neue Automation');
+newAutomationDialog.querySelector('p').textContent = uiText('Vor dem Leeren das aktuelle Projekt sichern? Die Projektsicherung enthält die Blocks und den eingefügten YAML-Code. Ohne Sicherung werden die aktuellen Eingaben gelöscht.');
+document.body.append(newAutomationDialog);
+$('backup-and-new').textContent = uiText('Sichern und neu beginnen');
+$('discard-and-new').textContent = uiText('Ohne Sicherung neu beginnen');
+$('cancel-new').textContent = uiText('Abbrechen');
+$('new-automation').addEventListener('click', () => newAutomationDialog.showModal());
+$('cancel-new').addEventListener('click', () => newAutomationDialog.close());
+function startNewAutomation() {
+  newAutomationDialog.close();
   clearTimeout(timer);
   workspace.clear();
   workspace.clearUndo();
@@ -212,6 +227,17 @@ $('new-automation').addEventListener('click', () => {
   update();
   workspace.scrollCenter();
   notice('Neue Automation begonnen.');
+}
+$('discard-and-new').addEventListener('click', startNewAutomation);
+$('backup-and-new').addEventListener('click', () => {
+  try {
+    const project = snapshot();
+    project.languageReload = { yaml: yamlInput.value, mode: $('yaml-mode').value, replace: $('yaml-replace').checked };
+    download(JSON.stringify(project, null, 2), filename(metadata.alias).replace('.yaml', '.blocks.json'), 'application/json');
+    startNewAutomation();
+  } catch {
+    notice('Projektsicherung fehlgeschlagen. Die aktuelle Automation bleibt erhalten.');
+  }
 });
 $('load-example').addEventListener('click', () => { if (ask('Aktuelle Blocks durch das Beispiel ersetzen? Speichere vorher deine Änderungen.')) loadModel(structuredClone(examples[$('example').value])); });
 $('undo').addEventListener('click', () => workspace.undo(false)); $('redo').addEventListener('click', () => workspace.undo(true)); $('fit').addEventListener('click', fitCompact);
@@ -266,10 +292,6 @@ try {
   const saved = localStorage.getItem(key);
   if (saved) {
     const project = JSON.parse(saved); restoreProject(project);
-    const draft = project.languageReload;
-    if (draft && typeof draft.yaml === 'string' && ['output', 'import'].includes(draft.mode)) {
-      yamlInput.value = draft.yaml; $('yaml-mode').value = draft.mode; $('yaml-replace').checked = draft.replace === true; syncYamlMode();
-    }
   } else { metaFields(); update(); }
 }
 catch { workspace.clear(); metadata = { mode: 'single' }; metaFields(); update(); notice('Gesicherter Browserstand konnte nicht geladen werden. Der Editor wurde leer geöffnet.'); }

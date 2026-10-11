@@ -3,6 +3,10 @@ import { uiErrors } from './ui-errors.js';
 
 // Application-owned presentation only. Never translate stored values or code.
 export const uiTranslations = Object.fromEntries([
+  ['Vor dem Leeren das aktuelle Projekt sichern? Die Projektsicherung enthält die Blocks und den eingefügten YAML-Code. Ohne Sicherung werden die aktuellen Eingaben gelöscht.','Save the current project before clearing? The backup includes the blocks and pasted YAML. Without a backup, the current inputs will be deleted.','Enregistrer le projet actuel avant de vider l’éditeur ? La sauvegarde contient les blocs et le YAML collé. Sans sauvegarde, les champs actuels seront effacés.'],
+  ['Sichern und neu beginnen','Save and start new','Enregistrer et recommencer'],
+  ['Ohne Sicherung neu beginnen','Start new without saving','Recommencer sans enregistrer'],
+  ['Projektsicherung fehlgeschlagen. Die aktuelle Automation bleibt erhalten.','Project backup failed. The current automation is preserved.','Échec de la sauvegarde. L’automatisation actuelle est conservée.'],
   ['Neue Automation','New automation','Nouvelle automatisation'],
   ['Willst du eine neue Automation beginnen? Alle aktuellen Blocks und Eingaben werden gelöscht. Sichere vorher dein Projekt.','Start a new automation? All current blocks and inputs will be cleared. Save your project first.','Commencer une nouvelle automatisation ? Tous les blocs et champs actuels seront effacés. Enregistrer le projet auparavant.'],
   ['Neue Automation begonnen.','New automation started.','Nouvelle automatisation commencée.'],

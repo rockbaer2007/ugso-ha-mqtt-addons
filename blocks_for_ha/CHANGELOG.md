@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.54
+
+- New automation offers project backup, clearing without backup, or cancellation in DE/EN/FR.
+- The backup download includes the current blocks, metadata and pasted YAML before clearing.
+
 ## 0.1.53
 
 - New automation button with confirmation in German, English and French.
