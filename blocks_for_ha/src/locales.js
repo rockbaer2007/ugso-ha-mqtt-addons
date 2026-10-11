@@ -243,7 +243,7 @@ export const labels = {
   'aufsteigend': ['ascending', 'croissant'], 'absteigend': ['descending', 'décroissant'],
   'Bedingung': ['Condition', 'Condition'], 'Einträge %1': ['Entries %1', 'Entrées %1'], 'Eintrag': ['Item', 'Élément'], 'Attribut': ['Attribute', 'Attribut'],
   'im Falle von': ['in case of', 'dans le cas de'], 'mache': ['do', 'faire'], 'sonst': ['else', 'sinon'], 'sonst falls': ['else if', 'sinon si'],
-  'und': ['and', 'et'], 'verglichener Datumswert': ['compared date value', 'date comparée'],
+  'und': ['and', 'et'], 'oder': ['or', 'ou'], 'nicht': ['not', 'non'], 'verglichener Datumswert': ['compared date value', 'date comparée'],
   'Blocks-Sprache': ['Block language', 'Langue des blocs'], 'Systemsprache': ['System language', 'Langue du système'],
   'am Anfang': ['at start', 'au début'], 'am Ende': ['at end', 'à la fin'], 'als Text': ['as text', 'en texte'],
   'Text ohne Groß-/Kleinschreibung': ['text ignoring case', 'texte sans distinction de casse'], 'füge ein an': ['insert at', 'insérer à'],

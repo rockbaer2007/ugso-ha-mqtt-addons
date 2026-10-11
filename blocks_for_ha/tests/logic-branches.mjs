@@ -41,8 +41,29 @@ try {
     });
     assert.equal(result.branches, 2); assert.equal(result.hasElse, true); assert.equal(result.style, 'ugso_logic');
     assert.ok(result.fields.includes('ELSE_TOGGLE'));
+    for (const [operator, label] of [['and', { de: 'und', en: 'and', fr: 'et' }[language]], ['or', { de: 'oder', en: 'or', fr: 'ou' }[language]]]) {
+      const layout = await page.evaluate(async operator => {
+        const url = performance.getEntriesByType('resource').find(e => new URL(e.name).pathname === '/src/blocks.js').name;
+        const { Blockly } = await import(url), ws = Blockly.getMainWorkspace(); ws.clear();
+        const block = ws.newBlock('ugso_logic_condition'); block.initSvg(); block.render();
+        block.loadExtraState({ items: 3 }); block.setFieldValue(operator, 'LOGIC');
+        await Blockly.renderManagement.finishQueuedRenders();
+        const icon = block.getIcon(Blockly.icons.MutatorIcon.TYPE); await icon.setBubbleVisible(true);
+        const builder = icon.getWorkspace();
+        const items = [...builder.getBlocksByType('ugso_condition_item'), ...builder.getFlyout().getWorkspace().getBlocksByType('ugso_condition_item')];
+        const labels = items.map(item => item.getFieldValue('OPERATOR'));
+        await icon.setBubbleVisible(false);
+        const result = { inline: block.getInputsInline(), option: block.getField('LOGIC').getText(), repeated: block.getFieldValue('OPERATOR2'), labels, inputs: [0, 1, 2].map(i => block.getInput(`COND${i}`).connection.getCheck()) };
+        block.loadExtraState({ items: 1 }); block.loadExtraState({ items: 3 });
+        if (block.getFieldValue('LOGIC') !== operator) throw Error('Operator lost when resizing group');
+        return result;
+      }, operator);
+      assert.equal(layout.inline, true); assert.equal(layout.option, label); assert.equal(layout.repeated, label);
+      assert.equal(layout.labels.length, 4); assert.ok(layout.labels.every(text => text === label));
+      assert.ok(layout.inputs.every(check => check.includes('Boolean')));
+    }
     assert.deepEqual(errors, []);
     await page.close();
   }
-  console.log('DE/EN/FR: Logic flyout, real gear branch builder, added else-if, else and rendered serialization verified.');
+  console.log('DE/EN/FR: expandable If and inline AND/OR inputs, operator-only labels in the real mutator including flyout, resizing and serialization verified.');
 } finally { await browser.close(); }

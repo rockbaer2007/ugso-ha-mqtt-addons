@@ -92,7 +92,7 @@ export const definitions = [
   { type: 'ugso_start_trigger', message0: 'Wenn Home Assistant startet', previousStatement: 'Trigger', nextStatement: 'Trigger', colour: '#b26c24' },
   { type: 'ugso_state_condition', message0: '%1 ist %2', args0: [entityField('input_boolean.laden_erlaubt'), { type: 'field_input', name: 'STATE', text: 'on' }], output: 'Boolean', colour: '#6860b5' },
   { type: 'ugso_numeric_condition', message0: '%1 ist %2 %3', args0: [entityField('sensor.batterie_ladezustand'), direction, number], output: 'Boolean', colour: '#6860b5' },
-  { type: 'ugso_logic_condition', message0: '%1', args0: [{ type: 'field_dropdown', name: 'LOGIC', options: [['UND · alle', 'and'], ['ODER · mindestens eine', 'or'], ['NICHT · keine', 'not']] }], output: 'Boolean', colour: '#6860b5', mutator: 'ugso_conditions' },
+  { type: 'ugso_logic_condition', message0: '%1 %2 %3', args0: [value('COND0', 'Boolean'), { type: 'field_dropdown', name: 'LOGIC', options: [['und', 'and'], ['oder', 'or'], ['nicht', 'not']] }, value('COND1', 'Boolean')], inputsInline: true, output: 'Boolean', colour: '#6860b5', mutator: 'ugso_conditions' },
   { type: 'ugso_switch_action', message0: '%1 %2', args0: [entityField('light.flur'), { type: 'field_dropdown', name: 'SERVICE', options: [['einschalten', 'turn_on'], ['ausschalten', 'turn_off'], ['umschalten', 'toggle']] }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Erzeugt eine Aktion der Domain der gewählten Entität. Prüfe die Verfügbarkeit in HA.' },
   { type: 'ugso_service_action', message0: 'HA-Aktion %1 Ziel %2 Daten (JSON) %3', args0: [{ type: 'field_multilinetext', name: 'SERVICE', text: 'notify.mobile_app_telefon' }, entityField(''), { type: 'field_input', name: 'DATA', text: '{"message":"Hallo!"}' }], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5', tooltip: 'Aktionsname als domain.name oder HA-Template, auch mehrzeilig. Ziel darf leer bleiben. Daten als JSON-Objekt. HA wertet Templates aus und prüft die Aktion.' },
   { type: 'ugso_delay_action', message0: 'Warte %1 Sekunden', args0: [value('SECONDS', 'Number')], previousStatement: 'Action', nextStatement: 'Action', colour: '#2682a5' },
@@ -100,8 +100,14 @@ export const definitions = [
 ];
 Blockly.defineBlocksWithJsonArray([
   { type: 'ugso_condition_container', message0: 'Bedingungen %1', args0: [statement('STACK', null)], colour: '#6860b5', enableContextMenu: false },
-  { type: 'ugso_condition_item', message0: 'Bedingung', previousStatement: null, nextStatement: null, colour: '#6860b5', enableContextMenu: false }
-].map(definition => localizedDefinition(definition)));
+  { type: 'ugso_condition_item', message0: '%1', args0: [{ type: 'field_label_serializable', name: 'OPERATOR', text: 'und' }], previousStatement: null, nextStatement: null, colour: '#6860b5', enableContextMenu: false }
+].map(definition => localizedDefinition(themedDefinition(definition))));
+const logicLabel = operator => translateLabel({ and: 'und', or: 'oder', not: 'nicht' }[operator] || 'und');
+function labelConditionBuilder(workspace, operator) {
+  for (const block of [...workspace.getAllBlocks(false), ...(workspace.getFlyout?.()?.getWorkspace().getAllBlocks(false) || [])]) {
+    if (block.type === 'ugso_condition_item') block.setFieldValue(logicLabel(operator), 'OPERATOR');
+  }
+}
 Blockly.Extensions.registerMutator('ugso_conditions', {
   itemCount_: 2,
   saveExtraState() { return { items: this.itemCount_, list: !!this.list_ }; },
@@ -109,13 +115,33 @@ Blockly.Extensions.registerMutator('ugso_conditions', {
     if (!Number.isInteger(state.items) || state.items < 1 || state.items > 100) throw new Error('1–100 Bedingungen erforderlich.');
     this.itemCount_ = state.items; this.list_ = !!state.list; this.updateConditions_();
   },
-  updateConditions_() {
-    for (let i = 0; i < this.itemCount_; i++) if (!this.getInput(`COND${i}`)) this.appendValueInput(`COND${i}`).setCheck('Boolean').appendField(translateLabel(`Bedingung ${i + 1}`));
+  updateConditions_(operator = this.getFieldValue('LOGIC')) {
+    const dropdown = this.getField('LOGIC');
+    const owner = this.inputList.find(input => input.fieldRow.includes(dropdown));
+    const target = this.itemCount_ > 1 ? 'COND1' : 'COND0';
+    const options = dropdown.getOptions(false);
+    if (owner?.name !== target) owner?.removeField('LOGIC');
+    for (let i = 0; i < this.itemCount_; i++) if (!this.getInput(`COND${i}`)) this.appendValueInput(`COND${i}`).setCheck('Boolean');
     for (let i = this.itemCount_; this.getInput(`COND${i}`); i++) this.removeInput(`COND${i}`);
+    if (owner?.name !== target) {
+      const replacement = new Blockly.FieldDropdown(options);
+      replacement.setValue(operator);
+      this.getInput(target).appendField(replacement, 'LOGIC');
+      replacement.setValidator(value => { this.updateConditions_(value); return value; });
+    }
+    for (let i = 2; i < this.itemCount_; i++) {
+      const name = `OPERATOR${i}`, input = this.getInput(`COND${i}`);
+      if (!this.getField(name)) input.appendField(logicLabel(operator), name);
+      else this.getField(name).setValue(logicLabel(operator));
+    }
+    this.setInputsInline(true);
+    const builder = this.getIcon?.(Blockly.icons.MutatorIcon.TYPE)?.getWorkspace();
+    if (builder) labelConditionBuilder(builder, operator);
   },
   decompose(workspace) {
     const root = workspace.newBlock('ugso_condition_container'); root.initSvg(); let connection = root.getInput('STACK').connection;
     for (let i = 0; i < this.itemCount_; i++) { const item = workspace.newBlock('ugso_condition_item'); item.initSvg(); connection.connect(item.previousConnection); connection = item.nextConnection; }
+    labelConditionBuilder(workspace, this.getFieldValue('LOGIC'));
     return root;
   },
   saveConnections(root) { let i = 0; for (let item = root.getInputTargetBlock('STACK'); item; item = item.getNextBlock()) { if (!item.isInsertionMarker()) item.valueConnection_ = this.getInput(`COND${i++}`)?.connection.targetConnection; } },
@@ -126,7 +152,10 @@ Blockly.Extensions.registerMutator('ugso_conditions', {
     for (let i = 0; i < this.itemCount_; i++) { const c = this.getInput(`COND${i}`).connection.targetConnection; if (c) c.disconnect(); }
     this.itemCount_ = Math.max(1, connections.length); this.updateConditions_(); connections.forEach((c, i) => c?.reconnect(this, `COND${i}`));
   }
-}, function () { this.updateConditions_(); }, ['ugso_condition_item']);
+}, function () {
+  this.updateConditions_();
+  this.getField('LOGIC').setValidator(operator => { this.updateConditions_(operator); return operator; });
+}, ['ugso_condition_item']);
 Blockly.Extensions.registerMutator('ugso_branches', {
   branchCount_: 0, hasElse_: false,
   saveExtraState() { return { branches: this.branchCount_, hasElse: this.hasElse_, choose: !!this.choose_ }; },

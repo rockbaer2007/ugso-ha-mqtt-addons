@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.57
+
+- Expandable AND/OR groups use inline Boolean inputs with the operator between them, following the ioBroker layout.
+- Operator selector uses only and/or/not; mutator items use the selected operator, including the flyout, in DE/EN/FR.
+- Existing condition connections, saved groups, undo and HA/Jinja semantics remain compatible.
+
 ## 0.1.56
 
 - Added the expandable If / Else if / Else action block to Logic, with its gear and quick expansion controls.
