@@ -232,6 +232,8 @@ definitions.push(
   { type: 'ugso_native_time_condition', message0: 'HA-Uhrzeit nach %1 vor %2', args0: [{ type: 'field_input', name: 'AFTER', text: '' }, { type: 'field_input', name: 'BEFORE', text: '19:00:00' }], output: 'Boolean', colour: '#6860b5', tooltip: 'Native HA-Zeitbedingung: nach inklusive, vor exklusiv. Eine Grenze darf leer bleiben; beide zusammen auch über Mitternacht. Feste Uhrzeiten HH:MM oder HH:MM:SS.' }
 );
 definitions.push(...systemTemplateDefinitions);
+definitions.find(d => d.type === 'ugso_template').message0 = 'Jinja – eigener Code %1';
+definitions.find(d => d.type === 'ugso_template_condition').message0 = 'Jinja – eigene Bedingung %1';
 Blockly.defineBlocksWithJsonArray(definitions.map(definition => localizedDefinition(themedDefinition(definition))));
 definitions.forEach(definition => {
   const original = Blockly.Blocks[definition.type].init;
@@ -259,7 +261,7 @@ export { Blockly };
 export const knownTypes = new Set([...definitions.map(item => item.type), ...functionTypes]);
 export const toolbox = { kind: 'categoryToolbox', contents: [
   { kind: 'category', name: 'Nachrichten', colour: '#2682a5', contents: ['ugso_callmebot_action', 'ugso_callmebot_signal_action', 'ugso_whatsapp_action', 'ugso_mqtt_action'].map(type => ({ kind: 'block', type })) },
-  { kind: 'category', name: 'Jinja (experimentell)', colour: '#8a6635', contents: [...jinjaDefinitions.map(d=>d.type),'ugso_jinja_value','ugso_jinja_condition'].map(type=>({kind:'block',type})) },
+  { kind: 'category', name: 'Jinja (experimentell)', colour: '#8a6635', contents: jinjaDefinitions.map(d=>({kind:'block',type:d.type})) },
   { kind: 'category', name: 'HA erweitert', colour: '#2682a5', contents: advancedDefinitions.filter(d=>!d.type.startsWith('ugso_jinja') && d.previousStatement !== 'Trigger').map(({type})=>({kind:'block',type})) },
   { kind: 'category', name: 'System', colour: '#2682a5', contents: [{ kind: 'block', type: 'ugso_automation' }, { kind: 'block', type: 'ugso_comment' }, ...['log', 'script', 'update', 'helper'].map(type => ({ kind: 'block', type: `ugso_${type}_action` }))] },
   { kind: 'category', name: 'Werte', colour: '#2e7653', contents: [{ kind: 'block', type: 'ugso_percent' }] },
@@ -468,6 +470,7 @@ function readTriggerBase(block) {
   }
 }
 function readCondition(block, depth) {
+  if (['ugso_template_time_window', 'ugso_template_change'].includes(block.type) || block.type === 'ugso_template_conditional' && block.getFieldValue('KIND') === 'boolean') return { condition: 'template', value_template: `{{ ${expression(block)} }}` };
   if (block.type === 'ugso_ha_condition') return advancedJSON(block);
   if (block.type === 'ugso_jinja_condition') return { condition: 'template', value_template: field(block, 'TEXT') };
   if (block.type === 'ugso_jinja_composed_condition') return { condition: 'template', value_template: composedJinja(block) };

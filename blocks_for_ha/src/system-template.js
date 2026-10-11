@@ -31,14 +31,46 @@ export const systemTemplateDefinitions = [
   { type: 'ugso_template_linebreak', message0: text('Zeilenumbruch', 'New line', 'Nouvelle ligne'), output: ['Value','String'], colour: '#8a6635' },
   { type: 'ugso_template_conditional', message0: text('falls %1', 'if %1', 'si %1'), args0: [input('TEST','Boolean')], message1: text('dann %1', 'then %1', 'alors %1'), args1: [input('THEN')], message2: text('sonst %1', 'else %1', 'sinon %1'), args2: [input('ELSE')], output: ['Value','String'], colour: '#8a6635', inputsInline: false }
 ];
-export const systemTypes = systemTemplateDefinitions.slice(0, 6).map(d => d.type);
-export const templateTypes = ['ugso_template_builder','ugso_template_linebreak','ugso_template_conditional','ugso_number_format','ugso_value_fallback'];
+export const systemTypes = ['ugso_entity_id', 'ugso_entity_value', 'ugso_entity_value_dynamic', 'ugso_entity_snapshot', 'ugso_app_control', 'ugso_automation_control'];
+for (const [type, title] of [
+  ['ugso_app_control', text('App steuern %1', 'Control app %1', 'Contrôler l’application %1')],
+  ['ugso_automation_control', text('Automation steuern %1', 'Control automation %1', 'Contrôler l’automatisation %1')]
+]) {
+  const definition = systemTemplateDefinitions.find(d => d.type === type);
+  definition.message0 = title;
+  definition.args1 = [definition.args0.pop()];
+  definition.message1 = text('Aktion %1', 'Action %1', 'Action %1');
+  definition.inputsInline = false;
+  definition.colour = '#6860b5'; // System controls use the familiar ioBroker blue.
+}
+systemTemplateDefinitions.find(d=>d.type==='ugso_template_builder').message0=text('Text zusammenstellen','Compose text','Composer du texte');
+const selectedValue=systemTemplateDefinitions.find(d=>d.type==='ugso_template_conditional');
+selectedValue.message3=selectedValue.message2;selectedValue.args3=selectedValue.args2;
+selectedValue.message2=selectedValue.message1;selectedValue.args2=selectedValue.args1;
+selectedValue.message1=selectedValue.message0;selectedValue.args1=selectedValue.args0;
+selectedValue.message0=text('Wert auswählen – falls/sonst %1','Select value – if/else %1','Choisir une valeur – si/sinon %1');
+selectedValue.args0=[{type:'field_dropdown',name:'KIND',options:[[text('Wert','Value','Valeur'),'value'],[text('Text','Text','Texte'),'text'],[text('Zahl','Number','Nombre'),'number'],[text('Logikwert','Boolean','Booléen'),'boolean']]}];
+selectedValue.tooltip=text('Ergebnistyp wählen. Falls benötigt einen Logikwert; dann/sonst erhalten passende Anschlüsse. Zahl und Logikwert benötigen beide Zweige.','Choose the result type. If requires a Boolean; then/else receive matching sockets. Number and Boolean require both branches.','Choisir le type du résultat. Si exige un booléen ; alors/sinon ont des entrées adaptées. Nombre et booléen exigent les deux branches.');
+systemTemplateDefinitions.push(
+  {type:'ugso_template_time_window',message0:text('Uhrzeit im Zeitraum','Time within period','Heure dans la plage'),message1:text('ab (einschließlich) %1','from (inclusive) %1','de (inclus) %1'),args1:[field('START','10:00:00')],message2:text('bis (ausschließlich) %1','until (exclusive) %1','à (exclu) %1'),args2:[field('END','13:00:00')],output:['Boolean','Value'],colour:'#8a6635',inputsInline:false,tooltip:text('Aktuelle HA-Ortszeit. Beginn inklusive, Ende exklusiv. Unterstützt Mitternacht; gleiche Grenzen ergeben falsch. Format HH:MM oder HH:MM:SS.','Current HA local time. Start inclusive, end exclusive. Supports midnight; equal boundaries are false. Format HH:MM or HH:MM:SS.','Heure locale HA actuelle. Début inclus, fin exclue. Gère minuit ; bornes égales donnent faux. Format HH:MM ou HH:MM:SS.')},
+  {type:'ugso_template_change',message0:text('Wertänderung prüfen','Check value change','Vérifier la variation'),message1:text('Anstieg über %1','rise above %1','hausse supérieure à %1'),args1:[input('RISE',['Number','RuntimeNumber'])],message2:text('Abfall über %1','fall above %1','baisse supérieure à %1'),args2:[input('FALL',['Number','RuntimeNumber'])],message3:text('Alter Wert (leer: Auslöser) %1','Old value (empty: trigger) %1','Ancienne valeur (vide : déclencheur) %1'),args3:[input('OLD','Value')],message4:text('Neuer Wert (leer: Auslöser) %1','New value (empty: trigger) %1','Nouvelle valeur (vide : déclencheur) %1'),args4:[input('NEW','Value')],output:['Boolean','Value'],colour:'#8a6635',inputsInline:false,tooltip:text('Neuer minus alter Wert. Wahr bei Anstieg oder Abfall über der jeweiligen positiven Schwelle. Leere Werteingänge lesen die Auslöserwerte. Fehlender, unknown, unavailable oder none alter Wert ergibt falsch. Zahlenumwandlung mit float(0).','New minus old value. True for a rise or fall above its positive threshold. Empty value inputs use trigger values. Missing, unknown, unavailable or none old value gives false. Number conversion uses float(0).','Nouvelle moins ancienne valeur. Vrai si la hausse ou la baisse dépasse son seuil positif. Entrées vides : valeurs du déclencheur. Ancienne valeur absente, unknown, unavailable ou none : faux. Conversion par float(0).')}
+);
+export const templateTypes = ['ugso_template_builder','ugso_template_time_window','ugso_template_change','ugso_template_conditional','ugso_number_format','ugso_value_fallback','ugso_template_linebreak'];
 for (const d of systemTemplateDefinitions) blockTranslations[d.type] = [...(labels[d.message0] || [d.message0, d.message0]), ...(d.tooltip ? labels[d.tooltip] : [])];
 defining = false;
 
 // Permanent named rows preserve fields and connections during project loading.
 // A native gear selects optional rows; no additional shortcut buttons.
 export function setupSystemTemplate(Blockly, block, previewSource) {
+  if(block.type==='ugso_template_conditional'){
+    const update=(kind=block.getFieldValue('KIND'))=>{
+      const check={value:null,text:'String',number:['Number','RuntimeNumber'],boolean:'Boolean'}[kind];
+      block.getInput('THEN').setCheck(check);block.getInput('ELSE').setCheck(check);
+      block.setOutput(true,kind==='value'?['Value','String']:kind==='number'?['RuntimeNumber','Value']:[kind==='boolean'?'Boolean':'String','Value']);
+    };
+    block.getField('KIND').setValidator(kind=>{update(kind);return kind;});update();
+  }
+  if(block.type==='ugso_template_change')for(const [name,value] of [['RISE',10],['FALL',20]])block.getInput(name).connection.setShadowState({type:'ugso_number',fields:{NUM:value}});
   if (block.type === 'ugso_template_builder') {
     setupTemplateSockets(Blockly, block);
     block.customContextMenu = menu => menu.push({ text: text('Template-Vorschau / Jinja', 'Template preview / Jinja', 'Aperçu du template / Jinja'), enabled: true, callback: () => showPreview(previewSource) });
@@ -69,19 +101,26 @@ export function setupSystemTemplate(Blockly, block, previewSource) {
   }
   if (!options.length) return;
   let selected = new Set();
-  const refresh = () => options.forEach(o => {
-    if (o.used()) selected.add(o.key);
-    const visible = selected.has(o.key);
-    if (block.workspace.rendered) o.row.setVisible(visible); else o.row.visible_ = visible;
-  });
+  const refresh = () => {
+    let changed = false;
+    for (const o of options) {
+      if (o.used()) selected.add(o.key);
+      const visible = selected.has(o.key);
+      if (block.rendered && o.row.isVisible() !== visible) {
+        for (const child of o.row.setVisible(visible)) child.queueRender();
+        changed = true;
+      } else if (!block.rendered) o.row.visible_ = visible;
+    }
+    if (changed) block.queueRender();
+  };
   block.optionEnabled_ = key => selected.has(key);
   block.saveExtraState = () => ({ options: [...selected] });
   block.loadExtraState = state => { selected = new Set((state?.options || []).filter(k => options.some(o => o.key === k))); refresh(); };
   block.setOnChange(event => { if (event.blockId === block.id && event.type === Blockly.Events.BLOCK_CHANGE) refresh(); });
   const rootType = `${block.type}_options`, types = options.map(o => `${rootType}_${o.key.toLowerCase()}`);
   if (!Blockly.Blocks[rootType]) Blockly.defineBlocksWithJsonArray([
-    { type: rootType, message0: text('Optionen %1', 'Options %1', 'Options %1'), args0: [{ type: 'input_statement', name: 'STACK' }], colour: '#2682a5', enableContextMenu: false },
-    ...options.map((o, i) => ({ type: types[i], message0: o.label, previousStatement: null, nextStatement: null, colour: '#2682a5', enableContextMenu: false }))
+    { type: rootType, message0: text('Optionen %1', 'Options %1', 'Options %1'), args0: [{ type: 'input_statement', name: 'STACK' }], colour: block.getColour(), enableContextMenu: false },
+    ...options.map((o, i) => ({ type: types[i], message0: o.label, previousStatement: null, nextStatement: null, colour: block.getColour(), enableContextMenu: false }))
   ]);
   block.decompose = ws => {
     const root = ws.newBlock(rootType); root.initSvg?.(); let c = root.getInput('STACK').connection;
@@ -201,7 +240,22 @@ export function systemTemplateExpression(block, child, expression) {
     return parts.length?`(${parts.join(' ~ ')})`:"''";
   }
   if (block.type === 'ugso_template_linebreak') return JSON.stringify('\n');
-  if (block.type === 'ugso_template_conditional') return `((${block.getInputTargetBlock('THEN')?child('THEN'):"''"}) if ${child('TEST')} else (${block.getInputTargetBlock('ELSE')?child('ELSE'):"''"}))`;
+  if(block.type==='ugso_template_conditional'){
+    if(['number','boolean'].includes(f(block,'KIND'))&&(!block.getInputTargetBlock('THEN')||!block.getInputTargetBlock('ELSE')))throw Error(text('Beide Zweige benötigen einen passenden Wert.','Both branches need a matching value.','Les deux branches exigent une valeur adaptée.'));
+    return `((${block.getInputTargetBlock('THEN')?child('THEN'):"''"}) if ${child('TEST')} else (${block.getInputTargetBlock('ELSE')?child('ELSE'):"''"}))`;
+  }
+  if(block.type==='ugso_template_time_window'){
+    const clock=name=>{const value=f(block,name);if(!/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value))throw Error(text('Uhrzeit als HH:MM oder HH:MM:SS eingeben.','Enter time as HH:MM or HH:MM:SS.','Saisir l’heure en HH:MM ou HH:MM:SS.'));return JSON.stringify(value.length===5?value+':00':value);};
+    const start=clock('START'),end=clock('END'),now="now().strftime('%H:%M:%S')";
+    return `((${start} <= ${now} < ${end}) if ${start} <= ${end} else (${now} >= ${start} or ${now} < ${end}))`;
+  }
+  if(block.type==='ugso_template_change'){
+    const old=block.getInputTargetBlock('OLD')?child('OLD'):"(trigger.from_state.state if trigger is defined and trigger.from_state is defined and trigger.from_state is not none else none)";
+    const next=block.getInputTargetBlock('NEW')?child('NEW'):"(trigger.to_state.state if trigger is defined and trigger.to_state is defined and trigger.to_state is not none else none)";
+    for(const name of ['RISE','FALL']){const b=block.getInputTargetBlock(name);if(b?.type==='ugso_number'&&Number(b.getFieldValue('NUM'))<0)throw Error(text('Schwellen müssen mindestens 0 sein.','Thresholds must be at least 0.','Les seuils doivent être au moins 0.'));}
+    const rise=child('RISE'),fall=child('FALL'),diff=`(((${next}) | float(0)) - ((${old}) | float(0)))`;
+    return `(false if (${old}) in [none, 'unavailable', 'unknown', 'none'] else ((${rise}) >= 0 and (${fall}) >= 0 and (${diff} > (${rise}) or ${diff} < -(${fall}))))`;
+  }
   if (block.type === 'ugso_value_fallback') { const v = child('VALUE'); return `(${child('FALLBACK')} if (${v}) in [none, 'unknown', 'unavailable', ''] else (${v}))`; }
   if (block.type === 'ugso_number_format') {
     const v = child('VALUE'), decimals = child('DECIMALS');

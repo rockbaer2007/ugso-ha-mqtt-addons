@@ -81,6 +81,7 @@ export function setupHAOptions(Blockly, block) {
   const oldSave = block.saveExtraState, oldLoad = block.loadExtraState;
   const refresh = () => {
     const options = candidates(block); block.haOptionRows_ = options;
+    let visibilityChanged = false;
     for (const option of options) {
       if (!defaults.has(option.key)) defaults.set(option.key, option.defaults);
       option.defaults = defaults.get(option.key);
@@ -89,7 +90,10 @@ export function setupHAOptions(Blockly, block) {
       // setVisible is a rendered-workspace operation. Retain the visibility flag
       // in headless mode for serialization and model tests.
       const visible = selected.has(option.key);
-      if (block.rendered && option.input.isVisible() !== visible) option.input.setVisible(visible);
+      if (block.rendered && option.input.isVisible() !== visible) {
+        for (const child of option.input.setVisible(visible)) child.queueRender();
+        visibilityChanged = true;
+      }
       else if (!block.rendered) option.input.visible_ = visible;
       for (const name of option.fields) {
         const field = block.getField(name); if (!field || field.haOptionWatch_) continue;
@@ -104,6 +108,7 @@ export function setupHAOptions(Blockly, block) {
       const option = options.find(option => option.key === key);
       if (option) block.moveInputBefore(option.input.name, null);
     }
+    if (visibilityChanged) block.queueRender();
     return options;
   };
   block.refreshHAOptions_ = refresh;

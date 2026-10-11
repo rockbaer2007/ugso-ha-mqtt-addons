@@ -10,10 +10,28 @@ try {
     await page.goto('http://127.0.0.1:4180/');await page.waitForSelector('.blocklySvg');
     const labels=await page.evaluate(async()=>{
       const url=performance.getEntriesByType('resource').find(e=>new URL(e.name).pathname==='/src/blocks.js').name;
-      const {Blockly}=await import(url),ws=Blockly.getMainWorkspace();ws.clear();
+      const {Blockly,toolbox}=await import(url),ws=Blockly.getMainWorkspace();ws.clear();
+      for(const type of ['ugso_app_control','ugso_automation_control']){
+        if(!toolbox.contents.find(c=>c.name==='System').contents.some(e=>e.type===type))throw Error('System control absent');
+        const control=ws.newBlock(type);control.initSvg();control.render();
+        if(control.getField('MODE').getParentInput()===control.getField(type==='ugso_app_control'?'APP':'ENTITY').getParentInput())throw Error('Control needs separate action row');
+      }
+      for(const type of ['ugso_template_time_window','ugso_template_change']){
+        const purpose=ws.newBlock(type);purpose.initSvg();purpose.render();
+        if(!purpose.outputConnection.getCheck().includes('Boolean')||purpose.getIcon(Blockly.icons.MutatorIcon.TYPE))throw Error('Purpose must use Boolean output without gear');
+      }
       const b=ws.newBlock('ugso_automation_control');b.initSvg();b.render();if(b.getInput('STOP').isVisible())throw Error('Stop should be hidden');
       b.loadExtraState({options:['STOP','TARGET']});b.render();if(!b.getInput('TARGET').isVisible())throw Error('Target missing');
-      const icon=b.getIcon(Blockly.icons.MutatorIcon.TYPE);await icon.setBubbleVisible(true);await Blockly.renderManagement.finishQueuedRenders();await new Promise(r=>setTimeout(r,150));await icon.setBubbleVisible(false);
+      const icon=b.getIcon(Blockly.icons.MutatorIcon.TYPE);await icon.setBubbleVisible(true);await Blockly.renderManagement.finishQueuedRenders();
+      const popup=icon.getWorkspace(),root=popup.getTopBlocks(false)[0];
+      const stop=popup.getBlocksByType('ugso_automation_control_options_stop')[0];stop.dispose(true);
+      await new Promise(r=>setTimeout(r,150));await Blockly.renderManagement.finishQueuedRenders();
+      if(b.getInput('STOP').isVisible())throw Error('Removed option must disappear while gear is open');
+      const before=b.getHeightWidth().height,item=popup.newBlock('ugso_automation_control_options_conditions');item.initSvg();item.render();
+      let last=root.getInputTargetBlock('STACK');while(last?.getNextBlock())last=last.getNextBlock();(last?.nextConnection||root.getInput('STACK').connection).connect(item.previousConnection);
+      await new Promise(r=>setTimeout(r,150));await Blockly.renderManagement.finishQueuedRenders();
+      if(!b.getInput('CONDITIONS').isVisible()||b.getHeightWidth().height<=before)throw Error('Added option must appear and resize while gear is open');
+      await icon.setBubbleVisible(false);
       const template=ws.newBlock('ugso_template_builder');template.initSvg();template.render();
       const value=ws.newBlock('ugso_entity_value');value.initSvg();value.render();template.getInput('PART0').connection.connect(value.outputConnection);
       if(template.getIcon(Blockly.icons.MutatorIcon.TYPE))throw Error('Template must have no gear');

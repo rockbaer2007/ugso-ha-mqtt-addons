@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.64
+
+- Purpose-specific Templates: Compose text, Time within period, Check value change, Select value – if/else and Jinja custom code/condition. No Template gears.
+- Boolean time and change blocks connect directly to HA conditions. Time supports midnight with inclusive start and exclusive end. Change thresholds match guarded trigger differences, with optional explicit old/new values.
+- Conditional result types provide matching text, number and Boolean sockets; numeric and Boolean branches must both be connected.
+- Raw Jinja palette duplicates removed from the experimental category; saved block IDs remain supported. App and automation controls are explicitly listed in System.
+- Complete DE/EN/FR labels and illustrated documentation; YAML, project and Jinja boundary checks.
+- System controls use the familiar blue, two-row ioBroker layout. HA and System gear changes show/hide option rows and resize the main block immediately while the popup remains open.
+
 ## 0.1.63
 
 - Template uses direct, typed value sockets in vertical rows, like ioBroker's Write file block. A new socket appears automatically when the last one is filled; names remain stable for undo/redo.

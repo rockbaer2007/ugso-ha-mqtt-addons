@@ -9,6 +9,67 @@ function make(ws, type, fields = {}) { const b = ws.newBlock(type); for (const [
 function plug(parent, input, child) { parent.getInput(input).connection.connect(child.outputConnection || child.previousConnection); return child; }
 function model(ws) { return workspaceModel(ws, examples.light); }
 function message(ws, value) { const b = make(ws,'ugso_log_action'); plug(b,'MESSAGE',value); plug(ws.getBlocksByType('ugso_automation')[0],'ACTIONS',b); return b; }
+
+test('Purpose templates export Boolean conditions, preserve types and evaluate time and trigger boundaries',()=>{
+  const ws=base(),copy=new Blockly.Workspace();try{
+    const root=ws.getBlocksByType('ugso_automation')[0];message(ws,make(ws,'ugso_text',{TEXT:'test'}));
+    const time=make(ws,'ugso_template_time_window');plug(root,'CONDITIONS',time);
+    const daytime=model(ws).conditions[0].value_template;
+    time.setFieldValue('22:00','START');time.setFieldValue('06:00','END');const overnight=model(ws).conditions[0].value_template;
+    time.setFieldValue('06:00','START');const equal=model(ws).conditions[0].value_template;
+    time.setFieldValue('24:00','START');assert.throws(()=>model(ws),/HH:MM/);time.dispose(false);
+    const change=make(ws,'ugso_template_change');plug(root,'CONDITIONS',change);const delta=model(ws).conditions[0].value_template;
+    Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws),copy);assert.deepEqual(model(copy),model(ws));
+    assert.deepEqual(fromYaml(toYaml(model(ws))),model(ws));
+    change.getInputTargetBlock('RISE').setFieldValue(-1,'NUM');assert.throws(()=>model(ws),/mindestens 0|at least 0/);change.getInputTargetBlock('RISE').setFieldValue(10,'NUM');
+    plug(change,'OLD',make(ws,'ugso_number',{NUM:100}));plug(change,'NEW',make(ws,'ugso_number',{NUM:111}));const explicit=model(ws).conditions[0].value_template;
+    if(process.env.BLOCKS_JINJA_TEST){
+      const result=spawnSync('python',['-c',`import sys,json,datetime,types
+from jinja2.sandbox import ImmutableSandboxedEnvironment
+day,night,equal,delta,explicit=json.load(sys.stdin);e=ImmutableSandboxedEnvironment()
+def evaluate(source,**context): return e.from_string(source).render(**context).strip().lower()=='true'
+for time,wanted in [('09:59:59',False),('10:00:00',True),('12:59:59',True),('13:00:00',False)]:
+ e.globals['now']=lambda:datetime.datetime.fromisoformat('2026-10-11T'+time)
+ assert evaluate(day)==wanted
+for time,wanted in [('21:59:59',False),('22:00:00',True),('00:00:00',True),('05:59:59',True),('06:00:00',False)]:
+ e.globals['now']=lambda:datetime.datetime.fromisoformat('2026-10-11T'+time)
+ assert evaluate(night)==wanted
+ assert not evaluate(equal)
+assert not evaluate(delta)
+assert not evaluate(delta,trigger=types.SimpleNamespace())
+for old,new,wanted in [(None,'100',False),('unknown','100',False),('unavailable','100',False),('none','100',False),('100','111',True),('100','79',True),('100','110',False),('100','80',False),('100','not numeric',True)]:
+ trigger=types.SimpleNamespace(from_state=None if old is None else types.SimpleNamespace(state=old),to_state=types.SimpleNamespace(state=new))
+ assert evaluate(delta,trigger=trigger)==wanted
+assert evaluate(explicit)
+print('ok')`],{input:JSON.stringify([daytime,overnight,equal,delta,explicit]),encoding:'utf8'});
+      assert.equal(result.status,0,result.stderr);assert.equal(result.stdout.trim(),'ok');
+    }
+  }finally{ws.dispose();copy.dispose();}
+});
+
+test('Conditional value type persists and requires complete numeric and Boolean branches',()=>{
+  const ws=base(),copy=new Blockly.Workspace();try{
+    const b=make(ws,'ugso_template_conditional',{KIND:'number'}),text=make(ws,'ugso_template_builder');message(ws,text);plug(text,'PART0',b);
+    plug(b,'TEST',make(ws,'ugso_boolean',{BOOL:'true'}));
+    assert.deepEqual(b.getInput('THEN').connection.getCheck(),['Number','RuntimeNumber']);
+    assert.throws(()=>model(ws),/Beide Zweige|Both branches/);
+    plug(b,'THEN',make(ws,'ugso_number',{NUM:10}));plug(b,'ELSE',make(ws,'ugso_number',{NUM:20}));
+    Blockly.serialization.workspaces.load(Blockly.serialization.workspaces.save(ws),copy);assert.deepEqual(model(copy),model(ws));
+    assert.equal(copy.getBlocksByType(b.type)[0].getFieldValue('KIND'),'number');
+    b.getInputTargetBlock('THEN').dispose(false);b.getInputTargetBlock('ELSE').dispose(false);b.outputConnection.disconnect();b.setFieldValue('boolean','KIND');
+    plug(b,'THEN',make(ws,'ugso_boolean',{BOOL:'true'}));plug(b,'ELSE',make(ws,'ugso_boolean',{BOOL:'false'}));plug(ws.getBlocksByType('ugso_automation')[0],'CONDITIONS',b);
+    assert.match(model(ws).conditions[0].value_template,/if true else/);
+  }finally{ws.dispose();copy.dispose();}
+});
+
+test('System controls remain visible and raw Jinja palette has no equivalent duplicate entries',()=>{
+  const system=toolbox.contents.find(c=>c.name==='System').contents.map(e=>e.type);
+  assert.ok(system.includes('ugso_app_control'));assert.ok(system.includes('ugso_automation_control'));
+  const jinja=toolbox.contents.find(c=>c.name==='Jinja (experimentell)').contents.map(e=>e.type);
+  assert.ok(!jinja.includes('ugso_jinja_value'));assert.ok(!jinja.includes('ugso_jinja_condition'));
+  const templates=toolbox.contents.find(c=>c.name==='Templates').contents.map(e=>e.type);
+  assert.ok(templates.includes('ugso_template'));assert.ok(templates.includes('ugso_template_condition'));
+});
 test('System and template palette entries are unique and typed separately from actions', () => {
   const entries = toolbox.contents.flatMap(c=>c.contents || []);
   for (const type of [...systemTypes,...templateTypes]) assert.equal(entries.filter(e=>e.type===type).length,1,type);
