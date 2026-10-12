@@ -1,8 +1,18 @@
 configuration:
   mqtt:
     name: MQTT broker
-    description: The internal HA MQTT service is preferred. These settings are a fallback. External TLS connections are not available in this preview.
+    description: Internal HA broker remains default; external broker and verified TLS are optional.
     fields:
+      use_supervisor:
+        name: Use HA broker automatically
+      tls:
+        name: Enable TLS
+      ca:
+        name: Custom CA (PEM)
+      cert:
+        name: Client certificate (PEM)
+      key:
+        name: Private client key (PEM)
       host:
         name: Broker address
       port:

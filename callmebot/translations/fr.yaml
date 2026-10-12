@@ -1,8 +1,18 @@
 configuration:
   mqtt:
     name: Courtier MQTT
-    description: Le service MQTT interne de HA est prioritaire. Ces réglages servent de secours. Les connexions TLS externes ne sont pas disponibles dans cette version expérimentale.
+    description: Broker HA interne par défaut ; broker externe et TLS vérifié facultatifs.
     fields:
+      use_supervisor:
+        name: Broker HA automatique
+      tls:
+        name: Activer TLS
+      ca:
+        name: CA personnalisée (PEM)
+      cert:
+        name: Certificat client (PEM)
+      key:
+        name: Clé privée client (PEM)
       host:
         name: Adresse du courtier
       port:

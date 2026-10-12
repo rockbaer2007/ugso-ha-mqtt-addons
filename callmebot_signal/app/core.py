@@ -6,6 +6,7 @@ import re
 import threading
 import time
 from collections import OrderedDict
+from admin import atomic_json, encrypt_profiles, decrypt_profiles, record, mqtt_config, tls_context, public_mqtt
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -28,7 +29,7 @@ def provider_send(profile, message):
     query = urlencode({"phone": profile["phone"], "text": message,
                        "apikey": profile["api_key"]})
     request = Request("https://signal.callmebot.com/signal/send.php?" + query,
-                      headers={"User-Agent": "UGSo-CallMeBot/0.1.1"})
+                      headers={"User-Agent": "UGSo-CallMeBot/0.1.2"})
     try:
         with build_opener(NoRedirect()).open(request, timeout=20) as response:
             body = response.read(16385)
@@ -45,6 +46,7 @@ class Gateway:
         self.directory.mkdir(parents=True, exist_ok=True)
         self.path = self.directory / "profiles.json"
         self.lock = threading.RLock()
+        self.mqtt_lock = threading.Lock()
         self.sender, self.clock = sender, clock
         self.settings = {"profiles": [], "default_profile": ""}
         if self.path.exists():
@@ -54,6 +56,18 @@ class Gateway:
         self.last_attempt = {}
         self.recent = []
         self.connected = False
+        self.history = []
+        self.history_error = False
+        history_path = self.directory / 'history.json'
+        if history_path.exists():
+            try:
+                history = json.loads(history_path.read_text('utf-8'))
+                self.history = history[:200] if isinstance(history, list) else []
+            except (ValueError, OSError):
+                self.history_error = True
+        self.mqtt_options = {}
+        self.mqtt_error = False
+        self.mqtt_client = None
         self.publish = lambda *args, **kwargs: None
 
     def validate(self, data):
@@ -114,9 +128,56 @@ class Gateway:
         with self.lock:
             return {"profiles": [{k: v for k, v in p.items() if k != "api_key"} | {"key_configured": True} for p in self.settings["profiles"]],
                     "default_profile": self.settings["default_profile"], "connected": self.connected,
-                    "recent": list(self.recent), "topic": TOPIC + "/send", "version": "0.1.1"}
+                    "history": list(self.history), "history_error": self.history_error, "mqtt": public_mqtt(self), "mqtt_error": self.mqtt_error, "release": "beta",
+                    "recent": list(self.recent), "topic": TOPIC + "/send", "version": "0.1.2"}
 
-    def submit(self, data, retained=False):
+    def backup(self, password):
+        try:
+            with self.lock:
+                return encrypt_profiles(self.settings, password, TOPIC)
+        except ValueError as error:
+            raise Failure(str(error)) from None
+
+    def restore(self, backup, password):
+        try:
+            data = decrypt_profiles(backup, password, TOPIC)
+        except ValueError as error:
+            raise Failure(str(error)) from None
+        with self.lock:
+            if self.pending.unfinished_tasks: raise Failure('busy')
+            if not isinstance(data, dict) or not isinstance(data.get('profiles'), list) or any(not isinstance(p, dict) or not p.get('api_key') for p in data['profiles']): raise Failure('backup_invalid')
+            self.save(data)
+
+    def clear_history(self):
+        with self.lock:
+            atomic_json(self.directory / 'history.json', [])
+            self.history = []
+            self.history_error = False
+
+    def configure_mqtt(self, data):
+        with self.mqtt_lock:
+            self._configure_mqtt(data)
+
+    def _configure_mqtt(self, data):
+        if not isinstance(data, dict): raise Failure('mqtt_invalid')
+        try:
+            proposed = dict(self.mqtt_options)
+            for k,v in data.items():
+                if k in ('password','ca','cert','key') and v == '': continue
+                if k != 'clear_tls': proposed[k] = v
+            if data.get('clear_tls') is True:
+                for k in ('ca','cert','key'): proposed[k] = ''
+            config = mqtt_config(proposed)
+            if config['tls']: tls_context(config)
+        except (ValueError, OSError):
+            raise Failure('mqtt_invalid') from None
+        atomic_json(self.directory / 'mqtt.json', config)
+        if self.mqtt_client:
+            self.mqtt_client.disconnect(); self.mqtt_client.loop_stop()
+        self.mqtt_options = config
+        self.mqtt_client = connect_mqtt(self, {'mqtt':config})
+
+    def submit(self, data, retained=False, source='mqtt'):
         if retained:
             raise Failure("retained_rejected")
         if not isinstance(data, dict) or set(data) - {"profile", "message", "request_id", "loglevel"}:
@@ -139,13 +200,14 @@ class Gateway:
             if rid and key in self.seen:
                 raise Failure("duplicate")
             try:
-                self.pending.put_nowait({"profile": pid, "message": message, "request_id": rid, "loglevel": level})
+                self.pending.put_nowait({"profile": pid, "message": message, "request_id": rid, "loglevel": level, "source": source})
             except queue.Full:
                 raise Failure("queue_full") from None
             if rid:
                 self.seen[key] = now
                 if len(self.seen) > 1000:
                     self.seen.popitem(last=False)
+        record(self, pid, 'queued', source)
         return {"status": "queued", "profile": pid, "request_id": rid}
 
     def process(self, item):
@@ -164,6 +226,8 @@ class Gateway:
             code = str(error)
         except Exception:
             code = "provider_unavailable"
+        if code not in {'accepted','unknown_profile','rate_limited','provider_rejected','provider_unavailable'}: code = 'provider_unavailable'
+        record(self, pid, code, item.get('source','mqtt'))
         result = {"profile": pid, "request_id": item["request_id"], "status": code, "time": int(time.time())}
         with self.lock:
             self.recent = [result] + self.recent[:19]
@@ -187,15 +251,20 @@ class Gateway:
 
 def connect_mqtt(gateway, options):
     import paho.mqtt.client as mqtt
-    config = options.get("mqtt", {})
+    config = mqtt_config(options.get('mqtt', {}))
+    gateway.mqtt_options = config
+    automatic = config['use_supervisor'] and bool(os.environ.get('MQTT_HOST'))
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="ugso-callmebot-signal", clean_session=True)
-    username = os.environ.get("MQTT_USERNAME", config.get("username", ""))
-    password = os.environ.get("MQTT_PASSWORD", config.get("password", ""))
+    username = os.environ.get('MQTT_USERNAME','') if automatic else config['username']
+    password = os.environ.get('MQTT_PASSWORD','') if automatic else config['password']
+    if config['tls'] and not automatic: client.tls_set_context(tls_context(config))
+    client.reconnect_delay_set(min_delay=1, max_delay=60)
     if username:
         client.username_pw_set(username, password)
     client.will_set(TOPIC + "/availability", "offline", qos=0, retain=True)
     def connected(client, userdata, flags, reason, properties):
         gateway.connected = not reason.is_failure
+        gateway.mqtt_error = reason.is_failure
         if gateway.connected:
             client.subscribe(TOPIC + "/send", qos=0)
             client.publish(TOPIC + "/availability", "online", retain=True)
@@ -203,7 +272,7 @@ def connect_mqtt(gateway, options):
                          "state_topic": TOPIC + "/profiles", "value_template": "{{ value_json.count }}",
                          "json_attributes_topic": TOPIC + "/profiles", "availability_topic": TOPIC + "/availability",
                          "entity_category": "diagnostic", "icon": "mdi:account-multiple",
-                         "device": {"identifiers": ["ugso_callmebot_signal"], "name": "CallMeBot Signal", "manufacturer": "UGSo", "sw_version": "0.1.1"}}
+                         "device": {"identifiers": ["ugso_callmebot_signal"], "name": "CallMeBot Signal", "manufacturer": "UGSo", "sw_version": "0.1.2"}}
             client.publish("homeassistant/sensor/ugso_callmebot_signal/profiles/config", json.dumps(discovery), retain=True)
             gateway.publish_profiles()
     def disconnected(client, userdata, flags, reason, properties):
@@ -215,9 +284,11 @@ def connect_mqtt(gateway, options):
             gateway.submit(json.loads(message.payload), retained=message.retain)
         except (Failure, ValueError, UnicodeError) as error:
             code = str(error) if isinstance(error, Failure) else "invalid_message"
+            record(gateway, '', code, 'mqtt')
             client.publish(TOPIC + "/result", json.dumps({"status": code}), retain=False)
     client.on_connect, client.on_disconnect, client.on_message = connected, disconnected, received
+    client.on_connect_fail = lambda *args: setattr(gateway, 'mqtt_error', True)
     gateway.publish = client.publish
-    client.connect_async(os.environ.get("MQTT_HOST", config.get("host", "core-mosquitto")), int(os.environ.get("MQTT_PORT", config.get("port", 1883))))
+    client.connect_async(os.environ['MQTT_HOST'] if automatic else config['host'], int(os.environ.get('MQTT_PORT',1883)) if automatic else config['port'])
     client.loop_start()
     return client

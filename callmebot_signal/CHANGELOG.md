@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2
+
+- Beta designation in UI/docs; HA experimental stage retained because beta is not a supported stage.
+- Persistent metadata-only send history (200 entries), profile/error filters and confirmed clearing in DE/EN/FR.
+- Password-encrypted profile backup/restore (scrypt + AES-GCM), provider isolation and no changes on invalid backup; pending sends block restore.
+- External MQTT with verified TLS, custom CA and client certificate/key. Automatic HA broker remains the default; existing profiles, keys, topics and entity IDs are preserved.
+
+
 ## 0.1.1
 
 - Removed UGSo from the visible application name; existing technical IDs, saved data and MQTT topics remain compatible.

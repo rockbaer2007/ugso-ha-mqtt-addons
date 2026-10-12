@@ -1,0 +1,6 @@
+#recent { max-height: 24rem; overflow: auto; padding-left: 1.4rem; }
+#recent li { padding: .25rem 0; overflow-wrap: anywhere; }
+#recent li.error, #history-warning { color: #e05959; }
+#recent li.accepted { color: #229979; }
+#recent li.queued { color: #c18a24; }
+#mqtt-form { margin-top: 1rem; }

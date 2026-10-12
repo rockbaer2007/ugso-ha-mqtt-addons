@@ -23,7 +23,7 @@ try {
     await page.locator('#id').fill('test_'+locale);await page.locator('#name').fill('Demo '+locale.toUpperCase());
     await page.locator('#phone').fill(locale==='fr'?'25a7d32b-0c51-44d8-b11b-c5bc73294abc':'+49123456789');await page.locator('#key').fill('dummy_secret');
     await page.locator('#default').check();
-    await page.locator('button[type=submit]').click();
+    await page.locator('#profile-form button[type=submit]').click();
     await page.waitForFunction(locale=>document.querySelector('#profiles').value==='test_'+locale,locale);
     assert.equal(await page.locator('#key').inputValue(),'');
     const state=await page.evaluate(()=>fetch('./api/state').then(r=>r.json()));

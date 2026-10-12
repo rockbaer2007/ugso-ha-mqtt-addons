@@ -1,7 +1,7 @@
 name: CallMeBot Signal
-version: "0.1.1"
+version: "0.1.2"
 slug: callmebot_signal
-description: Signal-Textnachrichten über CallMeBot mit Empfängerprofilen und MQTT
+description: "Beta: Signal-Textnachrichten über CallMeBot mit Empfängerprofilen und MQTT"
 stage: experimental
 url: https://opensource.ugso-software.de/projects/callmebot-signal/
 arch: [amd64, aarch64]
@@ -12,15 +12,25 @@ ingress: true
 ingress_port: 8099
 panel_icon: mdi:message-outline
 panel_title: CallMeBot Signal
-services: [mqtt:need]
+services: [mqtt:want]
 options:
   mqtt:
+    use_supervisor: true
+    tls: false
+    ca: ""
+    cert: ""
+    key: ""
     host: core-mosquitto
     port: 1883
     username: ""
     password: ""
 schema:
   mqtt:
+    use_supervisor: bool?
+    tls: bool?
+    ca: str?
+    cert: str?
+    key: password?
     host: str
     port: port
     username: str
