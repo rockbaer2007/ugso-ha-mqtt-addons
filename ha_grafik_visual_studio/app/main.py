@@ -17,6 +17,7 @@ from widget_packages import MAX_ZIP_BYTES, list_packages, read_package_zip, vali
 from technic_cover import cover_position_command, cover_entry_writable
 from technic_light import light_request, dimmer_commands
 from universal_color import universal_color_command
+from climate_controls import climate_command
 from technic_temperature import temperature_request, temperature_command, history_plan, history_series
 from material_history import material_history_plan, material_history_data
 from material_actions import material_action
@@ -328,7 +329,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.295"
+    server_version = "HAGrafikVisualStudio/0.1.296"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -376,7 +377,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.295"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.296"})
             return
         if path == "/api/viewer":
             groups = []
@@ -441,6 +442,18 @@ class Handler(BaseHTTPRequestHandler):
             except HomeAssistantAPIError as error:
                 LOG.warning("Home-Assistant-Zustände konnten nicht geladen werden: %s", error)
                 self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(error)})
+            return
+        if path == "/api/source-attributes":
+            entity_ids = query.get("entity_id", [])
+            if not entity_ids or len(entity_ids) > 100 or any(not ENTITY_ID_PATTERN.fullmatch(value) for value in entity_ids):
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": "Invalid source selection"})
+                return
+            try:
+                (entries,) = home_assistant_commands(["get_states"])
+                names = {entry['entity_id']: sorted(name for name in entry['attributes'] if isinstance(name, str) and 0 < len(name) <= 128 and not any(ord(char) < 32 for char in name))[:100] for entry in (entries or []) if isinstance(entry, dict) and entry.get('entity_id') in entity_ids and isinstance(entry.get('attributes'), dict)}
+                self.send_json(HTTPStatus.OK, {"attributes": names})
+            except HomeAssistantAPIError:
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "Source discovery unavailable"})
             return
         if path == "/api/projects":
             self.send_json(HTTPStatus.OK, self.list_projects())
@@ -556,7 +569,7 @@ class Handler(BaseHTTPRequestHandler):
                 elif parsed.path == "/api/energy-history":
                     command, start, end = energy_history_plan(request)
                     (raw,) = home_assistant_commands([command])
-                    result = energy_history_data(command["entity_ids"], raw, start, end)
+                    result = energy_history_data(command["entity_ids"], raw, start, end, request.get('attributes'))
                 elif parsed.path == "/api/material-history":
                     command, start, end = material_history_plan(request)
                     (raw,) = home_assistant_commands([command])
@@ -591,6 +604,25 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {'error': 'Material-Aktion fehlgeschlagen; Zustand erneut prüfen.'})
                 return
             self.send_json(HTTPStatus.OK, {'accepted': True})
+            return
+        if parsed.path == "/api/climate-control":
+            if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
+                self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "JSON request required"})
+                return
+            request = self.read_request_json()
+            if request is None:
+                return
+            try:
+                (entries,) = home_assistant_commands(["get_states"])
+                command = climate_command(request, entries or [])
+                home_assistant_commands([command])
+            except ValueError as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+                return
+            except HomeAssistantAPIError:
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "Climate action failed"})
+                return
+            self.send_json(HTTPStatus.OK, {"accepted": True})
             return
         if parsed.path == "/api/universal-color":
             if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":

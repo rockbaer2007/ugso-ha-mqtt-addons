@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.296
+
+- Add project/per-widget DE/EN/FR language choices for Special, gauges, data flow and the seven remaining bundled packages; translate properties, options and runtime messages while retaining user text and technical IDs.
+- Add optional Technic Climate controls for temperature ranges, HVAC/presets, fan, vertical/horizontal swing, target humidity and power; validate every command against current device capabilities and native limits.
+- Add optional read-source attributes, attribute discovery, source preview and compatible unit conversion. Retain legacy factors until conversion is explicitly enabled, and preserve native write targets.
+- Read selected attributes in Energy Recorder history, preserve missing-value gaps and reject ambiguous attributes of the same entity. New groups start disabled; existing package versions and saved project data remain valid.
+- Verify all 62 remaining types in light/dark and DE/EN/FR, plus Climate controls and project persistence. Real HA hardware/Companion testing remains installation dependent.
+
 ## 0.1.295
 
 - Fill Material Design sidebar/selector preview frames with the existing SVG icons; retain package graphics and IDs.

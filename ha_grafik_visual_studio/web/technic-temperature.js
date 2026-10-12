@@ -1,4 +1,5 @@
 // Original Studio thermostat geometry, fixed HA actions and Recorder charts.
+import { restText, markRestRuntime } from './rest-locales.js';
 const pending = new Set(), failed = new Set();
 const number = value => (typeof value === "number" || typeof value === "string" && value.trim() !== "") && Number.isFinite(Number(value)) ? Number(value) : null;
 const boolean = value => [true, "true", "on", 1, "1"].includes(value) ? true : [false, "false", "off", 0, "0"].includes(value) ? false : null;
@@ -76,13 +77,13 @@ export function renderTemperature(widget, doc, { runtime = false, locale = "de",
   historyButton.addEventListener("click", event => {
     event.stopPropagation(); if (historyButton.disabled) return; closeTemperatureHistory();
     const dialog = doc.createElement("dialog"); dialog.className = "technic-temperature-history"; dialog.dataset.widgetId = widget.id; activeDialog = dialog;
-    const title = doc.createElement("strong"); title.textContent = `${caption.textContent} – ${de ? "Verlauf" : "History"}`;
+    const title = doc.createElement("strong"); title.textContent = `${caption.textContent} – ${restText('Verlauf',locale)}`;
     const controls = doc.createElement("div"), chart = doc.createElement("div"), message = doc.createElement("small"); controls.className = "technic-temperature-history-actions"; message.setAttribute("role", "status");
     let generation = 0;
     const load = async period => { const current = ++generation; for (const button of controls.children) if (button.dataset.period) button.setAttribute("aria-pressed", String(button.dataset.period === period)); message.textContent = de ? "Verlauf wird geladen …" : "Loading history …"; chart.replaceChildren(); try { const data = await history({ target_entity: widget.targetEntityId || "", actual_entity: widget.actualEntityId || (widget.targetEntityId?.startsWith("climate.") ? widget.targetEntityId : ""), actuator_entity: widget.actuatorEntityId || (widget.targetEntityId?.startsWith("climate.") ? widget.targetEntityId : ""), range: period }); if (current !== generation || activeDialog !== dialog) return; chart.replaceChildren(temperatureHistorySvg(data, widget, doc, locale)); message.textContent = de ? "Soll / Ist: ° · Stellmotor: % (rechte Achse)" : "Target / actual: ° · actuator: % (right axis)"; } catch { if (current === generation && activeDialog === dialog) message.textContent = de ? "Verlauf nicht verfügbar. HA-Recorder und Aufzeichnung prüfen." : "History unavailable. Check HA Recorder and recording."; } };
     for (const [label, period] of [["24 h", "24h"], [de ? "7 Tage" : "7 days", "7d"]]) { const button = doc.createElement("button"); button.type = "button"; button.textContent = label; button.dataset.period = period; button.addEventListener("click", () => void load(period)); controls.append(button); }
     const close = doc.createElement("button"); close.type = "button"; close.textContent = de ? "Schließen" : "Close"; close.addEventListener("click", closeTemperatureHistory); controls.append(close);
-    dialog.append(title, controls, chart, message); dialog.addEventListener("close", () => { generation++; if (activeDialog === dialog) activeDialog = null; dialog.remove(); }); doc.body.append(dialog); dialog.showModal(); void load("24h");
+    dialog.append(title, controls, chart, message);markRestRuntime(dialog,widget,getStates(),locale); dialog.addEventListener("close", () => { generation++; if (activeDialog === dialog) activeDialog = null; dialog.remove(); }); doc.body.append(dialog); dialog.showModal(); void load("24h");
   });
   if (widget.showName && widget.namePosition === "top") root.append(caption);
   root.append(dial, range, historyButton); if (widget.showName && widget.namePosition !== "top") root.append(caption); root.append(status); update(); return root;

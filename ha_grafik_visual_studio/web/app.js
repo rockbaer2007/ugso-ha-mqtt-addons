@@ -8,6 +8,9 @@ import { renderInteractivePreview } from "./interactive-preview.js";
 import { isMaterialDefinition, renderMaterialPreview } from "./material-preview.js";
 import { universalUrl, universalBindings, renderUniversalView, openUniversalDialog, bindUniversalHold, renderUniversalColor, renderUniversalClock, updateUniversalClocks } from "./universal-runtime.js";
 import { interactiveLocale, interactiveText, interactiveGroups, localizeInteractiveDOM } from "./interactive-locales.js";
+import { CLIMATE_ATTRIBUTES, climateOptionsGroup, renderClimateControls } from './climate-controls.js';
+import { isRestWidget, restLocale, restText, restLanguageGroup, restGroups, localizeRestProperties, markRestRuntime, observeRestRuntime } from './rest-locales.js';
+import { sourceGroups, sourceEntries, sourceAttributes, resolveSource, mapDisplaySources } from './source-bindings.js';
 import { renderWeather } from "./weather-widget.js";
 import { renderHeatingRooms } from "./heating-rooms.js";
 import { renderWindowOverview } from "./window-overview.js";
@@ -206,6 +209,7 @@ const workspace = $("#workspace");
 const stage = $("#stage");
 const stageCanvas = $("#stage-canvas");
 startLocalization();
+observeRestRuntime(document);
 const fileTypes = {
   image: ["png", "jpg", "jpeg", "webp", "svg", "gif", "bmp", "ico"],
   code: ["json", "js", "css", "xml", "yaml", "yml"],
@@ -278,6 +282,13 @@ const commonWidgetGroups = [
 ];
 
 function widgetPropertyGroups(widget) {
+  const groups=baseWidgetPropertyGroups(widget);
+  if(isRestWidget(widget)){groups.push(restLanguageGroup);groups.push(sourceGroups(widget,state.entityStates,Object.fromEntries(groups.flatMap(group=>group.fields).map(field=>[field.key,field.label]))));}
+  if(getWidgetDefinition(widget.type).render?.kind==='technic-temperature')groups.push(climateOptionsGroup);
+  return groups;
+}
+function projectWidgetLanguage(){return ['de','en','fr'].includes(state.project?.settings?.widgetLocale)?state.project.settings.widgetLocale:document.documentElement.lang||'de';}
+function baseWidgetPropertyGroups(widget) {
   let styleEntryGroups = [];
   if (isHousingWidget(widget)) styleEntryGroups.push(housingSnapGroupFor(widget));
   if (widget.type === "interactive-table") styleEntryGroups = tableEntryGroups(widget);
@@ -806,10 +817,11 @@ async function fetchEntityStates(ids) {
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "technic-window" && ids.slice(offset, offset + 100).includes(widget.coverEntityId)) for (const name of ["current_position", "supported_features"]) query.append("attribute", `${widget.coverEntityId}|${name}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "technic-light" && ids.slice(offset, offset + 100).includes(widget.brightnessEntityId)) for (const name of ["brightness", "supported_color_modes", "min", "max", "step"]) query.append("attribute", `${widget.brightnessEntityId}|${name}`);
     for(const widget of visibleWidgets())if(widget.type==='universal-button')for(const entity of universalBindings(widget))if(ids.slice(offset,offset+100).includes(entity))for(const name of ['rgb_color','supported_color_modes','min_color_temp_kelvin','max_color_temp_kelvin'])query.append('attribute',`${entity}|${name}`);
+    for(const widget of visibleWidgets())if(isRestWidget(widget))for(const attribute of sourceAttributes(widget))if(ids.slice(offset,offset+100).includes(attribute.split('|')[0]))query.append('attribute',attribute);
     const temperatureAttributes = new Set();
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "technic-temperature") {
       for (const id of temperatureBindings(widget).filter(id => ids.slice(offset, offset + 100).includes(id))) {
-        const names = id.startsWith("climate.") ? ["temperature", "current_temperature", "current_humidity", "hvac_action", "min_temp", "max_temp", "target_temp_step", "supported_features"] : id === widget.targetEntityId ? ["min", "max", "step"] : [];
+        const names = id.startsWith("climate.") ? ["temperature", "current_temperature", "current_humidity", "hvac_action", ...CLIMATE_ATTRIBUTES] : id === widget.targetEntityId ? ["min", "max", "step"] : [];
         for (const name of names) temperatureAttributes.add(`${id}|${name}`);
       }
     }
@@ -1055,7 +1067,7 @@ function scheduleLineboxHelperOutputs() {
 }
 
 function renderRuntimeStageWhenReady() {
-  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true'], .industrial-gauge[data-dragging='true'], .radial-slider[data-dragging='true'], .technic-light[data-dragging='true'], .technic-temperature[data-dragging='true'], .styled-dropdown.is-open, .material-widget[data-dragging='true'], .material-widget[data-material-editing='true'], .material-widget[data-material-menu-open='true'], .material-widget[data-material-writing='true']") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true']")) {
+  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true'], .industrial-gauge[data-dragging='true'], .radial-slider[data-dragging='true'], .technic-light[data-dragging='true'], .technic-temperature[data-dragging='true'], .styled-dropdown.is-open, .material-widget[data-dragging='true'], .material-widget[data-material-editing='true'], .material-widget[data-material-menu-open='true'], .material-widget[data-material-writing='true'], .climate-controls[data-writing='true']") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true'], .climate-controls input, .climate-controls select")) {
     runtimeRenderDeferred = true;
     return;
   }
@@ -1222,7 +1234,7 @@ function renderPalette() {
   for (const set of widgetSets) {
     const setColor = PALETTE_COLORS[set.id] || extraColors[set.id];
     const widgets = search ? set.widgets.filter(definition =>
-      [definition.label, definition.type, set.label, ...(definition.searchTerms || [])].some(value => String(value || "").toLocaleLowerCase().includes(search))) : set.widgets;
+      [definition.label, definition.type, set.label, ...(isRestWidget(definition)?[restText(definition.label,projectWidgetLanguage()),restText(set.label,projectWidgetLanguage())]:[]), ...(definition.searchTerms || [])].some(value => String(value || "").toLocaleLowerCase().includes(search))) : set.widgets;
     if (!widgets.length) continue;
     const group = document.createElement("details");
     group.className = "widget-group";
@@ -1244,7 +1256,7 @@ function renderPalette() {
       } else state.collapsedWidgetSets.add(set.id);
     });
     const summary = document.createElement("summary");
-    summary.textContent = set.label;
+    summary.textContent = set.widgets.some(isRestWidget)?restText(set.label,projectWidgetLanguage()):set.label;
     const list = document.createElement("div");
     list.className = "widget-list";
     for (const definition of widgets) {
@@ -1253,7 +1265,7 @@ function renderPalette() {
       button.dataset.widgetType = definition.type;
       const label = document.createElement("span");
       label.className = "widget-choice-label";
-      label.textContent = definition.label;
+      label.textContent = isRestWidget(definition)?restText(definition.label,projectWidgetLanguage()):definition.label;
       const preview = document.createElement("span");
       preview.className = "widget-choice-preview";
       preview.dataset.kind = definition.preview?.kind || "symbol";
@@ -2507,8 +2519,8 @@ function connectionPathData(widget, widgets, reverse = false) {
 
 function effectiveConnectionStyle(widget, widgets, visited = new Set()) {
   if (widget.dataFlowVariant === "value-connection" || isValuePointConnection(widget, widgets)) return { ...widget, animationEnabled: false };
-  const entityId = connectionAnimationEntityId(widget);
-  let result = { ...widget, ...resolveConnectionAnimation(widget, state.entityStates[entityId]) };
+  const display=mapDisplaySources(widget,state.entityStates),entityId = connectionAnimationEntityId(display.widget);
+  let result = { ...widget, ...resolveConnectionAnimation(display.widget, display.states[entityId]) };
   const collectorReference = [widget.endCollector, widget.startCollector].find(reference => connectionCollectorPosition(reference, widgets));
   const collectorParentId = String(collectorReference || "").split(":", 1)[0];
   const parentId = collectorParentId || widget.flowParentId;
@@ -3181,6 +3193,8 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const selectedFilters = pageFilters.get(filterKey);
   for (const widget of activePage.widgets) {
     const basicT = value => basicText(value, basicLocale(widget, document.documentElement.lang));
+    const widgetLanguage=isRestWidget(widget)?restLocale(widget,projectWidgetLanguage()):document.documentElement.lang||'de';
+    const sourceDisplay=isRestWidget(widget)?mapDisplaySources(widget,state.entityStates):{widget,states:state.entityStates},displayWidget=sourceDisplay.widget,displayStates=sourceDisplay.states;
     if (isSolar(widget)) Object.assign(widget,solarSize(widget));
     if (isIndustrialSwitch(widget)) Object.assign(widget,switchSize(widget));
     if (isIndustrialLcd(widget)) Object.assign(widget,lcdSize(widget));
@@ -3295,49 +3309,49 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.style.border = "0"; content.style.padding = "0"; content.style.background = "transparent";
       content.append(renderSeparator(widget, document));
     } else if (isGauge(widget)) {
-      content.append(renderGauge(widget, document, { states: state.entityStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
+      content.append(renderGauge(displayWidget, document, { states: displayStates, runtime: runtimeMode, value: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined }));
     } else if (isCalendarPlus(widget)) {
       element.classList.add('calendar-plus-host');element.dataset.dashboardSurface=dashboardSurfaceKey;element.dataset.calendarSignature=calendarSignature;
-      const card=renderCalendarPlus(widget, document, {locale:document.documentElement.lang||"de",runtime:runtimeMode,key:`${dashboardSurfaceKey}:${widget.id}`,onCatalogChange:()=>{if(!runtimeMode)renderProperties();}});
+      const card=renderCalendarPlus(widget, document, {locale:widgetLanguage,runtime:runtimeMode,key:`${dashboardSurfaceKey}:${widget.id}`,onCatalogChange:()=>{if(!runtimeMode)renderProperties();}});
       applyCardCss(widget,content,card,element);content.append(card);
     } else if (isSolar(widget)) {
-      const card=renderSolar(widget,document,{states:state.entityStates,locale:document.documentElement.lang||'de',input:anchor=>widgetInputPacket({...widget,dataInputAnchor:anchor},activePage.widgets,state.entityStates)});
+      const card=renderSolar(displayWidget,document,{states:displayStates,locale:widgetLanguage,input:anchor=>widgetInputPacket({...widget,dataInputAnchor:anchor},activePage.widgets,state.entityStates)});
       applyCardCss(widget,content,card,element);content.append(card);
     } else if (isPrinter(widget)) {
-      const card=renderPrinter(widget, document, {states:state.entityStates, locale:document.documentElement.lang||"de", imageSource:safeUrl(widget.printerImageSrc,true), webSource:safeUrl(printerWebUrl(widget,state.entityStates))});
+      const card=renderPrinter(displayWidget, document, {states:displayStates, locale:widgetLanguage, imageSource:safeUrl(widget.printerImageSrc,true), webSource:safeUrl(printerWebUrl(widget,state.entityStates))});
       applyCardCss(widget,content,card,element);content.append(card);
     } else if (isEnergy(widget)) {
       content.style.padding="0"; content.style.border="0";
-      content.append(renderEnergy(widget, document, {states:state.entityStates, locale:document.documentElement.lang||"de", widgets:activePage.widgets, runtime:runtimeMode, refresh:()=>renderStage(), history:async request=>{
+      content.append(renderEnergy(widget, document, {states:state.entityStates, locale:widgetLanguage, widgets:activePage.widgets, runtime:runtimeMode, refresh:()=>renderStage(), history:async request=>{
         const response=await fetch("api/energy-history",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(request)});
         const result=await response.json();if(!response.ok)throw new Error(result.error||uiText("Recorder-Verlauf nicht verfügbar"));return result;
       }}));
     } else if (isIndustrialHeating(widget)) {
       content.style.padding="0";content.style.border="0";
-      content.append(renderIndustrialHeating(widget,document,{states:state.entityStates,locale:document.documentElement.lang||"de"}));
+      content.append(renderIndustrialHeating(displayWidget,document,{states:displayStates,locale:widgetLanguage}));
     } else if (isIndustrialSection(widget)) {
       content.style.padding="0";content.style.border="0";
       content.append(renderIndustrialSection(widget,document));
     } else if (isIndustrialWeather(widget)) {
       content.style.padding="0";content.style.border="0";
       const powerInput=widget.displayInputEnabled===true?widgetInputPacket({...widget,dataInputAnchor:"display-power"},activePage.widgets,state.entityStates,new Set([`data:${widget.id}`])).value:undefined;
-      content.append(renderIndustrialWeather(widget,document,{states:state.entityStates,powerInput,locale:document.documentElement.lang||"de"}));
+      content.append(renderIndustrialWeather(displayWidget,document,{states:displayStates,powerInput,locale:widgetLanguage}));
     } else if (isIndustrialClock(widget)) {
       content.style.padding="0";content.style.border="0";
       const powerInput=widget.displayInputEnabled===true?widgetInputPacket({...widget,dataInputAnchor:"display-power"},activePage.widgets,state.entityStates,new Set([`data:${widget.id}`])).value:undefined;
-      content.append(renderIndustrialClock(widget,document,{states:state.entityStates,powerInput}));
+      content.append(renderIndustrialClock(displayWidget,document,{states:displayStates,powerInput}));
     } else if (isIndustrialSegment(widget)) {
       content.style.padding="0";content.style.border="0";
       const packet=anchor=>widgetInputPacket({...widget,dataInputAnchor:anchor},activePage.widgets,state.entityStates,new Set([`data:${widget.id}`]));
-      content.append(renderIndustrialSegment(widget,document,{states:state.entityStates,input:widget.dataInputEnabled===true?packet("value-input"):{},powerInput:widget.displayInputEnabled===true?packet("display-power").value:undefined}));
+      content.append(renderIndustrialSegment(displayWidget,document,{states:displayStates,input:widget.dataInputEnabled===true?packet("value-input"):{},powerInput:widget.displayInputEnabled===true?packet("display-power").value:undefined}));
     } else if (isIndustrialOdometer(widget)) {
       content.style.padding="0";content.style.border="0";
       const input=widget.dataInputEnabled===true ? widgetInputPacket({...widget,dataInputAnchor:"value-input"},activePage.widgets,state.entityStates,new Set([`data:${widget.id}`])) : {};
-      content.append(renderIndustrialOdometer(widget,document,{states:state.entityStates,input,runtime:runtimeMode}));
+      content.append(renderIndustrialOdometer(displayWidget,document,{states:displayStates,input,runtime:runtimeMode}));
     } else if (isIndustrialLcd(widget)) {
       content.style.padding="0";content.style.border="0";
       const input=widget.displayInputEnabled===true ? widgetInputPacket({...widget,dataInputAnchor:"display-power"},activePage.widgets,state.entityStates,new Set([`data:${widget.id}`])).value : undefined;
-      content.append(renderIndustrialLcd(widget,document,{states:state.entityStates,input}));
+      content.append(renderIndustrialLcd(displayWidget,document,{states:displayStates,input}));
     } else if (isIndustrialSwitch(widget)) {
       content.style.padding="0";content.style.border="0";
       const inputs=Object.fromEntries(Array.from({length:switchCount(widget)},(_,i)=>[i+1,widget[`inputDock${i+1}`]===true ? widgetInputPacket({...widget,dataInputAnchor:`input-${i+1}`},activePage.widgets,state.entityStates,new Set([`data:${widget.id}`])).value : undefined]));
@@ -3348,7 +3362,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     } else if (["industrial-gauge","industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind)) {
       content.style.padding = "0"; content.style.border = "0";
       if (runtimeMode && !widget.entityId && widget.dataInputEnabled !== true) widget.state = industrialQuantize(widget, widget.state);
-      content.append(renderIndustrialGauge(widget, document, { linear:isIndustrialLinear(widget), runtime: runtimeMode, states: state.entityStates,
+      content.append(renderIndustrialGauge(displayWidget, document, { linear:isIndustrialLinear(widget), runtime: runtimeMode, states: displayStates,
         inputValue: widget.dataInputEnabled === true ? displayedWidgetState(widget) : undefined,
         onInput: value => { widget.state = value; },
         onCommit: value => { void writeIndustrialOutput(widget, value); },
@@ -3356,7 +3370,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "chart") {
       if (widget.noCard) content.style.background = "transparent";
-      content.append(widget.chartMode === "weather" ? renderWeather(widget, document, state.entityStates, document.documentElement.lang || "de") : renderPackageChart(widget, document, state.entityStates, document.documentElement.lang || "de", getWidgetDefinition(widget.type).render.valueKey));
+      content.append(widget.chartMode === "weather" ? renderWeather(displayWidget, document, displayStates, widgetLanguage) : renderPackageChart(displayWidget, document, displayStates, widgetLanguage, getWidgetDefinition(widget.type).render.valueKey));
     } else if (widget.type === "value-converter") {
       content.classList.add("value-converter-content");
       const input = widgetInputPacket(widget, activePage.widgets, state.entityStates, new Set([`data:${widget.id}`]));
@@ -3996,33 +4010,34 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
         await refreshRuntimeStates();
       } }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-status-list") {
-      content.append(renderTechnicStatusList(widget, document, { states: state.entityStates, locale: document.documentElement.lang || "de" }));
+      content.append(renderTechnicStatusList(displayWidget, document, { states: displayStates, locale: widgetLanguage }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-room") {
       const target = state.project.pages.find(page => page.id === widget.targetPage);
       const chain = [...(params.get("chain") || "").split(",").filter(Boolean), ...surfaceChain];
       const popupUrl = target ? technicRoomUrl(location.href, state.projectId, activePage.id, target.id, chain) : null;
-      content.append(renderTechnicRoom(widget, document, { runtime: runtimeMode, locale: document.documentElement.lang || "de", states: state.entityStates, popupUrl, navigate: () => { if (!target) return; state.tabEditor = null; state.tabReturn = null; state.project.currentPageId = target.id; setSingleWidgetSelection(null); render(); void refreshRuntimeStates(); } }));
+      content.append(renderTechnicRoom(displayWidget, document, { runtime: runtimeMode, locale: widgetLanguage, states: displayStates, popupUrl, navigate: () => { if (!target) return; state.tabEditor = null; state.tabReturn = null; state.project.currentPageId = target.id; setSingleWidgetSelection(null); render(); void refreshRuntimeStates(); } }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-light") {
-      content.append(renderTechnicLight(widget, document, { runtime: runtimeMode, locale: document.documentElement.lang || "de", getStates: () => state.entityStates, onSettled: focusRange => { renderRuntimeStageWhenReady(); if (focusRange) document.getElementById(widget.id)?.querySelector(".technic-light > input")?.focus({ preventScroll: true }); }, write: async request => {
+      content.append(renderTechnicLight(widget, document, { runtime: runtimeMode, locale: widgetLanguage, getStates: () => state.entityStates, onSettled: focusRange => { renderRuntimeStageWhenReady(); if (focusRange) document.getElementById(widget.id)?.querySelector(".technic-light > input")?.focus({ preventScroll: true }); }, write: async request => {
         try {
           const response = await fetch("api/light-dimmer", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) });
           if (!response.ok || (await response.json()).accepted !== true) throw new Error("Light action failed");
         } finally { await refreshRuntimeStates(); }
       } }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-temperature") {
-      content.append(renderTemperature(widget, document, { runtime: runtimeMode, locale: document.documentElement.lang || "de", getStates: () => state.entityStates,
+      content.append(renderTemperature(displayWidget, document, { runtime: runtimeMode, locale: widgetLanguage, getStates: () => mapDisplaySources(widget,state.entityStates).states,
         onSettled: focusRange => { renderRuntimeStageWhenReady(); if (focusRange) document.getElementById(widget.id)?.querySelector(".technic-temperature > input")?.focus({ preventScroll: true }); },
         write: async request => { try { const response = await fetch("api/temperature", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) }); if (!response.ok || (await response.json()).accepted !== true) throw new Error("Temperature action failed"); } finally { await refreshRuntimeStates(); } },
-        history: async request => { const response = await fetch("api/thermostat-history", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) }); if (!response.ok) throw new Error("History unavailable"); return response.json(); }
+        history: async request => { const nativeRequest={...request,target_entity:widget.targetEntityId||'',actual_entity:widget.actualEntityId||'',actuator_entity:widget.actuatorEntityId||''};const response = await fetch("api/thermostat-history", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(nativeRequest) }); if (!response.ok) throw new Error("History unavailable"); return response.json(); }
       }));
+      if(widget.climateControlsEnabled===true)content.append(renderClimateControls(widget,document,{runtime:runtimeMode,getEntry:()=>state.entityStates[widget.targetEntityId],text:value=>restText(value,widgetLanguage),settled:()=>renderRuntimeStageWhenReady(),write:async request=>{try{const response=await fetch('api/climate-control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(request)});if(!response.ok||!(await response.json()).accepted)throw new Error('Climate action failed');}finally{await refreshRuntimeStates();}}}));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-switch") {
-      content.append(renderTechnicSwitch(widget, document, { runtime: runtimeMode, locale: document.documentElement.lang || "de", getStates: () => state.entityStates, onSettled: () => renderStage(), write: async (entityId, value, numeric) => {
+      content.append(renderTechnicSwitch(widget, document, { runtime: runtimeMode, locale: widgetLanguage, getStates: () => state.entityStates, onSettled: () => renderStage(), write: async (entityId, value, numeric) => {
         const response = await fetch(numeric ? "api/helper-value" : "api/switch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(numeric ? { entity_id: entityId, value } : { entity_id: entityId, enabled: value }) });
         if (!response.ok || (await response.json()).accepted !== true) throw new Error("Switch action failed");
         await refreshRuntimeStates();
       } }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "technic-window") {
-      content.append(renderTechnicWindow(widget, document, { runtime: runtimeMode, locale: document.documentElement.lang || "de", getStates: () => state.entityStates, writePosition: async (entityId, position) => {
+      content.append(renderTechnicWindow(displayWidget, document, { runtime: runtimeMode, locale: widgetLanguage, getStates: () => mapDisplaySources(widget,state.entityStates).states, writePosition: async (entityId, position) => {
         const response = await fetch("api/cover-position", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity_id: entityId, position }) });
         if (!response.ok || (await response.json()).accepted !== true) throw new Error("Cover action failed");
         void refreshRuntimeStates();
@@ -4033,20 +4048,20 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       } }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "heating-params") {
       if (widget.noCard) content.style.background = "transparent";
-      content.append(renderHeatingParams(widget, document, { states: state.entityStates, runtime: runtimeMode, locale: document.documentElement.lang || "de", pending: pendingSwitches, write: (entityId, enabled) => { void writeRuntimeSwitch({ entityId }, enabled); } }));
+      content.append(renderHeatingParams(displayWidget, document, { states: displayStates, runtime: runtimeMode, locale: widgetLanguage, pending: pendingSwitches, write: (entityId, enabled) => { void writeRuntimeSwitch({ entityId }, enabled); } }));
     } else if (getWidgetDefinition(widget.type).render?.kind === "landlord-notification") {
       element.classList.add("notification-host"); element.dataset.dashboardSurface = dashboardSurfaceKey;
       if (widget.noCard) content.style.background = "transparent";
-      renderLandlordNotification(content, widget, document, runtimeMode, document.documentElement.lang || "de", async payload => {
+      renderLandlordNotification(content, widget, document, runtimeMode, widgetLanguage, async payload => {
         const response = await fetch("api/landlord-notification", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
         if (!response.ok || (await response.json()).accepted !== true) throw new Error("Notification failed");
       });
     } else if (getWidgetDefinition(widget.type).render?.kind === "window-overview") {
       if (widget.noCard) content.style.background = "transparent";
-      content.append(renderWindowOverview(widget, document, state.entityStates, document.documentElement.lang || "de", getWidgetDefinition(widget.type).render.valueKey));
+      content.append(renderWindowOverview(displayWidget, document, displayStates, widgetLanguage, getWidgetDefinition(widget.type).render.valueKey));
     } else if (getWidgetDefinition(widget.type).render?.kind === "room-table") {
       if (widget.noCard) content.style.background = "transparent";
-      content.append(renderHeatingRooms(widget, document, state.entityStates, document.documentElement.lang || "de", getWidgetDefinition(widget.type).render.valueKey));
+      content.append(renderHeatingRooms(displayWidget, document, displayStates, widgetLanguage, getWidgetDefinition(widget.type).render.valueKey));
     } else if (getWidgetDefinition(widget.type).render?.kind === "text") {
       const definition = getWidgetDefinition(widget.type);
       const value = document.createElement("span");
@@ -4073,6 +4088,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     }
     if (isIndustrial(widget)) applyIndustrialBackground(widget, content.firstElementChild);
     if (content.parentElement !== element) element.append(content);
+    if(isRestWidget(widget))markRestRuntime(element,widget,state.entityStates,widgetLanguage);
     if (getWidgetDefinition(widget.type).basicWidget) {
       const locale = basicLocale(widget, document.documentElement.lang);
       // Translate only known runtime fallback nodes, never user content or bound values.
@@ -4810,7 +4826,7 @@ function field(descriptor, widget) {
   if (descriptor.type === "textarea" || htmlField) input = document.createElement("textarea");
   else if (["select", "page", "widget", "collector", "connection"].includes(descriptor.type)) {
     input = document.createElement("select");
-    const choiceText = value => descriptor.interactiveLocale ? interactiveText(value,descriptor.interactiveLocale) : widget.type && ['universal-button','radial-slider'].includes(widget.type)?interactiveText(value,interactiveLocale(widget,document.documentElement.lang)):widget.type && getWidgetDefinition(widget.type).basicWidget ? basicText(value, basicLocale(widget, document.documentElement.lang)) : value;
+    const choiceText = value => descriptor.widgetLocale ? restText(value,descriptor.widgetLocale) : descriptor.interactiveLocale ? interactiveText(value,descriptor.interactiveLocale) : widget.type && ['universal-button','radial-slider'].includes(widget.type)?interactiveText(value,interactiveLocale(widget,document.documentElement.lang)):widget.type && getWidgetDefinition(widget.type).basicWidget ? basicText(value, basicLocale(widget, document.documentElement.lang)) : value;
     const choices = descriptor.type === "page" ? [{ value: "", label: choiceText("Keine Seite") }, ...state.project.pages.map(page => ({ value: page.id, label: page.name }))]
       : descriptor.type === "widget" ? [{ value: "", label: choiceText(descriptor.widgetType ? "Eigene Einstellungen" : "Kein Widget / freier Punkt") }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type !== "svg-connection" && (!descriptor.widgetType || item.type === descriptor.widgetType)).map(item => ({ value: item.id, label: `${widgetDisplayName(item)} · ${item.id}` }))]
       : descriptor.type === "connection" ? [{ value: "", label: "Keine Hauptlinie" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").map(item => ({ value: item.id, label: `${widgetDisplayName(item)} · ${item.id}` }))]
@@ -4923,6 +4939,7 @@ function field(descriptor, widget) {
     const button = document.createElement("button"); button.type = "button"; button.className = "property-icon-picker-button"; button.textContent = "✎"; button.title = "HTML bearbeiten"; button.setAttribute("aria-label", button.title);
     button.disabled = input.disabled; button.addEventListener("click", () => openHtmlEditor(input)); row.append(input, button); wrapper.append(row);
   } else wrapper.append(input);
+  if(descriptor.suggestions){const list=document.createElement('datalist');list.id=`source-options-${widget.id}-${descriptor.key}`;for(const value of descriptor.suggestions){const option=document.createElement('option');option.value=value;list.append(option);}input.setAttribute('list',list.id);wrapper.append(list);}
   if (input.type === "range") {
     const number = document.createElement("input"); number.type = "number"; number.min = input.min; number.max = input.max; number.step = input.step; number.value = input.value; number.setAttribute("aria-label", descriptor.label);
     input.addEventListener("input", () => { number.value = input.value; });
@@ -5122,20 +5139,29 @@ function renderProperties() {
   if(getWidgetDefinition(widget.type).render?.kind==='material-color-schemes')groups=materialGroups(groups,{...widget,showAdvanced:true},propertyGroupKey,document.documentElement.lang || 'de');
   if (getWidgetDefinition(widget.type).render?.kind === "technic-clock") {
     const labels = { row: "Nebeneinander", column: "Untereinander", left: "Links", center: "Mitte", right: "Rechts", "24h": "24 Stunden", "12h": "12 Stunden", de: "Deutsch", en: "English", fr: "Français", es: "Español", it: "Italiano", nl: "Nederlands", DMY: "Tag-Monat-Jahr", MDY: "Monat-Tag-Jahr", YMD: "Jahr-Monat-Tag", ".": "Punkt (.)", "-": "Bindestrich (-)", "/": "Schrägstrich (/)", space: "Leerzeichen", numeric: "Numerisch", short: "Kurz", long: "Lang", full: "4-stellig", off: "Aus" };
-    groups = groups.map(group => ({ ...group, fields: group.fields.map(descriptor => descriptor.key === "colorBg" ? { ...descriptor, optionalColor: true } : descriptor.type === "select" ? { ...descriptor, options: descriptor.options.map(value => ({ value, label: descriptor.key === "yearFormat" && value === "short" ? "2-stellig" : labels[value] || value })) } : descriptor) }));
+    groups = groups.map(group => ({ ...group, fields: group.fields.map(descriptor => descriptor.key === "colorBg" ? { ...descriptor, optionalColor: true } : descriptor.type === "select" ? { ...descriptor, options: descriptor.options.map(option => {const value=typeof option==='string'?option:option.value;return {value,label:descriptor.key==='yearFormat'&&value==='short'?'2-stellig':labels[value]||(typeof option==='string'?option:option.label)};}) } : descriptor) }));
   }
   if (["technic-room", "technic-status-list"].includes(getWidgetDefinition(widget.type).render?.kind)) {
     const labels = { left: "Links", center: "Mitte", right: "Rechts", top: "Oben", middle: "Mitte", bottom: "Unten", number: "Zahl", bool: "Wahr / Falsch", and: "UND", or: "ODER", popup: "Popup", switchView: "Seite wechseln" };
     // Keep saved group keys stable when changing the visible row count.
     groups = groups.map((group, index) => ({ ...group, id: propertyGroupKey(group, index) }))
       .filter(group => !/^Statuszeile \[\d+\]$/.test(group.label) || Number(group.label.match(/\d+/)[0]) <= Math.min(10, Math.max(0, Number(widget.rowCount) || 0)))
-      .map(group => ({ ...group, fields: group.fields.map(descriptor => descriptor.key === "targetPage" ? { ...descriptor, type: "page" } : descriptor.type === "select" ? { ...descriptor, options: descriptor.options.map(value => ({ value, label: labels[value] || value })) } : descriptor) }));
+      .map(group => ({ ...group, fields: group.fields.map(descriptor => descriptor.key === "targetPage" ? { ...descriptor, type: "page" } : descriptor.type === "select" ? { ...descriptor, options: descriptor.options.map(option => {const value=typeof option==='string'?option:option.value;return {value,label:labels[value]||(typeof option==='string'?option:option.label)};}) } : descriptor) }));
   }
   groups = [...groups, ...indexedWidgetGroups(widget)];
+  if(isRestWidget(widget))groups=restGroups(groups,widget,propertyGroupKey,projectWidgetLanguage());
   const heading = document.createElement("div"); heading.className = "selected-widget-heading";
-  const updateHeading = () => { heading.textContent = `${widgetDisplayName(widget)} — ${getWidgetDefinition(widget.dataFlowVariant || widget.type).label} · ${widget.id}`; };
+  const updateHeading = () => { const label=getWidgetDefinition(widget.dataFlowVariant || widget.type).label;heading.textContent = `${widgetDisplayName(widget)} — ${isRestWidget(widget)?restText(label,restLocale(widget,projectWidgetLanguage())):label} · ${widget.id}`; };
   updateHeading(); panel.append(heading);
-  panel.append(field({ label: "In Runtime verstecken", key: "hideInRuntime", type: "checkbox", default: false }, widget));
+  if(isRestWidget(widget)){
+    const inspect=document.createElement('button');inspect.type='button';inspect.className='property-action';inspect.textContent=restText('Quelle prüfen',restLocale(widget,projectWidgetLanguage()));
+    inspect.onclick=async()=>{await refreshEditorLiveStates();const ids=[...new Set(sourceEntries(widget).map(([,id])=>id))];if(ids.length){try{const query=new URLSearchParams();for(const id of ids.slice(0,100))query.append('entity_id',id);const response=await fetch('api/source-attributes?'+query);if(response.ok){const result=await response.json();for(const [id,names]of Object.entries(result.attributes||{}))if(state.entityStates[id]&&Array.isArray(names))state.entityStates[id].attributeNames=names;}}catch{/* Manually entered attributes remain usable offline. */}}renderProperties();const dialog=document.createElement('dialog');dialog.className='studio-dialog source-inspector';const text=value=>restText(value,restLocale(widget,projectWidgetLanguage()));
+      const title=document.createElement('strong');title.textContent=text('Quellenprüfung');dialog.append(title);
+      const rows=sourceEntries(widget);for(const [key,id]of rows){const result=resolveSource(widget,state.entityStates,key),row=document.createElement('p'),value=typeof result.value==='object'?JSON.stringify(result.value):String(result.value??'—');row.textContent=`${id}${result.attribute?' ['+result.attribute+']':''}: ${result.valid?value.slice(0,500):text(result.error)}${result.unit?' '+result.unit:''}`;dialog.append(row);if(result.valid){let structured=typeof result.value==='object';if(typeof result.value==='string'&&/^[\[{]/.test(result.value.trim())){try{JSON.parse(result.value);structured=true;}catch{const warning=document.createElement('small');warning.textContent=text('JSON-Struktur prüfen');dialog.append(warning);}}if(structured){const hint=document.createElement('small');hint.textContent=text('Quelle ist strukturiert');dialog.append(hint);}if(result.converted&&isEnergy(widget)){const hint=document.createElement('small');hint.textContent=text('Automatische Einheiten ersetzen den bisherigen Quellenfaktor.');dialog.append(hint);}}}
+      if(!rows.length){const hint=document.createElement('p');hint.textContent=text('Quelle nicht verfügbar');dialog.append(hint);}
+      const close=document.createElement('button');close.type='button';close.textContent=text('Schließen');close.onclick=()=>dialog.close();dialog.append(close);dialog.onclose=()=>dialog.remove();document.body.append(dialog);dialog.showModal();};panel.append(inspect);
+  }
+  panel.append(field({ label: isRestWidget(widget)?restText('In Runtime verstecken',restLocale(widget,projectWidgetLanguage())):'In Runtime verstecken', key: "hideInRuntime", type: "checkbox", default: false }, widget));
   groups = groups.map(group => ({ ...group, fields: group.fields.filter(descriptor => descriptor.key !== "hideInRuntime") }));
   if (getWidgetDefinition(widget.type).render?.kind === "material-widget") {
     const fill = document.createElement("button"); fill.type = "button"; fill.className = "property-action";
@@ -5168,7 +5194,7 @@ function renderProperties() {
   for (const [index, group] of groups.entries()) {
     const details = document.createElement("details"); details.className = "property-section";
     if (group.basicLocale) details.dataset.basicLocale = group.basicLocale;
-    const sectionKey = getWidgetDefinition(widget.type).basicWidget || isPrinter(widget) || isCalendarPlus(widget) || getWidgetDefinition(widget.type).render?.kind?.startsWith('material-') ? `widget:${widget.id}:${propertyGroupKey(group,index)}` : `widget:${widget.id}:${group.label}:${index}`;
+    const sectionKey = isRestWidget(widget) || getWidgetDefinition(widget.type).basicWidget || isPrinter(widget) || isCalendarPlus(widget) || getWidgetDefinition(widget.type).render?.kind?.startsWith('material-') ? `widget:${widget.id}:${propertyGroupKey(group,index)}` : `widget:${widget.id}:${group.label}:${index}`;
     details.open = state.expandedPropertySections.has(sectionKey);
     details.addEventListener("toggle", () => { if (details.open) state.expandedPropertySections.add(sectionKey); else state.expandedPropertySections.delete(sectionKey); });
     const summary = document.createElement("summary");
@@ -5206,6 +5232,7 @@ function renderProperties() {
         for (const control of body.querySelectorAll("input, select, textarea, button")) control.disabled = !enabled.checked;
         renderStage();
         if (widget.type === "linebox" && group.masterKey === "dockPointsEnabled") renderProperties();
+        if(['sourceOptionsEnabled','climateControlsEnabled'].includes(group.masterKey))renderProperties();
       } else {
         widget.enabledPropertyGroups ??= {};
         widget.enabledPropertyGroups[propertyGroupKey(group, index)] = enabled.checked;
@@ -5317,6 +5344,7 @@ function renderProperties() {
     details.append(summary, body); panel.append(details);
     if (group.basicLocale) localizeBasicDOM(details, group.basicLocale);
     if (group.interactiveLocale) localizeInteractiveDOM(details, group.interactiveLocale);
+    if (group.widgetLocale){details.dataset.widgetLocale=group.widgetLocale;localizeRestProperties(details,group.widgetLocale);}
   }
 }
 
@@ -5669,6 +5697,7 @@ function openSettingsDialog() {
   $("#settings-ignore-unloaded").checked = settings.ignoreUnloaded !== false;
   $("#settings-overflow").value = settings.bodyOverflow || "auto";
   $("#settings-material-design-style").value = settings.materialDesignStyle || "material3";
+  $("#settings-widget-locale").value=settings.widgetLocale||'auto';
   showSettingsTab("general");
   const dialog = $("#settings-dialog");
   if (!dialog.open) dialog.showModal();
@@ -5758,6 +5787,7 @@ $("#settings-save").addEventListener("click", async (event) => {
     ignoreUnloaded: $("#settings-ignore-unloaded").checked,
     bodyOverflow: $("#settings-overflow").value,
     materialDesignStyle: $("#settings-material-design-style").value,
+    widgetLocale:$("#settings-widget-locale").value,
   });
   state.project.settings.title = $("#project-title").value.trim();
   state.project.settings.favicon = $("#project-favicon").value.trim();

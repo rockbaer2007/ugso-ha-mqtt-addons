@@ -1,12 +1,15 @@
 // Independent HA adaptation. Reference and MIT attribution: packages/energy/UPSTREAM.txt.
+import { restText } from './rest-locales.js';
+import { resolveSource, sourceKey, sourceTargetUnit, sourceUnitConversion } from './source-bindings.js';
 export const isEnergy = widget => widget.type?.startsWith('ugso.energy/');
 export const energyBindings = widget => [...new Set(Object.entries(widget).filter(([key,value]) => /EntityId$/.test(key) && typeof value === 'string' && value).map(([,value]) => value))];
 export const energyNumber = value => (typeof value === 'number' || typeof value === 'string' && value.trim()) && Number.isFinite(Number(value)) ? Number(value) : null;
 const n = (value,fallback) => energyNumber(value) ?? fallback;
 export function energyValue(widget, states, prefix) {
-  const value=energyNumber(states[widget[prefix+'EntityId']]?.state);
-  return value == null ? null : energyNumber(value*n(widget[prefix+'Factor'],1));
+  const source=resolveSource(widget,states,prefix+'EntityId'),value=energyNumber(source.value);
+  return value == null ? null : energyNumber(value*(source.converted?1:n(widget[prefix+'Factor'],1)));
 }
+export function energyHistoryFactor(widget,states,prefix){const key=prefix+'EntityId';if(widget.sourceOptionsEnabled && widget[sourceKey('AutoUnit',key)]){const from=states[widget[key]]?.attributes?.unit_of_measurement,to=sourceTargetUnit(widget,key,states),model=sourceUnitConversion(1,from,to);return from&&to&&model.valid&&model.factor!==null?model.factor:null;}return n(widget[prefix+'Factor'],1);}
 export function energyBalance(widget,states) {
   const production=energyValue(widget,states,'production'),net=energyValue(widget,states,'grid'),separate=energyValue(widget,states,'export');
   const imported=net==null?null:Math.max(0,net),exported=widget.exportEntityId?separate:net==null?null:Math.max(0,-net);
@@ -78,18 +81,21 @@ export function clearEnergyCache(){periods.clear();historyCache.clear();}
 function rangeFor(widget,widgets){const selector=widgets.find(w=>w.id===widget.intervalWidgetId&&w.energyKind==='interval');const source=selector||widget;const choice=periods.get(source.id)||source;return energyPeriod(choice.period,choice.startDate);}
 function requestHistory(widget,range,ids,ctx){
   if(!ids.length)return {error:ctx.locale==='en'?'Select history entities':'Verlauf-Entitäten auswählen'};
-  const end=Math.min(+range.end,Date.now()),key=JSON.stringify([ids,+range.start,end>=+range.end?end:Math.floor(end/60000)*60000]);
+  const selected=Object.entries(widget).filter(([key,id])=>/EntityId$/.test(key)&&ids.includes(id));
+  for(const id of ids)if(new Set(selected.filter(([,value])=>value===id).map(([key])=>widget.sourceOptionsEnabled?widget[sourceKey('Attribute',key)]||'':'')).size>1)return {error:restText('Verschiedene Verlaufsattribute derselben Entität benötigen getrennte Verlaufwidgets.',ctx.locale)};
+  const attributes=widget.sourceOptionsEnabled?Object.fromEntries(Object.entries(widget).filter(([key,value])=>/EntityId$/.test(key)&&ids.includes(value)&&widget[sourceKey('Attribute',key)]).map(([key,value])=>[value,widget[sourceKey('Attribute',key)]])):{};
+  const end=Math.min(+range.end,Date.now()),key=JSON.stringify([ids,+range.start,end>=+range.end?end:Math.floor(end/60000)*60000,attributes]);
   const found=historyCache.get(key);if(found)return found;
   const entry={pending:true};historyCache.set(key,entry);
   while(historyCache.size>32)historyCache.delete(historyCache.keys().next().value);
-  ctx.history({entity_ids:ids,start:range.start.toISOString(),end:new Date(Math.max(+range.start+1,end)).toISOString()}).then(data=>{entry.data=data;entry.pending=false;ctx.refresh();}).catch(error=>{entry.error=error.message||(ctx.locale==='en'?'Recorder history unavailable':'Recorder-Verlauf nicht verfügbar');entry.pending=false;ctx.refresh();});
+  ctx.history({entity_ids:ids,start:range.start.toISOString(),end:new Date(Math.max(+range.start+1,end)).toISOString(),...(Object.keys(attributes).length?{attributes}: {})}).then(data=>{entry.data=data;entry.pending=false;ctx.refresh();}).catch(error=>{entry.error=error.message||(ctx.locale==='en'?'Recorder history unavailable':'Recorder-Verlauf nicht verfügbar');entry.pending=false;ctx.refresh();});
   return entry;
 }
 export function renderEnergy(widget,doc,ctx={}) {
   const {states={},locale='de',widgets=[],runtime=false}=ctx,english=locale.startsWith('en'),kind=widget.energyKind;
   const root=doc.createElement('div');root.className='energy-widget';root.dataset.energyKind=kind;
   Object.assign(root.style,{background:widget.noCard?'transparent':widget.backgroundColor||'#17242d',color:widget.textColor||'#e7edf2',borderRadius:widget.noCard?'0':'12px',padding:widget.noCard?'4px':'12px'});
-  const words=(de,en)=>english?en:de;
+  const words=(de,en)=>locale==='fr'?restText(de,'fr'):english?en:de;
   const fmt=(value,unit='')=>value==null?'—':new Intl.NumberFormat(locale,{maximumFractionDigits:Math.min(5,Math.max(0,n(widget.decimals,1)))}).format(value)+(unit?' '+unit:'');
   const line=(label,value)=>{const row=doc.createElement('div');row.className='energy-value-row';const name=doc.createElement('span'),number=doc.createElement('strong');name.textContent=label;number.textContent=value;row.append(name,number);root.append(row);return row;};
   if(widget.heading&&!widget.noCard){const heading=doc.createElement('strong');heading.className='energy-heading';heading.textContent=widget.heading;root.append(heading);}
@@ -144,7 +150,7 @@ export function renderEnergy(widget,doc,ctx={}) {
     if(kind==='consumption'||widget.costMode==='history'){
       const ids=[...new Set(prefixes.map(p=>widget[p+'EntityId']).filter(Boolean))];const history=requestHistory(widget,range,ids,ctx);
       if(history.pending||history.error){line(words('Verlauf','History'),history.error||words('Lädt…','Loading…'));return root;}
-      for(const p of prefixes){const points=history.data?.series?.[widget[p+'EntityId']]||[];const coverageEnd=Date.parse(history.data.end);series.push({name:widget[p+'Name']||p,unit:widget[p+'Unit']||'kWh',color:widget[p+'Color']||widget.accentColor,coverageEnd,points:energyBuckets(points,range,widget.historyMode,n(widget[p+'Factor'],1),coverageEnd)});}
+      for(const p of prefixes){const points=history.data?.series?.[widget[p+'EntityId']]||[];const coverageEnd=Date.parse(history.data.end),factor=energyHistoryFactor(widget,states,p);series.push({name:widget[p+'Name']||p,unit:widget.sourceOptionsEnabled&&widget[sourceKey('AutoUnit',p+'EntityId')]?sourceTargetUnit(widget,p+'EntityId',states):widget[p+'Unit']||'kWh',color:widget[p+'Color']||widget.accentColor,coverageEnd,points:energyBuckets(factor===null?[]:points,range,widget.historyMode,factor??1,coverageEnd)});}
     }
     if(kind==='costs'){
       const total=p=>{const points=series[p]?.points.filter(point=>point.x<series[p].coverageEnd)||[];return points.length&&points.every(p=>p.y!=null)?points.reduce((sum,p)=>sum+p.y,0):null;};

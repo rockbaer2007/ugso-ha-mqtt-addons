@@ -1,4 +1,5 @@
 // Read-only room status and local Studio page overlays.
+import {restText} from './rest-locales.js';
 const count = widget => Math.min(10, Math.max(0, Math.trunc(Number(widget.rowCount) || 0)));
 const extras = (widget, i) => String(widget[`extraEntityIds${i}`] || "").split(",").map(id => id.trim()).filter(Boolean);
 const boolean = value => [true, "true", "on", 1, "1"].includes(value) ? true : [false, "false", "off", 0, "0"].includes(value) ? false : null;
@@ -68,8 +69,8 @@ export function renderTechnicRoom(widget, doc, context = {}) {
       const dialog = doc.createElement("dialog"); dialog.className = "technic-room-dialog"; dialog.dataset.widgetId = widget.id; active = dialog;
       Object.assign(dialog.style, { width: `${bounded(widget.popupWidth, 800, 160, 3000)}px`, height: `${bounded(widget.popupHeight, 600, 100, 3000)}px`, backgroundColor: widget.popupBackgroundColor || "#0d1820", border: `${bounded(widget.popupBorderWidth, 1, 0, 20)}px solid ${widget.popupBorderColor || "#2ecfbf"}`, borderRadius: `${bounded(widget.popupBorderRadius, 8, 0, 100)}px` });
       if (widget.popupUseOffset) Object.assign(dialog.style, { margin: "0", left: `clamp(0px, ${bounded(widget.popupOffsetX, 0, 0, 10000)}px, max(0px, calc(100vw - ${bounded(widget.popupWidth, 800, 160, 3000)}px)))`, top: `clamp(0px, ${bounded(widget.popupOffsetY, 0, 0, 10000)}px, max(0px, calc(100vh - ${bounded(widget.popupHeight, 600, 100, 3000)}px)))` });
-      if (widget.showCloseButton !== false) { const close = doc.createElement("button"); close.type = "button"; close.textContent = locale === "de" ? "Schließen" : "Close"; close.addEventListener("click", closeTechnicRoom); dialog.append(close); }
-      const frame = doc.createElement("iframe"); frame.src = popupUrl; frame.title = widget.roomName || (locale === "de" ? "Raumseite" : "Room page"); dialog.append(frame);
+      if (widget.showCloseButton !== false) { const close = doc.createElement("button"); close.type = "button"; close.textContent = restText('Schließen',locale); close.addEventListener("click", closeTechnicRoom); dialog.append(close); }
+      const frame = doc.createElement("iframe"); frame.src = popupUrl; frame.title = widget.roomName || restText('Raumseite',locale); dialog.append(frame);
       dialog.addEventListener("click", event => { if (widget.closeOnOutsideClick === false || event.target !== dialog) return; const box = dialog.getBoundingClientRect(); if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) closeTechnicRoom(); });
       dialog.addEventListener("close", () => { if (active === dialog) { active = null; clearTimeout(timer); timer = null; } dialog.remove(); });
       doc.body.append(dialog); dialog.showModal();

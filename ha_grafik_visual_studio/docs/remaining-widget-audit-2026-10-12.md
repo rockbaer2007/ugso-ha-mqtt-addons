@@ -4,6 +4,10 @@ Stand: 12.10.2026, Studio 0.1.295. Geprüft wurden 62 weitere Widgettypen: 17 ei
 
 ## Ergebnis
 
+Nachtrag Studio **0.1.296**: Die umsetzbaren Sprach-, Climate- und Quellen-Ergänzungen sind umgesetzt. [DE/EN/FR-Anleitung und Grenzen](widgets-0.1.296.md). Neue Gruppen sind zunächst deaktiviert, bestehende Einstellungen/Pakete bleiben erhalten. Die folgende Tabelle beschreibt den ursprünglichen Prüfstand 0.1.295; die erweiterten Climate-Funktionen stehen im Nachtrag.
+
+Verifikation 0.1.296: **388 JavaScript- und 109 Python-Tests**, breite Browserprüfung aller 62 Typen mit französischen Eigenschaften und DE/EN/FR-Runtime in Hell/Dunkel, weitere spezialisierte Browserfälle für Calendar+, Energy, Printer, Solar, Industrial Weather/Heating und Climate. Auswahlwerte bleiben technisch unverändert. Alte/neue Projektfelder wurden gespeichert und wieder geladen. Docker-Build und `/health` melden 0.1.296. Reale Geräte und Companion wurden nicht gesteuert.
+
 Im geprüften Quellcode und den automatisierten Prüfungen wurde kein neuer blockierender Defekt festgestellt. Die übrigen Widgets passen zum HA-Datenmodell, wenn die unten genannten Entitäten, Einheiten und Voraussetzungen stimmen. Das ist keine Bestätigung, dass jede reale Integration und jedes Gerät funktioniert: Live-Geräte, Companion-App, tatsächliche Recorder-Daten, Mikrofon und externe Einbettung wurden nicht an einer echten HA-Installation geprüft.
 
 | Set / Paket | Typen | HA-Eignung und Voraussetzungen |
@@ -31,9 +35,9 @@ Im geprüften Quellcode und den automatisierten Prüfungen wurde kein neuer bloc
 
 ## Noch offen / bewusst begrenzt
 
-1. Vollständiges Französisch für die restlichen sieben Pakete und deren Eigenschaften ist nicht vorhanden; überwiegend DE/EN. Basic, Material und neue Universal/Radial-Optionen besitzen eigene DE/EN/FR-Unterstützung. Das ist eine Sprachlücke, keine vollständige Dreisprachigkeit des Studios.
-2. Technic-Thermostate decken nicht sämtliche Climate-Funktionen ab. [HA Climate](https://www.home-assistant.io/integrations/climate/) bietet unter anderem Heiz-/Kühlbereiche und weitere Gerätefunktionen.
-3. Energieeinheiten/Skalierungen und integrationsabhängige JSON-Attribute benötigen korrekte Zuordnung. Recorder-Verläufe sind nicht dasselbe wie Langzeitstatistiken.
+1. Die restlichen Widget-Eigenschaften und Laufzeitmeldungen erhalten ab 0.1.296 DE/EN/FR. Die allgemeine Studio-Oberfläche bleibt DE/EN; eigene Texte werden nicht übersetzt.
+2. Climate-Bereich, HVAC/Preset, Lüfter, Schwenken, Feuchtigkeit und Ein/Aus sind ab 0.1.296 optional vorhanden. Nur tatsächlich gemeldete Gerätefähigkeiten werden angeboten.
+3. Quellenprüfung, Attribute und kompatible Umrechnung sind ab 0.1.296 optional vorhanden. Integrationsabhängige JSON-Strukturen benötigen weiterhin passende Zuordnung. Recorder-Verläufe sind nicht dasselbe wie Langzeitstatistiken.
 4. HA-Dashboards und externe Webseiten funktionieren nur, wenn Browser-Anmeldung und Einbettungsregeln passen. [HA-Webseiten-Dokumentation](https://www.home-assistant.io/dashboards/iframe/) beschreibt Browserbeschränkungen für Einbettungen.
 5. Meteored benötigt Internet. Benachrichtigungen brauchen ein vorhandenes Ziel; kein Testversand an reale Empfänger wurde durchgeführt.
 6. Einige ältere lokale Dokumente beschrieben Live-Anbindung noch als zukünftig. `ha-widget-special-cases.md` wurde auf den aktuellen Prüfstand gebracht.

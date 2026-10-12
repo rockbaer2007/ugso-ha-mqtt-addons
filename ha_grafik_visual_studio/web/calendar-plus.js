@@ -73,9 +73,10 @@ export function calendarPlusEvents(calendars,sources,now=new Date(),rangeEnd=Inf
   return events.sort((a,b)=>a.start-b.start||a.title.localeCompare(b.title));
 }
 const words={de:{loading:'Termine werden geladen …',empty:'Keine kommenden Termine',choose:'Kalender auswählen',error:'Kalender konnten nicht geladen werden.',invalid:'Bitte calendar.*-Entitäten auswählen.',allDay:'Ganztägig',today:'Heute',tomorrow:'Morgen',active:'Läuft',all:'Alle Termine',close:'Schließen',refresh:'Aktualisieren',more:'Weitere Termine',days:'In {n} Tagen',minute:'In {n} Min.',hour:'In {n} Std.'},
-en:{loading:'Loading events …',empty:'No upcoming events',choose:'Select a calendar',error:'Could not load calendars.',invalid:'Please select calendar.* entities.',allDay:'All day',today:'Today',tomorrow:'Tomorrow',active:'In progress',all:'All events',close:'Close',refresh:'Refresh',more:'More events',days:'In {n} days',minute:'In {n} min',hour:'In {n} h'}};
+en:{loading:'Loading events …',empty:'No upcoming events',choose:'Select a calendar',error:'Could not load calendars.',invalid:'Please select calendar.* entities.',allDay:'All day',today:'Today',tomorrow:'Tomorrow',active:'In progress',all:'All events',close:'Close',refresh:'Refresh',more:'More events',days:'In {n} days',minute:'In {n} min',hour:'In {n} h'},
+fr:{loading:'Chargement des événements …',empty:'Aucun événement à venir',choose:'Choisir un calendrier',error:'Impossible de charger les calendriers.',invalid:'Choisir des entités calendar.*.',allDay:'Toute la journée',today:'Aujourd’hui',tomorrow:'Demain',active:'En cours',all:'Tous les événements',close:'Fermer',refresh:'Actualiser',more:'Autres événements',days:'Dans {n} jours',minute:'Dans {n} min',hour:'Dans {n} h'}};
 export function calendarPlusWhen(event,locale='de',now=new Date()) {
-  const lang=words[locale.startsWith('de')?'de':'en'];
+  const lang=words[locale.startsWith('de')?'de':locale.startsWith('fr')?'fr':'en'];
   if(event.start<=now&&event.end>now)return lang.active;
   if(calendarIso(event.start)===calendarIso(now)) {
     if(event.allDay)return lang.today;
@@ -108,7 +109,7 @@ async function loadEvents(ids,range,force=false) {
   try{return await promise;}catch(error){if(cache.get(key)===entry)cache.delete(key);throw error;}
 }
 export function renderCalendarPlus(widget,doc,{locale='de',runtime=false,key=widget.id,onCatalogChange=()=>{}}={}) {
-  locale=locale.startsWith('de')?'de':'en';const lang=words[locale];
+  locale=locale.startsWith('de')?'de':locale.startsWith('fr')?'fr':'en';const lang=words[locale];
   const root=doc.createElement('section');root.className='calendar-plus';root.dataset.theme=['dark','light'].includes(widget.calendarTheme)?widget.calendarTheme:'auto';
   root.style.setProperty('--cp-accent',widget.calendarAccent||'#e85b64');
   root.style.setProperty('--cp-font-size',`${Math.min(24,Math.max(10,Number(widget.calendarFontSize)||14))}px`);

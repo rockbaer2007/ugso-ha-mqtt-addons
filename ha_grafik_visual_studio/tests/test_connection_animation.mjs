@@ -6,13 +6,14 @@ import "../web/widget-sets/special.js";
 import { readFileSync } from "node:fs";
 import { resolveConnectionValueAnimation } from "../web/connection-animation.js";
 import { lineValuePacket } from "../web/dataflow.js";
+import { mapDisplaySources } from '../web/source-bindings.js';
 
 test("connected Poti output drives the rendered SVG line without an HA entity", () => {
   const app = readFileSync(new URL("../web/app.js", import.meta.url), "utf8");
   const body = app.slice(app.indexOf("function effectiveConnectionStyle("), app.indexOf("function appendConnectionMarker("));
-  const effective = new Function("state", "connectionAnimationEntityId", "resolveConnectionAnimation", "lineboxAnimationSettings", "resolveConnectionValueAnimation", "lineValuePacket", "getWidgetDefinition", "isValuePointConnection", "connectionCollectorPosition", "lineboxOutputForConnection", `${body}; return effectiveConnectionStyle;`)(
+  const effective = new Function("state", "connectionAnimationEntityId", "resolveConnectionAnimation", "lineboxAnimationSettings", "resolveConnectionValueAnimation", "lineValuePacket", "getWidgetDefinition", "isValuePointConnection", "connectionCollectorPosition", "lineboxOutputForConnection", 'mapDisplaySources', `${body}; return effectiveConnectionStyle;`)(
     { entityStates: {} }, connectionAnimationEntityId, resolveConnectionAnimation, lineboxAnimationSettings, resolveConnectionValueAnimation, lineValuePacket,
-    () => ({ render: { kind: "industrial-gauge" } }), () => false, () => null, () => null,
+    () => ({ render: { kind: "industrial-gauge" } }), () => false, () => null, () => null, mapDisplaySources,
   );
   const poti = { id: "poti", type: "ugso.industrial/gauge-poti", state: 10, dataOutputEnabled: true, dockPointsEnabled: true, dock_right_center: true, dataOutputAnchor: "right-center" };
   const line = { id: "line", type: "svg-connection", startWidgetId: "poti", startAnchor: "right-center", animationEnabled: true, animationSource: "number", animationNumberEntityId: "", lineboxDivisor: 10, baseColor: "#123456" };

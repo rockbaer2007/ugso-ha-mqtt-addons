@@ -34,7 +34,7 @@ test('remaining built-in and bundled widgets expose properties and render editor
     });
     let checked=0;
     for(const group of groups){
-      fixture=structuredClone(before);fixture.settings={...fixture.settings,autoSave:false};
+      fixture=structuredClone(before);fixture.settings={...fixture.settings,autoSave:false,widgetLocale:'fr'};
       Object.assign(fixture.pages[0].page,{width:1400,height:4000});
       fixture.pages[0].widgets=group.widgets.map((definition,index)=>({id:`audit-${index}`,generalEnabled:false,visibilityEnabled:false,signalImagesEnabled:false,extraControlEnabled:false,textColor:'#e7ecee',...structuredClone(definition.defaults),type:definition.runtimeType||definition.type,x:20+index%3*440,y:20+Math.floor(index/3)*520,visible:true}));
       const errorStart=errors.length;
@@ -43,10 +43,12 @@ test('remaining built-in and bundled widgets expose properties and render editor
         await page.locator('#widget-selector-clear').dispatchEvent('click');
         await page.locator(`#widget-selector-list input[data-widget-id="audit-${index}"]`).evaluate(input=>{input.checked=true;input.dispatchEvent(new Event('change',{bubbles:true}));});
         assert.ok((await page.locator('#properties').textContent()).includes(`audit-${index}`),`${group.id}/${group.widgets[index].type}: properties`);
+        assert.equal(await page.locator('#properties option').evaluateAll(options=>options.filter(option=>option.value==='[object Object]').length),0,`${group.id}/${group.widgets[index].type}: technical option values stay intact in French`);
         assert.equal(errors.length,errorStart,`${group.id}/${group.widgets[index].type}: ${errors.slice(errorStart).join('\n')}`);
         checked++;
       }
-      for(const scheme of ['light','dark']){
+      for(const [scheme,widgetLocale] of [['light','de'],['dark','en'],['light','fr'],['dark','fr']]){
+        fixture.settings.widgetLocale=widgetLocale;
         await page.emulateMedia({colorScheme:scheme});await page.goto(url+'?mode=runtime');
         await page.locator('#stage').waitFor();
         await page.locator('.widget-choice').first().waitFor({state:'attached'});

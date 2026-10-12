@@ -1,5 +1,11 @@
 # HA Grafik Visual Studio
 
+**Neu in 0.1.296:** Restliche Widget-Eigenschaften und Laufzeitmeldungen in DE/EN/FR, optionale Climate-Steuerung und Quellen-/Attribut-/Einheitenprüfung. Alte Projekte und Paketversionen bleiben gültig; neue Gruppen starten deaktiviert. [Anleitung DE/EN/FR](docs/widgets-0.1.296.md).
+
+**English:** Remaining widget properties/runtime messages gain DE/EN/FR, optional Climate controls and source/attribute/unit checks. Existing projects/packages remain valid; new groups start disabled.
+
+**Français :** Les propriétés/messages restants proposent DE/EN/FR, des commandes climatiques et une vérification des sources/attributs/unités. Projets/paquets conservés ; nouveaux groupes désactivés.
+
 **Neu in 0.1.295:** Material-Icons füllen den Rahmen. Universal bietet zusätzliche Bedienungen und Inhalte; Radialregler unterstützen Farbverläufe. Alte Taster bleiben im bisherigen Zyklusmodus. [Anleitung DE/EN/FR](docs/universal-0.1.295.md).
 
 **English:** Material previews fill their frames. Universal adds interactions/content and radial sliders accept gradients. Legacy cycle buttons and settings are preserved. See the DE/EN/FR guide.

@@ -1,4 +1,5 @@
 import { finite } from "./gauges.js";
+import { restText } from './rest-locales.js';
 import { housingSpace } from "./housing-snap.js";
 import { lcdPower } from "./industrial-lcd.js";
 import { lcdGlyph } from "./lcd-font.js";
@@ -22,7 +23,7 @@ export function weatherModel(widget,states={},now=new Date(),locale="de") {
   const temperature=value("temperature",attrs.temperature,attrs.temperature_unit||""),humidity=value("humidity",attrs.humidity,"%"),wind=value("wind",attrs.wind_speed,attrs.wind_speed_unit||"");
   const rain=value("rain",demo?35:today.precipitation_probability,"%"),low=value("low",demo?12:today.templow,attrs.temperature_unit||""),high=value("high",demo?22:today.temperature,attrs.temperature_unit||"");
   const condition=valid?CONDITIONS[record.state]:null,english=locale.startsWith("en");
-  return {temperature,humidity,wind,rain,low,high,condition:condition?.[english?1:0] || (english?"NO WEATHER":"KEIN WETTER"),icon:condition?.[2]||"unknown",demo};
+  return {temperature,humidity,wind,rain,low,high,condition:restText(condition?.[english?1:0] || (english?"NO WEATHER":"KEIN WETTER"),locale),icon:condition?.[2]||"unknown",demo};
 }
 // Original 16x16 pixel artwork. Coordinates are compiled into a tiny bitmap.
 export function weatherPixels(kind) {
@@ -51,7 +52,7 @@ export function renderIndustrialWeather(widget,doc,{states={},powerInput,locale=
   if(style && widget.industrialScrewsEnabled!==false)for(const corner of ["tl","tr","bl","br"]){const screw=doc.createElement("span");screw.className=`industrial-screw ${corner}`;screw.textContent="×";root.append(screw);}
   const screen=doc.createElement("div");screen.className="industrial-weather-screen";const svg=doc.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("viewBox","0 0 160 76");svg.setAttribute("preserveAspectRatio","xMidYMid meet");svg.setAttribute("role","img");
   const rect=(x,y,size)=>{const el=doc.createElementNS(svg.namespaceURI,"rect");for(const [key,value] of Object.entries({x,y,width:size,height:size}))el.setAttribute(key,String(value));return el;};
-  const labels=[],text=(value,x,y,scale=1,max=26)=>{labels.push(value);const group=doc.createElementNS(svg.namespaceURI,"g");group.dataset.text=value;Array.from(value).slice(0,max).forEach((char,i)=>lcdGlyph(char).forEach((bits,row)=>{for(let col=0;col<5;col++)if(bits & (1<<(4-col)))group.append(rect(x+(i*6+col)*scale,y+row*scale,.86*scale));}));svg.append(group);};
+  const labels=[],text=(value,x,y,scale=1,max=26)=>{value=restText(value,locale);labels.push(value);const group=doc.createElementNS(svg.namespaceURI,"g");group.dataset.text=value;Array.from(value).slice(0,max).forEach((char,i)=>lcdGlyph(char).forEach((bits,row)=>{for(let col=0;col<5;col++)if(bits & (1<<(4-col)))group.append(rect(x+(i*6+col)*scale,y+row*scale,.86*scale));}));svg.append(group);};
   const reading=(entry,decimals=0)=>entry.value==null?"--":`${entry.value.toFixed(decimals)}${entry.unit?` ${entry.unit}`:""}`;
   if(power===true){
     const icon=doc.createElementNS(svg.namespaceURI,"g");icon.dataset.icon=model.icon;for(const [x,y] of weatherPixels(model.icon))icon.append(rect(3+x*1.6,3+y*1.6,1.4));svg.append(icon);
