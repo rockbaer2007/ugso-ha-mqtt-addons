@@ -81,9 +81,9 @@ test("four industrial switches render, route ports and control independent entit
   await page.locator("#bank").screenshot({path:join(folder,"industrial-switches-64.png")});
   for(let n=1;n<=4;n++)fixture.pages[0].widgets.push({...definition.defaults,id:`single-${n}`,type:definition.type,x:bank.x+(n-1)*66,y:bank.y+100,height:64,width:64});
   await page.reload();await page.locator("#single-4").waitFor();
-  const block=await page.locator("#bank").boundingBox();
+  const block=await bounds("#bank");
   for(let n=1;n<=4;n++){
-   const single=await page.locator(`#single-${n}`).boundingBox(),singleLed=await page.locator(`#single-${n} .industrial-led`).boundingBox(),blockLed=await page.locator(`#bank [data-channel='${n}'] .industrial-led`).boundingBox();
+   const single=await bounds(`#single-${n}`),singleLed=await bounds(`#single-${n} .industrial-led`),blockLed=await bounds(`#bank [data-channel='${n}'] .industrial-led`);
    assert.ok(Math.abs(singleLed.x+singleLed.width/2-blockLed.x-blockLed.width/2)<.5);
    if(n===4)assert.equal(single.x+single.width,block.x+block.width);
   }

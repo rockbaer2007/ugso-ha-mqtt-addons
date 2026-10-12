@@ -61,9 +61,10 @@ test("linear package dimensions, scale-only controls, runtime writes and entity 
   const toggleDefinition=definitions.find(w=>w.type==="ugso.industrial/switch");
   for(let n=0;n<4;n++)fixture.pages[0].widgets.push({...toggleDefinition.defaults,type:toggleDefinition.type,id:`single-${n}`,x:60+n*66,y:420,width:64,height:64});
   await page.reload();await page.locator("#slim .industrial-linear").waitFor();
-  assert.equal((await page.locator("#slim").boundingBox()).height,32);
-  const lastSingle=await page.locator("#single-3").boundingBox();
-  for(const id of ["slider","slim"]){const box=await page.locator(`#${id}`).boundingBox();assert.equal(box.width,262);assert.equal(box.x+box.width,lastSingle.x+lastSingle.width);}
+  const stableBounds=async selector=>(await page.waitForFunction(selector=>{const node=document.querySelector(selector);if(!node)return false;const box=node.getBoundingClientRect();return box.width && box.height?{x:box.x,y:box.y,width:box.width,height:box.height}:false;},selector)).jsonValue();
+  assert.equal((await stableBounds("#slim")).height,32);
+  const lastSingle=await stableBounds("#single-3");
+  for(const id of ["slider","slim"]){const box=await stableBounds(`#${id}`);assert.equal(box.width,262);assert.equal(box.x+box.width,lastSingle.x+lastSingle.width);}
   for(const id of ["slider","slim"])await page.locator(`#${id}`).screenshot({path:join(folder,`industrial-linear-${id}-minimum.png`)});
   delete states["sensor.temp"];await page.reload();await page.waitForFunction(()=>document.querySelector("#gauge .industrial-linear")?.dataset.value==="");
   assert.equal(await page.locator("#gauge [data-linear-indicator='triangle']").evaluate(el=>el.style.display),"none");assert.deepEqual(errors,[]);
