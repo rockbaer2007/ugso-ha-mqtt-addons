@@ -83,12 +83,13 @@ export function renderEventCalendar(widget, document, context) {
     const previous = views.get(context.key), view = EVENT_VIEWS[widget.fcView] || EVENT_VIEWS.month;
     const calendar = new globalThis.FullCalendar.Calendar(host, {
       initialView: view, initialDate: previous?.view === widget.fcView ? previous.date : undefined,
-      locale: context.language.startsWith("de") ? "de" : "en", firstDay: widget.firstDayOfWeek === "sunday" ? 0 : 1,
+      locale: context.language.startsWith("de") ? "de" : context.language.startsWith('fr') ? 'fr' : "en", firstDay: widget.firstDayOfWeek === "sunday" ? 0 : 1,
       height: "100%", editable: false, selectable: false, navLinks: false, eventDisplay: "block",
       headerToolbar: widget.fcShowHeader === false ? false : { left: "title", center: "", right: widget.fcAllowNavigation === false || !context.runtime ? "" : "prev,next today" },
       weekNumbers: widget.fcShowWeekNumbers === true, weekNumberCalculation: date => calendarWeek(date, widget.fcWeekNumberType || "iso", widget.firstDayOfWeek),
       dayMaxEvents: Number(widget.fcMaxEventsPerDay) > 0 ? Number(widget.fcMaxEventsPerDay) : false,
       nowIndicator: styles.fcShowNowIndicator !== false,
+      slotMinTime:widget.fcTimeStart || '00:00:00',slotMaxTime:widget.fcTimeEnd || '24:00:00',slotDuration:{minutes:Math.max(5,Math.min(240,Number(widget.fcTimeInterval)||30))},
       datesSet: () => views.set(context.key, { date: calendar.getDate(), view: widget.fcView }),
       eventDidMount: ({ el, event, view }) => { const color = event.extendedProps.sourceColor; if (view.type.startsWith("list")) { const dot = el.querySelector(".fc-list-event-dot"); if (dot) dot.style.borderColor = color; el.style.backgroundColor = event.backgroundColor; el.style.color = event.textColor; } else el.style.borderLeft = `4px solid ${color}`; },
       events: async (info, success) => {

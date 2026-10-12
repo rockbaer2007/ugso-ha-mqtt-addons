@@ -28,6 +28,7 @@ SVG_VALUE = re.compile(r"^[a-zA-Z0-9#.,%+\-\s()]*$")
 ElementTree.register_namespace("", SVG_NS)
 
 PACKAGE_NAMES = {
+    "ugso.materialdesign": ("UGSo Material Design", "Material Design"),
     "ugso.industrial": ("UGSo Industrie", "Industrie"),
     "ugso.technic": ("UGSo Technic", "Technic"),
     "ugso.energy": ("UGSo Energy", "Energy"),
@@ -55,10 +56,32 @@ def validate_additive_update(installed, incoming):
     if tuple(map(int, incoming["version"].split("."))) <= tuple(map(int, installed["version"].split("."))):
         raise ValueError("Das Paket ist bereits installiert; eine Aktualisierung benötigt eine höhere Version.")
     new_widgets = {widget["type"]: widget for widget in incoming["widgets"]}
-    def contract(widget):
-        return {key: value for key, value in widget.items() if key not in {"icon", "iconData"}}
-    if any(widget["type"] not in new_widgets or contract(new_widgets[widget["type"]]) != contract(widget) for widget in installed["widgets"]):
-        raise ValueError("Paket-Updates dürfen vorhandene Widgets nicht ändern oder entfernen.")
+    def compatible(old, new):
+        for key in ("type", "label", "render"):
+            if old[key] != new[key]:
+                return False
+        if any(key not in new["defaults"] or type(value) is not type(new["defaults"][key]) or value != new["defaults"][key] for key, value in old["defaults"].items()):
+            return False
+        # Only add groups/fields and append choices; existing metadata and defaults stay intact.
+        groups = new["propertyGroups"]
+        if len(groups) < len(old["propertyGroups"]):
+            return False
+        for index, group in enumerate(old["propertyGroups"]):
+            updated = groups[index]
+            if {key: value for key, value in group.items() if key != "fields"} != {key: value for key, value in updated.items() if key != "fields"}:
+                return False
+            fields = {field["key"]: field for field in updated["fields"]}
+            if [field["key"] for field in updated["fields"][:len(group["fields"])]] != [field["key"] for field in group["fields"]]:
+                return False
+            for field in group["fields"]:
+                candidate = fields.get(field["key"], {})
+                if {key: value for key, value in field.items() if key != "options"} != {key: value for key, value in candidate.items() if key != "options"}:
+                    return False
+                if field.get("options") != candidate.get("options") and ("options" not in field or candidate.get("options", [])[:len(field["options"])] != field["options"]):
+                    return False
+        return True
+    if any(widget["type"] not in new_widgets or not compatible(widget, new_widgets[widget["type"]]) for widget in installed["widgets"]):
+        raise ValueError("Paket-Updates dürfen vorhandene Widgets, Standardwerte oder Einstellungen nicht ändern oder entfernen.")
 
 
 def _short_text(value, limit=120):

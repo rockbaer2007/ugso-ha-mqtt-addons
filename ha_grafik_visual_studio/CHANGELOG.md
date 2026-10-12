@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.292
+
+- Expand the 49 Material Design renderers towards the ioBroker reference: actual switches, state/press colors, slider geometry, round controls, input shapes, masked input and icons, data layouts, chart axes/stacks/tooltips and navigation drawers.
+- Add explicit multiple-target actions, index/name view selection, persistent child views, responsive columns, sanitized list text, image refresh, value effects and history aggregation.
+- Keep old defaults and project data intact. Package updates may add fields/groups and append choices, but cannot redefine saved defaults or existing controls. Legacy multi-state cycles and mapped views remain available.
+- Support Material labels, controls and calendar in DE/EN/FR; per-widget language can follow Studio or select a complete Material locale separately.
+- Use explicit, validated HA actions for supported switches, helpers, numbers/texts, selects, buttons, light brightness, fan percentage and cover position. Keep sensors and attributes read-only.
+- Material Design package 1.1.0 requires Studio 0.1.292. Health/version response now matches the app package.
+
 ## 0.1.291
 
 - Strg+C, Strg+X und Strg+V kopieren, schneiden aus und fügen ausgewählte Widgets ein, auch bei Mehrfachauswahl. Dieselbe interne Widget-Zwischenablage wie bei Toolbar und Kontextmenü; Rückgängig bleibt verfügbar.

@@ -1,3 +1,4 @@
+import { materialText } from './material-locales.js';
 const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
@@ -752,6 +753,7 @@ function translate(source) {
   if (activeLanguage !== "en") return source;
   const trimmed = source.trim();
   let translated = ENGLISH[trimmed];
+  if(!translated){const material=materialText(trimmed,activeLanguage);if(material!==trimmed)translated=material;}
   if (!translated) {
     const group = trimmed.match(/^(.+): Optionen im Projekt speichern$/);
     if (group) translated = `${translate(group[1])}: Save options in project`;

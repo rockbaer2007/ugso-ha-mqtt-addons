@@ -51,6 +51,24 @@ def tiny_png():
 
 
 class WidgetPackageTests(unittest.TestCase):
+    def test_additive_fields_keep_defaults_order_and_old_choices(self):
+        old=manifest()
+        old['widgets'][0]['defaults']['mode']='old'
+        old['widgets'][0]['propertyGroups'][0]['fields'].append({'key':'mode','label':'Mode','type':'select','options':['old']})
+        new=json.loads(json.dumps(old));new['version']='1.1.0'
+        new['widgets'][0]['defaults']['extra']=False
+        new['widgets'][0]['propertyGroups'][0]['fields'].append({'key':'extra','label':'Extra','type':'checkbox'})
+        new['widgets'][0]['propertyGroups'][0]['fields'][1]['options'].append('new')
+        validate_additive_update(old,new)
+        for change in ('remove','reorder','choice','default','fieldtype'):
+            bad=json.loads(json.dumps(new));widget=bad['widgets'][0]
+            if change=='remove':widget['propertyGroups'][0]['fields'].pop(0)
+            elif change=='reorder':widget['propertyGroups'][0]['fields'].reverse()
+            elif change=='choice':widget['propertyGroups'][0]['fields'][1]['options']=['new','old']
+            elif change=='default':widget['defaults']['text']='changed'
+            elif change=='fieldtype':widget['propertyGroups'][0]['fields'][0]['type']='number'
+            with self.subTest(change=change),self.assertRaises(ValueError):validate_additive_update(old,bad)
+
     def test_updates_only_add_widgets_without_redefining_existing_contract(self):
         old = manifest()
         new = manifest()

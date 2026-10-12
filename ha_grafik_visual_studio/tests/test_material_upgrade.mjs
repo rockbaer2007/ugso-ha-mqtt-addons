@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import { materialSelectedViews,materialViewIndex } from '../web/material-navigation.js';
+import { materialDisplayValue } from '../web/material-data.js';
+import { aggregateMaterialHistory,materialChartSeries } from '../web/material-chart.js';
+import { materialWritable,materialGroups } from '../web/material-widgets.js';
+import { materialText } from '../web/material-locales.js';
+
+const views=[{id:'A',value:'0'},{id:'B',value:'1'}];
+assert.equal(materialViewIndex(false),0);assert.equal(materialViewIndex('on'),1);assert.equal(materialViewIndex('unknown'),-1);
+assert.deepEqual(materialSelectedViews({layoutKind:'view'},false,views),[views[0]]);
+assert.deepEqual(materialSelectedViews({layoutKind:'view',viewSelectionMode:'name'},'B',views),[views[1]]);
+assert.deepEqual(materialSelectedViews({layoutKind:'view',viewSelectionMode:'index'},true,views),[views[1]]);
+assert.deepEqual(materialSelectedViews({layoutKind:'view'},'custom',[{id:'A',value:'custom'}]),[{id:'A',value:'custom'}]);
+const old={valueType:'number',factor:2,offset:1,decimals:1};assert.equal(materialDisplayValue(old,5,'en'),'11.0');assert.equal(materialDisplayValue({...old,valueType:'duration'},3661,'en'),'1:01:01');
+assert.equal(materialWritable({entityId:'number.x'},{'number.x':{state:'2',attributes:{min:0,max:10}}},11),false);
+assert.equal(materialWritable({entityId:'button.x'},{'button.x':{state:'2026-01-01'}},'PRESS'),true);
+assert.equal(materialWritable({entityId:'button.x'},{'button.x':{state:'unknown'}},'PRESS'),true);
+assert.equal(materialWritable({entityId:'sensor.x'},{'sensor.x':{state:'2'}},3),false);
+const raw={labels:['2026-01-01T00:00:00Z','2026-01-01T00:10:00Z','2026-01-01T00:20:00Z'],datasets:[{data:[10,20,null]}]};
+const grouped=aggregateMaterialHistory(raw,{historyAggregation:'average',historyBucketMinutes:15});assert.deepEqual(grouped.datasets[0].data,[15,null]);assert.equal(aggregateMaterialHistory(raw,{}),raw);
+const series=materialChartSeries({datasets:[{label:'A',data:[1,2],line_UseFillColor:true,line_steppedLine:true,barIsStacked:true,barStackId:2,yAxisID:'right'}]},{chartKind:'json'});assert.equal(series[0].fill,true);assert.equal(series[0].stepped,true);assert.equal(series[0].stack,'2');assert.equal(series[0].axis,'right');
+const colored=materialChartSeries({datasets:[{data:[1,2],borderColor:['#123','#456'],backgroundColor:['#789','#abc']}]},{chartKind:'bar'});assert.equal(typeof colored[0].color,'string');assert.deepEqual(colored[0].pointColors,['#789','#abc']);
+const groups=[{label:'Mehrziel-Aktion',fields:[]},{label:'Ziel [0]',fields:[]},{label:'Ziel [1]',fields:[]}];
+assert.deepEqual(materialGroups(groups,{multiStateMode:'targets',countTargets:1,materialLocale:'fr'},(_,i)=>`id-${i}`,'en').map(g=>g.label),['Action sur plusieurs cibles','Cible [0]']);
+assert.equal(materialText('Layout Eingabe (erweitert)','fr'),'Disposition du champ (avancé)');assert.equal(materialText('Größe Inneres vorangestelltes Symbol','en'),'Size: Inner leading icon');
+console.log('Material upgrade: preserved value mappings, explicit new modes, HA bounds, history aggregation and DE/EN/FR labels passed.');

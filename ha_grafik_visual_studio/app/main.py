@@ -18,6 +18,7 @@ from technic_cover import cover_position_command, cover_entry_writable
 from technic_light import light_request, dimmer_commands
 from technic_temperature import temperature_request, temperature_command, history_plan, history_series
 from material_history import material_history_plan, material_history_data
+from material_actions import material_action
 from energy_history import energy_history_plan, energy_history_data
 from tool_packages import list_tool_packages, read_tool_package_zip
 from package_catalog import catalog_packages, package_download
@@ -326,7 +327,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.101"
+    server_version = "HAGrafikVisualStudio/0.1.292"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -374,7 +375,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.260"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.292"})
             return
         if path == "/meteored-frame":
             try:
@@ -557,6 +558,25 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "HA-Anfrage fehlgeschlagen; Zustand erneut prüfen."})
                 return
             self.send_json(HTTPStatus.OK, result)
+            return
+        if parsed.path == '/api/material-value':
+            if self.headers.get('Content-Type', '').split(';', 1)[0].strip().lower() != 'application/json':
+                self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {'error': 'JSON-Anfrage erforderlich.'})
+                return
+            request = self.read_request_json()
+            if request is None:
+                return
+            try:
+                (entries,) = home_assistant_commands(['get_states'])
+                command = material_action(request, entries or [])
+                home_assistant_commands([command])
+            except ValueError as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {'error': str(error)})
+                return
+            except HomeAssistantAPIError:
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {'error': 'Material-Aktion fehlgeschlagen; Zustand erneut prüfen.'})
+                return
+            self.send_json(HTTPStatus.OK, {'accepted': True})
             return
         if parsed.path == "/api/light-dimmer":
             if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":

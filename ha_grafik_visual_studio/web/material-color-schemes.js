@@ -4,12 +4,13 @@ export function materialAppearance(widget, { projectStyle = 'material3', pageThe
   const style = widget.designStyle === 'project' ? projectStyle : widget.designStyle;
   const dark = (widget.themeMode === 'project' ? pageTheme : widget.themeMode) !== 'light';
   return style === 'material3'
-    ? { background: dark ? '#1d1b20' : '#f7f2fa', text: dark ? '#e6e0e9' : '#1d1b20', primary: dark ? '#d0bcff' : '#6750a4', radius: '12px' }
-    : { background: '#ffffff', text: '#000000', primary: '#44739e', radius: '0px' };
+    ? { style:'material3', background: dark ? '#1d1b20' : '#f7f2fa', text: dark ? '#e6e0e9' : '#1d1b20', primary: dark ? '#d0bcff' : '#6750a4', onPrimary:dark?'#381e72':'#ffffff', radius: '12px' }
+    : { style:'legacy', background: dark ? '#202124' : '#ffffff', text: dark ? '#eeeeee' : '#000000', primary: '#44739e', onPrimary:'#ffffff', radius: '4px' };
 }
 
 export function renderMaterialColorSchemes(widget, doc, settings) {
   const appearance = materialAppearance(widget, settings);
+  if(appearance.style==='legacy'){appearance.background='#ffffff';appearance.text='#000000';}
   const root = doc.createElement('div'); root.className = 'material-color-schemes';
   Object.assign(root.style, { background: appearance.background, color: appearance.text, borderRadius: appearance.radius });
   const title = doc.createElement('div'); title.className = 'material-schemes-title';

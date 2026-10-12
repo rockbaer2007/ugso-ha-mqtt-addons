@@ -1,5 +1,13 @@
 # HA Grafik Visual Studio
 
+Studio **0.1.292** erweitert das externe **Material Design 1.1.0** in Richtung des ioBroker-Originals: echte Switches, Button-Zustände und Mehrziel-Aktionen, Regler-/Eingabeformen, Tabellen-/Listenoptionen, Diagramme mit mehreren Achsen und Stacks sowie App Bar mit Drawer und erhaltenen Ansichten. Alte Projekte und Standardwerte werden nicht umgeschrieben. Der bisherige State-Multi-Wertezyklus und die bisherigen View-Zuordnungen bleiben nutzbar. Material-Sprache: automatisch aus Studio oder separat DE/EN/FR. Die Studio-Gesamtoberfläche bleibt DE/EN.
+
+**English:** Studio 0.1.292 supports the additive Material Design 1.1.0 upgrade with switches, original-style controls, explicit multiple-target actions, data/chart layouts and drawer navigation. Existing projects/defaults are retained, including legacy value cycles and view mappings. Material widgets offer DE/EN/FR independently; the overall Studio interface remains DE/EN.
+
+**Français :** Studio 0.1.292 prend en charge Material Design 1.1.0 : interrupteurs, commandes proches de l’original, actions multicibles, listes/tableaux/graphiques et navigation avec panneau latéral. Les anciens projets et valeurs restent conservés, y compris les cycles et associations de vues. Les widgets Material proposent DE/EN/FR séparément ; l’interface générale du Studio reste DE/EN.
+
+[DE](https://opensource.ugso-software.de/projects/grafik-visual-studio/materialdesign) · [EN](https://opensource.ugso-software.de/en/projects/grafik-visual-studio/materialdesign) · [FR](https://opensource.ugso-software.de/fr/projects/grafik-visual-studio/materialdesign)
+
 Studio **0.1.291**: **Strg+C / Strg+X / Strg+V** kopieren, schneiden aus und fügen Widgets ein, auch bei Mehrfachauswahl. Nutzt dieselbe interne Widget-Zwischenablage wie Toolbar und Kontextmenü; Rückgängig bleibt möglich. In Textfeldern gelten die normalen Text-Tastenkürzel. / **Ctrl/Cmd+C / X / V** copy, cut and paste selected widgets using the shared internal widget clipboard, including multiple selection and undo. Text fields retain their native shortcuts.
 
 Studio **0.1.290**: Ausgewählte Widgets mit **Entf** löschen. Derselbe Bestätigungsdialog wie beim Papierkorb erscheint; Abbrechen und Rückgängig funktionieren auch bei Mehrfachauswahl. In Eingabefeldern, offenen Dialogen und der Runtime werden damit keine Widgets gelöscht. / Delete selected widgets with the **Delete** key using the existing confirmation dialog, including multiple selection, cancellation and undo. Text fields, open dialogs and runtime keep their normal keyboard behaviour.

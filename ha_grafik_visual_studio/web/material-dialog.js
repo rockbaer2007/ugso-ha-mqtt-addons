@@ -1,5 +1,7 @@
 import { materialAppearance } from './material-color-schemes.js';
 import { iframeOptions } from './iframe-widget.js';
+import { materialText } from './material-locales.js';
+import { image } from './material-common.js';
 
 export function materialIframeUrl(source, baseUrl) {
   if (typeof source !== 'string' || !source.trim()) return null;
@@ -12,11 +14,12 @@ export function materialIframeUrl(source, baseUrl) {
 const controllers = new Map();
 const number = (value, fallback, min, max) => value === '' || value == null || !Number.isFinite(Number(value)) ? fallback : Math.min(max, Math.max(min, Number(value)));
 export const dialogStateOpen = value => [true, 1, '1', 'true', 'on'].includes(value);
-export function materialDialogGroups(groups, widget, groupKey) {
+export function materialDialogGroups(groups, widget, groupKey,locale='de') {
+  locale=widget.materialLocale && widget.materialLocale!=='auto'?widget.materialLocale:locale;
   const labels = { legacy: 'Klassisch', material3: 'Material 3', project: 'Projektstandard', light: 'Hell', dark: 'Dunkel', button: 'Schaltfläche', datapoint: 'Boolesche Entität', raised: 'Erhöht', outlined: 'Umrandet', text: 'Text', icon: 'Symbol', left: 'Links', right: 'Rechts', 'flex-start': 'Links', center: 'Mitte', 'flex-end': 'Rechts', small: 'Klein', medium: 'Mittel', large: 'Groß' };
   return groups.map((group, index) => ({ ...group, id: groupKey(group, index) }))
     .filter(group => widget.showAdvanced || !['Button Layout', 'Layout Kopfzeile', 'Layout der Schaltflächen in der Dialogfußzeile'].includes(group.label))
-    .map(group => ({ ...group, fields: group.fields.map(field => field.key === 'targetPage' ? { ...field, type: 'page' } : field.type === 'color' ? { ...field, optionalColor: true } : field.type === 'select' ? { ...field, options: field.options.map(value => typeof value === 'object' ? value : ({ value, label: labels[value] || value })) } : field) }));
+    .map(group => ({ ...group,label:materialText(group.label,locale),fields: group.fields.map(field => {const localized={...field,label:materialText(field.label,locale)};return field.key === 'targetPage' ? { ...localized, type: 'page' } : field.type === 'color' ? { ...localized, optionalColor: true } : field.type === 'select' ? { ...localized, options: field.options.map(value => typeof value === 'object' ? value : ({ value, label: materialText(labels[value] || value,locale) })) } : localized;}) }));
 }
 export function materialDialogLayout(widget, viewportWidth) {
   return { fullscreen: viewportWidth <= number(widget.fullscreenResolutionLower, 360, 0, 3000), width: number(widget.dialogMaxWidth, 800, 160, 3000), height: number(widget.viewHeight, 400, 100, 3000), gap: number(widget.viewDistanceToBorder, 16, 0, 100), opacity: number(widget.overlayOpacity, .6, 0, 1) };
@@ -37,14 +40,15 @@ function feedback(widget, win) {
   } catch { /* Optional feedback may be unavailable in the browser. */ }
 }
 export function renderMaterialDialog(widget, doc, context = {}) {
-  const { runtime = false, popupUrl = null, states = {}, surface, resetState = async () => {}, locale = 'de' } = context;
+  const { runtime = false, popupUrl = null, states = {}, surface, resetState = async () => {} } = context;
+  const locale=widget.materialLocale && widget.materialLocale!=='auto'?widget.materialLocale:context.locale || 'de';
   const appearance = materialAppearance(widget, context);
   const root = doc.createElement('div'); root.className = 'material-dialog-trigger'; root.dataset.dialogWidgetId = widget.id;
   const trigger = doc.createElement('button'); trigger.type = 'button';
   trigger.className = `material-dialog-button material-button-${widget.buttonStyle || 'raised'}`;
   const label = doc.createElement('span'); label.textContent = widget.labelText || (locale === 'de' ? 'Dialog öffnen' : locale === 'fr' ? 'Ouvrir le dialogue' : 'Open dialog');
   label.style.flexBasis = `${number(widget.labelWidth, 0, 0, 100)}%`;
-  if (widget.image) { const icon = doc.createElement('span'); icon.textContent = widget.image; icon.style.color = widget.imageColor || 'inherit'; icon.style.fontSize = `${number(widget.iconHeight, 20, 8, 100)}px`; trigger.append(icon); }
+  if (widget.image) { if(context.icon && /[:/]/.test(widget.image))trigger.append(image(doc,widget.image,widget.iconHeight,widget.imageColor,context));else {const icon = doc.createElement('span'); icon.textContent = widget.image; icon.style.color = widget.imageColor || 'inherit'; icon.style.fontSize = `${number(widget.iconHeight, 20, 8, 100)}px`; trigger.append(icon);} }
   if (widget.buttonStyle !== 'icon') trigger.append(label);
   else if (!widget.image) trigger.textContent = '▣';
   trigger.setAttribute('aria-label', label.textContent); trigger.style.flexDirection = widget.iconPosition === 'right' ? 'row-reverse' : 'row';
@@ -80,6 +84,7 @@ export function renderMaterialDialog(widget, doc, context = {}) {
     footer.style.minHeight = `${number(widget.footerHeight, 48, 0, 300)}px`; footer.style.backgroundColor = widget.footerBackgroundColor || 'transparent';
     const button = doc.createElement('button'); button.type = 'button'; button.className = `material-dialog-close material-close-${widget.buttonSize || 'medium'}`;
     button.textContent = layout.fullscreen ? widget.fullscreenCloseIcon || '×' : widget.buttonText || (locale === 'de' ? 'Schließen' : locale === 'fr' ? 'Fermer' : 'Close');
+    if(layout.fullscreen && context.icon && widget.fullscreenCloseIcon && /[:/]/.test(widget.fullscreenCloseIcon)){button.textContent='';button.append(image(doc,widget.fullscreenCloseIcon,24,widget.fullscreenCloseIconColor,context));}
     button.setAttribute('aria-label', locale === 'de' ? 'Dialog schließen' : locale === 'fr' ? 'Fermer le dialogue' : 'Close dialog');
     Object.assign(button.style, { width: widget.buttonFullWidth ? '100%' : '', color: (layout.fullscreen ? widget.fullscreenCloseIconColor : widget.buttonFontColor) || appearance.primary, fontSize: `${number(widget.buttonFontSize, 14, 8, 100)}px`, fontFamily: widget.buttonFont || 'inherit' });
     button.style.setProperty('--material-press', (layout.fullscreen ? widget.fullscreenCloseIconPressColor : widget.pressColor) || '#8884');

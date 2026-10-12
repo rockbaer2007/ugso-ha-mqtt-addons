@@ -19,6 +19,8 @@ import { renderTechnicStatusList } from "./technic-status-list.js";
 import { renderMaterialColorSchemes } from "./material-color-schemes.js";
 import { renderMaterialDialog, materialDialogGroups, syncMaterialDialogs, materialIframeUrl } from "./material-dialog.js";
 import { renderMaterialWidget, materialGroups, materialBindings } from "./material-widgets.js";
+import { cleanupMaterialNavigation } from "./material-navigation.js";
+import { materialText } from "./material-locales.js";
 import { createMeteoredController } from "./meteored.js";
 const meteored = createMeteoredController();
 const weatherForecastCache = new Map();
@@ -998,7 +1000,7 @@ function scheduleLineboxHelperOutputs() {
 }
 
 function renderRuntimeStageWhenReady() {
-  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true'], .industrial-gauge[data-dragging='true'], .radial-slider[data-dragging='true'], .technic-light[data-dragging='true'], .technic-temperature[data-dragging='true'], .styled-dropdown.is-open") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true']")) {
+  if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true'], .industrial-gauge[data-dragging='true'], .radial-slider[data-dragging='true'], .technic-light[data-dragging='true'], .technic-temperature[data-dragging='true'], .styled-dropdown.is-open, .material-widget[data-dragging='true'], .material-widget[data-material-editing='true'], .material-widget[data-material-menu-open='true'], .material-widget[data-material-writing='true']") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true']")) {
     runtimeRenderDeferred = true;
     return;
   }
@@ -3015,6 +3017,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     mediaRefreshers.clear();
   }
   const activePage = surface || currentPage();
+  const materialProjectId=state.projectId;
   const page = activePage.page;
   if (!runtimeMode) {
     let minX = 0; let minY = 0; let maxX = Number(page.width) || 0; let maxY = Number(page.height) || 0;
@@ -3070,6 +3073,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   const dashboardSurfaceKey = `${state.projectId}:${activePage.id}`;
   const retainedDashboards = new Map();
   for (const child of [...stage.children]) {
+    if(runtimeMode && child.classList.contains('material-layout-host') && child.dataset.dashboardSurface===dashboardSurfaceKey){retainedDashboards.set(child.dataset.widgetId,child);continue;}
     if (runtimeMode && child.classList.contains('calendar-plus-host') && child.dataset.dashboardSurface === dashboardSurfaceKey) {retainedDashboards.set(child.dataset.widgetId,child);continue;}
     if (runtimeMode && (child.classList.contains("widget-dashboard-in-widget") || child.classList.contains("widget-view-in-widget-8") || child.classList.contains("widget-iframe") || child.classList.contains("widget-iframe-8") || child.classList.contains("widget-image") || child.classList.contains("widget-image-8")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
     else if (runtimeMode && (child.classList.contains("meteored-host") || child.classList.contains("notification-host")) && child.dataset.dashboardSurface === dashboardSurfaceKey) retainedDashboards.set(child.dataset.widgetId, child);
@@ -3160,6 +3164,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
     if (widget.type === "dashboard-in-widget") { element.dataset.dashboardSurface = dashboardSurfaceKey; element.style.maxWidth = "800px"; element.style.maxHeight = "640px"; }
     if (widget.type === "view-in-widget-8") element.dataset.dashboardSurface = dashboardSurfaceKey;
     if (["iframe", "iframe-8", "image", "image-8"].includes(widget.type)) element.dataset.dashboardSurface = dashboardSurfaceKey;
+    if(getWidgetDefinition(widget.type).render?.kind==='material-widget' && widget.materialKind==='layout'){element.classList.add('material-layout-host');element.dataset.dashboardSurface=dashboardSurfaceKey;}
     const content = element.firstElementChild || document.createElement("div");
     content.className = "widget-content";
     Object.assign(content.style, {
@@ -3832,16 +3837,16 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.style.borderRadius = `${Math.max(0, Number(widget.borderRadius) || 0)}px`;
       content.append(renderTechnicClock(widget, document));
     } else if (getWidgetDefinition(widget.type).render?.kind === "material-widget") {
-      content.append(renderMaterialWidget(widget, document, {
+      const materialNode=renderMaterialWidget(widget, document, {
+        packageVersion: getWidgetDefinition(widget.type).packageVersion, surface:dashboardSurfaceKey,isActive:()=>runtimeMode && state.projectId===materialProjectId && stage.isConnected && [...stage.children].some(node=>node.dataset.widgetId===widget.id),
         runtime: runtimeMode, states: state.entityStates, baseUrl: location.href,
         language: document.documentElement.lang || "de", projectStyle: state.project.settings?.materialDesignStyle || "material3", pageTheme: activePage.page.theme,
-        icon: setIconImageSource, localChange: () => renderStage(), navigate: href => { const url = new URL(href); if (url.origin === location.origin) { url.searchParams.delete("embedded"); url.searchParams.delete("chain"); } location.href = url.href; },
-        pageUrl: pageId => state.project.pages.some(page => page.id === pageId) ? technicRoomUrl(location.href, state.projectId, activePage.id, pageId, [...(params.get("chain") || "").split(",").filter(Boolean), ...surfaceChain]) : null,
+        icon: setIconImageSource, onSettled:()=>renderRuntimeStageWhenReady(), localChange: () => runtimeMode?renderRuntimeStageWhenReady():renderStage(), navigate: href => { const url = new URL(href); if (url.origin === location.origin) { url.searchParams.delete("embedded"); url.searchParams.delete("chain"); } location.href = url.href; },
+        pageUrl: pageId => {const target=state.project.pages.find(page=>page.id===pageId) || state.project.pages.find(page=>page.name===pageId);return target?technicRoomUrl(location.href, state.projectId, activePage.id, target.id, [...(params.get("chain") || "").split(",").filter(Boolean), ...surfaceChain]):null;},
+        pageLabel:pageId=>(state.project.pages.find(page=>page.id===pageId) || state.project.pages.find(page=>page.name===pageId))?.name,
         write: async (entityId, value) => {
           if (!entityId) return true;
-          if (/^(select|input_select)\./.test(entityId)) return writeRuntimeHelperValue(entityId, String(value), "api/select-option");
-          if (/^input_(number|text)\./.test(entityId)) return writeRuntimeHelperValue(entityId, entityId.startsWith("input_number.") ? Number(value) : String(value));
-          const response = await fetch("api/switch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity_id: entityId, enabled: [true, 1, "1", "true", "on"].includes(value) }) });
+          const response = await fetch("api/material-value", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity_id: entityId, value }) });
           if (!response.ok) throw new Error("Wert konnte nicht geschrieben werden.");
           await refreshRuntimeStates(); return true;
         },
@@ -3850,7 +3855,8 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
           const response = await fetch("api/material-history", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity_ids: ids, hours: Number(current.historyHours) || 24 }) });
           if (!response.ok) throw new Error("Home-Assistant-Verlauf nicht verfügbar."); return response.json();
         },
-      }));
+      });
+      if(materialNode.parentElement!==content){content.replaceChildren(materialNode);}
     } else if (getWidgetDefinition(widget.type).render?.kind === "material-color-schemes") {
       content.append(renderMaterialColorSchemes(widget, document, { projectStyle: state.project.settings?.materialDesignStyle || "material3", pageTheme: activePage.page.theme }));
     } else if (["material-dialog", "material-iframe-dialog"].includes(getWidgetDefinition(widget.type).render?.kind)) {
@@ -3858,7 +3864,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       const target = state.project.pages.find(page => page.id === widget.targetPage);
       const chain = [...(params.get("chain") || "").split(",").filter(Boolean), ...surfaceChain];
       const popupUrl = iframe ? materialIframeUrl(widget.src, location.href) : target ? technicRoomUrl(location.href, state.projectId, activePage.id, target.id, chain) : null;
-      content.append(renderMaterialDialog(widget, document, { iframe, runtime: runtimeMode, states: state.entityStates, popupUrl, surface: dashboardSurfaceKey, projectStyle: state.project.settings?.materialDesignStyle || "material3", pageTheme: activePage.page.theme, locale: document.documentElement.lang || "de", resetState: async entityId => {
+      content.append(renderMaterialDialog(widget, document, { icon:setIconImageSource,iframe, runtime: runtimeMode, states: state.entityStates, popupUrl, surface: dashboardSurfaceKey, projectStyle: state.project.settings?.materialDesignStyle || "material3", pageTheme: activePage.page.theme, locale: document.documentElement.lang || "de", resetState: async entityId => {
         const response = await fetch("api/switch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ entity_id: entityId, enabled: false }) });
         if (!response.ok) throw new Error("Dialog trigger reset failed");
         await refreshRuntimeStates();
@@ -4057,7 +4063,10 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
   cleanupCalendarPlus();
   if (!embedded) syncTechnicControls(dashboardSurfaceKey, [...stage.querySelectorAll(".technic-window")].map(element => element.closest("[data-widget-id]")?.dataset.widgetId));
   if (!embedded) syncTechnicRoom(dashboardSurfaceKey, [...stage.querySelectorAll(".technic-room")].map(element => element.closest("[data-widget-id]")?.dataset.widgetId));
-  if (!embedded) syncMaterialDialogs(dashboardSurfaceKey, [...stage.querySelectorAll(".material-dialog-trigger")].map(element => element.dataset.dialogWidgetId));
+  if (!embedded) {
+    syncMaterialDialogs(dashboardSurfaceKey, [...stage.querySelectorAll(".material-dialog-trigger")].map(element => element.dataset.dialogWidgetId));
+    cleanupMaterialNavigation(dashboardSurfaceKey,[...stage.querySelectorAll('[data-material-navigation-id]')].map(element=>element.dataset.materialNavigationId));
+  }
   if (!embedded) syncTemperatureHistory(dashboardSurfaceKey, [...stage.querySelectorAll(".technic-temperature")].map(element => element.closest("[data-widget-id]")?.dataset.widgetId));
   if (!embedded) meteored.end();
   if (!embedded) finishMarquees();
@@ -4875,7 +4884,7 @@ function field(descriptor, widget) {
     if (["material-dialog", "material-iframe-dialog"].includes(renderKind) && ["showAdvanced", "showDialogMethod"].includes(descriptor.key)) renderProperties();
     if (renderKind === "material-widget") {
       if (/EntityId\d*$/.test(descriptor.key)) void refreshEditorLiveStates();
-      if (["showAdvanced", "countSelectItems", "listDataMethod", "rowCount", "dataMethod", "dataCount", "countViews"].includes(descriptor.key)) renderProperties();
+      if (["showAdvanced", "countSelectItems", "listDataMethod", "rowCount", "dataMethod", "dataCount", "countViews", "countTargets", "multiStateMode", "materialLocale", "columns"].includes(descriptor.key)) renderProperties();
     }
     if (["technic-room", "technic-status-list"].includes(renderKind)) { if (/EntityId(s)?\d+$/.test(descriptor.key) || descriptor.key === "rowCount") void refreshEditorLiveStates(); if (descriptor.key === "rowCount") renderProperties(); }
     if (renderKind === "room-table" && ["entityId", "tableAttribute"].includes(descriptor.key)) void refreshEditorLiveStates();
@@ -4972,8 +4981,9 @@ function renderProperties() {
   if (state.propertyTab === "scripts") { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "Widget-Skripte werden in einem späteren Ausbauschritt ergänzt."; panel.append(empty); return; }
   if (widget.type === "toggle" && typeof widget.state === "boolean") widget.state = widget.state ? "on" : "off";
   let groups = widgetPropertyGroups(widget);
-  if (getWidgetDefinition(widget.type).render?.kind === "material-widget") groups = materialGroups(groups, widget, propertyGroupKey);
-  if (["material-dialog", "material-iframe-dialog"].includes(getWidgetDefinition(widget.type).render?.kind)) groups = materialDialogGroups(groups, widget, propertyGroupKey);
+  if (getWidgetDefinition(widget.type).render?.kind === "material-widget") groups = materialGroups(groups, widget, propertyGroupKey,document.documentElement.lang || 'de');
+  if (["material-dialog", "material-iframe-dialog"].includes(getWidgetDefinition(widget.type).render?.kind)) groups = materialDialogGroups(groups, widget, propertyGroupKey,document.documentElement.lang || 'de');
+  if(getWidgetDefinition(widget.type).render?.kind==='material-color-schemes')groups=materialGroups(groups,{...widget,showAdvanced:true},propertyGroupKey,document.documentElement.lang || 'de');
   if (getWidgetDefinition(widget.type).render?.kind === "technic-clock") {
     const labels = { row: "Nebeneinander", column: "Untereinander", left: "Links", center: "Mitte", right: "Rechts", "24h": "24 Stunden", "12h": "12 Stunden", de: "Deutsch", en: "English", fr: "Français", es: "Español", it: "Italiano", nl: "Nederlands", DMY: "Tag-Monat-Jahr", MDY: "Monat-Tag-Jahr", YMD: "Jahr-Monat-Tag", ".": "Punkt (.)", "-": "Bindestrich (-)", "/": "Schrägstrich (/)", space: "Leerzeichen", numeric: "Numerisch", short: "Kurz", long: "Lang", full: "4-stellig", off: "Aus" };
     groups = groups.map(group => ({ ...group, fields: group.fields.map(descriptor => descriptor.key === "colorBg" ? { ...descriptor, optionalColor: true } : descriptor.type === "select" ? { ...descriptor, options: descriptor.options.map(value => ({ value, label: descriptor.key === "yearFormat" && value === "short" ? "2-stellig" : labels[value] || value })) } : descriptor) }));
@@ -4993,7 +5003,7 @@ function renderProperties() {
   groups = groups.map(group => ({ ...group, fields: group.fields.filter(descriptor => descriptor.key !== "hideInRuntime") }));
   if (getWidgetDefinition(widget.type).render?.kind === "material-widget") {
     const fill = document.createElement("button"); fill.type = "button"; fill.className = "property-action";
-    fill.textContent = "Felder neu aus der Entität befüllen";
+    fill.textContent = materialText("Felder neu aus der Entität befüllen",widget.materialLocale && widget.materialLocale!=='auto'?widget.materialLocale:document.documentElement.lang);
     fill.disabled = !state.entityStates[widget.entityId];
     fill.addEventListener("click", () => {
       const attrs = state.entityStates[widget.entityId]?.attributes || {};
@@ -5021,7 +5031,7 @@ function renderProperties() {
   }
   for (const [index, group] of groups.entries()) {
     const details = document.createElement("details"); details.className = "property-section";
-    const sectionKey = isPrinter(widget) || isCalendarPlus(widget) ? `widget:${widget.id}:${propertyGroupKey(group,index)}` : `widget:${widget.id}:${group.label}:${index}`;
+    const sectionKey = isPrinter(widget) || isCalendarPlus(widget) || getWidgetDefinition(widget.type).render?.kind?.startsWith('material-') ? `widget:${widget.id}:${propertyGroupKey(group,index)}` : `widget:${widget.id}:${group.label}:${index}`;
     details.open = state.expandedPropertySections.has(sectionKey);
     details.addEventListener("toggle", () => { if (details.open) state.expandedPropertySections.add(sectionKey); else state.expandedPropertySections.delete(sectionKey); });
     const summary = document.createElement("summary");
@@ -5330,7 +5340,7 @@ async function loadWidgetPackages() {
       registerWidgetSet({
         id: manifest.id, label: manifest.name, externalPackage: true,
         widgets: manifest.widgets.map(widget => ({
-          ...widget, packageId: manifest.id, definitionVersion: manifest.apiVersion, iconSvg: widget.iconData || "icons/text.svg", preview: { kind: "svg", lines: [] },
+          ...widget, packageId: manifest.id, packageVersion:manifest.version, definitionVersion: manifest.apiVersion, iconSvg: widget.iconData || "icons/text.svg", preview: { kind: "svg", lines: [] },
           propertyGroups: widget.propertyGroups.map(group => ({ ...group, ...(widget.render.kind === "chart" && group.label.startsWith("CSS ") ? { css: true, defaultEnabled: true } : {}), fields: group.fields.map(field => widget.render.kind === "material-color-schemes" && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { legacy: "Klassisch", material3: "Material 3", project: "Projektstandard", light: "Hell", dark: "Dunkel" }[value] || value })) } : ["technic-window", "technic-switch", "technic-light", "technic-temperature"].includes(widget.render.kind) && ["handle", "namePosition", "valueType", "iconKey"].includes(field.key) && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { left: "Links", right: "Rechts", top: "Oben", bottom: "Unten", bool: "Wahr / Falsch", number: "0 / 1", ...TECHNIC_SWITCH_ICONS }[value] || value })) } : field) })),
         })),
       });
