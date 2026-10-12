@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.15**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
+Version **0.1.16**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
 
 ## Installation und Einrichtung
 
@@ -70,9 +70,11 @@ ha_external
 | `device_class: text` / `state` | `state` |
 | Zahlwert | `number` |
 
-Zustände werden standardmäßig alle fünf Sekunden abgefragt und nur bei Änderungen
-gesendet; nach einer MQTT-Neuverbindung erneut vollständig. Kurze Zustandswechsel
-zwischen zwei Abfragen können fehlen. Übertragen werden der State und die
+Zustände werden nach einem vollständigen Erstabgleich live über HA-WebSocket-Ereignisse
+übernommen und nur bei Änderungen gesendet; nach einer MQTT-Neuverbindung erneut
+vollständig. Bei WebSocket-Ausfall gilt das vorhandene Abfrageintervall, standardmäßig
+fünf Sekunden. Während eines Verbindungsabbruchs verpasste Zwischenzustände können
+nicht nachträglich rekonstruiert werden. Übertragen werden der State und die
 ausgewählten Attribute der freigegebenen Entitäten, aber keine automatische
 MQTT-Discovery.
 Fehlende Entitäten erhalten `unavailable`; HA-Zustände `unknown` und `unavailable`
@@ -81,8 +83,12 @@ werden unverändert weitergegeben.
 Die App sendet mit QoS 1 und Retain. Beim ersten Abgleich werden States und
 Attribute vor den `/set`-Rückkanälen gesendet und mit `publish_delay_ms` in kleinen
 Häppchen gedrosselt, damit ioBroker die Objekte sauber anlegen kann. Beim Entfernen
-einer Entität oder Ändern des Topic-Präfixes bleiben alte Retain-Nachrichten auf dem Broker bestehen, bis du sie
-dort löschst. Verwende pro App-Instanz eine eigene Client-ID und ein eigenes Präfix.
+einer Entität oder Ändern des Topic-Präfixes bleiben alte Retain-Nachrichten zunächst
+erhalten. Unter **Veraltete Retain-Topics prüfen** kannst du von der App erfasste
+veraltete Topics auswählen und nach Bestätigung löschen. Aktive und fremde Topics
+werden abgewiesen. Vor dem Update nicht erfasste, inzwischen unbenutzte Topics
+müssen weiterhin manuell auf dem Broker entfernt werden. Verwende pro App-Instanz
+eine eigene Client-ID und ein eigenes Präfix.
 Automatische Wiederverbindung, Last Will und ein sauberer Offline-Status beim
 Beenden sind enthalten. `online` bezeichnet den letzten erfolgreichen Abgleich;
 Verbindungsfehler werden nach Timeout beziehungsweise MQTT-Keepalive erkannt.
@@ -100,17 +106,65 @@ Alte Befehls-Topics mit Entity-ID, zum Beispiel
 `ha_external/switch.stecker_garten/set`, werden als Kompatibilität weiter
 angenommen.
 
-TLS verwendet die Zertifikatsprüfung des Systems; für TLS auch den Broker-Port
-anpassen (häufig 8883). Eigene CA-Dateien und Client-Zertifikate sind noch nicht
-konfigurierbar. Der HA-Zugang erfolgt über den Supervisor-Token; ein manueller
+TLS verwendet die Zertifikatsprüfung des Systems oder deine eigene CA (PEM).
+Unter **Übertragung und TLS** lassen sich CA-Dateien und ein Client-Zertifikat mit
+passendem privatem Schlüssel hochladen oder als PEM-Text eintragen. Serverzertifikat
+und Hostname werden immer geprüft; für TLS auch den Broker-Port anpassen
+(häufig 8883). Der HA-Zugang erfolgt über den Supervisor-Token; ein manueller
 HA-Token ist nicht erforderlich. Die App legt keine HA-Konfigurationsdateien an.
+
+## Neue Funktionen und bestehende Einstellungen
+
+Version 0.1.16 erhält die vorhandenen Broker-Zugangsdaten, Client-ID, Topic-Präfix,
+Entitäts-/Attributauswahl, Publish-Pause und das Abfrageintervall. Beim Start erfolgt
+keine automatische Umschreibung der Konfiguration und keine Retain-Löschung.
+Neue TLS-Optionen sind leer; ohne eigene CA gilt weiterhin der System-Vertrauensspeicher.
+
+Die Statuszeile zeigt MQTT- und HA-Verbindung getrennt, Live-/Polling-Modus,
+letzten Abgleich, letzte Übertragung, Sendezähler und Fehlerart ohne Zugangsdaten.
+Bei einer vollen Ereigniswarteschlange werden ein Neuabgleich und ein Hinweis ausgelöst.
+
+Zusätzlich zu den bisherigen `/set`-Befehlen gelten:
+
+| Entität | Payload | HA-Aktion |
+| --- | --- | --- |
+| `cover` | `OPEN`, `CLOSE`, `STOP` | `open_cover`, `close_cover`, `stop_cover` |
+| `cover` | `{"position":45}` | `set_cover_position`, 0–100 |
+| `light` | `{"brightness_pct":75}` | `turn_on`, 0–100 |
+| `fan` | `{"percentage":50}` | `set_percentage`, 0–100 |
+
+Das konkrete HA-Gerät muss die Funktion unterstützen. Zusätzliche JSON-Felder,
+Werte außerhalb 0–100, Retain-Befehle und veraltete Warteschlangenbefehle werden
+verworfen. Es gibt weiterhin keine beliebigen HA-Serviceaufrufe.
+[HA-WebSocket](https://developers.home-assistant.io/docs/api/websocket/) ·
+[Rollläden](https://www.home-assistant.io/integrations/cover/) ·
+[Lampen](https://www.home-assistant.io/integrations/light/).
+
+**Einstellungen sichern** speichert Broker-Einstellungen, eigene CA und Auswahl als
+JSON, ohne MQTT-Passwort, Client-Zertifikat/privaten Schlüssel oder HA-Token.
+**Sicherung öffnen** prüft das Format und fragt vor dem Ersetzen nach. Beim gleichen
+Broker bleiben lokal vorhandene Zugangsdaten und Client-Zertifikate erhalten;
+auf einem anderen Broker müssen diese separat eingetragen werden. Die Sicherung
+ersetzt keine vollständige HA-App-Sicherung und enthält keine Retain-Inhalte.
+
+TLS-PEM-Texte: `tls_ca`, `tls_cert`, `tls_key`; leere Webfelder behalten gespeicherte
+Werte. **Gespeicherte TLS-Zertifikate und Schlüssel entfernen** löscht diese nur
+beim bestätigten Speichern. Veränderte MQTT-Einstellungen lassen sich ebenfalls
+vorher sichern. Die Retain-Inventarliste liegt persistent in `/data/mqtt-topics.json`.
 
 ## Entwicklung
 
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.15 mqtt_client
+docker build -t ugso-mqtt-client:0.1.16 mqtt_client
 ```
+
+Für die echten MQTT-/WebSocket-Integrationstests einen separaten lokalen Testbroker
+verwenden (keinen produktiven Broker). Optional `websockets==15.0.1` in der
+Testumgebung installieren und `MQTT_TEST_PORT` setzen. Eine ausschließlich lokale
+Mosquitto-Testkonfiguration liegt in `tests/mosquitto.conf`. Ohne Testbroker werden
+die Integrationstests übersprungen. Die UI-Prüfung `tests/test_ui.mjs` verwendet
+Playwright/Edge und die temporäre Vorschau `python mqtt_client/tests/preview.py 4186`.
 
 [English documentation](DOCS.en.md)

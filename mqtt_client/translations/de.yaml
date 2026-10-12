@@ -19,6 +19,16 @@ configuration:
     description: Eigener Namensbereich für Zustände, Befehle und Verfügbarkeit.
   poll_interval:
     name: Abfrageintervall in Sekunden
+    description: Polling-Rückfall bei unterbrochener Live-Verbindung. Standard bleibt 5 Sekunden.
+  tls_ca:
+    name: Eigene CA-Zertifikate (PEM)
+    description: Optional. Leer verwendet die System-Zertifizierungsstellen.
+  tls_cert:
+    name: Client-Zertifikat (PEM)
+    description: Optional für gegenseitiges TLS. Zusammen mit dem privaten Schlüssel angeben.
+  tls_key:
+    name: Privater Client-Schlüssel (PEM)
+    description: Bleibt in der App und wird nicht exportiert. Muss zum Client-Zertifikat passen.
   entities:
     name: Zu übertragende HA-Entitäten
     description: Liste konkreter Entity-IDs, deren State übertragen wird.
@@ -27,4 +37,4 @@ configuration:
     description: Werte im Format entity_id:attribut. Kann über die Weboberfläche ausgewählt werden.
   command_entities:
     name: Für Schreibbefehle freigegebene Entitäten
-    description: Teilmenge der obigen Liste. Erlaubt sind Schalter-Domains, Eingabewerte wie number/select/text und Buttons. Leer bedeutet keine Befehle.
+    description: Kompatibilitätsfeld. Rückbefehle werden für ausgewählte steuerbare Entitäten automatisch aktiviert, einschließlich Rollläden. Sensoren bleiben nur ausgehend.

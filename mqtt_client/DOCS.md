@@ -1,5 +1,22 @@
 # MQTT-Client einrichten
 
+Seit **0.1.16**: Live-Zustände mit vollständigem Erstabgleich und Polling-Rückfall,
+getrennter MQTT-/HA-Status, bestätigte Bereinigung erfasster alter Retain-Topics,
+Rollladen-/Helligkeits-/Lüfterbefehle, Einstellungssicherung und eigene TLS-PEM-Zertifikate.
+Bestehende Einstellungen aus 0.1.15 bleiben gültig; beim Start werden weder
+Zugangsdaten oder Auswahl überschrieben noch Retain-Werte gelöscht.
+
+**Übertragung und TLS** enthält das bisherige Abfrageintervall als Rückfall sowie
+CA und Client-Zertifikat/Schlüssel. Leere Zertifikatsfelder behalten gespeicherte Werte.
+**Einstellungen sichern** exportiert ohne Passwort oder Client-Zertifikat/privaten
+Schlüssel; **Sicherung öffnen** prüft das Format und fragt vor dem Ersetzen nach.
+**Veraltete Retain-Topics prüfen** löscht nur ausgewählte und bestätigte, von dieser
+App erfasste unbenutzte Topics. Aktive Werte und fremde Topics bleiben geschützt.
+
+Rollläden akzeptieren `OPEN`, `CLOSE`, `STOP`, `{"position":45}`, Lampen
+`{"brightness_pct":75}` und Lüfter `{"percentage":50}`. Die Prozentwerte liegen
+zwischen 0 und 100; das Gerät muss die HA-Funktion unterstützen.
+
 Der MQTT-Client überträgt ausgewählte Home-Assistant-Geräte und Werte gezielt an ioBroker oder einen anderen externen MQTT-Broker. Er ist eine schlanke Alternative dazu, über den ioBroker-HASS-Adapter den kompletten Home-Assistant-Bestand zu spiegeln. Du bestimmst, welche Geräte und Werte exportiert werden; daraus entsteht in ioBroker ein übersichtlicher Gerätebaum.
 
 Öffne nach dem Start **Open Web UI** und trage dort deinen externen Broker ein,

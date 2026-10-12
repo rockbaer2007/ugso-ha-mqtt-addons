@@ -19,6 +19,16 @@ configuration:
     description: Separate namespace for states, commands and availability.
   poll_interval:
     name: Poll interval in seconds
+    description: Polling fallback when live connection is interrupted. Default remains 5 seconds.
+  tls_ca:
+    name: Custom CA certificates (PEM)
+    description: Optional. Empty uses system certificate authorities.
+  tls_cert:
+    name: Client certificate (PEM)
+    description: Optional for mutual TLS. Supply the matching private key as well.
+  tls_key:
+    name: Private client key (PEM)
+    description: Kept in the app and excluded from exports. Must match the client certificate.
   entities:
     name: HA entities to export
     description: List of exact entity IDs whose state is published.
@@ -27,4 +37,4 @@ configuration:
     description: Values in entity_id:attribute format. Can be selected in the web UI.
   command_entities:
     name: Entities allowed to receive write commands
-    description: Subset of the list above. Supports toggle domains, value inputs such as number/select/text, and buttons. Empty disables commands.
+    description: Compatibility field. Selected controllable entities automatically enable return commands, including covers. Sensors remain outgoing-only.

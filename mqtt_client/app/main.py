@@ -1,6 +1,7 @@
 """Independent HA -> external MQTT client, with explicit command permissions."""
 
 import json
+import math
 import logging
 import os
 import queue
@@ -18,6 +19,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import paho.mqtt.client as mqtt
+from live import StateStream, TopicInventory, broker_identity
 
 LOG = logging.getLogger("mqtt-client")
 ENTITY = re.compile(r"^[a-z0-9_]+\.[a-z0-9_]+$")
@@ -25,10 +27,10 @@ ATTRIBUTE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.-]*$")
 TOGGLE_COMMAND_DOMAINS = {"switch", "light", "input_boolean", "fan"}
 VALUE_COMMAND_DOMAINS = {"input_number", "number", "input_select", "select", "input_text", "text"}
 PRESS_COMMAND_DOMAINS = {"button", "input_button"}
-COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS
+COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS | {"cover"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.15"
+APP_VERSION = "0.1.16"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -96,6 +98,12 @@ INDEX_HTML = """<!doctype html>
     label { display: grid; gap: 6px; font-size: .93rem; }
     input { box-sizing: border-box; width: 100%; border: 1px solid rgba(148, 163, 184, .55); border-radius: 8px; padding: 11px 12px; font: inherit; background: rgba(15, 23, 42, .18); color: inherit; }
     input:focus { outline: 2px solid #03a9f4; outline-offset: 1px; }
+    textarea { box-sizing: border-box; width: 100%; max-width: 100%; padding: 8px; border-radius: 8px; font: inherit; color: inherit; background: rgba(15, 23, 42, .18); }
+    details > label, details > p { margin-top: 10px; }
+    #retainedList label { overflow-wrap: anywhere; }
+    main > section.panel { margin-bottom: 16px; }
+    main > section.panel .toolbar { flex-wrap: wrap; }
+    main > section.panel .toolbar button { flex: 1 1 200px; }
     .row { display: grid; grid-template-columns: 1fr 120px; gap: 12px; }
     .status { display: flex; align-items: center; gap: 10px; margin: 0 0 20px; font-weight: 650; }
     .dot { width: 14px; height: 14px; border-radius: 50%; background: #ef4444; box-shadow: 0 0 0 4px rgba(239, 68, 68, .18); }
@@ -143,6 +151,7 @@ INDEX_HTML = """<!doctype html>
   <main>
     <h1><img src="./mqtt-icon.svg" width="36" height="36" alt="">MQTT-Client</h1>
     <div id="status" class="status"><span class="dot"></span><span>Keine Verbindung</span></div>
+    <p id="statusDetails" class="sub" role="status"></p>
     <form id="form" autocomplete="off">
       <div class="row">
         <label>IP oder Hostname
@@ -162,9 +171,37 @@ INDEX_HTML = """<!doctype html>
         <input id="password" name="password" type="password" autocomplete="new-password" placeholder="unverändert lassen">
       </label>
       <p class="hint">Standardport für den ioBroker-MQTT-Adapter: 1883.</p>
+      <details><summary>Übertragung und TLS</summary>
+        <label>Polling-Rückfall in Sekunden <input name="poll_interval" type="number" min="1" max="300" value="5"></label>
+        <label>Topic-Präfix <input name="topic_prefix" value="ha_external" required></label>
+        <label>Client-ID <input name="client_id" value="ugso-ha-mqtt-client" required></label>
+        <label class="check"><input name="tls" type="checkbox"> TLS mit Zertifikatsprüfung</label>
+        <p class="hint">PEM-Dateien laden oder Text einfügen. Leere Felder behalten vorhandene Zertifikate. Client-Zertifikat und privater Schlüssel gehören zusammen.</p>
+        <label>Eigene CA (PEM) <textarea name="tls_ca" rows="3" placeholder="unverändert lassen"></textarea><input type="file" data-pem="tls_ca" accept=".pem,.crt,.cer"></label>
+        <label>Client-Zertifikat (PEM) <textarea name="tls_cert" rows="3" placeholder="unverändert lassen"></textarea><input type="file" data-pem="tls_cert" accept=".pem,.crt"></label>
+        <label>Privater Client-Schlüssel (PEM) <textarea name="tls_key" rows="3" placeholder="unverändert lassen"></textarea><input type="file" data-pem="tls_key" accept=".pem,.key"></label>
+        <label class="check"><input name="clear_tls_material" type="checkbox"> Gespeicherte TLS-Zertifikate und Schlüssel entfernen</label>
+        <p id="tlsStored" class="hint"></p>
+      </details>
       <button id="save" type="submit">Speichern und verbinden</button>
       <div id="message" class="message"></div>
     </form>
+    <section class="panel">
+      <h2>Sicherung und Retain-Bereinigung</h2>
+      <p class="hint">Sicherung ohne MQTT-Passwort und ohne Client-Zertifikat/privaten Schlüssel. Beim Wiederherstellen auf einem anderen Broker diese separat neu eintragen.</p>
+      <div class="toolbar">
+        <button id="backup" type="button" class="secondary">Einstellungen sichern</button>
+        <button id="restore" type="button" class="secondary">Sicherung öffnen</button>
+        <input id="restoreFile" type="file" accept=".json" hidden>
+        <button id="retained" type="button" class="secondary">Veraltete Retain-Topics prüfen</button>
+      </div>
+    </section>
+    <dialog id="retainedDialog"><div class="dialog-body">
+      <h2>Veraltete Retain-Topics</h2>
+      <p>Nur von dieser App erfasste Topics auf dem aktuellen Broker. Auswählen und Löschen bestätigen; aktive Werte bleiben erhalten. Höchstens 100 Topics pro Vorgang.</p>
+      <div id="retainedList" class="list"></div>
+      <div class="actions"><button id="deleteRetained" type="button">Ausgewählte löschen</button><button id="closeRetained" type="button" class="secondary">Schließen</button></div>
+    </div></dialog>
 
     <section class="entity-grid">
       <div class="panel">
@@ -242,11 +279,13 @@ INDEX_HTML = """<!doctype html>
     let commandEntities = new Set();
     let activeEntity = null;
     let activeDevice = null;
-    const commandDomains = new Set(['switch', 'light', 'input_boolean', 'fan', 'input_number', 'number', 'input_select', 'select', 'input_text', 'text', 'button', 'input_button']);
+    const commandDomains = new Set(['switch', 'light', 'fan', 'cover', 'input_boolean', 'input_number', 'number', 'input_select', 'select', 'input_text', 'text', 'button', 'input_button']);
 
     function setStatus(data) {
       statusBox.classList.toggle('connected', Boolean(data.connected));
       statusBox.querySelector('span:last-child').textContent = data.text || 'Keine Verbindung';
+      const date = value => value ? new Date(value * 1000).toLocaleString() : 'noch keine';
+      document.getElementById('statusDetails').textContent = `MQTT: ${data.mqtt_connected ? 'verbunden' : 'getrennt'} · HA: ${data.ha_connected ? 'erreichbar' : 'nicht erreichbar'} · ${data.mode === 'websocket' ? 'Live-Ereignisse' : 'Polling-Rückfall'} · Abgleich: ${date(data.last_sync)} · Übertragung: ${date(data.last_publish)} · Gesendet: ${data.published || 0}` + (data.last_error ? ` · Fehler: ${data.last_error}` : '') + (data.stream_error ? ` · Live-Verbindung: ${data.stream_error}` : '') + (data.dropped_events ? ` · Überlast/Neuabgleich: ${data.dropped_events}` : '');
     }
 
     function attrKey(entity, attr) {
@@ -474,6 +513,11 @@ INDEX_HTML = """<!doctype html>
       form.broker_port.value = data.broker_port || 1883;
       form.username.value = data.username || '';
       form.publish_delay_ms.value = data.publish_delay_ms ?? 50;
+      form.poll_interval.value = data.poll_interval ?? 5;
+      form.topic_prefix.value = data.topic_prefix || 'ha_external';
+      form.client_id.value = data.client_id || 'ugso-ha-mqtt-client';
+      form.tls.checked = Boolean(data.tls);
+      document.getElementById('tlsStored').textContent = `Gespeichert: CA ${data.has_tls_ca ? 'ja' : 'nein'}, Client-Zertifikat ${data.has_tls_cert ? 'ja' : 'nein'}, privater Schlüssel ${data.has_tls_key ? 'ja' : 'nein'}.`;
       selectedStates = new Set(data.entities || []);
       selectedAttributes = new Set(data.entity_attributes || []);
       commandEntities = new Set(data.command_entities || []);
@@ -508,9 +552,13 @@ INDEX_HTML = """<!doctype html>
         broker_host: form.broker_host.value.trim(),
         broker_port: Number(form.broker_port.value || 1883),
         username: form.username.value.trim(),
-        publish_delay_ms: Number(form.publish_delay_ms.value || 50)
+        publish_delay_ms: Number(form.publish_delay_ms.value || 0),
+        poll_interval: Number(form.poll_interval.value || 5),
+        topic_prefix: form.topic_prefix.value.trim(), client_id: form.client_id.value.trim(),
+        tls: form.tls.checked, clear_tls_material: form.clear_tls_material.checked
       };
       if (form.password.value) payload.password = form.password.value;
+      for (const key of ['tls_ca', 'tls_cert', 'tls_key']) if (form[key].value.trim()) payload[key] = form[key].value.trim();
       try {
         const response = await fetch('./api/config', {
           method: 'POST',
@@ -520,6 +568,9 @@ INDEX_HTML = """<!doctype html>
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Speichern fehlgeschlagen');
         form.password.value = '';
+        for (const key of ['tls_ca', 'tls_cert', 'tls_key']) form[key].value = '';
+        form.clear_tls_material.checked = false;
+        await loadConfig();
         message.textContent = 'Gespeichert. Verbindung wird aufgebaut...';
         setStatus(data.status || {});
       } catch (error) {
@@ -572,6 +623,45 @@ INDEX_HTML = """<!doctype html>
     document.getElementById('reload').addEventListener('click', () => loadEntities().catch((error) => entityList.innerHTML = `<div class="sub">${error.message}</div>`));
     filter.addEventListener('input', renderLists);
 
+    async function api(path, payload) {
+      const response = await fetch('./api/' + path, payload === undefined ? {cache:'no-store'} : {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+      const data = await response.json();
+      if (!response.ok) throw Error(data.error || 'Vorgang fehlgeschlagen');
+      return data;
+    }
+    for (const input of document.querySelectorAll('[data-pem]')) input.addEventListener('change', async () => {
+      try { const file = input.files[0]; if (!file) return; if (file.size > 65536) throw Error('PEM-Datei ist zu groß'); form[input.dataset.pem].value = await file.text(); }
+      catch (error) { message.textContent = error.message; }
+      finally { input.value = ''; }
+    });
+    document.getElementById('backup').addEventListener('click', async () => {
+      try { const data = await api('backup'); const url = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})); const a = document.createElement('a'); a.href = url; a.download = 'mqtt-client-settings.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url),1000); }
+      catch (error) { message.textContent = error.message; }
+    });
+    document.getElementById('restore').addEventListener('click', () => document.getElementById('restoreFile').click());
+    document.getElementById('restoreFile').addEventListener('change', async event => {
+      try { const file = event.target.files[0]; if (!file) return; if (file.size > 1048576) throw Error('Sicherung ist zu groß'); const data = JSON.parse(await file.text()); if (!confirm('Broker-Einstellungen und Entitätsauswahl durch diese Sicherung ersetzen? Vorhandene Geheimnisse bleiben nur beim gleichen Broker erhalten.')) return; await api('restore',data); await loadConfig(); message.textContent = 'Sicherung geladen. Passwort und Client-Zertifikate gegebenenfalls neu eintragen.'; }
+      catch (error) { message.textContent = error.message; }
+      finally { event.target.value = ''; }
+    });
+    async function showRetained() {
+      const data = await api('retained'), list = document.getElementById('retainedList'); list.replaceChildren();
+      for (const topic of data.topics) { const label = document.createElement('label'); label.className = 'check'; const input = document.createElement('input'); input.type = 'checkbox'; input.value = topic; label.append(input,document.createTextNode(topic)); list.append(label); }
+      if (!data.topics.length) list.textContent = 'Keine erfassten veralteten Topics.';
+      document.getElementById('deleteRetained').disabled = !data.topics.length;
+      const dialog = document.getElementById('retainedDialog'); if (!dialog.open) dialog.showModal();
+    }
+    document.getElementById('retained').addEventListener('click', () => showRetained().catch(error => message.textContent = error.message));
+    document.getElementById('closeRetained').addEventListener('click', () => document.getElementById('retainedDialog').close());
+    document.getElementById('deleteRetained').addEventListener('click', async event => {
+      const topics = [...document.querySelectorAll('#retainedList input:checked')].map(input => input.value);
+      if (!topics.length || !confirm(`${topics.length} ausgewählte Retain-Topics wirklich löschen?`)) return;
+      event.target.disabled = true;
+      try { const data = await api('retained',{confirm:true,topics}); message.textContent = `${data.deleted.length} Retain-Topics gelöscht.`; await showRetained(); }
+      catch (error) { message.textContent = error.message; await showRetained().catch(() => {}); }
+      finally { event.target.disabled = false; }
+    });
+
     loadConfig().catch((error) => message.textContent = error.message || 'Konfiguration konnte nicht geladen werden.');
     loadEntities().catch((error) => entityList.innerHTML = `<div class="sub">${error.message}</div>`);
     setInterval(refreshStatus, 3000);
@@ -585,6 +675,17 @@ class RuntimeStatus:
         self.lock = threading.Lock()
         self.connected = False
         self.message = "Keine Verbindung"
+        self.details = dict(ha_connected=False, mode="polling", last_sync=None, last_publish=None,
+                            published=0, last_error=None, stream_error=None, dropped_events=0)
+
+    def update(self, **values):
+        with self.lock:
+            self.details.update(values)
+
+    def published(self):
+        with self.lock:
+            self.details["last_publish"] = time.time()
+            self.details["published"] += 1
 
     def set_connected(self, connected, message=None):
         with self.lock:
@@ -593,7 +694,8 @@ class RuntimeStatus:
 
     def snapshot(self):
         with self.lock:
-            return {"connected": self.connected, "text": self.message}
+            return {"connected": self.connected, "mqtt_connected": self.connected,
+                    "text": self.message, **self.details}
 
 
 @dataclass(frozen=True)
@@ -610,6 +712,9 @@ class Config:
     entity_attributes: tuple
     command_entities: tuple
     publish_delay_ms: int
+    tls_ca: str = ""
+    tls_cert: str = ""
+    tls_key: str = ""
 
     @classmethod
     def load(cls, options):
@@ -635,9 +740,12 @@ class Config:
         if any(entity.split('.')[0] not in COMMAND_DOMAINS for entity in requested_commands):
             raise ValueError("Befehle sind nur für unterstützte steuerbare Domains erlaubt")
         commands = automatic_command_entities(entities)
+        pem = [options.get(key, "") for key in ("tls_ca", "tls_cert", "tls_key")]
+        if any(not isinstance(v, str) or len(v) > 65536 for v in pem) or bool(pem[1]) != bool(pem[2]):
+            raise ValueError("TLS benötigt gültige PEM-Texte und Client-Zertifikat plus privaten Schlüssel")
         return cls(host, port, str(options.get("username", "")), str(options.get("password", "")),
                    bool(options.get("tls", False)), client_id, prefix, interval, entities, entity_attributes,
-                   commands, publish_delay_ms)
+                   commands, publish_delay_ms, *pem)
 
     def topic(self, entity, suffix):
         return f"{self.prefix}/{entity}/{suffix}"
@@ -677,8 +785,36 @@ def encode_mqtt_payload(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def tls_context(config):
+    context = ssl.create_default_context(cadata=config.tls_ca or None)
+    if config.tls_cert:
+        paths = []
+        try:
+            for text in (config.tls_cert, config.tls_key):
+                with NamedTemporaryFile("w", encoding="utf-8", delete=False) as handle:
+                    handle.write(text)
+                    paths.append(Path(handle.name))
+            context.load_cert_chain(str(paths[0]), str(paths[1]))
+        finally:
+            for path in paths:
+                path.unlink(missing_ok=True)
+    return context
+
+
 def mqtt_command(entity, payload):
     domain = entity.split(".", 1)[0]
+    if domain in {"cover", "light", "fan"} and payload.startswith("{"):
+        data = json.loads(payload)
+        key, service = {"cover": ("position", "set_cover_position"),
+                        "light": ("brightness_pct", "turn_on"), "fan": ("percentage", "set_percentage")}[domain]
+        if not isinstance(data, dict) or set(data) != {key} or isinstance(data[key], bool) or not isinstance(data[key], (int, float)) or not math.isfinite(data[key]) or not 0 <= data[key] <= 100:
+            raise ValueError("Nur Position/Helligkeit/Prozent von 0 bis 100 erlaubt")
+        return (service, data)
+    if domain == "cover":
+        service = {"OPEN": "open_cover", "CLOSE": "close_cover", "STOP": "stop_cover"}.get(payload.upper())
+        if service is None:
+            raise ValueError("OPEN/CLOSE/STOP oder JSON mit position erwartet")
+        return service
     if domain in TOGGLE_COMMAND_DOMAINS:
         service = {"ON": "turn_on", "OFF": "turn_off"}.get(payload.upper())
         if service is None:
@@ -689,6 +825,8 @@ def mqtt_command(entity, payload):
             value = float(payload)
         except ValueError as error:
             raise ValueError("Zahl erwartet") from error
+        if not math.isfinite(value):
+            raise ValueError("Endliche Zahl erwartet")
         return ("set_value", {"value": value})
     if domain in {"input_select", "select"}:
         if not payload:
@@ -909,6 +1047,12 @@ class Bridge:
         self.generation = 0
         self.sent_generation = -1
         self.sent = {}
+        self.sent_topics = {}
+        self.data_lock = threading.RLock()
+        self.events = queue.Queue(maxsize=10000)
+        self.states_cache = {}
+        self.live = False
+        self.inventory = None
         self.availability = f"{config.prefix}/availability"
         self.attribute_map = {}
         for entry in config.entity_attributes:
@@ -926,7 +1070,7 @@ class Bridge:
         if config.username:
             self.client.username_pw_set(config.username, config.password)
         if config.tls:
-            self.client.tls_set_context(ssl.create_default_context())
+            self.client.tls_set_context(tls_context(config))
         self.client.will_set(self.availability, "offline", qos=1, retain=True)
 
     def topic(self, entity, suffix, state_entry=None, prefixes=None):
@@ -942,6 +1086,9 @@ class Bridge:
                 topics[self.topic(entity, "set", entry, prefixes)] = entity
         self.command_topics = topics
         if self.connected.is_set():
+            for topic in sorted(self.subscribed_command_topics - set(topics)):
+                self.client.unsubscribe(topic)
+                self.subscribed_command_topics.remove(topic)
             for topic in sorted(set(topics) - self.subscribed_command_topics):
                 self.client.subscribe(topic, qos=0)
                 self.subscribed_command_topics.add(topic)
@@ -951,6 +1098,7 @@ class Bridge:
             LOG.warning("MQTT-Anmeldung fehlgeschlagen: %s", reason_code)
             if self.status:
                 self.status.set_connected(False, "Keine Verbindung")
+                self.status.update(last_error="MQTT connection rejected")
             return
         self.generation += 1
         self.subscribed_command_topics.clear()
@@ -990,34 +1138,124 @@ class Bridge:
         info.wait_for_publish(timeout=5)
         if not info.is_published():
             raise ConnectionError("MQTT publish acknowledgement timed out")
+        if self.status:
+            self.status.published()
         if throttle and self.config.publish_delay_ms:
-            time.sleep(self.config.publish_delay_ms / 1000)
+            self.stop.wait(self.config.publish_delay_ms / 1000)
 
-    def poll(self):
+    def poll(self, states=None):
+        with self.data_lock:
+            return self.sync_states(states)
+
+    def sync_states(self, states=None):
         generation = self.generation
         if generation != self.sent_generation:
             self.sent.clear()
+            self.sent_topics.clear()
             self.sent_generation = generation
-        states = {state["entity_id"]: state for state in self.ha.full_states()}
+        if states is None:
+            try:
+                states = {state["entity_id"]: state for state in self.ha.full_states()}
+            except (OSError, ValueError, TypeError, KeyError):
+                if self.status:
+                    self.status.update(ha_connected=False)
+                raise
+        if self.status:
+            self.status.update(ha_connected=True)
+        self.states_cache = dict(states)
         prefixes = common_prefixes_from_states(states)
         polled_entities = sorted(set(self.config.entities) | set(self.attribute_map))
+        targets = set()
         for entity in polled_entities:
+            if self.stop.is_set():
+                return
             entry = states.get(entity, {"state": "unavailable", "attributes": {}})
             state = str(entry.get("state", "unavailable"))
-            if entity in self.config.entities and self.sent.get(("state", entity)) != state:
-                self.publish(self.topic(entity, "state", entry if entity in states else None, prefixes), state, throttle=True)
+            state_topic = self.topic(entity, "state", entry if entity in states else None, prefixes)
+            if entity in self.config.entities:
+                targets.add(state_topic)
+            state_key = ("state", entity)
+            if entity in self.config.entities and (self.sent.get(state_key) != state or self.sent_topics.get(state_key) != state_topic):
+                self.publish(state_topic, state, throttle=True)
+                if self.inventory:
+                    self.inventory.remember(self.config, state_topic, entity)
                 self.sent[("state", entity)] = state
+                self.sent_topics[state_key] = state_topic
             attributes = entry.get("attributes", {})
             if not isinstance(attributes, dict):
                 attributes = {}
             for attribute in self.attribute_map.get(entity, []):
                 value = encode_mqtt_payload(attributes.get(attribute, "unavailable"))
                 key = ("attribute", entity, attribute)
-                if self.sent.get(key) != value:
-                    self.publish(self.topic(entity, f"attribute/{attribute}", entry if entity in states else None, prefixes), value, throttle=True)
+                topic = self.topic(entity, f"attribute/{attribute}", entry if entity in states else None, prefixes)
+                targets.add(topic)
+                if self.sent.get(key) != value or self.sent_topics.get(key) != topic:
+                    self.publish(topic, value, throttle=True)
+                    if self.inventory:
+                        self.inventory.remember(self.config, topic, entity, attribute)
                     self.sent[key] = value
+                    self.sent_topics[key] = topic
         self.publish(self.availability, "online")
+        targets.add(self.availability)
+        if self.inventory:
+            self.inventory.remember(self.config, self.availability, None)
         self.refresh_command_topics(states, prefixes)
+        if self.inventory:
+            self.inventory.reconcile(self.config, targets)
+        if self.status:
+            self.status.update(ha_connected=True, last_sync=time.time(), last_error=None)
+
+    def deliver_event(self, event):
+        if event[0] == "event" and event[1].get("entity_id") not in set(self.config.entities) | set(self.attribute_map):
+            return
+        try:
+            self.events.put_nowait(event)
+        except queue.Full:
+            while not self.events.empty():
+                try:
+                    self.events.get_nowait()
+                except queue.Empty:
+                    break
+            self.events.put_nowait(("fallback", None))
+            if self.status:
+                self.status.update(dropped_events=self.status.snapshot()["dropped_events"] + 1)
+            if event[0] != "fallback":
+                raise ConnectionError("Event queue full; resync required")
+
+    def process_event(self, event):
+        kind, data = event
+        if kind == "fallback":
+            self.live = False
+            return
+        if kind == "snapshot":
+            states = {s["entity_id"]: s for s in data}
+            self.sent.clear()
+            self.poll(states)
+            self.live = True
+            if self.status:
+                self.status.update(mode="websocket", stream_error=None)
+        elif kind == "event" and self.live:
+            entity = data["entity_id"]
+            if data.get("new_state") is None:
+                self.states_cache.pop(entity, None)
+            else:
+                self.states_cache[entity] = data["new_state"]
+            if entity in self.config.entities or entity in self.attribute_map:
+                self.poll(self.states_cache)
+
+    def cleanup(self, topics):
+        with self.data_lock:
+            if not self.connected.is_set() or not self.inventory:
+                raise ValueError("MQTT ist nicht verbunden")
+            allowed = set(self.inventory.candidates(self.config))
+            if not isinstance(topics, list) or len(topics) > 100 or any(not isinstance(t, str) or t not in allowed for t in topics):
+                raise ValueError("Nur bis zu 100 erfasste veraltete Topics dürfen gelöscht werden")
+            deleted = []
+            for topic in dict.fromkeys(topics):
+                self.publish(topic, "")
+                self.inventory.forget(self.config, topic)
+                deleted.append(topic)
+            return deleted
 
     def process_command(self, command):
         created, generation, entity, service = command
@@ -1030,24 +1268,44 @@ class Bridge:
     def run(self):
         self.client.connect_async(self.config.host, self.config.port, keepalive=30)
         self.client.loop_start()
+        stream = StateStream(self.ha, self.stop, self.deliver_event, self.status)
+        self.stream = stream
+        stream_thread = threading.Thread(target=stream.run, name="ha-state-stream", daemon=True)
+        stream_thread.start()
         next_poll = 0
         try:
             while not self.stop.is_set():
                 if not self.connected.wait(timeout=1):
                     continue
-                if time.monotonic() >= next_poll:
+                try:
+                    event = self.events.get_nowait()
+                    self.process_event(event)
+                    if event[0] == "fallback":
+                        next_poll = 0
+                except queue.Empty:
+                    pass
+                except (OSError, ValueError, RuntimeError, KeyError) as error:
+                    self.live = False
+                    stream.close()
+                    next_poll = 0
+                    if self.status:
+                        self.status.update(mode="polling", last_error=type(error).__name__)
+                if (not self.live and time.monotonic() >= next_poll) or self.sent_generation != self.generation:
                     try:
-                        self.poll()
+                        self.poll(self.states_cache if self.live else None)
                     except (OSError, ValueError, RuntimeError, KeyError) as error:
                         # Never log HTTP bodies, options, credentials or state payloads.
                         LOG.warning("Zustandsabgleich fehlgeschlagen (%s)", type(error).__name__)
+                        if self.status:
+                            self.status.update(last_error=type(error).__name__)
                         try:
                             self.publish(self.availability, "offline")
                         except (OSError, RuntimeError, ValueError):
                             pass
                     next_poll = time.monotonic() + self.config.interval
                 try:
-                    command = self.commands.get(timeout=min(0.5, max(0, next_poll - time.monotonic())))
+                    timeout = 0 if not self.events.empty() else (0.1 if self.live else min(0.5, max(0, next_poll - time.monotonic())))
+                    command = self.commands.get(timeout=timeout)
                 except queue.Empty:
                     continue
                 try:
@@ -1055,7 +1313,12 @@ class Bridge:
                     next_poll = 0
                 except (OSError, ValueError) as error:
                     LOG.warning("HA-Befehl fehlgeschlagen (%s); keine Wiederholung", type(error).__name__)
+                    if self.status:
+                        self.status.update(last_error="HA command: " + type(error).__name__)
         finally:
+            self.stop.set()
+            stream.close()
+            stream_thread.join(timeout=6)
             try:
                 if self.connected.is_set():
                     self.publish(self.availability, "offline")
@@ -1073,6 +1336,7 @@ class AppController:
         self.ha = HomeAssistant(self.token)
         self.lock = threading.Lock()
         self.status = RuntimeStatus()
+        self.inventory = TopicInventory(self.options_path.parent / "mqtt-topics.json")
         self.bridge = None
         self.thread = None
 
@@ -1091,6 +1355,8 @@ class AppController:
         with self.lock:
             try:
                 config = Config.load(self.read_options())
+                if config.tls:
+                    tls_context(config)
             except (OSError, ValueError, TypeError) as error:
                 LOG.info("MQTT-Client wartet auf gültige Broker-Konfiguration (%s)", type(error).__name__)
                 self.status.set_connected(False, "Keine Verbindung")
@@ -1104,18 +1370,24 @@ class AppController:
 
     def _start_locked(self, config):
         self.status.set_connected(False, "Keine Verbindung")
+        self.status.update(ha_connected=False, mode="polling", last_error=None, stream_error=None)
         self.bridge = self.bridge_factory(config, self.ha, status=self.status)
+        self.bridge.inventory = self.inventory
         self.thread = threading.Thread(target=self.bridge.run, name="mqtt-bridge", daemon=True)
         self.thread.start()
 
     def _stop_locked(self):
         if self.bridge:
             self.bridge.stop.set()
+            if getattr(self.bridge, "stream", None):
+                self.bridge.stream.close()
         thread = self.thread
+        if thread and thread.is_alive():
+            thread.join(timeout=15)
+            if thread.is_alive():
+                raise RuntimeError("Vorherige Verbindung beendet sich noch")
         self.bridge = None
         self.thread = None
-        if thread and thread.is_alive():
-            thread.join(timeout=8)
         self.status.set_connected(False, "Keine Verbindung")
 
     def public_config(self):
@@ -1131,22 +1403,77 @@ class AppController:
             "entity_attributes": options.get("entity_attributes", []),
             "command_entities": command_entities,
             "publish_delay_ms": options.get("publish_delay_ms", 50),
+            "poll_interval": options.get("poll_interval", 5),
+            "topic_prefix": options.get("topic_prefix", "ha_external"),
+            "client_id": options.get("client_id", "ugso-ha-mqtt-client"),
+            "tls": bool(options.get("tls", False)),
+            "has_tls_ca": bool(options.get("tls_ca")),
+            "has_tls_cert": bool(options.get("tls_cert")),
+            "has_tls_key": bool(options.get("tls_key")),
             "status": self.status.snapshot(),
         }
 
     def update_connection(self, payload):
         with self.lock:
             options = self.read_options()
-            for key in ("broker_host", "broker_port", "username", "publish_delay_ms"):
+            for key in ("broker_host", "broker_port", "username", "publish_delay_ms", "poll_interval", "topic_prefix", "client_id", "tls", "tls_ca", "tls_cert", "tls_key"):
                 if key in payload:
                     options[key] = payload[key]
             if "password" in payload:
                 options["password"] = payload["password"]
+            if payload.get("clear_tls_material") is True:
+                for key in ("tls_ca", "tls_cert", "tls_key"):
+                    options[key] = ""
             config = Config.load(options)
+            if config.tls:
+                tls_context(config)
             self.write_options(options)
             self._stop_locked()
             self._start_locked(config)
         return self.public_config()
+
+    BACKUP_KEYS = {"broker_host", "broker_port", "username", "tls", "tls_ca", "client_id",
+                   "topic_prefix", "poll_interval", "publish_delay_ms", "entities",
+                   "entity_attributes", "command_entities"}
+
+    def export_settings(self):
+        with self.lock:
+            options = self.read_options()
+            return {"format": "mqtt-client-settings", "version": 1,
+                    "options": {k: v for k, v in options.items() if k in self.BACKUP_KEYS}}
+
+    def import_settings(self, payload):
+        if payload.get("format") != "mqtt-client-settings" or payload.get("version") != 1 or not isinstance(payload.get("options"), dict):
+            raise ValueError("Ungültige MQTT-Client-Sicherung")
+        incoming = payload["options"]
+        if set(incoming) - self.BACKUP_KEYS:
+            raise ValueError("Sicherung enthält nicht unterstützte Einstellungen oder Geheimnisse")
+        with self.lock:
+            old = self.read_options()
+            options = dict(incoming)
+            same_broker = all(old.get(k, d) == options.get(k, d) for k, d in (("broker_host", ""), ("broker_port", 1883), ("username", ""), ("tls", False)))
+            for key in ("password", "tls_cert", "tls_key"):
+                options[key] = old.get(key, "") if same_broker else ""
+            config = Config.load(options)
+            if config.tls:
+                tls_context(config)
+            self._stop_locked()
+            self.write_options(options)
+            self._start_locked(config)
+        return self.public_config()
+
+    def retained_candidates(self):
+        with self.lock:
+            config = Config.load(self.read_options())
+            return {"topics": self.inventory.candidates(config)}
+
+    def cleanup_retained(self, payload):
+        if payload.get("confirm") is not True:
+            raise ValueError("Retain-Löschung muss bestätigt werden")
+        with self.lock:
+            if not self.bridge:
+                raise ValueError("MQTT ist nicht verbunden")
+            return {"deleted": self.bridge.cleanup(payload.get("topics"))}
 
     def update_selections(self, payload):
         with self.lock:
@@ -1222,6 +1549,15 @@ def make_handler(controller):
             self.wfile.write(body)
 
         def do_GET(self):
+            if self.path.endswith("/api/backup"):
+                self.send_json(HTTPStatus.OK, controller.export_settings())
+                return
+            if self.path.endswith("/api/retained"):
+                try:
+                    self.send_json(HTTPStatus.OK, controller.retained_candidates())
+                except (ValueError, OSError) as error:
+                    self.send_json(HTTPStatus.BAD_REQUEST, {"error": type(error).__name__})
+                return
             if self.path.split("?", 1)[0].endswith("/mqtt-icon.svg"):
                 body = (Path(__file__).parent / "mqtt-icon.svg").read_bytes()
                 self.send_response(HTTPStatus.OK)
@@ -1254,20 +1590,28 @@ def make_handler(controller):
             self.wfile.write(body)
 
         def do_POST(self):
-            if not (self.path.endswith("/api/config") or self.path.endswith("/api/selections")):
+            if not any(self.path.endswith("/api/" + name) for name in ("config", "selections", "restore", "retained")):
                 self.send_json(HTTPStatus.NOT_FOUND, {"error": "not found"})
                 return
             try:
                 length = int(self.headers.get("Content-Length", "0"))
+                if not 0 < length <= 1048576:
+                    raise ValueError("Anfrage muss 1 bis 1048576 Bytes enthalten")
                 payload = json.loads(self.rfile.read(length).decode("utf-8"))
-                if self.path.endswith("/api/selections"):
+                if not isinstance(payload, dict):
+                    raise ValueError("JSON-Objekt erwartet")
+                if self.path.endswith("/api/restore"):
+                    result = controller.import_settings(payload)
+                elif self.path.endswith("/api/retained"):
+                    result = controller.cleanup_retained(payload)
+                elif self.path.endswith("/api/selections"):
                     result = controller.update_selections(payload)
                 else:
                     result = controller.update_connection(payload)
                 self.send_json(HTTPStatus.OK, result)
             except (json.JSONDecodeError, ValueError, TypeError) as error:
                 self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
-            except OSError as error:
+            except (OSError, RuntimeError) as error:
                 self.send_json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": type(error).__name__})
 
     return Handler

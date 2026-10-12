@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.16
+
+- Live HA state_changed events with authenticated WebSocket, initial snapshot, heartbeat, reconnect and the existing poll_interval as fallback. Short transitions are processed in order; overload requests a fresh synchronization.
+- MQTT/HA connection status, live/polling mode, last synchronization/publish timestamps, publish count and sanitized error details in the Web UI.
+- Persistent inventory of acknowledged retained topics. Explicit selection and confirmation remove only recorded obsolete topics on the current broker; active topics are protected. Old unrecorded topics are never deleted automatically.
+- Cover OPEN/CLOSE/STOP and JSON position, light brightness_pct and fan percentage commands (0–100), alongside the existing commands. Retained, stale and malformed commands remain rejected.
+- JSON settings backup/restore with validation and confirmation. Passwords, client certificates/private keys and HA tokens are excluded. Existing local credentials are retained only for the same broker on explicit restore.
+- Custom PEM CA certificates and client certificate/private key with mandatory certificate/hostname verification, file upload, validation and explicit clearing.
+- Existing 0.1.15 settings, credentials, selections, topic prefix, client ID and polling interval remain valid without an automatic configuration rewrite. New TLS settings default to empty; retained data is preserved until explicitly confirmed for deletion.
+
 ## 0.1.15
 
 - MQTT.org symbol added as Home Assistant app icon/logo, web header icon and favicon.
