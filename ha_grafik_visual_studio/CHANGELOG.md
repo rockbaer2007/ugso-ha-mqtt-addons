@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.291
+
+- Strg+C, Strg+X und Strg+V kopieren, schneiden aus und fügen ausgewählte Widgets ein, auch bei Mehrfachauswahl. Dieselbe interne Widget-Zwischenablage wie bei Toolbar und Kontextmenü; Rückgängig bleibt verfügbar.
+- Ctrl/Cmd+C, X and V use the shared widget clipboard, including multiple selection. Text editing, open dialogs, runtime and held keys do not trigger widget clipboard actions.
+
 ## 0.1.290
 
 - Entf löscht ausgewählte Widgets über denselben Löschdialog wie der Papierkorb, einschließlich Mehrfachauswahl und Rückgängig. Die bestehende freiwillige Unterdrückung der Abfrage gilt auch hier.

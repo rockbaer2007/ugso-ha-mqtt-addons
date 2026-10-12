@@ -1,5 +1,7 @@
 # HA Grafik Visual Studio
 
+Studio **0.1.291**: **Strg+C / Strg+X / Strg+V** kopieren, schneiden aus und fügen Widgets ein, auch bei Mehrfachauswahl. Nutzt dieselbe interne Widget-Zwischenablage wie Toolbar und Kontextmenü; Rückgängig bleibt möglich. In Textfeldern gelten die normalen Text-Tastenkürzel. / **Ctrl/Cmd+C / X / V** copy, cut and paste selected widgets using the shared internal widget clipboard, including multiple selection and undo. Text fields retain their native shortcuts.
+
 Studio **0.1.290**: Ausgewählte Widgets mit **Entf** löschen. Derselbe Bestätigungsdialog wie beim Papierkorb erscheint; Abbrechen und Rückgängig funktionieren auch bei Mehrfachauswahl. In Eingabefeldern, offenen Dialogen und der Runtime werden damit keine Widgets gelöscht. / Delete selected widgets with the **Delete** key using the existing confirmation dialog, including multiple selection, cancellation and undo. Text fields, open dialogs and runtime keep their normal keyboard behaviour.
 
 Studio **0.1.266** ergänzt das eigene externe [Calendar + Widgetset](packages/calendar-plus/README.md): alle Home-Assistant-Kalender automatisch erkennen, einzeln ausblenden, Farben und Hintergründe je Kalender, Terminliste und Detail-Popup mit automatischer DE/EN-Sprache. Eigenständige Umsetzung, inspiriert von [xBourner/calendar-card-plus](https://github.com/xBourner/calendar-card-plus) (MIT). / Independent external calendar widget with automatic discovery, per-calendar visibility/colors, upcoming events and a details popup.

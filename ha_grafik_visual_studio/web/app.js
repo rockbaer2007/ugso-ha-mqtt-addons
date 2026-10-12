@@ -5234,14 +5234,22 @@ $("#widget-export").addEventListener("click", exportSelectedWidget);
 $("#widget-import").addEventListener("click", () => $("#widget-import-file").click());
 $("#widget-import-file").addEventListener("change", (event) => { if (event.target.files[0]) void importWidgets(event.target.files[0]); });
 document.addEventListener("keydown", (event) => {
+  const editing = [event.target, document.activeElement].some(element => element instanceof HTMLElement && (element.isContentEditable || element.closest("input, textarea, select, [role='textbox']")));
+  if (runtimeMode || event.defaultPrevented || editing || document.querySelector("dialog[open]")) return;
   if (event.key === "Delete" && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
-    const editing = [event.target, document.activeElement].some(element => element instanceof HTMLElement && (element.isContentEditable || element.closest("input, textarea, select, [role='textbox']")));
-    if (runtimeMode || event.defaultPrevented || event.repeat || editing || document.querySelector("dialog[open]") || !selectedWidgets().length) return;
+    if (event.repeat || !selectedWidgets().length) return;
     event.preventDefault();
     void deleteSelectedWidget();
     return;
   }
-  if (!(event.ctrlKey || event.metaKey) || event.altKey || ["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
+  if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+  const key = event.key.toLowerCase();
+  if (!event.shiftKey && ["c", "x", "v"].includes(key)) {
+    if (event.repeat || (key === "v" ? !state.widgetClipboard.length : !selectedWidgets().length)) return;
+    event.preventDefault();
+    if (key === "v") pasteWidgets(); else copySelectedWidgets(key === "x");
+    return;
+  }
   if (event.key.toLowerCase() === "z") { event.preventDefault(); if (event.shiftKey) redoWidgetChange(); else undoWidgetChange(); }
   if (event.key.toLowerCase() === "y") { event.preventDefault(); redoWidgetChange(); }
 });
