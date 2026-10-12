@@ -1,5 +1,11 @@
 # HA Grafik Visual Studio
 
+**Neu in 0.1.294:** Alle elf Interaktiv-Widgets mit Inventwo VIS-2 verglichen; verbleibende Unterschiede stehen im [Vergleich](docs/inventwo-interactive-audit-2026-10-12.md). Die Vorschauen füllen jetzt ihren Rahmen in Seitenleiste und Widget-Auswahl. Einstellungen bleiben erhalten.
+
+**English:** All eleven Interactive widgets reviewed against Inventwo VIS-2; see the linked comparison. Previews now fill their sidebar/selector frame. Existing settings remain intact.
+
+**Français :** Comparaison des onze widgets interactifs avec Inventwo VIS-2 dans le rapport ci-dessus. Les aperçus remplissent leur cadre dans la barre latérale et le sélecteur. Les réglages existants sont conservés.
+
 **Neu in 0.1.293:** Basic-Widgets erhalten die Ergänzungen aus dem VIS-2-Vergleich: Zahlenformatierung und Qualitätsklassen, Bestätigungsquelle, zusätzliche HA-Ziele, Darstellungsmodi, Vollbildicons, Unteransichten, Sprachaufnahme und Runtime verlassen. Basic-Einstellungen und Hinweise sind separat DE/EN/FR wählbar. Alte Projekte behalten ihre bisherigen Modi. [Anleitung DE/EN/FR](docs/basic-widgets-0.1.293.md).
 
 **English:** Basic widgets in 0.1.293 add number/quality formatting, acknowledgment sources, extra HA targets, appearance modes, fullscreen icons, subviews, speech recognition and runtime exit. Basic properties and guidance offer DE/EN/FR independently; existing projects keep their previous modes. See the linked guide.

@@ -4,6 +4,7 @@ import {cssGroups} from './widget-sets/core.js';
 import {completeCssGroups,cardCssEnabled,applyCardCss} from './card-css.js';
 import { entitySearchMatches } from "./entity-search.js";
 import { PALETTE_COLORS, allocatePaletteColors } from "./palette-colors.js";
+import { renderInteractivePreview } from "./interactive-preview.js";
 import { renderWeather } from "./weather-widget.js";
 import { renderHeatingRooms } from "./heating-rooms.js";
 import { renderWindowOverview } from "./window-overview.js";
@@ -1236,6 +1237,7 @@ function renderPalette() {
     for (const definition of widgets) {
       const button = document.createElement("button");
       button.className = "widget-choice";
+      button.dataset.widgetType = definition.type;
       const label = document.createElement("span");
       label.className = "widget-choice-label";
       label.textContent = definition.label;
@@ -1243,7 +1245,10 @@ function renderPalette() {
       preview.className = "widget-choice-preview";
       preview.dataset.kind = definition.preview?.kind || "symbol";
       preview.setAttribute("aria-hidden", "true");
-      if (definition.iconSvg) {
+      const interactivePreview = renderInteractivePreview(definition.type, document);
+      if (interactivePreview) {
+        preview.dataset.kind = "interactive"; preview.append(interactivePreview);
+      } else if (definition.iconSvg) {
         const icon = document.createElement("img"); icon.src = definition.iconSvg; icon.alt = ""; preview.append(icon);
       } else for (const lineText of definition.preview?.lines || [definition.icon]) {
         const line = document.createElement("span");
@@ -1376,7 +1381,9 @@ function renderWidgetFinder() {
       applyWidgetSelection(state.widgetSelectionDraft);
     });
     const preview = document.createElement("span"); preview.className = "widget-choice-preview widget-selector-preview"; preview.dataset.kind = definition.preview?.kind || "symbol";
-    for (const lineText of definition.preview?.lines || [definition.icon || "□"]) { const line = document.createElement("span"); line.textContent = lineText; preview.append(line); }
+    const interactivePreview = renderInteractivePreview(definition.type, document);
+    if (interactivePreview) { preview.dataset.kind = "interactive"; preview.append(interactivePreview); }
+    else for (const lineText of definition.preview?.lines || [definition.icon || "□"]) { const line = document.createElement("span"); line.textContent = lineText; preview.append(line); }
     const name = document.createElement("span"); name.className = "widget-selector-name"; name.textContent = widgetDisplayName(widget);
     const meta = document.createElement("small"); meta.textContent = `${definition.label} · ${widget.id}`; name.append(meta);
     row.append(check, preview, name); list.append(row);

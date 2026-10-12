@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.294
+
+- Review all eleven Interactive widgets against Inventwo VIS-2 1.10.0 and document remaining differences, especially Universal actions/content and radial gradients.
+- Replace tiny Interactive sidebar glyphs with original SVG previews filling the existing frame, also in the widget selector and light/dark themes.
+- Preserve widget IDs, settings, defaults and runtime behavior; previews are inert and do not execute Home Assistant actions.
+
 ## 0.1.293
 
 - Extend Basic with thousands/automatic decimals, optional reference number/boolean modes, quality classes, explicit acknowledgment entity/attribute, link targets, sanitized note formatting and additional HA action targets.
