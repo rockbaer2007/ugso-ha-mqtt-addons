@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.293
+
+- Extend Basic with thousands/automatic decimals, optional reference number/boolean modes, quality classes, explicit acknowledgment entity/attribute, link targets, sanitized note formatting and additional HA action targets.
+- Add modern/native control choices, classic/modern table styles, fullscreen icons tied to browser state with editor clicks disabled, project/page resolution details and subview navigation without changing the main page.
+- Add Speech to Text (browser-supported, single/start-stop/continuous, keywords and status icons) and HTML logout as a Studio runtime exit; it does not sign out the HA account.
+- Localize Basic properties, guidance and runtime messages in DE/EN/FR independently of the overall DE/EN Studio shell. Add localized/custom date formats, explicit timestamp units and updating relative time.
+- Apply group visibility using trusted HA Ingress viewer identity; unknown viewers have no groups. This is presentation logic, not API authorization.
+- Preserve old IDs, group keys, fields, CSS, formatting and raw HTML behavior. New widgets use modern presentation and inert HTML formatting; existing widgets change only when new options are selected. Grouping retains the existing Studio model.
+- No ioBroker assets/code or executable ioBroker bindings are imported; HA-specific semantics remain documented.
+
 ## 0.1.292
 
 - Expand the 49 Material Design renderers towards the ioBroker reference: actual switches, state/press colors, slider geometry, round controls, input shapes, masked input and icons, data layouts, chart axes/stacks/tooltips and navigation drawers.

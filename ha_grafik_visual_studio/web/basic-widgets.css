@@ -1,0 +1,24 @@
+.fullscreen-button[data-basic-fullscreen="icon"] { display:flex; align-items:center; justify-content:center; width:100%; height:100%; padding:4px; border:0; background:transparent; color:inherit; }
+.fullscreen-button svg { width:32px; height:32px; }
+.basic-modern-control .widget-checkbox input { appearance:none; width:20px; height:20px; border:2px solid currentColor; border-radius:2px; cursor:pointer; margin:4px; }
+.basic-modern-control .widget-checkbox input:checked { background:var(--accent,#1976d2); border-color:var(--accent,#1976d2); }
+.basic-modern-control .widget-checkbox input:checked::after { content:""; display:block; width:6px; height:11px; border:solid white; border-width:0 2px 2px 0; transform:rotate(45deg); margin:0 4px; }
+.basic-modern-control select { border:0; border-bottom:1px solid currentColor; background:transparent; color:inherit; border-radius:0; padding:8px 28px 8px 8px; }
+.basic-modern-control .bar-track { border-radius:4px; background:color-mix(in srgb,var(--accent,#1976d2) 20%,transparent); }
+.basic-table-modern { overflow:auto; width:100%; height:100%; }
+.basic-table-modern table { width:100%; border-collapse:collapse; }
+.basic-table-modern th { position:sticky; top:0; z-index:1; background:var(--panel,#242729); text-align:left; font-weight:500; }
+.basic-table-modern td,.basic-table-modern th { border-bottom:1px solid color-mix(in srgb,currentColor 15%,transparent); padding:8px 12px; }
+.basic-table-modern tr.selected-row { background:color-mix(in srgb,var(--accent,#1976d2) 18%,transparent); }
+.basic-table-classic .tclass { border-collapse:collapse; width:100%; }
+.basic-table-classic .tclass-inner { flex:1; min-height:0; }
+.basic-table-classic { display:flex; flex-direction:column; width:100%; height:100%; }
+.basic-native-progress { width:100%; height:100%; }
+.basic-table-classic th,.basic-table-classic td { border:1px solid currentColor; padding:2px 4px; }
+.basic-speech { display:flex; gap:6px; flex-direction:column; align-items:center; max-width:100%; }
+.basic-speech button,.basic-exit { display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px; background:transparent; color:inherit; border:1px solid currentColor; border-radius:4px; }
+.basic-speech span { overflow-wrap:anywhere; }
+.basic-exit.text { border:0; }
+.basic-exit.contained { background:var(--accent,#1976d2); color:white; border:0; }
+.basic-speech button[aria-pressed="true"] { color:var(--accent,#1976d2); }
+/* Legacy settings keep their existing selectors and defaults. */

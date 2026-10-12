@@ -817,6 +817,7 @@ export function uiText(source, values = {}) {
 }
 
 function excluded(element) {
+  if (element.closest("[data-basic-locale]")) return true;
   if (element.id === "entity-selected-id") return false;
   if (element.classList.contains("empty") && element.closest("#objects-browser, #entities-tree")) return false;
   if (element.closest(".widget-choice-label")) return true;

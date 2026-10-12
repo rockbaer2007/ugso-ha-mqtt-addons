@@ -1,5 +1,11 @@
 # HA Grafik Visual Studio
 
+**Neu in 0.1.293:** Basic-Widgets erhalten die Ergänzungen aus dem VIS-2-Vergleich: Zahlenformatierung und Qualitätsklassen, Bestätigungsquelle, zusätzliche HA-Ziele, Darstellungsmodi, Vollbildicons, Unteransichten, Sprachaufnahme und Runtime verlassen. Basic-Einstellungen und Hinweise sind separat DE/EN/FR wählbar. Alte Projekte behalten ihre bisherigen Modi. [Anleitung DE/EN/FR](docs/basic-widgets-0.1.293.md).
+
+**English:** Basic widgets in 0.1.293 add number/quality formatting, acknowledgment sources, extra HA targets, appearance modes, fullscreen icons, subviews, speech recognition and runtime exit. Basic properties and guidance offer DE/EN/FR independently; existing projects keep their previous modes. See the linked guide.
+
+**Français :** Les widgets Basic de 0.1.293 ajoutent formats numériques/qualité, sources de confirmation, cibles HA supplémentaires, apparence, plein écran, sous-vues, reconnaissance vocale et sortie de l’exécution. Réglages et conseils Basic proposent DE/EN/FR séparément ; les anciens projets conservent leurs modes. Consultez le guide ci-dessus.
+
 Studio **0.1.292** erweitert das externe **Material Design 1.1.0** in Richtung des ioBroker-Originals: echte Switches, Button-Zustände und Mehrziel-Aktionen, Regler-/Eingabeformen, Tabellen-/Listenoptionen, Diagramme mit mehreren Achsen und Stacks sowie App Bar mit Drawer und erhaltenen Ansichten. Alte Projekte und Standardwerte werden nicht umgeschrieben. Der bisherige State-Multi-Wertezyklus und die bisherigen View-Zuordnungen bleiben nutzbar. Material-Sprache: automatisch aus Studio oder separat DE/EN/FR. Die Studio-Gesamtoberfläche bleibt DE/EN.
 
 **English:** Studio 0.1.292 supports the additive Material Design 1.1.0 upgrade with switches, original-style controls, explicit multiple-target actions, data/chart layouts and drawer navigation. Existing projects/defaults are retained, including legacy value cycles and view mappings. Material widgets offer DE/EN/FR independently; the overall Studio interface remains DE/EN.

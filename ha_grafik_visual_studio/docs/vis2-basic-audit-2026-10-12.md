@@ -2,6 +2,8 @@
 
 Stand: 12. Oktober 2026. Geprüftes Studio: 0.1.292, Commit `7e9f8bb1858d7d4ea815e7daf87d16ad3012c38e`.
 
+**Nacharbeiten in 0.1.293:** Die umsetzbaren Ergänzungen sind als kompatible Optionen und neue Basic-Widgets implementiert. [Leitfaden und verbleibende HA-spezifische Unterschiede, DE/EN/FR](basic-widgets-0.1.293.md). Die folgende Tabelle bleibt als Prüfstand 0.1.292 erhalten; sie ist keine aktuelle Liste offener Aufgaben. HTML-Bereinigung ist in 0.1.293 ein ausdrücklicher Modus: Die frühere Annahme einer generellen Bereinigung durch `appendSafeHtml` war zu weitgehend. Ebenso ist die in der alten Tabelle genannte VIS-View-Editor-Testoption im aktuellen Original auskommentiert und kein aktiv fehlendes Bedienelement.
+
 ## Ergebnis und Prüfgrenzen
 
 Die Basic-Widgets stimmen **noch nicht vollständig** mit VIS-2 überein. Von 41 Originaltypen einschließlich des internen Gruppenwidgets haben 38 ein Gegenstück im Studio-Basisset. Drei Originaltypen sind dort nicht registriert. Das Basisset enthält außerdem acht zusätzliche Typen.

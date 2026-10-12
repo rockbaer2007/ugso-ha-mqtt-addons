@@ -24,7 +24,7 @@ test("Note reads attributes and permits writes only to available text helpers", 
 test("Note has a single test-text field, reference defaults and required CSS", () => {
   const definition = getWidgetDefinition("note");
   const fields = definition.propertyGroups.find(group => group.label === "Allgemein").fields;
-  assert.deepEqual(fields.map(field => field.key), ["entityId", "entityAttribute", "prefix", "suffix", "state", "hideCorner"]);
+  assert.deepEqual(fields.map(field => field.key), ["entityId", "entityAttribute", "prefix", "suffix", "state", "hideCorner", "noteHtml"]);
   assert.equal(definition.defaults.width, 100); assert.equal(definition.defaults.height, 70);
   assert.equal(definition.defaults.radius, 5); assert.equal(definition.defaults.hideCorner, false);
   assert.ok(definition.propertyGroups.find(group => group.label === "CSS Allgemein").required);

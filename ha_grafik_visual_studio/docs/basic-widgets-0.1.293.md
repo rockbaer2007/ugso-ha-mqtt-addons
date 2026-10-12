@@ -1,0 +1,60 @@
+# Basic-Widgets 0.1.293 · DE / EN / FR
+
+## Deutsch
+
+Die 48 Basic-Einträge orientieren sich an VIS-2. Die Umsetzung bleibt ein eigenständiger HA-Renderer. Optische und funktionale Unterschiede des HA-Modells bleiben bestehen: keine beliebigen ioBroker-Schreibzugriffe, keine ausführbaren ioBroker-JavaScript-Bindings, eigene Icons und Studio-Gruppierung.
+
+Unter **Extrasteuerung → Steuerungsziel** wählt „Hauptziel und Zusatzaktion“ das bisherige Verhalten. „Nur separates Ziel“ liest den Hauptzustand und schreibt ausschließlich an das gewählte separate Ziel beziehungsweise führt dessen URL aus. Für eine Richtung ohne konfiguriertes separates Ziel bleibt der Klick deaktiviert; es wird nicht auf das Hauptziel zurückgefallen.
+
+- **Basic-Sprache:** automatisch aus Studio oder separat Deutsch, Englisch, Französisch. Die gesamte Studio-Oberfläche bleibt DE/EN; diese Auswahl betrifft Basic-Eigenschaften, Hinweise und neue Runtime-Meldungen. Eigene Beschriftungen und Entitätswerte werden nicht übersetzt.
+- **Number:** Tausendertrennung und automatische Nachkommastellen sind optional. Der bisherige Zahlenparser und die Singularwahl bleiben bestehen. „VIS-2-kompatibel“ verwendet einen Parser mit numerischem Präfix und wählt Singular anhand des formatierten Werts. Qualitätsentität plus zwei CSS-Klassen lassen sich zusätzlich einstellen.
+- **AckFlag HTML:** HA hat kein ioBroker-ACK-Flag. „Bestätigungsentität“ liest ausdrücklich eine getrennte Entität oder deren Attribut. Alte Projekte behalten den bisherigen Hauptzustand. Eine fehlende Bestätigungsquelle gilt nicht als bestätigt.
+- **Bool HTML / control:** optionale Min-/Max-Sentinels statt einer numerischen Schwelle. Min/Max können Zahlen, Text oder Boolwerte sein. „control“ erhält HTML-Zusätze und separate HA-Ziele für true/false. Zusatzaktionen werden serverseitig gegen unterstützte Entitäten und Grenzen geprüft. Leere Schreibziele bleiben aus; nach einem Fehler beim Zusatzschreiben folgt keine zusätzliche URL-Aktion. Die Hauptaktion und Zusatzaktion sind keine atomare Transaktion.
+- **Link:** Zielfenster wählen. **Note:** „Bereinigtes HTML anzeigen“ für einfache Formatierung; der Notizdialog schreibt weiterhin nur Text an verfügbare `input_text`-Helfer ohne Attribut.
+- **HTML-Modus:** neue Widgets verwenden bereinigte, inerte Formatierung. Bestehende Widgets ohne neues Feld behalten ihre bisherige HTML-Ausgabe. Es wird kein gespeicherter HTML-Code gelöscht. Der bereinigte Modus entfernt unter anderem Skripte, Event-Attribute, Formulare und eingebettete Frames; komplexe Webseiten gehören in iFrame. Dies ist kein Interpreter für ioBroker-Bindings.
+- **Darstellung:** Bool Checkbox/Select und Bar bieten bisherig, nativ oder modern. Table bietet bisherig, klassisch mit `tclass`-Klassen oder modern mit festem Header. Vorhandene JSON-, Ereignis-, Auswahl-, Bestätigungs-, Detail- und Spaltenfelder bleiben nutzbar. Eigene VIS-CSS-Regeln können Anpassungen erfordern; keine pixelgenaue DOM-Kompatibilität behaupten.
+- **Full Screen:** neue Widgets verwenden wechselnde Icons; alte Textbuttons bleiben erhalten. Escape wird über den tatsächlichen Browserzustand erkannt. Im Editor ist die Funktion deaktiviert.
+- **HTML navigation:** als Unteransicht ein View-in-widget-Ziel auf derselben Seite wählen. Der Klick ersetzt nur dessen eingebettete Seite. Studio-Seiten bleiben iframe-basiert; Rekursionsschutz bleibt aktiv.
+- **Zeit:** neue Widgets verwenden lokalisierte Formate; bestehende behalten den bisherigen Modus. `auto`, numerische Datums-/Zeitteile, Monats-/Wochentagsnamen, 12-Stunden-Uhr, Millisekunden und Literale in `[Klammern]` werden unterstützt. Für numerische Zeitstempel Sekunden oder Millisekunden ausdrücklich wählen; automatisch verwendet eine Größenheuristik. Relative Zeit wird jede Sekunde aktualisiert. TimesValue und Timestamp Value bleiben zwei kompatible Originaleinträge mit derselben Quellart.
+- **Screen Resolution:** optional Projekt-/Seitennamen und Projektgröße ergänzen die Browsergröße. Keine ioBroker-Instanzsteuerung.
+- **Speech to Text:** Mikrofontaste, einmal/Start-Stopp/fortlaufend, DE/EN/FR-Erkennungssprache, optionale Schlüsselwortfilter, fünf Statusbilder, Text-/Bildanzeige und Farben. Ausgabe lokal oder an verfügbaren `input_text`-Helfer. Benötigt Browserunterstützung, Mikrofonfreigabe und meist HTTPS; der Erkennungsdienst des Browsers kann eine Internetverbindung benötigen. Keine Aufnahme startet automatisch.
+- **HTML logout:** verlässt die Studio-Runtime zur Rückkehr-URL oder versucht ein vom Skript geöffnetes Fenster zu schließen. Es meldet das HA-Konto nicht ab und löscht keine HA-Anmeldedaten. Widgetgruppierung nutzt weiterhin die vorhandene Studio-Gruppierungsfunktion.
+- **Gruppen-Sichtbarkeit:** HA-Gruppen-IDs wie `system-admin` oder `system-users`, mit Semikolon getrennt. Auswertung nur anhand bestätigter aktiver Ingress-Benutzer vom Supervisor-Proxy. Unbekannte oder lokale Benutzer erhalten keine Gruppe. Auswahl „ausblenden/deaktivieren“ gilt bei nicht passender Gruppe oder Zustandsbedingung. Das ist Darstellung, keine zusätzliche Zugriffskontrolle für APIs.
+
+Technische IDs und gespeicherte Gruppen-Schlüssel bleiben stabil. Für vorhandene Widgets neue Modi bewusst wählen; Projekt-JSON vorher zu sichern bleibt sinnvoll. Der ursprüngliche Audit dokumentiert den Stand 0.1.292; dieser Leitfaden beschreibt die Nacharbeiten.
+
+## English
+
+The 48 Basic entries follow VIS-2 using an independent HA renderer. Existing projects retain IDs, property-group keys, CSS, values and previous modes. No executable ioBroker bindings or unrestricted state writes are introduced. The Studio shell remains DE/EN; Basic properties, guidance and new runtime messages can independently use DE/EN/FR. User text and entity values are never translated.
+
+Additional control offers main target plus extra action, or separate target only. The latter reads the main state without writing to it; an unconfigured direction stays disabled rather than falling back to the main target.
+
+Number adds optional thousands separators, automatic decimals and quality classes. Reference mode changes numeric-prefix parsing and singular selection explicitly. AckFlag uses a selected acknowledgment entity/attribute; HA has no ioBroker ACK flag. Old projects retain their main-state behavior. Bool HTML/control add optional on/off sentinels, HTML additions and separate extra targets. Supported extra actions are checked by the server; failure stops the subsequent URL action. Main and extra actions are not atomic.
+
+Links choose their target window. Notes optionally show inert formatted HTML; editing still writes only note text to an available input_text helper without an attribute. New widgets default to sanitized HTML; existing widgets keep their previous markup without rewriting saved data. Sanitized mode removes scripts, event attributes, forms and frames. Use iFrame for complex pages.
+
+Checkbox/Select/Bar offer previous/native/modern appearance; Table offers previous/classic/modern styles while retaining all JSON/event/selection/ack/detail/column settings. Classic provides tclass hooks, but custom VIS CSS may need adaptation. New fullscreen widgets use state-following icons and are disabled in the editor. Subview navigation replaces the page of a View-in-widget container on the same page. Screen Resolution can display project/page details.
+
+Localized time supports auto formatting, numeric date/time tokens, month/weekday names, 12-hour clocks, milliseconds and literal text in brackets. Choose seconds or milliseconds explicitly for numeric timestamps; auto uses a size heuristic. Relative time updates every second; old date modes remain. TimesValue and Timestamp Value intentionally share their source semantics.
+
+Speech to Text starts only on a click, supports single/start-stop/continuous recognition, keywords, five status icons and result colors. It writes locally or to available input_text. Browser support, microphone permission and usually HTTPS are required; the browser recognition service may need internet. HTML logout leaves runtime or closes a script-opened window; it does not sign out HA or delete its credentials. Existing Studio grouping remains.
+
+Group visibility uses HA group IDs from an active trusted Ingress viewer only. Unknown/local viewers have no groups. Hide/disable applies when the group or state condition fails. It controls presentation, not API authorization. This implementation does not promise pixel-identical VIS markup or emulate ioBroker sessions.
+
+## Français
+
+Les 48 entrées Basic suivent VIS-2 avec un moteur HA indépendant. Les anciens projets conservent identifiants, clés des groupes, CSS, valeurs et modes précédents. Aucune liaison JavaScript ioBroker exécutable ni écriture arbitraire n’est ajoutée. L’interface générale reste DE/EN ; réglages, conseils et nouveaux messages Basic proposent DE/EN/FR séparément. Les textes utilisateur et valeurs d’entité ne sont pas traduits.
+
+La commande supplémentaire propose cible principale plus action supplémentaire, ou cible séparée uniquement. Ce dernier mode lit l’état principal sans y écrire ; une direction non configurée reste désactivée sans revenir à la cible principale.
+
+Number ajoute séparateur de milliers, décimales automatiques et classes de qualité facultatifs. Le mode de référence change explicitement le parsing numérique et le choix du singulier. AckFlag utilise une entité ou un attribut de confirmation choisi ; HA n’a pas d’indicateur ACK ioBroker. Les anciens projets conservent leur état principal. Bool HTML/control ajoutent sentinelles marche/arrêt, préfixe/suffixe HTML et cibles supplémentaires. Le serveur vérifie les actions prises en charge ; un échec empêche l’action URL suivante. Les actions principale et supplémentaire ne sont pas atomiques.
+
+Les liens choisissent leur fenêtre cible. Les notes peuvent afficher du HTML inerte ; la modification écrit seulement le texte dans un input_text disponible sans attribut. Les nouveaux widgets utilisent le HTML nettoyé ; les anciens conservent leur balisage sans réécriture des données. Le nettoyage retire scripts, attributs d’événement, formulaires et frames. Utilisez iFrame pour les pages complexes.
+
+Checkbox/Select/Bar proposent apparence précédente/native/moderne. Table propose précédente/classique/moderne et conserve JSON, événements, sélection, confirmation, détail et colonnes. Le mode classique fournit les classes tclass ; du CSS VIS personnalisé peut nécessiter une adaptation. Les nouveaux widgets plein écran utilisent des icônes suivant l’état du navigateur et sont désactivés dans l’éditeur. La navigation de sous-vue remplace la page d’un conteneur View-in-widget sur la même page. Screen Resolution peut montrer les détails du projet et de la page.
+
+Le temps localisé prend en charge auto, éléments numériques date/heure, noms de mois/jours, horloge 12 heures, millisecondes et texte entre crochets. Choisissez explicitement secondes ou millisecondes pour les horodatages numériques ; auto utilise une heuristique de taille. Le temps relatif s’actualise chaque seconde ; les anciens modes restent. TimesValue et Timestamp Value partagent volontairement leur source.
+
+Speech to Text démarre uniquement au clic : une fois, démarrer/arrêter ou continu, mots-clés, cinq icônes d’état et couleurs. Il écrit localement ou dans input_text disponible. Il nécessite un navigateur compatible, permission du microphone et généralement HTTPS ; le service de reconnaissance peut nécessiter internet. HTML logout quitte l’exécution ou ferme une fenêtre ouverte par script ; il ne déconnecte pas le compte HA et ne supprime pas ses identifiants. Le groupement Studio existant est conservé.
+
+La visibilité par groupe utilise uniquement les IDs de groupes HA d’un utilisateur actif confirmé par Ingress. Les utilisateurs inconnus/locaux n’ont aucun groupe. Masquer/désactiver s’applique si groupe ou condition d’état échoue. C’est une fonction d’affichage, pas une autorisation API. Cette réalisation ne promet pas un DOM VIS identique au pixel et n’émule pas les sessions ioBroker.

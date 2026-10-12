@@ -327,7 +327,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.292"
+    server_version = "HAGrafikVisualStudio/0.1.293"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -375,7 +375,20 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.292"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.293"})
+            return
+        if path == "/api/viewer":
+            groups = []
+            user_id = self.headers.get("X-Remote-User-Id")
+            if self.client_address[0] == "172.30.32.2" and user_id:
+                try:
+                    users = home_assistant_commands(["config/auth/list"])[0]
+                    user = next((user for user in users if user.get("id") == user_id and user.get("is_active")), None)
+                    if user:
+                        groups = user.get("group_ids", [])
+                except HomeAssistantAPIError:
+                    pass  # Unknown viewer is never granted group visibility.
+            self.send_json(HTTPStatus.OK, {"groups": groups})
             return
         if path == "/meteored-frame":
             try:

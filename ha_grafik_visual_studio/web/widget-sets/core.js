@@ -1,4 +1,5 @@
 import { registerWidgetSet } from "../widget-registry.js";
+import { extendBasic, missingBasic } from "../basic-options.js";
 
 const fields = (items) => ({ label: "Größe und Position", fields: items });
 const sliderShadow = (label, prefix) => ({ label, fields: [
@@ -482,6 +483,6 @@ registerWidgetSet({
     if (["button", "toggle", "checkbox", "bulb", "slider", "sensor", "string", "string-raw", "image-source", "time-value", "timestamp-value", "timestamp", "last-changed", "value-list-text", "value-list-html", "value-list-html-style", "bool-display", "bool-select", "bool-html-control", "table", "bar", "gauge", "image"].includes(widget.type)) {
       widget.propertyGroups.push(signalImages());
     }
-    return widget;
-  }),
+    return extendBasic(widget);
+  }).concat(missingBasic(cssGroups)),
 });

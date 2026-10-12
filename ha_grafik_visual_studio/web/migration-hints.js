@@ -43,7 +43,7 @@ export function migrationHint(widget, key) {
   if (widget.type === "string" && key === "state") return "Testtext gilt nur im Editor. Der Entitätswert und der Testtext bleiben Text; nur HTML davor und dahinter wird formatiert.";
   if (widget.type === "filter-dropdown" && key === "filterEntries") return "Filterwerte entsprechen den Filterwörtern der Widgets auf dieser Seite. Kein HA-Helfer nötig. Textfarben werden als HEX gespeichert; Standard gilt beim Start der Runtime.";
   if (widget.type === "navigation" && key === "navHtml") return "HTML wird bereinigt angezeigt; eingebettete Skripte werden nicht ausgeführt. Seitenwechsel benötigt keinen HA-Helfer.";
-  if (widget.type === "navigation" && key === "subView") return "VIS2-Unteransichten dienen speziellen Navigationssystemen, zum Beispiel Jaeger Design. Diese Funktion ist in Studio noch nicht angebunden; Tabs sind davon unabhängig.";
+  if (widget.type === "navigation" && key === "subView") return "Wähle ein View-in-widget-Ziel auf dieser Seite. Die Navigation ersetzt dessen eingebettete Seite; die Hauptseite bleibt bestehen.";
   if (widget.type === "html" && key === "htmlContent") return "HTML wird bereinigt angezeigt. Eingebettete Skripte und Event-Handler werden nicht ausgeführt; keine HA-Schreibentität nötig.";
   if (widget.type === "html" && key === "refreshInterval") return "0 oder leer deaktiviert die Aktualisierung. Millisekunden bauen den HTML-Inhalt neu auf; das ist keine HA-Abfragezeit.";
   if (widget.type === "bar" && key === "barBorder") return "CSS-Rand angeben, zum Beispiel 2px solid blue. Eine einzelne 2 ist keine vollständige CSS-Randangabe.";
@@ -57,7 +57,7 @@ export function migrationHint(widget, key) {
     if (key === "ackEntityId") return "Benötigt einen passenden input_text- oder input_number-Helfer für die Bestätigung; Typ und Länge müssen zum Wert passen.";
     if (key === "selectedEntityId") return "Benötigt einen input_text-Helfer für die ausgewählte JSON-Zeile. Die maximale Textlänge des Helfers beachten.";
   }
-  if (["extraTrueEntityId", "extraFalseEntityId"].includes(key)) return "Diese zusätzlichen Schreibziele sind noch nicht angebunden; hier wird derzeit kein HA-Wert geschrieben.";
+  if (["extraTrueEntityId", "extraFalseEntityId"].includes(key)) return "Zusätzliches HA-Schreibziel für den eingestellten Wert. Die Entität muss die Aktion unterstützen; nicht verfügbare Ziele werden abgelehnt.";
   if (key !== "entityId") return "";
   if (widget.type === "bar") return "Liest einen Zahlenwert, zum Beispiel Solarleistung. Es wird kein HA-Wert geschrieben und kein zusätzlicher Helfer benötigt.";
   if (widget.readOnly === true) return "Nur Anzeige: Die Entität wird gelesen, nicht geschaltet. Dafür ist kein zusätzlicher Helfer nötig.";
