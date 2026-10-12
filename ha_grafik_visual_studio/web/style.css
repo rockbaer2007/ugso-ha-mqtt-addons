@@ -500,6 +500,25 @@ html.embedded-loading body { visibility: hidden; background: transparent; }
 .widget-choice-preview[data-kind="svg"] img { display: block; width: 24px; height: 24px; object-fit: contain; }
 .widget-choice-preview[data-kind="interactive"] { padding: 0; }
 .widget-choice-preview[data-kind="interactive"] > svg { display: block; width: 100%; height: 100%; flex: 0 0 auto; }
+.widget-choice-preview[data-kind="material"] { padding: 0; overflow: hidden; }
+.widget-choice-preview[data-kind="material"] > svg, .widget-choice-preview[data-kind="material"] > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.widget-choice-preview[data-kind="material"][data-padded-icon="true"] > img { transform: scale(2); }
+.universal-rich-media { flex: 1; align-self: stretch; min-height: 0; min-width: 0; width: 100%; height: 100%; }
+.universal-view { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.universal-view iframe { display: block; width: 100%; height: 100%; border: 0; transform-origin: top left; }
+.universal-dialog { display: flex; flex-direction: column; max-width: calc(100vw - 16px); max-height: calc(100dvh - 16px); }
+.universal-dialog:not([open]) { display: none; }
+.universal-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 8px; }
+.universal-dialog .universal-view { flex: 1; min-height: 0; }
+.universal-color { display: flex; flex-direction: column; gap: 3px; width: 100%; height: 100%; overflow: auto; }
+.universal-color input[type="color"] { width: 100%; min-height: 28px; }
+.universal-color label { display: flex; align-items: center; gap: 4px; font-size: 11px; }
+.universal-color label input { min-width: 0; width: 100%; }
+.universal-color output { font-size: 11px; overflow-wrap: anywhere; }
+.universal-color-wheel { aspect-ratio: 1; width: min(100%, 140px); flex: 0 0 auto; border-radius: 50%; background: radial-gradient(white,transparent 70%),conic-gradient(red,yellow,lime,cyan,blue,magenta,red); }
+.universal-color-box { height: 100px; min-height: 50px; flex: 0 0 auto; width: 100%; touch-action: none; }
+.universal-color-wheel { touch-action: none; }
+.universal-clock { display: block; width: 100%; height: 100%; }
 .widget-choice-preview[data-kind="code"], .widget-choice-preview[data-kind="list"], .widget-choice-preview[data-kind="table"] { border-radius: 2px; }
 .widget-choice-preview[data-kind="code"] span { font: 700 6px/1 monospace; }
 .widget-choice-preview[data-kind="list"] span { max-width: 33px; overflow: hidden; text-overflow: clip; white-space: nowrap; }

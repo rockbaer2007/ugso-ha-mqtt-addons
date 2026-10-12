@@ -16,6 +16,7 @@ from threading import Lock
 from widget_packages import MAX_ZIP_BYTES, list_packages, read_package_zip, validate_additive_update
 from technic_cover import cover_position_command, cover_entry_writable
 from technic_light import light_request, dimmer_commands
+from universal_color import universal_color_command
 from technic_temperature import temperature_request, temperature_command, history_plan, history_series
 from material_history import material_history_plan, material_history_data
 from material_actions import material_action
@@ -327,7 +328,7 @@ PROJECT_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "HAGrafikVisualStudio/0.1.294"
+    server_version = "HAGrafikVisualStudio/0.1.295"
 
     def log_message(self, fmt, *args):
         LOG.info("%s - %s", self.address_string(), fmt % args)
@@ -375,7 +376,7 @@ class Handler(BaseHTTPRequestHandler):
             self.color_favorites_request()
             return
         if path == "/health":
-            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.294"})
+            self.send_json(HTTPStatus.OK, {"status": "ok", "app": "ha_grafik_visual_studio", "version": "0.1.295"})
             return
         if path == "/api/viewer":
             groups = []
@@ -590,6 +591,25 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {'error': 'Material-Aktion fehlgeschlagen; Zustand erneut prüfen.'})
                 return
             self.send_json(HTTPStatus.OK, {'accepted': True})
+            return
+        if parsed.path == "/api/universal-color":
+            if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":
+                self.send_json(HTTPStatus.UNSUPPORTED_MEDIA_TYPE, {"error": "JSON request required"})
+                return
+            request = self.read_request_json()
+            if request is None:
+                return
+            try:
+                (entries,) = home_assistant_commands(["get_states"])
+                command = universal_color_command(request, entries or [])
+                home_assistant_commands([command])
+            except ValueError as error:
+                self.send_json(HTTPStatus.BAD_REQUEST, {"error": str(error)})
+                return
+            except HomeAssistantAPIError:
+                self.send_json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "Color action failed"})
+                return
+            self.send_json(HTTPStatus.OK, {"accepted": True})
             return
         if parsed.path == "/api/light-dimmer":
             if self.headers.get("Content-Type", "").split(";", 1)[0].strip().lower() != "application/json":

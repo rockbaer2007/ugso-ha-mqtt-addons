@@ -1,5 +1,6 @@
 import { registerWidgetSet } from "../widget-registry.js";
 import { UNIVERSAL_STYLE_GROUPS, universalColors } from "../universal-element.js";
+import { universalActionFields, universalDialogGroup } from "../universal-options.js";
 import { calendarDefinition } from "./calendar.js";
 import { eventCalendarDefinition } from "./event-calendar.js";
 import { checkboxDefinition } from "./styled-checkbox.js";
@@ -29,10 +30,13 @@ registerWidgetSet({
         { label: "Bedienung", key: "interaction", type: "select", refreshProperties: true, options: [
           { value: "switch", label: "Schalten" }, { value: "button", label: "Taster / nächsten Zustand" },
           { value: "read-only", label: "Nur anzeigen" }, { value: "navigation", label: "Navigation" },
+          { value: "dialog", label: "Ansicht im Dialog" }, { value: "adjust", label: "Erhöhen / Verringern" }, { value: "http", label: "HTTP-Aufruf" },
         ] },
         { label: "Modus", key: "buttonMode", type: "select", options: [{ value: "single", label: "Einzeltaste" }, { value: "separate", label: "Getrennte Tasten" }] },
         { label: "Wert false", key: "falseValue" }, { label: "Wert true", key: "trueValue" },
         { label: "Vorschau-/Testzustand", key: "state" }, { label: "Ziel-URL für Navigation", key: "targetUrl" },
+        ...universalActionFields,
+        ...universalDialogGroup.fields.map(field=>({...field,showWhen:{key:'interaction',value:'dialog'}})),
       ] },
       { id: "ue-feedback", label: "Klick-Feedback", universalModel: "feedback", fields: [{ label: "Klick durchlassen", key: "clickThrough", type: "checkbox", default: false }], modelFields: [
         { label: "Dauer (ms)", key: "duration", type: "range", min: 0, max: 10000, default: 0 }, ...universalColors(),

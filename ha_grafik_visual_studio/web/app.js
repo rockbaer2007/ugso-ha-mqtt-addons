@@ -5,6 +5,9 @@ import {completeCssGroups,cardCssEnabled,applyCardCss} from './card-css.js';
 import { entitySearchMatches } from "./entity-search.js";
 import { PALETTE_COLORS, allocatePaletteColors } from "./palette-colors.js";
 import { renderInteractivePreview } from "./interactive-preview.js";
+import { isMaterialDefinition, renderMaterialPreview } from "./material-preview.js";
+import { universalUrl, universalBindings, renderUniversalView, openUniversalDialog, bindUniversalHold, renderUniversalColor, renderUniversalClock, updateUniversalClocks } from "./universal-runtime.js";
+import { interactiveLocale, interactiveText, interactiveGroups, localizeInteractiveDOM } from "./interactive-locales.js";
 import { renderWeather } from "./weather-widget.js";
 import { renderHeatingRooms } from "./heating-rooms.js";
 import { renderWindowOverview } from "./window-overview.js";
@@ -37,6 +40,15 @@ import { renderBasicSpecial, cleanupBasicRuntime } from "./basic-runtime.js";
 import { basicHint } from "./basic-hints.js";
 let viewerGroups = [], viewerChecked = 0;
 const basicSubviewTargets = new Map();
+const universalHoldWrites = new Map();
+function writeUniversalHold(widget,value,text){
+  if(!widget.entityId){setRuntimeStateElement(widget,value);return;}
+  const entity=widget.entityId,next=WRITABLE_SWITCH_ENTITY.test(entity)?(isOn(value)?'on':'off'):WRITABLE_NUMBER_HELPER.test(entity)?Number(value):String(value);
+  const previous=universalHoldWrites.get(entity)||Promise.resolve();
+  const task=previous.catch(()=>{}).then(async()=>{const response=await fetch('api/material-value',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entity_id:entity,value:next})});if(!response.ok)throw new Error();});
+  universalHoldWrites.set(entity,task);
+  task.catch(()=>showRuntimeControlError(text('Haltewert konnte nicht geschrieben werden'))).finally(()=>{if(universalHoldWrites.get(entity)===task){universalHoldWrites.delete(entity);void refreshRuntimeStates();}});
+}
 async function refreshViewerGroups() {
   if (Date.now() - viewerChecked < 60000) return;
   viewerChecked = Date.now();
@@ -793,6 +805,7 @@ async function fetchEntityStates(ids) {
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "room-table" && widget.tableAttribute && ids.slice(offset, offset + 100).includes(widget.entityId)) query.append("attribute", `${widget.entityId}|${widget.tableAttribute}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "technic-window" && ids.slice(offset, offset + 100).includes(widget.coverEntityId)) for (const name of ["current_position", "supported_features"]) query.append("attribute", `${widget.coverEntityId}|${name}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "technic-light" && ids.slice(offset, offset + 100).includes(widget.brightnessEntityId)) for (const name of ["brightness", "supported_color_modes", "min", "max", "step"]) query.append("attribute", `${widget.brightnessEntityId}|${name}`);
+    for(const widget of visibleWidgets())if(widget.type==='universal-button')for(const entity of universalBindings(widget))if(ids.slice(offset,offset+100).includes(entity))for(const name of ['rgb_color','supported_color_modes','min_color_temp_kelvin','max_color_temp_kelvin'])query.append('attribute',`${entity}|${name}`);
     const temperatureAttributes = new Set();
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "technic-temperature") {
       for (const id of temperatureBindings(widget).filter(id => ids.slice(offset, offset + 100).includes(id))) {
@@ -863,7 +876,7 @@ function editorLiveEntityIds() {
     !["dock", "preview"].includes(widget.numericSource) ? widget.entityId : "",
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
     ...(widget.type === "event-calendar" ? eventSources(widget).map(source => source.entityId) : []),
-    ...(widget.type === "universal-button" ? (widget.visualStates || []).filter(item => item.compareSource === "entity").map(item => item.entityId) : []),
+    ...(widget.type === "universal-button" ? universalBindings(widget) : []),
   ]))]
     .filter((id) => /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(id || ""));
 }
@@ -920,7 +933,7 @@ function runtimeLiveEntityIds() {
     widget.type === "dropdown" ? widget.bgEntityId : "",
     widget.entityId, widget.visibilityEnabled ? widget.visibilityEntityId : "",
     ...(widget.type === "event-calendar" ? eventSources(widget).map(source => source.entityId) : []),
-    ...(widget.type === "universal-button" ? (widget.visualStates || []).filter(item => item.compareSource === "entity").map(item => item.entityId) : []),
+    ...(widget.type === "universal-button" ? universalBindings(widget) : []),
     widget.type === "svg-connection" ? connectionAnimationEntityId(widget) : "",
     widget.type === "linebox" && widget.outputHelperEnabled ? widget.outputHelperEntityId : "",
     ...(widget.type === "table" ? [widget.eventEntityId, widget.ackEntityId, widget.selectedEntityId] : []),
@@ -1249,8 +1262,10 @@ function renderPalette() {
       if (interactivePreview) {
         preview.dataset.kind = "interactive"; preview.append(interactivePreview);
       } else if (definition.iconSvg) {
+        if(isMaterialDefinition(definition)){preview.dataset.kind='material';if(definition.packageId==='ugso.materialdesign')preview.dataset.paddedIcon='true';}
         const icon = document.createElement("img"); icon.src = definition.iconSvg; icon.alt = ""; preview.append(icon);
-      } else for (const lineText of definition.preview?.lines || [definition.icon]) {
+      } else if(isMaterialDefinition(definition)){preview.dataset.kind='material';preview.append(renderMaterialPreview(definition,document));}
+      else for (const lineText of definition.preview?.lines || [definition.icon]) {
         const line = document.createElement("span");
         line.textContent = lineText;
         preview.append(line);
@@ -1383,6 +1398,7 @@ function renderWidgetFinder() {
     const preview = document.createElement("span"); preview.className = "widget-choice-preview widget-selector-preview"; preview.dataset.kind = definition.preview?.kind || "symbol";
     const interactivePreview = renderInteractivePreview(definition.type, document);
     if (interactivePreview) { preview.dataset.kind = "interactive"; preview.append(interactivePreview); }
+    else if(isMaterialDefinition(definition)){preview.dataset.kind='material';if(definition.packageId==='ugso.materialdesign')preview.dataset.paddedIcon='true';if(definition.iconSvg){const image=document.createElement('img');image.src=definition.iconSvg;image.alt='';preview.append(image);}else preview.append(renderMaterialPreview(definition,document));}
     else for (const lineText of definition.preview?.lines || [definition.icon || "□"]) { const line = document.createElement("span"); line.textContent = lineText; preview.append(line); }
     const name = document.createElement("span"); name.className = "widget-selector-name"; name.textContent = widgetDisplayName(widget);
     const meta = document.createElement("small"); meta.textContent = `${definition.label} · ${widget.id}`; name.append(meta);
@@ -2844,6 +2860,7 @@ setInterval(() => {
     const [value, format, mode, locale, unit] = JSON.parse(node.dataset.basicDate);
     node.textContent = mode === "localized" ? basicDate(value, format, true, locale, Date.now(), unit) : formatDate(value, format, true, locale);
   }
+  updateUniversalClocks(document);
 }, 1000);
 
 function listEntry(widget) {
@@ -2865,11 +2882,16 @@ function applySafeStyle(element, cssText) {
   }
 }
 
-function renderUniversalElement(widget, content, runtimeMode) {
+function renderUniversalElement(widget, content, runtimeMode, activePage = currentPage(), surfaceChain = []) {
   const widgets = allProjectWidgets(state.project);
   const style = Object.assign({}, ...UNIVERSAL_STYLE_GROUPS.map(group => universalStyle(widget, widgets, group)));
   const actual = displayedWidgetState(widget);
   const selected = universalVisual(widget, actual, state.entityStates, matchesCondition);
+  const text=value=>interactiveText(value,interactiveLocale(widget,document.documentElement.lang));
+  const context={runtime:runtimeMode,pages:state.project.pages,url:location.href,project:state.projectId,parent:activePage.id,chain:[...(params.get('chain')||'').split(',').filter(Boolean),...surfaceChain],text,states:state.entityStates,entityId:widget.entityId};
+  const writeColor=async(entity,kind,value)=>{try{const response=await fetch('api/universal-color',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entity_id:entity,kind,value})});if(!response.ok)throw new Error();await refreshRuntimeStates();}catch{showRuntimeControlError(text('Farbaktion fehlgeschlagen'));}};
+  context.writeColor=(entity,hex,value)=>{if(/^light\./.test(entity))void writeColor(entity,'rgb',[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)));else setRuntimeStateElement({...widget,entityId:entity},value);};
+  context.writeKelvin=(entity,value)=>void writeColor(entity,'kelvin',value);
   const tiles = widget.buttonMode === "separate" ? selected.states.map((visual, index) => ({ visual: universalStateVisual(widget, visual), index })).filter(tile => tile.visual.enabled !== false) : [selected];
   content.classList.add("universal-widget-content");
   content.style.display = "flex"; content.style.padding = "0"; content.style.background = "transparent"; content.style.border = "0"; content.style.boxShadow = "none";
@@ -2922,6 +2944,10 @@ function renderUniversalElement(widget, content, runtimeMode) {
         media.append(image);
       } else if (source) media.textContent = source;
     } else if (type === "html") appendSafeHtml(media, visual.html || "");
+    else if(type==='view')media.append(renderUniversalView(document,{...style,...visual},context));
+    else if(type==='colorpicker')media.append(renderUniversalColor(document,{...style,...visual},context));
+    else if(type==='analogclock')media.append(renderUniversalClock(document,{...style,...visual}));
+    if(['view','colorpicker','analogclock'].includes(type)){media.classList.add('universal-rich-media');}
     if (type !== "text") inside.append(media);
     if (visual.text || type === "text") {
       const caption = document.createElement("span"); caption.className = "universal-widget-text";
@@ -2933,16 +2959,28 @@ function renderUniversalElement(widget, content, runtimeMode) {
     tile.setAttribute("aria-label", widget.title || inside.textContent || `Universal Element: ${actual ?? ""}`);
     if (!runtimeMode || widget.interaction === "read-only" || widget.clickThrough) continue;
     const nextValue = widget.buttonMode === "separate" ? selected.states[index].value : universalNext(widget, actual, index, selected.states);
-    const ready = !(visual.disableClick && index === selected.index) && (widget.interaction === "navigation" ? Boolean(safeUrl(widget.targetUrl)) : stateElementReady(widget, nextValue));
+    const pageTarget=state.project.pages.find(page=>page.id===widget.targetPage);
+    const url=universalUrl(widget.interaction==='http'?widget.httpUrl:widget.targetUrl,location.href);
+    const ready = !(visual.disableClick && index === selected.index) && (widget.interaction === "navigation" ? Boolean(pageTarget || url) : widget.interaction==='dialog'?Boolean(pageTarget):widget.interaction==='http'?Boolean(url):nextValue!==null && stateElementReady(widget, nextValue));
     tile.classList.add("is-interactive"); tile.setAttribute("role", widget.interaction === "navigation" ? "link" : "button"); tile.tabIndex = ready ? 0 : -1; tile.setAttribute("aria-disabled", String(!ready));
     const activate = event => {
       event.stopPropagation(); if (!ready) return;
       const duration = Math.min(10000, Math.max(0, Number(widget.feedback?.duration) || 0));
       if (duration) { const expiry = Date.now() + duration; universalFeedback.set(feedbackKey, expiry); setTimeout(() => { if (universalFeedback.get(feedbackKey) === expiry) { universalFeedback.delete(feedbackKey); renderStage(); } }, duration); }
-      if (widget.interaction === "navigation") { window.open(safeUrl(widget.targetUrl), "_blank", "noopener,noreferrer"); if (duration) renderStage(); }
+      if (widget.interaction === "navigation") {
+        if(widget.navigationPin && window.prompt(text('Navigations-PIN'))!==String(widget.navigationPin))return;
+        if(pageTarget)selectProjectPage(pageTarget.id);else window.open(url, "_blank", "noopener,noreferrer");
+      }
+      else if(widget.interaction==='dialog')openUniversalDialog(document,widget,context);
+      else if(widget.interaction==='http'){
+        if(widget.httpMode==='current')location.assign(url);
+        else if(widget.httpMode==='tab')window.open(url,'_blank','noopener,noreferrer');
+        else {tile.setAttribute('aria-busy','true');fetch(url,{method:'GET',credentials:'omit',signal:AbortSignal.timeout(15000)}).then(response=>{if(!response.ok)throw new Error();}).catch(()=>showRuntimeControlError(text('HTTP-Aufruf fehlgeschlagen (CORS prüfen)'))).finally(()=>tile.removeAttribute('aria-busy'));}
+      }
       else { setRuntimeStateElement(widget, nextValue); if (duration) renderStage(); }
     };
-    if (ready) { tile.addEventListener("click", activate); tile.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); activate(event); } }); }
+    if(ready && widget.interaction==='button' && widget.holdEnabled)bindUniversalHold(tile,widget,{actual,ready:value=>stateElementReady(widget,value),write:value=>writeUniversalHold(widget,value,text)});
+    else if (ready) { tile.addEventListener("click", activate); tile.addEventListener("keydown", event => { if (["Enter", " "].includes(event.key)) { event.preventDefault(); activate(event); } }); }
   }
 }
 
@@ -3356,7 +3394,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       if (widget.title) content.append(title);
       content.append(value, ports);
     } else if (widget.type === "universal-button") {
-      renderUniversalElement(widget, content, runtimeMode);
+      renderUniversalElement(widget, content, runtimeMode, activePage, surfaceChain);
       if (runtimeMode && widget.clickThrough) element.style.pointerEvents = "none";
     } else if (widget.type === "event-calendar") {
       content.style.display = "block";
@@ -4772,7 +4810,7 @@ function field(descriptor, widget) {
   if (descriptor.type === "textarea" || htmlField) input = document.createElement("textarea");
   else if (["select", "page", "widget", "collector", "connection"].includes(descriptor.type)) {
     input = document.createElement("select");
-    const choiceText = value => widget.type && getWidgetDefinition(widget.type).basicWidget ? basicText(value, basicLocale(widget, document.documentElement.lang)) : value;
+    const choiceText = value => descriptor.interactiveLocale ? interactiveText(value,descriptor.interactiveLocale) : widget.type && ['universal-button','radial-slider'].includes(widget.type)?interactiveText(value,interactiveLocale(widget,document.documentElement.lang)):widget.type && getWidgetDefinition(widget.type).basicWidget ? basicText(value, basicLocale(widget, document.documentElement.lang)) : value;
     const choices = descriptor.type === "page" ? [{ value: "", label: choiceText("Keine Seite") }, ...state.project.pages.map(page => ({ value: page.id, label: page.name }))]
       : descriptor.type === "widget" ? [{ value: "", label: choiceText(descriptor.widgetType ? "Eigene Einstellungen" : "Kein Widget / freier Punkt") }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type !== "svg-connection" && (!descriptor.widgetType || item.type === descriptor.widgetType)).map(item => ({ value: item.id, label: `${widgetDisplayName(item)} · ${item.id}` }))]
       : descriptor.type === "connection" ? [{ value: "", label: "Keine Hauptlinie" }, ...currentPage().widgets.filter(item => item.id !== widget.id && item.type === "svg-connection").map(item => ({ value: item.id, label: `${widgetDisplayName(item)} · ${item.id}` }))]
@@ -4906,7 +4944,7 @@ function field(descriptor, widget) {
       widget.printerImageMode = "custom";
       const mode = $("#properties [data-property-key='printerImageMode']"); if (mode) mode.value = "custom";
     }
-    if (["industrial-gauge","industrial-switch","industrial-lcd","industrial-linear","industrial-odometer","industrial-segment","industrial-clock","industrial-weather","industrial-section","industrial-heating"].includes(getWidgetDefinition(widget.type).render?.kind) && descriptor.key === "industrialStyle" && input.checked) widget.industrialScrewsEnabled = true;
+    if (["industrial-gauge","industrial-switch","industrial-lcd","industrial-linear","industrial-odometer","industrial-segment","industrial-clock","industrial-weather","industrial-section","industrial-heating"].includes(renderKind) && descriptor.key === "industrialStyle" && input.checked) widget.industrialScrewsEnabled = true;
     if(isIndustrialSection(widget) && ["width","height","sectionCount","sectionRows","housingSpace"].includes(descriptor.key)) {
       if(["sectionCount","sectionRows","housingSpace"].includes(descriptor.key)) widget.height=previousSectionCell*sectionRows(widget)+2*Math.max(0,Math.min(64,Number(widget.housingSpace??1)||0))*(sectionRows(widget)-1);
       Object.assign(widget,sectionSize(widget,descriptor.key));syncIndustrialSizeFields(widget,descriptor.key);
@@ -4946,8 +4984,8 @@ function field(descriptor, widget) {
       if(/^(inputEntityId|outputEntityId)[1-4]$/.test(descriptor.key))void refreshEditorLiveStates();
       if(descriptor.key==="switchCount")renderProperties();
     }
-    if (["industrial-gauge","industrial-linear"].includes(getWidgetDefinition(widget.type).render?.kind) && ["entityId", "outputEntityId"].includes(descriptor.key)) void refreshEditorLiveStates();
-    if (getWidgetDefinition(widget.type).render?.kind === "industrial-gauge" && ["width", "height", "aspectRatio1to1"].includes(descriptor.key)) {
+    if (["industrial-gauge","industrial-linear"].includes(renderKind) && ["entityId", "outputEntityId"].includes(descriptor.key)) void refreshEditorLiveStates();
+    if (renderKind === "industrial-gauge" && ["width", "height", "aspectRatio1to1"].includes(descriptor.key)) {
       Object.assign(widget, industrialSize(widget, descriptor.key));
       syncIndustrialSizeFields(widget, descriptor.key);
     }
@@ -4999,14 +5037,14 @@ function field(descriptor, widget) {
   input.addEventListener(input.tagName === "SELECT" ? "change" : "input", update);
   if (isSolar(widget) && ['width','height'].includes(descriptor.key)) input.addEventListener('change',()=>{input.value=String(widget[descriptor.key]);syncIndustrialSizeFields(widget);});
   if (isIndustrialLinear(widget) && ["entityId","dataInputEnabled"].includes(descriptor.key)) input.addEventListener("change", renderProperties);
-  if (["industrial-gauge","industrial-switch","industrial-lcd","industrial-linear","industrial-odometer","industrial-segment","industrial-clock","industrial-weather","industrial-section","industrial-heating"].includes(getWidgetDefinition(widget.type).render?.kind) && ["width", "height"].includes(descriptor.key)) input.addEventListener("change", () => { input.value = String(widget[descriptor.key]); syncIndustrialSizeFields(widget); });
+  if (["industrial-gauge","industrial-switch","industrial-lcd","industrial-linear","industrial-odometer","industrial-segment","industrial-clock","industrial-weather","industrial-section","industrial-heating"].includes(renderKind) && ["width", "height"].includes(descriptor.key)) input.addEventListener("change", () => { input.value = String(widget[descriptor.key]); syncIndustrialSizeFields(widget); });
   if (descriptor.refreshProperties && input.tagName === "TEXTAREA") input.addEventListener("change", renderProperties);
   if (descriptor.refreshProperties && ["number", "range"].includes(input.type)) input.addEventListener("change", renderProperties);
   if (widget.type === "value-list-html-style" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
   if (widget.type === "image-8" && descriptor.key === "count") input.addEventListener("blur", renderProperties);
   if (widget.type === "table" && descriptor.key === "maxColumns") input.addEventListener("blur", renderProperties);
   if (isGauge(widget) && ["ringCount", "levelCount"].includes(descriptor.key)) input.addEventListener("blur", renderProperties);
-  if (descriptor.key === "dataCount" && getWidgetDefinition(widget.type).render?.kind === "chart") input.addEventListener("blur", renderProperties);
+  if (descriptor.key === "dataCount" && renderKind === "chart") input.addEventListener("blur", renderProperties);
   if (descriptor.key === "preset") input.addEventListener("change", () => {
     if (PRESETS[input.value]) Object.assign(widget, PRESETS[input.value]);
     render();
@@ -5079,6 +5117,7 @@ function renderProperties() {
   let groups = widgetPropertyGroups(widget);
   if (getWidgetDefinition(widget.type).basicWidget) groups = basicGroups(groups, widget, propertyGroupKey, document.documentElement.lang);
   if (getWidgetDefinition(widget.type).render?.kind === "material-widget") groups = materialGroups(groups, widget, propertyGroupKey,document.documentElement.lang || 'de');
+  if(['universal-button','radial-slider'].includes(widget.type))groups=interactiveGroups(groups,widget,propertyGroupKey,document.documentElement.lang);
   if (["material-dialog", "material-iframe-dialog"].includes(getWidgetDefinition(widget.type).render?.kind)) groups = materialDialogGroups(groups, widget, propertyGroupKey,document.documentElement.lang || 'de');
   if(getWidgetDefinition(widget.type).render?.kind==='material-color-schemes')groups=materialGroups(groups,{...widget,showAdvanced:true},propertyGroupKey,document.documentElement.lang || 'de');
   if (getWidgetDefinition(widget.type).render?.kind === "technic-clock") {
@@ -5202,7 +5241,7 @@ function renderProperties() {
       });
     }
     if (group.hint) { const hint = document.createElement("p"); hint.className = "property-hint"; hint.textContent = group.hint; body.append(hint); }
-    const visibleFields = (fields, model) => fields.filter((descriptor) => !descriptor.showWhen || (descriptor.showWhen.values ? descriptor.showWhen.values.includes(model[descriptor.showWhen.key] ?? descriptor.showWhen.default) : (model[descriptor.showWhen.key] ?? descriptor.showWhen.default) === descriptor.showWhen.value)).map((descriptor) => field(descriptor, model));
+    const visibleFields = (fields, model) => fields.filter((descriptor) => !descriptor.showWhen || (descriptor.showWhen.values ? descriptor.showWhen.values.includes(model[descriptor.showWhen.key] ?? descriptor.showWhen.default) : (model[descriptor.showWhen.key] ?? descriptor.showWhen.default) === descriptor.showWhen.value)).map((descriptor) => field(group.interactiveLocale?{...descriptor,interactiveLocale:group.interactiveLocale,label:interactiveText(descriptor.label,group.interactiveLocale),options:descriptor.options?.map(option=>typeof option==='string'?{value:option,label:interactiveText(option,group.interactiveLocale)}:{...option,label:interactiveText(option.label,group.interactiveLocale)})}:descriptor, model));
     body.append(...visibleFields(group.fields, widget));
     if (updateDockAll) {
       for (const input of body.querySelectorAll("input[data-dock-point]")) input.addEventListener("input", updateDockAll);
@@ -5277,6 +5316,7 @@ function renderProperties() {
     }
     details.append(summary, body); panel.append(details);
     if (group.basicLocale) localizeBasicDOM(details, group.basicLocale);
+    if (group.interactiveLocale) localizeInteractiveDOM(details, group.interactiveLocale);
   }
 }
 

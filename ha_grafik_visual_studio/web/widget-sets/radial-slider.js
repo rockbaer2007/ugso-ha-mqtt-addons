@@ -1,4 +1,4 @@
-const color = (label, key) => ({ label, key, type: "color", optionalColor: true });
+const color = (label, key) => ({ label: ['trackColor','trackActiveColor','thumbColor'].includes(key)?label+' / Verlauf':label, key, type: ['trackColor','trackActiveColor','thumbColor'].includes(key)?"text":"color", optionalColor: true });
 const range = (label, key, min = 0, max = 50) => ({ label, key, type: "range", min, max });
 const shadow = prefix => [range("X-Versatz", `${prefix}ShadowX`, -50), range("Y-Versatz", `${prefix}ShadowY`, -50), range("Unschärfe", `${prefix}ShadowBlur`), color("Schattenfarbe", `${prefix}ShadowColor`)];
 export const radialSliderDefinition = {
@@ -10,5 +10,5 @@ export const radialSliderDefinition = {
     { label: "CSS Radialregler – Daumen", css: true, defaultEnabled: true, fields: [{ label: "Vom Widget", key: "radialThumbFromWidget", type: "widget", widgetType: "radial-slider" }, color("Daumenfarbe", "thumbColor"), range("Daumengröße (px)", "thumbSize", 1), ...shadow("thumb")] },
     { label: "CSS Radialregler – Wert", css: true, defaultEnabled: true, fields: [range("Wertgröße (px)", "valueSize", 8, 100), color("Wertfarbe", "valueColor"), range("Bezeichnungsgröße (px)", "labelSize", 8, 50), color("Bezeichnungsfarbe", "labelColor")] },
     { label: "Größe und Position", fields: [{ label: "Breite (px)", key: "width", type: "number", min: 32 }, { label: "Höhe (px)", key: "height", type: "number", min: 32 }, { label: "X (px)", key: "x", type: "number" }, { label: "Y (px)", key: "y", type: "number" }] },
-  ],
+  ].map(group=>group.label==='Allgemein'?{...group,fields:[...group.fields,{label:"Interaktiv-Sprache",key:"interactiveLocale",type:"select",refreshProperties:true,options:[{value:"auto",label:"Projektstandard"},{value:"de",label:"Deutsch"},{value:"en",label:"English"},{value:"fr",label:"Français"}]}]}:group),
 };

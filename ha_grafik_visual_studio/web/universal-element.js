@@ -1,5 +1,6 @@
 // Original Studio implementation; VIS2 is a functional reference, not a dependency.
 import { stateCaption } from "./state-caption.js";
+import { universalContentOptions, universalContentFields } from "./universal-options.js";
 export const COLOR_FIELDS = [
   ["iconColor", "Inhaltsfarbe"], ["backgroundColor", "Hintergrund"], ["textColor", "Textfarbe"],
   ["borderColor", "Randfarbe"], ["outerShadowColor", "Äußere Schattenfarbe"], ["innerShadowColor", "Innere Schattenfarbe"],
@@ -16,7 +17,8 @@ export function universalStateFields(condition = true) {
     ...(condition ? [select("Vergleichen nach", "compareSource", [{ value: "widget", label: "Widget-Standard" }, { value: "entity", label: "Andere HA-Entität" }], "widget"),
       { label: "Home-Assistant-Entität", key: "entityId", universalEntity: true, showWhen: { key: "compareSource", value: "entity" } },
       select("Vergleichsoperator", "condition", ["==", "!=", ">", ">=", "<", "<="], "=="), { label: "Wert", key: "value" }, check("Klick deaktivieren wenn aktiv", "disableClick")] : []),
-    select("Inhaltstyp", "contentType", [{ value: "icon", label: "Symbol" }, { value: "image", label: "Bild" }, { value: "text", label: "Text" }, { value: "html", label: "HTML" }], "icon"),
+    select("Inhaltstyp", "contentType", [{ value: "icon", label: "Symbol" }, { value: "image", label: "Bild" }, { value: "text", label: "Text" }, { value: "html", label: "HTML" }, ...universalContentOptions], "icon"),
+    ...universalContentFields,
     { label: "Symbol", key: "icon", previewImage: true, showWhen: { key: "contentType", value: "icon", default: "icon" } },
     { label: "Bild", key: "image", previewImage: true, showWhen: { key: "contentType", value: "image" } },
     { label: "Text", key: "text", type: "html" },
@@ -30,7 +32,7 @@ export function universalStateFields(condition = true) {
 }
 export const UNIVERSAL_STYLE_GROUPS = [
   { id: "ue-text", label: "Text", fields: [select("Textdekoration", "textDecoration", ["none", "underline", "overline", "line-through"], "none"), ...sides("Rand", "textMargin")] },
-  { id: "ue-content", label: "Inhalt", fields: [select("Inhaltstyp", "contentType", [{ value: "icon", label: "Symbol" }, { value: "image", label: "Bild" }, { value: "text", label: "Text" }, { value: "html", label: "HTML" }], "icon"), number("Inhaltsgröße (px)", "contentSize", 0, 768, 48), number("Drehung", "contentRotation", -180, 180), check("Spiegel", "contentMirror"), ...sides("Rand", "contentMargin")] },
+  { id: "ue-content", label: "Inhalt", fields: [select("Inhaltstyp", "contentType", [{ value: "icon", label: "Symbol" }, { value: "image", label: "Bild" }, { value: "text", label: "Text" }, { value: "html", label: "HTML" }, ...universalContentOptions], "icon"), ...universalContentFields, number("Inhaltsgröße (px)", "contentSize", 0, 768, 48), number("Drehung", "contentRotation", -180, 180), check("Spiegel", "contentMirror"), ...sides("Rand", "contentMargin")] },
   { id: "ue-alignment", label: "Ausrichtung", fields: [select("Richtung", "contentLayout", [{ value: "vertical", label: "Spalte" }, { value: "horizontal", label: "Zeile" }], "vertical"),
     select("Ausrichtung", "contentAlign", ["start", "center", "end", "space-between", "space-around", "space-evenly"], "center"),
     select("Textausrichtung", "textAlign", ["start", "center", "end"], "center"), select("Inhalt ausrichten", "itemsAlign", ["start", "center", "end", "stretch"], "center"), check("Reihenfolge umkehren", "reverseContent")] },
@@ -67,6 +69,15 @@ export function universalStateVisual(widget, state) {
   return { ...widget.defaultState, ...state, text: String(stateCaption(state?.text, widget.defaultState?.text, widget.title)) };
 }
 export function universalNext(widget, actual, index, states) {
+  if (widget.interaction === "button" && widget.buttonBehavior === "fixed") return widget.trueValue ?? "on";
+  if (widget.interaction === "adjust") {
+    if (String(actual ?? '').trim()==='' || !Number.isFinite(Number(actual))) return null;
+    const delta=Number(widget.valueDelta ?? 1); if(!Number.isFinite(delta)) return null;
+    let value=Number(actual)+delta;
+    if(widget.adjustMin!==undefined && widget.adjustMin!=='' && Number.isFinite(Number(widget.adjustMin))) value=Math.max(Number(widget.adjustMin),value);
+    if(widget.adjustMax!==undefined && widget.adjustMax!=='' && Number.isFinite(Number(widget.adjustMax))) value=Math.min(Number(widget.adjustMax),value);
+    return Number.isFinite(value)?Number(value.toPrecision(12)):null;
+  }
   if (widget.interaction === "switch") {
     const low = widget.falseValue ?? states[0]?.value ?? "off", high = widget.trueValue ?? states[1]?.value ?? "on";
     const boolean = value => ["on", "true", "1"].includes(String(value).toLowerCase()) ? true : ["off", "false", "0"].includes(String(value).toLowerCase()) ? false : null;

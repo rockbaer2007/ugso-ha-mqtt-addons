@@ -1,4 +1,5 @@
 import { styledSliderDomain, styledSliderValue, styledSliderWritable } from "./styled-slider.js";
+import { svgPaint } from "./svg-gradient.js";
 export const RADIAL_STYLE_GROUPS = [
   ["radialTrack", ["trackColor", "trackActiveColor", "trackWidth", "trackShadowX", "trackShadowY", "trackShadowBlur", "trackShadowColor"]],
   ["radialThumb", ["thumbColor", "thumbSize", "thumbShadowX", "thumbShadowY", "thumbShadowBlur", "thumbShadowColor"]],
@@ -64,8 +65,8 @@ export function renderRadialSlider(widget, doc, context) {
   const shadow = (prefix, fallback) => `drop-shadow(${clamp(style[`${prefix}ShadowX`], 2, -50, 50)}px ${clamp(style[`${prefix}ShadowY`], 2, -50, 50)}px ${clamp(style[`${prefix}ShadowBlur`], 2, 0, 50)}px ${style[`${prefix}ShadowColor`] || fallback})`;
   track.setAttribute("d", radialArc(center, radius, start, sweep));
   for (const path of [track, active]) { path.setAttribute("fill", "none"); path.setAttribute("stroke-width", width); path.setAttribute("stroke-linecap", "round"); }
-  track.setAttribute("stroke", style.trackColor || "#6E6E6E"); active.setAttribute("stroke", style.trackActiveColor || "#5E6B3F"); track.style.filter = shadow("track", "#000000");
-  thumb.setAttribute("r", thumbSize / 2); thumb.setAttribute("fill", style.thumbColor || "#455618"); thumb.style.filter = shadow("thumb", "#00000080");
+  track.setAttribute("stroke", svgPaint(svg,style.trackColor,"#6E6E6E")); active.setAttribute("stroke", svgPaint(svg,style.trackActiveColor,"#5E6B3F")); track.style.filter = shadow("track", "#000000");
+  thumb.setAttribute("r", thumbSize / 2); thumb.setAttribute("fill", svgPaint(svg,style.thumbColor,"#455618")); thumb.style.filter = shadow("thumb", "#00000080");
   const centerText = doc.createElement("div"), value = doc.createElement("div"), label = doc.createElement("div"); centerText.className = "radial-center"; value.className = "radial-value"; label.className = "radial-label";
   value.hidden = widget.showValue === false; value.style.fontSize = `${clamp(widget.valueSize, 32, 8, 100)}px`; value.style.color = widget.valueColor || "#FFFFFF";
   label.hidden = widget.showLabel === false || !widget.label; label.textContent = String(widget.label || ""); label.title = label.textContent; label.style.fontSize = `${Math.min(clamp(widget.labelSize, 14, 8, 50), size * .15)}px`; label.style.color = widget.labelColor || "#C8C8C8";

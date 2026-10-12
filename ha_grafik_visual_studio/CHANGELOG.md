@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.295
+
+- Fill Material Design sidebar/selector preview frames with the existing SVG icons; retain package graphics and IDs.
+- Extend Universal with opt-in fixed and hold buttons, bounded increase/decrease, Studio page navigation with an optional UI PIN, browser HTTP GET/new/current tab and configurable page dialogs.
+- Add embedded Studio views with recursion protection and optional scaling, color box/wheel with HSV/RGB/alpha/Kelvin controls, HEX/HEX8/RGB/HSL/HSV/CIE output and a local analog clock as Universal content.
+- Validate HA light RGB/Kelvin commands against current entity capabilities; other color formats use input_text helpers. Queue hold writes so a quick release restores the captured previous value.
+- Support CSS linear gradients for radial track/active track/thumb including color functions, explicit stops and inherited styles.
+- Add DE/EN/FR Universal/radial options and documentation. Preserve legacy cycle buttons, existing group keys, defaults and saved settings; fix nested Universal property controls.
+
 ## 0.1.294
 
 - Review all eleven Interactive widgets against Inventwo VIS-2 1.10.0 and document remaining differences, especially Universal actions/content and radial gradients.

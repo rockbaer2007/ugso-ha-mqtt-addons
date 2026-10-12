@@ -1,5 +1,7 @@
 # Interaktiv: Vergleich mit Inventwo VIS-2
 
+**Nachtrag 0.1.295:** Die unten aufgeführten Hauptlücken wurden um Dialog-/eingebettete Ansichten, feste/Halte-Taster, Wertänderung, HTTP, Farbwähler, Analoguhr und radiale Farbverläufe ergänzt. [Aktuelle Funktionen und verbleibende Detailunterschiede (DE/EN/FR)](universal-0.1.295.md). Die folgende Tabelle beschreibt den ursprünglichen Prüfstand 0.1.294.
+
 Stand: 12.10.2026, Studio 0.1.294. Referenz: [Inventwo VIS-2 1.10.0, Commit 46f040e](https://github.com/inventwo/ioBroker.vis-2-widgets-inventwo/tree/46f040e761012a9a6d61151e8e03df7fde02ce7b), insbesondere `src-widgets/src/InventwoWidget*.tsx` und `docs/en/widgets/`. Verglichen wurden Registrierung, Eigenschaften, Ereignisse und Renderer aller elf Widgettypen. Dies ist ein Quellcodevergleich; ein vollständiger Pixelvergleich mit einer laufenden ioBroker-Installation steht noch aus.
 
 ## Ergebnis nach Widget
