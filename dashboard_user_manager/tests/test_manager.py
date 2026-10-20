@@ -312,6 +312,13 @@ class ManagerTests(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn('credentials', response.text)
         self.assertEqual((await request('/')).status, 200)
         self.assertEqual((await request('/static/app.js')).status, 200)
+        icon = await request('/static/icon.png')
+        self.assertEqual(icon.status,200)
+        self.assertEqual(icon.content_type,'image/png')
+        self.assertTrue(icon.body.startswith(b'\x89PNG\r\n\x1a\n'))
+        self.assertEqual(icon.headers['X-Content-Type-Options'],'nosniff')
+        with self.assertRaises(web.HTTPNotFound):
+            await request('/static/not-an-asset.png')
         self.assertEqual(len(json.loads((await request('/api/views?path=test')).body)['views']), 4)
         preview = json.loads((await request('/api/matrix', {'path':'test',
             'rows':[{'index':i,'users':['web']} for i in range(4)],

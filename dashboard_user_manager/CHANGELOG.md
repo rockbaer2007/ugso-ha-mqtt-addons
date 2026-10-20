@@ -1,3 +1,8 @@
+# 0.1.7
+
+- Eigenes Dashboard-/Benutzer-Icon im HA-App-Paket, in der Oberfläche und als PNG-Favicon eingebunden.
+- Gleiches freigegebenes Motiv im UGSo-Paket; kompakter Kopfbereich und unveränderte Daten/Vorauswahl.
+
 # 0.1.6
 
 - Doppelte Übersicht aus Dashboard-Liste und altem Standardzugang zusammengeführt; vorhandene Vorauswahl und ältere Sicherungen bleiben kompatibel.

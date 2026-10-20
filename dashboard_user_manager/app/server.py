@@ -13,7 +13,7 @@ from aiohttp import ClientError, ClientSession, ClientTimeout, web
 from visibility import Invalid, fingerprint, human_users, summary, transform, transform_matrix
 from i18n import language, translate, payload
 
-VERSION = '0.1.6'
+VERSION = '0.1.7'
 STATIC = Path(__file__).parent / 'static'
 ACTOR = web.RequestKey('actor', str)
 
@@ -278,9 +278,11 @@ def create_app(manager):
 
     async def asset(request):
         name = request.match_info['name']
-        if name not in {'app.js', 'matrix.js', 'i18n.js', 'style.css'}:
+        types = {'app.js':'text/javascript', 'matrix.js':'text/javascript',
+                 'i18n.js':'text/javascript', 'style.css':'text/css', 'icon.png':'image/png'}
+        if name not in types:
             raise web.HTTPNotFound()
-        return web.Response(body=(STATIC / name).read_bytes(), content_type='text/javascript' if name.endswith('.js') else 'text/css')
+        return web.Response(body=(STATIC / name).read_bytes(), content_type=types[name])
 
     async def bootstrap(request):
         users = await manager.ha.users()
