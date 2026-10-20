@@ -1,0 +1,25 @@
+name: Dashboard User Manager checks
+on:
+  push:
+    paths: [dashboard_user_manager/**, .github/workflows/dashboard-users.yml]
+  pull_request:
+    paths: [dashboard_user_manager/**, .github/workflows/dashboard-users.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: pip install -r dashboard_user_manager/requirements.txt
+      - run: python -m unittest discover -s dashboard_user_manager/tests -v
+      - run: npm ci --prefix dashboard_user_manager --ignore-scripts
+      - run: npm test --prefix dashboard_user_manager
+      - run: docker build -t ugso-dashboard-users:test dashboard_user_manager

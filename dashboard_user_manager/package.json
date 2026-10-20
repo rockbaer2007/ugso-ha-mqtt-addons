@@ -1,0 +1,6 @@
+{
+  "name": "ha-dashboard-user-manager-checks",
+  "private": true,
+  "scripts": {"test": "node --test tests/*.cjs"},
+  "devDependencies": {"jsdom": "^27.0.0"}
+}

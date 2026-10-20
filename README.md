@@ -6,6 +6,8 @@ Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetrage
 
 ## Enthaltene Add-ons
 
+- [Dashboard-Benutzerverwaltung](dashboard_user_manager/README.md): **0.1.4**, Benutzer als Checkbox-Spalten für alle Ansichten oder einzeln zuordnen. Automatische DE/EN/FR-Oberfläche, Vorschau-freies Speichern mit Dashboard-Backup und Konflikterkennung. [DE](https://opensource.ugso-software.de/projects/dashboard-user-manager/) / [EN](https://opensource.ugso-software.de/en/projects/dashboard-user-manager/) / [FR](https://opensource.ugso-software.de/fr/projects/dashboard-user-manager/). Bestehende lokale Apps bleiben separate Installationen.
+
 - [CallMeBot Signal](callmebot_signal/README.md): **experimentelle** Signal-Textnachrichten mit Telefon-/UUID-Profilen, eigenem MQTT-Namensraum und dreisprachigem Blockly-Baustein. Oberfläche: DE/EN/FR.
 - [CallMeBot Whatsapp](callmebot/README.md): **experimentelle** WhatsApp-Textnachrichten mit Empfängerprofilen, MQTT und dreisprachigem Blockly-Baustein. Oberfläche: DE/EN/FR.
 
