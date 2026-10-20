@@ -42,7 +42,11 @@ Dashboard auswählen. Die Tabelle zeigt Ansichten als Zeilen und Benutzer als Sp
 
 Anschließend **Änderungen speichern**. Es gibt keine separate Vorschau mehr. Vor dem Schreiben wird das komplette Dashboard gesichert. Nur bearbeitete Zuordnungen ändern sich; Karten, Layouts, frühere Benutzer-IDs und andere Ansichten bleiben erhalten. Bearbeitete Ansichten erhalten feste Benutzerlisten; neue Konten werden dort nicht automatisch ergänzt.
 
-Die App nutzt 90 vw und 90 vh. Bei vielen Benutzern ist die Tabelle horizontal scrollbar; Ansichtennamen und Benutzerköpfe bleiben sichtbar.
+Die App nutzt 90 vw und 90 vh. Ab 0.1.11 besitzt die Checkbox-Tabelle eine eigene begrenzte Höhe und scrollt vertikal sowie bei vielen Benutzern horizontal. Innerhalb der Tabelle wischen oder mit fokussiertem Scrollbereich Pfeiltasten/Bild auf/Bild ab verwenden. Ansichtennamen und Benutzerköpfe bleiben sichtbar; auf niedrigen Displays sind die Köpfe kürzer. Außerhalb der Tabelle scrollt die übrige Seite.
+
+EN: The bounded checkbox table scrolls vertically and, when needed, horizontally. Swipe inside it or focus the region and use arrow/Page Up/Page Down keys. View names and user headers stay fixed; shorter screens use compact headers. Scroll outside the table to move the surrounding page.
+
+FR : Le tableau de hauteur limitée défile verticalement et, si nécessaire, horizontalement. Balayez dans le tableau ou placez-y le focus puis utilisez les flèches/Page précédente/Page suivante. Noms des vues et en-têtes restent fixes ; les écrans bas utilisent des en-têtes compacts. Faites défiler hors du tableau pour déplacer le reste de la page.
 
 Die Sichtbarkeit betrifft Tabs, keine Zugriffssperre. Direkte URLs bleiben erreichbar. YAML- und automatisch erzeugte Dashboards sind nur lesbar.
 

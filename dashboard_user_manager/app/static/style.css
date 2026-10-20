@@ -10,3 +10,7 @@ body{width:90vw;height:90vh;margin:5vh auto;overflow:auto;border-radius:12px}hea
 @media(prefers-color-scheme:dark){.role-user{color:#78de9b}.role-admin{color:#ff929a}}
 .save-actions button{width:210px;min-height:41px;white-space:normal}.save-actions{align-items:stretch}
 @media(max-width:800px){header,main,footer{padding:16px}header{align-items:start}h1{font-size:23px}section{padding:16px}.dashboard-picker{max-width:none}.toolbar button{flex:1}.toolbar #changes{flex-basis:100%}th:first-child{min-width:160px;max-width:180px}thead th{min-width:110px}}
+/* Keep a real two-axis scroll viewport, including touch/Ingress clients. */
+.table-wrap{height:55vh;height:55dvh;min-height:280px;max-height:640px;overflow-x:auto;overflow-y:scroll;overscroll-behavior:contain;touch-action:pan-x pan-y pinch-zoom;-webkit-overflow-scrolling:touch}
+@media(max-width:800px){.table-wrap th:first-child{width:160px;min-width:160px;max-width:180px}}
+@media(max-height:600px){.table-wrap{height:70vh;height:70dvh;min-height:220px}.column-user .user-name{height:72px}}

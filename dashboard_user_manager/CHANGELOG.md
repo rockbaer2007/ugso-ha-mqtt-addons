@@ -1,3 +1,9 @@
+# 0.1.11
+
+- Checkbox-Tabelle als begrenzte Scrollfläche mit ausdrücklich vertikalem und horizontalem Scrollen, Touch-Gesten und Tastaturbedienung.
+- Kompaktere Benutzerköpfe auf niedrigen Displays und schmalere Ansichtenspalte auf Mobilgeräten; fixierte Köpfe bleiben erhalten.
+- Scrollbereich in DE/EN/FR zugänglich beschriftet. Keine Änderung an Zuordnungen, Speicherlogik oder Berechtigungen.
+
 # 0.1.10
 
 - App-/HA-Backup-Wiederherstellung auf dem Testsystem erfolgreich geprüft; vorhandene private Dashboard-Sicherungen und Bestandsdaten erhalten.
