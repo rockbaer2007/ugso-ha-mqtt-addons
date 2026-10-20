@@ -89,5 +89,19 @@
   "Aus „Alle“ wird eine feste Benutzerliste. Künftige neue Benutzer werden nicht automatisch sichtbar.": ["“Everyone” becomes a fixed user list. Future users will not automatically see the view.", "« Tous » devient une liste fixe. Les futurs utilisateurs ne verront pas automatiquement la vue."],
   "Ungültige Ansichtenauswahl.": ["Invalid view selection.", "Sélection de vues invalide."],
   "Ungültige oder doppelte Ansicht.": ["Invalid or duplicate view.", "Vue invalide ou en double."],
-  "Ungültiger oder nicht mehr vorhandener Benutzer.": ["Invalid user or user no longer exists.", "Utilisateur invalide ou supprimé."]
+  "Ungültiger oder nicht mehr vorhandener Benutzer.": ["Invalid user or user no longer exists.", "Utilisateur invalide ou supprimé."],
+  "Abbrechen": ["Cancel", "Annuler"],
+  "Dashboard-Vorauswahl": ["Dashboard selection", "Présélection des tableaux de bord"],
+  "Über „Neu laden“ erneut prüfen. Fehlgeschlagene Dashboards gelten nicht als leer.": ["Check again using Reload. Failed dashboards are not treated as empty.", "Réessayez avec Recharger. Les tableaux en échec ne sont pas considérés comme vides."],
+  "Nur angehakte Dashboards erscheinen in der Dropdownliste. Die Vorauswahl wird in diesem Browser gespeichert; Dashboards und Benutzerzuordnungen bleiben unverändert.": ["Only checked dashboards appear in the dropdown. The selection is saved in this browser; dashboards and user assignments remain unchanged.", "Seuls les tableaux cochés figurent dans la liste. La présélection est enregistrée dans ce navigateur ; les tableaux et les affectations restent inchangés."],
+  "Alle auswählen": ["Select all", "Tout sélectionner"],
+  "Alle abwählen": ["Clear all", "Tout désélectionner"],
+  "Vorauswahl übernehmen": ["Apply selection", "Appliquer la présélection"],
+  "Vorauswahl konnte nicht gespeichert werden. Browser-Speicher prüfen.": ["The selection could not be saved. Check browser storage.", "La présélection n’a pas pu être enregistrée. Vérifiez le stockage du navigateur."],
+  "Keine Dashboards vorausgewählt. Bitte Dashboard-Vorauswahl öffnen.": ["No dashboards selected. Open Dashboard selection.", "Aucun tableau présélectionné. Ouvrez la présélection des tableaux de bord."],
+  "Keine Dashboards mit Ansichten verfügbar. Ladehinweise prüfen.": ["No dashboards with views available. Check loading notices.", "Aucun tableau avec des vues disponible. Consultez les avertissements de chargement."],
+  "{selected} von {total} Dashboards ausgewählt · {empty} ohne Ansichten ausgeblendet": ["{selected} of {total} dashboards selected · {empty} without views hidden", "{selected} tableaux sur {total} sélectionnés · {empty} sans vues masqués"],
+  "{count} Dashboards konnten nicht geladen werden": ["{count} dashboards could not be loaded", "{count} tableaux de bord n’ont pas pu être chargés"],
+  "Dashboard konnte nicht geladen werden. Bitte erneut prüfen.": ["Dashboard could not be loaded. Please check again.", "Le tableau de bord n’a pas pu être chargé. Veuillez réessayer."],
+  "Ungültige Dashboard-Konfiguration.": ["Invalid dashboard configuration.", "Configuration de tableau de bord invalide."]
 }

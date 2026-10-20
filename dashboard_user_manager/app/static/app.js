@@ -2,6 +2,10 @@
 const $ = id => document.getElementById(id);
 const t = (key, values) => I18n.t(key, values);
 const state = {users: [], dashboards: [], views: [], draft: new Map(), csrf: '', configHash: '', usersHash: '', busy: false, generation: 0, loaded: false};
+const selectionKey = 'dashboard-users-dashboards';
+let dashboardSelection = null;
+try { const saved = JSON.parse(localStorage.getItem(selectionKey)); if (Array.isArray(saved) && saved.every(p => typeof p === 'string')) dashboardSelection = saved; } catch { /* Invalid/unavailable preferences leave all dashboards visible. */ }
+function selectedDashboards() { return state.dashboards.filter(d => dashboardSelection === null || dashboardSelection.includes(d.url_path || '')); }
 function node(tag, text, cls) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (cls) el.className = cls; return el; }
 function status(text, type = '') { state.lastStatus = [text,type]; $('status').textContent = t(text); $('status').className = type; }
 function path() { return $('dashboard').value || null; }
@@ -12,7 +16,8 @@ function buttons() {
   $('save').disabled = state.busy || !editable() || !count;
   $('discard').disabled = state.busy || !count;
   $('changes').textContent = count ? t('{count} Ansichten geändert · noch nicht gespeichert', {count}) : t('Keine Änderungen');
-  $('reload').disabled = state.busy; $('dashboard').disabled = state.busy || !state.dashboards.length;
+  $('reload').disabled = state.busy; $('dashboard').disabled = state.busy || !selectedDashboards().length;
+  $('choose-dashboards').disabled = state.busy;
   for (const el of $('table-wrap').querySelectorAll('input')) el.disabled = state.busy || !editable() || el.dataset.locked === 'true';
   for (const el of $('backups').querySelectorAll('button')) el.disabled = state.busy;
 }
@@ -74,8 +79,9 @@ function discard() {state.draft = Matrix.initial(state.views, state.users); sync
 function confirmDiscard() { return !changes().length || confirm(t('Ungespeicherte Checkbox-Auswahl verwerfen?')); }
 async function loadViews() {
   const generation = ++state.generation; state.loaded = false; state.views = []; state.draft = new Map(); renderMatrix();
-  const dash = state.dashboards.find(d => d.url_path === path());
-  $('dashboard-info').textContent = t(dash?.mode === 'storage' ? 'Manuell verwaltet · bearbeitbar' : 'YAML / automatisch erzeugt · nur lesbar');
+  const dash = selectedDashboards().find(d => d.url_path === path());
+  $('dashboard-info').textContent = dash ? t(dash.mode === 'storage' && !dash.generated ? 'Manuell verwaltet · bearbeitbar' : 'YAML / automatisch erzeugt · nur lesbar') : '';
+  if (!dash) { status(state.dashboards.length ? 'Keine Dashboards vorausgewählt. Bitte Dashboard-Vorauswahl öffnen.' : 'Keine Dashboards mit Ansichten verfügbar. Ladehinweise prüfen.'); return; }
   try {
     const data = await api(`views?path=${encodeURIComponent(path() || '')}`);
     if (generation !== state.generation) return;
@@ -97,10 +103,10 @@ function renderBackups(backups) {
 async function bootstrap(preferredPath = path()) {
   state.busy = true; state.loaded = false; buttons(); status('Dashboards und Benutzer laden …');
   try {
-    const data = await api('bootstrap'); state.csrf = data.csrf; state.users = data.users; state.usersHash = data.users_hash; state.dashboards = data.dashboards;
+    const data = await api('bootstrap'); state.csrf = data.csrf; state.users = data.users; state.usersHash = data.users_hash; state.dashboards = data.dashboards; state.dashboardErrors = data.dashboard_errors || []; state.emptyDashboards = data.empty_dashboards || 0;
     $('version').textContent = data.version; $('dashboard').replaceChildren();
     renderDashboards(preferredPath);
-    if (data.dashboards.some(d => d.url_path === preferredPath)) $('dashboard').value = preferredPath || '';
+    renderCatalogInfo();
     renderBackups(data.backups); await loadViews(); state.currentPath = path();
   } catch (error) { status(error.message, 'error'); }
   finally { state.busy = false; buttons(); }
@@ -127,12 +133,50 @@ $('discard').addEventListener('click', discard); $('save').addEventListener('cli
 window.addEventListener('beforeunload', event => { if (changes().length) {event.preventDefault(); event.returnValue = '';} });
 function renderDashboards(selectedPath = path()) {
   $('dashboard').replaceChildren();
-  for (const dash of state.dashboards) {const option = node('option',`${dash.title || dash.url_path || t('Übersicht')}${dash.mode !== 'storage' ? ' · '+t('nur lesbar') : ''}`); option.value = dash.url_path || ''; $('dashboard').append(option);}
-  if (state.dashboards.some(d => d.url_path === selectedPath)) $('dashboard').value = selectedPath || '';
+  const available = selectedDashboards();
+  for (const dash of available) {const option = node('option',`${dash.title || dash.url_path || t('Übersicht')}${dash.mode !== 'storage' || dash.generated ? ' · '+t('nur lesbar') : ''}`); option.value = dash.url_path || ''; $('dashboard').append(option);}
+  const selected = available.find(d => d.url_path === selectedPath) || available.find(d => d.mode === 'storage' && !d.generated) || available[0];
+  if (selected) $('dashboard').value = selected.url_path || '';
 }
+function renderCatalogInfo() {
+  $('catalog-info').textContent = t('{selected} von {total} Dashboards ausgewählt · {empty} ohne Ansichten ausgeblendet', {selected:selectedDashboards().length,total:state.dashboards.length,empty:state.emptyDashboards || 0});
+  const errors = state.dashboardErrors || [];
+  $('dashboard-errors').hidden = !errors.length;
+  $('dashboard-errors-title').textContent = t('{count} Dashboards konnten nicht geladen werden', {count:errors.length});
+  $('dashboard-errors-list').replaceChildren();
+  for (const dash of errors) $('dashboard-errors-list').append(node('li',`${dash.title || dash.url_path || t('Übersicht')}: ${t(dash.load_error)}`));
+}
+function renderChoices() {
+  const pending = new Set(Array.from($('dashboard-choices').querySelectorAll('input:checked'), el => el.value));
+  $('dashboard-choices').replaceChildren();
+  for (const dash of state.dashboards) {
+    const label = node('label',undefined,'dashboard-choice');
+    const input = checkbox(dash.title || dash.url_path || t('Übersicht'),pending.has(dash.url_path || ''),()=>{}); input.value = dash.url_path || '';
+    label.append(input,node('span',dash.title || dash.url_path || t('Übersicht'))); $('dashboard-choices').append(label);
+  }
+}
+$('choose-dashboards').addEventListener('click', () => {
+  renderChoices();
+  for (const input of $('dashboard-choices').querySelectorAll('input')) input.checked = dashboardSelection === null || dashboardSelection.includes(input.value);
+  $('preference-error').textContent = ''; $('dashboard-dialog').showModal();
+});
+for (const [id,checked] of [['choose-all',true],['choose-none',false]]) $(id).addEventListener('click', () => {for (const input of $('dashboard-choices').querySelectorAll('input')) input.checked = checked;});
+$('choose-cancel').addEventListener('click', () => $('dashboard-dialog').close());
+$('choose-apply').addEventListener('click', async () => {
+  const selected = Array.from($('dashboard-choices').querySelectorAll('input:checked'),el => el.value);
+  const keepCurrent = selected.includes(path() || '');
+  if (!keepCurrent && !confirmDiscard()) return;
+  // Retain choices for temporarily failed/unavailable dashboards; never forget them silently.
+  const unavailable = (dashboardSelection || []).filter(p => !state.dashboards.some(d => (d.url_path || '') === p));
+  const next = [...new Set([...selected,...unavailable])];
+  try { localStorage.setItem(selectionKey,JSON.stringify(next)); }
+  catch { $('preference-error').textContent = t('Vorauswahl konnte nicht gespeichert werden. Browser-Speicher prüfen.'); return; }
+  dashboardSelection = next; $('dashboard-dialog').close(); renderDashboards(); renderCatalogInfo();
+  if (!keepCurrent) {await loadViews(); state.currentPath = path();} else buttons();
+});
 I18n.listeners.push(() => {
-  renderDashboards(); renderMatrix(); renderBackups(state.backups || []);
-  $('dashboard-info').textContent = t(editable() ? 'Manuell verwaltet · bearbeitbar' : 'YAML / automatisch erzeugt · nur lesbar');
+  renderDashboards(); renderCatalogInfo(); if ($('dashboard-dialog').open) renderChoices(); renderMatrix(); renderBackups(state.backups || []);
+  $('dashboard-info').textContent = selectedDashboards().length ? t(editable() ? 'Manuell verwaltet · bearbeitbar' : 'YAML / automatisch erzeugt · nur lesbar') : '';
   if (state.lastStatus) status(...state.lastStatus);
 });
 I18n.init().then(() => {$('status').removeAttribute('data-i18n'); return bootstrap();}).catch(() => status('App nicht erreichbar oder Sitzung abgelaufen. Bitte über HA neu öffnen.','error'));

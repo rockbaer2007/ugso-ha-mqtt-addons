@@ -13,7 +13,7 @@ from aiohttp import ClientError, ClientSession, ClientTimeout, web
 from visibility import Invalid, fingerprint, human_users, summary, transform, transform_matrix
 from i18n import language, translate, payload
 
-VERSION = '0.1.4'
+VERSION = '0.1.5'
 STATIC = Path(__file__).parent / 'static'
 ACTOR = web.RequestKey('actor', str)
 
@@ -77,6 +77,31 @@ class Manager:
         self.ha, self.backups = ha, Path(backup_dir)
         self.previews = {}
         self.lock = asyncio.Lock()
+
+    async def catalog(self):
+        """Inspect real configurations; failed reads must never masquerade as empty."""
+        candidates = await self.ha.dashboards()
+        limit = asyncio.Semaphore(4)
+
+        async def inspect(item):
+            async with limit:
+                try:
+                    cfg = await self.ha.config(item.get('url_path'))
+                    if (not isinstance(cfg, dict) or ('views' not in cfg and 'strategy' not in cfg)
+                            or not isinstance(cfg.get('views', []), list)):
+                        raise HAError('Ungültige Dashboard-Konfiguration.')
+                    views = cfg.get('views', [])
+                    if any(not isinstance(view, dict) for view in views):
+                        raise HAError('Ungültige Dashboard-Konfiguration.')
+                    return {**item, 'view_count': len(views), 'generated': 'strategy' in cfg}
+                except (HAError, ClientError, asyncio.TimeoutError, OSError):
+                    # A stable translated message, never arbitrary upstream data.
+                    return {**item, 'load_error': 'Dashboard konnte nicht geladen werden. Bitte erneut prüfen.'}
+
+        inspected = await asyncio.gather(*(inspect(item) for item in candidates))
+        return {'dashboards': [d for d in inspected if d.get('view_count', 0) > 0],
+                'dashboard_errors': [d for d in inspected if 'load_error' in d],
+                'empty_dashboards': sum(d.get('view_count') == 0 for d in inspected)}
 
     async def dashboard(self, path):
         dashboards = await self.ha.dashboards()
@@ -255,7 +280,7 @@ def create_app(manager):
         users = await manager.ha.users()
         return web.json_response({'version': VERSION, 'csrf': csrf,
                                   'users': public_users(users), 'users_hash': fingerprint(users),
-                                  'dashboards': await manager.ha.dashboards(),
+                                  **await manager.catalog(),
                                   'backups': manager.list_backups()})
 
     async def view(request):

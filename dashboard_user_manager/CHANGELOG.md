@@ -1,3 +1,9 @@
+# 0.1.5
+
+- Nur erfolgreich geladene Dashboards mit Ansichten in der Auswahl; leere Einträge ausgeblendet und Ladefehler gesondert sichtbar.
+- Dashboard-Vorauswahl mit Checkboxen, Alle auswählen/abwählen, Abbrechen und Speicherung pro Browser.
+- Vorauswahl erhält eigene Namen, Dashboard-Daten und ungespeicherte Zuordnungen; DE/EN/FR vollständig ergänzt.
+
 # 0.1.4
 
 - Vollständige Oberfläche, Dialoge und API-Meldungen in DE/EN/FR.

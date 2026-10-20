@@ -254,6 +254,21 @@ class ManagerTests(unittest.IsolatedAsyncioTestCase):
             response=await guard(req,backup)
             self.assertEqual(json.loads(response.body),{'message':'Keine Änderung nötig.','config':CONFIG})
 
+    async def test_catalog_distinguishes_empty_errors_generated_and_real_dashboards(self):
+        items = [{'url_path':p,'title':p,'mode':'storage'} for p in ['real','empty','failed','malformed','generated']]
+        self.ha.dashboards = AsyncMock(return_value=items)
+        async def config(path):
+            if path == 'failed': raise HAError('private upstream content')
+            return {'real':CONFIG,'empty':{'views':[]},'malformed':{},'generated':{'strategy':{},'views':[{}]}}[path]
+        self.ha.config = config
+        result = await self.manager.catalog()
+        self.assertEqual([d['url_path'] for d in result['dashboards']],['real','generated'])
+        self.assertTrue(result['dashboards'][1]['generated'])
+        self.assertEqual(result['empty_dashboards'],1)
+        self.assertEqual([d['url_path'] for d in result['dashboard_errors']],['failed','malformed'])
+        self.assertNotIn('private upstream',json.dumps(result))
+        self.assertEqual(self.ha.writes,0)
+
     async def test_real_routes_from_bootstrap_to_save_without_network(self):
         app = create_app(self.manager)
         app.freeze()
