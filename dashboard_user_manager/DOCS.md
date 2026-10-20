@@ -1,5 +1,13 @@
 # Dashboard-Benutzerverwaltung
 
+## App-/HA-Wiederherstellung ab 0.1.10 geprüft
+
+Vor dem Rücksetzen frisch vollständig sichern. Im HA-Backup nur diese App auswählen, um App und private Dashboard-Sicherungen zurückzusetzen, während die aktuellen HA-Dashboards bestehen bleiben. Für eine vollständige Wiederherstellung zusätzlich HA-Einstellungen/Verlauf, vorhandene Ordner und alle benötigten Apps auswählen: Der ausgewählte Umfang kehrt auf den Sicherungszeitpunkt zurück. Während des HA-Neustarts keine parallelen Änderungen vornehmen. Anschließend die App über die HA-Seitenleiste öffnen und Daten/Vorauswahl prüfen.
+
+EN: Back up first. App-only restoration recovers the app and private backups while keeping current HA dashboards. Full restoration also restores the selected HA configuration/history, folders and apps to the backup timestamp. Reopen through the HA sidebar and verify the data afterwards.
+
+FR : Sauvegarder avant de restaurer. La restauration de l’application seule récupère ses données privées sans changer les tableaux HA actuels. La restauration complète ramène aussi configuration/historique HA, dossiers et applications sélectionnés à l’instant sauvegardé. Rouvrir par la barre latérale et vérifier les données.
+
 ## Zeitlimit und Entwurf ab 0.1.9
 
 Speichern und „Serverstand prüfen“ haben jeweils 30 Sekunden Zeitlimit. „Warten abbrechen“ beendet das Warten und erhält die Zuordnungen. Ein bereits gesendeter Schreibauftrag kann serverseitig noch abgeschlossen werden. Deshalb bleibt erneutes Speichern dann gesperrt, bis die Serverprüfung den tatsächlichen Stand bestätigt; niemals automatisch erneut schreiben.

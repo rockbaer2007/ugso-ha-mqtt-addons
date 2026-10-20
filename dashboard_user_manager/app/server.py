@@ -13,7 +13,7 @@ from aiohttp import ClientError, ClientSession, ClientTimeout, web
 from visibility import Invalid, fingerprint, human_users, summary, transform, transform_matrix
 from i18n import language, translate, payload
 
-VERSION = '0.1.9'
+VERSION = '0.1.10'
 STATIC = Path(__file__).parent / 'static'
 ACTOR = web.RequestKey('actor', str)
 

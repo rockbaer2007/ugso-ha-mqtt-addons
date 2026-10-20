@@ -1,3 +1,8 @@
+# 0.1.10
+
+- App-/HA-Backup-Wiederherstellung auf dem Testsystem erfolgreich geprüft; vorhandene private Dashboard-Sicherungen und Bestandsdaten erhalten.
+- Kennzeichnung „Experimentell“ nach Abschluss der offenen Wiederherstellungsprüfung entfernt. Doku DE/EN/FR ergänzt; Speicherlogik und Berechtigungen unverändert.
+
 # 0.1.9
 
 - Speichern und Serverprüfung mit 30 Sekunden Gesamtzeitlimit und „Warten abbrechen“; Entwurf bleibt erhalten und kann als JSON gesichert werden.
