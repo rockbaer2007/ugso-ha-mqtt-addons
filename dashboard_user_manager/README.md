@@ -4,7 +4,9 @@ Benutzer als Checkbox-Spalten, Ansichten als Zeilen: im Spaltenkopf gemeinsam au
 
 Nur für Administratoren über Home Assistant Ingress. Kein zusätzlicher LAN-Port, keine manuelle Token-Eingabe. YAML- und automatisch erzeugte Dashboards sind nur lesbar. Tabsichtbarkeit ist keine Zugriffssperre für direkte URLs.
 
-**0.1.8 · DE / EN / FR · MIT**. Eigenes Icon in HA-App-Kachel und Oberfläche. Automatisch nach HA-Sprache, Browser-Fallback und Englisch für nicht unterstützte Sprachen. Optional oben DE/EN/FR wählen. Sprachwechsel erhält ungespeicherte Auswahl und eigene Namen. U = Benutzer, A = Administrator. Nur Dashboards mit Ansichten, getrennte Ladefehler und gespeicherte Dashboard-Vorauswahl per Checkbox. Die migrierte Übersicht erscheint einmal; die frühere Vorauswahl bleibt erhalten. [Deutsche Dokumentation](https://opensource.ugso-software.de/projects/dashboard-user-manager/).
+**0.1.9 · DE / EN / FR · MIT**. Eigenes Icon in HA-App-Kachel und Oberfläche. Automatisch nach HA-Sprache, Browser-Fallback und Englisch für nicht unterstützte Sprachen. Optional oben DE/EN/FR wählen. Sprachwechsel erhält ungespeicherte Auswahl und eigene Namen. U = Benutzer, A = Administrator. Nur Dashboards mit Ansichten, getrennte Ladefehler und gespeicherte Dashboard-Vorauswahl per Checkbox. Die migrierte Übersicht erscheint einmal; die frühere Vorauswahl bleibt erhalten. [Deutsche Dokumentation](https://opensource.ugso-software.de/projects/dashboard-user-manager/).
+
+0.1.9: 30 Sekunden Zeitlimit, Warten abbrechen und Entwurf sichern. Unklare Schreibausgänge vor erneutem Speichern am Server prüfen. / 30-second limit, Stop waiting and Download draft. Verify uncertain outcomes before retrying. / Limite de 30 secondes, arrêt de l’attente et téléchargement du brouillon. Vérifier le serveur avant de réessayer.
 
 0.1.8: Speichern-Erfolgsmeldung und Ansichtenanzahl durchgehend in der aktuellen Sprache, auch beim Sprachwechsel nach dem Speichern. Save confirmation and view count follow the current language, including later language changes. Le message de réussite et le nombre de vues suivent la langue actuelle, y compris après l’enregistrement.
 

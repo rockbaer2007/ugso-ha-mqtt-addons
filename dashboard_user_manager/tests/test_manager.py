@@ -125,6 +125,71 @@ class ManagerTests(unittest.IsolatedAsyncioTestCase):
 
     async def plan(self): return await self.manager.preview('admin', 'test', 'replace', ['web'])
 
+    async def resolve_plan(self, p, actor='admin', manager=None):
+        return await (manager or self.manager).resolve(actor, 'test', p['token'],
+                            p['before_hash'], p['after_hash'], fingerprint(USERS))
+
+    async def test_resolve_consumes_prepared_plan_and_fences_late_commit(self):
+        p = await self.plan()
+        self.assertEqual((await self.resolve_plan(p))['outcome'], 'before')
+        with self.assertRaises(Invalid): await self.manager.commit('admin', p['token'])
+        self.assertEqual(self.ha.writes, 0)
+        self.assertEqual(self.manager.list_backups(), [])
+        self.assertEqual(self.ha.data, CONFIG)
+
+    async def test_resolve_recognizes_committed_and_conflicting_states_without_writing(self):
+        p = await self.plan()
+        await self.manager.commit('admin', p['token'])
+        self.assertEqual((await self.resolve_plan(p))['outcome'], 'after')
+        self.ha.people.append({'id':'new'})
+        self.assertEqual((await self.resolve_plan(p))['outcome'], 'conflict')
+        self.ha.people = copy.deepcopy(USERS)
+        self.ha.data['title'] = 'Other editor'
+        self.assertEqual((await self.resolve_plan(p))['outcome'], 'conflict')
+        self.assertEqual(self.ha.writes, 1)
+
+    async def test_resolve_waits_for_running_commit_before_classifying(self):
+        p = await self.plan()
+        entered, release = asyncio.Event(), asyncio.Event()
+        original = self.ha.call
+        async def delayed(*args, **kwargs):
+            entered.set()
+            await release.wait()
+            return await original(*args, **kwargs)
+        self.ha.call = delayed
+        commit = asyncio.create_task(self.manager.commit('admin', p['token']))
+        await entered.wait()
+        resolve = asyncio.create_task(self.resolve_plan(p))
+        await asyncio.sleep(0)
+        self.assertFalse(resolve.done())
+        release.set()
+        await commit
+        self.assertEqual((await resolve)['outcome'], 'after')
+        self.assertEqual(self.ha.writes, 1)
+
+    async def test_resolve_handles_lost_confirmation_and_app_restart(self):
+        p = await self.plan()
+        original = self.ha.call
+        async def lost(*args, **kwargs):
+            await original(*args, **kwargs)
+            raise HAError('lost confirmation')
+        self.ha.call = lost
+        with self.assertRaises(HAError): await self.manager.commit('admin', p['token'])
+        restarted = Manager(self.ha, self.tmp.name)
+        result = await self.resolve_plan(p, manager=restarted)
+        self.assertEqual(result['outcome'], 'after')
+        self.assertEqual(len(result['backups']), 1)
+        with self.assertRaises(Invalid): await restarted.commit('admin', p['token'])
+        self.assertEqual(self.ha.writes, 1)
+
+    async def test_resolve_rejects_other_actor_or_invalid_hash_without_consuming_plan(self):
+        p = await self.plan()
+        with self.assertRaises(Invalid): await self.resolve_plan(p, actor='web')
+        with self.assertRaises(Invalid):
+            await self.manager.resolve('admin', 'test', p['token'], 'invalid', p['after_hash'], fingerprint(USERS))
+        self.assertIn(p['token'], self.manager.previews)
+        self.assertEqual(self.ha.writes, 0)
+
     async def test_backup_before_write_and_restore_roundtrip(self):
         def check_backup():
             files = list(Path(self.tmp.name).glob('*.json'))
@@ -325,6 +390,13 @@ class ManagerTests(unittest.IsolatedAsyncioTestCase):
             'config_hash':fingerprint(CONFIG), 'users_hash':boot['users_hash']}, boot['csrf'])).body)
         saved = json.loads((await request('/api/commit', {'token': preview['token']}, boot['csrf'])).body)
         self.assertEqual(saved['changed'], 4)
+        resolve_body = {'path':'test', 'token':preview['token'], 'before_hash':preview['before_hash'],
+                        'after_hash':preview['after_hash'], 'users_hash':boot['users_hash']}
+        with self.assertRaises(web.HTTPForbidden): await request('/api/resolve', resolve_body)
+        checked = json.loads((await request('/api/resolve', resolve_body, boot['csrf'])).body)
+        self.assertEqual(checked['outcome'], 'after')
+        self.assertEqual(checked['views'], saved['views'])
+        self.assertEqual(self.ha.writes, 1)
         restored = await request('/api/restore', {'id': saved['backup']}, boot['csrf'])
         self.assertEqual(restored.status, 200)
         self.assertEqual(self.ha.data, CONFIG)

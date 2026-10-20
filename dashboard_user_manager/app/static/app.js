@@ -2,6 +2,7 @@
 const $ = id => document.getElementById(id);
 const t = (key, values) => I18n.t(key, values);
 const state = {users: [], dashboards: [], views: [], draft: new Map(), csrf: '', configHash: '', usersHash: '', busy: false, generation: 0, loaded: false};
+const OPERATION_TIMEOUT = 30000;
 const selectionKey = 'dashboard-users-dashboards';
 let dashboardSelection = null;
 try { const saved = JSON.parse(localStorage.getItem(selectionKey)); if (Array.isArray(saved) && saved.every(p => typeof p === 'string')) dashboardSelection = saved; } catch { /* Invalid/unavailable preferences leave all dashboards visible. */ }
@@ -14,21 +15,45 @@ function editable() { return state.dashboards.find(d => d.url_path === path())?.
 function changes() { return Matrix.changes(state.views, state.users, state.draft); }
 function buttons() {
   const count = changes().length;
-  $('save').disabled = state.busy || !editable() || !count;
-  $('discard').disabled = state.busy || !count;
+  const blocked = Boolean(state.uncertain || state.conflicted);
+  $('save').disabled = state.busy || blocked || !editable() || !count;
+  $('discard').disabled = state.busy || Boolean(state.uncertain) || !count;
   $('changes').textContent = count ? t('{count} Ansichten geändert · noch nicht gespeichert', {count}) : t('Keine Änderungen');
-  $('reload').disabled = state.busy; $('dashboard').disabled = state.busy || !selectedDashboards().length;
-  $('choose-dashboards').disabled = state.busy;
-  for (const el of $('table-wrap').querySelectorAll('input')) el.disabled = state.busy || !editable() || el.dataset.locked === 'true';
-  for (const el of $('backups').querySelectorAll('button')) el.disabled = state.busy;
+  $('reload').disabled = state.busy || Boolean(state.uncertain); $('dashboard').disabled = state.busy || blocked || !selectedDashboards().length;
+  $('choose-dashboards').disabled = state.busy || blocked;
+  $('cancel-save').hidden = !state.operation;
+  $('verify-save').hidden = !state.uncertain;
+  $('save-help').hidden = !state.operation && !state.uncertain;
+  $('verify-save').disabled = state.busy;
+  $('export-draft').disabled = state.busy || (!count && !state.uncertain);
+  for (const el of $('table-wrap').querySelectorAll('input')) el.disabled = state.busy || blocked || !editable() || el.dataset.locked === 'true';
+  for (const el of $('backups').querySelectorAll('button')) el.disabled = state.busy || blocked;
 }
-async function api(route, body) {
-  const response = await fetch(`api/${route}`, {cache: 'no-store', headers: {'Accept-Language':I18n.language,...(body === undefined ? {} : {'Content-Type': 'application/json', 'X-Dashboard-CSRF': state.csrf})}, method: body === undefined ? 'GET' : 'POST', body: body === undefined ? undefined : JSON.stringify(body)});
+async function api(route, body, signal) {
+  const request = (async () => {
+  const response = await fetch(`api/${route}`, {cache: 'no-store', signal, headers: {'Accept-Language':I18n.language,...(body === undefined ? {} : {'Content-Type': 'application/json', 'X-Dashboard-CSRF': state.csrf})}, method: body === undefined ? 'GET' : 'POST', body: body === undefined ? undefined : JSON.stringify(body)});
   const text = await response.text(); let data;
   try { data = JSON.parse(text); } catch { throw new Error(t('App nicht erreichbar oder Sitzung abgelaufen. Bitte über HA neu öffnen.')); }
   if (!response.ok) throw new Error(data.error || t('Anfrage fehlgeschlagen.'));
   return data;
+  })();
+  if (!signal) return request;
+  // Also bound response-body reading and ignore late responses, even if a
+  // transport ignores AbortSignal. No continuation can dispatch a late commit.
+  return new Promise((resolve,reject) => {
+    const abort = () => reject(new Error('operation-stopped'));
+    if (signal.aborted) {request.catch(()=>{}); abort(); return;}
+    signal.addEventListener('abort',abort,{once:true});
+    request.then(data => signal.aborted ? abort() : resolve(data),reject)
+      .finally(() => signal.removeEventListener('abort',abort));
+  });
 }
+function beginOperation() {
+  const operation = {controller:new AbortController(),timedOut:false};
+  operation.timer = window.setTimeout(() => {operation.timedOut=true; operation.controller.abort();},OPERATION_TIMEOUT);
+  state.operation=operation; state.busy=true; buttons(); return operation;
+}
+function endOperation(operation) {window.clearTimeout(operation.timer); state.operation=null; state.busy=false; buttons();}
 function checkbox(label, checked, listener, locked = false) {
   const el = node('input'); el.type = 'checkbox'; el.checked = checked; el.setAttribute('aria-label', label); el.dataset.locked = String(locked); el.addEventListener('change', listener); return el;
 }
@@ -104,7 +129,7 @@ function renderBackups(backups) {
 async function bootstrap(preferredPath = path()) {
   state.busy = true; state.loaded = false; buttons(); status('Dashboards und Benutzer laden …');
   try {
-    const data = await api('bootstrap'); state.csrf = data.csrf; state.users = data.users; state.usersHash = data.users_hash; state.dashboards = data.dashboards; state.dashboardErrors = data.dashboard_errors || []; state.emptyDashboards = data.empty_dashboards || 0;
+    const data = await api('bootstrap'); state.conflicted=false; state.csrf = data.csrf; state.users = data.users; state.usersHash = data.users_hash; state.dashboards = data.dashboards; state.dashboardErrors = data.dashboard_errors || []; state.emptyDashboards = data.empty_dashboards || 0;
     $('version').textContent = data.version; $('dashboard').replaceChildren();
     renderDashboards(preferredPath);
     renderCatalogInfo();
@@ -113,14 +138,47 @@ async function bootstrap(preferredPath = path()) {
   finally { state.busy = false; buttons(); }
 }
 async function save() {
-  if (state.busy || !editable() || !changes().length) return;
-  state.busy = true; buttons(); status('Dashboard prüfen, sichern und Zuordnungen speichern …');
+  if (state.busy || state.uncertain || state.conflicted || !editable() || !changes().length) return;
+  const operation=beginOperation(); let recovery;
+  status('Dashboard prüfen, sichern und Zuordnungen speichern …');
   try {
-    const prepared = await api('matrix', {path: path(), rows: changes(), config_hash: state.configHash, users_hash: state.usersHash});
-    const result = await api('commit', {token: prepared.token}); await bootstrap();
+    const prepared = await api('matrix', {path: path(), rows: changes(), config_hash: state.configHash, users_hash: state.usersHash},operation.controller.signal);
+    if (operation.controller.signal.aborted) throw new Error('operation-stopped');
+    recovery={path:path(),token:prepared.token,before_hash:prepared.before_hash,after_hash:prepared.after_hash,users_hash:state.usersHash};
+    const result = await api('commit', {token: prepared.token},operation.controller.signal);
+    // The commit response already confirms a read-back. Do not clear a draft
+    // through a second bootstrap request which could fail after the HA write.
+    state.views=result.views; state.configHash=result.config_hash;
+    state.draft=Matrix.initial(state.views,state.users); renderMatrix(); renderBackups(result.backups);
     status(result.changed ? 'Benutzersichtbarkeit gespeichert und zurückgelesen. {count} Ansichten geändert.' : 'Keine Änderung nötig.', 'success', {count:result.changed});
-  } catch (error) { status(error.message, 'error'); }
-  finally { state.busy = false; buttons(); }
+  } catch (error) {
+    if (recovery) {state.uncertain=recovery; status('Speicherergebnis unklar. Dein Entwurf bleibt erhalten. Vor erneutem Speichern Serverstand prüfen.','error');}
+    else if (operation.controller.signal.aborted) status(operation.timedOut?'Zeitlimit erreicht. Dein Entwurf bleibt erhalten. Es wurde kein Schreibauftrag gesendet.':'Vorgang abgebrochen. Dein Entwurf bleibt erhalten. Es wurde kein Schreibauftrag gesendet.','error');
+    else status(error.message,'error');
+  } finally {endOperation(operation);}
+}
+async function verifySave() {
+  if(state.busy || !state.uncertain)return;
+  const operation=beginOperation(), recovery=state.uncertain;
+  status('Serverstand prüfen. Dein Entwurf bleibt erhalten.');
+  try {
+    // Refresh CSRF after an app restart without replacing the draft/users.
+    const session=await api('bootstrap',undefined,operation.controller.signal); state.csrf=session.csrf;
+    const result=await api('resolve',recovery,operation.controller.signal);
+    if(result.outcome==='conflict') {state.conflicted=true;state.uncertain=null;status('Serverstand oder Benutzerliste weicht ab. Entwurf sichern und neu laden; nichts wurde erneut geschrieben.','error');}
+    else {
+      state.uncertain=null; state.configHash=result.config_hash;
+      state.views=result.views; renderMatrix();
+      status(result.outcome==='after'?'Serverstand entspricht dem Entwurf. Bereits gespeichert; kein erneuter Schreibvorgang.':'Serverstand ist unverändert. Dein Entwurf ist erhalten und kann erneut gespeichert werden.','success');
+    }
+    renderBackups(result.backups);
+  }catch {status('Serverstand noch nicht bestätigt. Dein Entwurf bleibt erhalten; Speichern bleibt gesperrt.','error');}
+  finally {endOperation(operation);}
+}
+function exportDraft() {
+  const data={version:1,dashboard:path(),created_at:new Date().toISOString(),uncertain:Boolean(state.uncertain),views:state.views,rows:[...state.draft].map(([index,users])=>({index,users:[...users]}))};
+  const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  const link=node('a');link.href=url;link.download='dashboard-user-draft.json';link.click();window.setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 async function restoreBackup(backup) {
   if (state.busy || !confirmDiscard() || !confirm(t('Dashboard „{path}“ aus der Sicherung vom {date} vollständig wiederherstellen? Der aktuelle Stand wird vorher erneut gesichert. Zwischenzeitliche Änderungen verhindern die Wiederherstellung.',{path:backup.path || 'lovelace',date:new Date(backup.created_at * 1000).toLocaleString(I18n.language)}))) return;
@@ -132,6 +190,8 @@ async function restoreBackup(backup) {
 $('reload').addEventListener('click', () => {if (confirmDiscard()) bootstrap();});
 $('dashboard').addEventListener('change', () => {if (!confirmDiscard()) {$('dashboard').value = state.currentPath || ''; return;} state.currentPath = path(); loadViews();});
 $('discard').addEventListener('click', discard); $('save').addEventListener('click', save);
+$('cancel-save').addEventListener('click',()=>state.operation?.controller.abort());
+$('verify-save').addEventListener('click',verifySave); $('export-draft').addEventListener('click',exportDraft);
 window.addEventListener('beforeunload', event => { if (changes().length) {event.preventDefault(); event.returnValue = '';} });
 function renderDashboards(selectedPath = path()) {
   $('dashboard').replaceChildren();

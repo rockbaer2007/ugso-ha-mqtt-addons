@@ -1,5 +1,5 @@
 name: Dashboard-Benutzerverwaltung
-version: "0.1.8"
+version: "0.1.9"
 slug: dashboard_user_manager
 description: Benutzer für alle Ansichten eines Dashboards gemeinsam setzen oder entfernen
 url: https://opensource.ugso-software.de/projects/dashboard-user-manager/

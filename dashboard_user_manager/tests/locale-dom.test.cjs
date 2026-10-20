@@ -19,7 +19,7 @@ test('real save success uses one current-language template despite an English AP
         if(route==='locales.json') data=JSON.parse(read('locales.json'));
         else if(route==='api/bootstrap') data={version:'0.1.8',csrf:'test',users_hash:'users',users:[{id:'web',name:'Original User',active:true}],dashboards:[{url_path:'test',title:'Original Dashboard',mode:'storage'}],backups:[]};
         else if(route==='api/matrix') data={token:'prepared'};
-        else if(route==='api/commit') {committed=true;data={changed,message:changed?'User visibility saved and verified by reading it back.':'No change needed.'};}
+        else if(route==='api/commit') {committed=true;data={changed,message:changed?'User visibility saved and verified by reading it back.':'No change needed.',views:[0,1].map(index=>({index,title:'Original '+index,path:'view-'+index,users:['web']})),config_hash:'after',backups:[]};}
         else if(route.startsWith('api/views?')) data={config_hash:committed?'after':'before',views:[0,1].map(index=>({index,title:'Original '+index,path:'view-'+index,users:committed?['web']:[]})),generated:false};
         else throw new Error('Unexpected route '+route);
         return {ok:true,json:async()=>data,text:async()=>JSON.stringify(data)};

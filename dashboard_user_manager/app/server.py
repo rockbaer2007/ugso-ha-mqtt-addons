@@ -13,7 +13,7 @@ from aiohttp import ClientError, ClientSession, ClientTimeout, web
 from visibility import Invalid, fingerprint, human_users, summary, transform, transform_matrix
 from i18n import language, translate, payload
 
-VERSION = '0.1.8'
+VERSION = '0.1.9'
 STATIC = Path(__file__).parent / 'static'
 ACTOR = web.RequestKey('actor', str)
 
@@ -141,7 +141,8 @@ class Manager:
                                 'after': after, 'users_hash': fingerprint(users),
                                 'expires': time.time() + 300, 'changes': changes}
         return {'token': token, 'changes': changes, 'warnings': warnings,
-                'total_views': len(before['views']), 'expires_seconds': 300}
+                'total_views': len(before['views']), 'expires_seconds': 300,
+                'before_hash': fingerprint(before), 'after_hash': fingerprint(after)}
 
     def save_backup(self, path, before, after, actor, reason):
         self.backups.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -170,7 +171,9 @@ class Manager:
                 raise Invalid('Die Benutzerliste wurde inzwischen geändert. Bitte erneut prüfen.')
             self.previews.pop(token)
             if not p['changes']:
-                return {'changed': 0, 'message': 'Keine Änderung nötig.', 'backup': None}
+                return {'changed': 0, 'message': 'Keine Änderung nötig.', 'backup': None,
+                        'views': summary(current), 'config_hash': fingerprint(current),
+                        'backups': self.list_backups()}
             backup = self.save_backup(p['path'], current, p['after'], actor, 'bulk-visibility')
             try:
                 await self.ha.call('lovelace/config/save', url_path=p['path'], config=p['after'])
@@ -180,7 +183,32 @@ class Manager:
             except (HAError, ClientError, asyncio.TimeoutError, OSError) as exc:
                 raise HAError(f'Speicherergebnis nicht bestätigt. Nicht blind wiederholen. Sicherung: {backup}') from exc
             return {'changed': len(p['changes']), 'backup': backup,
+                    'views': summary(saved), 'config_hash': fingerprint(saved),
+                    'backups': self.list_backups(),
                     'message': 'Benutzersichtbarkeit gespeichert und zurückgelesen.'}
+
+    async def resolve(self, actor, path, token, before_hash, after_hash, users_hash):
+        """Fence late commits, then inspect actual state without a HA write."""
+        if (not isinstance(token, str) or not re.fullmatch(r'[A-Za-z0-9_-]{43}', token)
+                or any(not isinstance(h, str) or not re.fullmatch(r'[a-f0-9]{64}', h)
+                       for h in (before_hash, after_hash, users_hash))):
+            raise Invalid('Ungültige Anfrage.')
+        async with self.lock:
+            p = self.previews.get(token)
+            if p and (p['actor'] != actor or p['path'] != path):
+                raise Invalid('Ungültige Anfrage.')
+            # If commit already holds the lock, wait for it. Otherwise consume
+            # its plan now, so a delayed POST cannot write after this check.
+            self.previews.pop(token, None)
+            current = await self.dashboard(path)
+            people = await self.ha.users()
+            current_hash = fingerprint(current)
+            outcome = ('after' if current_hash == after_hash else
+                       'before' if current_hash == before_hash else 'conflict')
+            if fingerprint(people) != users_hash:
+                outcome = 'conflict'
+            return {'outcome': outcome, 'views': summary(current),
+                    'config_hash': current_hash, 'backups': self.list_backups()}
 
     def read_backup(self, name):
         if not isinstance(name, str) or not re.fullmatch(r'\d{8}T\d{6}Z-[a-f0-9]{12}\.json', name):
@@ -317,6 +345,12 @@ def create_app(manager):
     async def restore(request):
         return web.json_response(await manager.restore(request[ACTOR], (await request.json()).get('id')))
 
+    async def resolve(request):
+        body = await request.json()
+        return web.json_response(await manager.resolve(request[ACTOR], body.get('path'),
+                                body.get('token'), body.get('before_hash'),
+                                body.get('after_hash'), body.get('users_hash')))
+
     async def download(request):
         r = manager.read_backup(request.match_info['name'])
         return web.json_response(r, headers={'Content-Disposition': 'attachment; filename="dashboard-backup.json"'})
@@ -332,6 +366,7 @@ def create_app(manager):
     app.router.add_post('/api/preview', preview)
     app.router.add_post('/api/matrix', matrix)
     app.router.add_post('/api/commit', commit)
+    app.router.add_post('/api/resolve', resolve)
     app.router.add_post('/api/restore', restore)
     app.router.add_get('/api/backups/{name}', download)
     return app

@@ -1,3 +1,9 @@
+# 0.1.9
+
+- Speichern und Serverprüfung mit 30 Sekunden Gesamtzeitlimit und „Warten abbrechen“; Entwurf bleibt erhalten und kann als JSON gesichert werden.
+- Nach unklarem Schreibausgang erneutes Speichern bis zur Serverprüfung gesperrt. Prüfung wartet auf laufende eigene Schreibvorgänge und entwertet verspätete Schreibaufträge; kein automatisches Nachspeichern.
+- Bereits gespeicherten Entwurf erkennen, unveränderten Stand zum bewussten erneuten Speichern freigeben und abweichende Daten/Benutzer als Konflikt behandeln. DE/EN/FR vollständig.
+
 # 0.1.8
 
 - Speichern-Erfolgsmeldung samt Anzahl vollständig in der gewählten Sprache DE/EN/FR, unabhängig von der Sprache der API-Antwort.

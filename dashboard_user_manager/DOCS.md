@@ -1,5 +1,15 @@
 # Dashboard-Benutzerverwaltung
 
+## Zeitlimit und Entwurf ab 0.1.9
+
+Speichern und „Serverstand prüfen“ haben jeweils 30 Sekunden Zeitlimit. „Warten abbrechen“ beendet das Warten und erhält die Zuordnungen. Ein bereits gesendeter Schreibauftrag kann serverseitig noch abgeschlossen werden. Deshalb bleibt erneutes Speichern dann gesperrt, bis die Serverprüfung den tatsächlichen Stand bestätigt; niemals automatisch erneut schreiben.
+
+Die Prüfung unterscheidet bereits gespeichert, unverändert und Konflikt. Bei unverändertem Stand kann der erhaltene Entwurf bewusst gespeichert werden. Bei Konflikt den Entwurf sichern und neu laden. „Entwurf sichern“ lädt die geplanten Benutzerzuordnungen mit Dashboard-Pfad als JSON auf den PC, ohne Sitzungsschlüssel. Die vollständigen Dashboard-Sicherungen bleiben in der privaten App-Ablage.
+
+EN: Saving and server checks each stop after 30 seconds. Stop waiting preserves the draft. A dispatched write may still finish; check the server before retrying. The check distinguishes saved, unchanged and conflicting states. Download draft exports planned assignments locally without session secrets.
+
+FR : Enregistrement et vérification s’arrêtent après 30 secondes. Arrêter l’attente conserve le brouillon. Une écriture envoyée peut se terminer ; vérifiez le serveur avant de réessayer. La vérification distingue déjà enregistré, inchangé et conflit. Le brouillon se télécharge localement sans secrets de session.
+
 ## DE / EN / FR automatisch
 
 Die App übernimmt die HA-Oberflächensprache, sonst die Browsersprache. Nicht unterstützte Sprachen verwenden Englisch. Oben ist zusätzlich eine manuelle Auswahl möglich. Eigene Namen, Zuordnungen und ungespeicherte Checkboxen bleiben beim Sprachwechsel erhalten. Übersetzungen sind vollständig im App-Paket enthalten.
