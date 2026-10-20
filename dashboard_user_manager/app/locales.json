@@ -1,4 +1,5 @@
 {
+  "Benutzersichtbarkeit gespeichert und zurückgelesen. {count} Ansichten geändert.": ["User visibility saved and verified by reading it back. {count} views changed.", "Visibilité des utilisateurs enregistrée et vérifiée par relecture. {count} vues modifiées."],
   "Dashboard-Benutzer": ["Dashboard users", "Utilisateurs des tableaux de bord"],
   "Dashboard-Benutzerverwaltung": ["Dashboard User Manager", "Gestion des utilisateurs des tableaux de bord"],
   "HOME ASSISTANT · VERWALTUNG": ["HOME ASSISTANT · ADMINISTRATION", "HOME ASSISTANT · ADMINISTRATION"],

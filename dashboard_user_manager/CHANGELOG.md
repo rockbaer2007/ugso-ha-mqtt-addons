@@ -1,3 +1,8 @@
+# 0.1.8
+
+- Speichern-Erfolgsmeldung samt Anzahl vollständig in der gewählten Sprache DE/EN/FR, unabhängig von der Sprache der API-Antwort.
+- Bereits angezeigte Erfolgsmeldung wechselt bei einer Sprachänderung ohne Neuladen korrekt mit; unveränderte Speicherung und Sicherungen.
+
 # 0.1.7
 
 - Eigenes Dashboard-/Benutzer-Icon im HA-App-Paket, in der Oberfläche und als PNG-Favicon eingebunden.

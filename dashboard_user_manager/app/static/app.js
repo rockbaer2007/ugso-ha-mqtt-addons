@@ -8,7 +8,7 @@ try { const saved = JSON.parse(localStorage.getItem(selectionKey)); if (Array.is
 function matchesDashboard(dash, value) { return [dash.url_path,...(dash.aliases || [])].some(p => (p || '') === (value || '')); }
 function selectedDashboards() { return state.dashboards.filter(d => dashboardSelection === null || dashboardSelection.some(p => matchesDashboard(d,p))); }
 function node(tag, text, cls) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (cls) el.className = cls; return el; }
-function status(text, type = '') { state.lastStatus = [text,type]; $('status').textContent = t(text); $('status').className = type; }
+function status(text, type = '', values = {}) { state.lastStatus = [text,type,values]; $('status').textContent = t(text,values); $('status').className = type; }
 function path() { return $('dashboard').value || null; }
 function editable() { return state.dashboards.find(d => d.url_path === path())?.mode === 'storage' && state.loaded; }
 function changes() { return Matrix.changes(state.views, state.users, state.draft); }
@@ -117,7 +117,8 @@ async function save() {
   state.busy = true; buttons(); status('Dashboard prüfen, sichern und Zuordnungen speichern …');
   try {
     const prepared = await api('matrix', {path: path(), rows: changes(), config_hash: state.configHash, users_hash: state.usersHash});
-    const result = await api('commit', {token: prepared.token}); await bootstrap(); status(`${result.message} ${t('{count} Ansichten geändert.',{count:result.changed})}`, 'success');
+    const result = await api('commit', {token: prepared.token}); await bootstrap();
+    status(result.changed ? 'Benutzersichtbarkeit gespeichert und zurückgelesen. {count} Ansichten geändert.' : 'Keine Änderung nötig.', 'success', {count:result.changed});
   } catch (error) { status(error.message, 'error'); }
   finally { state.busy = false; buttons(); }
 }
