@@ -5,7 +5,8 @@ const state = {users: [], dashboards: [], views: [], draft: new Map(), csrf: '',
 const selectionKey = 'dashboard-users-dashboards';
 let dashboardSelection = null;
 try { const saved = JSON.parse(localStorage.getItem(selectionKey)); if (Array.isArray(saved) && saved.every(p => typeof p === 'string')) dashboardSelection = saved; } catch { /* Invalid/unavailable preferences leave all dashboards visible. */ }
-function selectedDashboards() { return state.dashboards.filter(d => dashboardSelection === null || dashboardSelection.includes(d.url_path || '')); }
+function matchesDashboard(dash, value) { return [dash.url_path,...(dash.aliases || [])].some(p => (p || '') === (value || '')); }
+function selectedDashboards() { return state.dashboards.filter(d => dashboardSelection === null || dashboardSelection.some(p => matchesDashboard(d,p))); }
 function node(tag, text, cls) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; if (cls) el.className = cls; return el; }
 function status(text, type = '') { state.lastStatus = [text,type]; $('status').textContent = t(text); $('status').className = type; }
 function path() { return $('dashboard').value || null; }
@@ -135,7 +136,7 @@ function renderDashboards(selectedPath = path()) {
   $('dashboard').replaceChildren();
   const available = selectedDashboards();
   for (const dash of available) {const option = node('option',`${dash.title || dash.url_path || t('Übersicht')}${dash.mode !== 'storage' || dash.generated ? ' · '+t('nur lesbar') : ''}`); option.value = dash.url_path || ''; $('dashboard').append(option);}
-  const selected = available.find(d => d.url_path === selectedPath) || available.find(d => d.mode === 'storage' && !d.generated) || available[0];
+  const selected = available.find(d => matchesDashboard(d,selectedPath)) || available.find(d => d.mode === 'storage' && !d.generated) || available[0];
   if (selected) $('dashboard').value = selected.url_path || '';
 }
 function renderCatalogInfo() {
@@ -157,7 +158,7 @@ function renderChoices() {
 }
 $('choose-dashboards').addEventListener('click', () => {
   renderChoices();
-  for (const input of $('dashboard-choices').querySelectorAll('input')) input.checked = dashboardSelection === null || dashboardSelection.includes(input.value);
+  for (const input of $('dashboard-choices').querySelectorAll('input')) input.checked = selectedDashboards().some(d => (d.url_path || '') === input.value);
   $('preference-error').textContent = ''; $('dashboard-dialog').showModal();
 });
 for (const [id,checked] of [['choose-all',true],['choose-none',false]]) $(id).addEventListener('click', () => {for (const input of $('dashboard-choices').querySelectorAll('input')) input.checked = checked;});
@@ -167,7 +168,7 @@ $('choose-apply').addEventListener('click', async () => {
   const keepCurrent = selected.includes(path() || '');
   if (!keepCurrent && !confirmDiscard()) return;
   // Retain choices for temporarily failed/unavailable dashboards; never forget them silently.
-  const unavailable = (dashboardSelection || []).filter(p => !state.dashboards.some(d => (d.url_path || '') === p));
+  const unavailable = (dashboardSelection || []).filter(p => !state.dashboards.some(d => matchesDashboard(d,p)));
   const next = [...new Set([...selected,...unavailable])];
   try { localStorage.setItem(selectionKey,JSON.stringify(next)); }
   catch { $('preference-error').textContent = t('Vorauswahl konnte nicht gespeichert werden. Browser-Speicher prüfen.'); return; }

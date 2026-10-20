@@ -4,7 +4,7 @@ Benutzer als Checkbox-Spalten, Ansichten als Zeilen: im Spaltenkopf gemeinsam au
 
 Nur für Administratoren über Home Assistant Ingress. Kein zusätzlicher LAN-Port, keine manuelle Token-Eingabe. YAML- und automatisch erzeugte Dashboards sind nur lesbar. Tabsichtbarkeit ist keine Zugriffssperre für direkte URLs.
 
-**0.1.5 · DE / EN / FR · MIT**. Automatisch nach HA-Sprache, Browser-Fallback und Englisch für nicht unterstützte Sprachen. Optional oben DE/EN/FR wählen. Sprachwechsel erhält ungespeicherte Auswahl und eigene Namen. U = Benutzer, A = Administrator. Nur Dashboards mit Ansichten, getrennte Ladefehler und gespeicherte Dashboard-Vorauswahl per Checkbox. [Deutsche Dokumentation](https://opensource.ugso-software.de/projects/dashboard-user-manager/).
+**0.1.6 · DE / EN / FR · MIT**. Automatisch nach HA-Sprache, Browser-Fallback und Englisch für nicht unterstützte Sprachen. Optional oben DE/EN/FR wählen. Sprachwechsel erhält ungespeicherte Auswahl und eigene Namen. U = Benutzer, A = Administrator. Nur Dashboards mit Ansichten, getrennte Ladefehler und gespeicherte Dashboard-Vorauswahl per Checkbox. Die migrierte Übersicht erscheint einmal; die frühere Vorauswahl bleibt erhalten. [Deutsche Dokumentation](https://opensource.ugso-software.de/projects/dashboard-user-manager/).
 
 ## English
 

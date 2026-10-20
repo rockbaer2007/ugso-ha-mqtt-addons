@@ -13,7 +13,7 @@ from aiohttp import ClientError, ClientSession, ClientTimeout, web
 from visibility import Invalid, fingerprint, human_users, summary, transform, transform_matrix
 from i18n import language, translate, payload
 
-VERSION = '0.1.5'
+VERSION = '0.1.6'
 STATIC = Path(__file__).parent / 'static'
 ACTOR = web.RequestKey('actor', str)
 
@@ -57,11 +57,17 @@ class HA:
         listed = await self.call('lovelace/dashboards/list')
         panels = await self.call('get_panels')
         result = {d['url_path']: d for d in listed}
+        # Modern HA lists the migrated overview as "lovelace". The panel at
+        # that path is the same dashboard, not a second legacy None dashboard.
+        # HA resolves None to "lovelace" when present (including old backups).
+        if 'lovelace' in result:
+            result['lovelace'] = {**result['lovelace'], 'aliases': [None]}
+            result.pop(None, None)
         for key, panel in panels.items():
             if panel.get('component_name') != 'lovelace':
                 continue
             config = panel.get('config') or {}
-            path = None if key == 'lovelace' else key
+            path = ('lovelace' if 'lovelace' in result else None) if key == 'lovelace' else key
             if path not in result:
                 result[path] = {'url_path': path, 'title': panel.get('title') or key,
                                 'mode': config.get('mode', 'generated'),
@@ -105,7 +111,7 @@ class Manager:
 
     async def dashboard(self, path):
         dashboards = await self.ha.dashboards()
-        item = next((d for d in dashboards if d.get('url_path') == path), None)
+        item = next((d for d in dashboards if d.get('url_path') == path or path in d.get('aliases', [])), None)
         if not item:
             raise Invalid('Dashboard nicht gefunden. Bitte neu laden.')
         if item.get('mode') != 'storage':

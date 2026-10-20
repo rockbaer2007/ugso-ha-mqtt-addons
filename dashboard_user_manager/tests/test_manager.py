@@ -254,6 +254,32 @@ class ManagerTests(unittest.IsolatedAsyncioTestCase):
             response=await guard(req,backup)
             self.assertEqual(json.loads(response.body),{'message':'Keine Änderung nötig.','config':CONFIG})
 
+    async def test_migrated_overview_is_one_dashboard_but_equal_titles_stay_distinct(self):
+        adapter = HA(None, 'not-a-real-token')
+        listed = [{'url_path':'lovelace','title':'Übersicht aktuell','mode':'storage'},
+                  {'url_path':'other-dashboard','title':'Übersicht aktuell','mode':'storage'}]
+        panels = {'lovelace':{'component_name':'lovelace','title':'Übersicht aktuell','config':{'mode':'storage'}},
+                  'other-dashboard':{'component_name':'lovelace','title':'Übersicht aktuell','config':{'mode':'storage'}},
+                  'my-app':{'component_name':'custom','title':'App'}}
+        adapter.call = AsyncMock(side_effect=[listed,panels])
+        result = await adapter.dashboards()
+        self.assertEqual(len(result),2)
+        self.assertEqual([d['url_path'] for d in result],['lovelace','other-dashboard'])
+        self.assertEqual(result[0]['aliases'],[None])
+        self.assertEqual(listed[0].get('aliases'),None)
+        adapter.dashboards = AsyncMock(return_value=result)
+        adapter.config = AsyncMock(return_value=CONFIG)
+        manager = Manager(adapter,self.manager.backups)
+        self.assertEqual(await manager.dashboard(None),CONFIG)  # old backups/previews
+        self.assertEqual(await manager.dashboard('lovelace'),CONFIG)
+        adapter.config.assert_any_await(None)
+        adapter.config.assert_any_await('lovelace')
+
+    async def test_legacy_default_panel_keeps_none_path(self):
+        adapter = HA(None,'not-a-real-token')
+        adapter.call = AsyncMock(side_effect=[[],{'lovelace':{'component_name':'lovelace','title':'Legacy','config':{'mode':'storage'}}}])
+        self.assertEqual(await adapter.dashboards(),[{'url_path':None,'title':'Legacy','mode':'storage','require_admin':False}])
+
     async def test_catalog_distinguishes_empty_errors_generated_and_real_dashboards(self):
         items = [{'url_path':p,'title':p,'mode':'storage'} for p in ['real','empty','failed','malformed','generated']]
         self.ha.dashboards = AsyncMock(return_value=items)

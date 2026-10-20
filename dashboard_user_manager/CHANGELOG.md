@@ -1,3 +1,8 @@
+# 0.1.6
+
+- Doppelte Übersicht aus Dashboard-Liste und altem Standardzugang zusammengeführt; vorhandene Vorauswahl und ältere Sicherungen bleiben kompatibel.
+- Gleichnamige Dashboards mit unterschiedlichen Pfaden bleiben getrennt erhalten.
+
 # 0.1.5
 
 - Nur erfolgreich geladene Dashboards mit Ansichten in der Auswahl; leere Einträge ausgeblendet und Ladefehler gesondert sichtbar.

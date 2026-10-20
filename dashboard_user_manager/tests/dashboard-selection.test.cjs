@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const app = fs.existsSync(path.resolve(__dirname,'../app')) ? path.resolve(__dirname,'../app') : path.resolve(__dirname,'../dashboard_user_manager/app');
 const read = name => fs.readFileSync(path.join(app,name),'utf8');
 const settle = async()=>{for(let i=0;i<20;i++) await new Promise(r=>setImmediate(r));};
-async function setup(saved) {
+async function setup(saved, dashboards) {
   const dom = new JSDOM(read('static/index.html'),{url:'https://offline.invalid/',runScripts:'outside-only'}), w=dom.window;
   const calls=[]; let allowDiscard=false;
   if(saved!==undefined) w.localStorage.setItem('dashboard-users-dashboards',JSON.stringify(saved));
@@ -18,7 +18,7 @@ async function setup(saved) {
     calls.push([route,options]);
     const data=route==='locales.json'?JSON.parse(read('locales.json')):route==='api/bootstrap'?{
       version:'0.1.5',csrf:'test',users_hash:'users',users:[{id:'web',name:'Original'}],
-      dashboards:[{url_path:'one',title:'Küche',mode:'storage'},{url_path:'two',title:'Wohnzimmer',mode:'storage'}],
+      dashboards:dashboards || [{url_path:'one',title:'Küche',mode:'storage'},{url_path:'two',title:'Wohnzimmer',mode:'storage'}],
       empty_dashboards:2,dashboard_errors:[{url_path:'bad',title:'Fehler <b>',load_error:'Dashboard konnte nicht geladen werden. Bitte erneut prüfen.'}],backups:[]
     }:{config_hash:'config',views:[{index:0,title:'Originalansicht',path:'home',users:[]}],generated:false};
     return {ok:true,json:async()=>data,text:async()=>JSON.stringify(data)};
@@ -62,4 +62,21 @@ test('keeping current dashboard preserves draft; removing it requires discard an
     assert.ok(d.querySelector('#preference-error').textContent.length);assert.equal(d.querySelector('#dashboard-dialog').open,true);
     assert.equal(calls.filter(([,o])=>o.method==='POST').length,0);
   }finally{w.close();}
+});
+test('legacy overview preference selects one canonical overview and is retained on apply',async()=>{
+  for(const saved of [[''],['','lovelace'],[]]) {
+    const {w,calls}=await setup(saved,[{url_path:'lovelace',aliases:[null],title:'Übersicht aktuell',mode:'storage'},
+      {url_path:'other-dashboard',title:'Übersicht aktuell',mode:'storage'}]);
+    const d=w.document;
+    try {
+      assert.equal(d.querySelectorAll('#dashboard option').length,saved.length ? 1 : 0);
+      if(saved.length) assert.equal(d.querySelector('#dashboard').value,'lovelace');
+      d.querySelector('#choose-dashboards').click();
+      assert.equal(d.querySelectorAll('#dashboard-choices input').length,2); // distinct equal names kept
+      assert.equal(d.querySelector('#dashboard-choices input[value="lovelace"]').checked,Boolean(saved.length));
+      d.querySelector('#choose-apply').click();await settle();
+      assert.deepEqual(JSON.parse(w.localStorage.getItem('dashboard-users-dashboards')),saved.length ? ['lovelace'] : []);
+      assert.equal(calls.filter(([,o])=>o.method==='POST').length,0);
+    }finally{w.close();}
+  }
 });
