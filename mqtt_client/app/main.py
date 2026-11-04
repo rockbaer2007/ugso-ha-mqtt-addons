@@ -19,7 +19,8 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import paho.mqtt.client as mqtt
-from live import StateStream, TopicInventory, broker_identity
+from live import StateStream, TopicInventory, broker_identity, entity_registry
+from websocket import WebSocketException
 
 LOG = logging.getLogger("mqtt-client")
 ENTITY = re.compile(r"^[a-z0-9_]+\.[a-z0-9_]+$")
@@ -174,6 +175,7 @@ INDEX_HTML = """<!doctype html>
       <details><summary>Übertragung und TLS</summary>
         <label>Polling-Rückfall in Sekunden <input name="poll_interval" type="number" min="1" max="300" value="5"></label>
         <label>Topic-Präfix <input name="topic_prefix" value="ha_external" required></label>
+        <label>HA-Label-ID für Zustandsweiterleitung <input name="forward_label" placeholder="an_mqtt_client_weiterleiten" maxlength="128"></label>
         <label>Client-ID <input name="client_id" value="ugso-ha-mqtt-client" required></label>
         <label class="check"><input name="tls" type="checkbox"> TLS mit Zertifikatsprüfung</label>
         <p class="hint">PEM-Dateien laden oder Text einfügen. Leere Felder behalten vorhandene Zertifikate. Client-Zertifikat und privater Schlüssel gehören zusammen.</p>
@@ -515,6 +517,7 @@ INDEX_HTML = """<!doctype html>
       form.publish_delay_ms.value = data.publish_delay_ms ?? 50;
       form.poll_interval.value = data.poll_interval ?? 5;
       form.topic_prefix.value = data.topic_prefix || 'ha_external';
+      form.forward_label.value = data.forward_label || '';
       form.client_id.value = data.client_id || 'ugso-ha-mqtt-client';
       form.tls.checked = Boolean(data.tls);
       document.getElementById('tlsStored').textContent = `Gespeichert: CA ${data.has_tls_ca ? 'ja' : 'nein'}, Client-Zertifikat ${data.has_tls_cert ? 'ja' : 'nein'}, privater Schlüssel ${data.has_tls_key ? 'ja' : 'nein'}.`;
@@ -555,6 +558,7 @@ INDEX_HTML = """<!doctype html>
         publish_delay_ms: Number(form.publish_delay_ms.value || 0),
         poll_interval: Number(form.poll_interval.value || 5),
         topic_prefix: form.topic_prefix.value.trim(), client_id: form.client_id.value.trim(),
+        forward_label: form.forward_label.value.trim(),
         tls: form.tls.checked, clear_tls_material: form.clear_tls_material.checked
       };
       if (form.password.value) payload.password = form.password.value;
@@ -715,6 +719,7 @@ class Config:
     tls_ca: str = ""
     tls_cert: str = ""
     tls_key: str = ""
+    forward_label: str = ""
 
     @classmethod
     def load(cls, options):
@@ -743,9 +748,12 @@ class Config:
         pem = [options.get(key, "") for key in ("tls_ca", "tls_cert", "tls_key")]
         if any(not isinstance(v, str) or len(v) > 65536 for v in pem) or bool(pem[1]) != bool(pem[2]):
             raise ValueError("TLS benötigt gültige PEM-Texte und Client-Zertifikat plus privaten Schlüssel")
+        label = options.get("forward_label", "")
+        if not isinstance(label, str) or (label and not re.fullmatch(r"[a-z0-9_]{1,128}", label)):
+            raise ValueError("forward_label muss eine gültige HA-Label-ID sein")
         return cls(host, port, str(options.get("username", "")), str(options.get("password", "")),
                    bool(options.get("tls", False)), client_id, prefix, interval, entities, entity_attributes,
-                   commands, publish_delay_ms, *pem)
+                   commands, publish_delay_ms, *pem, forward_label=label)
 
     def topic(self, entity, suffix):
         return f"{self.prefix}/{entity}/{suffix}"
@@ -1051,6 +1059,7 @@ class Bridge:
         self.data_lock = threading.RLock()
         self.events = queue.Queue(maxsize=10000)
         self.states_cache = {}
+        self.labeled_entities = frozenset()
         self.live = False
         self.inventory = None
         self.availability = f"{config.prefix}/availability"
@@ -1147,6 +1156,24 @@ class Bridge:
         with self.data_lock:
             return self.sync_states(states)
 
+    def refresh_label_selection(self):
+        try:
+            selected = frozenset(
+                entry["entity_id"] for entry in entity_registry(self.ha)
+                if not entry.get("disabled_by") and self.config.forward_label in entry.get("labels", [])
+                and ENTITY.fullmatch(entry["entity_id"])
+            )
+        except (OSError, ValueError, WebSocketException, KeyError, TypeError, AttributeError) as error:
+            LOG.warning("HA-Label-Abgleich fehlgeschlagen (%s)", type(error).__name__)
+            selected = frozenset()
+        if selected == self.labeled_entities:
+            return False
+        for entity in self.labeled_entities - selected:
+            self.sent.pop(("state", entity), None)
+            self.sent_topics.pop(("state", entity), None)
+        self.labeled_entities = selected
+        return True
+
     def sync_states(self, states=None):
         generation = self.generation
         if generation != self.sent_generation:
@@ -1164,7 +1191,8 @@ class Bridge:
             self.status.update(ha_connected=True)
         self.states_cache = dict(states)
         prefixes = common_prefixes_from_states(states)
-        polled_entities = sorted(set(self.config.entities) | set(self.attribute_map))
+        state_entities = set(self.config.entities) | (self.labeled_entities & states.keys())
+        polled_entities = sorted(state_entities | set(self.attribute_map))
         targets = set()
         for entity in polled_entities:
             if self.stop.is_set():
@@ -1172,10 +1200,10 @@ class Bridge:
             entry = states.get(entity, {"state": "unavailable", "attributes": {}})
             state = str(entry.get("state", "unavailable"))
             state_topic = self.topic(entity, "state", entry if entity in states else None, prefixes)
-            if entity in self.config.entities:
+            if entity in state_entities:
                 targets.add(state_topic)
             state_key = ("state", entity)
-            if entity in self.config.entities and (self.sent.get(state_key) != state or self.sent_topics.get(state_key) != state_topic):
+            if entity in state_entities and (self.sent.get(state_key) != state or self.sent_topics.get(state_key) != state_topic):
                 self.publish(state_topic, state, throttle=True)
                 if self.inventory:
                     self.inventory.remember(self.config, state_topic, entity)
@@ -1206,7 +1234,7 @@ class Bridge:
             self.status.update(ha_connected=True, last_sync=time.time(), last_error=None)
 
     def deliver_event(self, event):
-        if event[0] == "event" and event[1].get("entity_id") not in set(self.config.entities) | set(self.attribute_map):
+        if event[0] == "event" and not self.config.forward_label and event[1].get("entity_id") not in set(self.config.entities) | set(self.attribute_map):
             return
         try:
             self.events.put_nowait(event)
@@ -1240,14 +1268,14 @@ class Bridge:
                 self.states_cache.pop(entity, None)
             else:
                 self.states_cache[entity] = data["new_state"]
-            if entity in self.config.entities or entity in self.attribute_map:
+            if entity in self.config.entities or entity in self.attribute_map or entity in self.labeled_entities:
                 self.poll(self.states_cache)
 
     def cleanup(self, topics):
         with self.data_lock:
             if not self.connected.is_set() or not self.inventory:
                 raise ValueError("MQTT ist nicht verbunden")
-            allowed = set(self.inventory.candidates(self.config))
+            allowed = set(self.inventory.candidates(self.config, self.labeled_entities))
             if not isinstance(topics, list) or len(topics) > 100 or any(not isinstance(t, str) or t not in allowed for t in topics):
                 raise ValueError("Nur bis zu 100 erfasste veraltete Topics dürfen gelöscht werden")
             deleted = []
@@ -1273,10 +1301,16 @@ class Bridge:
         stream_thread = threading.Thread(target=stream.run, name="ha-state-stream", daemon=True)
         stream_thread.start()
         next_poll = 0
+        next_label_refresh = 0
         try:
             while not self.stop.is_set():
                 if not self.connected.wait(timeout=1):
                     continue
+                labels_changed = False
+                if self.config.forward_label and time.monotonic() >= next_label_refresh:
+                    with self.data_lock:
+                        labels_changed = self.refresh_label_selection()
+                    next_label_refresh = time.monotonic() + self.config.interval
                 try:
                     event = self.events.get_nowait()
                     self.process_event(event)
@@ -1290,7 +1324,7 @@ class Bridge:
                     next_poll = 0
                     if self.status:
                         self.status.update(mode="polling", last_error=type(error).__name__)
-                if (not self.live and time.monotonic() >= next_poll) or self.sent_generation != self.generation:
+                if labels_changed or (not self.live and time.monotonic() >= next_poll) or self.sent_generation != self.generation:
                     try:
                         self.poll(self.states_cache if self.live else None)
                     except (OSError, ValueError, RuntimeError, KeyError) as error:
@@ -1405,6 +1439,7 @@ class AppController:
             "publish_delay_ms": options.get("publish_delay_ms", 50),
             "poll_interval": options.get("poll_interval", 5),
             "topic_prefix": options.get("topic_prefix", "ha_external"),
+            "forward_label": options.get("forward_label", ""),
             "client_id": options.get("client_id", "ugso-ha-mqtt-client"),
             "tls": bool(options.get("tls", False)),
             "has_tls_ca": bool(options.get("tls_ca")),
@@ -1416,7 +1451,7 @@ class AppController:
     def update_connection(self, payload):
         with self.lock:
             options = self.read_options()
-            for key in ("broker_host", "broker_port", "username", "publish_delay_ms", "poll_interval", "topic_prefix", "client_id", "tls", "tls_ca", "tls_cert", "tls_key"):
+            for key in ("broker_host", "broker_port", "username", "publish_delay_ms", "poll_interval", "topic_prefix", "client_id", "tls", "tls_ca", "tls_cert", "tls_key", "forward_label"):
                 if key in payload:
                     options[key] = payload[key]
             if "password" in payload:
@@ -1434,7 +1469,7 @@ class AppController:
 
     BACKUP_KEYS = {"broker_host", "broker_port", "username", "tls", "tls_ca", "client_id",
                    "topic_prefix", "poll_interval", "publish_delay_ms", "entities",
-                   "entity_attributes", "command_entities"}
+                   "entity_attributes", "command_entities", "forward_label"}
 
     def export_settings(self):
         with self.lock:
@@ -1465,7 +1500,8 @@ class AppController:
     def retained_candidates(self):
         with self.lock:
             config = Config.load(self.read_options())
-            return {"topics": self.inventory.candidates(config)}
+            labeled = self.bridge.labeled_entities if self.bridge else ()
+            return {"topics": self.inventory.candidates(config, labeled)}
 
     def cleanup_retained(self, payload):
         if payload.get("confirm") is not True:

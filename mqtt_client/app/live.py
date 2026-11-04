@@ -20,6 +20,26 @@ def connect_socket(url, timeout=5, enable_multithread=True):
     return socket
 
 
+def entity_registry(ha):
+    parts = urlsplit(ha.base_url)
+    url = urlunsplit(("wss" if parts.scheme == "https" else "ws", parts.netloc,
+                      parts.path.rstrip("/") + "/websocket", "", ""))
+    socket = connect_socket(url, timeout=3)
+    try:
+        if json.loads(socket.recv()).get("type") != "auth_required":
+            raise ValueError("HA registry authentication handshake")
+        socket.send(json.dumps({"type": "auth", "access_token": ha.token}))
+        if json.loads(socket.recv()).get("type") != "auth_ok":
+            raise ValueError("HA registry authentication rejected")
+        socket.send(json.dumps({"id": 1, "type": "config/entity_registry/list"}))
+        reply = json.loads(socket.recv())
+        if reply.get("id") != 1 or not reply.get("success") or not isinstance(reply.get("result"), list):
+            raise ValueError("HA entity registry unavailable")
+        return reply["result"]
+    finally:
+        socket.shutdown()
+
+
 class StateStream:
     def __init__(self, ha, stop, deliver, status, connector=None):
         self.ha, self.stop, self.deliver, self.status = ha, stop, deliver, status
@@ -157,11 +177,12 @@ class TopicInventory:
             if changed:
                 self.save()
 
-    def candidates(self, config):
+    def candidates(self, config, labeled_entities=()):
         with self.lock:
+            state_entities = set(config.entities) | set(labeled_entities)
             result = []
             for r in self.records:
-                selected = (True if r["entity"] is None else r["entity"] in config.entities if r["attribute"] is None else
+                selected = (True if r["entity"] is None else r["entity"] in state_entities if r["attribute"] is None else
                             f'{r["entity"]}:{r["attribute"]}' in config.entity_attributes)
                 if r["broker"] == broker_identity(config) and (not r["active"] or r["prefix"] != config.prefix or not selected):
                     result.append(r["topic"])

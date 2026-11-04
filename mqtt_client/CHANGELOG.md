@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.17
+
+- Optional Home Assistant entity label selects additional states for MQTT forwarding. Label selection refreshes at the configured polling interval and grants no MQTT command permissions.
+
 ## 0.1.16
 
 - Live HA state_changed events with authenticated WebSocket, initial snapshot, heartbeat, reconnect and the existing poll_interval as fallback. Short transitions are processed in order; overload requests a fresh synchronization.

@@ -54,3 +54,8 @@ wie `ha_external/switch.stecker_garten/set` werden als Kompatibilität weiter
 angenommen. Sensorwerte bleiben nur ausgehend.
 
 [Vollständige Anleitung mit Beispiel und Einschränkungen](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/mqtt_client)
+## Entitäten per HA-Label weiterleiten
+
+Lege ein HA-Label „An MQTT-Client weiterleiten“ an und trage seine ID im Feld **HA-Label-ID für Zustandsweiterleitung** ein. Weise das Label in den Entitätseinstellungen über **Label hinzufügen** zu und speichere die Entität. Der Client prüft die Zuordnung im eingestellten Polling-Intervall. Ein leeres Feld deaktiviert die Label-Auswahl.
+
+Das Label leitet den Zustand weiter. Attribute und Rückbefehle werden weiterhin über die manuelle Auswahl verwaltet. Nach Entfernen des Labels endet die automatische Weiterleitung. Manuell ausgewählte Entitäten bleiben aktiv. Der letzte Retain-Wert kann über die vorhandene Topic-Bereinigung entfernt werden.

@@ -91,3 +91,8 @@ and confirmation, at most 100 topics per request.
 [Light actions](https://www.home-assistant.io/integrations/light/).
 
 See the [German README](README.md) for a complete sample configuration and tests.
+## Forward entities by HA label
+
+Create an HA label named “Forward to MQTT Client” and enter its ID in the **HA label ID** setting. Assign the label in the entity settings and save. The client checks assignments at the configured polling interval. Leave the setting empty to disable label selection.
+
+The label forwards the entity state. Attributes and commands are managed through manual selection. Removing the label stops automatic forwarding. Manually selected entities stay active. The existing topic cleanup can remove the last retained value.

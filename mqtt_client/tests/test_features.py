@@ -61,6 +61,32 @@ class FeatureTests(unittest.TestCase):
         self.assertEqual(self.bridge.inventory.candidates(self.config), [])
         self.assertIn(((old, ""), {"qos": 1, "retain": True}), [(c.args, c.kwargs) for c in self.client.publish.call_args_list])
 
+    def test_label_forwards_state_until_removed_and_keeps_manual_selection(self):
+        self.bridge.config = Config.load({"broker_host": "broker", "entities": ["switch.test"],
+                                         "forward_label": "forward", "publish_delay_ms": 0})
+        manual = self.ha.full_states()[0]
+        labeled = {"entity_id": "switch.labeled", "state": "on", "attributes": {}}
+        self.bridge.process_event(("snapshot", [manual, labeled]))
+        self.client.publish.reset_mock()
+        with patch("main.entity_registry", return_value=[{"entity_id": "switch.labeled", "labels": ["forward"]}]):
+            self.assertTrue(self.bridge.refresh_label_selection())
+        self.bridge.poll(self.bridge.states_cache)
+        publications = [call.args for call in self.client.publish.call_args_list if call.args[0].endswith("/state")]
+        self.assertEqual(len(publications), 1)
+        topic, value = publications[0]
+        self.assertEqual(value, "on")
+        self.assertNotIn(topic, self.bridge.inventory.candidates(self.bridge.config, self.bridge.labeled_entities))
+        self.assertNotIn("switch.labeled", self.bridge.command_topics.values())
+        with patch("main.entity_registry", return_value=[]):
+            self.assertTrue(self.bridge.refresh_label_selection())
+        self.bridge.poll(self.bridge.states_cache)
+        self.assertIn(topic, self.bridge.inventory.candidates(self.bridge.config))
+        self.client.publish.reset_mock()
+        self.bridge.process_event(("event", {"entity_id": "switch.labeled", "new_state": {**labeled, "state": "off"}}))
+        self.client.publish.assert_not_called()
+        self.bridge.process_event(("event", {"entity_id": "switch.test", "new_state": {**manual, "state": "on"}}))
+        self.assertTrue(any(call.args[0].endswith("/state") for call in self.client.publish.call_args_list))
+
     def test_cleanup_never_deletes_active_or_other_broker_topics(self):
         self.bridge.poll()
         topic = self.client.publish.call_args_list[0].args[0]
