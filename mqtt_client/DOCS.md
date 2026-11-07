@@ -1,5 +1,10 @@
 # MQTT-Client einrichten
 
+Ab **0.1.20** sind die Verbindungseinstellungen unter **Zugangsdaten** einklappbar.
+Ohne gespeicherte Brokeradresse bleibt der Bereich zur Ersteinrichtung offen.
+Mit gespeicherter Brokeradresse ist er nach dem Laden oder erfolgreichen Speichern
+eingeklappt und lässt sich über den Titel jederzeit öffnen.
+
 Ab **0.1.19** trennt auch die Übertragungsliste den Namen von den Angaben zu
 State, Attributauswahl und Rückbefehl. **Bearbeiten** bleibt rechts ausgerichtet.
 

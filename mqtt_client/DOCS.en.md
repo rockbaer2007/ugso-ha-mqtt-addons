@@ -1,5 +1,9 @@
 # MQTT-Client
 
+Since **0.1.20**, connection settings are collapsible under **Zugangsdaten**
+(Credentials). The section opens for initial setup and collapses after loading or
+successfully saving a configured broker address. Click the title to reopen it.
+
 Since **0.1.19**, the transmission list also separates the entity name from the
 state, attribute-selection and return-command summary. **Edit** remains on the right.
 

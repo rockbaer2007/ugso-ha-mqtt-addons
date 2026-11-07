@@ -116,6 +116,8 @@ INDEX_HTML = """<!doctype html>
     button.danger { background: #ef4444; }
     button:disabled { opacity: .55; cursor: default; }
     .message { min-height: 1.35em; }
+    .credentials { margin-bottom: 16px; }
+    .credentials > summary { padding: 12px 14px; cursor: pointer; font-weight: 650; }
     .entity-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; }
     .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .toolbar input { padding: 9px 10px; }
@@ -154,6 +156,8 @@ INDEX_HTML = """<!doctype html>
     <h1><img src="./mqtt-icon.svg" width="36" height="36" alt="">MQTT-Client</h1>
     <div id="status" class="status"><span class="dot"></span><span>Keine Verbindung</span></div>
     <p id="statusDetails" class="sub" role="status"></p>
+    <details id="credentials" class="credentials" open>
+    <summary>Zugangsdaten</summary>
     <form id="form" autocomplete="off">
       <div class="row">
         <label>IP oder Hostname
@@ -187,8 +191,9 @@ INDEX_HTML = """<!doctype html>
         <p id="tlsStored" class="hint"></p>
       </details>
       <button id="save" type="submit">Speichern und verbinden</button>
-      <div id="message" class="message"></div>
     </form>
+    </details>
+    <div id="message" class="message" role="status"></div>
     <section class="panel">
       <h2>Sicherung und Retain-Bereinigung</h2>
       <p class="hint">Sicherung ohne MQTT-Passwort und ohne Client-Zertifikat/privaten Schlüssel. Beim Wiederherstellen auf einem anderen Broker diese separat neu eintragen.</p>
@@ -514,6 +519,7 @@ INDEX_HTML = """<!doctype html>
       const response = await fetch('./api/config', { cache: 'no-store' });
       const data = await response.json();
       form.broker_host.value = data.broker_host || '';
+      document.getElementById('credentials').open = !Boolean(data.broker_host);
       form.broker_port.value = data.broker_port || 1883;
       form.username.value = data.username || '';
       form.publish_delay_ms.value = data.publish_delay_ms ?? 50;

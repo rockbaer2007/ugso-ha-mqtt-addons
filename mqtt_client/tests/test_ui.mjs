@@ -9,7 +9,9 @@ try {
   await page.goto(process.env.MQTT_UI_URL||'http://127.0.0.1:4186/');
   await page.waitForFunction(()=>document.querySelector('#broker_host').value==='demo-broker');
   assert.match(await page.locator('#statusDetails').innerText(),/HA: erreichbar.*Live-Ereignisse/);
-  await page.locator('details summary').click();
+  assert.equal(await page.locator('#credentials').evaluate(el=>el.open),false);
+  await page.locator('#credentials > summary').click();
+  await page.locator('form details summary').click();
   await page.locator('[name=poll_interval]').fill('17');
   await page.locator('#publish_delay_ms').fill('0');
   await page.locator('#save').click(); await page.waitForFunction(()=>document.querySelector('#message').textContent.startsWith('Gespeichert'));
@@ -36,6 +38,7 @@ try {
   await page.locator('#closeRetained').click();
   const rejected=await page.request.post(new URL('api/retained',page.url()).href,{data:{confirm:true,topics:['foreign/topic']}});
   assert.equal(rejected.status(),400);
+  await page.locator('#credentials > summary').click();
   const upload=page.locator('[data-pem=tls_ca]'); await upload.setInputFiles({name:'ca.pem',mimeType:'text/plain',buffer:Buffer.from('invalid-ca')});
   await page.waitForFunction(()=>document.querySelector('[name=tls_ca]').value==='invalid-ca');
   assert.equal(await page.locator('[name=tls_ca]').inputValue(),'invalid-ca');

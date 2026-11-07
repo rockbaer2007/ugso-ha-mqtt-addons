@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.20
+
+- Collapsible connection settings named Zugangsdaten. Opens for initial setup; automatically collapses when a saved broker address is loaded or successfully saved. Existing settings and credentials are preserved.
+
 ## 0.1.19
 
 - Separate entity names and selection details in the transmission list. Long names wrap beside the edit action without merging with the State/attribute summary.
