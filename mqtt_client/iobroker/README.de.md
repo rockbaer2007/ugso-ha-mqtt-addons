@@ -1,8 +1,12 @@
 # ioBroker: automatische Rollenzuordnung {#iobroker-role-mapping}
 
-Das optionale JavaScript gehört zu MQTT-Client **0.1.27** und läuft im ioBroker-JavaScript-Adapter. Es verwendet die übertragenen Metadaten `device_class` und `unit_of_measurement`. Es ordnet nur eindeutige Fälle zu; weder MQTT-Werte noch Datentypen, Einheiten, Zugangsdaten oder Rückkanäle werden umgeschrieben.
+Das optionale JavaScript gehört zu MQTT-Client **0.1.28** und läuft im ioBroker-JavaScript-Adapter. Es verwendet die übertragenen Metadaten `device_class` und `unit_of_measurement`. Es ordnet nur eindeutige Fälle zu; weder MQTT-Werte noch Datentypen, Einheiten, Zugangsdaten oder Rückkanäle werden umgeschrieben.
 
 
+
+## Neu in 0.1.28: HA-Live-Rückmeldungen ohne fremde Ereignisflut {#live-0128}
+
+Diese Korrektur betrifft die **MQTT-Client-App in Home Assistant**: auf 0.1.28 aktualisieren und die App neu starten. Der ioBroker-Helfer 0.1.27 kann unverändert bleiben; sein Austausch allein behebt den Empfang von HA-Ereignissen nicht. Bei aktiver Label-Auswahl werden nur noch Ereignisse tatsächlich ausgewählter Entitäten und ihrer aktivierten Gerätemesswerte eingereiht. Ereignisse des übrigen HA-Bestands können die Warteschlange nicht mehr füllen. Wenn Labels oder Gerätezuordnungen geändert werden, lädt der Client frische HA-Zustände. Ältere gepufferte Zustände mit überholtem `last_updated` werden nach einem Abgleich verworfen; normale zeitlich geordnete Änderungen bleiben erhalten. Der Überlastzähler zählt seit dem App-Start und meldet weiterhin echte Überläufe ausgewählter Ereignisse. Die eingestellte Publish-Pause und alle Zugangsdaten/Auswahlen bleiben erhalten; ein großer erster Abgleich kann weiterhin länger dauern. Nach abgeschlossenem Erstabgleich ein unkritisches Relais in HA schalten und prüfen, ob MQTT und der virtuelle ioBroker-Status zeitnah folgen. Live-Bestätigung auf dem Nutzersystem steht noch aus.
 
 ## Neu in 0.1.27: Rückkanal ohne Retain {#commands-0127}
 

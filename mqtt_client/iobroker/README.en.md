@@ -1,8 +1,12 @@
 # ioBroker: automatic role mapping {#iobroker-role-mapping}
 
-The optional JavaScript ships with MQTT-Client **0.1.27** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
+The optional JavaScript ships with MQTT-Client **0.1.28** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
 
 
+
+## New in 0.1.28: HA live feedback without unrelated event floods {#live-0128}
+
+This fix is in the **MQTT-Client app in Home Assistant**: update it to 0.1.28 and restart the app. The ioBroker helper 0.1.27 can remain unchanged; replacing only that script does not fix HA event reception. Label forwarding now queues events only for selected entities and their enabled same-device readings. Events from the rest of HA cannot fill that queue. When labels or device assignments change, the client fetches fresh HA states. Buffered states with an older `last_updated` are ignored after a resync; normal ordered transitions are preserved. The overload counter is cumulative since app startup and still reports actual selected-event overflows. The configured publish delay, credentials and selections are preserved; a large initial sync may still take longer. After initial sync, toggle a non-critical relay in HA and check that MQTT and the virtual ioBroker state follow promptly. Confirmation on the user's live system is still pending.
 
 ## New in 0.1.27: return channel without retain {#commands-0127}
 

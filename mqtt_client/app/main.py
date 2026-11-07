@@ -13,6 +13,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -32,7 +33,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS | {"cover"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.27"
+APP_VERSION = "0.1.28"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -1123,6 +1124,17 @@ class HomeAssistant:
         return self.request(f"services/{entity.split('.')[0]}/{service}", payload)
 
 
+def ha_state_time(entry):
+    value = entry.get("last_updated") if isinstance(entry, dict) else None
+    if not isinstance(value, str):
+        return None
+    try:
+        stamp = datetime.fromisoformat(value)
+        return stamp.timestamp() if stamp.tzinfo is not None else None
+    except (ValueError, OverflowError):
+        return None
+
+
 class Bridge:
     def __init__(self, config, ha, client=None, status=None):
         self.config = config
@@ -1152,6 +1164,7 @@ class Bridge:
             entity, attribute = entry.split(":", 1)
             self.attribute_map.setdefault(entity, []).append(attribute)
         self.manual_attribute_map = {entity: list(attrs) for entity, attrs in self.attribute_map.items()}
+        self.event_entities = frozenset(config.entities) | frozenset(self.manual_attribute_map)
         self.command_topics = {config.topic(entity, "set"): entity for entity in config.command_entities}
         self.command_features = {}
         self.subscribed_command_topics = set()
@@ -1307,6 +1320,9 @@ class Bridge:
             for attr in attrs:
                 if attr not in values:
                     values.append(attr)
+        # One immutable selection for the WebSocket producer: never queue the
+        # whole HA installation merely because label selection is enabled.
+        self.event_entities = frozenset(self.config.entities) | self.labeled_entities | frozenset(self.attribute_map)
 
     def light_specs(self, states, prefixes=None):
         for entity in sorted(self.labeled_entities):
@@ -1392,6 +1408,8 @@ class Bridge:
             self.sent.pop(("state", entity), None)
             self.sent_topics.pop(("state", entity), None)
         self.labeled_entities = selected
+        extra = related_readings(selected, registry, self.states_cache) if self.config.label_device_readings else set()
+        self.event_entities = frozenset(self.config.entities) | selected | frozenset(extra) | frozenset(self.manual_attribute_map)
         return True
 
     def sync_states(self, states=None):
@@ -1482,7 +1500,7 @@ class Bridge:
             self.status.update(ha_connected=True, last_sync=time.time(), last_error=None)
 
     def deliver_event(self, event):
-        if event[0] == "event" and not self.config.forward_label and event[1].get("entity_id") not in set(self.config.entities) | set(self.attribute_map):
+        if event[0] == "event" and event[1].get("entity_id") not in self.event_entities:
             return
         try:
             self.events.put_nowait(event)
@@ -1512,6 +1530,10 @@ class Bridge:
                 self.status.update(mode="websocket", stream_error=None)
         elif kind == "event" and self.live:
             entity = data["entity_id"]
+            incoming_time = ha_state_time(data.get("new_state"))
+            cached_time = ha_state_time(self.states_cache.get(entity))
+            if incoming_time is not None and cached_time is not None and incoming_time <= cached_time:
+                return
             if data.get("new_state") is None:
                 self.states_cache.pop(entity, None)
             else:
@@ -1579,7 +1601,9 @@ class Bridge:
                         self.status.update(mode="polling", last_error=type(error).__name__)
                 if labels_changed or (not self.live and time.monotonic() >= next_poll) or self.sent_generation != self.generation:
                     try:
-                        self.poll(self.states_cache if self.live else None)
+                        # New label/device selections need fresh states because
+                        # unrelated events are intentionally not buffered.
+                        self.poll(self.states_cache if self.live and not labels_changed else None)
                     except (OSError, ValueError, RuntimeError, KeyError) as error:
                         # Never log HTTP bodies, options, credentials or state payloads.
                         LOG.warning("Zustandsabgleich fehlgeschlagen (%s)", type(error).__name__)

@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.27**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
+Version **0.1.28**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
 
 **Neu in 0.1.24:** Der Helfer legt virtuelle Datenpunkte unter `0_userdata.0.ugso_mqtt`
 automatisch an. Für VIS 2 genügt je Wert ein Datenpunkt: Status mit `ack: true`,
@@ -26,6 +26,10 @@ ausgewählte Attribute mit Topic, Wert, Brokerbestätigung und farbiger Herkunft
 Label (blau), Manuell (grün), Beides (violett). Die Liste ist durchsuchbar und
 scrollbar. Nur Zugangsdaten klappen automatisch ein; Übertragung/TLS und beide
 Buttons bleiben erreichbar. Details stehen in [der Anleitung](DOCS.md).
+
+## Neu in 0.1.28: HA-Live-Rückmeldungen ohne fremde Ereignisflut
+
+Diese Korrektur betrifft die **MQTT-Client-App in Home Assistant**: auf 0.1.28 aktualisieren und die App neu starten. Der ioBroker-Helfer 0.1.27 kann unverändert bleiben; sein Austausch allein behebt den Empfang von HA-Ereignissen nicht. Bei aktiver Label-Auswahl werden nur noch Ereignisse tatsächlich ausgewählter Entitäten und ihrer aktivierten Gerätemesswerte eingereiht. Ereignisse des übrigen HA-Bestands können die Warteschlange nicht mehr füllen. Wenn Labels oder Gerätezuordnungen geändert werden, lädt der Client frische HA-Zustände. Ältere gepufferte Zustände mit überholtem `last_updated` werden nach einem Abgleich verworfen; normale zeitlich geordnete Änderungen bleiben erhalten. Der Überlastzähler zählt seit dem App-Start und meldet weiterhin echte Überläufe ausgewählter Ereignisse. Die eingestellte Publish-Pause und alle Zugangsdaten/Auswahlen bleiben erhalten; ein großer erster Abgleich kann weiterhin länger dauern. Nach abgeschlossenem Erstabgleich ein unkritisches Relais in HA schalten und prüfen, ob MQTT und der virtuelle ioBroker-Status zeitnah folgen. Live-Bestätigung auf dem Nutzersystem steht noch aus.
 
 ## Neu in 0.1.27: Rückkanal ohne Retain
 
@@ -186,7 +190,7 @@ vorher sichern. Die Retain-Inventarliste liegt persistent in `/data/mqtt-topics.
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.27 mqtt_client
+docker build -t ugso-mqtt-client:0.1.28 mqtt_client
 ```
 
 Für die echten MQTT-/WebSocket-Integrationstests einen separaten lokalen Testbroker

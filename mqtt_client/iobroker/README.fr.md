@@ -1,8 +1,12 @@
 # ioBroker : attribution automatique des rôles {#iobroker-role-mapping}
 
-Le JavaScript optionnel est fourni avec MQTT-Client **0.1.27** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
+Le JavaScript optionnel est fourni avec MQTT-Client **0.1.28** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
 
 
+
+## Nouveauté 0.1.28 : retours HA sans surcharge d’événements étrangers {#live-0128}
+
+Cette correction concerne **l’application MQTT-Client dans Home Assistant** : mettez-la à jour vers 0.1.28 et redémarrez l’application. Le script ioBroker 0.1.27 peut rester inchangé ; son seul remplacement ne corrige pas la réception des événements HA. Avec la sélection par étiquette, seuls les événements des entités sélectionnées et de leurs mesures du même appareil activées sont mis en file. Les événements du reste de HA ne peuvent plus remplir cette file. Après modification des étiquettes ou des affectations d’appareils, le client récupère des états HA récents. Les états en attente avec un ancien `last_updated` sont ignorés après resynchronisation ; les changements normalement ordonnés restent conservés. Le compteur de surcharge est cumulatif depuis le démarrage et signale toujours les débordements réels des événements sélectionnés. Le délai de publication configuré, les identifiants de connexion et les sélections sont conservés ; une première synchronisation importante peut encore durer. Après celle-ci, actionnez un relais non critique dans HA et vérifiez que MQTT et le point virtuel ioBroker suivent rapidement. La confirmation sur le système réel de l’utilisateur reste à faire.
 
 ## Nouveauté 0.1.27 : commandes sans retain {#commands-0127}
 

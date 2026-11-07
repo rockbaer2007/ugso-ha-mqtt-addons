@@ -114,6 +114,8 @@ class LabelSupportTests(unittest.TestCase):
         self.bridge = self.make_bridge(label_device_readings=True)
         self.select()
         self.assertEqual(self.bridge.labeled_entities, {"switch.plug", "sensor.power", "sensor.battery", "binary_sensor.battery_low"})
+        self.assertTrue(self.bridge.labeled_entities <= self.bridge.event_entities)
+        self.assertNotIn("sensor.other", self.bridge.event_entities)
         self.assertNotIn("sensor.power", self.bridge.command_topics.values())
         self.assertNotIn("binary_sensor.battery_low", self.bridge.command_topics.values())
         rows = self.bridge.transmission_snapshot()["values"]

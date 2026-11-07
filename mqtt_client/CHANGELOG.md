@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.28
+
+- Filter incoming HA state events against an immutable selection of manual, labeled and optional same-device entities before enqueueing. Label forwarding no longer queues the whole HA installation, preventing unrelated event bursts from overflowing and delaying selected states.
+- Fetch fresh HA states when label/device selections change; newly selected values do not depend on stale unselected caches. Ignore older or duplicate HA last_updated timestamps after snapshots/resync, preserving normal ordered transitions.
+- Add regression tests for a 12,000-event unrelated burst, latest-state ordering and optional same-device event selection. Existing selected-event overflow recovery remains available.
+- Update the HA MQTT-Client app for this fix. The ioBroker helper 0.1.27 remains unchanged; replacing the helper alone does not update HA-to-MQTT event reception. DE/EN/FR instructions updated.
+
 ## 0.1.27
 
 - Send virtual commands through the ioBroker MQTT adapter's sendMessage2Client API with retain false. Normal raw set-state writes may be delivered with RETAIN in broker/server mode and are correctly rejected by the HA client's stale-command protection.

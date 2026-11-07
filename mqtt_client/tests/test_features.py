@@ -47,6 +47,32 @@ class FeatureTests(unittest.TestCase):
         self.bridge.process_event(("fallback", None))
         self.assertFalse(self.bridge.live)
 
+    def test_labeled_live_queue_ignores_unselected_ha_event_bursts(self):
+        self.bridge.config = Config.load({"broker_host": "broker", "forward_label": "forward", "publish_delay_ms": 0})
+        self.bridge.label_roots = frozenset(["switch.test"])
+        self.bridge.process_event(("snapshot", self.ha.full_states()))
+        self.client.publish.reset_mock()
+        for index in range(12000):
+            self.bridge.deliver_event(("event", {"entity_id": f"sensor.unselected_{index}", "new_state": {"state": "42"}}))
+        self.assertTrue(self.bridge.events.empty())
+        entry = {**self.ha.full_states()[0], "state": "on"}
+        self.bridge.deliver_event(("event", {"entity_id": "switch.test", "new_state": entry}))
+        self.bridge.process_event(self.bridge.events.get_nowait())
+        self.assertEqual(self.status.snapshot()["dropped_events"], 0)
+        self.assertTrue(any(call.args[0].endswith('/state') and call.args[1] == 'on' for call in self.client.publish.call_args_list))
+
+    def test_stale_buffered_event_cannot_overwrite_a_newer_snapshot(self):
+        current = {**self.ha.full_states()[0], "last_updated": "2026-11-07T11:00:02+00:00"}
+        self.bridge.process_event(("snapshot", [current]))
+        self.client.publish.reset_mock()
+        stale = {**current, "state": "on", "last_updated": "2026-11-07T11:00:01+00:00"}
+        self.bridge.process_event(("event", {"entity_id": "switch.test", "new_state": stale}))
+        self.assertEqual(self.bridge.states_cache["switch.test"]["state"], 'off')
+        self.client.publish.assert_not_called()
+        fresh = {**stale, "last_updated": "2026-11-07T11:00:03+00:00"}
+        self.bridge.process_event(("event", {"entity_id": "switch.test", "new_state": fresh}))
+        self.assertEqual(self.bridge.states_cache["switch.test"]["state"], 'on')
+
     def test_topic_rename_republishes_same_value_and_tracks_old_topic(self):
         self.bridge.poll()
         old = self.client.publish.call_args_list[0].args[0]
