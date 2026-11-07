@@ -1,6 +1,10 @@
 # MQTT-Client einrichten
 
 
+
+**App 0.1.35:** Auch eine gleichzeitig manuell und per Label ausgewählte Lampe darf vorübergehend im HA-Abgleich fehlen. Der Auswahlkatalog bleibt dann verfügbar. Der JavaScript-Helfer bleibt auf **0.1.34**.
+
+
 ## Neu in 0.1.34: flache MQTT-Pfade nur für neue Entitäten {#mqtt-layout-0134}
 
 Unter **Übertragung und TLS → MQTT-Struktur für neue Entitäten** kann **Flach mit kurzen Namen** gewählt werden. Standard bleibt die bisherige Struktur. Danach **Speichern und verbinden**. Die Einstellung gilt für erstmals ausgewählte manuelle Entitäten und neue Label-Mitglieder, einschließlich optionaler Gerätemesswerte.

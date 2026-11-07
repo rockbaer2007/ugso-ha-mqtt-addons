@@ -113,6 +113,15 @@ class RoutingTests(unittest.TestCase):
         self.bridge.process_command(self.bridge.commands.get_nowait())
         self.bridge.ha.command.assert_called_once_with("light.lamp", "turn_on", {"brightness_pct": 75})
 
+    def test_missing_manual_labeled_light_keeps_catalog_and_assigned_path(self):
+        self.bridge.config = replace(self.config, entities=("light.missing",), topic_layout_new="flat")
+        self.bridge.label_roots = frozenset({"light.missing"})
+        self.bridge.poll({})
+        catalog = json.loads(self.bridge.sent[("selection",)][3:])["light.missing"]
+        self.assertEqual(catalog["feature_state_topics"], {})
+        self.assertEqual(catalog["feature_command_topics"], {})
+        self.assertEqual(catalog["state_topic"], self.bridge.topic("light.missing", "state"))
+
     def test_durable_assignments_avoid_existing_folders_and_light_feature_collisions(self):
         config = replace(self.config, topic_layout_new="flat")
         self.routes.assign(config, "light.lamp", "ha_external/device/switch", "licht")

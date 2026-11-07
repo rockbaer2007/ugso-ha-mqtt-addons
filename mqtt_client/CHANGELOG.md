@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.35
+
+- Preserve catalog generation when a manually selected and labeled Light is temporarily missing from the HA state snapshot. Keep all MQTT 0.1.34 route behavior and the unchanged JavaScript helper 0.1.34.
+
 ## 0.1.34
 
 - Add opt-in flat raw MQTT topics for previously unseen entities and label members only. Persist per-broker/prefix assignments atomically in mqtt-routes.json, migrate existing selections/inventory, include routes in settings backups and reject conflicting imports. Preserve existing paths across renames, removals/reselection, restarts and updates.

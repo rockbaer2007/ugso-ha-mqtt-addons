@@ -35,7 +35,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS | {"cover"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.34"
+APP_VERSION = "0.1.35"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -1655,8 +1655,8 @@ class Bridge:
             "state_topic": self.topic(entity, "state", states.get(entity), prefixes),
             "topic_layout": self.route_layout(entity),
             "command_topic": self.topic(entity, "set", states.get(entity), prefixes) if self.bridge_metadata[entity]["command_enabled"] else None,
-            "feature_state_topics": {feature: self.topic(entity, feature + "/state", states.get(entity), prefixes) for feature in light_features(states[entity].get("attributes", {}))} if entity.startswith("light.") and entity in self.labeled_entities else {},
-            "feature_command_topics": {feature: self.topic(entity, feature + "/set", states.get(entity), prefixes) for feature in light_features(states[entity].get("attributes", {}))} if entity.startswith("light.") and entity in self.labeled_entities else {},
+            "feature_state_topics": {feature: self.topic(entity, feature + "/state", states.get(entity), prefixes) for feature in light_features(states.get(entity, {}).get("attributes", {}))} if entity.startswith("light.") and entity in self.labeled_entities else {},
+            "feature_command_topics": {feature: self.topic(entity, feature + "/set", states.get(entity), prefixes) for feature in light_features(states.get(entity, {}).get("attributes", {}))} if entity.startswith("light.") and entity in self.labeled_entities else {},
             "command": self.bridge_metadata[entity]["command_enabled"],
             "features": sorted(light_features(states.get(entity, {}).get("attributes", {}))) if entity.startswith("light.") and entity in self.labeled_entities else [],
             "attributes": self.catalog_attributes(entity, states),

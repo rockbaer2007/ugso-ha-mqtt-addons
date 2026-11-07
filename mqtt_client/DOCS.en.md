@@ -1,6 +1,10 @@
 # MQTT-Client
 
 
+
+**App 0.1.35:** A Light selected both manually and by label may temporarily be missing from the HA snapshot without interrupting the selection catalog. The JavaScript helper remains at **0.1.34**.
+
+
 ## New in 0.1.34: flat MQTT paths for new entities only {#mqtt-layout-0134}
 
 Under **Transmission and TLS → MQTT structure for new entities**, select **Flat with short names** and **Save and connect**. The existing structure remains the default. This preference applies to manually selected entities and label members first encountered afterwards, including optional device measurements.
