@@ -129,6 +129,7 @@ INDEX_HTML = """<!doctype html>
     .deviceRows { display: grid; gap: 6px; }
     .entityRow { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 8px; background: rgba(148, 163, 184, .12); }
     .entityRow input { width: auto; }
+    .entityText { display: grid; gap: 3px; min-width: 0; }
     .entityRow .name, .entityValue { font-weight: 400; }
     .entityValue { white-space: nowrap; }
     .entity, .selected { width: 100%; text-align: left; color: inherit; background: rgba(148, 163, 184, .12); display: grid; gap: 2px; }
@@ -374,9 +375,9 @@ INDEX_HTML = """<!doctype html>
         const item = catalog.find((entry) => entry.entity_id === row.dataset.entityId);
         if (!item) return;
         const input = row.querySelector('input[type="checkbox"]');
-        const meta = row.querySelector('.meta');
+        const meta = row.querySelector('.entityDetails');
         input.checked = entityFullySelected(item);
-        meta.textContent = `${item.entity_id} · ${item.iobroker_type} · ${item.attributes.length} Attribute${selectedSummary(item.entity_id)}`;
+        meta.textContent = `${item.iobroker_type} · ${item.attributes.length} Attribute${selectedSummary(item.entity_id)}`;
       });
     }
 
@@ -445,9 +446,10 @@ INDEX_HTML = """<!doctype html>
           const row = document.createElement('label');
           row.className = 'entityRow';
           row.dataset.entityId = item.entity_id;
-          row.innerHTML = '<input type="checkbox"><span><span class="name"></span><span class="meta"></span></span><span class="entityValue"></span>';
+          row.innerHTML = '<input type="checkbox"><span class="entityText"><span class="name"></span><span class="entityId meta"></span><span class="meta entityDetails"></span></span><span class="entityValue"></span>';
           row.querySelector('.name').textContent = entityLabel(item);
-          row.querySelector('.meta').textContent = `${item.entity_id} · ${item.iobroker_type} · ${item.attributes.length} Attribute${selectedSummary(item.entity_id)}`;
+          row.querySelector('.entityId').textContent = item.entity_id;
+          row.querySelector('.entityDetails').textContent = `${item.iobroker_type} · ${item.attributes.length} Attribute${selectedSummary(item.entity_id)}`;
           row.querySelector('.entityValue').textContent = item.state;
           const input = row.querySelector('input');
           input.checked = entityFullySelected(item);

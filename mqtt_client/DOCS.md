@@ -1,5 +1,9 @@
 # MQTT-Client einrichten
 
+Ab **0.1.18** zeigt jede Entität im Geräte-Popup den Namen, die Entitäts-ID und
+den Zieltyp mit Attributanzahl in drei getrennten Zeilen. Der aktuelle State
+steht weiterhin rechts; lange Namen und IDs werden innerhalb der Zeile umgebrochen.
+
 Seit **0.1.16**: Live-Zustände mit vollständigem Erstabgleich und Polling-Rückfall,
 getrennter MQTT-/HA-Status, bestätigte Bereinigung erfasster alter Retain-Topics,
 Rollladen-/Helligkeits-/Lüfterbefehle, Einstellungssicherung und eigene TLS-PEM-Zertifikate.

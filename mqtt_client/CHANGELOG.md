@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.18
+
+- Device popup rows show the name, entity ID and target type/attribute count on three separate lines, including after selection changes. Long names and entity IDs wrap within their column.
+
 ## 0.1.17
 
 - Optional Home Assistant entity label selects additional states for MQTT forwarding. Label selection refreshes at the configured polling interval and grants no MQTT command permissions.
