@@ -34,7 +34,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS | {"cover"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.30"
+APP_VERSION = "0.1.31"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -123,8 +123,8 @@ INDEX_HTML = """<!doctype html>
     .credentialsToggle { width: 100%; text-align: left; color: inherit; background: rgba(148, 163, 184, .12); }
     .credentialsToggle::before { content: '▸'; display: inline-block; width: 20px; }
     .credentialsToggle[aria-expanded="true"]::before { content: '▾'; }
-    #credentialsFields { display: grid; gap: 10px; margin-top: 10px; }
-    #credentialsFields[hidden] { display: none !important; }
+    #credentialsFields, #tlsFields { display: grid; gap: 10px; margin-top: 10px; }
+    #credentialsFields[hidden], #tlsFields[hidden] { display: none !important; }
     .transferList { display: grid; gap: 8px; max-height: 60vh; overflow: auto; }
     .transferRow { display: grid; gap: 5px; padding: 12px; border-radius: 8px; background: rgba(148, 163, 184, .12); overflow-wrap: anywhere; }
     .transferHeading { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -207,6 +207,9 @@ INDEX_HTML = """<!doctype html>
         <button id="readingDiagnostics" type="button" class="secondary">Zugehörige Messwerte prüfen</button>
         <p class="hint">Label-Auswahl aktiviert passende Rückkanäle und Standardattribute. Zusätzliche Messwerte werden nur gelesen. Light-Helligkeit: 0–100 %.</p>
         <label>Client-ID <input name="client_id" value="ugso-ha-mqtt-client" required></label>
+        <section id="tlsSettings">
+        <button id="tlsToggle" class="credentialsToggle" type="button" aria-expanded="false" aria-controls="tlsFields">TLS und Zertifikate</button>
+        <div id="tlsFields" hidden>
         <label class="check"><input name="tls" type="checkbox"> TLS mit Zertifikatsprüfung</label>
         <p class="hint">PEM-Dateien laden oder Text einfügen. Leere Felder behalten vorhandene Zertifikate. Client-Zertifikat und privater Schlüssel gehören zusammen.</p>
         <label>Eigene CA (PEM) <textarea name="tls_ca" rows="3" placeholder="unverändert lassen"></textarea><input type="file" data-pem="tls_ca" accept=".pem,.crt,.cer"></label>
@@ -214,6 +217,8 @@ INDEX_HTML = """<!doctype html>
         <label>Privater Client-Schlüssel (PEM) <textarea name="tls_key" rows="3" placeholder="unverändert lassen"></textarea><input type="file" data-pem="tls_key" accept=".pem,.key"></label>
         <label class="check"><input name="clear_tls_material" type="checkbox"> Gespeicherte TLS-Zertifikate und Schlüssel entfernen</label>
         <p id="tlsStored" class="hint"></p>
+        </div>
+        </section>
       </section>
       <div class="connectionActions">
         <button id="save" type="submit">Speichern und verbinden</button>
@@ -567,6 +572,17 @@ INDEX_HTML = """<!doctype html>
     });
     document.getElementById('credentialsFields').addEventListener('invalid', () => setCredentialsOpen(true), true);
 
+    function setTlsOpen(open) {
+      document.getElementById('tlsFields').hidden = !open;
+      document.getElementById('tlsToggle').setAttribute('aria-expanded', String(open));
+    }
+    function updateTlsSummary() {
+      document.getElementById('tlsToggle').textContent = 'TLS und Zertifikate · ' + (form.tls.checked ? 'TLS ausgewählt' : 'TLS nicht ausgewählt');
+    }
+    document.getElementById('tlsToggle').addEventListener('click', () => setTlsOpen(document.getElementById('tlsFields').hidden));
+    document.getElementById('tlsFields').addEventListener('invalid', () => setTlsOpen(true), true);
+    form.tls.addEventListener('change', updateTlsSummary);
+
     async function loadConfig() {
       const response = await fetch('./api/config', { cache: 'no-store' });
       const data = await response.json();
@@ -581,6 +597,8 @@ INDEX_HTML = """<!doctype html>
       form.label_device_readings.checked = Boolean(data.label_device_readings);
       form.client_id.value = data.client_id || 'ugso-ha-mqtt-client';
       form.tls.checked = Boolean(data.tls);
+      updateTlsSummary();
+      setTlsOpen(false);
       document.getElementById('tlsStored').textContent = `Gespeichert: CA ${data.has_tls_ca ? 'ja' : 'nein'}, Client-Zertifikat ${data.has_tls_cert ? 'ja' : 'nein'}, privater Schlüssel ${data.has_tls_key ? 'ja' : 'nein'}.`;
       selectedStates = new Set(data.entities || []);
       selectedAttributes = new Set(data.entity_attributes || []);

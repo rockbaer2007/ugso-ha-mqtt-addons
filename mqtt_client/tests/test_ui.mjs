@@ -37,6 +37,13 @@ try {
   assert.match(await scriptDownload.text(),/mode: 'preview'/);
   assert.equal(await page.locator('#transferSettings').isVisible(),true);
   assert.equal(await page.locator('#publish_delay_ms').isVisible(),true);
+  assert.equal(await page.locator('#tlsToggle').getAttribute('aria-expanded'),'false');
+  assert.equal(await page.locator('[name=tls_ca]').isVisible(),false);
+  assert.match(await page.locator('#tlsToggle').innerText(),/TLS nicht ausgewählt/);
+  await page.locator('#tlsToggle').click();
+  assert.equal(await page.locator('[name=tls_ca]').isVisible(),true);
+  await page.locator('#tlsToggle').focus(); await page.keyboard.press('Enter');
+  assert.equal(await page.locator('[name=tls_ca]').isVisible(),false);
   await page.route('**/api/label-diagnostics',route=>route.fulfill({json:{enabled:true,roots:[
     {entity_id:'switch.no_device',device_linked:false,candidates:[]},
     {entity_id:'switch.plug',device_linked:true,candidates:[{entity_id:'sensor.<script>literal</script>',device_class:'power',unit:'W',reason:'included',class_source:'unit'}]}
@@ -73,6 +80,8 @@ try {
   const config=await(await page.request.get(new URL('api/config',page.url()).href)).json();
   assert.equal(config.poll_interval,17); assert.equal(config.publish_delay_ms,0); assert.equal(config.has_password,true);
   assert.equal(config.label_device_readings,true);
+  assert.equal(config.tls,false);
+  assert.equal(await page.locator('[name=tls_ca]').isVisible(),false);
   assert.equal(await page.locator('#broker_host').isVisible(),false);
   assert.equal(config.password,undefined); assert.equal(config.tls_key,undefined);
   const downloadEvent=page.waitForEvent('download'); await page.locator('#backup').click();
@@ -97,10 +106,12 @@ try {
   const rejected=await page.request.post(new URL('api/retained',page.url()).href,{data:{confirm:true,topics:['foreign/topic']}});
   assert.equal(rejected.status(),400);
   await page.locator('#credentialsToggle').click();
+  await page.locator('#tlsToggle').click();
   const upload=page.locator('[data-pem=tls_ca]'); await upload.setInputFiles({name:'ca.pem',mimeType:'text/plain',buffer:Buffer.from('invalid-ca')});
   await page.waitForFunction(()=>document.querySelector('[name=tls_ca]').value==='invalid-ca');
   assert.equal(await page.locator('[name=tls_ca]').inputValue(),'invalid-ca');
   await page.locator('[name=tls]').check(); await page.locator('#save').click();
+  assert.match(await page.locator('#tlsToggle').innerText(),/TLS ausgewählt/);
   await page.waitForFunction(()=>document.querySelector('#message').textContent==='SSLError');
   assert.equal((await(await page.request.get(new URL('api/config',page.url()).href)).json()).tls,false);
   await page.setViewportSize({width:390,height:900});

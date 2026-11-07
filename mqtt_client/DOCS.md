@@ -1,5 +1,9 @@
 # MQTT-Client einrichten
 
+## Neu in 0.1.31: TLS und Zertifikate separat einklappen
+
+**TLS und Zertifikate** ist jetzt ein eigener, per Maus und Tastatur bedienbarer Klappbereich. Die Schaltfläche zeigt auch geschlossen, ob TLS ausgewählt ist. Beim Auf-/Zuklappen werden weder TLS noch gespeicherte Zertifikate oder Zugangsdaten verändert. Nach Laden und Speichern bleibt der Bereich geschlossen; Übertragungseinstellungen und die beiden Aktionsschaltflächen bleiben sichtbar. Der [neue Blogeintrag zum JavaScript-Helfer](https://opensource.ugso-software.de/blog/snippets/iobroker-blockly#mqtt-vis2-helper) erklärt Zweck, Einrichtung, Status/Rückkanal und Sicherung und enthält das vollständige unveränderte Skript 0.1.27 mit Kopierbutton und Download.
+
 ## Neu in 0.1.30: Zugangsdaten einklappen
 
 **Zugangsdaten** besitzt jetzt eine eigene Auf-/Zuklapp-Schaltfläche, auch per Tastatur bedienbar. Bei vorhandenem Broker bleiben IP, Port, Benutzername und Passwort nach Laden und Speichern eingeklappt. Fehlen Pflichtangaben, wird der Bereich zur Eingabe geöffnet. **Übertragung und TLS**, **Speichern und verbinden** und **Aktuell übertragene Werte** bleiben sichtbar. Einstellungen und Zugangsdaten werden nicht verändert. Die Priorisierung aus 0.1.29 und Helfer 0.1.27 bleiben erhalten. Der Nutzer hat die Schalt-Rückmeldung mit ungefähr einer halben Sekunde Verzögerung als erfolgreich bestätigt. Auch die Zigbee-Lampe wurde erfolgreich geprüft: Rückmeldung funktioniert, die Helligkeit folgt HA auf 100 %.

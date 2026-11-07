@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.30**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
+Version **0.1.31**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
 
 **Neu in 0.1.24:** Der Helfer legt virtuelle Datenpunkte unter `0_userdata.0.ugso_mqtt`
 automatisch an. Für VIS 2 genügt je Wert ein Datenpunkt: Status mit `ack: true`,
@@ -26,6 +26,10 @@ ausgewählte Attribute mit Topic, Wert, Brokerbestätigung und farbiger Herkunft
 Label (blau), Manuell (grün), Beides (violett). Die Liste ist durchsuchbar und
 scrollbar. Nur Zugangsdaten klappen automatisch ein; Übertragung/TLS und beide
 Buttons bleiben erreichbar. Details stehen in [der Anleitung](DOCS.md).
+
+## Neu in 0.1.31: TLS und Zertifikate separat einklappen
+
+**TLS und Zertifikate** ist jetzt ein eigener, per Maus und Tastatur bedienbarer Klappbereich. Die Schaltfläche zeigt auch geschlossen, ob TLS ausgewählt ist. Beim Auf-/Zuklappen werden weder TLS noch gespeicherte Zertifikate oder Zugangsdaten verändert. Nach Laden und Speichern bleibt der Bereich geschlossen; Übertragungseinstellungen und die beiden Aktionsschaltflächen bleiben sichtbar. Der [neue Blogeintrag zum JavaScript-Helfer](https://opensource.ugso-software.de/blog/snippets/iobroker-blockly#mqtt-vis2-helper) erklärt Zweck, Einrichtung, Status/Rückkanal und Sicherung und enthält das vollständige unveränderte Skript 0.1.27 mit Kopierbutton und Download.
 
 ## Neu in 0.1.30: Zugangsdaten einklappen
 

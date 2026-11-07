@@ -1,8 +1,12 @@
 # ioBroker: automatic role mapping {#iobroker-role-mapping}
 
-The optional JavaScript ships with MQTT-Client **0.1.30** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
+The optional JavaScript ships with MQTT-Client **0.1.31** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
 
 
+
+## New in 0.1.31: collapse TLS and certificates separately {#tls-0131}
+
+**TLS and certificates** now has its own collapsible section, operable by mouse or keyboard. Its button shows whether TLS is selected even while closed. Expanding/collapsing changes neither TLS nor stored certificates or credentials. The section stays closed after loading and saving; transmission settings and both action buttons remain visible. The [new JavaScript helper blog entry](https://opensource.ugso-software.de/en/blog/snippets/iobroker-blockly#mqtt-vis2-helper) explains purpose, setup, status/commands and backups and includes the complete unchanged script 0.1.27 with copy button and download.
 
 ## New in 0.1.30: collapsible credentials {#credentials-0130}
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.31
+
+- Collapse TLS/certificate settings independently with a keyboard-accessible button. The header shows whether TLS is selected; opening/closing does not change TLS, stored certificates or credentials. Transmission settings, save and transfer overview stay visible. Keep the existing bridge behavior and helper 0.1.27 unchanged.
+- Add a DE/EN/FR blog walkthrough with the complete unchanged helper, copy button and downloadable JavaScript file. Preserve existing Blockly examples.
+
 ## 0.1.30
 
 - Replace native credential details with an explicit accessible expand/collapse button. Configured credentials start collapsed and close again after save/reload; missing required credentials open for validation. Transmission/TLS settings and action buttons stay visible. Preserve all connection settings, credentials and the 0.1.29 priority/measurement logic; helper 0.1.27 is unchanged.

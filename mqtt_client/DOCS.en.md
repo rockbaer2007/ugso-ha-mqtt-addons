@@ -1,5 +1,9 @@
 # MQTT-Client
 
+## New in 0.1.31: collapse TLS and certificates separately
+
+**TLS and certificates** now has its own collapsible section, operable by mouse or keyboard. Its button shows whether TLS is selected even while closed. Expanding/collapsing changes neither TLS nor stored certificates or credentials. The section stays closed after loading and saving; transmission settings and both action buttons remain visible. The [new JavaScript helper blog entry](https://opensource.ugso-software.de/en/blog/snippets/iobroker-blockly#mqtt-vis2-helper) explains purpose, setup, status/commands and backups and includes the complete unchanged script 0.1.27 with copy button and download.
+
 ## New in 0.1.30: collapsible credentials
 
 **Credentials** now has a dedicated expand/collapse button with keyboard support. With a configured broker, IP, port, username and password remain collapsed after loading and saving. Missing required credentials open the section for correction. **Transmission and TLS**, **Save and connect** and **Currently transmitted values** stay visible. Settings and credentials are not changed. The 0.1.29 priority logic and helper 0.1.27 are preserved. The user confirmed successful control feedback with a delay of approximately half a second. The Zigbee light was also tested successfully: feedback works and brightness follows HA to 100%.

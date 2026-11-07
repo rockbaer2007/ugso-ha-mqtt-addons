@@ -1,8 +1,12 @@
 # ioBroker : attribution automatique des rôles {#iobroker-role-mapping}
 
-Le JavaScript optionnel est fourni avec MQTT-Client **0.1.30** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
+Le JavaScript optionnel est fourni avec MQTT-Client **0.1.31** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
 
 
+
+## Nouveauté 0.1.31 : TLS et certificats repliables séparément {#tls-0131}
+
+**TLS et certificats** dispose désormais d’une section repliable indépendante, utilisable à la souris et au clavier. Son bouton indique si TLS est sélectionné, même une fois replié. L’ouverture ou la fermeture ne modifie ni TLS, ni les certificats enregistrés, ni les identifiants. La section reste repliée après chargement et enregistrement ; les réglages de transmission et les deux boutons d’action restent visibles. Le [nouvel article sur le script JavaScript](https://opensource.ugso-software.de/fr/blog/snippets/iobroker-blockly#mqtt-vis2-helper) explique l’objectif, l’installation, les états/commandes et les sauvegardes, avec le script 0.1.27 complet et inchangé, un bouton de copie et un téléchargement.
 
 ## Nouveauté 0.1.30 : identifiants repliables {#credentials-0130}
 
