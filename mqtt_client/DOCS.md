@@ -1,5 +1,13 @@
 # MQTT-Client einrichten
 
+## Neu in 0.1.23
+
+**ioBroker-Rollenskript herunterladen** liefert ein optionales JavaScript für
+den ioBroker-JavaScript-Adapter. Vorschau ist voreingestellt. Es sichert ursprüngliche
+Rollen vor Änderungen und erhält Werte, Datentypen, Zugangsdaten und manuelle
+Spezialrollen. Bei schreibbaren MQTT-Messwerten entstehen schreibgeschützte Aliase.
+[Installation, Wiederherstellung und Zuordnungstabelle](iobroker/README.de.md).
+
 ## Neu in 0.1.22
 
 Die Label-Auswahl aktiviert jetzt den Zustand, vorhandene Standardattribute und

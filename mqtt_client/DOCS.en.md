@@ -1,5 +1,14 @@
 # MQTT-Client
 
+## New in 0.1.23
+
+**ioBroker-Rollenskript herunterladen** downloads an optional JavaScript for the
+ioBroker JavaScript adapter. Preview is the default. Original roles are backed up
+before changes; values, types, credentials and manual specific roles are preserved.
+Writable MQTT measurements use read-only aliases instead.
+[Installation, restore and mapping table](iobroker/README.en.md) ·
+[Guide français](iobroker/README.fr.md).
+
 ## New in 0.1.22
 
 Label selection now includes the state, available standard metadata and return

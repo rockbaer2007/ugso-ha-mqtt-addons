@@ -21,5 +21,9 @@ jobs:
           python-version: '3.13'
       - run: pip install -r mqtt_client/requirements.txt
       - run: python -m unittest discover -s mqtt_client/tests -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test mqtt_client/tests/test_role_mapper.cjs
       - run: docker build -t mqtt-client:test mqtt_client
       - run: docker run --rm -v "$PWD/mqtt_client/tests:/tests:ro" mqtt-client:test python -m unittest discover -s /tests -v

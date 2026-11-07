@@ -11,6 +11,10 @@ try {
   assert.match(await page.locator('#statusDetails').innerText(),/HA: erreichbar.*Live-Ereignisse/);
   assert.equal(await page.locator('#credentials').evaluate(el=>el.open),false);
   assert.equal(await page.locator('#save').isVisible(),true);
+  const scriptDownload=await page.request.get(new URL('downloads/ugso-mqtt-role-mapper.js',page.url()).href);
+  assert.equal(scriptDownload.status(),200);
+  assert.match(scriptDownload.headers()['content-disposition'],/attachment/);
+  assert.match(await scriptDownload.text(),/mode: 'preview'/);
   assert.equal(await page.locator('form > details > summary').filter({hasText:'Übertragung und TLS'}).isVisible(),true);
   await page.locator('#transmissions').click();
   await page.waitForFunction(()=>document.querySelector('#transferList .transferRow'));

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.23
+
+- Optional ioBroker JavaScript for conservative device-class-to-role mapping, with read-only preview, verified role journal and guarded restore. Includes strict ISO date/timestamp validation and explicit numeric unit allowlists.
+- Preserve manual specific roles, source values, types, permissions and credentials. Writable measurements get own read-only aliases; raw on/off strings and ambiguous classes are skipped.
+- Script download in the app; DE/EN/FR installation guides and complete implemented/conditional mapping tables. JavaScript tests cover failed backups, manual edits, aliases and restore.
+
 ## 0.1.22
 
 - Label-selected controllable entities automatically receive return channels. Validate queued commands again before execution; ignore retained, empty and invalid commands.

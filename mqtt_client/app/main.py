@@ -32,7 +32,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS | {"cover"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.22"
+APP_VERSION = "0.1.23"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -224,6 +224,7 @@ INDEX_HTML = """<!doctype html>
       <p class="hint">Sicherung ohne MQTT-Passwort und ohne Client-Zertifikat/privaten Schlüssel. Beim Wiederherstellen auf einem anderen Broker diese separat neu eintragen.</p>
       <div class="toolbar">
         <button id="backup" type="button" class="secondary">Einstellungen sichern</button>
+        <a href="downloads/ugso-mqtt-role-mapper.js" download="ugso-mqtt-role-mapper.js">ioBroker-Rollenskript herunterladen</a>
         <button id="restore" type="button" class="secondary">Sicherung öffnen</button>
         <input id="restoreFile" type="file" accept=".json" hidden>
         <button id="retained" type="button" class="secondary">Veraltete Retain-Topics prüfen</button>
@@ -1814,6 +1815,15 @@ def make_handler(controller):
             self.wfile.write(body)
 
         def do_GET(self):
+            if self.path.split("?", 1)[0].endswith("/downloads/ugso-mqtt-role-mapper.js"):
+                body = (Path(__file__).parent / "iobroker" / "ugso-mqtt-role-mapper.js").read_bytes()
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "text/javascript; charset=utf-8")
+                self.send_header("Content-Disposition", 'attachment; filename="ugso-mqtt-role-mapper.js"')
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             if self.path.endswith("/api/transmissions"):
                 self.send_json(HTTPStatus.OK, controller.transmissions())
                 return
