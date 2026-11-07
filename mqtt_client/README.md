@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.32**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
+Version **0.1.33**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
 
 **Neu in 0.1.24:** Der Helfer legt virtuelle Datenpunkte unter `0_userdata.0.ugso_mqtt`
 automatisch an. Für VIS 2 genügt je Wert ein Datenpunkt: Status mit `ack: true`,
@@ -26,6 +26,12 @@ ausgewählte Attribute mit Topic, Wert, Brokerbestätigung und farbiger Herkunft
 Label (blau), Manuell (grün), Beides (violett). Die Liste ist durchsuchbar und
 scrollbar. Nur Zugangsdaten klappen automatisch ein; Übertragung/TLS und beide
 Buttons bleiben erreichbar. Details stehen in [der Anleitung](DOCS.md).
+
+## Neu in 0.1.33: flache VIS-2-Struktur mit kurzen Namen
+
+**Den vollständigen JavaScript-Helfer 0.1.33 ersetzen und eigene Einstellungen übernehmen.** Im Einstellungsblock wählt `virtualLayout: 'nested'` die bisherige Struktur (Standard); `virtualLayout: 'flat'` legt kurze Datenpunkte direkt unter dem Geräteordner an, etwa `schalter`, `energie`, `leistung`, `spannung`, `stromstaerke`. Bei Lampen kommen passende Werte wie `helligkeit`, `farbe`, `effekt` und `farbtemperatur` hinzu. Gleichartige oder belegte Namen erhalten eindeutige Zusätze wie `leistung_2`; einmal vergebene Zuordnungen bleiben im Sicherungsjournal erhalten.
+
+Zuerst im Vorschaumodus prüfen, anschließend `mode: 'apply'` wählen. Ein Layoutwechsel löscht oder verschiebt keine vorhandenen Datenpunkte. Bereits vom Helfer angelegte alte und neue IDs werden weiter aktualisiert und behalten ihre freigegebenen Rückkanäle; vorhandene VIS-2-Verknüpfungen können bleiben. Deshalb bleiben alte Ordner zunächst auch sichtbar. Fremde Objekte und manuelle Rollen werden nicht überschrieben, MQTT-Topics bleiben unverändert. Zur Rückkehr die Option mit dem neuen Helfer auf `nested` stellen; die alte Helferdatei 0.1.27 kann Journale mit flachen Einträgen nicht lesen.
 
 ## Neu in 0.1.32: zusätzliche Messwerte deutlich markieren
 

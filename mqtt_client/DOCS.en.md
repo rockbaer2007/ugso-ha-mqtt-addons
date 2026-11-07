@@ -1,5 +1,11 @@
 # MQTT-Client
 
+## New in 0.1.33: flat VIS-2 layout with short names
+
+**Replace the complete JavaScript helper with 0.1.33 and retain your settings.** In its settings block, `virtualLayout: 'nested'` selects the existing layout (default); `virtualLayout: 'flat'` creates short points directly below the device folder, such as `schalter`, `energie`, `leistung`, `spannung`, `stromstaerke`. Lights add supported values such as `helligkeit`, `farbe`, `effekt` and `farbtemperatur`. Duplicate or occupied names receive unique suffixes such as `leistung_2`; assigned mappings remain pinned in the backup journal.
+
+Review preview first, then choose `mode: 'apply'`. Switching layout deletes or moves no existing points. Old and new IDs previously created by the helper continue to update and retain their authorized command channels; existing VIS-2 references can stay. Old folders therefore remain visible initially. Unrelated objects and manual roles are not overwritten, and MQTT topics remain unchanged. To switch back, select `nested` in the new helper; the old 0.1.27 helper cannot read journals containing flat entries.
+
 ## New in 0.1.32: highlight additional measurements
 
 The **“Automatically include related measurements and battery values from the same device”** option is highlighted in amber. Highlighting does not enable the checkbox: make your selection and click **“Save and connect”**. Existing settings are preserved. TLS and certificates remain separately collapsible.

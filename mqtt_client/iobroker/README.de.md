@@ -1,8 +1,14 @@
 # ioBroker: automatische Rollenzuordnung {#iobroker-role-mapping}
 
-Das optionale JavaScript gehört zu MQTT-Client **0.1.32** und läuft im ioBroker-JavaScript-Adapter. Es verwendet die übertragenen Metadaten `device_class` und `unit_of_measurement`. Es ordnet nur eindeutige Fälle zu; weder MQTT-Werte noch Datentypen, Einheiten, Zugangsdaten oder Rückkanäle werden umgeschrieben.
+Das optionale JavaScript gehört zu MQTT-Client **0.1.33** und läuft im ioBroker-JavaScript-Adapter. Es verwendet die übertragenen Metadaten `device_class` und `unit_of_measurement`. Es ordnet nur eindeutige Fälle zu; weder MQTT-Werte noch Datentypen, Einheiten, Zugangsdaten oder Rückkanäle werden umgeschrieben.
 
 
+
+## Neu in 0.1.33: flache VIS-2-Struktur mit kurzen Namen {#flat-layout-0133}
+
+**Den vollständigen JavaScript-Helfer 0.1.33 ersetzen und eigene Einstellungen übernehmen.** Im Einstellungsblock wählt `virtualLayout: 'nested'` die bisherige Struktur (Standard); `virtualLayout: 'flat'` legt kurze Datenpunkte direkt unter dem Geräteordner an, etwa `schalter`, `energie`, `leistung`, `spannung`, `stromstaerke`. Bei Lampen kommen passende Werte wie `helligkeit`, `farbe`, `effekt` und `farbtemperatur` hinzu. Gleichartige oder belegte Namen erhalten eindeutige Zusätze wie `leistung_2`; einmal vergebene Zuordnungen bleiben im Sicherungsjournal erhalten.
+
+Zuerst im Vorschaumodus prüfen, anschließend `mode: 'apply'` wählen. Ein Layoutwechsel löscht oder verschiebt keine vorhandenen Datenpunkte. Bereits vom Helfer angelegte alte und neue IDs werden weiter aktualisiert und behalten ihre freigegebenen Rückkanäle; vorhandene VIS-2-Verknüpfungen können bleiben. Deshalb bleiben alte Ordner zunächst auch sichtbar. Fremde Objekte und manuelle Rollen werden nicht überschrieben, MQTT-Topics bleiben unverändert. Zur Rückkehr die Option mit dem neuen Helfer auf `nested` stellen; die alte Helferdatei 0.1.27 kann Journale mit flachen Einträgen nicht lesen.
 
 ## Neu in 0.1.32: zusätzliche Messwerte deutlich markieren {#readings-highlight-0132}
 

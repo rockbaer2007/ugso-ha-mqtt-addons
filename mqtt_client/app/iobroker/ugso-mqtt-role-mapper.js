@@ -1,4 +1,4 @@
-/* MQTT-Client 0.1.27: ioBroker JavaScript adapter 10.4.10 compatible.
+/* MQTT-Client 0.1.33: ioBroker JavaScript adapter 10.4.10 compatible.
  * Preview first. Settings and documentation: mqtt_client/iobroker/README*.md.
  * No MQTT state values, types, units, permissions or commands are changed.
  */
@@ -8,6 +8,7 @@ const UGSO_MQTT_ROLE_SETTINGS = {
     mqttRoot: 'mqtt.0.ha_external',
     mode: 'preview', // preview | apply | restore
     outputMode: 'virtual', // virtual (VIS 2 state/set) | roles (previous role/alias mapper)
+    virtualLayout: 'nested', // nested (existing IDs) | flat (short names per device)
     virtualRoot: '0_userdata.0.ugso_mqtt',
     virtualBackupId: '0_userdata.0.ugso_mqtt_helper.backup',
     backupId: '0_userdata.0.ugso_mqtt_roles.backup',
@@ -212,6 +213,8 @@ const UgsoMqttRoles = (() => {
     }
     function createVirtualMapper(api, settings) {
         validateSettings(settings);
+        const layout = settings.virtualLayout ?? 'nested';
+        if (!['nested', 'flat'].includes(layout)) throw new Error('Invalid virtualLayout');
         if (!/^0_userdata\.0\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$/.test(settings.virtualRoot) ||
             !/^0_userdata\.0\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$/.test(settings.virtualBackupId) ||
             settings.virtualRoot === settings.virtualBackupId) throw new Error('Invalid virtual scope');
@@ -235,8 +238,48 @@ const UgsoMqttRoles = (() => {
         };
         const online = () => get(settings.mqttRoot + '.availability') === 'online';
         const targetFor = id => settings.virtualRoot + id.slice(settings.mqttRoot.length);
-        const excluded = id => settings.excludeIds.includes(id) || settings.excludeIds.includes(targetFor(id));
+        const excluded = (sourceId, targetId) => settings.excludeIds.includes(sourceId) || Boolean(targetId && settings.excludeIds.includes(targetId));
         const owned = (object, record) => object?.type === 'state' && object.common?.type === record.common.type && stable(object.native) === stable(record.native);
+        const groupFor = sourceId => sourceId.slice(prefix.length).split('.')[0];
+        const flatRecord = (id, record) => {
+            const group = groupFor(record.sourceId);
+            return record.layout === 'flat' && /^[A-Za-z0-9_-]+$/.test(group) &&
+                new RegExp('^' + escapeRegex(output + group + '.') + '[a-z0-9_]{1,96}$').test(id);
+        };
+        function shortName(spec) {
+            const features = {brightness: 'helligkeit', rgb_color: 'farbe', effect: 'effekt', color_temp_kelvin: 'farbtemperatur'};
+            if (own(features, spec.feature)) return features[spec.feature];
+            const domain = spec.entity.split('.')[0];
+            if (domain === 'light') return 'licht';
+            if (['switch', 'input_boolean', 'fan', 'humidifier', 'automation', 'script', 'remote', 'siren'].includes(domain)) return 'schalter';
+            if (domain === 'binary_sensor' && spec.deviceClass === 'battery') return 'batterie_schwach';
+            const classes = {energy: 'energie', energy_storage: 'energiespeicher', power: 'leistung', voltage: 'spannung', current: 'stromstaerke', temperature: 'temperatur', humidity: 'luftfeuchte', battery: 'batterie', date: 'datum', timestamp: 'zeitstempel', uptime: 'zeitstempel'};
+            if (typeof spec.deviceClass === 'string' && own(classes, spec.deviceClass)) return classes[spec.deviceClass];
+            const group = groupFor(spec.sourceId), name = spec.entity.split('.')[1];
+            return (name.startsWith(group + '_') ? name.slice(group.length + 1) : name).slice(0, 64) || 'wert';
+        }
+        function flatDisplayName(id) {
+            const leaf = id.slice(id.lastIndexOf('.') + 1), match = leaf.match(/^(.*?)(_[0-9]+)?$/);
+            const names = {energie: 'Energie', energiespeicher: 'Energiespeicher', leistung: 'Leistung', spannung: 'Spannung', stromstaerke: 'Stromstärke', temperatur: 'Temperatur', luftfeuchte: 'Luftfeuchte', batterie: 'Batterie', batterie_schwach: 'Batterie schwach', datum: 'Datum', zeitstempel: 'Zeitstempel', schalter: 'Schalter', licht: 'Licht', helligkeit: 'Helligkeit', farbe: 'Farbe', effekt: 'Effekt', farbtemperatur: 'Farbtemperatur'};
+            return (own(names, match[1]) ? names[match[1]] : match[1].replaceAll('_', ' ')) + (match[2] ? ' ' + match[2].slice(1) : '');
+        }
+        function flatTarget(spec, data, recordsBySource, reserved) {
+            const existing = (recordsBySource.get(spec.sourceId) || []).find(id => data.entries[id].layout === 'flat');
+            if (existing) return existing; // Pin names even if selection order or HA metadata changes.
+            const group = groupFor(spec.sourceId);
+            if (!/^[A-Za-z0-9_-]+$/.test(group)) return null;
+            const parent = output + group, object = api.getObject(parent);
+            if (object && !['folder', 'channel', 'device'].includes(object.type)) return null;
+            const name = shortName(spec);
+            for (let index = 1; index <= 10000; index++) {
+                const id = parent + '.' + name + (index === 1 ? '' : '_' + index);
+                if (![settings.virtualBackupId, settings.backupId].includes(id) && !reserved.has(id) && !api.getObject(id)) {
+                    reserved.add(id);
+                    return id;
+                }
+            }
+            throw new Error('No free flat name for ' + spec.sourceId);
+        }
 
         function describe(id, catalog = active()) {
             if (!id.startsWith(prefix) || !id.endsWith('.state') || id.includes('.attribute.') || excluded(id)) return null;
@@ -320,7 +363,7 @@ const UgsoMqttRoles = (() => {
             }
             const common = {name: String(attribute('friendly_name') || entity) + (feature ? ' ' + feature : ''), type, role, read: true, write: Boolean(writable), ...extra};
             if (typeof unit === 'string' && type === 'number') common.unit = unit;
-            return {id: targetFor(id), sourceId: id, entity, feature, setId: writable ? setId : null, value, sourceTs: source.ts || 0, common,
+            return {id: targetFor(id), sourceId: id, entity, feature, deviceClass: dc, setId: writable ? setId : null, value, sourceTs: source.ts || 0, common,
                 native: {ugsoMqttVis2: {version: 1, sourceId: id}}, encode};
         }
 
@@ -333,7 +376,9 @@ const UgsoMqttRoles = (() => {
             const data = JSON.parse(raw);
             if (data.format !== 'ugso-mqtt-vis2' || data.version !== 1 || data.mqttRoot !== settings.mqttRoot || data.virtualRoot !== settings.virtualRoot || !data.entries || Array.isArray(data.entries)) throw new Error('Virtual backup mismatch');
             for (const [id, record] of Object.entries(data.entries)) {
-                if (!id.startsWith(output) || typeof record.sourceId !== 'string' || !record.sourceId.startsWith(prefix) || id !== targetFor(record.sourceId) || !record.common || !['boolean', 'number', 'string'].includes(record.common.type) || record.native?.ugsoMqttVis2?.sourceId !== record.sourceId) throw new Error('Invalid virtual backup entry');
+                if (!id.startsWith(output) || typeof record.sourceId !== 'string' || !record.sourceId.startsWith(prefix) || !record.sourceId.endsWith('.state') || record.sourceId.includes('.attribute.') ||
+                    (record.layout !== undefined && !['nested', 'flat'].includes(record.layout)) ||
+                    !(id === targetFor(record.sourceId) || flatRecord(id, record)) || !record.common || !['boolean', 'number', 'string'].includes(record.common.type) || record.native?.ugsoMqttVis2?.sourceId !== record.sourceId) throw new Error('Invalid virtual backup entry');
             }
             return data;
         }
@@ -343,7 +388,7 @@ const UgsoMqttRoles = (() => {
             const changed = sourceIds ? new Set(sourceIds) : null;
             if (settings.mode === 'restore') {
                 for (const [id, record] of Object.entries(data.entries)) {
-                    if (!owned(api.getObject(id), record) || excluded(record.sourceId)) continue;
+                    if (!owned(api.getObject(id), record) || excluded(record.sourceId, id)) continue;
                     record.disabled = true;
                     await api.writeJournal(settings.virtualBackupId, JSON.stringify(data));
                     await api.disableVirtual(id); // Keep values, roles and dashboard references.
@@ -352,45 +397,64 @@ const UgsoMqttRoles = (() => {
             }
             const valid = new Set();
             const catalog = active();
-            for (const sourceId of changed || api.listSources()) {
+            const reserved = new Set(Object.keys(data.entries));
+            const recordsBySource = new Map();
+            for (const [id, record] of Object.entries(data.entries)) {
+                if (!recordsBySource.has(record.sourceId)) recordsBySource.set(record.sourceId, []);
+                recordsBySource.get(record.sourceId).push(id);
+            }
+            for (const sourceId of [...new Set(changed || api.listSources())].sort()) {
                 const spec = describe(sourceId, catalog);
                 if (!spec) continue;
-                valid.add(spec.id);
-                let record = data.entries[spec.id], object = api.getObject(spec.id), created = false;
-                if (record?.disabled || record && object && !owned(object, record) || !record && object) continue;
-                if (record && record.common.type !== spec.common.type) { valid.delete(spec.id); continue; }
-                if (settings.mode === 'preview') {
-                    if (!previewed.has(spec.id)) { api.log('Preview VIS 2: ' + spec.id + ' <- ' + sourceId + (spec.setId ? ' -> ' + spec.setId : ' (read-only)')); previewed.add(spec.id); }
-                    continue;
-                }
-                if (!online()) continue;
-                if (!record || !object) {
-                    record = {sourceId, common: spec.common, native: spec.native, savedAt: new Date(api.now()).toISOString()};
-                    data.entries[spec.id] = record;
-                    await api.writeJournal(settings.virtualBackupId, JSON.stringify(data));
-                    if (api.getObject(spec.id)) continue;
-                    await api.createVirtual(spec.id, {type: 'state', common: spec.common, native: spec.native});
-                    created = true;
-                    api.log('Created VIS 2: ' + spec.id);
-                }
-                if (!online()) continue;
-                const wait = pending.get(spec.id);
-                if (wait && spec.sourceTs <= wait.sourceTs) {
-                    if (!wait.timedOut && api.now() - wait.time >= 30000) {
-                        wait.timedOut = true;
-                        await api.setVirtual(spec.id, {val: wait.requested, ack: false, q: 0x80});
-                        api.log('No new HA confirmation after 30s: ' + spec.id);
+                const desired = layout === 'flat' ? flatTarget(spec, data, recordsBySource, reserved) : spec.id;
+                // Keep existing IDs synchronized and controllable when changing layout.
+                const targets = new Set([...(desired ? [desired] : []), ...(recordsBySource.get(sourceId) || [])]);
+                for (const id of targets) {
+                    if (excluded(sourceId, id)) continue;
+                    const parts = id.split('.');
+                    if (parts.slice(3, -1).some((_, index) => {
+                        const parent = api.getObject(parts.slice(0, index + 4).join('.'));
+                        return parent && !['folder', 'channel', 'device'].includes(parent.type);
+                    })) { api.log('Skipped VIS 2 target: parent is not a folder: ' + id); continue; }
+                    valid.add(id);
+                    let record = data.entries[id], object = api.getObject(id), created = false;
+                    if (record?.disabled || record && object && !owned(object, record) || !record && object) continue;
+                    if (record && record.common.type !== spec.common.type) { valid.delete(id); continue; }
+                    if (settings.mode === 'preview') {
+                        if (!previewed.has(id)) { api.log('Preview VIS 2: ' + id + ' <- ' + sourceId + (spec.setId ? ' -> ' + spec.setId : ' (read-only)')); previewed.add(id); }
+                        continue;
                     }
-                    continue;
+                    if (!online()) continue;
+                    if (!record || !object) {
+                        const common = record?.layout === 'flat' || id === desired && layout === 'flat' ? {...spec.common, name: flatDisplayName(id)} : spec.common;
+                        record = {sourceId, common, native: spec.native, savedAt: new Date(api.now()).toISOString(),
+                            ...(record?.layout ? {layout: record.layout} : id === desired && layout === 'flat' ? {layout: 'flat'} : {})};
+                        data.entries[id] = record;
+                        await api.writeJournal(settings.virtualBackupId, JSON.stringify(data));
+                        if (api.getObject(id)) continue;
+                        await api.createVirtual(id, {type: 'state', common, native: spec.native});
+                        created = true;
+                        api.log('Created VIS 2: ' + id);
+                    }
+                    if (!online()) continue;
+                    const wait = pending.get(id);
+                    if (wait && spec.sourceTs <= wait.sourceTs) {
+                        if (!wait.timedOut && api.now() - wait.time >= 30000) {
+                            wait.timedOut = true;
+                            await api.setVirtual(id, {val: wait.requested, ack: false, q: 0x80});
+                            api.log('No new HA confirmation after 30s: ' + id);
+                        }
+                        continue;
+                    }
+                    pending.delete(id);
+                    const current = created ? undefined : api.getState(id);
+                    if (!current || current.val !== spec.value || current.ack !== true || current.q) await api.setVirtual(id, {val: spec.value, ack: true, q: 0});
                 }
-                pending.delete(spec.id);
-                const current = created ? undefined : api.getState(spec.id);
-                if (!current || current.val !== spec.value || current.ack !== true || current.q) await api.setVirtual(spec.id, {val: spec.value, ack: true, q: 0});
             }
             if (settings.mode === 'apply') {
                 for (const [id, record] of Object.entries(data.entries)) {
                     if (changed && !changed.has(record.sourceId)) continue;
-                    if (record.disabled || excluded(record.sourceId) || !owned(api.getObject(id), record) || valid.has(id) && online()) continue;
+                    if (record.disabled || excluded(record.sourceId, id) || !owned(api.getObject(id), record) || valid.has(id) && online()) continue;
                     const current = api.getState(id);
                     if (current && current.q !== 0x82) await api.setVirtual(id, {val: current.val, ack: current.ack, q: 0x82});
                 }
@@ -401,7 +465,7 @@ const UgsoMqttRoles = (() => {
         async function command(event) {
             if (settings.mode !== 'apply' || !ready || event?.state?.ack !== false || event.state.q && event.state.q !== 0 || !num(event.state.ts) || event.state.ts <= started || api.now() - event.state.ts > 10000 || typeof event.id !== 'string' || !event.id.startsWith(output)) return;
             const data = await journal(), record = data.entries[event.id];
-            if (!record || record.disabled || excluded(record.sourceId) || !owned(api.getObject(event.id), record) || api.getObject(event.id).common.write !== true) return;
+            if (!record || record.disabled || excluded(record.sourceId, event.id) || !owned(api.getObject(event.id), record) || api.getObject(event.id).common.write !== true) return;
             const spec = describe(record.sourceId);
             if (!online() || !spec?.setId || !spec.encode || spec.common.type !== record.common.type) throw new Error('Source offline, unselected or return channel disabled');
             const payload = spec.encode(event.state.val);
@@ -504,7 +568,7 @@ if (typeof on === 'function' && typeof getObject === 'function') {
     try {
         if (!['virtual', 'roles'].includes(settings.outputMode)) throw new Error('Invalid outputMode');
         const virtual = settings.outputMode === 'virtual';
-        api.log('Helper 0.1.27; output=' + settings.outputMode + '; mode=' + settings.mode + (settings.mode === 'preview' ? ' (creates missing helper folders/backups only; source changes are previewed)' : ''));
+        api.log('Helper 0.1.33; output=' + settings.outputMode + '; layout=' + settings.virtualLayout + '; mode=' + settings.mode + (settings.mode === 'preview' ? ' (creates missing helper folders/backups only; source changes are previewed)' : ''));
         const mapper = virtual ? UgsoMqttRoles.createVirtualMapper(api, settings) : UgsoMqttRoles.createMapper(api, settings);
         let serial = Promise.resolve(), timer, pendingTimer, stopped = false, queued = 0, initialized = false;
         const enqueue = task => {
@@ -542,7 +606,7 @@ if (typeof on === 'function' && typeof getObject === 'function') {
             });
             if (virtual) {
                 const target = settings.virtualRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                on({id: new RegExp('^' + target + '\\..+\\.state$'), ack: false, change: 'any', q: '*'}, event => {
+                on({id: new RegExp('^' + target + '\\..+$'), ack: false, change: 'any', q: '*'}, event => {
                     if (!initialized) return;
                     enqueue(async () => { await mapper.command(event); checkPending(); });
                 });

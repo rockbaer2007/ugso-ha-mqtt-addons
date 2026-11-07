@@ -1,8 +1,14 @@
 # ioBroker : attribution automatique des rôles {#iobroker-role-mapping}
 
-Le JavaScript optionnel est fourni avec MQTT-Client **0.1.32** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
+Le JavaScript optionnel est fourni avec MQTT-Client **0.1.33** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
 
 
+
+## Nouveauté 0.1.33 : structure VIS-2 plate avec noms courts {#flat-layout-0133}
+
+**Remplacez le script JavaScript complet par la version 0.1.33 en conservant vos réglages.** Dans son bloc de réglages, `virtualLayout: 'nested'` sélectionne la structure existante (par défaut) ; `virtualLayout: 'flat'` crée des points courts directement sous le dossier de l’appareil, par exemple `schalter`, `energie`, `leistung`, `spannung`, `stromstaerke`. Les lampes ajoutent les valeurs compatibles comme `helligkeit`, `farbe`, `effekt` et `farbtemperatur`. Les noms identiques ou occupés reçoivent un suffixe unique comme `leistung_2` ; les affectations attribuées restent fixées dans le journal de sauvegarde.
+
+Vérifiez d’abord l’aperçu, puis choisissez `mode: 'apply'`. Le changement de structure ne supprime ni ne déplace aucun point existant. Les anciens et nouveaux identifiants déjà créés par le script restent actualisés et conservent leurs canaux de commande autorisés ; les références VIS-2 existantes peuvent rester. Les anciens dossiers restent donc visibles au départ. Les objets tiers et rôles manuels ne sont pas écrasés et les topics MQTT restent inchangés. Pour revenir en arrière, sélectionnez `nested` dans le nouveau script ; l’ancien script 0.1.27 ne peut pas lire les journaux contenant des entrées plates.
 
 ## Nouveauté 0.1.32 : mesures supplémentaires mises en évidence {#readings-highlight-0132}
 

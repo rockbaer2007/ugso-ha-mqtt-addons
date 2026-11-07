@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.33
+
+- Add helper option virtualLayout: nested (default, existing IDs) or flat (short per-device names such as schalter, energie, leistung, spannung and stromstaerke). Keep original MQTT topics unchanged.
+- Preserve and continue synchronizing previously created helper points and their command routes when switching layouts. No automatic removal or renaming; protect manual objects/roles. Pin new flat names in the existing journal; resolve duplicates and occupied names with stable numeric suffixes.
+- Validate both legacy and flat journal records, preserve backup-before-create behavior and support flat return channels in the adapter 10.4.10 event subscription. Existing helper settings must be retained when replacing the full script.
+- Update helper/download/blog and documentation DE/EN/FR to 0.1.33; retain the old 0.1.27 download.
+
 ## 0.1.32
 
 - Highlight the opt-in for related device measurements/battery values with an amber border/background and stronger label. Preserve the saved checkbox value and existing behavior. Keep the independently collapsible TLS/certificate section from 0.1.31.

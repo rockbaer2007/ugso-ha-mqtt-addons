@@ -53,6 +53,129 @@ function fixture(mode = 'apply') {
         mapper: () => createVirtualMapper(api, settings)};
 }
 
+test('flat layout preview and apply create short typed names without intermediate state folders', async () => {
+    const f = fixture('preview'); f.settings.virtualLayout = 'flat';
+    const relay = f.add('switch.plug', 'plug.switch', 'on');
+    const readings = [['energy', 'kWh', 'energie'], ['power', 'W', 'leistung'], ['voltage', 'V', 'spannung'], ['current', 'A', 'stromstaerke']];
+    for (const [dc, unit] of readings) f.add('sensor.plug_' + dc, 'plug.plug_' + dc, 42, {device_class: dc, unit_of_measurement: unit}, false);
+    const objects = structuredClone(f.objects), states = structuredClone(f.states);
+    await f.mapper().run(); assert.deepEqual(f.writes, []); assert.deepEqual(f.objects, objects); assert.deepEqual(f.states, states);
+    f.settings.mode = 'apply'; const mapper = f.mapper(); await mapper.run();
+    assert.equal(f.states[f.settings.virtualRoot + '.plug.schalter'].val, true);
+    assert.equal(f.objects[f.target(relay)], undefined);
+    for (const [dc, unit, name] of readings) {
+        const id = f.settings.virtualRoot + '.plug.' + name;
+        assert.equal(f.states[id].val, 42); assert.equal(f.objects[id].common.unit, unit); assert.equal(f.objects[id].common.write, false);
+        assert.equal(f.objects[id + '.state'], undefined);
+    }
+    assert.equal(f.objects[f.settings.virtualRoot + '.plug.stromstaerke'].common.name, 'Stromstärke');
+    await mapper.command(f.event(f.settings.virtualRoot + '.plug.schalter', false));
+    assert.deepEqual(f.sends, [[relay.slice(0, -6) + '.set', 'OFF']]);
+});
+
+test('layout changes preserve and synchronize existing VIS-2 IDs and commands in both directions', async () => {
+    const f = fixture(), source = f.add('switch.plug', 'plug.switch', 'on'), old = f.target(source);
+    await f.mapper().run(); f.objects[old].common.name = 'My existing dashboard'; f.objects[old].common.role = 'My.manual.role';
+    const oldObject = structuredClone(f.objects[old]);
+    f.settings.virtualLayout = 'flat'; let mapper = f.mapper(); await mapper.run();
+    const flat = f.settings.virtualRoot + '.plug.schalter';
+    assert.deepEqual(f.objects[old], oldObject);
+    f.states[source] = {val:'off', ack:true, q:0, ts:f.tick(100)};
+    await mapper.run([source]);
+    for (const id of [old, flat]) { assert.equal(f.states[id].val, false); assert.equal(f.states[id].ack, true); assert.equal(f.states[id].q, 0); }
+    await mapper.command(f.event(old,true)); await mapper.command(f.event(flat,true)); assert.equal(f.sends.length,2);
+    f.settings.virtualLayout = 'nested'; mapper = f.mapper();
+    f.states[source] = {val:'on', ack:true, q:0, ts:f.tick(100)}; await mapper.run();
+    assert.equal(f.states[flat].val,true); assert.equal(f.states[old].val,true); assert.deepEqual(f.objects[old],oldObject);
+    await mapper.command(f.event(flat,false)); assert.equal(f.sends.length,3);
+});
+
+test('duplicate flat names are unique and pinned across restarts, new entities and reordered scans', async () => {
+    const f = fixture(); f.settings.virtualLayout = 'flat';
+    const a = f.add('sensor.power_a','plug.a',10,{device_class:'power',unit_of_measurement:'W'},false);
+    const b = f.add('sensor.power_b','plug.b',20,{device_class:'power',unit_of_measurement:'W'},false);
+    await f.mapper().run(); const root=f.settings.virtualRoot+'.plug.';
+    assert.equal(f.states[root+'leistung'].val,10); assert.equal(f.states[root+'leistung_2'].val,20);
+    const c=f.add('sensor.power_c','plug.aa',30,{device_class:'power',unit_of_measurement:'W'},false);
+    const sources=f.api.listSources; f.api.listSources=()=>sources().reverse();
+    const mapper=f.mapper(); await mapper.run();
+    assert.equal(f.states[root+'leistung'].val,10); assert.equal(f.states[root+'leistung_2'].val,20); assert.equal(f.states[root+'leistung_3'].val,30);
+    const journal=JSON.parse(f.states[f.settings.virtualBackupId].val);
+    assert.equal(journal.entries[root+'leistung'].sourceId,a); assert.equal(journal.entries[root+'leistung_2'].sourceId,b); assert.equal(journal.entries[root+'leistung_3'].sourceId,c);
+});
+
+test('flat preview reserves distinct duplicate names without writing a journal or creating points', async () => {
+    const f=fixture('preview'); f.settings.virtualLayout='flat'; const messages=[];f.api.log=message=>messages.push(message);
+    f.add('sensor.power_a','plug.a',10,{device_class:'power',unit_of_measurement:'W'},false);
+    f.add('sensor.power_b','plug.b',20,{device_class:'power',unit_of_measurement:'W'},false);
+    await f.mapper().run(); assert.deepEqual(f.writes,[]);
+    assert.equal(messages.length,2); assert.ok(messages[0].includes('.plug.leistung <-'));assert.ok(messages[1].includes('.plug.leistung_2 <-'));
+});
+
+test('flat names avoid existing folders and foreign values; nested mode does not replace flat parents', async () => {
+    const f=fixture(); f.settings.virtualLayout='flat';
+    f.objects[f.settings.virtualRoot+'.plug.leistung']={type:'folder',common:{name:'existing folder'}};
+    const foreign=f.settings.virtualRoot+'.plug.spannung'; f.state(foreign,123,{role:'My.role'});
+    const before=structuredClone(f.objects[foreign]);
+    f.add('sensor.power','plug.leistung',10,{device_class:'power',unit_of_measurement:'W'},false);
+    f.add('sensor.voltage','plug.voltage',228,{device_class:'voltage',unit_of_measurement:'V'},false);
+    await f.mapper().run();
+    assert.equal(f.states[f.settings.virtualRoot+'.plug.leistung_2'].val,10);
+    assert.equal(f.states[f.settings.virtualRoot+'.plug.spannung_2'].val,228);
+    assert.deepEqual(f.objects[foreign],before); assert.equal(f.states[foreign].val,123);
+    f.settings.virtualLayout='nested'; await f.mapper().run(); assert.equal(f.states[foreign].val,123);
+    const g=fixture();g.settings.virtualLayout='flat';
+    g.add('sensor.power','plug.leistung',10,{device_class:'power',unit_of_measurement:'W'},false);
+    await g.mapper().run();g.settings.virtualLayout='nested';await g.mapper().run();
+    assert.equal(g.objects[g.settings.virtualRoot+'.plug.leistung'].type,'state');
+    assert.equal(g.objects[g.settings.virtualRoot+'.plug.leistung.state'],undefined);
+});
+
+test('flat Light channels retain supported conversions and exact command routes', async () => {
+    const f=fixture(); f.settings.virtualLayout='flat';
+    const root=f.add('light.lamp','lamp.switch','on',{effect_list:['Rainbow','off'],min_color_temp_kelvin:2000,max_color_temp_kelvin:6500},true,['brightness','rgb_color','effect','color_temp_kelvin']);
+    for (const [feature,value] of [['brightness',50],['rgb_color','[1,2,255]'],['effect','Rainbow'],['color_temp_kelvin',3000]]) f.feature(root,feature,value);
+    const mapper=f.mapper(); await mapper.run(); const path=f.settings.virtualRoot+'.lamp.';
+    assert.equal(f.states[path+'licht'].val,true); assert.equal(f.states[path+'helligkeit'].val,50); assert.equal(f.states[path+'farbe'].val,'#0102FF');
+    await mapper.command(f.event(path+'helligkeit',75)); assert.deepEqual(f.sends.at(-1),[root.slice(0,-6)+'.brightness.set','75']);
+    await mapper.command(f.event(path+'farbe','#FF8000')); assert.deepEqual(f.sends.at(-1),[root.slice(0,-6)+'.rgb_color.set','[255,128,0]']);
+    f.settings.mode='restore';await f.mapper().run();
+    assert.equal(f.objects[path+'licht'].common.write,false); assert.equal(f.states[path+'licht'].val,true); assert.equal(f.sends.length,2);
+});
+
+test('invalid flat settings, unrelated journal targets and excluded IDs cannot create or control values', async () => {
+    const f=fixture();f.settings.virtualLayout='invalid';assert.throws(()=>f.mapper(),/virtualLayout/);assert.deepEqual(f.writes,[]);
+    f.settings.virtualLayout='flat';const source=f.add('switch.plug','plug.switch','on');await f.mapper().run();
+    const flat=f.settings.virtualRoot+'.plug.schalter',journal=JSON.parse(f.states[f.settings.virtualBackupId].val);
+    f.settings.excludeIds=[flat];const mapper=f.mapper();f.writes.length=0;await mapper.run();await mapper.command(f.event(flat,false));
+    assert.deepEqual(f.writes,[]);assert.deepEqual(f.sends,[]);
+    journal.entries[f.settings.virtualRoot+'.other.schalter']=journal.entries[flat];f.states[f.settings.virtualBackupId].val=JSON.stringify(journal);
+    await assert.rejects(f.mapper().run(),/Invalid virtual backup/);assert.equal(f.objects[f.settings.virtualRoot+'.other.schalter'],undefined);
+    assert.equal(f.states[source].val,'on');
+});
+
+test('adapter runtime subscribes to flat controls without state suffix and publishes non-retained commands', async () => {
+    const f=fixture(),sourceId=f.add('switch.plug','plug.switch','off'),subscriptions=[],sent=[];
+    const code=readFileSync(require.resolve('../app/iobroker/ugso-mqtt-role-mapper.js'),'utf8');
+    const context={Date:class extends Date {static now(){return f.api.now();}},
+        existsObject:id=>Boolean(f.objects[id]),existsState:id=>Boolean(f.states[id]),getObject:f.api.getObject,getState:f.api.getState,
+        getStateAsync:async id=>f.api.getState(id),
+        createStateAsync:async(id,val,force,common)=>{f.objects[id]={type:'state',common};f.states[id]={val,ack:true};},
+        setStateAsync:async(id,state)=>{f.states[id]={...state};},
+        setObject:(id,object,cb)=>{f.objects[id]=structuredClone(object);cb();},
+        sendToAsync:async(...args)=>{sent.push(args);return {result:true};},
+        $:()=>({each:cb=>f.api.listSources().forEach(cb)}),log:()=>{},
+        on:(pattern,callback)=>subscriptions.push({pattern,callback}),onStop:()=>{},setTimeout:()=>1,clearTimeout:()=>{}};
+    vm.runInNewContext(code.replace("mode: 'preview'","mode: 'apply'").replace("virtualLayout: 'nested'","virtualLayout: 'flat'"),context);
+    await new Promise(resolve=>setImmediate(resolve));
+    const target=f.settings.virtualRoot+'.plug.schalter',listener=subscriptions.find(item=>item.pattern.ack===false);
+    assert.equal(f.states[target].val,false);assert.equal(listener.pattern.id.test(target),true);assert.equal(listener.pattern.id.test(f.settings.virtualRoot+'.plug.switch.state'),true);
+    const event=f.event(target,true);f.states[target]=event.state;listener.callback(event);
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(sent.length,1);assert.equal(sent[0][1],'sendMessage2Client');assert.equal(sent[0][2].message,'ON');assert.equal(sent[0][2].retain,false);
+    assert.equal(sent[0][2].topic,f.objects[sourceId].native.topic.slice(0,-6)+'/set');
+});
+
 test('commands use the MQTT adapter topic API with retain false and preserve raw set values', async () => {
     const f = fixture(), source = f.add('switch.plug', 'plug.switch', 'on'), id = source.slice(0, -6) + '.set';
     const calls = [], before = structuredClone(f.states);
