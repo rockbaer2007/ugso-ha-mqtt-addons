@@ -53,6 +53,42 @@ class ClientTests(unittest.TestCase):
     def message(self, payload=b"ON", topic="ha_external/switch.test/set", retain=False):
         self.bridge.on_message(self.client, None, SimpleNamespace(topic=topic, payload=payload, retain=retain))
 
+    def test_transmission_snapshot_includes_labels_attributes_and_deduplicated_origins(self):
+        self.bridge.attribute_map = {"sensor.temperature": ["unit_of_measurement"]}
+        self.bridge.labeled_entities = frozenset(["sensor.temperature", "switch.test"])
+        self.bridge.poll()
+        rows = self.bridge.transmission_snapshot()["values"]
+        keys = [(row["entity_id"], row["attribute"]) for row in rows]
+        self.assertEqual(len(keys), len(set(keys)))
+        by_key = {(row["entity_id"], row["attribute"]): row for row in rows}
+        self.assertEqual(by_key[("switch.test", None)]["origin"], "both")
+        self.assertEqual(by_key[("sensor.temperature", None)]["origin"], "both")
+        self.assertTrue(all(row["last_success"] for row in rows))
+        self.assertNotIn("sensor.private", str(rows))
+        self.bridge.labeled_entities = frozenset(["input_number.level"])
+        self.bridge.poll()
+        rows = self.bridge.transmission_snapshot()["values"]
+        by_key = {(row["entity_id"], row["attribute"]): row for row in rows}
+        self.assertEqual(by_key[("input_number.level", None)]["origin"], "label")
+        self.assertEqual(by_key[("switch.test", None)]["origin"], "manual")
+        self.assertEqual(by_key[("sensor.temperature", "unit_of_measurement")]["origin"], "manual")
+        self.assertEqual(by_key[("sensor.temperature", "unit_of_measurement")]["value"], "°C")
+        self.bridge.labeled_entities = frozenset()
+        self.bridge.poll()
+        self.assertNotIn("input_number.level", str(self.bridge.transmission_snapshot()))
+
+    def test_transmission_failure_keeps_previous_confirmation_and_sanitizes_error(self):
+        self.bridge.poll()
+        self.ha.full_states.return_value[0]["state"] = "22"
+        self.client.publish.side_effect = RuntimeError("private broker details")
+        with self.assertRaises(RuntimeError):
+            self.bridge.poll()
+        row = next(row for row in self.bridge.transmission_snapshot()["values"] if row["entity_id"] == "sensor.temperature" and row["attribute"] is None)
+        self.assertEqual(row["value"], "22")
+        self.assertEqual(row["last_sent_value"], "21.5")
+        self.assertEqual(row["error"], "RuntimeError")
+        self.assertNotIn("private broker details", str(row))
+
     def test_only_selected_states_and_no_unchanged_republish(self):
         self.bridge.poll()
         self.assertEqual(self.client.publish.call_count, 3)

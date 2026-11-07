@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.21
+
+- Keep transmission/TLS settings and save controls outside the collapsible credentials section. Equal-size save and transmission-list buttons share one row.
+- Searchable, scrollable live transmission popup includes manually selected states/attributes and label-selected states without duplicates. Origin badges: blue Label, green Manual, purple Both; attributes remain manually selected.
+- Show current values/topics, last broker-acknowledged value/time and sanitized per-value errors. Confirmation means broker acknowledgement, not delivery to a destination application. Runtime history is not persisted; settings and credentials remain unchanged.
+
 ## 0.1.20
 
 - Collapsible connection settings named Zugangsdaten. Opens for initial setup; automatically collapses when a saved broker address is loaded or successfully saved. Existing settings and credentials are preserved.

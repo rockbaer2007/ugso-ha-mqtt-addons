@@ -1,5 +1,20 @@
 # MQTT-Client
 
+## New in 0.1.21
+
+Only credentials collapse automatically. **Übertragung und TLS** remains separately
+accessible. Equal-size **Save and connect** and **Current transmissions** buttons
+share a visible row. The searchable, scrollable popup includes manually selected
+states/attributes and label-selected states, without duplicate states.
+
+Origin badges are labelled: blue **Label**, green **Manual**, purple **Both**.
+Attributes remain manually selected. Each row shows the name, entity ID, attribute,
+current value, topic and last broker-acknowledged value/time. Errors appear separately
+in red; unconfirmed values are marked. Refresh runs every three seconds while open
+and via the refresh button. Acknowledgement means acceptance by the MQTT broker,
+not processing by ioBroker. Runtime history resets when the connection is restarted;
+existing settings, credentials and selections are preserved.
+
 Since **0.1.20**, connection settings are collapsible under **Zugangsdaten**
 (Credentials). The section opens for initial setup and collapses after loading or
 successfully saving a configured broker address. Click the title to reopen it.

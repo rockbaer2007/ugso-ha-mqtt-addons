@@ -118,6 +118,15 @@ INDEX_HTML = """<!doctype html>
     .message { min-height: 1.35em; }
     .credentials { margin-bottom: 16px; }
     .credentials > summary { padding: 12px 14px; cursor: pointer; font-weight: 650; }
+    .transferList { display: grid; gap: 8px; max-height: 60vh; overflow: auto; }
+    .transferRow { display: grid; gap: 5px; padding: 12px; border-radius: 8px; background: rgba(148, 163, 184, .12); overflow-wrap: anywhere; }
+    .transferHeading { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .origin { padding: 3px 8px; border-radius: 12px; font-size: .78rem; font-weight: 650; }
+    .origin.label { color: #082f49; background: #7dd3fc; }
+    .origin.manual { color: #052e16; background: #86efac; }
+    .origin.both { color: #2e1065; background: #d8b4fe; }
+    .transferError { color: #fca5a5; }
+    .connectionActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .entity-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; }
     .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
     .toolbar input { padding: 9px 10px; }
@@ -156,9 +165,9 @@ INDEX_HTML = """<!doctype html>
     <h1><img src="./mqtt-icon.svg" width="36" height="36" alt="">MQTT-Client</h1>
     <div id="status" class="status"><span class="dot"></span><span>Keine Verbindung</span></div>
     <p id="statusDetails" class="sub" role="status"></p>
+    <form id="form" autocomplete="off">
     <details id="credentials" class="credentials" open>
     <summary>Zugangsdaten</summary>
-    <form id="form" autocomplete="off">
       <div class="row">
         <label>IP oder Hostname
           <input id="broker_host" name="broker_host" required placeholder="192.168.1.20">
@@ -177,6 +186,7 @@ INDEX_HTML = """<!doctype html>
         <input id="password" name="password" type="password" autocomplete="new-password" placeholder="unverändert lassen">
       </label>
       <p class="hint">Standardport für den ioBroker-MQTT-Adapter: 1883.</p>
+    </details>
       <details><summary>Übertragung und TLS</summary>
         <label>Polling-Rückfall in Sekunden <input name="poll_interval" type="number" min="1" max="300" value="5"></label>
         <label>Topic-Präfix <input name="topic_prefix" value="ha_external" required></label>
@@ -190,10 +200,20 @@ INDEX_HTML = """<!doctype html>
         <label class="check"><input name="clear_tls_material" type="checkbox"> Gespeicherte TLS-Zertifikate und Schlüssel entfernen</label>
         <p id="tlsStored" class="hint"></p>
       </details>
-      <button id="save" type="submit">Speichern und verbinden</button>
+      <div class="connectionActions">
+        <button id="save" type="submit">Speichern und verbinden</button>
+        <button id="transmissions" type="button" class="secondary">Aktuell übertragene Werte</button>
+      </div>
     </form>
-    </details>
     <div id="message" class="message" role="status"></div>
+    <dialog id="transmissionsDialog" class="devicePopup"><div class="dialog-body">
+      <h2>Aktuell übertragene Werte</h2>
+      <p class="sub">Blau: Label · Grün: Manuell · Violett: Beides. Bestätigt bedeutet vom MQTT-Broker angenommen, nicht vom Zielgerät verarbeitet. Bestätigungsdaten werden nur im Arbeitsspeicher gehalten.</p>
+      <div class="toolbar"><input id="transferSearch" aria-label="Übertragene Werte suchen" placeholder="Name, Entität, Attribut oder Topic suchen"><button id="refreshTransfers" type="button">Aktualisieren</button></div>
+      <p id="transferCount" class="sub" role="status"></p>
+      <div id="transferList" class="transferList"></div>
+      <div class="actions"><button id="closeTransfers" type="button" class="secondary">Schließen</button></div>
+    </div></dialog>
     <section class="panel">
       <h2>Sicherung und Retain-Bereinigung</h2>
       <p class="hint">Sicherung ohne MQTT-Passwort und ohne Client-Zertifikat/privaten Schlüssel. Beim Wiederherstellen auf einem anderen Broker diese separat neu eintragen.</p>
@@ -641,6 +661,42 @@ INDEX_HTML = """<!doctype html>
       if (!response.ok) throw Error(data.error || 'Vorgang fehlgeschlagen');
       return data;
     }
+    let transferRows = [], transferLoading = false;
+    function renderTransfers() {
+      const term = document.getElementById('transferSearch').value.trim().toLowerCase();
+      const rows = transferRows.filter(row => [row.name, row.entity_id, row.attribute, row.topic].join(' ').toLowerCase().includes(term));
+      const list = document.getElementById('transferList');
+      list.replaceChildren();
+      document.getElementById('transferCount').textContent = `${rows.length} von ${transferRows.length} Werten (States und ausgewählte Attribute)`;
+      for (const row of rows) {
+        const item = document.createElement('article'); item.className = 'transferRow';
+        const heading = document.createElement('div'); heading.className = 'transferHeading';
+        const name = document.createElement('strong'); name.textContent = row.name;
+        const badge = document.createElement('span'); badge.className = 'origin ' + row.origin;
+        badge.textContent = {label:'Label', manual:'Manuell', both:'Beides'}[row.origin];
+        heading.append(name, badge); item.append(heading);
+        for (const text of [row.entity_id + (row.attribute ? ' · Attribut: ' + row.attribute : ''), 'Wert: ' + row.value, 'Topic: ' + row.topic]) {
+          const line = document.createElement('div'); line.textContent = text; item.append(line);
+        }
+        const status = document.createElement('div'); status.className = row.error ? 'transferError' : 'meta';
+        status.textContent = row.error ? 'Übertragungsfehler: ' + row.error : row.last_success ? 'Vom Broker bestätigt' : 'Noch nicht bestätigt';
+        if (row.last_success) status.textContent += ' · Letzte Bestätigung: ' + new Date(row.last_success * 1000).toLocaleString() + ' · Gesendeter Wert: ' + row.last_sent_value;
+        item.append(status); list.append(item);
+      }
+      if (!rows.length) list.textContent = transferRows.length ? 'Keine passenden Werte.' : 'Noch keine aktiven Übertragungen erfasst. Verbindung und Auswahl prüfen.';
+    }
+    async function loadTransfers() {
+      if (transferLoading) return;
+      transferLoading = true;
+      try { const data = await api('transmissions'); transferRows = data.values || []; renderTransfers(); }
+      catch (error) { document.getElementById('transferCount').textContent = 'Aktualisierung fehlgeschlagen: ' + error.message; }
+      finally { transferLoading = false; }
+    }
+    document.getElementById('transmissions').addEventListener('click', () => { document.getElementById('transmissionsDialog').showModal(); loadTransfers(); });
+    document.getElementById('refreshTransfers').addEventListener('click', loadTransfers);
+    document.getElementById('closeTransfers').addEventListener('click', () => document.getElementById('transmissionsDialog').close());
+    document.getElementById('transferSearch').addEventListener('input', renderTransfers);
+    setInterval(() => { if (document.getElementById('transmissionsDialog').open) loadTransfers(); }, 3000);
     for (const input of document.querySelectorAll('[data-pem]')) input.addEventListener('change', async () => {
       try { const file = input.files[0]; if (!file) return; if (file.size > 65536) throw Error('PEM-Datei ist zu groß'); form[input.dataset.pem].value = await file.text(); }
       catch (error) { message.textContent = error.message; }
@@ -1064,6 +1120,7 @@ class Bridge:
         self.sent_generation = -1
         self.sent = {}
         self.sent_topics = {}
+        self.transfer_results = {}
         self.data_lock = threading.RLock()
         self.events = queue.Queue(maxsize=10000)
         self.states_cache = {}
@@ -1164,6 +1221,41 @@ class Bridge:
         with self.data_lock:
             return self.sync_states(states)
 
+    def publish_value(self, key, topic, value):
+        previous = self.transfer_results.get(key, {})
+        try:
+            self.publish(topic, value, throttle=True)
+        except Exception as error:
+            self.transfer_results[key] = {**previous, "error": type(error).__name__}
+            raise
+        self.transfer_results[key] = {"topic": topic, "value": value, "last_success": time.time(), "error": None}
+
+    def transmission_snapshot(self):
+        with self.data_lock:
+            states = self.states_cache
+            prefixes = common_prefixes_from_states(states)
+            rows = []
+            keys = [("state", entity) for entity in set(self.config.entities) | set(self.labeled_entities)]
+            keys += [("attribute", entity, attribute) for entity, attrs in self.attribute_map.items() for attribute in attrs]
+            for key in sorted(keys):
+                entity = key[1]
+                attribute = key[2] if len(key) == 3 else None
+                entry = states.get(entity, {"state": "unavailable", "attributes": {}})
+                attrs = entry.get("attributes", {})
+                if not isinstance(attrs, dict):
+                    attrs = {}
+                value = encode_mqtt_payload(attrs.get(attribute, "unavailable")) if attribute else str(entry.get("state", "unavailable"))
+                topic = self.topic(entity, f"attribute/{attribute}" if attribute else "state", entry if entity in states else None, prefixes)
+                manual = attribute is not None or entity in self.config.entities
+                label = attribute is None and entity in self.labeled_entities
+                result = self.transfer_results.get(key, {})
+                same_topic = result.get("topic") == topic
+                rows.append(dict(entity_id=entity, attribute=attribute, name=attrs.get("friendly_name") or entity,
+                                 value=value, topic=topic, origin="both" if manual and label else "manual" if manual else "label",
+                                 last_success=result.get("last_success") if same_topic else None,
+                                 last_sent_value=result.get("value") if same_topic else None, error=result.get("error")))
+            return {"values": rows}
+
     def refresh_label_selection(self):
         try:
             selected = frozenset(
@@ -1201,6 +1293,8 @@ class Bridge:
         prefixes = common_prefixes_from_states(states)
         state_entities = set(self.config.entities) | (self.labeled_entities & states.keys())
         polled_entities = sorted(state_entities | set(self.attribute_map))
+        active_keys = {("state", entity) for entity in state_entities} | {("attribute", entity, attr) for entity, attrs in self.attribute_map.items() for attr in attrs}
+        self.transfer_results = {key: result for key, result in self.transfer_results.items() if key in active_keys}
         targets = set()
         for entity in polled_entities:
             if self.stop.is_set():
@@ -1212,7 +1306,7 @@ class Bridge:
                 targets.add(state_topic)
             state_key = ("state", entity)
             if entity in state_entities and (self.sent.get(state_key) != state or self.sent_topics.get(state_key) != state_topic):
-                self.publish(state_topic, state, throttle=True)
+                self.publish_value(state_key, state_topic, state)
                 if self.inventory:
                     self.inventory.remember(self.config, state_topic, entity)
                 self.sent[("state", entity)] = state
@@ -1226,7 +1320,7 @@ class Bridge:
                 topic = self.topic(entity, f"attribute/{attribute}", entry if entity in states else None, prefixes)
                 targets.add(topic)
                 if self.sent.get(key) != value or self.sent_topics.get(key) != topic:
-                    self.publish(topic, value, throttle=True)
+                    self.publish_value(key, topic, value)
                     if self.inventory:
                         self.inventory.remember(self.config, topic, entity, attribute)
                     self.sent[key] = value
@@ -1511,6 +1605,11 @@ class AppController:
             labeled = self.bridge.labeled_entities if self.bridge else ()
             return {"topics": self.inventory.candidates(config, labeled)}
 
+    def transmissions(self):
+        with self.lock:
+            bridge = self.bridge
+        return bridge.transmission_snapshot() if bridge else {"values": []}
+
     def cleanup_retained(self, payload):
         if payload.get("confirm") is not True:
             raise ValueError("Retain-Löschung muss bestätigt werden")
@@ -1593,6 +1692,9 @@ def make_handler(controller):
             self.wfile.write(body)
 
         def do_GET(self):
+            if self.path.endswith("/api/transmissions"):
+                self.send_json(HTTPStatus.OK, controller.transmissions())
+                return
             if self.path.endswith("/api/backup"):
                 self.send_json(HTTPStatus.OK, controller.export_settings())
                 return

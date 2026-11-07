@@ -1,5 +1,24 @@
 # MQTT-Client einrichten
 
+## Neu in 0.1.21
+
+Nur die Zugangsdaten klappen automatisch ein. **Übertragung und TLS** bleibt
+separat erreichbar; **Speichern und verbinden** und **Aktuell übertragene Werte**
+stehen gleich groß nebeneinander und bleiben sichtbar.
+
+**Aktuell übertragene Werte** öffnet eine durchsuchbare, scrollbare Liste mit
+States und ausgewählten Attributen. Die Herkunft ist beschriftet und farbig:
+**Label** blau, **Manuell** grün, **Beides** violett. Doppelte States erscheinen
+nur einmal. Attribute kommen weiterhin aus der manuellen Auswahl.
+
+Angezeigt werden Name, Entitäts-ID, Attribut, aktueller Wert, Topic und letzte
+Brokerbestätigung mit gesendetem Wert. Fehler sind separat rot markiert; noch
+nicht bestätigte Werte sind entsprechend gekennzeichnet. Die Liste aktualisiert
+sich bei geöffnetem Dialog alle drei Sekunden sowie über **Aktualisieren**.
+Bestätigung bedeutet Annahme durch den MQTT-Broker, nicht Verarbeitung in ioBroker.
+Die Laufzeitübersicht wird bei einem Neustart der Verbindung zurückgesetzt;
+vorhandene Einstellungen, Zugangsdaten und Auswahlen bleiben erhalten.
+
 Ab **0.1.20** sind die Verbindungseinstellungen unter **Zugangsdaten** einklappbar.
 Ohne gespeicherte Brokeradresse bleibt der Bereich zur Ersteinrichtung offen.
 Mit gespeicherter Brokeradresse ist er nach dem Laden oder erfolgreichen Speichern
