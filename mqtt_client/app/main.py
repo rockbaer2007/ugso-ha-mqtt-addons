@@ -134,7 +134,7 @@ INDEX_HTML = """<!doctype html>
     .entityValue { white-space: nowrap; }
     .entity, .selected { width: 100%; text-align: left; color: inherit; background: rgba(148, 163, 184, .12); display: grid; gap: 2px; }
     .entity:hover, .selected:hover { background: rgba(3, 169, 244, .18); }
-    .selected { grid-template-columns: 1fr auto; align-items: center; }
+    .selected { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
     .name { font-weight: 650; overflow-wrap: anywhere; }
     .meta { color: var(--secondary-text-color, #94a3b8); font-size: .78rem; overflow-wrap: anywhere; }
     .check.bidirectional { display: none; }
@@ -408,7 +408,7 @@ INDEX_HTML = """<!doctype html>
         const button = document.createElement('button');
         button.type = 'button';
         button.className = 'selected';
-        button.innerHTML = `<span><span class="name"></span><span class="meta"></span></span><span>Bearbeiten</span>`;
+        button.innerHTML = `<span class="entityText"><span class="name"></span><span class="meta"></span></span><span>Bearbeiten</span>`;
         button.querySelector('.name').textContent = item ? entityLabel(item) : entity;
         const parts = [];
         if (selectedStates.has(entity)) parts.push('State');

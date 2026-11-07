@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.19
+
+- Separate entity names and selection details in the transmission list. Long names wrap beside the edit action without merging with the State/attribute summary.
+
 ## 0.1.18
 
 - Device popup rows show the name, entity ID and target type/attribute count on three separate lines, including after selection changes. Long names and entity IDs wrap within their column.

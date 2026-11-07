@@ -1,5 +1,8 @@
 # MQTT-Client
 
+Since **0.1.19**, the transmission list also separates the entity name from the
+state, attribute-selection and return-command summary. **Edit** remains on the right.
+
 Since **0.1.18**, each entity in the device popup displays its name, entity ID,
 and target type with attribute count on three separate lines. The current state
 remains on the right; long names and IDs wrap within their column.

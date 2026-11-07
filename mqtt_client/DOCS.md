@@ -1,5 +1,8 @@
 # MQTT-Client einrichten
 
+Ab **0.1.19** trennt auch die Übertragungsliste den Namen von den Angaben zu
+State, Attributauswahl und Rückbefehl. **Bearbeiten** bleibt rechts ausgerichtet.
+
 Ab **0.1.18** zeigt jede Entität im Geräte-Popup den Namen, die Entitäts-ID und
 den Zieltyp mit Attributanzahl in drei getrennten Zeilen. Der aktuelle State
 steht weiterhin rechts; lange Namen und IDs werden innerhalb der Zeile umgebrochen.
