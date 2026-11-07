@@ -1,5 +1,16 @@
 # MQTT-Client
 
+## New in 0.1.24: automatic VIS-2 states
+
+The combined ioBroker helper creates own states below `0_userdata.0.ugso_mqtt` in
+`outputMode: 'virtual'`. One state combines feedback and the return channel:
+HA updates use `ack: true`, VIS-2 requests use `ack: false` and go to `/set`.
+Switches, brightness, RGB, effects and Kelvin are normalized as needed. The journal
+and folders are created automatically in `mode: 'apply'`; `mode: 'preview'` writes
+nothing. Startup never switches a device. Uses APIs available in JavaScript adapter
+10.4.10. Existing aliases and MQTT objects are preserved. Missing optional attributes
+no longer cause warnings. [Full setup and limits](iobroker/README.en.md).
+
 ## New in 0.1.23
 
 **ioBroker-Rollenskript herunterladen** downloads an optional JavaScript for the

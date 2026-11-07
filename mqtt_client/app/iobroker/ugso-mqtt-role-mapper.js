@@ -1,4 +1,4 @@
-/* MQTT-Client 0.1.23: paste this entire file into an ioBroker JavaScript script.
+/* MQTT-Client 0.1.24: ioBroker JavaScript adapter 10.4.10 compatible.
  * Preview first. Settings and documentation: mqtt_client/iobroker/README*.md.
  * No MQTT state values, types, units, permissions or commands are changed.
  */
@@ -7,6 +7,9 @@
 const UGSO_MQTT_ROLE_SETTINGS = {
     mqttRoot: 'mqtt.0.ha_external',
     mode: 'preview', // preview | apply | restore
+    outputMode: 'virtual', // virtual (VIS 2 state/set) | roles (previous role/alias mapper)
+    virtualRoot: '0_userdata.0.ugso_mqtt',
+    virtualBackupId: '0_userdata.0.ugso_mqtt_helper.backup',
     backupId: '0_userdata.0.ugso_mqtt_roles.backup',
     aliasRoot: 'alias.0.ugso_mqtt_roles', // Read-only aliases when MQTT objects are writable.
     excludeIds: [], // Exact state IDs; also protects manually assigned generic "state" roles.
@@ -207,7 +210,212 @@ const UgsoMqttRoles = (() => {
         }
         return {run};
     }
-    return {createMapper, propose, validDate, validTimestamp, numeric, binary};
+    function createVirtualMapper(api, settings) {
+        validateSettings(settings);
+        if (!/^0_userdata\.0\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$/.test(settings.virtualRoot) ||
+            !/^0_userdata\.0\.[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$/.test(settings.virtualBackupId) ||
+            settings.virtualRoot === settings.virtualBackupId) throw new Error('Invalid virtual scope');
+        const prefix = settings.mqttRoot + '.', output = settings.virtualRoot + '.';
+        const pending = new Map(), started = api.now(), previewed = new Set();
+        let ready = false;
+        const get = id => api.getState(id)?.val;
+        const list = value => {
+            if (typeof value === 'string') { try { value = JSON.parse(value); } catch { return []; } }
+            return Array.isArray(value) && value.every(v => typeof v === 'string') ? value : [];
+        };
+        const num = value => typeof value === 'number' && Number.isFinite(value);
+        const bool = value => value === true || value === 'on' || value === 'ON' ? true : value === false || value === 'off' || value === 'OFF' ? false : undefined;
+        const active = () => {
+            const value = get(settings.mqttRoot + '.selected_entities');
+            if (typeof value !== 'string' || !value.startsWith('v1:')) return {};
+            try {
+                const data = JSON.parse(value.slice(3));
+                return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+            } catch { return {}; }
+        };
+        const online = () => get(settings.mqttRoot + '.availability') === 'online';
+        const targetFor = id => settings.virtualRoot + id.slice(settings.mqttRoot.length);
+        const excluded = id => settings.excludeIds.includes(id) || settings.excludeIds.includes(targetFor(id));
+        const owned = (object, record) => object?.type === 'state' && object.common?.type === record.common.type && stable(object.native) === stable(record.native);
+
+        function describe(id, catalog = active()) {
+            if (!id.startsWith(prefix) || !id.endsWith('.state') || id.includes('.attribute.') || excluded(id)) return null;
+            const source = api.getState(id);
+            if (!source || source.ack !== true || source.q && source.q !== 0) return null;
+            const base = id.slice(0, -6);
+            let root = base, feature = '', entity = get(root + '.attribute.ha_entity_id');
+            if (!entity) {
+                const last = base.slice(base.lastIndexOf('.') + 1);
+                if (!['brightness', 'rgb_color', 'effect', 'color_temp_kelvin'].includes(last)) return null;
+                root = base.slice(0, base.lastIndexOf('.'));
+                entity = get(root + '.attribute.ha_entity_id'); feature = last;
+                if (typeof entity !== 'string' || !entity.startsWith('light.')) return null;
+            }
+            if (typeof entity !== 'string' || !/^[a-z0-9_]+\.[a-z0-9_]+$/.test(entity)) return null;
+            const selected = own(catalog, entity) ? catalog[entity] : null;
+            if (!selected || typeof selected !== 'object' || typeof selected.state_topic !== 'string' || !selected.state_topic.endsWith('/state') || selected.state_topic !== api.getObject(root + '.state')?.native?.topic || feature && (!Array.isArray(selected.features) || !selected.features.includes(feature))) return null;
+            const expectedTopic = feature ? selected.state_topic.slice(0, -6) + '/' + feature + '/state' : selected.state_topic;
+            if (api.getObject(id)?.native?.topic !== expectedTopic) return null;
+            const attribute = key => selected.attributes && own(selected.attributes, key) ? selected.attributes[key] : get(root + '.attribute.' + key);
+            const domain = entity.split('.')[0], dc = attribute('device_class');
+            const flag = attribute('command_enabled');
+            const enabled = selected.command === true && (flag === true || flag === 'true');
+            const setId = base + '.set';
+            let writable = enabled && api.getObject(setId)?.type === 'state';
+            let value = source.val, type = typeof value, role = 'state', encode;
+            const extra = {}, unit = feature === 'brightness' ? '%' : feature === 'color_temp_kelvin' ? 'K' : attribute('unit_of_measurement');
+            if (feature === 'rgb_color') {
+                let rgb = value;
+                if (typeof rgb === 'string') { try { rgb = JSON.parse(rgb); } catch { return null; } }
+                if (!Array.isArray(rgb) || rgb.length !== 3 || rgb.some(v => !Number.isInteger(v) || v < 0 || v > 255)) return null;
+                value = '#' + rgb.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+                type = 'string'; role = writable ? 'level.color.rgb' : 'text';
+                encode = input => {
+                    if (typeof input !== 'string' || !/^#[0-9a-f]{6}$/i.test(input)) throw new Error('Expected #RRGGBB');
+                    return JSON.stringify([1, 3, 5].map(i => parseInt(input.slice(i, i + 2), 16)));
+                };
+            } else if (feature === 'brightness' || feature === 'color_temp_kelvin') {
+                const lo = feature === 'brightness' ? 0 : attribute('min_color_temp_kelvin');
+                const hi = feature === 'brightness' ? 100 : attribute('max_color_temp_kelvin');
+                if (!num(value) || !num(lo) || !num(hi) || value < lo || value > hi || lo > hi) return null;
+                if (feature === 'color_temp_kelvin' && !Number.isInteger(value)) return null;
+                type = 'number'; role = writable ? feature === 'brightness' ? 'level.dimmer' : 'level.color.temperature' : feature === 'brightness' ? 'value.dimmer' : 'value';
+                extra.min = lo; extra.max = hi;
+                encode = input => {
+                    if (!num(input) || input < lo || input > hi || feature === 'color_temp_kelvin' && !Number.isInteger(input)) throw new Error('Light value outside limits');
+                    return String(input);
+                };
+            } else if (feature === 'effect' || ['select', 'input_select'].includes(domain)) {
+                const options = list(attribute(feature === 'effect' ? 'effect_list' : 'options'));
+                if (typeof value !== 'string' || !options.includes(value)) return null;
+                type = 'string'; role = feature === 'effect' && writable ? 'level.effect' : 'state';
+                extra.states = Object.fromEntries(options.map(v => [v, v]));
+                encode = input => { if (!options.includes(input)) throw new Error('Option not supported'); return input; };
+            } else if (domain === 'binary_sensor' || ['switch', 'light', 'input_boolean', 'fan', 'humidifier', 'automation', 'script', 'remote', 'siren'].includes(domain)) {
+                value = bool(value); if (value === undefined) return null;
+                type = 'boolean';
+                if (domain === 'binary_sensor') writable = false;
+                role = writable ? domain === 'light' ? 'switch.light' : 'switch' : own(binary, dc) ? binary[dc] : 'sensor.switch';
+                encode = input => { if (typeof input !== 'boolean') throw new Error('Boolean expected'); return input ? 'ON' : 'OFF'; };
+            } else if (['number', 'input_number'].includes(domain)) {
+                if (!num(value)) return null;
+                type = 'number'; role = writable ? 'level' : 'value';
+                const lo = attribute('min'), hi = attribute('max'), step = attribute('step');
+                if (num(lo)) extra.min = lo; if (num(hi)) extra.max = hi; if (num(step) && step > 0) extra.step = step;
+                encode = input => { if (!num(input) || num(lo) && input < lo || num(hi) && input > hi) throw new Error('Number outside limits'); return String(input); };
+            } else if (['text', 'input_text'].includes(domain)) {
+                if (typeof value !== 'string') return null;
+                type = 'string'; role = 'text';
+                const lo = num(attribute('min')) ? attribute('min') : 0, hi = num(attribute('max')) ? Math.min(255, attribute('max')) : 255;
+                encode = input => { if (typeof input !== 'string' || input.length < lo || input.length > hi) throw new Error('Text outside limits'); return input; };
+            } else {
+                writable = false;
+                if (domain === 'sensor' && ['date', 'timestamp', 'uptime'].includes(dc)) {
+                    if (!(dc === 'date' ? validDate(value) : validTimestamp(value))) return null;
+                    type = 'string'; role = 'date';
+                } else if (type === 'number' && num(value)) {
+                    role = propose('sensor', dc, unit, {type: 'state', common: {type, read: true, write: false}}, {val: value}) || 'value';
+                } else if (type === 'string' && !['unknown', 'unavailable'].includes(value)) role = 'text';
+                else return null;
+            }
+            const common = {name: String(attribute('friendly_name') || entity) + (feature ? ' ' + feature : ''), type, role, read: true, write: Boolean(writable), ...extra};
+            if (typeof unit === 'string' && type === 'number') common.unit = unit;
+            return {id: targetFor(id), sourceId: id, entity, feature, setId: writable ? setId : null, value, sourceTs: source.ts || 0, common,
+                native: {ugsoMqttVis2: {version: 1, sourceId: id}}, encode};
+        }
+
+        async function journal() {
+            const raw = api.getState(settings.virtualBackupId)?.val;
+            if (raw === undefined || raw === null || raw === '') {
+                if (api.getObject(settings.virtualBackupId)) throw new Error('Existing virtual backup is empty; use a separate virtualBackupId');
+                return {format: 'ugso-mqtt-vis2', version: 1, mqttRoot: settings.mqttRoot, virtualRoot: settings.virtualRoot, entries: {}};
+            }
+            const data = JSON.parse(raw);
+            if (data.format !== 'ugso-mqtt-vis2' || data.version !== 1 || data.mqttRoot !== settings.mqttRoot || data.virtualRoot !== settings.virtualRoot || !data.entries || Array.isArray(data.entries)) throw new Error('Virtual backup mismatch');
+            for (const [id, record] of Object.entries(data.entries)) {
+                if (!id.startsWith(output) || typeof record.sourceId !== 'string' || !record.sourceId.startsWith(prefix) || id !== targetFor(record.sourceId) || !record.common || !['boolean', 'number', 'string'].includes(record.common.type) || record.native?.ugsoMqttVis2?.sourceId !== record.sourceId) throw new Error('Invalid virtual backup entry');
+            }
+            return data;
+        }
+
+        async function run() {
+            const data = await journal();
+            if (settings.mode === 'restore') {
+                for (const [id, record] of Object.entries(data.entries)) {
+                    if (!owned(api.getObject(id), record) || excluded(record.sourceId)) continue;
+                    record.disabled = true;
+                    await api.writeJournal(settings.virtualBackupId, JSON.stringify(data));
+                    await api.disableVirtual(id); // Keep values, roles and dashboard references.
+                }
+                return;
+            }
+            const valid = new Set();
+            const catalog = active();
+            for (const sourceId of api.listSources()) {
+                const spec = describe(sourceId, catalog);
+                if (!spec) continue;
+                valid.add(spec.id);
+                let record = data.entries[spec.id], object = api.getObject(spec.id), created = false;
+                if (record?.disabled || record && !owned(object, record) || !record && object) continue;
+                if (record && record.common.type !== spec.common.type) { valid.delete(spec.id); continue; }
+                if (settings.mode === 'preview') {
+                    if (!previewed.has(spec.id)) { api.log('Preview VIS 2: ' + spec.id + ' <- ' + sourceId + (spec.setId ? ' -> ' + spec.setId : ' (read-only)')); previewed.add(spec.id); }
+                    continue;
+                }
+                if (!online()) continue;
+                if (!record) {
+                    record = {sourceId, common: spec.common, native: spec.native, savedAt: new Date(api.now()).toISOString()};
+                    data.entries[spec.id] = record;
+                    await api.writeJournal(settings.virtualBackupId, JSON.stringify(data));
+                    if (api.getObject(spec.id)) continue;
+                    await api.createVirtual(spec.id, {type: 'state', common: spec.common, native: spec.native});
+                    created = true;
+                    api.log('Created VIS 2: ' + spec.id);
+                }
+                if (!online()) continue;
+                const wait = pending.get(spec.id);
+                if (wait && spec.sourceTs <= wait.sourceTs) {
+                    if (!wait.timedOut && api.now() - wait.time >= 30000) {
+                        wait.timedOut = true;
+                        await api.setVirtual(spec.id, {val: wait.requested, ack: false, q: 0x80});
+                        api.log('No new HA confirmation after 30s: ' + spec.id);
+                    }
+                    continue;
+                }
+                pending.delete(spec.id);
+                const current = created ? undefined : api.getState(spec.id);
+                if (!current || current.val !== spec.value || current.ack !== true || current.q) await api.setVirtual(spec.id, {val: spec.value, ack: true, q: 0});
+            }
+            if (settings.mode === 'apply') {
+                for (const [id, record] of Object.entries(data.entries)) {
+                    if (record.disabled || excluded(record.sourceId) || !owned(api.getObject(id), record) || valid.has(id) && online()) continue;
+                    const current = api.getState(id);
+                    if (current && current.q !== 0x82) await api.setVirtual(id, {val: current.val, ack: current.ack, q: 0x82});
+                }
+                ready = true;
+            }
+        }
+
+        async function command(event) {
+            if (settings.mode !== 'apply' || !ready || event?.state?.ack !== false || event.state.q && event.state.q !== 0 || !num(event.state.ts) || event.state.ts <= started || api.now() - event.state.ts > 10000 || typeof event.id !== 'string' || !event.id.startsWith(output)) return;
+            const data = await journal(), record = data.entries[event.id];
+            if (!record || record.disabled || excluded(record.sourceId) || !owned(api.getObject(event.id), record) || api.getObject(event.id).common.write !== true) return;
+            const spec = describe(record.sourceId);
+            if (!online() || !spec?.setId || !spec.encode || spec.common.type !== record.common.type) throw new Error('Source offline, unselected or return channel disabled');
+            const payload = spec.encode(event.state.val);
+            const bytes = typeof payload === 'string' ? Array.from(payload).reduce((sum, char) => sum + (char.codePointAt(0) < 0x80 ? 1 : char.codePointAt(0) < 0x800 ? 2 : char.codePointAt(0) < 0x10000 ? 3 : 4), 0) : 257;
+            if (bytes > 256) throw new Error('Command payload too large');
+            pending.set(event.id, {sourceTs: spec.sourceTs, time: api.now(), requested: event.state.val, timedOut: false});
+            try { await api.sendCommand(spec.setId, payload); }
+            catch (error) {
+                pending.get(event.id).timedOut = true;
+                await api.setVirtual(event.id, {val: event.state.val, ack: false, q: 0x80});
+                throw error;
+            }
+        }
+        return {run, command, describe, hasPending: () => pending.size > 0};
+    }
+    return {createMapper, createVirtualMapper, propose, validDate, validTimestamp, numeric, binary};
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UgsoMqttRoles;
@@ -216,12 +424,33 @@ if (typeof on === 'function' && typeof getObject === 'function') {
     const settings = UGSO_MQTT_ROLE_SETTINGS;
     const api = {
         getObject: id => getObject(id),
-        getState: id => getState(id),
+        // getState logs a warning for missing objects. Optional metadata and the
+        // not-yet-created journal are expected to be absent during preview.
+        getState: id => getObject(id)?.type === 'state' ? getState(id) : undefined,
         listMetadata: () => {
             const ids = [];
             $('state[id=' + settings.mqttRoot + '.*.attribute.device_class]').each(id => ids.push(id));
             return ids;
         },
+        listSources: () => {
+            const ids = [];
+            $('state[id=' + settings.mqttRoot + '.*.state]').each(id => ids.push(id));
+            return ids;
+        },
+        now: () => Date.now(),
+        createVirtual: async (id, object) => {
+            const parts = id.split('.');
+            for (let size = 3; size < parts.length; size++) {
+                const folderId = parts.slice(0, size).join('.'), existing = getObject(folderId);
+                if (existing && !['folder', 'channel', 'device'].includes(existing.type)) throw new Error('Existing parent is not a folder: ' + folderId);
+                if (!existing) await new Promise((resolve, reject) => setObject(folderId, {type: 'folder', common: {name: parts[size - 1]}, native: {ugsoMqttVis2Folder: true}}, error => error ? reject(new Error(String(error))) : resolve()));
+            }
+            if (getObject(id)) throw new Error('Virtual target appeared during creation');
+            await new Promise((resolve, reject) => setObject(id, object, error => error ? reject(new Error(String(error))) : resolve()));
+        },
+        disableVirtual: id => new Promise((resolve, reject) => extendObject(id, {common: {write: false}}, error => error ? reject(new Error(String(error))) : resolve())),
+        setVirtual: (id, state) => setStateAsync(id, state),
+        sendCommand: (id, payload) => setStateAsync(id, {val: payload, ack: false}),
         writeRole: (id, role) => new Promise((resolve, reject) => extendObject(id, {common: {role}}, error => error ? reject(new Error(String(error))) : resolve())),
         restoreObject: (id, object) => new Promise((resolve, reject) => setObject(id, object, error => error ? reject(new Error(String(error))) : resolve())),
         createAlias: (id, object) => new Promise((resolve, reject) => setObject(id, object, error => error ? reject(new Error(String(error))) : resolve())),
@@ -234,24 +463,33 @@ if (typeof on === 'function' && typeof getObject === 'function') {
         log: message => log('[UGSo MQTT roles] ' + message, 'info'),
     };
     try {
-        const mapper = UgsoMqttRoles.createMapper(api, settings);
-        let running = false, pending = false, timer;
-        const scan = async () => {
-            if (running) { pending = true; return; }
-            running = true;
-            try { await mapper.run(); }
-            catch (error) { log('[UGSo MQTT roles] ' + error.message, 'error'); }
-            finally {
-                running = false;
-                if (pending && !timer) { pending = false; timer = setTimeout(() => { timer = undefined; scan(); }, 1000); }
-            }
+        if (!['virtual', 'roles'].includes(settings.outputMode)) throw new Error('Invalid outputMode');
+        const virtual = settings.outputMode === 'virtual';
+        const mapper = virtual ? UgsoMqttRoles.createVirtualMapper(api, settings) : UgsoMqttRoles.createMapper(api, settings);
+        let serial = Promise.resolve(), timer, pendingTimer, stopped = false, queued = 0;
+        const enqueue = task => {
+            if (stopped || queued >= 100) return;
+            queued++;
+            serial = serial.then(() => stopped ? undefined : task()).catch(error => log('[UGSo MQTT helper] ' + error.message, 'error')).finally(() => queued--);
+        };
+        const checkPending = () => {
+            if (!stopped && virtual && mapper.hasPending() && !pendingTimer) pendingTimer = setTimeout(() => {
+                pendingTimer = undefined; enqueue(async () => { await mapper.run(); checkPending(); });
+            }, 5000);
         };
         if (settings.mode !== 'restore') {
             const escaped = settings.mqttRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            on({id: new RegExp('^' + escaped + '\\..+\\.(?:state|attribute\\.(?:device_class|unit_of_measurement))$'), change: 'any'}, () => {
-                if (!timer) timer = setTimeout(() => { timer = undefined; scan(); }, 1000);
+            on({id: new RegExp('^' + escaped + '\\.(?:availability|selected_entities|.+\\.(?:state|attribute\\.[^.]+))$'), change: 'any', q: '*'}, () => {
+                if (!timer) timer = setTimeout(() => { timer = undefined; enqueue(() => mapper.run()); }, 1000);
             });
+            if (virtual) {
+                const target = settings.virtualRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                on({id: new RegExp('^' + target + '\\..+\\.state$'), ack: false, change: 'any', q: '*'}, event => {
+                    enqueue(async () => { await mapper.command(event); checkPending(); });
+                });
+            }
         }
-        scan();
+        onStop(() => { stopped = true; if (timer) clearTimeout(timer); if (pendingTimer) clearTimeout(pendingTimer); }, 1000);
+        enqueue(() => mapper.run());
     } catch (error) { log('[UGSo MQTT roles] ' + error.message, 'error'); }
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.24
+
+- Combined ioBroker helper: automatically create virtual VIS-2 states and folders, normalize switch/battery on/off and Light RGB, and bridge current ack-false requests to the corresponding set channel. Source updates use ack true; no startup/restart command or feedback loop.
+- Explicit, versioned source catalog binds HA identity, current topic, metadata, capabilities and command permissions. Removed labels, renamed topics and unsupported values cannot create stale controls. Original MQTT values, roles, credentials and existing aliases remain unchanged.
+- Preserve last values with error quality when offline/unknown; unconfirmed commands are marked after approximately 30 seconds without automatic retries. Preview, verified journal, collision protection and non-destructive virtual restore included.
+- Fix getState warnings for missing journals and optional attributes. API-compatible with ioBroker JavaScript adapter 10.4.10; tests include adapter-style execution. Previous role/alias mode remains available through outputMode roles.
+
 ## 0.1.23
 
 - Optional ioBroker JavaScript for conservative device-class-to-role mapping, with read-only preview, verified role journal and guarded restore. Includes strict ISO date/timestamp validation and explicit numeric unit allowlists.

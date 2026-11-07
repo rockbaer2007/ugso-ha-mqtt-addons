@@ -29,6 +29,8 @@ def related_readings(roots, registry, states):
 
 
 def metadata(entity, attrs):
+    if not isinstance(attrs, dict):
+        return set()
     keys = {"friendly_name", "device_class", "unit_of_measurement", "state_class"}
     domain = entity.split(".", 1)[0]
     if domain in {"number", "input_number"}:
@@ -43,6 +45,8 @@ def metadata(entity, attrs):
 
 
 def light_features(attrs):
+    if not isinstance(attrs, dict):
+        return set()
     modes = attrs.get("supported_color_modes") or []
     modes = {mode for mode in modes if isinstance(mode, str)} if isinstance(modes, (list, tuple, set)) else set()
     result = set()

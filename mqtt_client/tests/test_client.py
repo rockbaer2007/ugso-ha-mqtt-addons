@@ -91,7 +91,7 @@ class ClientTests(unittest.TestCase):
 
     def test_only_selected_states_and_no_unchanged_republish(self):
         self.bridge.poll()
-        self.assertEqual(self.client.publish.call_count, 3)
+        self.assertEqual(self.client.publish.call_count, 8)  # states, source metadata, selection catalog, availability
         self.assertNotIn("secret", str(self.client.publish.call_args_list))
         self.client.publish.reset_mock()
         self.bridge.poll()
@@ -102,7 +102,7 @@ class ClientTests(unittest.TestCase):
         self.client.publish.reset_mock()
         self.bridge.on_connect(self.client, None, None, SimpleNamespace(is_failure=False), None)
         self.bridge.poll()
-        self.assertEqual(self.client.publish.call_count, 3)
+        self.assertEqual(self.client.publish.call_count, 8)
 
     def test_states_publish_before_command_topics_are_subscribed(self):
         self.bridge.poll()

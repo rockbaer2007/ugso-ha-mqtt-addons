@@ -65,6 +65,25 @@ class LabelSupportTests(unittest.TestCase):
         self.bridge.process_command(self.bridge.commands.get_nowait())
         self.ha.command.assert_called_once_with("switch.plug", "turn_off")
 
+    def test_vis2_catalog_binds_selection_to_current_topic_and_revokes_removed_labels(self):
+        self.select()
+        def catalog():
+            payload = [call.args[1] for call in self.client.publish.call_args_list if call.args[0] == "ha_external/selected_entities"][-1]
+            self.assertTrue(payload.startswith("v1:"))
+            return json.loads(payload[3:])
+        data = catalog()
+        self.assertEqual(set(data), {"switch.plug"})
+        self.assertTrue(data["switch.plug"]["command"])
+        self.assertNotIn("never-send", str(data))
+        old_topic = data["switch.plug"]["state_topic"]
+        self.states["switch.plug"]["attributes"]["friendly_name"] = "New name"
+        self.bridge.poll(self.states)
+        self.assertNotEqual(catalog()["switch.plug"]["state_topic"], old_topic)
+        self.registry[0]["labels"] = []
+        self.select()
+        self.assertEqual(catalog(), {})
+        self.ha.command.assert_not_called()
+
     def test_label_removal_revokes_queued_commands_but_keeps_manual(self):
         self.bridge = self.make_bridge(entities=["switch.plug"])
         self.select()

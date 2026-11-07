@@ -1,5 +1,17 @@
 # MQTT-Client einrichten
 
+## Neu in 0.1.24: automatische VIS-2-Datenpunkte
+
+Der kombinierte ioBroker-Helfer legt in `outputMode: 'virtual'` eigene Datenpunkte
+unter `0_userdata.0.ugso_mqtt` an. Ein Datenpunkt verbindet Status und Rückkanal:
+HA-Rückmeldungen kommen mit `ack: true`, VIS-2-Bedienungen gehen mit `ack: false`
+an `/set`. Switches, Helligkeit, RGB, Effekte und Kelvin werden passend umgesetzt.
+Sicherungsdatenpunkt und Ordner entstehen automatisch in `mode: 'apply'`;
+`mode: 'preview'` bleibt ohne Schreibzugriffe. Beim Start wird nicht geschaltet.
+Die APIs von JavaScript-Adapter 10.4.10 sind berücksichtigt. Bestehende Aliase und
+MQTT-Objekte bleiben erhalten. Fehlende optionale Attribute erzeugen keine Warnungen.
+[Vollständige Einrichtung und Grenzen](iobroker/README.de.md).
+
 ## Neu in 0.1.23
 
 **ioBroker-Rollenskript herunterladen** liefert ein optionales JavaScript für

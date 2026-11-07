@@ -53,11 +53,14 @@ class FeatureTests(unittest.TestCase):
         self.ha.full_states.return_value[0]["attributes"]["friendly_name"] = "Renamed"
         self.bridge.poll()
         candidates = self.bridge.inventory.candidates(self.config)
-        self.assertEqual(candidates, [old])
-        self.assertEqual(TopicInventory(self.path / "topics.json").candidates(self.config), [old])
+        expected = sorted([old, old.removesuffix("/state") + "/attribute/ha_entity_id", old.removesuffix("/state") + "/attribute/command_enabled"])
+        self.assertEqual(candidates, expected)
+        self.assertEqual(TopicInventory(self.path / "topics.json").candidates(self.config), expected)
         with self.assertRaises(ValueError):
             self.bridge.cleanup(["another/app/state"])
         self.assertEqual(self.bridge.cleanup([old]), [old])
+        self.assertEqual(self.bridge.inventory.candidates(self.config), [topic for topic in expected if topic != old])
+        self.bridge.cleanup([topic for topic in expected if topic != old])
         self.assertEqual(self.bridge.inventory.candidates(self.config), [])
         self.assertIn(((old, ""), {"qos": 1, "retain": True}), [(c.args, c.kwargs) for c in self.client.publish.call_args_list])
 
@@ -96,7 +99,7 @@ class FeatureTests(unittest.TestCase):
         other = Config.load({"broker_host": "other", "entities": []})
         self.assertEqual(self.bridge.inventory.candidates(other), [])
         changed = Config.load({"broker_host": "broker", "topic_prefix": "new", "entities": []})
-        self.assertEqual(len(self.bridge.inventory.candidates(changed)), 2, "state and old availability")
+        self.assertEqual(len(self.bridge.inventory.candidates(changed)), 5, "state, source metadata, catalog and old availability")
 
     def test_failed_cleanup_keeps_inventory_for_retry(self):
         self.bridge.inventory.remember(self.config, "ha_external/old/state", "sensor.old")
@@ -156,7 +159,7 @@ class FeatureTests(unittest.TestCase):
         self.assertTrue(status["mqtt_connected"] and status["ha_connected"])
         self.assertIsNotNone(status["last_sync"])
         self.assertIsNotNone(status["last_publish"])
-        self.assertEqual(status["published"], 2)
+        self.assertEqual(status["published"], 5)
         self.assertNotIn("password", status)
 
     def test_existing_015_settings_survive_start_and_selection_save(self):

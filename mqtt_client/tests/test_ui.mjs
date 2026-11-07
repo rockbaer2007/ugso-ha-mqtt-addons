@@ -26,7 +26,7 @@ try {
   const sample=snapshot.values[0];
   await page.route('**/api/transmissions',route=>route.fulfill({json:{values:['manual','label','both'].map((origin,index)=>({...sample,origin,entity_id:'sensor.demo_'+index,name:index===2?'<script>Literal name</script>':'Demo '+index}))}}));
   await page.locator('#refreshTransfers').click();
-  await page.waitForFunction(()=>document.querySelectorAll('#transferList .origin').length===3);
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll('#transferList .origin'),node=>node.textContent).join('|')==='Manuell|Label|Beides');
   assert.deepEqual(await page.locator('#transferList .origin').allTextContents(),['Manuell','Label','Beides']);
   assert.equal(await page.locator('#transferList script').count(),0);
   assert.equal(new Set(await page.locator('#transferList .origin').evaluateAll(nodes=>nodes.map(node=>getComputedStyle(node).backgroundColor))).size,3);

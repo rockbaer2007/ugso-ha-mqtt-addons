@@ -183,6 +183,7 @@ class TopicInventory:
             result = []
             for r in self.records:
                 selected = (True if r["entity"] is None else r["entity"] in state_entities if r["attribute"] is None else
+                            r["attribute"] in {"ha_entity_id", "command_enabled"} and r["entity"] in state_entities or
                             f'{r["entity"]}:{r["attribute"]}' in set(config.entity_attributes) | set(active_attributes))
                 if r["broker"] == broker_identity(config) and (not r["active"] or r["prefix"] != config.prefix or not selected):
                     result.append(r["topic"])

@@ -1,11 +1,48 @@
 # ioBroker: automatic role mapping {#iobroker-role-mapping}
 
-The optional JavaScript ships with MQTT-Client **0.1.23** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
+The optional JavaScript ships with MQTT-Client **0.1.24** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
+
+
+## New in 0.1.24: one VIS-2 state for feedback and commands {#vis2}
+
+The script now creates virtual states and folders automatically below `0_userdata.0.ugso_mqtt`. It targets the APIs of ioBroker JavaScript adapter **10.4.10**. First **update MQTT-Client to 0.1.24** and reconnect: its new selection catalog binds each entity to its current topic and command permission. Old retained topics must not create duplicate controls.
+
+Initially keep these settings at the top of the complete script:
+
+```js
+outputMode: 'virtual',
+mode: 'preview',
+mqttRoot: 'mqtt.0.ha_external',
+virtualRoot: '0_userdata.0.ugso_mqtt',
+virtualBackupId: '0_userdata.0.ugso_mqtt_helper.backup',
+```
+
+After checking preview, change to `mode: 'apply'` and restart. **The backup state, folders and new VIS-2 states are created automatically.** Preview deliberately creates nothing. Existing unrelated states, aliases and manual roles are not overwritten. Your existing alias, for example below `alias.0.HA`, need not be removed.
+
+Example: `mqtt.0.ha_external.claudia_pc.switch.state` and its `mqtt.0.ha_external.claudia_pc.switch.set` return channel become `0_userdata.0.ugso_mqtt.claudia_pc.switch.state`. **Use only this virtual state in VIS 2.**
+
+| Direction/function | Behaviour |
+|---|---|
+| MQTT feedback → VIS 2 | Confirmed state with `ack: true` |
+| VIS-2 operation → MQTT command | Only current requests with `ack: false` go to `/set` |
+| Switch | Virtually normalize `on`/`off` to booleans; send `ON`/`OFF` back |
+| Brightness | Percentage 0–100 with checked limits |
+| RGB | MQTT JSON array ↔ virtual hexadecimal `#RRGGBB` |
+| Effect | Only options in the current effect list |
+| Color temperature | Integer Kelvin within current limits |
+| Numbers, selects and text | Validate available limits or options |
+| Dates, measurements and battery | Read-only; original MQTT values remain unchanged |
+
+Creation, startup and restart send no control commands and never replay old requests. A new HA state update confirms the value; broker acceptance alone does not confirm execution. Without a fresh response for approximately 30 seconds, the request remains unacknowledged with error quality `q: 128`. When deselected, unknown or offline, the last value is preserved with `q: 130` and commands are blocked. No artificial zero/off values are used.
+
+The `virtualBackupId` journal is saved and verified before each new state is created. It holds mappings and object definitions, not MQTT credentials or current measurements. Virtual mode leaves original MQTT objects unchanged. With `mode: 'restore'`, virtual values and dashboard references are preserved; own virtual command states become read-only and synchronization ends. Stop the script afterwards.
+
+The previous functionality remains available through `outputMode: 'roles'`. The direct-role/alias rules and restore instructions below apply to that role mode; the mapping tables also describe virtual states semantically. **Run only one helper copy at a time.** Missing optional attributes and a journal not yet created no longer generate the previous `getState` warnings.
 
 ## Installation and backup {#installation}
 
 1. First export the affected MQTT objects with their states and existing scripts in ioBroker Admin, or create a complete backup.
-2. In MQTT-Client choose **ioBroker-Rollenskript herunterladen**, or [download the script](../app/iobroker/ugso-mqtt-role-mapper.js).
+2. In MQTT-Client choose **ioBroker-/VIS-2-Helfer herunterladen**, or [download the script](../app/iobroker/ugso-mqtt-role-mapper.js).
 3. Under **Scripts** in ioBroker, create a **JavaScript** and paste the complete file. Run only one copy in one JavaScript instance.
 4. Set `mqttRoot` to your MQTT path, for example `mqtt.0.ha_external`. Wildcards are not allowed.
 5. Keep `mode: 'preview'`, start the script and inspect its log. Preview performs no writes.
@@ -93,7 +130,7 @@ Only actual boolean values with a matching object type are accepted. Standard HA
 
 ## Further mappings considered {#conditional}
 
-These cases are documented but **not applied automatically**:
+Role-only mode does not apply these cases automatically. Virtual mode now implements the Light and switch functions below with the described checks; fill levels, consumption/production and ambiguous measurement classes are still not guessed.
 
 | HA class/function | Possible role | Additional requirement |
 |---|---|---|
@@ -120,4 +157,4 @@ Stop the script afterwards. Keep the journal and exclusions. Already recorded st
 
 Verified locally with simulated ioBroker APIs for preview, backup failures, types, units, manual edits, aliases and restore. Not yet installation-tested on a real ioBroker system.
 
-[Home Assistant: Sensor](https://www.home-assistant.io/integrations/sensor/#device-class) · [Home Assistant: Binary sensor](https://www.home-assistant.io/integrations/binary_sensor/#device-class) · [ioBroker: State roles](https://www.iobroker.com/docs/dev/stateroles.md) · [ioBroker: JavaScript API](https://github.com/ioBroker/ioBroker.javascript/blob/master/docs/en/javascript.md)
+[Home Assistant: Sensor](https://www.home-assistant.io/integrations/sensor/#device-class) · [Home Assistant: Binary sensor](https://www.home-assistant.io/integrations/binary_sensor/#device-class) · [ioBroker: State roles](https://www.iobroker.com/docs/dev/stateroles.md) · [ioBroker: JavaScript API](https://github.com/ioBroker/ioBroker.javascript/blob/v10.4.10/docs/en/javascript.md)

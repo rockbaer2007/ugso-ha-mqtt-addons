@@ -32,7 +32,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS | {"cover"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.23"
+APP_VERSION = "0.1.24"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -224,7 +224,7 @@ INDEX_HTML = """<!doctype html>
       <p class="hint">Sicherung ohne MQTT-Passwort und ohne Client-Zertifikat/privaten Schlüssel. Beim Wiederherstellen auf einem anderen Broker diese separat neu eintragen.</p>
       <div class="toolbar">
         <button id="backup" type="button" class="secondary">Einstellungen sichern</button>
-        <a href="downloads/ugso-mqtt-role-mapper.js" download="ugso-mqtt-role-mapper.js">ioBroker-Rollenskript herunterladen</a>
+        <a href="downloads/ugso-mqtt-role-mapper.js" download="ugso-mqtt-role-mapper.js">ioBroker-/VIS-2-Helfer herunterladen</a>
         <button id="restore" type="button" class="secondary">Sicherung öffnen</button>
         <input id="restoreFile" type="file" accept=".json" hidden>
         <button id="retained" type="button" class="secondary">Veraltete Retain-Topics prüfen</button>
@@ -1143,6 +1143,7 @@ class Bridge:
         self.label_roots = None
         self.label_registry = []
         self.auto_attributes = set()
+        self.bridge_metadata = {}
         self.live = False
         self.inventory = None
         self.availability = f"{config.prefix}/availability"
@@ -1296,6 +1297,16 @@ class Bridge:
                 values = self.attribute_map.setdefault(entity, [])
                 if attribute not in values:
                     values.append(attribute)
+        # Explicit source identity and command permission for the ioBroker VIS-2
+        # helper. Never infer HA domains from translated device/value names.
+        selected = set(self.config.entities) | (self.labeled_entities & states.keys())
+        commands = set(self.config.command_entities) | set(automatic_command_entities(self.labeled_entities))
+        self.bridge_metadata = {entity: {"ha_entity_id": entity, "command_enabled": entity in commands} for entity in selected}
+        for entity, attrs in self.bridge_metadata.items():
+            values = self.attribute_map.setdefault(entity, [])
+            for attr in attrs:
+                if attr not in values:
+                    values.append(attr)
 
     def light_specs(self, states, prefixes=None):
         for entity in sorted(self.labeled_entities):
@@ -1339,8 +1350,11 @@ class Bridge:
                     attrs = {}
                 value = encode_mqtt_payload(attrs.get(attribute, "unavailable")) if attribute else str(entry.get("state", "unavailable"))
                 topic = self.topic(entity, f"attribute/{attribute}" if attribute else "state", entry if entity in states else None, prefixes)
-                manual = attribute in self.manual_attribute_map.get(entity, []) if attribute else entity in self.config.entities
-                label = (entity, attribute) in self.auto_attributes if attribute else entity in self.labeled_entities
+                attrs = {**attrs, **self.bridge_metadata.get(entity, {})}
+                if attribute in self.bridge_metadata.get(entity, {}):
+                    value = encode_mqtt_payload(attrs[attribute])
+                manual = (attribute in self.manual_attribute_map.get(entity, []) or attribute in self.bridge_metadata.get(entity, {}) and entity in self.config.entities) if attribute else entity in self.config.entities
+                label = ((entity, attribute) in self.auto_attributes or attribute in self.bridge_metadata.get(entity, {})) and entity in self.labeled_entities if attribute else entity in self.labeled_entities
                 result = self.transfer_results.get(key, {})
                 same_topic = result.get("topic") == topic
                 rows.append(dict(entity_id=entity, attribute=attribute, name=attrs.get("friendly_name") or entity,
@@ -1422,6 +1436,7 @@ class Bridge:
             attributes = entry.get("attributes", {})
             if not isinstance(attributes, dict):
                 attributes = {}
+            attributes = {**attributes, **self.bridge_metadata.get(entity, {})}
             for attribute in self.attribute_map.get(entity, []):
                 value = encode_mqtt_payload(attributes.get(attribute, "unavailable"))
                 key = ("attribute", entity, attribute)
@@ -1441,6 +1456,21 @@ class Bridge:
                     self.inventory.remember(self.config, topic, key[1], "light/" + key[2])
                 self.sent[key] = value
                 self.sent_topics[key] = topic
+        selection_topic = f"{self.config.prefix}/selected_entities"
+        # Prefix keeps ioBroker's MQTT JSON expansion from splitting this catalog.
+        # Bind permissions to the exact current topic, including renamed devices.
+        selected_value = "v1:" + json.dumps({entity: {
+            "state_topic": self.topic(entity, "state", states.get(entity), prefixes),
+            "command": self.bridge_metadata[entity]["command_enabled"],
+            "features": sorted(light_features(states.get(entity, {}).get("attributes", {}))) if entity.startswith("light.") and entity in self.labeled_entities else [],
+            "attributes": {name: states.get(entity, {}).get("attributes", {})[name] for name in sorted(label_metadata(entity, states.get(entity, {}).get("attributes", {})))},
+        } for entity in sorted(state_entities)}, ensure_ascii=False, separators=(",", ":"))
+        if self.sent.get(("selection",)) != selected_value:
+            self.publish(selection_topic, selected_value)
+            self.sent[("selection",)] = selected_value
+        targets.add(selection_topic)
+        if self.inventory:
+            self.inventory.remember(self.config, selection_topic, None)
         self.publish(self.availability, "online")
         targets.add(self.availability)
         if self.inventory:
