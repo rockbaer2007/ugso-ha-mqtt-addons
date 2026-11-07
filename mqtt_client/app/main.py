@@ -126,6 +126,8 @@ INDEX_HTML = """<!doctype html>
     .origin.manual { color: #052e16; background: #86efac; }
     .origin.both { color: #2e1065; background: #d8b4fe; }
     .transferError { color: #fca5a5; }
+    #transmissionsDialog .dialog-body { display: flex; flex-direction: column; max-height: calc(100dvh - 60px); box-sizing: border-box; }
+    #transmissionsDialog .transferList { min-height: 0; flex: 1 1 auto; }
     .connectionActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
     .entity-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; }
     .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
