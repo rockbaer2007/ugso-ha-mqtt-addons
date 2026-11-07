@@ -1,7 +1,31 @@
 # ioBroker : attribution automatique des rôles {#iobroker-role-mapping}
 
-Le JavaScript optionnel est fourni avec MQTT-Client **0.1.33** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
+Le JavaScript optionnel est fourni avec MQTT-Client **0.1.34** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
 
+
+
+
+## Nouveauté 0.1.34 : chemins MQTT plats pour les nouvelles entités uniquement {#mqtt-layout-0134}
+
+Dans **Transmission et TLS → Structure MQTT des nouvelles entités**, choisissez **Plate avec noms courts**, puis **Enregistrer et connecter**. La structure existante reste le choix par défaut. Ce réglage concerne les entités manuelles et les membres d’un label rencontrés pour la première fois ensuite, y compris les mesures facultatives du même appareil.
+
+Les entités connues conservent leurs chemins. Les affectations sont enregistrées durablement dans `/data/mqtt-routes.json` et incluses dans la sauvegarde exportée des réglages. Retirer puis resélectionner un label, renommer, redémarrer ou mettre à jour réutilise le chemin attribué. Lors de la première mise à jour, les sélections existantes et les topics enregistrés sont conservés ; la sélection existante du label est fixée au premier rapprochement réussi. Ne supprimez pas ce fichier. Revenir au réglage précédent ne migre pas les entités déjà affectées.
+
+Exemples de nouveaux topics MQTT plats :
+
+```text
+ha_external/appareil/schalter
+ha_external/appareil/schalter_set
+ha_external/appareil/schalter_attribute/device_class
+ha_external/appareil/energie
+ha_external/appareil/leistung
+ha_external/appareil/licht_brightness
+ha_external/appareil/licht_brightness_set
+```
+
+Les anciens topics comme `ha_external/appareil/switch/state` et `…/switch/set` restent valides en parallèle. Les noms courts en conflit reçoivent un suffixe unique. Les points, valeurs, alias et références VIS-2 existants ne sont ni renommés ni supprimés.
+
+**Avant d’activer les chemins MQTT plats, remplacez le script JavaScript complet par la version 0.1.34 en conservant vos réglages.** Il lit les deux structures grâce au catalogue transmis, qui indique les chemins exacts des états et commandes. Vérifiez la prévisualisation, puis choisissez `mode: 'apply'`. Les anciens scripts ne reconnaissent pas les nouveaux chemins MQTT plats. L’option indépendante du script `virtualLayout: 'flat'` détermine uniquement la présentation sous `0_userdata.0.ugso_mqtt`. Les rôles manuels et références existants restent protégés.
 
 
 ## Nouveauté 0.1.33 : structure VIS-2 plate avec noms courts {#flat-layout-0133}

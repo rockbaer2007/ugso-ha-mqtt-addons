@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.34
+
+- Add opt-in flat raw MQTT topics for previously unseen entities and label members only. Persist per-broker/prefix assignments atomically in mqtt-routes.json, migrate existing selections/inventory, include routes in settings backups and reject conflicting imports. Preserve existing paths across renames, removals/reselection, restarts and updates.
+- Extend the JavaScript helper to discover mixed raw layouts through exact catalog routes, including Light values and non-retained return commands. Preserve existing virtual IDs, roles, journals and VIS-2 references; cache catalog routes for event processing.
+- Document raw MQTT layout separately from virtualLayout; update DE/EN/FR guides, full helper code and download.
+
 ## 0.1.33
 
 - Add helper option virtualLayout: nested (default, existing IDs) or flat (short per-device names such as schalter, energie, leistung, spannung and stromstaerke). Keep original MQTT topics unchanged.

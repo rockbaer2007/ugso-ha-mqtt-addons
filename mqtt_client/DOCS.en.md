@@ -1,5 +1,29 @@
 # MQTT-Client
 
+
+## New in 0.1.34: flat MQTT paths for new entities only {#mqtt-layout-0134}
+
+Under **Transmission and TLS → MQTT structure for new entities**, select **Flat with short names** and **Save and connect**. The existing structure remains the default. This preference applies to manually selected entities and label members first encountered afterwards, including optional device measurements.
+
+Known entities keep their existing paths. Assignments persist in `/data/mqtt-routes.json` and are included in exported settings backups. Removing and reselecting a label, renaming, restarting or updating reuses the assigned path. On the first upgrade, existing selections and recorded topics are preserved; the existing label selection is pinned during its first successful reconciliation. Do not delete this file. Changing the preference back does not migrate previously assigned entities.
+
+Example new flat MQTT topics:
+
+```text
+ha_external/device/schalter
+ha_external/device/schalter_set
+ha_external/device/schalter_attribute/device_class
+ha_external/device/energie
+ha_external/device/leistung
+ha_external/device/licht_brightness
+ha_external/device/licht_brightness_set
+```
+
+Existing topics such as `ha_external/device/switch/state` and `…/switch/set` remain valid alongside them. Short-name collisions receive unique suffixes. Existing points, values, aliases and VIS-2 references are neither renamed nor removed.
+
+**Before enabling flat MQTT paths, replace the complete JavaScript helper with 0.1.34 and retain your settings.** It reads both MQTT structures from the published selection catalog with exact state and command paths. Review preview first, then choose `mode: 'apply'`. Older helpers cannot discover new flat MQTT paths. The independent helper option `virtualLayout: 'flat'` only controls the layout below `0_userdata.0.ugso_mqtt`. Existing manual roles and references remain protected.
+
+
 ## New in 0.1.33: flat VIS-2 layout with short names
 
 **Replace the complete JavaScript helper with 0.1.33 and retain your settings.** In its settings block, `virtualLayout: 'nested'` selects the existing layout (default); `virtualLayout: 'flat'` creates short points directly below the device folder, such as `schalter`, `energie`, `leistung`, `spannung`, `stromstaerke`. Lights add supported values such as `helligkeit`, `farbe`, `effekt` and `farbtemperatur`. Duplicate or occupied names receive unique suffixes such as `leistung_2`; assigned mappings remain pinned in the backup journal.

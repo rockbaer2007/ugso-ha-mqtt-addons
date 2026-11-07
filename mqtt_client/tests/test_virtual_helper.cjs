@@ -3,7 +3,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {readFileSync} = require('node:fs');
 const vm = require('node:vm');
-const {createVirtualMapper, initialize, publishCommand} = require('../app/iobroker/ugso-mqtt-role-mapper.js');
+const {createVirtualMapper, createMapper, initialize, publishCommand, catalogRoutes} = require('../app/iobroker/ugso-mqtt-role-mapper.js');
 
 function fixture(mode = 'apply') {
     const settings = {mqttRoot: 'mqtt.0.ha_external', aliasRoot: 'alias.0.ugso_mqtt_roles', backupId: '0_userdata.0.ugso_mqtt_roles.backup', virtualRoot: '0_userdata.0.ugso_mqtt', virtualBackupId: '0_userdata.0.ugso_mqtt_helper.backup', mode, excludeIds: []};
@@ -20,7 +20,7 @@ function fixture(mode = 'apply') {
                 if (!objects[path]) objects[path] = {type: 'folder'};
             }
         },
-        listSources: () => Object.keys(objects).filter(id => id.startsWith(settings.mqttRoot + '.') && id.endsWith('.state')),
+        listSources: () => Object.keys(objects).filter(id => id.startsWith(settings.mqttRoot + '.') && catalogRoutes(catalog).get(objects[id].native?.topic)),
         writeJournal: async (id, value) => { writes.push(['backup', id]); objects[id] = {type: 'state'}; states[id] = {val: value, ack: true}; },
         createVirtual: async (id, object) => { writes.push(['create', id]); objects[id] = clone(object); },
         setVirtual: async (id, state) => { writes.push(['value', id]); states[id] = {...clone(state), ts: clock}; },
@@ -46,12 +46,54 @@ function fixture(mode = 'apply') {
         state(source, value, {}, {topic}); state(source.slice(0, -6) + '.set', '', {}, {topic: topic.slice(0, -6) + '/set'});
         return source;
     }
+    function flatAdd(entity, name, value, attrs = {}, command = true, features = []) {
+        const id=settings.mqttRoot+'.'+name,topic='ha_external/'+name.replaceAll('.','/');
+        state(id,value,{}, {topic});
+        if(command)state(id+'_set','',{}, {topic:topic+'_set'});
+        for(const [key,val]of Object.entries({ha_entity_id:entity,command_enabled:command,...attrs}))state(id+'_attribute.'+key,val);
+        catalog[entity]={state_topic:topic,topic_layout:'flat',command_topic:command?topic+'_set':null,command,features,feature_state_topics:{},feature_command_topics:{},attributes:attrs};
+        updateCatalog();return id;
+    }
+    function flatFeature(root, entity, name, value) {
+        const id=root+'_'+name,topic=objects[root].native.topic+'_'+name;
+        state(id,value,{}, {topic});state(id+'_set','',{}, {topic:topic+'_set'});
+        catalog[entity].feature_state_topics[name]=topic;catalog[entity].feature_command_topics[name]=topic+'_set';updateCatalog();return id;
+    }
     state(settings.mqttRoot + '.availability', 'online');
-    return {settings, api, objects, states, writes, sends, catalog, state, add, feature, updateCatalog,
+    return {settings, api, objects, states, writes, sends, catalog, state, add, feature, flatAdd, flatFeature, updateCatalog,
         target: id => settings.virtualRoot + id.slice(settings.mqttRoot.length), tick: (ms = 1) => clock += ms,
         event: (id, val, ack = false) => ({id, state: {val, ack, q: 0, ts: ++clock}}),
         mapper: () => createVirtualMapper(api, settings)};
 }
+
+test('mixed raw MQTT layouts retain old virtual IDs and use catalog-bound new controls', async () => {
+    const f=fixture(),old=f.add('switch.old','old.switch','on');
+    let mapper=f.mapper();await mapper.run();const oldTarget=f.target(old),before=structuredClone(f.objects[oldTarget]);
+    const fresh=f.flatAdd('switch.new','new.schalter','off');const power=f.flatAdd('sensor.power','new.leistung',42,{device_class:'power',unit_of_measurement:'W'},false);
+    mapper=f.mapper();await mapper.run();
+    assert.deepEqual(f.objects[oldTarget],before);assert.equal(f.states[f.target(fresh)].val,false);assert.equal(f.objects[f.target(power)].common.role,'value.power');
+    await mapper.command(f.event(oldTarget,false));await mapper.command(f.event(f.target(fresh),true));
+    assert.deepEqual(f.sends,[[old.slice(0,-6)+'.set','OFF'],[fresh+'_set','ON']]);
+    f.states[fresh]={val:'on',ack:true,q:0,ts:f.tick(100)};await mapper.run([fresh]);assert.equal(f.states[f.target(fresh)].ack,true);assert.equal(f.states[f.target(fresh)].val,true);
+    f.settings.virtualLayout='flat';await f.mapper().run();assert.equal(f.objects[f.target(fresh)+'_2'],undefined,'already short mirror keeps its ID');
+    f.api.sendMqtt=async(...args)=>{f.sends.push(args);return {result:true};};await publishCommand(f.api,f.settings,fresh+'_set','OFF');
+    assert.equal(f.sends.at(-1)[2].topic,f.objects[fresh].native.topic+'_set');assert.equal(f.sends.at(-1)[2].retain,false);
+    delete f.catalog['switch.new'];f.updateCatalog();await assert.rejects(publishCommand(f.api,f.settings,fresh+'_set','ON'),/match/);
+});
+
+test('flat raw Light channels and role mode support explicit metadata and never infer unrelated state IDs', async () => {
+    const f=fixture(),root=f.flatAdd('light.new','new.licht','on',{effect_list:['Rainbow','off'],min_color_temp_kelvin:2000,max_color_temp_kelvin:6500},true,['brightness','rgb_color','effect','color_temp_kelvin']);
+    const brightness=f.flatFeature(root,'light.new','brightness',50);
+    const rgb=f.flatFeature(root,'light.new','rgb_color','[1,2,255]');
+    f.flatFeature(root,'light.new','effect','Rainbow');f.flatFeature(root,'light.new','color_temp_kelvin',3000);
+    const mapper=f.mapper();await mapper.run();assert.equal(f.states[f.target(rgb)].val,'#0102FF');
+    await mapper.command(f.event(f.target(brightness),75));assert.deepEqual(f.sends.at(-1),[brightness+'_set','75']);
+    const date=f.flatAdd('sensor.date','new.datum','2026-06-01',{device_class:'date'},false);
+    f.api.listMetadata=()=>[date+'_attribute.device_class'];f.api.writeRole=async(id,role)=>{f.objects[id].common.role=role;};
+    await createMapper(f.api,f.settings).run();assert.equal(f.objects[date].common.role,'date');
+    const shadow=f.flatAdd('switch.shadow','new.shadow','off');f.catalog['switch.shadow'].state_topic=f.objects[root].native.topic;f.updateCatalog();
+    await mapper.run();assert.equal(f.objects[f.target(shadow)],undefined);
+});
 
 test('flat layout preview and apply create short typed names without intermediate state folders', async () => {
     const f = fixture('preview'); f.settings.virtualLayout = 'flat';
@@ -155,7 +197,8 @@ test('invalid flat settings, unrelated journal targets and excluded IDs cannot c
 });
 
 test('adapter runtime subscribes to flat controls without state suffix and publishes non-retained commands', async () => {
-    const f=fixture(),sourceId=f.add('switch.plug','plug.switch','off'),subscriptions=[],sent=[];
+    for (const flatRaw of [false,true]) {
+    const f=fixture(),sourceId=flatRaw ? f.flatAdd('switch.plug','plug.schalter','off') : f.add('switch.plug','plug.switch','off'),subscriptions=[],sent=[];
     const code=readFileSync(require.resolve('../app/iobroker/ugso-mqtt-role-mapper.js'),'utf8');
     const context={Date:class extends Date {static now(){return f.api.now();}},
         existsObject:id=>Boolean(f.objects[id]),existsState:id=>Boolean(f.states[id]),getObject:f.api.getObject,getState:f.api.getState,
@@ -173,7 +216,8 @@ test('adapter runtime subscribes to flat controls without state suffix and publi
     const event=f.event(target,true);f.states[target]=event.state;listener.callback(event);
     await new Promise(resolve=>setImmediate(resolve));
     assert.equal(sent.length,1);assert.equal(sent[0][1],'sendMessage2Client');assert.equal(sent[0][2].message,'ON');assert.equal(sent[0][2].retain,false);
-    assert.equal(sent[0][2].topic,f.objects[sourceId].native.topic.slice(0,-6)+'/set');
+    assert.equal(sent[0][2].topic,flatRaw ? f.objects[sourceId].native.topic+'_set' : f.objects[sourceId].native.topic.slice(0,-6)+'/set');
+    }
 });
 
 test('commands use the MQTT adapter topic API with retain false and preserve raw set values', async () => {

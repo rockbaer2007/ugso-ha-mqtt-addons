@@ -1,5 +1,5 @@
 name: MQTT-Client
-version: "0.1.33"
+version: "0.1.34"
 slug: mqtt_client
 description: Send selected Home Assistant states to an external MQTT broker such as ioBroker
 url: https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/mqtt_client
@@ -30,6 +30,7 @@ options:
   entities: []
   forward_label: ""
   label_device_readings: false
+  topic_layout_new: nested
   entity_attributes: []
   command_entities: []
 schema:
@@ -49,6 +50,7 @@ schema:
     - str
   forward_label: str?
   label_device_readings: bool?
+  topic_layout_new: list(nested|flat)?
   entity_attributes:
     - str
   command_entities:

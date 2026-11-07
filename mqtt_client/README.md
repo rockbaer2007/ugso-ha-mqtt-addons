@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.33**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
+Version **0.1.34**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
 
 **Neu in 0.1.24:** Der Helfer legt virtuelle Datenpunkte unter `0_userdata.0.ugso_mqtt`
 automatisch an. Für VIS 2 genügt je Wert ein Datenpunkt: Status mit `ack: true`,
@@ -26,6 +26,30 @@ ausgewählte Attribute mit Topic, Wert, Brokerbestätigung und farbiger Herkunft
 Label (blau), Manuell (grün), Beides (violett). Die Liste ist durchsuchbar und
 scrollbar. Nur Zugangsdaten klappen automatisch ein; Übertragung/TLS und beide
 Buttons bleiben erreichbar. Details stehen in [der Anleitung](DOCS.md).
+
+
+## Neu in 0.1.34: flache MQTT-Pfade nur für neue Entitäten {#mqtt-layout-0134}
+
+Unter **Übertragung und TLS → MQTT-Struktur für neue Entitäten** kann **Flach mit kurzen Namen** gewählt werden. Standard bleibt die bisherige Struktur. Danach **Speichern und verbinden**. Die Einstellung gilt für erstmals ausgewählte manuelle Entitäten und neue Label-Mitglieder, einschließlich optionaler Gerätemesswerte.
+
+Bereits bekannte Entitäten behalten ihre bisherigen Pfade. Die Zuordnung wird dauerhaft in `/data/mqtt-routes.json` gespeichert und ist in der exportierten Einstellungssicherung enthalten. Auch nach Entfernen und erneutem Auswählen eines Labels, Umbenennen, Neustart oder Update wird derselbe Pfad verwendet. Beim ersten Upgrade werden vorhandene Auswahlen und erfasste Topics als Bestand übernommen; die bestehende Label-Auswahl wird beim ersten erfolgreichen Abgleich gesichert. Diese Datei nicht löschen. Eine Rückstellung auf die bisherige Struktur migriert keine bereits zugeordneten Entitäten.
+
+Beispiel für neue flache MQTT-Topics:
+
+```text
+ha_external/geraet/schalter
+ha_external/geraet/schalter_set
+ha_external/geraet/schalter_attribute/device_class
+ha_external/geraet/energie
+ha_external/geraet/leistung
+ha_external/geraet/licht_brightness
+ha_external/geraet/licht_brightness_set
+```
+
+Alte Topics wie `ha_external/geraet/switch/state` und `…/switch/set` bleiben parallel gültig. Vergebene kurze Namen werden bei Kollisionen eindeutig ergänzt. Vorhandene Datenpunkte, Werte, Aliase und VIS-2-Verknüpfungen werden weder umbenannt noch gelöscht.
+
+**Vor Aktivierung den vollständigen JavaScript-Helfer 0.1.34 installieren und eigene Einstellungen übernehmen.** Er liest beide MQTT-Strukturen anhand des übertragenen Auswahlkatalogs mit exakten Status- und Rückkanalpfaden. Erst Vorschau prüfen, dann `mode: 'apply'`. Ältere Helfer erkennen die neuen flachen MQTT-Pfade nicht. `virtualLayout: 'flat'` ist davon unabhängig: Diese Helferoption bestimmt nur die Darstellung unter `0_userdata.0.ugso_mqtt`. Die bisherigen manuellen Rollen und Verknüpfungen bleiben geschützt.
+
 
 ## Neu in 0.1.33: flache VIS-2-Struktur mit kurzen Namen
 

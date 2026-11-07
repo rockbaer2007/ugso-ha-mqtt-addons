@@ -1,5 +1,29 @@
 # MQTT-Client einrichten
 
+
+## Neu in 0.1.34: flache MQTT-Pfade nur für neue Entitäten {#mqtt-layout-0134}
+
+Unter **Übertragung und TLS → MQTT-Struktur für neue Entitäten** kann **Flach mit kurzen Namen** gewählt werden. Standard bleibt die bisherige Struktur. Danach **Speichern und verbinden**. Die Einstellung gilt für erstmals ausgewählte manuelle Entitäten und neue Label-Mitglieder, einschließlich optionaler Gerätemesswerte.
+
+Bereits bekannte Entitäten behalten ihre bisherigen Pfade. Die Zuordnung wird dauerhaft in `/data/mqtt-routes.json` gespeichert und ist in der exportierten Einstellungssicherung enthalten. Auch nach Entfernen und erneutem Auswählen eines Labels, Umbenennen, Neustart oder Update wird derselbe Pfad verwendet. Beim ersten Upgrade werden vorhandene Auswahlen und erfasste Topics als Bestand übernommen; die bestehende Label-Auswahl wird beim ersten erfolgreichen Abgleich gesichert. Diese Datei nicht löschen. Eine Rückstellung auf die bisherige Struktur migriert keine bereits zugeordneten Entitäten.
+
+Beispiel für neue flache MQTT-Topics:
+
+```text
+ha_external/geraet/schalter
+ha_external/geraet/schalter_set
+ha_external/geraet/schalter_attribute/device_class
+ha_external/geraet/energie
+ha_external/geraet/leistung
+ha_external/geraet/licht_brightness
+ha_external/geraet/licht_brightness_set
+```
+
+Alte Topics wie `ha_external/geraet/switch/state` und `…/switch/set` bleiben parallel gültig. Vergebene kurze Namen werden bei Kollisionen eindeutig ergänzt. Vorhandene Datenpunkte, Werte, Aliase und VIS-2-Verknüpfungen werden weder umbenannt noch gelöscht.
+
+**Vor Aktivierung den vollständigen JavaScript-Helfer 0.1.34 installieren und eigene Einstellungen übernehmen.** Er liest beide MQTT-Strukturen anhand des übertragenen Auswahlkatalogs mit exakten Status- und Rückkanalpfaden. Erst Vorschau prüfen, dann `mode: 'apply'`. Ältere Helfer erkennen die neuen flachen MQTT-Pfade nicht. `virtualLayout: 'flat'` ist davon unabhängig: Diese Helferoption bestimmt nur die Darstellung unter `0_userdata.0.ugso_mqtt`. Die bisherigen manuellen Rollen und Verknüpfungen bleiben geschützt.
+
+
 ## Neu in 0.1.33: flache VIS-2-Struktur mit kurzen Namen
 
 **Den vollständigen JavaScript-Helfer 0.1.33 ersetzen und eigene Einstellungen übernehmen.** Im Einstellungsblock wählt `virtualLayout: 'nested'` die bisherige Struktur (Standard); `virtualLayout: 'flat'` legt kurze Datenpunkte direkt unter dem Geräteordner an, etwa `schalter`, `energie`, `leistung`, `spannung`, `stromstaerke`. Bei Lampen kommen passende Werte wie `helligkeit`, `farbe`, `effekt` und `farbtemperatur` hinzu. Gleichartige oder belegte Namen erhalten eindeutige Zusätze wie `leistung_2`; einmal vergebene Zuordnungen bleiben im Sicherungsjournal erhalten.

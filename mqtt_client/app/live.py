@@ -152,12 +152,14 @@ class TopicInventory:
             temp = Path(handle.name)
         temp.replace(self.path)
 
-    def remember(self, config, topic, entity, attribute=None):
+    def remember(self, config, topic, entity, attribute=None, topic_layout=None):
         with self.lock:
             broker = broker_identity(config)
             record = next((r for r in self.records if r["broker"] == broker and r["topic"] == topic), None)
             data = dict(broker=broker, topic=topic, entity=entity, attribute=attribute,
                         prefix=config.prefix, active=True)
+            if topic_layout is not None:
+                data["topic_layout"] = topic_layout
             if record != data:
                 if record:
                     record.update(data)

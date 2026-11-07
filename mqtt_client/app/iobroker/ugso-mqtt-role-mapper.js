@@ -1,4 +1,4 @@
-/* MQTT-Client 0.1.33: ioBroker JavaScript adapter 10.4.10 compatible.
+/* MQTT-Client 0.1.34: ioBroker JavaScript adapter 10.4.10 compatible.
  * Preview first. Settings and documentation: mqtt_client/iobroker/README*.md.
  * No MQTT state values, types, units, permissions or commands are changed.
  */
@@ -111,14 +111,15 @@ const UgsoMqttRoles = (() => {
         validateSettings(settings);
         const inScope = id => typeof id === 'string' && id.startsWith(settings.mqttRoot + '.');
         const excluded = id => settings.excludeIds.includes(id);
-        const metadataPattern = new RegExp('^' + escapeRegex(settings.mqttRoot) + '\\.(.+)\\.attribute\\.device_class$');
+        const metadataPattern = new RegExp('^' + escapeRegex(settings.mqttRoot) + '\\.(.+)(?:\\.attribute|_attribute)\\.device_class$');
         const previewed = new Map();
 
-        function plan(metadataId) {
+        function plan(metadataId, routes) {
             const match = metadataId.match(metadataPattern);
             if (!match) return null;
-            const base = metadataId.slice(0, -'.attribute.device_class'.length);
-            const id = base + '.state';
+            const flat = metadataId.endsWith('_attribute.device_class');
+            const base = metadataId.slice(0, -(flat ? '_attribute.device_class' : '.attribute.device_class').length);
+            const id = base + (flat ? '' : '.state');
             if (!inScope(id) || excluded(id)) return null;
             const object = api.getObject(id);
             if (!object || !generic(object.common && object.common.role)) return null;
@@ -126,7 +127,11 @@ const UgsoMqttRoles = (() => {
             // Disambiguate the allowlisted measurement/binary classes by their actual type.
             const domain = object.common.type === 'boolean' ? 'binary_sensor' : 'sensor';
             const deviceClass = api.getState(metadataId)?.val;
-            const unit = api.getState(base + '.attribute.unit_of_measurement')?.val;
+            if (flat) {
+                const route = (routes || catalogRoutes(readCatalog(api, settings))).get(object.native?.topic);
+                if (!route?.flat || route.feature || route.selected.attributes?.device_class !== deviceClass) return null;
+            }
+            const unit = api.getState(base + (flat ? '_attribute.' : '.attribute.') + 'unit_of_measurement')?.val;
             const role = propose(domain, deviceClass, unit, object, api.getState(id));
             if (!role) return null;
             const item = {id, role, type: object.common.type, hadRole: own(object.common, 'role'), previousRole: object.common.role ?? null, metadataId, kind: 'role'};
@@ -189,8 +194,9 @@ const UgsoMqttRoles = (() => {
                 }
                 return count;
             }
+            const routes = catalogRoutes(readCatalog(api, settings));
             for (const metadataId of api.listMetadata()) {
-                const item = plan(metadataId);
+                const item = plan(metadataId, routes);
                 if (!item || own(journal.entries, item.id)) continue;
                 if (settings.mode !== 'preview' || previewed.get(item.id) !== item.role) {
                     api.log((settings.mode === 'preview' ? 'Preview: ' : 'Apply: ') + item.id + ' -> ' + item.role + (item.kind === 'alias' ? ' (read-only alias: ' + item.aliasId + ')' : ''));
@@ -211,6 +217,31 @@ const UgsoMqttRoles = (() => {
         }
         return {run};
     }
+    function readCatalog(api, settings) {
+        const raw = api.getState(settings.mqttRoot + '.selected_entities')?.val;
+        if (typeof raw !== 'string' || !raw.startsWith('v1:')) return {};
+        try { const data = JSON.parse(raw.slice(3)); return data && typeof data === 'object' && !Array.isArray(data) ? data : {}; } catch { return {}; }
+    }
+    function catalogRoutes(catalog) {
+        const routes = new Map();
+        const add = (topic, route) => {
+            if (typeof topic !== 'string' || !topic || /[+#\u0000]/.test(topic)) return;
+            routes.set(topic, routes.has(topic) ? null : route); // Never guess ambiguous paths.
+        };
+        for (const [entity, selected] of Object.entries(catalog)) {
+            if (!/^[a-z0-9_]+\.[a-z0-9_]+$/.test(entity) || !selected || typeof selected !== 'object' || typeof selected.state_topic !== 'string') continue;
+            const flat = selected.topic_layout === 'flat';
+            if (!flat && !selected.state_topic.endsWith('/state')) continue;
+            const root = selected.state_topic;
+            add(root, {entity, selected, flat, feature: '', commandTopic: selected.command_topic || (flat ? null : root.slice(0,-6) + '/set')});
+            if (entity.startsWith('light.') && Array.isArray(selected.features)) for (const feature of selected.features) {
+                if (!['brightness', 'rgb_color', 'effect', 'color_temp_kelvin'].includes(feature)) continue;
+                add(selected.feature_state_topics?.[feature] || (!flat ? root.slice(0,-6) + '/' + feature + '/state' : null),
+                    {entity, selected, flat, feature, commandTopic: selected.feature_command_topics?.[feature] || (!flat ? root.slice(0,-6) + '/' + feature + '/set' : null)});
+            }
+        }
+        return routes;
+    }
     function createVirtualMapper(api, settings) {
         validateSettings(settings);
         const layout = settings.virtualLayout ?? 'nested';
@@ -228,14 +259,7 @@ const UgsoMqttRoles = (() => {
         };
         const num = value => typeof value === 'number' && Number.isFinite(value);
         const bool = value => value === true || value === 'on' || value === 'ON' ? true : value === false || value === 'off' || value === 'OFF' ? false : undefined;
-        const active = () => {
-            const value = get(settings.mqttRoot + '.selected_entities');
-            if (typeof value !== 'string' || !value.startsWith('v1:')) return {};
-            try {
-                const data = JSON.parse(value.slice(3));
-                return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
-            } catch { return {}; }
-        };
+        const active = () => readCatalog(api, settings);
         const online = () => get(settings.mqttRoot + '.availability') === 'online';
         const targetFor = id => settings.virtualRoot + id.slice(settings.mqttRoot.length);
         const excluded = (sourceId, targetId) => settings.excludeIds.includes(sourceId) || Boolean(targetId && settings.excludeIds.includes(targetId));
@@ -266,6 +290,10 @@ const UgsoMqttRoles = (() => {
         function flatTarget(spec, data, recordsBySource, reserved) {
             const existing = (recordsBySource.get(spec.sourceId) || []).find(id => data.entries[id].layout === 'flat');
             if (existing) return existing; // Pin names even if selection order or HA metadata changes.
+            if (spec.sourceLayout === 'flat') {
+                const mirrored = (recordsBySource.get(spec.sourceId) || []).find(id => id === targetFor(spec.sourceId) && new RegExp('^' + escapeRegex(shortName(spec)) + '(?:_[0-9]+)?$').test(id.slice(id.lastIndexOf('.') + 1)));
+                if (mirrored) return mirrored;
+            }
             const group = groupFor(spec.sourceId);
             if (!/^[A-Za-z0-9_-]+$/.test(group)) return null;
             const parent = output + group, object = api.getObject(parent);
@@ -281,30 +309,22 @@ const UgsoMqttRoles = (() => {
             throw new Error('No free flat name for ' + spec.sourceId);
         }
 
-        function describe(id, catalog = active()) {
-            if (!id.startsWith(prefix) || !id.endsWith('.state') || id.includes('.attribute.') || excluded(id)) return null;
+        function describe(id, catalog = active(), index = catalogRoutes(catalog)) {
+            if (!id.startsWith(prefix) || excluded(id)) return null;
             const source = api.getState(id);
             if (!source || source.ack !== true || source.q && source.q !== 0) return null;
-            const base = id.slice(0, -6);
-            let root = base, feature = '', entity = get(root + '.attribute.ha_entity_id');
-            if (!entity) {
-                const last = base.slice(base.lastIndexOf('.') + 1);
-                if (!['brightness', 'rgb_color', 'effect', 'color_temp_kelvin'].includes(last)) return null;
-                root = base.slice(0, base.lastIndexOf('.'));
-                entity = get(root + '.attribute.ha_entity_id'); feature = last;
-                if (typeof entity !== 'string' || !entity.startsWith('light.')) return null;
-            }
-            if (typeof entity !== 'string' || !/^[a-z0-9_]+\.[a-z0-9_]+$/.test(entity)) return null;
-            const selected = own(catalog, entity) ? catalog[entity] : null;
-            if (!selected || typeof selected !== 'object' || typeof selected.state_topic !== 'string' || !selected.state_topic.endsWith('/state') || selected.state_topic !== api.getObject(root + '.state')?.native?.topic || feature && (!Array.isArray(selected.features) || !selected.features.includes(feature))) return null;
-            const expectedTopic = feature ? selected.state_topic.slice(0, -6) + '/' + feature + '/state' : selected.state_topic;
-            if (api.getObject(id)?.native?.topic !== expectedTopic) return null;
-            const attribute = key => selected.attributes && own(selected.attributes, key) ? selected.attributes[key] : get(root + '.attribute.' + key);
+            const route = index.get(api.getObject(id)?.native?.topic);
+            if (!route) return null;
+            const {entity, feature, selected, flat} = route;
+            const root = flat ? feature ? id.slice(0, -feature.length - 1) : id : feature ? id.slice(0, -feature.length - 7) : id.slice(0,-6);
+            const metadata = root + (flat ? '_attribute.' : '.attribute.');
+            if (get(metadata + 'ha_entity_id') !== entity || api.getObject(root + (flat ? '' : '.state'))?.native?.topic !== selected.state_topic) return null;
+            const attribute = key => selected.attributes && own(selected.attributes, key) ? selected.attributes[key] : get(metadata + key);
             const domain = entity.split('.')[0], dc = attribute('device_class');
             const flag = attribute('command_enabled');
             const enabled = selected.command === true && (flag === true || flag === 'true');
-            const setId = base + '.set';
-            let writable = enabled && api.getObject(setId)?.type === 'state';
+            const setId = flat ? id + '_set' : id.slice(0,-6) + '.set';
+            let writable = enabled && api.getObject(setId)?.type === 'state' && api.getObject(setId)?.native?.topic === route.commandTopic;
             let value = source.val, type = typeof value, role = 'state', encode;
             const extra = {}, unit = feature === 'brightness' ? '%' : feature === 'color_temp_kelvin' ? 'K' : attribute('unit_of_measurement');
             if (feature === 'rgb_color') {
@@ -363,7 +383,7 @@ const UgsoMqttRoles = (() => {
             }
             const common = {name: String(attribute('friendly_name') || entity) + (feature ? ' ' + feature : ''), type, role, read: true, write: Boolean(writable), ...extra};
             if (typeof unit === 'string' && type === 'number') common.unit = unit;
-            return {id: targetFor(id), sourceId: id, entity, feature, deviceClass: dc, setId: writable ? setId : null, value, sourceTs: source.ts || 0, common,
+            return {id: targetFor(id), sourceId: id, sourceLayout: flat ? 'flat' : 'nested', entity, feature, deviceClass: dc, setId: writable ? setId : null, value, sourceTs: source.ts || 0, common,
                 native: {ugsoMqttVis2: {version: 1, sourceId: id}}, encode};
         }
 
@@ -376,7 +396,7 @@ const UgsoMqttRoles = (() => {
             const data = JSON.parse(raw);
             if (data.format !== 'ugso-mqtt-vis2' || data.version !== 1 || data.mqttRoot !== settings.mqttRoot || data.virtualRoot !== settings.virtualRoot || !data.entries || Array.isArray(data.entries)) throw new Error('Virtual backup mismatch');
             for (const [id, record] of Object.entries(data.entries)) {
-                if (!id.startsWith(output) || typeof record.sourceId !== 'string' || !record.sourceId.startsWith(prefix) || !record.sourceId.endsWith('.state') || record.sourceId.includes('.attribute.') ||
+                if (!id.startsWith(output) || typeof record.sourceId !== 'string' || !record.sourceId.startsWith(prefix) || (record.sourceLayout !== 'flat' && (!record.sourceId.endsWith('.state') || record.sourceId.includes('.attribute.'))) ||
                     (record.layout !== undefined && !['nested', 'flat'].includes(record.layout)) ||
                     !(id === targetFor(record.sourceId) || flatRecord(id, record)) || !record.common || !['boolean', 'number', 'string'].includes(record.common.type) || record.native?.ugsoMqttVis2?.sourceId !== record.sourceId) throw new Error('Invalid virtual backup entry');
             }
@@ -397,6 +417,7 @@ const UgsoMqttRoles = (() => {
             }
             const valid = new Set();
             const catalog = active();
+            const index = catalogRoutes(catalog);
             const reserved = new Set(Object.keys(data.entries));
             const recordsBySource = new Map();
             for (const [id, record] of Object.entries(data.entries)) {
@@ -404,7 +425,7 @@ const UgsoMqttRoles = (() => {
                 recordsBySource.get(record.sourceId).push(id);
             }
             for (const sourceId of [...new Set(changed || api.listSources())].sort()) {
-                const spec = describe(sourceId, catalog);
+                const spec = describe(sourceId, catalog, index);
                 if (!spec) continue;
                 const desired = layout === 'flat' ? flatTarget(spec, data, recordsBySource, reserved) : spec.id;
                 // Keep existing IDs synchronized and controllable when changing layout.
@@ -428,6 +449,7 @@ const UgsoMqttRoles = (() => {
                     if (!record || !object) {
                         const common = record?.layout === 'flat' || id === desired && layout === 'flat' ? {...spec.common, name: flatDisplayName(id)} : spec.common;
                         record = {sourceId, common, native: spec.native, savedAt: new Date(api.now()).toISOString(),
+                            ...(spec.sourceLayout === 'flat' ? {sourceLayout: 'flat'} : {}),
                             ...(record?.layout ? {layout: record.layout} : id === desired && layout === 'flat' ? {layout: 'flat'} : {})};
                         data.entries[id] = record;
                         await api.writeJournal(settings.virtualBackupId, JSON.stringify(data));
@@ -503,16 +525,19 @@ const UgsoMqttRoles = (() => {
         api.log('Helper infrastructure ready; existing backups and values preserved.');
     }
     async function publishCommand(api, settings, id, payload) {
-        if (typeof id !== 'string' || !id.startsWith(settings.mqttRoot + '.') || !id.endsWith('.set')) throw new Error('Invalid command ID');
-        const target = api.getObject(id), source = api.getObject(id.slice(0, -4) + '.state');
+        if (typeof id !== 'string' || !id.startsWith(settings.mqttRoot + '.') || !(id.endsWith('.set') || id.endsWith('_set'))) throw new Error('Invalid command ID');
+        const flat = !id.endsWith('.set');
+        const target = api.getObject(id), source = api.getObject(id.slice(0, -4) + (flat ? '' : '.state'));
         const stateTopic = source?.native?.topic, topic = target?.native?.topic;
-        if (target?.type !== 'state' || source?.type !== 'state' || typeof stateTopic !== 'string' || !stateTopic.endsWith('/state') || topic !== stateTopic.slice(0, -6) + '/set') throw new Error('Command topic does not match source');
+        const route = flat ? catalogRoutes(readCatalog(api, settings)).get(stateTopic) : null;
+        if (target?.type !== 'state' || source?.type !== 'state' || typeof stateTopic !== 'string' ||
+            (flat ? !route?.flat || route.selected.command !== true || route.commandTopic !== topic || topic !== stateTopic + '_set' : !stateTopic.endsWith('/state') || topic !== stateTopic.slice(0,-6) + '/set')) throw new Error('Command topic does not match source');
         const instance = settings.mqttRoot.split('.').slice(0, 2).join('.');
         const result = await api.sendMqtt(instance, 'sendMessage2Client', {topic, message: payload, retain: false}, {timeout: 5000});
         if (result?.result !== true) throw new Error(result?.error || 'MQTT adapter did not accept the command');
         api.log('Command handed to MQTT adapter (retain=false): ' + id + '; waiting for HA feedback.');
     }
-    return {createMapper, createVirtualMapper, initialize, publishCommand, propose, validDate, validTimestamp, numeric, binary};
+    return {createMapper, createVirtualMapper, initialize, publishCommand, readCatalog, catalogRoutes, propose, validDate, validTimestamp, numeric, binary};
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UgsoMqttRoles;
@@ -523,17 +548,27 @@ if (typeof on === 'function' && typeof getObject === 'function') {
     // existsObject/existsState perform silent checks of the adapter caches.
     const optionalObject = id => existsObject(id) ? getObject(id) : undefined;
     const optionalState = id => existsState(id) ? getState(id) : undefined;
+    let previousCatalog, cachedRoutes = new Map();
+    const currentRoutes = () => {
+        const value = optionalState(settings.mqttRoot + '.selected_entities')?.val;
+        if (value !== previousCatalog) {
+            previousCatalog = value;
+            cachedRoutes = UgsoMqttRoles.catalogRoutes(UgsoMqttRoles.readCatalog(api, settings));
+        }
+        return cachedRoutes;
+    };
     const api = {
         getObject: optionalObject,
         getState: optionalState,
         listMetadata: () => {
             const ids = [];
-            $('state[id=' + settings.mqttRoot + '.*.attribute.device_class]').each(id => ids.push(id));
+            $('state[id=' + settings.mqttRoot + '.*device_class]').each(id => { if (id.endsWith('.attribute.device_class') || id.endsWith('_attribute.device_class')) ids.push(id); });
             return ids;
         },
         listSources: () => {
             const ids = [];
-            $('state[id=' + settings.mqttRoot + '.*.state]').each(id => ids.push(id));
+            const routes = currentRoutes();
+            $('state[id=' + settings.mqttRoot + '.*]').each(id => { if (routes.get(optionalObject(id)?.native?.topic)) ids.push(id); });
             return ids;
         },
         now: () => Date.now(),
@@ -568,7 +603,7 @@ if (typeof on === 'function' && typeof getObject === 'function') {
     try {
         if (!['virtual', 'roles'].includes(settings.outputMode)) throw new Error('Invalid outputMode');
         const virtual = settings.outputMode === 'virtual';
-        api.log('Helper 0.1.33; output=' + settings.outputMode + '; layout=' + settings.virtualLayout + '; mode=' + settings.mode + (settings.mode === 'preview' ? ' (creates missing helper folders/backups only; source changes are previewed)' : ''));
+        api.log('Helper 0.1.34; output=' + settings.outputMode + '; layout=' + settings.virtualLayout + '; mode=' + settings.mode + (settings.mode === 'preview' ? ' (creates missing helper folders/backups only; source changes are previewed)' : ''));
         const mapper = virtual ? UgsoMqttRoles.createVirtualMapper(api, settings) : UgsoMqttRoles.createMapper(api, settings);
         let serial = Promise.resolve(), timer, pendingTimer, stopped = false, queued = 0, initialized = false;
         const enqueue = task => {
@@ -585,18 +620,20 @@ if (typeof on === 'function' && typeof getObject === 'function') {
             const escaped = settings.mqttRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             let fullScan = false;
             const dirtySources = new Set();
-            on({id: new RegExp('^' + escaped + '\\.(?:availability|selected_entities|.+\\.(?:state|attribute\\.[^.]+))$'), change: 'any', q: '*'}, event => {
+            on({id: new RegExp('^' + escaped + '\\..+$'), change: 'any', q: '*'}, event => {
                 if (!initialized) return;
                 if (!event?.id || !event.state) return;
                 const same = event.oldState && JSON.stringify(event.state.val) === JSON.stringify(event.oldState.val) && event.state.ack === event.oldState.ack && event.state.q === event.oldState.q;
                 if (same && !(virtual && mapper.pendingSources().includes(event.id))) return;
-                if (event.id.endsWith('.state')) dirtySources.add(event.id);
-                else if (event.id.includes('.attribute.')) {
-                    const [base, attribute] = event.id.split('.attribute.');
+                if (event.id === settings.mqttRoot + '.availability' || event.id === settings.mqttRoot + '.selected_entities') fullScan = true;
+                else if (currentRoutes().get(optionalObject(event.id)?.native?.topic)) dirtySources.add(event.id);
+                else if (event.id.includes('.attribute.') || event.id.includes('_attribute.')) {
+                    const flat = event.id.includes('_attribute.');
+                    const [base, attribute] = event.id.split(flat ? '_attribute.' : '.attribute.');
                     if (!['ha_entity_id', 'command_enabled', 'device_class', 'unit_of_measurement', 'friendly_name', 'min', 'max', 'step', 'options', 'effect_list', 'min_color_temp_kelvin', 'max_color_temp_kelvin'].includes(attribute)) return;
-                    dirtySources.add(base + '.state');
-                    for (const feature of ['brightness', 'rgb_color', 'effect', 'color_temp_kelvin']) dirtySources.add(base + '.' + feature + '.state');
-                } else fullScan = true;
+                    dirtySources.add(base + (flat ? '' : '.state'));
+                    for (const feature of ['brightness', 'rgb_color', 'effect', 'color_temp_kelvin']) dirtySources.add(base + (flat ? '_' + feature : '.' + feature + '.state'));
+                } else return;
                 if (!timer) timer = setTimeout(() => {
                     timer = undefined;
                     const sources = fullScan || !virtual ? undefined : [...dirtySources];

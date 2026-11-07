@@ -37,6 +37,8 @@ try {
   assert.match(await scriptDownload.text(),/mode: 'preview'/);
   assert.equal(await page.locator('#transferSettings').isVisible(),true);
   assert.equal(await page.locator('#publish_delay_ms').isVisible(),true);
+  assert.equal(await page.locator('[name=topic_layout_new]').inputValue(),'nested');
+  await page.locator('[name=topic_layout_new]').selectOption('flat');
   const readingsOption = page.locator('.deviceReadingsOption');
   assert.equal(await readingsOption.locator('[name=label_device_readings]').count(),1);
   assert.equal(await readingsOption.evaluate(el=>getComputedStyle(el).borderLeftWidth),'4px');
@@ -84,6 +86,7 @@ try {
   const config=await(await page.request.get(new URL('api/config',page.url()).href)).json();
   assert.equal(config.poll_interval,17); assert.equal(config.publish_delay_ms,0); assert.equal(config.has_password,true);
   assert.equal(config.label_device_readings,true);
+  assert.equal(config.topic_layout_new,'flat');
   assert.equal(config.tls,false);
   assert.equal(await page.locator('[name=tls_ca]').isVisible(),false);
   assert.equal(await page.locator('#broker_host').isVisible(),false);
@@ -92,6 +95,8 @@ try {
   const download=await downloadEvent, backup=JSON.parse(await readFile(await download.path(),'utf8'));
   assert.equal(backup.options.poll_interval,17); assert.equal(backup.options.password,undefined);
   assert.equal(backup.options.label_device_readings,true);
+  assert.equal(backup.options.topic_layout_new,'flat');
+  assert.equal(backup.topic_routes.format,'ugso-mqtt-routes');
   assert.equal(backup.options.tls_key,undefined); assert.deepEqual(backup.options.entities,['switch.test']);
   page.once('dialog',dialog=>dialog.dismiss());
   await page.locator('#restoreFile').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});
