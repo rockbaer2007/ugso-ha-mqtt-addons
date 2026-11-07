@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.36
+
+- Persist ingress settings independently of Supervisor-generated options.json in private mqtt-settings.json. Atomically save before reporting success and retain choices, credentials and selections across restart/update, while merging actual Supervisor edits against the previous baseline. Preserve existing MQTT routes and helper 0.1.34.
+- Add update-rewrite, repeated restart, explicit opt-out, credentials, import/restore, corrupt-file and failed-write regression tests. Document the one-time upgrade backup/restore step in DE/EN/FR; already lost settings are not guessed.
+
 ## 0.1.35
 
 - Preserve catalog generation when a manually selected and labeled Light is temporarily missing from the HA state snapshot. Keep all MQTT 0.1.34 route behavior and the unchanged JavaScript helper 0.1.34.

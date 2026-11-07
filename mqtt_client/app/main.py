@@ -23,6 +23,7 @@ from tempfile import NamedTemporaryFile
 import paho.mqtt.client as mqtt
 from live import StateStream, TopicInventory, broker_identity, entity_registry
 from routing import TopicRoutes
+from settings_store import SettingsStore
 from label_support import related_readings, related_reading_report, reading_class, READING_CLASSES, metadata as label_metadata, light_features, light_value, light_command, finite
 from websocket import WebSocketException
 
@@ -35,7 +36,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS | {"cover"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.35"
+APP_VERSION = "0.1.36"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -1878,6 +1879,7 @@ class Bridge:
 class AppController:
     def __init__(self, options_path, token, bridge_factory=Bridge):
         self.options_path = Path(options_path)
+        self.settings = SettingsStore(self.options_path)
         self.token = token
         self.bridge_factory = bridge_factory
         self.ha = HomeAssistant(self.token)
@@ -1889,15 +1891,10 @@ class AppController:
         self.thread = None
 
     def read_options(self):
-        return json.loads(self.options_path.read_text(encoding="utf-8"))
+        return self.settings.read()
 
     def write_options(self, options):
-        self.options_path.parent.mkdir(parents=True, exist_ok=True)
-        with NamedTemporaryFile("w", encoding="utf-8", dir=self.options_path.parent, delete=False) as handle:
-            json.dump(options, handle, indent=2)
-            handle.write("\n")
-            temp_path = Path(handle.name)
-        temp_path.replace(self.options_path)
+        self.settings.write(options)
 
     def start(self):
         with self.lock:

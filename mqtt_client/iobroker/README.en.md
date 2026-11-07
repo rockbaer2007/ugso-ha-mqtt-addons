@@ -5,6 +5,18 @@ The optional JavaScript ships with MQTT-Client **0.1.34** and runs in the ioBrok
 
 
 
+
+## New in 0.1.36: retain settings across updates {#settings-persistence-0136}
+
+**Saved app settings now survive the Home Assistant Supervisor regenerating its options file during an update.** This includes the related-measurements checkbox, the MQTT layout for new entities, other saved app settings and credentials. The app stores them independently in its private `/data/mqtt-settings.json` file. MQTT path assignments remain in `/data/mqtt-routes.json`; existing points and VIS-2 references are unchanged.
+
+**One-time upgrade from 0.1.35 or earlier:** Export settings in the app before updating. If they have already been reset during the first upgrade, import that backup afterwards or select both options again once and click **Save and connect**. Already lost settings cannot be reliably reconstructed; additional measurements are never enabled without your selection.
+
+Prefer editing these settings in the app. Actual Supervisor configuration changes are merged on restart; unchanged Supervisor defaults do not reset app choices. To explicitly return an app choice to its default, select and save it in the app. Existing settings backups remain usable and still exclude passwords and private TLS keys. The JavaScript helper remains **0.1.34**; no further helper replacement is required for this fix.
+
+Background: Supervisor manages `/data/options.json`; the private `/data` directory provides persistent storage for the app. [Official HA documentation](https://contributors.home-assistant.io/apps/reference/environment/).
+
+
 ## New in 0.1.34: flat MQTT paths for new entities only {#mqtt-layout-0134}
 
 Under **Transmission and TLS → MQTT structure for new entities**, select **Flat with short names** and **Save and connect**. The existing structure remains the default. This preference applies to manually selected entities and label members first encountered afterwards, including optional device measurements.

@@ -5,6 +5,18 @@
 **App 0.1.35:** Auch eine gleichzeitig manuell und per Label ausgewählte Lampe darf vorübergehend im HA-Abgleich fehlen. Der Auswahlkatalog bleibt dann verfügbar. Der JavaScript-Helfer bleibt auf **0.1.34**.
 
 
+
+## Neu in 0.1.36: Einstellungen nach Updates erhalten {#settings-persistence-0136}
+
+**Gespeicherte App-Einstellungen bleiben jetzt auch erhalten, wenn der Home-Assistant-Supervisor beim Update seine Optionsdatei neu erzeugt.** Das betrifft insbesondere den Messwerte-Haken und die MQTT-Struktur für neue Entitäten, aber auch die übrigen in der App gespeicherten Einstellungen und Zugangsdaten. Die App sichert sie unabhängig in der privaten Datei `/data/mqtt-settings.json`. Die MQTT-Pfadzuordnungen bleiben weiterhin in `/data/mqtt-routes.json`; vorhandene Datenpunkte und VIS-2-Verknüpfungen werden nicht geändert.
+
+**Einmaliger Umstieg von 0.1.35 oder älter:** Vor dem Update die Einstellungen in der App exportieren. Falls sie beim ersten Wechsel bereits zurückgesetzt wurden, die Sicherung nach dem Update wieder importieren oder die beiden Optionen einmal erneut wählen und **Speichern und verbinden** drücken. Schon verlorene Einstellungen können nicht zuverlässig rekonstruiert werden; zusätzliche Messwerte werden nicht ungefragt aktiviert.
+
+Die Einstellungen bevorzugt in der App ändern. Tatsächlich geänderte Supervisor-Konfigurationswerte werden beim Neustart übernommen; unveränderte Supervisor-Standardwerte setzen App-Auswahlen nicht zurück. Soll eine App-Auswahl ausdrücklich auf ihren Standard zurück, dies in der App wählen und speichern. Die vorhandene Einstellungssicherung bleibt verwendbar und enthält weiterhin keine Passwörter oder privaten TLS-Schlüssel. Der JavaScript-Helfer bleibt **0.1.34**; hierfür muss er nicht erneut ersetzt werden.
+
+Hintergrund: Der Supervisor verwaltet `/data/options.json`; für eigene dauerhafte Daten ist das private `/data`-Verzeichnis vorgesehen. [Offizielle HA-Dokumentation](https://contributors.home-assistant.io/apps/reference/environment/).
+
+
 ## Neu in 0.1.34: flache MQTT-Pfade nur für neue Entitäten {#mqtt-layout-0134}
 
 Unter **Übertragung und TLS → MQTT-Struktur für neue Entitäten** kann **Flach mit kurzen Namen** gewählt werden. Standard bleibt die bisherige Struktur. Danach **Speichern und verbinden**. Die Einstellung gilt für erstmals ausgewählte manuelle Entitäten und neue Label-Mitglieder, einschließlich optionaler Gerätemesswerte.

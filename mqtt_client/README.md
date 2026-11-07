@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.35**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
+Version **0.1.36**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
 
 **Neu in 0.1.24:** Der Helfer legt virtuelle Datenpunkte unter `0_userdata.0.ugso_mqtt`
 automatisch an. Für VIS 2 genügt je Wert ein Datenpunkt: Status mit `ack: true`,
@@ -30,6 +30,18 @@ Buttons bleiben erreichbar. Details stehen in [der Anleitung](DOCS.md).
 
 
 **App 0.1.35:** Auch eine gleichzeitig manuell und per Label ausgewählte Lampe darf vorübergehend im HA-Abgleich fehlen. Der Auswahlkatalog bleibt dann verfügbar. Der JavaScript-Helfer bleibt auf **0.1.34**.
+
+
+
+## Neu in 0.1.36: Einstellungen nach Updates erhalten {#settings-persistence-0136}
+
+**Gespeicherte App-Einstellungen bleiben jetzt auch erhalten, wenn der Home-Assistant-Supervisor beim Update seine Optionsdatei neu erzeugt.** Das betrifft insbesondere den Messwerte-Haken und die MQTT-Struktur für neue Entitäten, aber auch die übrigen in der App gespeicherten Einstellungen und Zugangsdaten. Die App sichert sie unabhängig in der privaten Datei `/data/mqtt-settings.json`. Die MQTT-Pfadzuordnungen bleiben weiterhin in `/data/mqtt-routes.json`; vorhandene Datenpunkte und VIS-2-Verknüpfungen werden nicht geändert.
+
+**Einmaliger Umstieg von 0.1.35 oder älter:** Vor dem Update die Einstellungen in der App exportieren. Falls sie beim ersten Wechsel bereits zurückgesetzt wurden, die Sicherung nach dem Update wieder importieren oder die beiden Optionen einmal erneut wählen und **Speichern und verbinden** drücken. Schon verlorene Einstellungen können nicht zuverlässig rekonstruiert werden; zusätzliche Messwerte werden nicht ungefragt aktiviert.
+
+Die Einstellungen bevorzugt in der App ändern. Tatsächlich geänderte Supervisor-Konfigurationswerte werden beim Neustart übernommen; unveränderte Supervisor-Standardwerte setzen App-Auswahlen nicht zurück. Soll eine App-Auswahl ausdrücklich auf ihren Standard zurück, dies in der App wählen und speichern. Die vorhandene Einstellungssicherung bleibt verwendbar und enthält weiterhin keine Passwörter oder privaten TLS-Schlüssel. Der JavaScript-Helfer bleibt **0.1.34**; hierfür muss er nicht erneut ersetzt werden.
+
+Hintergrund: Der Supervisor verwaltet `/data/options.json`; für eigene dauerhafte Daten ist das private `/data`-Verzeichnis vorgesehen. [Offizielle HA-Dokumentation](https://contributors.home-assistant.io/apps/reference/environment/).
 
 
 ## Neu in 0.1.34: flache MQTT-Pfade nur für neue Entitäten {#mqtt-layout-0134}
