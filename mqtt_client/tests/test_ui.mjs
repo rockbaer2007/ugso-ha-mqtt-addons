@@ -37,6 +37,10 @@ try {
   assert.match(await scriptDownload.text(),/mode: 'preview'/);
   assert.equal(await page.locator('#transferSettings').isVisible(),true);
   assert.equal(await page.locator('#publish_delay_ms').isVisible(),true);
+  const readingsOption = page.locator('.deviceReadingsOption');
+  assert.equal(await readingsOption.locator('[name=label_device_readings]').count(),1);
+  assert.equal(await readingsOption.evaluate(el=>getComputedStyle(el).borderLeftWidth),'4px');
+  assert.equal(await page.locator('[name=label_device_readings]').isChecked(),false,'highlight never enables the opt-in');
   assert.equal(await page.locator('#tlsToggle').getAttribute('aria-expanded'),'false');
   assert.equal(await page.locator('[name=tls_ca]').isVisible(),false);
   assert.match(await page.locator('#tlsToggle').innerText(),/TLS nicht ausgewählt/);

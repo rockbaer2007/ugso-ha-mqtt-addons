@@ -1,5 +1,9 @@
 # MQTT-Client
 
+## New in 0.1.32: highlight additional measurements
+
+The **“Automatically include related measurements and battery values from the same device”** option is highlighted in amber. Highlighting does not enable the checkbox: make your selection and click **“Save and connect”**. Existing settings are preserved. TLS and certificates remain separately collapsible.
+
 ## New in 0.1.31: collapse TLS and certificates separately
 
 **TLS and certificates** now has its own collapsible section, operable by mouse or keyboard. Its button shows whether TLS is selected even while closed. Expanding/collapsing changes neither TLS nor stored certificates or credentials. The section stays closed after loading and saving; transmission settings and both action buttons remain visible. The [new JavaScript helper blog entry](https://opensource.ugso-software.de/en/blog/snippets/iobroker-blockly#mqtt-vis2-helper) explains purpose, setup, status/commands and backups and includes the complete unchanged script 0.1.27 with copy button and download.

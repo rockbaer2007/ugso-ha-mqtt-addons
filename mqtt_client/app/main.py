@@ -34,7 +34,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS | {"cover"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.31"
+APP_VERSION = "0.1.32"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -165,6 +165,8 @@ INDEX_HTML = """<!doctype html>
     .checks { display: grid; gap: 8px; max-height: 260px; overflow: auto; }
     .check { display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 8px; background: rgba(148, 163, 184, .12); }
     .check input { width: auto; }
+    .check.deviceReadingsOption { border: 1px solid rgba(251, 191, 36, .65); border-left: 4px solid #fbbf24; background: rgba(251, 191, 36, .16); padding: 12px; font-weight: 650; }
+    .deviceReadingsOption input { accent-color: #fbbf24; flex-shrink: 0; }
     .actions { display: flex; justify-content: flex-end; gap: 10px; }
     @media (max-width: 820px) { .entity-grid, .row, .deviceSections { grid-template-columns: 1fr; } main { padding-top: 18px; } }
   </style>
@@ -203,7 +205,7 @@ INDEX_HTML = """<!doctype html>
         <label>HA-Kontrollabgleich / Polling-Rückfall in Sekunden <input name="poll_interval" type="number" min="1" max="300" value="5"></label>
         <label>Topic-Präfix <input name="topic_prefix" value="ha_external" required></label>
         <label>HA-Label-ID für Zustandsweiterleitung <input name="forward_label" placeholder="an_mqtt_client_weiterleiten" maxlength="128"></label>
-        <label class="check"><input name="label_device_readings" type="checkbox"> Zugehörige Mess- und Batteriewerte desselben Geräts automatisch einbeziehen</label>
+        <label class="check deviceReadingsOption"><input name="label_device_readings" type="checkbox"> Zugehörige Mess- und Batteriewerte desselben Geräts automatisch einbeziehen</label>
         <button id="readingDiagnostics" type="button" class="secondary">Zugehörige Messwerte prüfen</button>
         <p class="hint">Label-Auswahl aktiviert passende Rückkanäle und Standardattribute. Zusätzliche Messwerte werden nur gelesen. Light-Helligkeit: 0–100 %.</p>
         <label>Client-ID <input name="client_id" value="ugso-ha-mqtt-client" required></label>

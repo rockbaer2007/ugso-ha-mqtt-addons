@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.32
+
+- Highlight the opt-in for related device measurements/battery values with an amber border/background and stronger label. Preserve the saved checkbox value and existing behavior. Keep the independently collapsible TLS/certificate section from 0.1.31.
+
 ## 0.1.31
 
 - Collapse TLS/certificate settings independently with a keyboard-accessible button. The header shows whether TLS is selected; opening/closing does not change TLS, stored certificates or credentials. Transmission settings, save and transfer overview stay visible. Keep the existing bridge behavior and helper 0.1.27 unchanged.

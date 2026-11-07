@@ -1,8 +1,12 @@
 # ioBroker : attribution automatique des rôles {#iobroker-role-mapping}
 
-Le JavaScript optionnel est fourni avec MQTT-Client **0.1.31** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
+Le JavaScript optionnel est fourni avec MQTT-Client **0.1.32** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
 
 
+
+## Nouveauté 0.1.32 : mesures supplémentaires mises en évidence {#readings-highlight-0132}
+
+L’option **« Inclure automatiquement les mesures et valeurs de batterie du même appareil »** est mise en évidence en jaune. Cette présentation n’active pas la case : faites votre choix, puis cliquez sur **« Enregistrer et connecter »**. Les réglages existants sont conservés. TLS et certificats restent repliables séparément.
 
 ## Nouveauté 0.1.31 : TLS et certificats repliables séparément {#tls-0131}
 

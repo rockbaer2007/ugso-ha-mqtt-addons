@@ -1,8 +1,12 @@
 # ioBroker: automatic role mapping {#iobroker-role-mapping}
 
-The optional JavaScript ships with MQTT-Client **0.1.31** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
+The optional JavaScript ships with MQTT-Client **0.1.32** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
 
 
+
+## New in 0.1.32: highlight additional measurements {#readings-highlight-0132}
+
+The **“Automatically include related measurements and battery values from the same device”** option is highlighted in amber. Highlighting does not enable the checkbox: make your selection and click **“Save and connect”**. Existing settings are preserved. TLS and certificates remain separately collapsible.
 
 ## New in 0.1.31: collapse TLS and certificates separately {#tls-0131}
 

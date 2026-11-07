@@ -1,8 +1,12 @@
 # ioBroker: automatische Rollenzuordnung {#iobroker-role-mapping}
 
-Das optionale JavaScript gehört zu MQTT-Client **0.1.31** und läuft im ioBroker-JavaScript-Adapter. Es verwendet die übertragenen Metadaten `device_class` und `unit_of_measurement`. Es ordnet nur eindeutige Fälle zu; weder MQTT-Werte noch Datentypen, Einheiten, Zugangsdaten oder Rückkanäle werden umgeschrieben.
+Das optionale JavaScript gehört zu MQTT-Client **0.1.32** und läuft im ioBroker-JavaScript-Adapter. Es verwendet die übertragenen Metadaten `device_class` und `unit_of_measurement`. Es ordnet nur eindeutige Fälle zu; weder MQTT-Werte noch Datentypen, Einheiten, Zugangsdaten oder Rückkanäle werden umgeschrieben.
 
 
+
+## Neu in 0.1.32: zusätzliche Messwerte deutlich markieren {#readings-highlight-0132}
+
+Die Option **„Zugehörige Mess- und Batteriewerte desselben Geräts automatisch einbeziehen“** ist gelb hervorgehoben. Die Markierung aktiviert den Haken nicht: Gewünschte Auswahl setzen und **„Speichern und verbinden“** drücken. Bestehende Einstellungen bleiben erhalten. TLS und Zertifikate sind weiterhin separat einklappbar.
 
 ## Neu in 0.1.31: TLS und Zertifikate separat einklappen {#tls-0131}
 

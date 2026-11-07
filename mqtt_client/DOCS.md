@@ -1,5 +1,9 @@
 # MQTT-Client einrichten
 
+## Neu in 0.1.32: zusätzliche Messwerte deutlich markieren
+
+Die Option **„Zugehörige Mess- und Batteriewerte desselben Geräts automatisch einbeziehen“** ist gelb hervorgehoben. Die Markierung aktiviert den Haken nicht: Gewünschte Auswahl setzen und **„Speichern und verbinden“** drücken. Bestehende Einstellungen bleiben erhalten. TLS und Zertifikate sind weiterhin separat einklappbar.
+
 ## Neu in 0.1.31: TLS und Zertifikate separat einklappen
 
 **TLS und Zertifikate** ist jetzt ein eigener, per Maus und Tastatur bedienbarer Klappbereich. Die Schaltfläche zeigt auch geschlossen, ob TLS ausgewählt ist. Beim Auf-/Zuklappen werden weder TLS noch gespeicherte Zertifikate oder Zugangsdaten verändert. Nach Laden und Speichern bleibt der Bereich geschlossen; Übertragungseinstellungen und die beiden Aktionsschaltflächen bleiben sichtbar. Der [neue Blogeintrag zum JavaScript-Helfer](https://opensource.ugso-software.de/blog/snippets/iobroker-blockly#mqtt-vis2-helper) erklärt Zweck, Einrichtung, Status/Rückkanal und Sicherung und enthält das vollständige unveränderte Skript 0.1.27 mit Kopierbutton und Download.
