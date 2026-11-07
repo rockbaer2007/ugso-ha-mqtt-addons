@@ -1,5 +1,49 @@
 # MQTT-Client einrichten
 
+## Neu in 0.1.22
+
+Die Label-Auswahl aktiviert jetzt den Zustand, vorhandene Standardattribute und
+passende Rückkanäle steuerbarer Entitäten. Schalter erhalten automatisch
+`<basis>/set` für `ON`/`OFF`; Zahlen, Selects und Taster verwenden ihre
+unterstützten Befehle. Es werden beim Einrichten keine Schaltbefehle gesendet.
+Retain-Befehle, leere Befehle und ungültige Werte werden verworfen.
+
+Bei Lampen entstehen nur die von HA gemeldeten Kanäle:
+
+| Kanal unter `<basis>` | Wert und Rückkanal |
+| --- | --- |
+| `brightness/state`, `brightness/set` | Helligkeit 0–100 % |
+| `rgb_color/state`, `rgb_color/set` | JSON `[255,128,0]`, Komponenten 0–255 |
+| `effect/state`, `effect/set` | Effektname aus der gemeldeten Effektliste |
+| `color_temp_kelvin/state`, `color_temp_kelvin/set` | Ganze Kelvinzahl innerhalb der gemeldeten Grenzen |
+
+`<basis>` ist das bestehende Topic ohne `/state`. Effektliste, unterstützte
+Farbmodi und minimale/maximale Kelvinwerte werden als Attribute nur gelesen.
+Manuell ausgewählte HA-Attribute behalten ihren Pfad und ihre Einheit:
+`attribute/brightness` bleibt beispielsweise 0–255.
+
+Unter **Übertragung und TLS** kann **Zugehörige Mess- und Batteriewerte desselben
+Geräts automatisch einbeziehen** aktiviert werden. `label_device_readings` ist
+standardmäßig `false`. Berücksichtigt werden Energie, Spannung, Strom, Leistung,
+Temperatur, Feuchtigkeit und Batterie sowie ein vorhandener Batterie-leer-Sensor.
+Die Zuordnung erfolgt ausschließlich über dieselbe HA-Geräte-ID. Es werden keine
+Schwellwerte erfunden oder ähnlich benannte Geräte zusammengefasst. Diese
+zusätzlichen Sensoren erhalten keine Rückkanäle.
+
+Automatisch übertragen werden vorhandene Standardangaben wie Name, Geräteklasse,
+Einheit und Zustandsklasse sowie notwendige Auswahl-/Grenzwerte. Andere Attribute
+bleiben manuell auswählbar. `device_class` wird als Metadatum übertragen; die
+ioBroker-Rolle, etwa `date`, wird dadurch nicht automatisch geändert.
+
+Das Werte-Popup zeigt auch automatische Attribute, Light-Werte und aktive
+Rückkanäle mit ihrer Herkunft. Nach Entfernen des Labels entfallen automatische
+Werte und Rückkanäle beim nächsten Abgleich; wartende Befehle werden vor der
+Ausführung erneut geprüft. Manuelle Auswahlen und Zugangsdaten bleiben erhalten.
+Alte Retain-Werte werden erst über die bestätigte Topic-Bereinigung entfernt.
+
+Lokal mit simuliertem HA und Broker geprüft; kein neuer Gerätetest auf HA.
+[Release 0.1.22](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/mqtt-client-v0.1.22)
+
 ## Neu in 0.1.21
 
 Nur die Zugangsdaten klappen automatisch ein. **Übertragung und TLS** bleibt
@@ -9,7 +53,7 @@ stehen gleich groß nebeneinander und bleiben sichtbar.
 **Aktuell übertragene Werte** öffnet eine durchsuchbare, scrollbare Liste mit
 States und ausgewählten Attributen. Die Herkunft ist beschriftet und farbig:
 **Label** blau, **Manuell** grün, **Beides** violett. Doppelte States erscheinen
-nur einmal. Attribute kommen weiterhin aus der manuellen Auswahl.
+nur einmal. Seit 0.1.22 kommen auch automatische Standardattribute hinzu.
 
 Angezeigt werden Name, Entitäts-ID, Attribut, aktueller Wert, Topic und letzte
 Brokerbestätigung mit gesendetem Wert. Fehler sind separat rot markiert; noch
@@ -89,4 +133,4 @@ angenommen. Sensorwerte bleiben nur ausgehend.
 
 Lege ein HA-Label „An MQTT-Client weiterleiten“ an und trage seine ID im Feld **HA-Label-ID für Zustandsweiterleitung** ein. Weise das Label in den Entitätseinstellungen über **Label hinzufügen** zu und speichere die Entität. Der Client prüft die Zuordnung im eingestellten Polling-Intervall. Ein leeres Feld deaktiviert die Label-Auswahl.
 
-Das Label leitet den Zustand weiter. Attribute und Rückbefehle werden weiterhin über die manuelle Auswahl verwaltet. Nach Entfernen des Labels endet die automatische Weiterleitung. Manuell ausgewählte Entitäten bleiben aktiv. Der letzte Retain-Wert kann über die vorhandene Topic-Bereinigung entfernt werden.
+Das Label leitet Zustand und Standardattribute weiter und aktiviert passende Rückkanäle. Weitere Attribute bleiben manuell auswählbar. Nach Entfernen des Labels endet die automatische Weiterleitung samt Rückkanälen. Manuell ausgewählte Entitäten bleiben aktiv. Der letzte Retain-Wert kann über die vorhandene Topic-Bereinigung entfernt werden.

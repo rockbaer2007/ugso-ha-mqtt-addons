@@ -20,6 +20,7 @@ from tempfile import NamedTemporaryFile
 
 import paho.mqtt.client as mqtt
 from live import StateStream, TopicInventory, broker_identity, entity_registry
+from label_support import related_readings, metadata as label_metadata, light_features, light_value, light_command, finite
 from websocket import WebSocketException
 
 LOG = logging.getLogger("mqtt-client")
@@ -31,7 +32,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS | {"cover"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.16"
+APP_VERSION = "0.1.22"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -193,6 +194,8 @@ INDEX_HTML = """<!doctype html>
         <label>Polling-Rückfall in Sekunden <input name="poll_interval" type="number" min="1" max="300" value="5"></label>
         <label>Topic-Präfix <input name="topic_prefix" value="ha_external" required></label>
         <label>HA-Label-ID für Zustandsweiterleitung <input name="forward_label" placeholder="an_mqtt_client_weiterleiten" maxlength="128"></label>
+        <label class="check"><input name="label_device_readings" type="checkbox"> Zugehörige Mess- und Batteriewerte desselben Geräts automatisch einbeziehen</label>
+        <p class="hint">Label-Auswahl aktiviert passende Rückkanäle und Standardattribute. Zusätzliche Messwerte werden nur gelesen. Light-Helligkeit: 0–100 %.</p>
         <label>Client-ID <input name="client_id" value="ugso-ha-mqtt-client" required></label>
         <label class="check"><input name="tls" type="checkbox"> TLS mit Zertifikatsprüfung</label>
         <p class="hint">PEM-Dateien laden oder Text einfügen. Leere Felder behalten vorhandene Zertifikate. Client-Zertifikat und privater Schlüssel gehören zusammen.</p>
@@ -548,6 +551,7 @@ INDEX_HTML = """<!doctype html>
       form.poll_interval.value = data.poll_interval ?? 5;
       form.topic_prefix.value = data.topic_prefix || 'ha_external';
       form.forward_label.value = data.forward_label || '';
+      form.label_device_readings.checked = Boolean(data.label_device_readings);
       form.client_id.value = data.client_id || 'ugso-ha-mqtt-client';
       form.tls.checked = Boolean(data.tls);
       document.getElementById('tlsStored').textContent = `Gespeichert: CA ${data.has_tls_ca ? 'ja' : 'nein'}, Client-Zertifikat ${data.has_tls_cert ? 'ja' : 'nein'}, privater Schlüssel ${data.has_tls_key ? 'ja' : 'nein'}.`;
@@ -589,6 +593,7 @@ INDEX_HTML = """<!doctype html>
         poll_interval: Number(form.poll_interval.value || 5),
         topic_prefix: form.topic_prefix.value.trim(), client_id: form.client_id.value.trim(),
         forward_label: form.forward_label.value.trim(),
+        label_device_readings: form.label_device_readings.checked,
         tls: form.tls.checked, clear_tls_material: form.clear_tls_material.checked
       };
       if (form.password.value) payload.password = form.password.value;
@@ -685,6 +690,7 @@ INDEX_HTML = """<!doctype html>
         status.textContent = row.error ? 'Übertragungsfehler: ' + row.error : row.last_success ? 'Vom Broker bestätigt' : 'Noch nicht bestätigt';
         if (row.last_success) status.textContent += ' · Letzte Bestätigung: ' + new Date(row.last_success * 1000).toLocaleString() + ' · Gesendeter Wert: ' + row.last_sent_value;
         item.append(status); list.append(item);
+        if (row.set_topic) { const command = document.createElement('div'); command.className = 'meta'; command.textContent = 'Rückkanal aktiv: ' + row.set_topic; item.append(command); }
       }
       if (!rows.length) list.textContent = transferRows.length ? 'Keine passenden Werte.' : 'Noch keine aktiven Übertragungen erfasst. Verbindung und Auswahl prüfen.';
       list.scrollTop = scrollTop;
@@ -788,6 +794,7 @@ class Config:
     tls_cert: str = ""
     tls_key: str = ""
     forward_label: str = ""
+    label_device_readings: bool = False
 
     @classmethod
     def load(cls, options):
@@ -819,9 +826,12 @@ class Config:
         label = options.get("forward_label", "")
         if not isinstance(label, str) or (label and not re.fullmatch(r"[a-z0-9_]{1,128}", label)):
             raise ValueError("forward_label muss eine gültige HA-Label-ID sein")
+        if not isinstance(options.get("label_device_readings", False), bool):
+            raise ValueError("label_device_readings muss ein Boolean sein")
         return cls(host, port, str(options.get("username", "")), str(options.get("password", "")),
                    bool(options.get("tls", False)), client_id, prefix, interval, entities, entity_attributes,
-                   commands, publish_delay_ms, *pem, forward_label=label)
+                   commands, publish_delay_ms, *pem, forward_label=label,
+                   label_device_readings=options.get("label_device_readings", False))
 
     def topic(self, entity, suffix):
         return f"{self.prefix}/{entity}/{suffix}"
@@ -1129,6 +1139,9 @@ class Bridge:
         self.events = queue.Queue(maxsize=10000)
         self.states_cache = {}
         self.labeled_entities = frozenset()
+        self.label_roots = None
+        self.label_registry = []
+        self.auto_attributes = set()
         self.live = False
         self.inventory = None
         self.availability = f"{config.prefix}/availability"
@@ -1136,7 +1149,9 @@ class Bridge:
         for entry in config.entity_attributes:
             entity, attribute = entry.split(":", 1)
             self.attribute_map.setdefault(entity, []).append(attribute)
+        self.manual_attribute_map = {entity: list(attrs) for entity, attrs in self.attribute_map.items()}
         self.command_topics = {config.topic(entity, "set"): entity for entity in config.command_entities}
+        self.command_features = {}
         self.subscribed_command_topics = set()
         self.client = client or mqtt.Client(mqtt.CallbackAPIVersion.VERSION2,
                                             client_id=config.client_id, clean_session=True)
@@ -1157,12 +1172,20 @@ class Bridge:
         return self.config.topic(entity, suffix)
 
     def refresh_command_topics(self, states, prefixes=None):
-        topics = {self.config.topic(entity, "set"): entity for entity in self.config.command_entities}
-        for entity in self.config.command_entities:
+        entities = set(self.config.command_entities) | set(automatic_command_entities(self.labeled_entities))
+        topics = {self.config.topic(entity, "set"): entity for entity in entities}
+        features = {}
+        for entity in entities:
             entry = states.get(entity)
             if entry:
                 topics[self.topic(entity, "set", entry, prefixes)] = entity
+                if entity in self.labeled_entities and entity.startswith("light."):
+                    for feature in light_features(entry.get("attributes", {})):
+                        topic = self.topic(entity, f"{feature}/set", entry, prefixes)
+                        topics[topic] = entity
+                        features[topic] = feature
         self.command_topics = topics
+        self.command_features = features
         if self.connected.is_set():
             for topic in sorted(self.subscribed_command_topics - set(topics)):
                 self.client.unsubscribe(topic)
@@ -1199,13 +1222,16 @@ class Bridge:
             payload = message.payload.decode("utf-8").strip()
         except UnicodeDecodeError:
             return
+        if not payload:
+            return
         try:
-            command = mqtt_command(entity, payload)
+            feature = self.command_features.get(message.topic)
+            command = self.parse_command(entity, payload, feature)
         except ValueError as error:
             LOG.warning("Ungültiger Befehl verworfen (%s)", error)
             return
         try:
-            self.commands.put_nowait((time.monotonic(), self.generation, entity, command))
+            self.commands.put_nowait((time.monotonic(), self.generation, entity, command, payload, feature))
         except queue.Full:
             LOG.warning("Befehlswarteschlange voll; Befehl verworfen")
 
@@ -1220,6 +1246,68 @@ class Bridge:
             self.status.published()
         if throttle and self.config.publish_delay_ms:
             self.stop.wait(self.config.publish_delay_ms / 1000)
+
+    def parse_command(self, entity, payload, feature=None):
+        if entity not in set(self.config.command_entities) | set(automatic_command_entities(self.labeled_entities)):
+            raise ValueError("Rückkanal nicht mehr freigegeben")
+        entry = self.states_cache.get(entity, {})
+        attrs = entry.get("attributes", {})
+        if feature:
+            if entity not in self.labeled_entities or not entity.startswith("light."):
+                raise ValueError("Light-Rückkanal nicht mehr freigegeben")
+            return light_command(feature, payload, attrs)
+        if entity in self.labeled_entities:
+            domain = entity.split(".", 1)[0]
+            if domain == "light" and payload.startswith("{"):
+                data = json.loads(payload)
+                if not isinstance(data, dict) or len(data) != 1:
+                    raise ValueError("Genau ein Light-Wert erwartet")
+                key, value = next(iter(data.items()))
+                if key not in {"brightness_pct", "rgb_color", "effect", "color_temp_kelvin"}:
+                    raise ValueError("Light-Wert nicht unterstützt")
+                return light_command("brightness" if key == "brightness_pct" else key,
+                                     value if key == "effect" else json.dumps(value), attrs)
+            command = mqtt_command(entity, payload)
+            if domain in {"number", "input_number"}:
+                value = command[1]["value"]
+                lo, hi = attrs.get("min"), attrs.get("max")
+                if (lo is not None and (not finite(lo) or value < lo)) or (hi is not None and (not finite(hi) or value > hi)):
+                    raise ValueError("Zahl außerhalb der Entitätsgrenzen")
+            if domain in {"select", "input_select"} and payload not in (attrs.get("options") or []):
+                raise ValueError("Auswahl nicht verfügbar")
+            if domain in {"text", "input_text"} and not attrs.get("min", 0) <= len(payload) <= attrs.get("max", 255):
+                raise ValueError("Textlänge außerhalb der Entitätsgrenzen")
+            return command
+        return mqtt_command(entity, payload)
+
+    def prepare_label_values(self, states):
+        roots = self.label_roots if self.label_roots is not None else self.labeled_entities
+        extra = related_readings(roots, self.label_registry, states) if self.config.label_device_readings else set()
+        self.labeled_entities = frozenset(set(roots) | extra)
+        self.attribute_map = {entity: list(attrs) for entity, attrs in self.manual_attribute_map.items()}
+        self.auto_attributes = set()
+        for entity in self.labeled_entities:
+            attrs = states.get(entity, {}).get("attributes", {})
+            if not isinstance(attrs, dict):
+                attrs = {}
+            for attribute in label_metadata(entity, attrs):
+                self.auto_attributes.add((entity, attribute))
+                values = self.attribute_map.setdefault(entity, [])
+                if attribute not in values:
+                    values.append(attribute)
+
+    def light_specs(self, states, prefixes=None):
+        for entity in sorted(self.labeled_entities):
+            if not entity.startswith("light.") or entity not in states:
+                continue
+            entry = states[entity]
+            for feature in sorted(light_features(entry.get("attributes", {}))):
+                yield ("feature", entity, feature), self.topic(entity, f"{feature}/state", entry, prefixes), encode_mqtt_payload(light_value(feature, entry))
+
+    def inventory_attributes(self):
+        values = {f"{entity}:{attr}" for entity, attrs in self.attribute_map.items() for attr in attrs}
+        values.update(f"{key[1]}:light/{key[2]}" for key, _, _ in self.light_specs(self.states_cache))
+        return values
 
     def poll(self, states=None):
         with self.data_lock:
@@ -1250,27 +1338,40 @@ class Bridge:
                     attrs = {}
                 value = encode_mqtt_payload(attrs.get(attribute, "unavailable")) if attribute else str(entry.get("state", "unavailable"))
                 topic = self.topic(entity, f"attribute/{attribute}" if attribute else "state", entry if entity in states else None, prefixes)
-                manual = attribute is not None or entity in self.config.entities
-                label = attribute is None and entity in self.labeled_entities
+                manual = attribute in self.manual_attribute_map.get(entity, []) if attribute else entity in self.config.entities
+                label = (entity, attribute) in self.auto_attributes if attribute else entity in self.labeled_entities
                 result = self.transfer_results.get(key, {})
                 same_topic = result.get("topic") == topic
                 rows.append(dict(entity_id=entity, attribute=attribute, name=attrs.get("friendly_name") or entity,
                                  value=value, topic=topic, origin="both" if manual and label else "manual" if manual else "label",
                                  last_success=result.get("last_success") if same_topic else None,
-                                 last_sent_value=result.get("value") if same_topic else None, error=result.get("error")))
+                                 last_sent_value=result.get("value") if same_topic else None, error=result.get("error"),
+                                 set_topic=self.topic(entity, "set", entry if entity in states else None, prefixes) if not attribute and entity in set(self.config.command_entities) | set(automatic_command_entities(self.labeled_entities)) else None))
+            for key, topic, value in self.light_specs(states, prefixes):
+                result = self.transfer_results.get(key, {})
+                same_topic = result.get("topic") == topic
+                rows.append(dict(entity_id=key[1], attribute=key[2], name=states[key[1]].get("attributes", {}).get("friendly_name") or key[1],
+                                 value=value, topic=topic, origin="label", last_success=result.get("last_success") if same_topic else None,
+                                 last_sent_value=result.get("value") if same_topic else None, error=result.get("error"),
+                                 set_topic=topic.removesuffix("/state") + "/set"))
             return {"values": rows}
 
     def refresh_label_selection(self):
         try:
+            registry = entity_registry(self.ha)
             selected = frozenset(
-                entry["entity_id"] for entry in entity_registry(self.ha)
+                entry["entity_id"] for entry in registry
                 if not entry.get("disabled_by") and self.config.forward_label in entry.get("labels", [])
                 and ENTITY.fullmatch(entry["entity_id"])
             )
         except (OSError, ValueError, WebSocketException, KeyError, TypeError, AttributeError) as error:
             LOG.warning("HA-Label-Abgleich fehlgeschlagen (%s)", type(error).__name__)
             selected = frozenset()
-        if selected == self.labeled_entities:
+            registry = []
+        changed = selected != self.label_roots or registry != self.label_registry
+        self.label_roots = selected
+        self.label_registry = registry
+        if not changed:
             return False
         for entity in self.labeled_entities - selected:
             self.sent.pop(("state", entity), None)
@@ -1294,10 +1395,12 @@ class Bridge:
         if self.status:
             self.status.update(ha_connected=True)
         self.states_cache = dict(states)
+        self.prepare_label_values(states)
         prefixes = common_prefixes_from_states(states)
         state_entities = set(self.config.entities) | (self.labeled_entities & states.keys())
         polled_entities = sorted(state_entities | set(self.attribute_map))
         active_keys = {("state", entity) for entity in state_entities} | {("attribute", entity, attr) for entity, attrs in self.attribute_map.items() for attr in attrs}
+        active_keys.update(key for key, _, _ in self.light_specs(states, prefixes))
         self.transfer_results = {key: result for key, result in self.transfer_results.items() if key in active_keys}
         targets = set()
         for entity in polled_entities:
@@ -1329,6 +1432,14 @@ class Bridge:
                         self.inventory.remember(self.config, topic, entity, attribute)
                     self.sent[key] = value
                     self.sent_topics[key] = topic
+        for key, topic, value in self.light_specs(states, prefixes):
+            targets.add(topic)
+            if self.sent.get(key) != value or self.sent_topics.get(key) != topic:
+                self.publish_value(key, topic, value)
+                if self.inventory:
+                    self.inventory.remember(self.config, topic, key[1], "light/" + key[2])
+                self.sent[key] = value
+                self.sent_topics[key] = topic
         self.publish(self.availability, "online")
         targets.add(self.availability)
         if self.inventory:
@@ -1381,7 +1492,7 @@ class Bridge:
         with self.data_lock:
             if not self.connected.is_set() or not self.inventory:
                 raise ValueError("MQTT ist nicht verbunden")
-            allowed = set(self.inventory.candidates(self.config, self.labeled_entities))
+            allowed = set(self.inventory.candidates(self.config, self.labeled_entities, self.inventory_attributes()))
             if not isinstance(topics, list) or len(topics) > 100 or any(not isinstance(t, str) or t not in allowed for t in topics):
                 raise ValueError("Nur bis zu 100 erfasste veraltete Topics dürfen gelöscht werden")
             deleted = []
@@ -1392,8 +1503,13 @@ class Bridge:
             return deleted
 
     def process_command(self, command):
-        created, generation, entity, service = command
+        created, generation, entity, service, *original = command
         if self.connected.is_set() and generation == self.generation and time.monotonic() - created <= 10:
+            if original:
+                try:
+                    service = self.parse_command(entity, original[0], original[1])
+                except ValueError:
+                    return
             if isinstance(service, tuple):
                 self.ha.command(entity, service[0], service[1])
             else:
@@ -1546,6 +1662,7 @@ class AppController:
             "poll_interval": options.get("poll_interval", 5),
             "topic_prefix": options.get("topic_prefix", "ha_external"),
             "forward_label": options.get("forward_label", ""),
+            "label_device_readings": options.get("label_device_readings", False),
             "client_id": options.get("client_id", "ugso-ha-mqtt-client"),
             "tls": bool(options.get("tls", False)),
             "has_tls_ca": bool(options.get("tls_ca")),
@@ -1557,7 +1674,7 @@ class AppController:
     def update_connection(self, payload):
         with self.lock:
             options = self.read_options()
-            for key in ("broker_host", "broker_port", "username", "publish_delay_ms", "poll_interval", "topic_prefix", "client_id", "tls", "tls_ca", "tls_cert", "tls_key", "forward_label"):
+            for key in ("broker_host", "broker_port", "username", "publish_delay_ms", "poll_interval", "topic_prefix", "client_id", "tls", "tls_ca", "tls_cert", "tls_key", "forward_label", "label_device_readings"):
                 if key in payload:
                     options[key] = payload[key]
             if "password" in payload:
@@ -1575,7 +1692,7 @@ class AppController:
 
     BACKUP_KEYS = {"broker_host", "broker_port", "username", "tls", "tls_ca", "client_id",
                    "topic_prefix", "poll_interval", "publish_delay_ms", "entities",
-                   "entity_attributes", "command_entities", "forward_label"}
+                   "entity_attributes", "command_entities", "forward_label", "label_device_readings"}
 
     def export_settings(self):
         with self.lock:
@@ -1607,7 +1724,8 @@ class AppController:
         with self.lock:
             config = Config.load(self.read_options())
             labeled = self.bridge.labeled_entities if self.bridge else ()
-            return {"topics": self.inventory.candidates(config, labeled)}
+            attributes = self.bridge.inventory_attributes() if self.bridge else ()
+            return {"topics": self.inventory.candidates(config, labeled, attributes)}
 
     def transmissions(self):
         with self.lock:

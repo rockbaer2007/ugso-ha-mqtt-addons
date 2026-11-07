@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.22
+
+- Label-selected controllable entities automatically receive return channels. Validate queued commands again before execution; ignore retained, empty and invalid commands.
+- Capability-aware Light channels for brightness (0–100%), RGB, effect and Kelvin color temperature, including supported modes, effects and temperature limits. Existing manually selected raw attributes retain their paths and units.
+- Optional same-device measurements and battery readings using HA device IDs; disabled by default. Only standard metadata and supported measurement classes are included automatically.
+- Show automatic attributes, Light values and return topics in the transmission popup. Preserve manual selections, credentials and settings backups; protect active automatic topics during retained-topic cleanup.
+
 ## 0.1.21
 
 - Keep transmission/TLS settings and save controls outside the collapsible credentials section. Equal-size save and transmission-list buttons share one row.

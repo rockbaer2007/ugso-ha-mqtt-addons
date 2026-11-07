@@ -34,13 +34,16 @@ try {
   await page.locator('form > details > summary').filter({hasText:'Übertragung und TLS'}).click();
   await page.locator('[name=poll_interval]').fill('17');
   await page.locator('#publish_delay_ms').fill('0');
+  await page.locator('[name=label_device_readings]').check();
   await page.locator('#save').click(); await page.waitForFunction(()=>document.querySelector('#message').textContent.startsWith('Gespeichert'));
   const config=await(await page.request.get(new URL('api/config',page.url()).href)).json();
   assert.equal(config.poll_interval,17); assert.equal(config.publish_delay_ms,0); assert.equal(config.has_password,true);
+  assert.equal(config.label_device_readings,true);
   assert.equal(config.password,undefined); assert.equal(config.tls_key,undefined);
   const downloadEvent=page.waitForEvent('download'); await page.locator('#backup').click();
   const download=await downloadEvent, backup=JSON.parse(await readFile(await download.path(),'utf8'));
   assert.equal(backup.options.poll_interval,17); assert.equal(backup.options.password,undefined);
+  assert.equal(backup.options.label_device_readings,true);
   assert.equal(backup.options.tls_key,undefined); assert.deepEqual(backup.options.entities,['switch.test']);
   page.once('dialog',dialog=>dialog.dismiss());
   await page.locator('#restoreFile').setInputFiles({name:'backup.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup))});

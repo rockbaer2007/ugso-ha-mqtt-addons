@@ -54,7 +54,7 @@ class ClientTests(unittest.TestCase):
         self.bridge.on_message(self.client, None, SimpleNamespace(topic=topic, payload=payload, retain=retain))
 
     def test_transmission_snapshot_includes_labels_attributes_and_deduplicated_origins(self):
-        self.bridge.attribute_map = {"sensor.temperature": ["unit_of_measurement"]}
+        self.bridge.manual_attribute_map = {"sensor.temperature": ["unit_of_measurement"]}
         self.bridge.labeled_entities = frozenset(["sensor.temperature", "switch.test"])
         self.bridge.poll()
         rows = self.bridge.transmission_snapshot()["values"]

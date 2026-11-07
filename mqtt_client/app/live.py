@@ -177,13 +177,13 @@ class TopicInventory:
             if changed:
                 self.save()
 
-    def candidates(self, config, labeled_entities=()):
+    def candidates(self, config, labeled_entities=(), active_attributes=()):
         with self.lock:
             state_entities = set(config.entities) | set(labeled_entities)
             result = []
             for r in self.records:
                 selected = (True if r["entity"] is None else r["entity"] in state_entities if r["attribute"] is None else
-                            f'{r["entity"]}:{r["attribute"]}' in config.entity_attributes)
+                            f'{r["entity"]}:{r["attribute"]}' in set(config.entity_attributes) | set(active_attributes))
                 if r["broker"] == broker_identity(config) and (not r["active"] or r["prefix"] != config.prefix or not selected):
                     result.append(r["topic"])
             return sorted(result)

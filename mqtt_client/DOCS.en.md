@@ -1,5 +1,47 @@
 # MQTT-Client
 
+## New in 0.1.22
+
+Label selection now includes the state, available standard metadata and return
+channels for supported controllable entities. Switches automatically receive
+`<base>/set` for `ON`/`OFF`; numbers, selects and buttons use their supported
+commands. Setup sends no control commands. Retained, empty and invalid commands
+are discarded.
+
+Lights receive only channels supported by their HA capabilities:
+
+| Channel below `<base>` | Value and return channel |
+| --- | --- |
+| `brightness/state`, `brightness/set` | Brightness 0–100% |
+| `rgb_color/state`, `rgb_color/set` | JSON `[255,128,0]`, components 0–255 |
+| `effect/state`, `effect/set` | Effect name from the reported effect list |
+| `color_temp_kelvin/state`, `color_temp_kelvin/set` | Integer Kelvin within the reported limits |
+
+`<base>` is the existing topic without `/state`. Effect lists, supported color
+modes and minimum/maximum Kelvin values are read-only attributes. Manually selected
+HA attributes retain their paths and units: `attribute/brightness` remains 0–255.
+
+Under **Übertragung und TLS** (Transfer and TLS), enable **Zugehörige Mess- und
+Batteriewerte desselben Geräts automatisch einbeziehen** to include related
+measurements. `label_device_readings` defaults to `false`. Supported readings
+are energy, voltage, current, power, temperature, humidity, battery and an existing
+battery-low sensor. Matching uses the same HA device ID, never similar names.
+No thresholds are invented. These additional sensors have no return channels.
+
+Automatic metadata includes available names, device classes, units and state
+classes, plus required choices and limits. Other attributes remain selectable
+manually. `device_class` is transmitted as metadata; this does not automatically
+change an ioBroker role such as `date`.
+
+The transmission popup also shows automatic attributes, Light values and active
+return topics with their origin. Removing a label revokes automatic values and
+return channels at the next sync; queued commands are checked again before
+execution. Manual selections and credentials are preserved. Old retained values
+are removed only through confirmed topic cleanup.
+
+Verified locally with simulated HA and broker; no new HA device test.
+[Release 0.1.22](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/mqtt-client-v0.1.22)
+
 ## New in 0.1.21
 
 Only credentials collapse automatically. **Übertragung und TLS** remains separately
@@ -8,7 +50,7 @@ share a visible row. The searchable, scrollable popup includes manually selected
 states/attributes and label-selected states, without duplicate states.
 
 Origin badges are labelled: blue **Label**, green **Manual**, purple **Both**.
-Attributes remain manually selected. Each row shows the name, entity ID, attribute,
+Since 0.1.22, automatic standard attributes are included too. Each row shows the name, entity ID, attribute,
 current value, topic and last broker-acknowledged value/time. Errors appear separately
 in red; unconfirmed values are marked. Refresh runs every three seconds while open
 and via the refresh button. Acknowledgement means acceptance by the MQTT broker,
@@ -121,4 +163,4 @@ See the [German README](README.md) for a complete sample configuration and tests
 
 Create an HA label named “Forward to MQTT Client” and enter its ID in the **HA label ID** setting. Assign the label in the entity settings and save. The client checks assignments at the configured polling interval. Leave the setting empty to disable label selection.
 
-The label forwards the entity state. Attributes and commands are managed through manual selection. Removing the label stops automatic forwarding. Manually selected entities stay active. The existing topic cleanup can remove the last retained value.
+The label forwards the state and standard metadata and enables supported return channels. Other attributes remain manually selectable. Removing the label stops automatic forwarding and revokes return channels. Manually selected entities stay active. The existing topic cleanup can remove the last retained value.

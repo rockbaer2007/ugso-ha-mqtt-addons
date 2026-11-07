@@ -76,11 +76,12 @@ class FeatureTests(unittest.TestCase):
         topic, value = publications[0]
         self.assertEqual(value, "on")
         self.assertNotIn(topic, self.bridge.inventory.candidates(self.bridge.config, self.bridge.labeled_entities))
-        self.assertNotIn("switch.labeled", self.bridge.command_topics.values())
+        self.assertIn("switch.labeled", self.bridge.command_topics.values())
         with patch("main.entity_registry", return_value=[]):
             self.assertTrue(self.bridge.refresh_label_selection())
         self.bridge.poll(self.bridge.states_cache)
         self.assertIn(topic, self.bridge.inventory.candidates(self.bridge.config))
+        self.assertNotIn("switch.labeled", self.bridge.command_topics.values())
         self.client.publish.reset_mock()
         self.bridge.process_event(("event", {"entity_id": "switch.labeled", "new_state": {**labeled, "state": "off"}}))
         self.client.publish.assert_not_called()
