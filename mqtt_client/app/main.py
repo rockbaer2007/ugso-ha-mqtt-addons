@@ -666,6 +666,7 @@ INDEX_HTML = """<!doctype html>
       const term = document.getElementById('transferSearch').value.trim().toLowerCase();
       const rows = transferRows.filter(row => [row.name, row.entity_id, row.attribute, row.topic].join(' ').toLowerCase().includes(term));
       const list = document.getElementById('transferList');
+      const scrollTop = list.scrollTop;
       list.replaceChildren();
       document.getElementById('transferCount').textContent = `${rows.length} von ${transferRows.length} Werten (States und ausgewählte Attribute)`;
       for (const row of rows) {
@@ -684,6 +685,7 @@ INDEX_HTML = """<!doctype html>
         item.append(status); list.append(item);
       }
       if (!rows.length) list.textContent = transferRows.length ? 'Keine passenden Werte.' : 'Noch keine aktiven Übertragungen erfasst. Verbindung und Auswahl prüfen.';
+      list.scrollTop = scrollTop;
     }
     async function loadTransfers() {
       if (transferLoading) return;
