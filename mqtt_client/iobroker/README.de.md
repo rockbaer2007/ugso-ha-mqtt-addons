@@ -1,7 +1,18 @@
 # ioBroker: automatische Rollenzuordnung {#iobroker-role-mapping}
 
-Das optionale JavaScript gehört zu MQTT-Client **0.1.24** und läuft im ioBroker-JavaScript-Adapter. Es verwendet die übertragenen Metadaten `device_class` und `unit_of_measurement`. Es ordnet nur eindeutige Fälle zu; weder MQTT-Werte noch Datentypen, Einheiten, Zugangsdaten oder Rückkanäle werden umgeschrieben.
+Das optionale JavaScript gehört zu MQTT-Client **0.1.25** und läuft im ioBroker-JavaScript-Adapter. Es verwendet die übertragenen Metadaten `device_class` und `unit_of_measurement`. Es ordnet nur eindeutige Fälle zu; weder MQTT-Werte noch Datentypen, Einheiten, Zugangsdaten oder Rückkanäle werden umgeschrieben.
 
+
+
+## Korrektur 0.1.25: fehlende Objekte ohne Warnungen {#fix-0125}
+
+In JavaScript-Adapter **10.4.10** warnt auch `getObject` bei fehlenden IDs. Der Helfer prüft jetzt mit `existsObject` und `existsState`, bevor er Objekte oder Zustände liest. Das gilt für Journal, optionale Metadaten, Ordner und noch nicht angelegte virtuelle Datenpunkte. Die vorherige Prüfung über `getObject` allein reichte nicht aus.
+
+In der Vorschau erscheinen `Preview VIS 2`-Zeilen, aber es wird nichts angelegt. Für die automatische Anlage nach der Prüfung `mode: 'apply'` setzen. In der JavaScript-Instanz `setObject` erlauben und **Do not subscribe to all states on start** deaktivieren, weil der Helfer synchron aus den Zustands-Caches liest. Eine abgebrochene eigene Neuanlage kann nach der Freigabe erneut versucht werden; fremde oder bearbeitete Datenpunkte bleiben geschützt.
+
+MQTT-Client **ab 0.1.24** liefert den benötigten Auswahlkatalog; für diese Korrektur genügt der Austausch der vollständigen Helferdatei. Alte nicht mehr ausgewählte Retain-Topics ohne aktuelle Entitätskennung werden ausgelassen. Fehlende HA-Metadaten werden nicht vom Helfer erfunden. Die Startmeldung nennt jetzt Version und Betriebsmodus.
+
+Der Helfer bündelt echte MQTT-Änderungen für eine Sekunde. Im virtuellen Modus werden nur die betroffenen Quellen verarbeitet; unveränderte Wiederholungen und fremde Attribute lösen keinen Durchlauf aus. Eine Vollprüfung erfolgt beim Start und bei Änderungen des Auswahlkatalogs oder der Verfügbarkeit. Die Befehls-Zeitprüfung betrifft nur ausstehende Quellen und endet nach Bestätigung oder Zeitablauf. Der Client abonniert pro Entität nur noch den zum Status passenden Rückkanal; alte ioBroker-Objekte werden nicht gelöscht.
 
 ## Neu in 0.1.24: ein VIS-2-Datenpunkt für Status und Befehl {#vis2}
 

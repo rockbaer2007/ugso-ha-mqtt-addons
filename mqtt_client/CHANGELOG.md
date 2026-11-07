@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.25
+
+- Process virtual MQTT source updates selectively, ignore unchanged repeats and unrelated attributes, and stop timeout checks after confirmation/expiry. Full enumeration only at startup or selection/availability changes. Subscribe only to the command topic matching each entity's state, without deleting existing MQTT objects.
+- Fix missing-object warnings in JavaScript adapter 10.4.10: both getObject and getState are guarded by silent existsObject/existsState checks. Regression tests reproduce warnings from either API, including preview without a journal or optional metadata.
+- Identify helper version/mode at startup. Retry interrupted own virtual point creations after permissions are corrected, without overwriting existing objects or replaying commands.
+- Clarify preview versus apply and required adapter permissions/cache settings in DE/EN/FR. MQTT-Client 0.1.24 remains sufficient for the helper catalog.
+
 ## 0.1.24
 
 - Combined ioBroker helper: automatically create virtual VIS-2 states and folders, normalize switch/battery on/off and Light RGB, and bridge current ack-false requests to the corresponding set channel. Source updates use ack true; no startup/restart command or feedback loop.

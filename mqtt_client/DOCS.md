@@ -1,5 +1,12 @@
 # MQTT-Client einrichten
 
+## Korrektur in 0.1.25
+
+Fehlende Journale, optionale Attribute und virtuelle Ziele werden vor dem Lesen
+mit `existsObject`/`existsState` geprüft. Auch `getObject` warnt in Adapter 10.4.10
+bei fehlenden IDs. Vorschau bleibt ohne Neuanlagen; `mode: 'apply'` legt sie an.
+[Aktualisierte Hinweise zu Freigaben und Vorschau](iobroker/README.de.md#fix-0125).
+
 ## Neu in 0.1.24: automatische VIS-2-Datenpunkte
 
 Der kombinierte ioBroker-Helfer legt in `outputMode: 'virtual'` eigene Datenpunkte

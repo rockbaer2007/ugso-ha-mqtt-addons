@@ -32,7 +32,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS | {"cover"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.24"
+APP_VERSION = "0.1.25"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -1175,12 +1175,12 @@ class Bridge:
 
     def refresh_command_topics(self, states, prefixes=None):
         entities = set(self.config.command_entities) | set(automatic_command_entities(self.labeled_entities))
-        topics = {self.config.topic(entity, "set"): entity for entity in entities}
+        topics = {}
         features = {}
         for entity in entities:
             entry = states.get(entity)
+            topics[self.topic(entity, "set", entry, prefixes)] = entity
             if entry:
-                topics[self.topic(entity, "set", entry, prefixes)] = entity
                 if entity in self.labeled_entities and entity.startswith("light."):
                     for feature in light_features(entry.get("attributes", {})):
                         topic = self.topic(entity, f"{feature}/set", entry, prefixes)

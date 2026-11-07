@@ -1,7 +1,18 @@
 # ioBroker: automatic role mapping {#iobroker-role-mapping}
 
-The optional JavaScript ships with MQTT-Client **0.1.24** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
+The optional JavaScript ships with MQTT-Client **0.1.25** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
 
+
+
+## Fix 0.1.25: missing objects without warnings {#fix-0125}
+
+JavaScript adapter **10.4.10** also warns when `getObject` reads a missing ID. The helper now checks `existsObject` and `existsState` before reading objects or states. This covers the journal, optional metadata, folders and virtual states not created yet. The previous `getObject`-only guard was insufficient.
+
+Preview logs `Preview VIS 2` lines but creates nothing. After checking, set `mode: 'apply'` for automatic creation. Allow `setObject` in the JavaScript instance and disable **Do not subscribe to all states on start**, because the helper reads state caches synchronously. Interrupted own creations can retry after permissions are corrected; unrelated or edited states remain protected.
+
+MQTT-Client **0.1.24 or later** provides the required selection catalog; replacing the complete helper file is enough for this fix. Old deselected retained topics without current entity identity are skipped. Missing HA metadata is never invented. The startup message now identifies the version and operating mode.
+
+The helper batches actual MQTT changes for one second. Virtual mode processes only affected sources; unchanged repeats and unrelated attributes do not trigger a pass. Full scans run at startup and when the selection catalog or availability changes. Timeout checks cover pending sources only and stop after confirmation or timeout. Each entity uses only the return channel matching its state; existing ioBroker objects are not deleted.
 
 ## New in 0.1.24: one VIS-2 state for feedback and commands {#vis2}
 

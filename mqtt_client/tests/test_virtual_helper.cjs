@@ -147,6 +147,18 @@ test('source type changes preserve existing virtual values and mark them invalid
     assert.equal(f.objects[f.target(id)].common.type, 'number');
 });
 
+test('an interrupted point creation can retry after permissions are fixed', async () => {
+    const f = fixture(), id = f.add('switch.plug', 'plug.switch', 'on'), mapper = f.mapper();
+    const create = f.api.createVirtual;
+    f.api.createVirtual = async () => { throw new Error('setObject disabled'); };
+    await assert.rejects(mapper.run(), /disabled/);
+    assert.equal(f.objects[f.target(id)], undefined);
+    f.api.createVirtual = create;
+    await mapper.run();
+    assert.equal(f.states[f.target(id)].val, true); assert.equal(f.states[f.target(id)].ack, true);
+    assert.deepEqual(f.sends, []);
+});
+
 test('restore keeps virtual values/references and disables commands, without touching MQTT', async () => {
     const f = fixture(), id = f.add('switch.plug', 'plug.switch', 'on'); await f.mapper().run();
     const target = f.target(id); f.objects[target].common.role = 'My.manual.role';
@@ -163,12 +175,26 @@ test('missing source confirmation is marked unconfirmed after 30 seconds', async
     await mapper.run(); assert.equal(f.states[target].ack, false); assert.equal(f.sends.length, 1);
 });
 
+test('changed MQTT sources update selectively without enumerating or invalidating other points', async () => {
+    const f = fixture(), first = f.add('sensor.first', 'first.sensor', 10, {}, false);
+    const second = f.add('sensor.second', 'second.sensor', 20, {}, false), mapper = f.mapper();
+    await mapper.run();
+    f.api.listSources = () => { throw new Error('A full scan is not allowed'); };
+    f.states[first] = {val: 11, ack: true, ts: f.tick()};
+    await mapper.run([first]);
+    assert.equal(f.states[f.target(first)].val, 11);
+    assert.equal(f.states[f.target(second)].val, 20);
+    assert.equal(f.states[f.target(second)].q, 0);
+});
+
 test('adapter-style runtime does not read missing backup/optional metadata or need TextEncoder', async () => {
     const f = fixture('preview'); f.add('sensor.date', 'date.sensor', '2026-06-01', {device_class: 'date'}, false);
     const source = readFileSync(require.resolve('../app/iobroker/ugso-mqtt-role-mapper.js'), 'utf8');
     for (const outputMode of ['virtual', 'roles']) {
         const warnings = [], logs = [];
-        const context = {getObject: f.api.getObject, getState: id => { if (!f.objects[id]) warnings.push(id); return f.api.getState(id); },
+        const context = {getObject: id => { if (!f.objects[id]) warnings.push('getObject: ' + id); return f.api.getObject(id); },
+            existsObject: id => Boolean(f.objects[id]), existsState: id => Boolean(f.states[id]),
+            getState: id => { if (!f.states[id]) warnings.push('getState: ' + id); return f.api.getState(id); },
             $: selector => ({each: cb => (selector.includes('device_class') ? Object.keys(f.states).filter(id => id.endsWith('.attribute.device_class')) : f.api.listSources()).forEach(cb)}),
             log: message => logs.push(message), on: () => {}, onStop: () => {}, setTimeout: () => 1, clearTimeout: () => {}};
         vm.runInNewContext(source.replace("outputMode: 'virtual'", "outputMode: '" + outputMode + "'"), context);
@@ -180,7 +206,8 @@ test('adapter-style runtime does not read missing backup/optional metadata or ne
 test('adapter 10.4.10 API-style apply automatically creates folders, journal and ack-true values', async () => {
     const f = fixture('apply'), id = f.add('switch.plug', 'plug.switch', 'on');
     const warnings = [], commands = [], logs = [], source = readFileSync(require.resolve('../app/iobroker/ugso-mqtt-role-mapper.js'), 'utf8');
-    const context = {getObject: f.api.getObject,
+    const context = {getObject: id => { if (!f.objects[id]) warnings.push('getObject: ' + id); return f.api.getObject(id); },
+        existsObject: id => Boolean(f.objects[id]), existsState: id => Boolean(f.states[id]),
         getState: id => { if (!f.objects[id] || !f.states[id]) warnings.push(id); return f.api.getState(id); },
         getStateAsync: async id => f.api.getState(id),
         createStateAsync: async (id, val, force, common) => { f.objects[id] = {type: 'state', common}; f.states[id] = {val, ack: true}; },

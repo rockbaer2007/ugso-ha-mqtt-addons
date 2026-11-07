@@ -59,6 +59,9 @@ class LabelSupportTests(unittest.TestCase):
     def test_label_switch_has_commands_and_no_action_during_setup(self):
         self.select()
         self.assertIn("switch.plug", self.bridge.command_topics.values())
+        self.assertEqual(sum(entity == "switch.plug" for entity in self.bridge.command_topics.values()), 1)
+        state_topic = self.bridge.sent_topics[("state", "switch.plug")]
+        self.assertIn(state_topic.removesuffix("/state") + "/set", self.bridge.command_topics)
         self.ha.command.assert_not_called()
         self.assertNotIn("never-send", str(self.client.publish.call_args_list))
         self.send("switch.plug", "OFF")

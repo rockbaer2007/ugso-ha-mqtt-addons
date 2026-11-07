@@ -1,7 +1,18 @@
 # ioBroker : attribution automatique des rôles {#iobroker-role-mapping}
 
-Le JavaScript optionnel est fourni avec MQTT-Client **0.1.24** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
+Le JavaScript optionnel est fourni avec MQTT-Client **0.1.25** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
 
+
+
+## Correction 0.1.25 : objets absents sans avertissements {#fix-0125}
+
+L’adaptateur JavaScript **10.4.10** émet aussi un avertissement lorsque `getObject` lit un identifiant absent. Le script vérifie désormais `existsObject` et `existsState` avant toute lecture d’objet ou d’état : journal, métadonnées optionnelles, dossiers et points virtuels non encore créés. La protection précédente utilisant seulement `getObject` était insuffisante.
+
+L’aperçu affiche des lignes `Preview VIS 2` mais ne crée rien. Après vérification, choisissez `mode: 'apply'` pour la création automatique. Autorisez `setObject` dans l’instance JavaScript et désactivez **Do not subscribe to all states on start**, car le script lit les caches d’états de manière synchrone. Une création propre au script interrompue peut être retentée après correction des autorisations ; les points étrangers ou modifiés restent protégés.
+
+MQTT-Client **0.1.24 ou ultérieur** fournit le catalogue requis ; remplacer le fichier complet du script suffit pour cette correction. Les anciens topics persistants désélectionnés sans identité d’entité actuelle sont ignorés. Les métadonnées HA absentes ne sont jamais inventées. Le message de démarrage indique maintenant version et mode.
+
+Le script regroupe les changements MQTT réels pendant une seconde. Le mode virtuel traite uniquement les sources concernées ; les répétitions identiques et les attributs sans rapport ne déclenchent aucun passage. Une analyse complète a lieu au démarrage et lorsque le catalogue de sélection ou la disponibilité change. La vérification du délai concerne uniquement les commandes en attente et cesse après confirmation ou expiration. Chaque entité utilise uniquement le canal de commande correspondant à son état ; les objets ioBroker existants ne sont pas supprimés.
 
 ## Nouveauté 0.1.24 : un point VIS 2 pour l’état et la commande {#vis2}
 

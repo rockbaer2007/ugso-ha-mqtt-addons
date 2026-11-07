@@ -1,5 +1,12 @@
 # MQTT-Client
 
+## Fix in 0.1.25
+
+Missing journals, optional attributes and virtual targets are checked with
+`existsObject`/`existsState` before reads. Adapter 10.4.10 also warns for missing
+IDs in `getObject`. Preview creates nothing; `mode: 'apply'` creates the points.
+[Updated permission and preview notes](iobroker/README.en.md#fix-0125).
+
 ## New in 0.1.24: automatic VIS-2 states
 
 The combined ioBroker helper creates own states below `0_userdata.0.ugso_mqtt` in

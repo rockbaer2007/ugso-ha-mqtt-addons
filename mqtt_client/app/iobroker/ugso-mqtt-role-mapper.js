@@ -1,4 +1,4 @@
-/* MQTT-Client 0.1.24: ioBroker JavaScript adapter 10.4.10 compatible.
+/* MQTT-Client 0.1.25: ioBroker JavaScript adapter 10.4.10 compatible.
  * Preview first. Settings and documentation: mqtt_client/iobroker/README*.md.
  * No MQTT state values, types, units, permissions or commands are changed.
  */
@@ -338,8 +338,9 @@ const UgsoMqttRoles = (() => {
             return data;
         }
 
-        async function run() {
+        async function run(sourceIds) {
             const data = await journal();
+            const changed = sourceIds ? new Set(sourceIds) : null;
             if (settings.mode === 'restore') {
                 for (const [id, record] of Object.entries(data.entries)) {
                     if (!owned(api.getObject(id), record) || excluded(record.sourceId)) continue;
@@ -351,19 +352,19 @@ const UgsoMqttRoles = (() => {
             }
             const valid = new Set();
             const catalog = active();
-            for (const sourceId of api.listSources()) {
+            for (const sourceId of changed || api.listSources()) {
                 const spec = describe(sourceId, catalog);
                 if (!spec) continue;
                 valid.add(spec.id);
                 let record = data.entries[spec.id], object = api.getObject(spec.id), created = false;
-                if (record?.disabled || record && !owned(object, record) || !record && object) continue;
+                if (record?.disabled || record && object && !owned(object, record) || !record && object) continue;
                 if (record && record.common.type !== spec.common.type) { valid.delete(spec.id); continue; }
                 if (settings.mode === 'preview') {
                     if (!previewed.has(spec.id)) { api.log('Preview VIS 2: ' + spec.id + ' <- ' + sourceId + (spec.setId ? ' -> ' + spec.setId : ' (read-only)')); previewed.add(spec.id); }
                     continue;
                 }
                 if (!online()) continue;
-                if (!record) {
+                if (!record || !object) {
                     record = {sourceId, common: spec.common, native: spec.native, savedAt: new Date(api.now()).toISOString()};
                     data.entries[spec.id] = record;
                     await api.writeJournal(settings.virtualBackupId, JSON.stringify(data));
@@ -388,6 +389,7 @@ const UgsoMqttRoles = (() => {
             }
             if (settings.mode === 'apply') {
                 for (const [id, record] of Object.entries(data.entries)) {
+                    if (changed && !changed.has(record.sourceId)) continue;
                     if (record.disabled || excluded(record.sourceId) || !owned(api.getObject(id), record) || valid.has(id) && online()) continue;
                     const current = api.getState(id);
                     if (current && current.q !== 0x82) await api.setVirtual(id, {val: current.val, ack: current.ack, q: 0x82});
@@ -413,7 +415,8 @@ const UgsoMqttRoles = (() => {
                 throw error;
             }
         }
-        return {run, command, describe, hasPending: () => pending.size > 0};
+        const pendingSources = () => [...pending.entries()].filter(([, wait]) => !wait.timedOut).map(([id]) => api.getObject(id)?.native?.ugsoMqttVis2?.sourceId).filter(Boolean);
+        return {run, command, describe, pendingSources, hasPending: () => pendingSources().length > 0};
     }
     return {createMapper, createVirtualMapper, propose, validDate, validTimestamp, numeric, binary};
 })();
@@ -422,11 +425,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = UgsoMqttRo
 
 if (typeof on === 'function' && typeof getObject === 'function') {
     const settings = UGSO_MQTT_ROLE_SETTINGS;
+    // In adapter 10.4.10 both getObject and getState warn for missing IDs.
+    // existsObject/existsState perform silent checks of the adapter caches.
+    const optionalObject = id => existsObject(id) ? getObject(id) : undefined;
+    const optionalState = id => existsState(id) ? getState(id) : undefined;
     const api = {
-        getObject: id => getObject(id),
-        // getState logs a warning for missing objects. Optional metadata and the
-        // not-yet-created journal are expected to be absent during preview.
-        getState: id => getObject(id)?.type === 'state' ? getState(id) : undefined,
+        getObject: optionalObject,
+        getState: optionalState,
         listMetadata: () => {
             const ids = [];
             $('state[id=' + settings.mqttRoot + '.*.attribute.device_class]').each(id => ids.push(id));
@@ -441,11 +446,11 @@ if (typeof on === 'function' && typeof getObject === 'function') {
         createVirtual: async (id, object) => {
             const parts = id.split('.');
             for (let size = 3; size < parts.length; size++) {
-                const folderId = parts.slice(0, size).join('.'), existing = getObject(folderId);
+                const folderId = parts.slice(0, size).join('.'), existing = optionalObject(folderId);
                 if (existing && !['folder', 'channel', 'device'].includes(existing.type)) throw new Error('Existing parent is not a folder: ' + folderId);
                 if (!existing) await new Promise((resolve, reject) => setObject(folderId, {type: 'folder', common: {name: parts[size - 1]}, native: {ugsoMqttVis2Folder: true}}, error => error ? reject(new Error(String(error))) : resolve()));
             }
-            if (getObject(id)) throw new Error('Virtual target appeared during creation');
+            if (optionalObject(id)) throw new Error('Virtual target appeared during creation');
             await new Promise((resolve, reject) => setObject(id, object, error => error ? reject(new Error(String(error))) : resolve()));
         },
         disableVirtual: id => new Promise((resolve, reject) => extendObject(id, {common: {write: false}}, error => error ? reject(new Error(String(error))) : resolve())),
@@ -456,7 +461,7 @@ if (typeof on === 'function' && typeof getObject === 'function') {
         createAlias: (id, object) => new Promise((resolve, reject) => setObject(id, object, error => error ? reject(new Error(String(error))) : resolve())),
         deleteAlias: id => new Promise((resolve, reject) => deleteObject(id, false, error => error ? reject(new Error(String(error))) : resolve())),
         writeJournal: async (id, value) => {
-            if (!getObject(id)) await createStateAsync(id, '', false, {name: 'UGSo MQTT role backup', type: 'string', role: 'json', read: true, write: false});
+            if (!optionalObject(id)) await createStateAsync(id, '', false, {name: 'UGSo MQTT role backup', type: 'string', role: 'json', read: true, write: false});
             await setStateAsync(id, {val: value, ack: true});
             if ((await getStateAsync(id))?.val !== value) throw new Error('Backup could not be verified');
         },
@@ -465,6 +470,7 @@ if (typeof on === 'function' && typeof getObject === 'function') {
     try {
         if (!['virtual', 'roles'].includes(settings.outputMode)) throw new Error('Invalid outputMode');
         const virtual = settings.outputMode === 'virtual';
+        api.log('Helper 0.1.25; output=' + settings.outputMode + '; mode=' + settings.mode + (settings.mode === 'preview' ? ' (read-only preview; no points are created)' : ''));
         const mapper = virtual ? UgsoMqttRoles.createVirtualMapper(api, settings) : UgsoMqttRoles.createMapper(api, settings);
         let serial = Promise.resolve(), timer, pendingTimer, stopped = false, queued = 0;
         const enqueue = task => {
@@ -474,13 +480,30 @@ if (typeof on === 'function' && typeof getObject === 'function') {
         };
         const checkPending = () => {
             if (!stopped && virtual && mapper.hasPending() && !pendingTimer) pendingTimer = setTimeout(() => {
-                pendingTimer = undefined; enqueue(async () => { await mapper.run(); checkPending(); });
+                pendingTimer = undefined; enqueue(async () => { await mapper.run(mapper.pendingSources()); checkPending(); });
             }, 5000);
         };
         if (settings.mode !== 'restore') {
             const escaped = settings.mqttRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            on({id: new RegExp('^' + escaped + '\\.(?:availability|selected_entities|.+\\.(?:state|attribute\\.[^.]+))$'), change: 'any', q: '*'}, () => {
-                if (!timer) timer = setTimeout(() => { timer = undefined; enqueue(() => mapper.run()); }, 1000);
+            let fullScan = false;
+            const dirtySources = new Set();
+            on({id: new RegExp('^' + escaped + '\\.(?:availability|selected_entities|.+\\.(?:state|attribute\\.[^.]+))$'), change: 'any', q: '*'}, event => {
+                if (!event?.id || !event.state) return;
+                const same = event.oldState && JSON.stringify(event.state.val) === JSON.stringify(event.oldState.val) && event.state.ack === event.oldState.ack && event.state.q === event.oldState.q;
+                if (same && !(virtual && mapper.pendingSources().includes(event.id))) return;
+                if (event.id.endsWith('.state')) dirtySources.add(event.id);
+                else if (event.id.includes('.attribute.')) {
+                    const [base, attribute] = event.id.split('.attribute.');
+                    if (!['ha_entity_id', 'command_enabled', 'device_class', 'unit_of_measurement', 'friendly_name', 'min', 'max', 'step', 'options', 'effect_list', 'min_color_temp_kelvin', 'max_color_temp_kelvin'].includes(attribute)) return;
+                    dirtySources.add(base + '.state');
+                    for (const feature of ['brightness', 'rgb_color', 'effect', 'color_temp_kelvin']) dirtySources.add(base + '.' + feature + '.state');
+                } else fullScan = true;
+                if (!timer) timer = setTimeout(() => {
+                    timer = undefined;
+                    const sources = fullScan || !virtual ? undefined : [...dirtySources];
+                    fullScan = false; dirtySources.clear();
+                    enqueue(() => mapper.run(sources));
+                }, 1000);
             });
             if (virtual) {
                 const target = settings.virtualRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
