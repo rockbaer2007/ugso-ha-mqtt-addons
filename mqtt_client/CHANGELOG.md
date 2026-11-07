@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.30
+
+- Replace native credential details with an explicit accessible expand/collapse button. Configured credentials start collapsed and close again after save/reload; missing required credentials open for validation. Transmission/TLS settings and action buttons stay visible. Preserve all connection settings, credentials and the 0.1.29 priority/measurement logic; helper 0.1.27 is unchanged.
+
 ## 0.1.29
 
 - Recognize switches by domain without requiring a device class or unit. Add same-device power/voltage/current/energy unit fallback when HA device_class is missing; never override explicit classes or guess device relationships from names. Add read-only label-reading diagnostics showing inclusion/exclusion reasons without state values or credentials.

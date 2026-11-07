@@ -34,7 +34,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS | {"cover"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.29"
+APP_VERSION = "0.1.30"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -120,7 +120,11 @@ INDEX_HTML = """<!doctype html>
     button:disabled { opacity: .55; cursor: default; }
     .message { min-height: 1.35em; }
     .credentials { margin-bottom: 16px; }
-    .credentials > summary { padding: 12px 14px; cursor: pointer; font-weight: 650; }
+    .credentialsToggle { width: 100%; text-align: left; color: inherit; background: rgba(148, 163, 184, .12); }
+    .credentialsToggle::before { content: '▸'; display: inline-block; width: 20px; }
+    .credentialsToggle[aria-expanded="true"]::before { content: '▾'; }
+    #credentialsFields { display: grid; gap: 10px; margin-top: 10px; }
+    #credentialsFields[hidden] { display: none !important; }
     .transferList { display: grid; gap: 8px; max-height: 60vh; overflow: auto; }
     .transferRow { display: grid; gap: 5px; padding: 12px; border-radius: 8px; background: rgba(148, 163, 184, .12); overflow-wrap: anywhere; }
     .transferHeading { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
@@ -171,8 +175,9 @@ INDEX_HTML = """<!doctype html>
     <div id="status" class="status"><span class="dot"></span><span>Keine Verbindung</span></div>
     <p id="statusDetails" class="sub" role="status"></p>
     <form id="form" autocomplete="off">
-    <details id="credentials" class="credentials" open>
-    <summary>Zugangsdaten</summary>
+    <section id="credentials" class="credentials">
+    <button id="credentialsToggle" class="credentialsToggle" type="button" aria-expanded="false" aria-controls="credentialsFields">Zugangsdaten</button>
+    <div id="credentialsFields" hidden>
       <div class="row">
         <label>IP oder Hostname
           <input id="broker_host" name="broker_host" required placeholder="192.168.1.20">
@@ -188,7 +193,8 @@ INDEX_HTML = """<!doctype html>
         <input id="password" name="password" type="password" autocomplete="new-password" placeholder="unverändert lassen">
       </label>
       <p class="hint">Standardport für den ioBroker-MQTT-Adapter: 1883.</p>
-    </details>
+    </div>
+    </section>
       <section id="transferSettings"><h2>Übertragung und TLS</h2>
         <label>Publish-Pause für Messwerte und Attribute in ms
           <input id="publish_delay_ms" name="publish_delay_ms" type="number" min="0" max="1000" value="50">
@@ -551,11 +557,21 @@ INDEX_HTML = """<!doctype html>
       renderLists();
     }
 
+    function setCredentialsOpen(open) {
+      document.getElementById('credentialsFields').hidden = !open;
+      document.getElementById('credentialsToggle').setAttribute('aria-expanded', String(open));
+    }
+
+    document.getElementById('credentialsToggle').addEventListener('click', () => {
+      setCredentialsOpen(document.getElementById('credentialsFields').hidden);
+    });
+    document.getElementById('credentialsFields').addEventListener('invalid', () => setCredentialsOpen(true), true);
+
     async function loadConfig() {
       const response = await fetch('./api/config', { cache: 'no-store' });
       const data = await response.json();
       form.broker_host.value = data.broker_host || '';
-      document.getElementById('credentials').open = !Boolean(data.broker_host);
+      setCredentialsOpen(!Boolean(data.broker_host));
       form.broker_port.value = data.broker_port || 1883;
       form.username.value = data.username || '';
       form.publish_delay_ms.value = data.publish_delay_ms ?? 50;

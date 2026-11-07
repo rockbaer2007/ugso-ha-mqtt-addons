@@ -1,8 +1,12 @@
 # ioBroker : attribution automatique des rôles {#iobroker-role-mapping}
 
-Le JavaScript optionnel est fourni avec MQTT-Client **0.1.29** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
+Le JavaScript optionnel est fourni avec MQTT-Client **0.1.30** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
 
 
+
+## Nouveauté 0.1.30 : identifiants repliables {#credentials-0130}
+
+La section **Identifiants** dispose désormais d’un bouton pour la déplier ou la replier, également utilisable au clavier. Si le broker est configuré, l’adresse IP, le port, le nom d’utilisateur et le mot de passe restent repliés après chargement et enregistrement. Si des champs obligatoires manquent, la section s’ouvre pour les corriger. **Transmission et TLS**, **Enregistrer et connecter** et **Valeurs actuellement transmises** restent visibles. Les réglages et identifiants ne sont pas modifiés. La priorité de la version 0.1.29 et le script 0.1.27 sont conservés. L’utilisateur a confirmé le bon fonctionnement du retour de commande avec un délai d’environ une demi-seconde. La lampe Zigbee a également été testée avec succès : le retour d’état fonctionne et la luminosité suit HA à 100 %.
 
 ## Nouveauté 0.1.29 : états de commande avant mesures {#priority-0129}
 
