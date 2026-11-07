@@ -3,7 +3,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {readFileSync} = require('node:fs');
 const vm = require('node:vm');
-const {createVirtualMapper} = require('../app/iobroker/ugso-mqtt-role-mapper.js');
+const {createVirtualMapper, initialize} = require('../app/iobroker/ugso-mqtt-role-mapper.js');
 
 function fixture(mode = 'apply') {
     const settings = {mqttRoot: 'mqtt.0.ha_external', aliasRoot: 'alias.0.ugso_mqtt_roles', backupId: '0_userdata.0.ugso_mqtt_roles.backup', virtualRoot: '0_userdata.0.ugso_mqtt', virtualBackupId: '0_userdata.0.ugso_mqtt_helper.backup', mode, excludeIds: []};
@@ -12,6 +12,14 @@ function fixture(mode = 'apply') {
     const clone = value => JSON.parse(JSON.stringify(value));
     const api = {
         getObject: id => objects[id] && clone(objects[id]), getState: id => states[id] && clone(states[id]), now: () => clock,
+        ensureFolders: async id => {
+            const parts = id.split('.');
+            for (let size = 3; size <= parts.length; size++) {
+                const path = parts.slice(0, size).join('.');
+                if (objects[path] && !['folder', 'channel', 'device'].includes(objects[path].type)) throw new Error('Folder conflict');
+                if (!objects[path]) objects[path] = {type: 'folder'};
+            }
+        },
         listSources: () => Object.keys(objects).filter(id => id.startsWith(settings.mqttRoot + '.') && id.endsWith('.state')),
         writeJournal: async (id, value) => { writes.push(['backup', id]); objects[id] = {type: 'state'}; states[id] = {val: value, ack: true}; },
         createVirtual: async (id, object) => { writes.push(['create', id]); objects[id] = clone(object); },
@@ -45,7 +53,34 @@ function fixture(mode = 'apply') {
         mapper: () => createVirtualMapper(api, settings)};
 }
 
-test('preview writes nothing; apply creates backup before points and sends no startup command', async () => {
+test('all modes initialize missing helper infrastructure once without changing existing values or source objects', async () => {
+    for (const mode of ['preview', 'apply', 'restore']) {
+        const f = fixture(mode), source = f.add('switch.plug', 'plug.switch', 'on');
+        const sourceBefore = structuredClone(f.objects[source]);
+        await initialize(f.api, f.settings);
+        assert.equal(f.objects[f.settings.virtualRoot].type, 'folder');
+        assert.equal(f.objects[f.settings.aliasRoot].type, 'folder');
+        assert.equal(JSON.parse(f.states[f.settings.virtualBackupId].val).format, 'ugso-mqtt-vis2');
+        assert.equal(JSON.parse(f.states[f.settings.backupId].val).format, 'ugso-mqtt-roles');
+        assert.equal(f.objects[f.target(source)], undefined);
+        assert.deepEqual(f.objects[source], sourceBefore);
+        const before = structuredClone(f.states), writeCount = f.writes.length;
+        await initialize(f.api, f.settings);
+        assert.deepEqual(f.states, before); assert.equal(f.writes.length, writeCount);
+        assert.deepEqual(f.sends, []);
+    }
+});
+
+test('initialization preserves existing backups and refuses colliding paths', async () => {
+    const f = fixture('preview');
+    f.state(f.settings.backupId, 'existing backup');
+    await initialize(f.api, f.settings);
+    assert.equal(f.states[f.settings.backupId].val, 'existing backup');
+    const g = fixture('preview'); g.settings.backupId = g.settings.virtualBackupId;
+    await assert.rejects(initialize(g.api, g.settings), /Conflicting/); assert.deepEqual(g.writes, []);
+});
+
+test('preview mapping writes nothing; apply creates backup before points and sends no startup command', async () => {
     const f = fixture('preview'), id = f.add('switch.plug', 'plug.switch', 'on');
     const before = structuredClone(f.objects);
     await f.mapper().run(); assert.deepEqual(f.writes, []); assert.deepEqual(f.objects, before);
@@ -195,6 +230,10 @@ test('adapter-style runtime does not read missing backup/optional metadata or ne
         const context = {getObject: id => { if (!f.objects[id]) warnings.push('getObject: ' + id); return f.api.getObject(id); },
             existsObject: id => Boolean(f.objects[id]), existsState: id => Boolean(f.states[id]),
             getState: id => { if (!f.states[id]) warnings.push('getState: ' + id); return f.api.getState(id); },
+            getStateAsync: async id => f.api.getState(id),
+            createStateAsync: async (id, val, force, common) => { f.objects[id] = {type: 'state', common}; f.states[id] = {val, ack: true}; },
+            setStateAsync: async (id, state) => { f.states[id] = {...state}; },
+            setObject: (id, object, cb) => { f.objects[id] = structuredClone(object); cb(); },
             $: selector => ({each: cb => (selector.includes('device_class') ? Object.keys(f.states).filter(id => id.endsWith('.attribute.device_class')) : f.api.listSources()).forEach(cb)}),
             log: message => logs.push(message), on: () => {}, onStop: () => {}, setTimeout: () => 1, clearTimeout: () => {}};
         vm.runInNewContext(source.replace("outputMode: 'virtual'", "outputMode: '" + outputMode + "'"), context);

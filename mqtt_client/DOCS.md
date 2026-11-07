@@ -1,10 +1,14 @@
 # MQTT-Client einrichten
 
+## Neu in 0.1.26: automatische Basisanlage
+
+Fehlende eigene Basisordner (`virtualRoot`, `aliasRoot`) und beide Sicherungsdatenpunkte (`virtualBackupId`, `backupId`) werden jetzt beim Start in **jedem Modus** automatisch angelegt, auch in `preview` und `restore`. Vorhandene Ordner, Sicherungen, Werte und manuelle Rollen werden nicht überschrieben. Neue Journale enthalten gültige leere Strukturen. Für die Basisanlage muss `setObject` in der JavaScript-Instanz auch in der Vorschau erlaubt sein. Fehlende Freigaben oder kollidierende Pfade werden als Fehler gemeldet. Die Vorschau legt keine steuerbaren VIS-2-Datenpunkte an und ändert keine MQTT-Rollen oder Gerätewerte; dafür nach Prüfung `mode: 'apply'` verwenden. Die ereignisgesteuerte Verarbeitung aus 0.1.25 bleibt erhalten.
+
 ## Korrektur in 0.1.25
 
 Fehlende Journale, optionale Attribute und virtuelle Ziele werden vor dem Lesen
 mit `existsObject`/`existsState` geprüft. Auch `getObject` warnt in Adapter 10.4.10
-bei fehlenden IDs. Vorschau bleibt ohne Neuanlagen; `mode: 'apply'` legt sie an.
+bei fehlenden IDs. Alle Modi legen fehlende Basisordner und Sicherungen an; nur `apply` legt VIS-2-Nutzdatenpunkte an.
 [Aktualisierte Hinweise zu Freigaben und Vorschau](iobroker/README.de.md#fix-0125).
 
 ## Neu in 0.1.24: automatische VIS-2-Datenpunkte
@@ -13,8 +17,8 @@ Der kombinierte ioBroker-Helfer legt in `outputMode: 'virtual'` eigene Datenpunk
 unter `0_userdata.0.ugso_mqtt` an. Ein Datenpunkt verbindet Status und Rückkanal:
 HA-Rückmeldungen kommen mit `ack: true`, VIS-2-Bedienungen gehen mit `ack: false`
 an `/set`. Switches, Helligkeit, RGB, Effekte und Kelvin werden passend umgesetzt.
-Sicherungsdatenpunkt und Ordner entstehen automatisch in `mode: 'apply'`;
-`mode: 'preview'` bleibt ohne Schreibzugriffe. Beim Start wird nicht geschaltet.
+Basisordner und Sicherungsdatenpunkte entstehen automatisch in jedem Modus;
+`mode: 'preview'` ändert keine Gerätewerte oder Rollen. Beim Start wird nicht geschaltet.
 Die APIs von JavaScript-Adapter 10.4.10 sind berücksichtigt. Bestehende Aliase und
 MQTT-Objekte bleiben erhalten. Fehlende optionale Attribute erzeugen keine Warnungen.
 [Vollständige Einrichtung und Grenzen](iobroker/README.de.md).

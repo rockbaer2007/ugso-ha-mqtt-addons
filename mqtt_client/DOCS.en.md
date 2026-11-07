@@ -1,10 +1,14 @@
 # MQTT-Client
 
+## New in 0.1.26: automatic helper setup
+
+Missing helper base folders (`virtualRoot`, `aliasRoot`) and both backup states (`virtualBackupId`, `backupId`) are now created automatically at startup in **every mode**, including `preview` and `restore`. Existing folders, backups, values and manual roles are not overwritten. New journals contain valid empty structures. Allow `setObject` in the JavaScript instance even for preview. Missing permissions or conflicting paths are reported as errors. Preview does not create controllable VIS-2 states or change MQTT roles or device values; use `mode: 'apply'` after review for those operations. Event-driven processing from 0.1.25 is retained.
+
 ## Fix in 0.1.25
 
 Missing journals, optional attributes and virtual targets are checked with
 `existsObject`/`existsState` before reads. Adapter 10.4.10 also warns for missing
-IDs in `getObject`. Preview creates nothing; `mode: 'apply'` creates the points.
+IDs in `getObject`. All modes create missing helper base folders and backups; `apply` creates VIS-2 data points.
 [Updated permission and preview notes](iobroker/README.en.md#fix-0125).
 
 ## New in 0.1.24: automatic VIS-2 states
@@ -13,8 +17,8 @@ The combined ioBroker helper creates own states below `0_userdata.0.ugso_mqtt` i
 `outputMode: 'virtual'`. One state combines feedback and the return channel:
 HA updates use `ack: true`, VIS-2 requests use `ack: false` and go to `/set`.
 Switches, brightness, RGB, effects and Kelvin are normalized as needed. The journal
-and folders are created automatically in `mode: 'apply'`; `mode: 'preview'` writes
-nothing. Startup never switches a device. Uses APIs available in JavaScript adapter
+and base folders are created automatically in every mode; preview changes
+no device values or roles. Startup never switches a device. Uses APIs available in JavaScript adapter
 10.4.10. Existing aliases and MQTT objects are preserved. Missing optional attributes
 no longer cause warnings. [Full setup and limits](iobroker/README.en.md).
 

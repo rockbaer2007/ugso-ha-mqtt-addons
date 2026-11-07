@@ -1,4 +1,4 @@
-/* MQTT-Client 0.1.25: ioBroker JavaScript adapter 10.4.10 compatible.
+/* MQTT-Client 0.1.26: ioBroker JavaScript adapter 10.4.10 compatible.
  * Preview first. Settings and documentation: mqtt_client/iobroker/README*.md.
  * No MQTT state values, types, units, permissions or commands are changed.
  */
@@ -418,7 +418,27 @@ const UgsoMqttRoles = (() => {
         const pendingSources = () => [...pending.entries()].filter(([, wait]) => !wait.timedOut).map(([id]) => api.getObject(id)?.native?.ugsoMqttVis2?.sourceId).filter(Boolean);
         return {run, command, describe, pendingSources, hasPending: () => pendingSources().length > 0};
     }
-    return {createMapper, createVirtualMapper, propose, validDate, validTimestamp, numeric, binary};
+    async function initialize(api, settings) {
+        validateSettings(settings);
+        createVirtualMapper(api, settings); // Validate all paths before any writes.
+        const journals = [
+            [settings.virtualBackupId, {format: 'ugso-mqtt-vis2', version: 1, mqttRoot: settings.mqttRoot, virtualRoot: settings.virtualRoot, entries: {}}],
+            [settings.backupId, {format: 'ugso-mqtt-roles', version: 1, mqttRoot: settings.mqttRoot, aliasRoot: settings.aliasRoot, entries: {}}],
+        ];
+        if (settings.backupId === settings.virtualBackupId || journals.some(([id]) => settings.virtualRoot === id || settings.virtualRoot.startsWith(id + '.'))) throw new Error('Conflicting helper paths');
+        for (const [id] of journals) {
+            const object = api.getObject(id), state = api.getState(id);
+            if (object && object.type !== 'state' || !object && state) throw new Error('Existing backup path conflict: ' + id);
+        }
+        await api.ensureFolders(settings.virtualRoot);
+        await api.ensureFolders(settings.aliasRoot);
+        for (const [id, value] of journals) {
+            await api.ensureFolders(id.slice(0, id.lastIndexOf('.')));
+            if (!api.getObject(id)) await api.writeJournal(id, JSON.stringify(value));
+        }
+        api.log('Helper infrastructure ready; existing backups and values preserved.');
+    }
+    return {createMapper, createVirtualMapper, initialize, propose, validDate, validTimestamp, numeric, binary};
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UgsoMqttRoles;
@@ -443,13 +463,16 @@ if (typeof on === 'function' && typeof getObject === 'function') {
             return ids;
         },
         now: () => Date.now(),
-        createVirtual: async (id, object) => {
+        ensureFolders: async id => {
             const parts = id.split('.');
-            for (let size = 3; size < parts.length; size++) {
+            for (let size = 3; size <= parts.length; size++) {
                 const folderId = parts.slice(0, size).join('.'), existing = optionalObject(folderId);
                 if (existing && !['folder', 'channel', 'device'].includes(existing.type)) throw new Error('Existing parent is not a folder: ' + folderId);
                 if (!existing) await new Promise((resolve, reject) => setObject(folderId, {type: 'folder', common: {name: parts[size - 1]}, native: {ugsoMqttVis2Folder: true}}, error => error ? reject(new Error(String(error))) : resolve()));
             }
+        },
+        createVirtual: async (id, object) => {
+            await api.ensureFolders(id.slice(0, id.lastIndexOf('.')));
             if (optionalObject(id)) throw new Error('Virtual target appeared during creation');
             await new Promise((resolve, reject) => setObject(id, object, error => error ? reject(new Error(String(error))) : resolve()));
         },
@@ -470,9 +493,9 @@ if (typeof on === 'function' && typeof getObject === 'function') {
     try {
         if (!['virtual', 'roles'].includes(settings.outputMode)) throw new Error('Invalid outputMode');
         const virtual = settings.outputMode === 'virtual';
-        api.log('Helper 0.1.25; output=' + settings.outputMode + '; mode=' + settings.mode + (settings.mode === 'preview' ? ' (read-only preview; no points are created)' : ''));
+        api.log('Helper 0.1.26; output=' + settings.outputMode + '; mode=' + settings.mode + (settings.mode === 'preview' ? ' (creates missing helper folders/backups only; source changes are previewed)' : ''));
         const mapper = virtual ? UgsoMqttRoles.createVirtualMapper(api, settings) : UgsoMqttRoles.createMapper(api, settings);
-        let serial = Promise.resolve(), timer, pendingTimer, stopped = false, queued = 0;
+        let serial = Promise.resolve(), timer, pendingTimer, stopped = false, queued = 0, initialized = false;
         const enqueue = task => {
             if (stopped || queued >= 100) return;
             queued++;
@@ -488,6 +511,7 @@ if (typeof on === 'function' && typeof getObject === 'function') {
             let fullScan = false;
             const dirtySources = new Set();
             on({id: new RegExp('^' + escaped + '\\.(?:availability|selected_entities|.+\\.(?:state|attribute\\.[^.]+))$'), change: 'any', q: '*'}, event => {
+                if (!initialized) return;
                 if (!event?.id || !event.state) return;
                 const same = event.oldState && JSON.stringify(event.state.val) === JSON.stringify(event.oldState.val) && event.state.ack === event.oldState.ack && event.state.q === event.oldState.q;
                 if (same && !(virtual && mapper.pendingSources().includes(event.id))) return;
@@ -508,11 +532,12 @@ if (typeof on === 'function' && typeof getObject === 'function') {
             if (virtual) {
                 const target = settings.virtualRoot.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                 on({id: new RegExp('^' + target + '\\..+\\.state$'), ack: false, change: 'any', q: '*'}, event => {
+                    if (!initialized) return;
                     enqueue(async () => { await mapper.command(event); checkPending(); });
                 });
             }
         }
         onStop(() => { stopped = true; if (timer) clearTimeout(timer); if (pendingTimer) clearTimeout(pendingTimer); }, 1000);
-        enqueue(() => mapper.run());
+        enqueue(async () => { await UgsoMqttRoles.initialize(api, settings); initialized = true; await mapper.run(); });
     } catch (error) { log('[UGSo MQTT roles] ' + error.message, 'error'); }
 }

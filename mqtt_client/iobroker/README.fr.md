@@ -1,14 +1,18 @@
 # ioBroker : attribution automatique des rôles {#iobroker-role-mapping}
 
-Le JavaScript optionnel est fourni avec MQTT-Client **0.1.25** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
+Le JavaScript optionnel est fourni avec MQTT-Client **0.1.26** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
 
 
+
+## Nouveauté 0.1.26 : création automatique de la base {#setup-0126}
+
+Les dossiers de base du script (`virtualRoot`, `aliasRoot`) et les deux points de sauvegarde (`virtualBackupId`, `backupId`) absents sont désormais créés automatiquement au démarrage dans **tous les modes**, y compris `preview` et `restore`. Les dossiers, sauvegardes, valeurs et rôles manuels existants ne sont pas écrasés. Les nouveaux journaux contiennent des structures vides valides. Autorisez `setObject` dans l’instance JavaScript même pour l’aperçu. Les autorisations manquantes et les chemins incompatibles sont signalés comme erreurs. L’aperçu ne crée aucun point VIS 2 commandable et ne modifie ni les rôles MQTT ni les valeurs des appareils ; utilisez `mode: 'apply'` après vérification pour ces opérations. Le traitement événementiel de la version 0.1.25 est conservé.
 
 ## Correction 0.1.25 : objets absents sans avertissements {#fix-0125}
 
 L’adaptateur JavaScript **10.4.10** émet aussi un avertissement lorsque `getObject` lit un identifiant absent. Le script vérifie désormais `existsObject` et `existsState` avant toute lecture d’objet ou d’état : journal, métadonnées optionnelles, dossiers et points virtuels non encore créés. La protection précédente utilisant seulement `getObject` était insuffisante.
 
-L’aperçu affiche des lignes `Preview VIS 2` mais ne crée rien. Après vérification, choisissez `mode: 'apply'` pour la création automatique. Autorisez `setObject` dans l’instance JavaScript et désactivez **Do not subscribe to all states on start**, car le script lit les caches d’états de manière synchrone. Une création propre au script interrompue peut être retentée après correction des autorisations ; les points étrangers ou modifiés restent protégés.
+L’aperçu affiche des lignes `Preview VIS 2` mais crée uniquement les dossiers de base et sauvegardes absents. Après vérification, choisissez `mode: 'apply'` pour la création automatique. Autorisez `setObject` dans l’instance JavaScript et désactivez **Do not subscribe to all states on start**, car le script lit les caches d’états de manière synchrone. Une création propre au script interrompue peut être retentée après correction des autorisations ; les points étrangers ou modifiés restent protégés.
 
 MQTT-Client **0.1.24 ou ultérieur** fournit le catalogue requis ; remplacer le fichier complet du script suffit pour cette correction. Les anciens topics persistants désélectionnés sans identité d’entité actuelle sont ignorés. Les métadonnées HA absentes ne sont jamais inventées. Le message de démarrage indique maintenant version et mode.
 
@@ -28,7 +32,7 @@ virtualRoot: '0_userdata.0.ugso_mqtt',
 virtualBackupId: '0_userdata.0.ugso_mqtt_helper.backup',
 ```
 
-Après vérification de l’aperçu, passez à `mode: 'apply'` et redémarrez. **Le point de sauvegarde, les dossiers et les nouveaux points VIS 2 sont créés automatiquement.** L’aperçu ne crée volontairement rien. Les points étrangers existants, alias et rôles manuels ne sont pas écrasés. Votre ancien alias, par exemple sous `alias.0.HA`, peut être conservé.
+Après vérification de l’aperçu, passez à `mode: 'apply'` et redémarrez. **Le point de sauvegarde, les dossiers et les nouveaux points VIS 2 sont créés automatiquement.** L’aperçu crée uniquement les dossiers de base et sauvegardes absents ; les nouveaux points VIS 2 nécessitent `apply`. Les points étrangers existants, alias et rôles manuels ne sont pas écrasés. Votre ancien alias, par exemple sous `alias.0.HA`, peut être conservé.
 
 Exemple : `mqtt.0.ha_external.claudia_pc.switch.state` et son canal `mqtt.0.ha_external.claudia_pc.switch.set` deviennent `0_userdata.0.ugso_mqtt.claudia_pc.switch.state`. **Utilisez uniquement ce point virtuel dans VIS 2.**
 
@@ -56,7 +60,7 @@ La fonction précédente reste accessible avec `outputMode: 'roles'`. Les règle
 2. Dans MQTT-Client, choisissez **ioBroker-/VIS-2-Helfer herunterladen**, ou [téléchargez le script](../app/iobroker/ugso-mqtt-role-mapper.js).
 3. Dans **Scripts** d’ioBroker, créez un **JavaScript** et collez le fichier entier. Une seule copie doit fonctionner dans une seule instance JavaScript.
 4. Réglez `mqttRoot` sur votre chemin MQTT, par exemple `mqtt.0.ha_external`. Les caractères génériques sont interdits.
-5. Conservez `mode: 'preview'`, démarrez le script et consultez son journal. L’aperçu n’écrit rien.
+5. Conservez `mode: 'preview'`, démarrez le script et consultez son journal. L’aperçu crée uniquement les dossiers de base et sauvegardes absents.
 6. Ajoutez dans `excludeIds` les points auxquels vous avez attribué manuellement le rôle générique `state`. Ce rôle manuel est indiscernable du rôle par défaut.
 7. Après vérification, passez à `mode: 'apply'` et redémarrez le script. Autorisez `setObject` dans les paramètres de l’instance JavaScript. Celle-ci doit pouvoir lire les états MQTT.
 

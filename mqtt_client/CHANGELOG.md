@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.26
+
+- Automatically create missing helper base folders and both valid backup journals in every mode, including preview and restore. Preserve existing objects, journal entries and values; reject conflicting paths. Preview still does not create virtual controls or change source roles/values.
+- Clarify the startup message and DE/EN/FR instructions. Object creation permission is required even in preview. Retain event-driven selective processing from 0.1.25.
+
 ## 0.1.25
 
 - Process virtual MQTT source updates selectively, ignore unchanged repeats and unrelated attributes, and stop timeout checks after confirmation/expiry. Full enumeration only at startup or selection/availability changes. Subscribe only to the command topic matching each entity's state, without deleting existing MQTT objects.

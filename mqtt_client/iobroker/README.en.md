@@ -1,14 +1,18 @@
 # ioBroker: automatic role mapping {#iobroker-role-mapping}
 
-The optional JavaScript ships with MQTT-Client **0.1.25** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
+The optional JavaScript ships with MQTT-Client **0.1.26** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
 
 
+
+## New in 0.1.26: automatic helper setup {#setup-0126}
+
+Missing helper base folders (`virtualRoot`, `aliasRoot`) and both backup states (`virtualBackupId`, `backupId`) are now created automatically at startup in **every mode**, including `preview` and `restore`. Existing folders, backups, values and manual roles are not overwritten. New journals contain valid empty structures. Allow `setObject` in the JavaScript instance even for preview. Missing permissions or conflicting paths are reported as errors. Preview does not create controllable VIS-2 states or change MQTT roles or device values; use `mode: 'apply'` after review for those operations. Event-driven processing from 0.1.25 is retained.
 
 ## Fix 0.1.25: missing objects without warnings {#fix-0125}
 
 JavaScript adapter **10.4.10** also warns when `getObject` reads a missing ID. The helper now checks `existsObject` and `existsState` before reading objects or states. This covers the journal, optional metadata, folders and virtual states not created yet. The previous `getObject`-only guard was insufficient.
 
-Preview logs `Preview VIS 2` lines but creates nothing. After checking, set `mode: 'apply'` for automatic creation. Allow `setObject` in the JavaScript instance and disable **Do not subscribe to all states on start**, because the helper reads state caches synchronously. Interrupted own creations can retry after permissions are corrected; unrelated or edited states remain protected.
+Preview logs `Preview VIS 2` lines but creates only missing helper base folders and backups. After checking, set `mode: 'apply'` for automatic creation. Allow `setObject` in the JavaScript instance and disable **Do not subscribe to all states on start**, because the helper reads state caches synchronously. Interrupted own creations can retry after permissions are corrected; unrelated or edited states remain protected.
 
 MQTT-Client **0.1.24 or later** provides the required selection catalog; replacing the complete helper file is enough for this fix. Old deselected retained topics without current entity identity are skipped. Missing HA metadata is never invented. The startup message now identifies the version and operating mode.
 
@@ -28,7 +32,7 @@ virtualRoot: '0_userdata.0.ugso_mqtt',
 virtualBackupId: '0_userdata.0.ugso_mqtt_helper.backup',
 ```
 
-After checking preview, change to `mode: 'apply'` and restart. **The backup state, folders and new VIS-2 states are created automatically.** Preview deliberately creates nothing. Existing unrelated states, aliases and manual roles are not overwritten. Your existing alias, for example below `alias.0.HA`, need not be removed.
+After checking preview, change to `mode: 'apply'` and restart. **The backup state, folders and new VIS-2 states are created automatically.** Preview creates only missing helper base folders and backups; new VIS-2 data points require `apply`. Existing unrelated states, aliases and manual roles are not overwritten. Your existing alias, for example below `alias.0.HA`, need not be removed.
 
 Example: `mqtt.0.ha_external.claudia_pc.switch.state` and its `mqtt.0.ha_external.claudia_pc.switch.set` return channel become `0_userdata.0.ugso_mqtt.claudia_pc.switch.state`. **Use only this virtual state in VIS 2.**
 
@@ -56,7 +60,7 @@ The previous functionality remains available through `outputMode: 'roles'`. The 
 2. In MQTT-Client choose **ioBroker-/VIS-2-Helfer herunterladen**, or [download the script](../app/iobroker/ugso-mqtt-role-mapper.js).
 3. Under **Scripts** in ioBroker, create a **JavaScript** and paste the complete file. Run only one copy in one JavaScript instance.
 4. Set `mqttRoot` to your MQTT path, for example `mqtt.0.ha_external`. Wildcards are not allowed.
-5. Keep `mode: 'preview'`, start the script and inspect its log. Preview performs no writes.
+5. Keep `mode: 'preview'`, start the script and inspect its log. Preview creates only missing helper base folders and backups.
 6. Add manually assigned generic `state` roles to `excludeIds`. Such manual roles cannot be distinguished from automatically assigned defaults.
 7. After checking, set `mode: 'apply'` and restart the script. Allow `setObject` in the JavaScript instance settings. The instance must be able to read MQTT states.
 

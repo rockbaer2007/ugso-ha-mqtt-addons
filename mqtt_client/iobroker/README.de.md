@@ -1,14 +1,18 @@
 # ioBroker: automatische Rollenzuordnung {#iobroker-role-mapping}
 
-Das optionale JavaScript gehört zu MQTT-Client **0.1.25** und läuft im ioBroker-JavaScript-Adapter. Es verwendet die übertragenen Metadaten `device_class` und `unit_of_measurement`. Es ordnet nur eindeutige Fälle zu; weder MQTT-Werte noch Datentypen, Einheiten, Zugangsdaten oder Rückkanäle werden umgeschrieben.
+Das optionale JavaScript gehört zu MQTT-Client **0.1.26** und läuft im ioBroker-JavaScript-Adapter. Es verwendet die übertragenen Metadaten `device_class` und `unit_of_measurement`. Es ordnet nur eindeutige Fälle zu; weder MQTT-Werte noch Datentypen, Einheiten, Zugangsdaten oder Rückkanäle werden umgeschrieben.
 
 
+
+## Neu in 0.1.26: automatische Basisanlage {#setup-0126}
+
+Fehlende eigene Basisordner (`virtualRoot`, `aliasRoot`) und beide Sicherungsdatenpunkte (`virtualBackupId`, `backupId`) werden jetzt beim Start in **jedem Modus** automatisch angelegt, auch in `preview` und `restore`. Vorhandene Ordner, Sicherungen, Werte und manuelle Rollen werden nicht überschrieben. Neue Journale enthalten gültige leere Strukturen. Für die Basisanlage muss `setObject` in der JavaScript-Instanz auch in der Vorschau erlaubt sein. Fehlende Freigaben oder kollidierende Pfade werden als Fehler gemeldet. Die Vorschau legt keine steuerbaren VIS-2-Datenpunkte an und ändert keine MQTT-Rollen oder Gerätewerte; dafür nach Prüfung `mode: 'apply'` verwenden. Die ereignisgesteuerte Verarbeitung aus 0.1.25 bleibt erhalten.
 
 ## Korrektur 0.1.25: fehlende Objekte ohne Warnungen {#fix-0125}
 
 In JavaScript-Adapter **10.4.10** warnt auch `getObject` bei fehlenden IDs. Der Helfer prüft jetzt mit `existsObject` und `existsState`, bevor er Objekte oder Zustände liest. Das gilt für Journal, optionale Metadaten, Ordner und noch nicht angelegte virtuelle Datenpunkte. Die vorherige Prüfung über `getObject` allein reichte nicht aus.
 
-In der Vorschau erscheinen `Preview VIS 2`-Zeilen, aber es wird nichts angelegt. Für die automatische Anlage nach der Prüfung `mode: 'apply'` setzen. In der JavaScript-Instanz `setObject` erlauben und **Do not subscribe to all states on start** deaktivieren, weil der Helfer synchron aus den Zustands-Caches liest. Eine abgebrochene eigene Neuanlage kann nach der Freigabe erneut versucht werden; fremde oder bearbeitete Datenpunkte bleiben geschützt.
+In der Vorschau erscheinen `Preview VIS 2`-Zeilen, aber es werden nur fehlende Basisordner und Sicherungen angelegt. Für die automatische Anlage nach der Prüfung `mode: 'apply'` setzen. In der JavaScript-Instanz `setObject` erlauben und **Do not subscribe to all states on start** deaktivieren, weil der Helfer synchron aus den Zustands-Caches liest. Eine abgebrochene eigene Neuanlage kann nach der Freigabe erneut versucht werden; fremde oder bearbeitete Datenpunkte bleiben geschützt.
 
 MQTT-Client **ab 0.1.24** liefert den benötigten Auswahlkatalog; für diese Korrektur genügt der Austausch der vollständigen Helferdatei. Alte nicht mehr ausgewählte Retain-Topics ohne aktuelle Entitätskennung werden ausgelassen. Fehlende HA-Metadaten werden nicht vom Helfer erfunden. Die Startmeldung nennt jetzt Version und Betriebsmodus.
 
@@ -28,7 +32,7 @@ virtualRoot: '0_userdata.0.ugso_mqtt',
 virtualBackupId: '0_userdata.0.ugso_mqtt_helper.backup',
 ```
 
-Nach Prüfung der Vorschau auf `mode: 'apply'` wechseln und neu starten. **Sicherungsdatenpunkt, Ordner und neue VIS-2-Datenpunkte werden automatisch angelegt.** In der Vorschau wird absichtlich nichts angelegt. Vorhandene fremde Datenpunkte, Aliase und manuelle Rollen werden nicht überschrieben. Deinen bisherigen Alias, zum Beispiel unter `alias.0.HA`, musst du nicht entfernen.
+Nach Prüfung der Vorschau auf `mode: 'apply'` wechseln und neu starten. **Sicherungsdatenpunkt, Ordner und neue VIS-2-Datenpunkte werden automatisch angelegt.** Auch die Vorschau legt fehlende Basisordner und Sicherungen an; neue VIS-2-Nutzdatenpunkte benötigen `apply`. Vorhandene fremde Datenpunkte, Aliase und manuelle Rollen werden nicht überschrieben. Deinen bisherigen Alias, zum Beispiel unter `alias.0.HA`, musst du nicht entfernen.
 
 Beispiel: Aus `mqtt.0.ha_external.claudia_pc.switch.state` und dem zugehörigen `mqtt.0.ha_external.claudia_pc.switch.set` entsteht `0_userdata.0.ugso_mqtt.claudia_pc.switch.state`. **Nur diesen virtuellen Datenpunkt in VIS 2 verwenden.**
 
@@ -56,7 +60,7 @@ Die bisherige Funktion bleibt über `outputMode: 'roles'` verfügbar. Die folgen
 2. Im MQTT-Client **ioBroker-/VIS-2-Helfer herunterladen** wählen oder [die Skriptdatei laden](../app/iobroker/ugso-mqtt-role-mapper.js).
 3. Im ioBroker unter **Skripte** ein neues **JavaScript** anlegen und den gesamten Dateiinhalt einfügen. Es genügt ein Skript in einer JavaScript-Instanz.
 4. Oben `mqttRoot` auf den eigenen MQTT-Pfad einstellen, zum Beispiel `mqtt.0.ha_external`. Der Pfad darf keine Platzhalter enthalten.
-5. Zunächst `mode: 'preview'` beibehalten, starten und das JavaScript-Protokoll prüfen. Die Vorschau schreibt nichts.
+5. Zunächst `mode: 'preview'` beibehalten, starten und das JavaScript-Protokoll prüfen. Die Vorschau legt nur fehlende eigene Basisordner und Sicherungen an.
 6. Manuell als `state` verwendete Datenpunkte in `excludeIds` eintragen. Eine solche manuelle Standardrolle ist von der automatisch vergebenen Rolle nicht unterscheidbar.
 7. Nach der Kontrolle `mode: 'apply'` setzen und das Skript neu starten. In den Einstellungen der JavaScript-Instanz muss die Verwendung von `setObject` erlaubt sein. Die Instanz muss die MQTT-Zustände lesen können.
 
