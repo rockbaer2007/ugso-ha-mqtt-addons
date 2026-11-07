@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.27
+
+- Send virtual commands through the ioBroker MQTT adapter's sendMessage2Client API with retain false. Normal raw set-state writes may be delivered with RETAIN in broker/server mode and are correctly rejected by the HA client's stale-command protection.
+- Resolve and validate the command topic against the source's native topic. Preserve raw MQTT set values and global broker settings; no automatic retry. Broker API errors and timeouts remain unconfirmed commands.
+- Log command handoff separately from HA feedback. DE/EN/FR guides explain the new route and why raw set values need not change.
+
 ## 0.1.26
 
 - Automatically create missing helper base folders and both valid backup journals in every mode, including preview and restore. Preserve existing objects, journal entries and values; reject conflicting paths. Preview still does not create virtual controls or change source roles/values.

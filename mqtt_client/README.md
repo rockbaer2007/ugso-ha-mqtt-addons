@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.26**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
+Version **0.1.27**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
 
 **Neu in 0.1.24:** Der Helfer legt virtuelle Datenpunkte unter `0_userdata.0.ugso_mqtt`
 automatisch an. Für VIS 2 genügt je Wert ein Datenpunkt: Status mit `ack: true`,
@@ -26,6 +26,10 @@ ausgewählte Attribute mit Topic, Wert, Brokerbestätigung und farbiger Herkunft
 Label (blau), Manuell (grün), Beides (violett). Die Liste ist durchsuchbar und
 scrollbar. Nur Zugangsdaten klappen automatisch ein; Übertragung/TLS und beide
 Buttons bleiben erreichbar. Details stehen in [der Anleitung](DOCS.md).
+
+## Neu in 0.1.27: Rückkanal ohne Retain
+
+Schaltbefehle werden jetzt gezielt über die ioBroker-MQTT-Schnittstelle `sendMessage2Client` mit **`retain: false`** veröffentlicht. Normale Schreibzugriffe auf MQTT-`set`-Datenpunkte können im Servermodus mit gesetztem Retain-Flag beim Client ankommen. Der HA-Client verwirft solche Befehle weiterhin, damit beim Verbinden keine alten Schaltaufträge ausgeführt werden. Globale Broker-Einstellungen und MQTT-Datenpunktwerte bleiben erhalten. Der Helfer prüft den Befehlstopic gegen den zugehörigen Statustopic und verwendet `native.topic`, nicht aus Objekt-IDs erratene Pfade. In VIS 2 weiterhin ausschließlich den virtuellen Datenpunkt unter `0_userdata.0.ugso_mqtt` mit `ack: false` bedienen und `mode: 'apply'` verwenden. Die Logzeile `Command handed to MQTT adapter (retain=false)` bestätigt nur die Übergabe; erst ein neuer HA-Status bestätigt den Vorgang. Der rohe MQTT-`set`-Wert muss dabei nicht wechseln. Keine automatischen Wiederholungen; Fehler oder fehlende HA-Bestätigung bleiben als unbestätigt erkennbar. Für diese Korrektur die vollständige Helferdatei ersetzen und eigene Einstellungen übernehmen.
 
 ## Installation und Einrichtung
 
@@ -182,7 +186,7 @@ vorher sichern. Die Retain-Inventarliste liegt persistent in `/data/mqtt-topics.
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.26 mqtt_client
+docker build -t ugso-mqtt-client:0.1.27 mqtt_client
 ```
 
 Für die echten MQTT-/WebSocket-Integrationstests einen separaten lokalen Testbroker

@@ -3,7 +3,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const {readFileSync} = require('node:fs');
 const vm = require('node:vm');
-const {createVirtualMapper, initialize} = require('../app/iobroker/ugso-mqtt-role-mapper.js');
+const {createVirtualMapper, initialize, publishCommand} = require('../app/iobroker/ugso-mqtt-role-mapper.js');
 
 function fixture(mode = 'apply') {
     const settings = {mqttRoot: 'mqtt.0.ha_external', aliasRoot: 'alias.0.ugso_mqtt_roles', backupId: '0_userdata.0.ugso_mqtt_roles.backup', virtualRoot: '0_userdata.0.ugso_mqtt', virtualBackupId: '0_userdata.0.ugso_mqtt_helper.backup', mode, excludeIds: []};
@@ -52,6 +52,21 @@ function fixture(mode = 'apply') {
         event: (id, val, ack = false) => ({id, state: {val, ack, q: 0, ts: ++clock}}),
         mapper: () => createVirtualMapper(api, settings)};
 }
+
+test('commands use the MQTT adapter topic API with retain false and preserve raw set values', async () => {
+    const f = fixture(), source = f.add('switch.plug', 'plug.switch', 'on'), id = source.slice(0, -6) + '.set';
+    const calls = [], before = structuredClone(f.states);
+    f.api.sendMqtt = async (...args) => { calls.push(args); return {result: true}; };
+    await publishCommand(f.api, f.settings, id, 'ON');
+    assert.deepEqual(calls, [['mqtt.0', 'sendMessage2Client', {topic: f.objects[id].native.topic, message: 'ON', retain: false}, {timeout: 5000}]]);
+    assert.deepEqual(f.states, before);
+    f.objects[id].native.topic = 'unrelated/device/set';
+    await assert.rejects(publishCommand(f.api, f.settings, id, 'OFF'), /does not match/);
+    assert.equal(calls.length, 1);
+    f.objects[id].native.topic = f.objects[source].native.topic.slice(0, -6) + '/set';
+    f.api.sendMqtt = async () => ({error: 'MQTT server stopped'});
+    await assert.rejects(publishCommand(f.api, f.settings, id, 'OFF'), /stopped/);
+});
 
 test('all modes initialize missing helper infrastructure once without changing existing values or source objects', async () => {
     for (const mode of ['preview', 'apply', 'restore']) {

@@ -1,8 +1,12 @@
 # ioBroker : attribution automatique des rôles {#iobroker-role-mapping}
 
-Le JavaScript optionnel est fourni avec MQTT-Client **0.1.26** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
+Le JavaScript optionnel est fourni avec MQTT-Client **0.1.27** et s’exécute dans l’adaptateur JavaScript d’ioBroker. Il exploite les métadonnées transmises `device_class` et `unit_of_measurement`. Seuls les cas non ambigus sont traités ; les valeurs MQTT, types, unités, identifiants de connexion et canaux de commande ne sont pas réécrits.
 
 
+
+## Nouveauté 0.1.27 : commandes sans retain {#commands-0127}
+
+Les commandes utilisent désormais l’API `sendMessage2Client` de l’adaptateur MQTT ioBroker avec **`retain: false`**. En mode serveur, une écriture normale dans un point MQTT `set` peut parvenir au client avec le drapeau RETAIN. Le client HA continue de refuser ces commandes afin de ne pas exécuter d’anciennes demandes à la reconnexion. Les réglages globaux du broker et les valeurs des points MQTT sont conservés. Le script vérifie le topic de commande par rapport au topic d’état via `native.topic`, sans déduire les chemins des identifiants d’objets. Dans VIS 2, commandez toujours le point virtuel sous `0_userdata.0.ugso_mqtt` avec `ack: false` et `mode: 'apply'`. La ligne `Command handed to MQTT adapter (retain=false)` confirme uniquement la transmission à l’adaptateur ; un nouvel état HA doit confirmer l’exécution. La valeur brute du point MQTT `set` ne change pas nécessairement. Aucun nouvel essai automatique ; les erreurs ou l’absence de retour HA restent non confirmées. Remplacez le fichier complet du script en conservant vos réglages.
 
 ## Nouveauté 0.1.26 : création automatique de la base {#setup-0126}
 

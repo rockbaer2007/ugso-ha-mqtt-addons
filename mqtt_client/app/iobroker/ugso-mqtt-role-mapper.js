@@ -1,4 +1,4 @@
-/* MQTT-Client 0.1.26: ioBroker JavaScript adapter 10.4.10 compatible.
+/* MQTT-Client 0.1.27: ioBroker JavaScript adapter 10.4.10 compatible.
  * Preview first. Settings and documentation: mqtt_client/iobroker/README*.md.
  * No MQTT state values, types, units, permissions or commands are changed.
  */
@@ -438,7 +438,17 @@ const UgsoMqttRoles = (() => {
         }
         api.log('Helper infrastructure ready; existing backups and values preserved.');
     }
-    return {createMapper, createVirtualMapper, initialize, propose, validDate, validTimestamp, numeric, binary};
+    async function publishCommand(api, settings, id, payload) {
+        if (typeof id !== 'string' || !id.startsWith(settings.mqttRoot + '.') || !id.endsWith('.set')) throw new Error('Invalid command ID');
+        const target = api.getObject(id), source = api.getObject(id.slice(0, -4) + '.state');
+        const stateTopic = source?.native?.topic, topic = target?.native?.topic;
+        if (target?.type !== 'state' || source?.type !== 'state' || typeof stateTopic !== 'string' || !stateTopic.endsWith('/state') || topic !== stateTopic.slice(0, -6) + '/set') throw new Error('Command topic does not match source');
+        const instance = settings.mqttRoot.split('.').slice(0, 2).join('.');
+        const result = await api.sendMqtt(instance, 'sendMessage2Client', {topic, message: payload, retain: false}, {timeout: 5000});
+        if (result?.result !== true) throw new Error(result?.error || 'MQTT adapter did not accept the command');
+        api.log('Command handed to MQTT adapter (retain=false): ' + id + '; waiting for HA feedback.');
+    }
+    return {createMapper, createVirtualMapper, initialize, publishCommand, propose, validDate, validTimestamp, numeric, binary};
 })();
 
 if (typeof module !== 'undefined' && module.exports) module.exports = UgsoMqttRoles;
@@ -478,7 +488,8 @@ if (typeof on === 'function' && typeof getObject === 'function') {
         },
         disableVirtual: id => new Promise((resolve, reject) => extendObject(id, {common: {write: false}}, error => error ? reject(new Error(String(error))) : resolve())),
         setVirtual: (id, state) => setStateAsync(id, state),
-        sendCommand: (id, payload) => setStateAsync(id, {val: payload, ack: false}),
+        sendMqtt: (instance, command, message, options) => sendToAsync(instance, command, message, options),
+        sendCommand: (id, payload) => UgsoMqttRoles.publishCommand(api, settings, id, payload),
         writeRole: (id, role) => new Promise((resolve, reject) => extendObject(id, {common: {role}}, error => error ? reject(new Error(String(error))) : resolve())),
         restoreObject: (id, object) => new Promise((resolve, reject) => setObject(id, object, error => error ? reject(new Error(String(error))) : resolve())),
         createAlias: (id, object) => new Promise((resolve, reject) => setObject(id, object, error => error ? reject(new Error(String(error))) : resolve())),
@@ -493,7 +504,7 @@ if (typeof on === 'function' && typeof getObject === 'function') {
     try {
         if (!['virtual', 'roles'].includes(settings.outputMode)) throw new Error('Invalid outputMode');
         const virtual = settings.outputMode === 'virtual';
-        api.log('Helper 0.1.26; output=' + settings.outputMode + '; mode=' + settings.mode + (settings.mode === 'preview' ? ' (creates missing helper folders/backups only; source changes are previewed)' : ''));
+        api.log('Helper 0.1.27; output=' + settings.outputMode + '; mode=' + settings.mode + (settings.mode === 'preview' ? ' (creates missing helper folders/backups only; source changes are previewed)' : ''));
         const mapper = virtual ? UgsoMqttRoles.createVirtualMapper(api, settings) : UgsoMqttRoles.createMapper(api, settings);
         let serial = Promise.resolve(), timer, pendingTimer, stopped = false, queued = 0, initialized = false;
         const enqueue = task => {

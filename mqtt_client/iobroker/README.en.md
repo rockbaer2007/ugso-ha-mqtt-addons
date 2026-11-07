@@ -1,8 +1,12 @@
 # ioBroker: automatic role mapping {#iobroker-role-mapping}
 
-The optional JavaScript ships with MQTT-Client **0.1.26** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
+The optional JavaScript ships with MQTT-Client **0.1.27** and runs in the ioBroker JavaScript adapter. It uses transmitted `device_class` and `unit_of_measurement` metadata. Only unambiguous cases are mapped; MQTT values, types, units, credentials and return channels are not rewritten.
 
 
+
+## New in 0.1.27: return channel without retain {#commands-0127}
+
+Commands now use the ioBroker MQTT adapter's `sendMessage2Client` API with **`retain: false`**. Normal writes to MQTT `set` states may reach the client with RETAIN enabled in server mode. The HA client continues rejecting retained commands so reconnecting cannot execute old requests. Global broker settings and MQTT state values are preserved. The helper validates the command topic against its state topic using `native.topic`, rather than guessing paths from object IDs. In VIS 2, keep controlling the virtual state below `0_userdata.0.ugso_mqtt` with `ack: false` and use `mode: 'apply'`. The log line `Command handed to MQTT adapter (retain=false)` confirms handoff only; a new HA state is required to confirm execution. The raw MQTT `set` value need not change. No automatic retry; errors or missing HA feedback remain unconfirmed. Replace the complete helper file while retaining your own settings.
 
 ## New in 0.1.26: automatic helper setup {#setup-0126}
 

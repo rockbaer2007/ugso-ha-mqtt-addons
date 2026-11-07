@@ -1,5 +1,9 @@
 # MQTT-Client
 
+## New in 0.1.27: return channel without retain
+
+Commands now use the ioBroker MQTT adapter's `sendMessage2Client` API with **`retain: false`**. Normal writes to MQTT `set` states may reach the client with RETAIN enabled in server mode. The HA client continues rejecting retained commands so reconnecting cannot execute old requests. Global broker settings and MQTT state values are preserved. The helper validates the command topic against its state topic using `native.topic`, rather than guessing paths from object IDs. In VIS 2, keep controlling the virtual state below `0_userdata.0.ugso_mqtt` with `ack: false` and use `mode: 'apply'`. The log line `Command handed to MQTT adapter (retain=false)` confirms handoff only; a new HA state is required to confirm execution. The raw MQTT `set` value need not change. No automatic retry; errors or missing HA feedback remain unconfirmed. Replace the complete helper file while retaining your own settings.
+
 ## New in 0.1.26: automatic helper setup
 
 Missing helper base folders (`virtualRoot`, `aliasRoot`) and both backup states (`virtualBackupId`, `backupId`) are now created automatically at startup in **every mode**, including `preview` and `restore`. Existing folders, backups, values and manual roles are not overwritten. New journals contain valid empty structures. Allow `setObject` in the JavaScript instance even for preview. Missing permissions or conflicting paths are reported as errors. Preview does not create controllable VIS-2 states or change MQTT roles or device values; use `mode: 'apply'` after review for those operations. Event-driven processing from 0.1.25 is retained.
