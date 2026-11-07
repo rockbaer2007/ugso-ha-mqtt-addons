@@ -1,6 +1,6 @@
 # MQTT-Client
 
-Version **0.1.28**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
+Version **0.1.29**. Zusätzlicher MQTT-Client für einen externen Broker, beispielsweise den ioBroker-MQTT-Adapter im Modus **Server/Broker**. Die App ist für gezielte Home-Assistant-zu-ioBroker-Übertragungen gedacht: Du wählst einzelne Geräte oder Werte aus, statt mit dem ioBroker-HASS-Adapter pauschal den gesamten Home-Assistant-Bestand zu spiegeln. Das ist ähnlich zum bekannten Weg ioBroker → Home Assistant per MQTT, nur in Gegenrichtung und bewusst selektiv. Dein HA-Broker und die vorhandene MQTT-Integration bleiben bestehen. Die App verbindet sich direkt mit der HA-API und dem externen Broker; sie ist keine Broker-Bridge.
 
 **Neu in 0.1.24:** Der Helfer legt virtuelle Datenpunkte unter `0_userdata.0.ugso_mqtt`
 automatisch an. Für VIS 2 genügt je Wert ein Datenpunkt: Status mit `ack: true`,
@@ -26,6 +26,12 @@ ausgewählte Attribute mit Topic, Wert, Brokerbestätigung und farbiger Herkunft
 Label (blau), Manuell (grün), Beides (violett). Die Liste ist durchsuchbar und
 scrollbar. Nur Zugangsdaten klappen automatisch ein; Übertragung/TLS und beide
 Buttons bleiben erreichbar. Details stehen in [der Anleitung](DOCS.md).
+
+## Neu in 0.1.29: Schaltwerte vor Messwerten
+
+**Die HA-MQTT-Client-App auf 0.1.29 aktualisieren; der ioBroker-Helfer 0.1.27 bleibt unverändert.** Schaltzustände, Kontakte und Befehlsrückmeldungen werden vor Messwerten behandelt. Ihre Veröffentlichung wartet nicht auf die Publish-Pause. Bereits laufende Übertragungen werden abgeschlossen; zwischen Nachrichten geben Messwert-/Attributpakete für dringende Zustände und Schaltbefehle nach. Wenn mindestens 32 Ereignisse warten, werden Sensor-Zwischenstände in begrenzten Paketen auf den jeweils letzten Zustand zusammengefasst. Normale Schaltfolgen bleiben erhalten. Zusätzlich liest der Kontrollabgleich auch bei bestehender Live-Verbindung den tatsächlichen HA-Zustand im vorhandenen `poll_interval` (Standard 5 Sekunden). Unveränderte Werte werden nicht erneut veröffentlicht. **Übertragung und TLS** sowie die **Publish-Pause für Messwerte und Attribute** sind direkt sichtbar; Zugangsdaten bleiben separat einklappbar. Die Statuszeile unterscheidet **Wartend**, **Zusammengefasst**, **HA-Eingang** und den fortlaufenden Zähler **Gesendet**. Bestehende Einstellungen und Werte bleiben erhalten. Für die Prüfung den Kontrollabgleich auf 5 Sekunden lassen und ein unkritisches Relais in HA schalten. Erst eine tatsächliche HA-Rückmeldung führt zu `ack: true`; die Broker-Übergabe allein genügt nicht. Lokal geprüft, Bestätigung der Verzögerung auf dem Nutzersystem steht noch aus.
+
+Schalter werden über die Domain `switch.*` erkannt und benötigen weder Geräteklasse noch Einheit. Lampen verwenden `light.*`. Die aktivierte automatische Messwertauswahl bleibt auf dieselbe HA-Gerätezuordnung beschränkt. Für Sensoren gilt zuerst `device_class`; fehlt sie, werden eindeutige Einheiten aus `unit_of_measurement` wie W/kW/MW, V/mV/kV, A/mA und Wh/kWh/MWh verwendet. Vorhandene Klassen werden nicht überschrieben; ähnliche Namen oder ein mehrdeutiges Prozentzeichen genügen nicht. Unter **Zugehörige Messwerte prüfen** zeigt eine schreibgeschützte Prüfung die erkannten Sensoren und Ausschlussgründe, etwa fehlende Gerätezuordnung, deaktivierte Entität oder ungeeignete Klasse/Einheit. Messwerte dürfen hinter Schaltwerten warten. Einstellungen, Zugangsdaten und bestehende Werte bleiben erhalten.
 
 ## Neu in 0.1.28: HA-Live-Rückmeldungen ohne fremde Ereignisflut
 
@@ -190,7 +196,7 @@ vorher sichern. Die Retain-Inventarliste liegt persistent in `/data/mqtt-topics.
 ```sh
 python -m pip install -r mqtt_client/requirements.txt
 python -m unittest discover -s mqtt_client/tests -v
-docker build -t ugso-mqtt-client:0.1.28 mqtt_client
+docker build -t ugso-mqtt-client:0.1.29 mqtt_client
 ```
 
 Für die echten MQTT-/WebSocket-Integrationstests einen separaten lokalen Testbroker

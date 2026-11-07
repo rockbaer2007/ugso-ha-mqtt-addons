@@ -9,13 +9,25 @@ try {
   await page.goto(process.env.MQTT_UI_URL||'http://127.0.0.1:4186/');
   await page.waitForFunction(()=>document.querySelector('#broker_host').value==='demo-broker');
   assert.match(await page.locator('#statusDetails').innerText(),/HA: erreichbar.*Live-Ereignisse/);
+  assert.match(await page.locator('#statusDetails').innerText(),/Wartend:.*Zusammengefasst:.*HA-Eingang:/);
   assert.equal(await page.locator('#credentials').evaluate(el=>el.open),false);
   assert.equal(await page.locator('#save').isVisible(),true);
   const scriptDownload=await page.request.get(new URL('downloads/ugso-mqtt-role-mapper.js',page.url()).href);
   assert.equal(scriptDownload.status(),200);
   assert.match(scriptDownload.headers()['content-disposition'],/attachment/);
   assert.match(await scriptDownload.text(),/mode: 'preview'/);
-  assert.equal(await page.locator('form > details > summary').filter({hasText:'Übertragung und TLS'}).isVisible(),true);
+  assert.equal(await page.locator('#transferSettings').isVisible(),true);
+  assert.equal(await page.locator('#publish_delay_ms').isVisible(),true);
+  await page.route('**/api/label-diagnostics',route=>route.fulfill({json:{enabled:true,roots:[
+    {entity_id:'switch.no_device',device_linked:false,candidates:[]},
+    {entity_id:'switch.plug',device_linked:true,candidates:[{entity_id:'sensor.<script>literal</script>',device_class:'power',unit:'W',reason:'included',class_source:'unit'}]}
+  ]}}));
+  await page.locator('#readingDiagnostics').click();
+  await page.waitForFunction(()=>document.querySelector('#readingReport').textContent.includes('aus Einheit'));
+  assert.match(await page.locator('#readingReport').innerText(),/Keine HA-Gerätezuordnung/);
+  assert.equal(await page.locator('#readingReport script').count(),0);
+  await page.locator('#closeReadingDialog').click();
+  await page.unroute('**/api/label-diagnostics');
   await page.locator('#transmissions').click();
   await page.waitForFunction(()=>document.querySelector('#transferList .transferRow'));
   assert.match(await page.locator('#transferList').innerText(),/Demo switch.*Manuell/s);
@@ -35,7 +47,6 @@ try {
   await page.locator('#closeTransfers').click();
   await page.unroute('**/api/transmissions');
   await page.locator('#credentials > summary').click();
-  await page.locator('form > details > summary').filter({hasText:'Übertragung und TLS'}).click();
   await page.locator('[name=poll_interval]').fill('17');
   await page.locator('#publish_delay_ms').fill('0');
   await page.locator('[name=label_device_readings]').check();

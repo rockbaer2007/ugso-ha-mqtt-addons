@@ -73,6 +73,95 @@ class FeatureTests(unittest.TestCase):
         self.bridge.process_event(("event", {"entity_id": "switch.test", "new_state": fresh}))
         self.assertEqual(self.bridge.states_cache["switch.test"]["state"], 'on')
 
+    def test_switch_feedback_precedes_measurement_backlog_without_publish_pause(self):
+        self.bridge.config = Config.load({"broker_host": "broker", "entities": ["switch.test", "sensor.power"], "publish_delay_ms": 50})
+        self.bridge.stop.wait = Mock(return_value=False)
+        relay = self.ha.full_states()[0]
+        meter = {"entity_id": "sensor.power", "state": "0", "attributes": {"device_class": "power", "unit_of_measurement": "W"}}
+        self.bridge.process_event(("snapshot", [relay, meter]))
+        self.client.publish.reset_mock()
+        self.bridge.stop.wait.reset_mock()
+        for value in range(100):
+            self.bridge.deliver_event(("event", {"entity_id": "sensor.power", "new_state": {**meter, "state": str(value)}}))
+        self.bridge.deliver_event(("event", {"entity_id": "switch.test", "new_state": {**relay, "state": "on"}}))
+        self.bridge.process_pending_events()
+        self.assertEqual(self.bridge.states_cache["switch.test"]["state"], "on")
+        self.assertEqual(self.bridge.events.qsize(), 100)
+        self.bridge.stop.wait.assert_not_called()
+        self.assertEqual([call.args[1] for call in self.client.publish.call_args_list if call.args[0].endswith('/state')], ['on'])
+        self.bridge.process_pending_events()
+        self.assertTrue(self.bridge.events.empty())
+        self.assertEqual(self.bridge.states_cache["sensor.power"]["state"], '99')
+        self.assertEqual(self.status.snapshot()["coalesced_events"], 99)
+        self.assertEqual([call.args[1] for call in self.client.publish.call_args_list if call.args[0].endswith('/state')], ['on', '99'])
+
+    def test_ordinary_switch_transitions_are_not_coalesced(self):
+        relay = self.ha.full_states()[0]
+        self.bridge.process_event(("snapshot", [relay]))
+        self.client.publish.reset_mock()
+        for value in ['on', 'off']:
+            self.bridge.deliver_event(("event", {"entity_id": "switch.test", "new_state": {**relay, "state": value}}))
+        self.bridge.process_pending_events()
+        self.bridge.process_pending_events()
+        values = [call.args[1] for call in self.client.publish.call_args_list if call.args[0].endswith('/state')]
+        self.assertEqual(values, ['on', 'off'])
+        self.assertEqual(self.status.snapshot()['coalesced_events'], 0)
+
+    def test_measurement_bulk_yields_when_switch_feedback_arrives(self):
+        self.bridge.config = Config.load({"broker_host": "broker", "entities": ["switch.test", "sensor.power"], "publish_delay_ms": 0})
+        relay = self.ha.full_states()[0]
+        meter = {"entity_id": "sensor.power", "state": "42", "attributes": {"device_class": "power", "unit_of_measurement": "W"}}
+        def during_publish(topic, value, **kwargs):
+            if topic.endswith('/sensor/state'):
+                self.bridge.deliver_event(("event", {"entity_id": "switch.test", "new_state": {**relay, "state": "on"}}))
+            return SimpleNamespace(rc=0, wait_for_publish=Mock(), is_published=lambda: True)
+        self.client.publish.side_effect = during_publish
+        self.bridge.process_event(("snapshot", [relay, meter]))
+        self.assertTrue(self.bridge.sync_pending)
+        self.bridge.process_pending_events()
+        self.assertFalse(self.bridge.sync_pending)
+        calls = [call.args for call in self.client.publish.call_args_list]
+        on_index = next(i for i, (topic, value) in enumerate(calls) if topic.endswith('/state') and value == 'on')
+        metadata_index = next(i for i, (topic, value) in enumerate(calls) if '/attribute/' in topic)
+        self.assertLess(on_index, metadata_index)
+
+    def test_live_cache_is_reconciled_with_ha_when_event_is_missing(self):
+        self.bridge.process_event(("snapshot", self.ha.full_states()))
+        self.ha.full_states.return_value = [{**self.ha.full_states()[0], "state": "on", "last_updated": "2026-11-07T11:00:02+00:00"}]
+        self.ha.full_states.reset_mock()
+        self.client.publish.reset_mock()
+        with patch('main.time.monotonic', return_value=100):
+            deadline = self.bridge.reconcile_if_due(99)
+        self.assertEqual(deadline, 105)
+        self.ha.full_states.assert_called_once()
+        self.assertEqual(self.bridge.states_cache['switch.test']['state'], 'on')
+        self.assertTrue(self.bridge.live)
+        self.ha.full_states.reset_mock()
+        self.client.publish.reset_mock()
+        with patch('main.time.monotonic', return_value=102):
+            self.assertEqual(self.bridge.reconcile_if_due(deadline), deadline)
+        self.ha.full_states.assert_not_called()
+        with patch('main.time.monotonic', return_value=106):
+            self.bridge.reconcile_if_due(deadline)
+        self.ha.full_states.assert_called_once()
+        self.client.publish.assert_not_called()
+
+    def test_measurement_bulk_yields_to_a_return_command(self):
+        self.bridge.config = Config.load({"broker_host": "broker", "entities": ["switch.test", "sensor.power"], "command_entities": ["switch.test"], "publish_delay_ms": 0})
+        relay = self.ha.full_states()[0]
+        meter = {"entity_id": "sensor.power", "state": "42", "attributes": {"device_class": "power"}}
+        def during_publish(topic, value, **kwargs):
+            if topic.endswith('/sensor/state'):
+                import time
+                self.bridge.commands.put_nowait((time.monotonic(), self.bridge.generation, 'switch.test', 'turn_on'))
+            return SimpleNamespace(rc=0, wait_for_publish=Mock(), is_published=lambda: True)
+        self.client.publish.side_effect = during_publish
+        self.bridge.process_event(("snapshot", [relay, meter]))
+        self.assertTrue(self.bridge.sync_pending)
+        self.assertFalse(any('/attribute/' in call.args[0] for call in self.client.publish.call_args_list))
+        self.bridge.process_command(self.bridge.commands.get_nowait())
+        self.ha.command.assert_called_once_with('switch.test', 'turn_on')
+
     def test_topic_rename_republishes_same_value_and_tracks_old_topic(self):
         self.bridge.poll()
         old = self.client.publish.call_args_list[0].args[0]

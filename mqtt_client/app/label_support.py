@@ -4,11 +4,44 @@ import math
 import re
 
 READING_CLASSES = {"energy", "energy_storage", "voltage", "current", "power", "temperature", "humidity", "battery"}
+READING_UNITS = {"W": "power", "kW": "power", "MW": "power", "V": "voltage", "mV": "voltage", "kV": "voltage", "A": "current", "mA": "current", "Wh": "energy", "kWh": "energy", "MWh": "energy"}
 COLOR_MODES = {"hs", "xy", "rgb", "rgbw", "rgbww"}
 
 
 def finite(value):
     return not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(value)
+
+
+def reading_class(entry, attrs):
+    if not isinstance(attrs, dict):
+        attrs = {}
+    explicit = attrs.get("device_class") or entry.get("device_class") or entry.get("original_device_class")
+    if explicit:
+        return explicit if isinstance(explicit, str) else None
+    unit = attrs.get("unit_of_measurement")
+    return READING_UNITS.get(unit) if isinstance(unit, str) else None
+
+
+def related_reading_report(roots, registry, states):
+    by_id = {entry.get("entity_id"): entry for entry in registry}
+    reports = []
+    for root in sorted(roots):
+        device = by_id.get(root, {}).get("device_id")
+        candidates = []
+        for entry in registry if device else []:
+            entity = entry.get("entity_id", "")
+            if entry.get("device_id") != device or not isinstance(entity, str) or not re.fullmatch(r"(?:sensor|binary_sensor)\.[a-z0-9_]+", entity):
+                continue
+            attrs = states.get(entity, {}).get("attributes", {})
+            if not isinstance(attrs, dict):
+                attrs = {}
+            dc = reading_class(entry, attrs)
+            supported = dc in READING_CLASSES if entity.startswith("sensor.") else dc == "battery"
+            reason = "disabled" if entry.get("disabled_by") else "included" if supported else "missing_class_or_unit" if not dc else "unsupported_class"
+            candidates.append({"entity_id": entity, "device_class": dc, "unit": attrs.get("unit_of_measurement"),
+                               "reason": reason, "class_source": "ha" if attrs.get("device_class") or entry.get("device_class") or entry.get("original_device_class") else "unit" if dc else "unknown"})
+        reports.append({"entity_id": root, "device_linked": bool(device), "candidates": candidates})
+    return reports
 
 
 def related_readings(roots, registry, states):
@@ -21,7 +54,7 @@ def related_readings(roots, registry, states):
         attrs = states.get(entity, {}).get("attributes", {})
         if not isinstance(attrs, dict):
             attrs = {}
-        dc = attrs.get("device_class") or entry.get("device_class") or entry.get("original_device_class")
+        dc = reading_class(entry, attrs)
         domain = entity.split(".", 1)[0]
         if (domain == "sensor" and dc in READING_CLASSES) or (domain == "binary_sensor" and dc == "battery"):
             result.add(entity)

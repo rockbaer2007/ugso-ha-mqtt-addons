@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.29
+
+- Recognize switches by domain without requiring a device class or unit. Add same-device power/voltage/current/energy unit fallback when HA device_class is missing; never override explicit classes or guess device relationships from names. Add read-only label-reading diagnostics showing inclusion/exclusion reasons without state values or credentials.
+- Prioritize control/contact states over sensor events. Publish control and Light feedback before measurement/metadata traffic and without the configured artificial publish pause. Measurement batches yield to waiting control feedback or return commands between messages.
+- Coalesce duplicate sensor intermediate states in batches when at least 32 events wait, while preserving ordinary control transitions. Keep recovery/snapshot priority and stale timestamp protection.
+- Reconcile actual HA states periodically even with a live WebSocket, using the existing poll_interval (default 5 seconds). Unchanged values and availability are not repeatedly published. A successful command prompts a fresh HA check; broker handoff alone never confirms execution.
+- Show waiting/coalesced events and the last selected HA event in the status line. Move Publish-Pause into always-visible transmission settings; credentials still collapse independently.
+- Preserve settings, credentials, topic paths, values and the unchanged ioBroker helper 0.1.27. Update the HA app for these changes. DE/EN/FR documentation updated.
+
 ## 0.1.28
 
 - Filter incoming HA state events against an immutable selection of manual, labeled and optional same-device entities before enqueueing. Label forwarding no longer queues the whole HA installation, preventing unrelated event bursts from overflowing and delaying selected states.

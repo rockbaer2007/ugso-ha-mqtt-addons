@@ -95,7 +95,7 @@ class ClientTests(unittest.TestCase):
         self.assertNotIn("secret", str(self.client.publish.call_args_list))
         self.client.publish.reset_mock()
         self.bridge.poll()
-        self.client.publish.assert_called_once_with("ha_external/availability", "online", qos=1, retain=True)
+        self.client.publish.assert_not_called()
 
     def test_reconnect_resends_states(self):
         self.bridge.poll()

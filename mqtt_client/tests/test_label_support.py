@@ -122,6 +122,41 @@ class LabelSupportTests(unittest.TestCase):
         self.assertTrue(all(row["origin"] == "label" for row in rows))
         self.assertTrue(any(row["attribute"] == "unit_of_measurement" and row["value"] == "W" for row in rows))
 
+    def test_related_units_and_switch_without_unit(self):
+        self.bridge = self.make_bridge(label_device_readings=True)
+        units = {"sensor.arbitrary_2": ("W", "power"), "sensor.voltage_2": ("V", "voltage"),
+                 "sensor.current_2": ("A", "current"), "sensor.energy_2": ("kWh", "energy")}
+        for entity, (unit, _) in units.items():
+            self.states[entity] = {"state": "912345", "attributes": {"unit_of_measurement": unit}}
+            self.registry.append({"entity_id": entity, "device_id": "plug"})
+        self.states["sensor.ambiguous"] = {"state": "50", "attributes": {"unit_of_measurement": "%"}}
+        self.states["sensor.conflicting"] = {"state": "50", "attributes": {"device_class": "monetary", "unit_of_measurement": "W"}}
+        for entity in ("sensor.ambiguous", "sensor.conflicting"):
+            self.registry.append({"entity_id": entity, "device_id": "plug"})
+        self.select()
+        self.assertIn("switch.plug", self.bridge.command_topics.values())
+        for entity, (_, dc) in units.items():
+            self.assertIn(entity, self.bridge.event_entities)
+            self.assertEqual(self.bridge.catalog_attributes(entity, self.states)["device_class"], dc)
+            self.assertNotIn("device_class", self.states[entity]["attributes"])
+        self.assertNotIn("sensor.ambiguous", self.bridge.labeled_entities)
+        self.assertNotIn("sensor.conflicting", self.bridge.labeled_entities)
+        report = self.bridge.reading_diagnostics()
+        candidates = {item["entity_id"]: item for item in report["roots"][0]["candidates"]}
+        self.assertEqual(candidates["sensor.arbitrary_2"]["class_source"], "unit")
+        self.assertEqual(candidates["sensor.disabled"]["reason"], "disabled")
+        self.assertNotIn("912345", json.dumps(report))
+        self.assertNotIn("never-send", json.dumps(report))
+
+    def test_missing_device_does_not_guess_by_entity_name(self):
+        self.bridge = self.make_bridge(label_device_readings=True)
+        self.registry[0].pop("device_id")
+        self.select()
+        self.assertEqual(self.bridge.labeled_entities, {"switch.plug"})
+        report = self.bridge.reading_diagnostics()["roots"][0]
+        self.assertFalse(report["device_linked"])
+        self.assertEqual(report["candidates"], [])
+
     def test_metadata_is_deduplicated_and_active_topics_are_protected(self):
         self.bridge = self.make_bridge(entity_attributes=["switch.plug:friendly_name"])
         self.select()

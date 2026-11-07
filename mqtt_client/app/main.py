@@ -16,12 +16,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from itertools import count
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
 import paho.mqtt.client as mqtt
 from live import StateStream, TopicInventory, broker_identity, entity_registry
-from label_support import related_readings, metadata as label_metadata, light_features, light_value, light_command, finite
+from label_support import related_readings, related_reading_report, reading_class, READING_CLASSES, metadata as label_metadata, light_features, light_value, light_command, finite
 from websocket import WebSocketException
 
 LOG = logging.getLogger("mqtt-client")
@@ -33,7 +34,7 @@ PRESS_COMMAND_DOMAINS = {"button", "input_button"}
 COMMAND_DOMAINS = TOGGLE_COMMAND_DOMAINS | VALUE_COMMAND_DOMAINS | PRESS_COMMAND_DOMAINS | {"cover"}
 OPTIONS_PATH = Path(os.environ.get("MQTT_CLIENT_OPTIONS", "/data/options.json"))
 INGRESS_PORT = int(os.environ.get("MQTT_CLIENT_INGRESS_PORT", "8099"))
-APP_VERSION = "0.1.28"
+APP_VERSION = "0.1.29"
 DEVICE_SUFFIXES = (
     "Energieeinspeisung",
     "Last Response Time",
@@ -183,19 +184,21 @@ INDEX_HTML = """<!doctype html>
       <label>Username
         <input id="username" name="username" autocomplete="username">
       </label>
-      <label>Publish-Pause in ms
-        <input id="publish_delay_ms" name="publish_delay_ms" type="number" min="0" max="1000" value="50">
-      </label>
       <label>Passwort
         <input id="password" name="password" type="password" autocomplete="new-password" placeholder="unverändert lassen">
       </label>
       <p class="hint">Standardport für den ioBroker-MQTT-Adapter: 1883.</p>
     </details>
-      <details><summary>Übertragung und TLS</summary>
-        <label>Polling-Rückfall in Sekunden <input name="poll_interval" type="number" min="1" max="300" value="5"></label>
+      <section id="transferSettings"><h2>Übertragung und TLS</h2>
+        <label>Publish-Pause für Messwerte und Attribute in ms
+          <input id="publish_delay_ms" name="publish_delay_ms" type="number" min="0" max="1000" value="50">
+        </label>
+        <p class="hint">Schaltzustände und Rückmeldungen haben Vorrang und werden durch diese Pause nicht gebremst.</p>
+        <label>HA-Kontrollabgleich / Polling-Rückfall in Sekunden <input name="poll_interval" type="number" min="1" max="300" value="5"></label>
         <label>Topic-Präfix <input name="topic_prefix" value="ha_external" required></label>
         <label>HA-Label-ID für Zustandsweiterleitung <input name="forward_label" placeholder="an_mqtt_client_weiterleiten" maxlength="128"></label>
         <label class="check"><input name="label_device_readings" type="checkbox"> Zugehörige Mess- und Batteriewerte desselben Geräts automatisch einbeziehen</label>
+        <button id="readingDiagnostics" type="button" class="secondary">Zugehörige Messwerte prüfen</button>
         <p class="hint">Label-Auswahl aktiviert passende Rückkanäle und Standardattribute. Zusätzliche Messwerte werden nur gelesen. Light-Helligkeit: 0–100 %.</p>
         <label>Client-ID <input name="client_id" value="ugso-ha-mqtt-client" required></label>
         <label class="check"><input name="tls" type="checkbox"> TLS mit Zertifikatsprüfung</label>
@@ -205,13 +208,19 @@ INDEX_HTML = """<!doctype html>
         <label>Privater Client-Schlüssel (PEM) <textarea name="tls_key" rows="3" placeholder="unverändert lassen"></textarea><input type="file" data-pem="tls_key" accept=".pem,.key"></label>
         <label class="check"><input name="clear_tls_material" type="checkbox"> Gespeicherte TLS-Zertifikate und Schlüssel entfernen</label>
         <p id="tlsStored" class="hint"></p>
-      </details>
+      </section>
       <div class="connectionActions">
         <button id="save" type="submit">Speichern und verbinden</button>
         <button id="transmissions" type="button" class="secondary">Aktuell übertragene Werte</button>
       </div>
     </form>
     <div id="message" class="message" role="status"></div>
+    <dialog id="readingDialog"><div class="dialog-body">
+      <h2>Zugehörige Messwerte prüfen</h2>
+      <p class="sub">Nur die HA-Gerätezuordnung zählt. Fehlende Klassen können für W, V, A oder Wh aus eindeutigen Einheiten ergänzt werden. Keine Zuordnung nur anhand ähnlicher Namen.</p>
+      <div id="readingReport" class="checks" role="status"></div>
+      <div class="actions"><button id="closeReadingDialog" type="button" class="secondary">Schließen</button></div>
+    </div></dialog>
     <dialog id="transmissionsDialog" class="devicePopup"><div class="dialog-body">
       <h2>Aktuell übertragene Werte</h2>
       <p class="sub">Blau: Label · Grün: Manuell · Violett: Beides. Bestätigt bedeutet vom MQTT-Broker angenommen, nicht vom Zielgerät verarbeitet. Bestätigungsdaten werden nur im Arbeitsspeicher gehalten.</p>
@@ -320,7 +329,7 @@ INDEX_HTML = """<!doctype html>
       statusBox.classList.toggle('connected', Boolean(data.connected));
       statusBox.querySelector('span:last-child').textContent = data.text || 'Keine Verbindung';
       const date = value => value ? new Date(value * 1000).toLocaleString() : 'noch keine';
-      document.getElementById('statusDetails').textContent = `MQTT: ${data.mqtt_connected ? 'verbunden' : 'getrennt'} · HA: ${data.ha_connected ? 'erreichbar' : 'nicht erreichbar'} · ${data.mode === 'websocket' ? 'Live-Ereignisse' : 'Polling-Rückfall'} · Abgleich: ${date(data.last_sync)} · Übertragung: ${date(data.last_publish)} · Gesendet: ${data.published || 0}` + (data.last_error ? ` · Fehler: ${data.last_error}` : '') + (data.stream_error ? ` · Live-Verbindung: ${data.stream_error}` : '') + (data.dropped_events ? ` · Überlast/Neuabgleich: ${data.dropped_events}` : '');
+      document.getElementById('statusDetails').textContent = `MQTT: ${data.mqtt_connected ? 'verbunden' : 'getrennt'} · HA: ${data.ha_connected ? 'erreichbar' : 'nicht erreichbar'} · ${data.mode === 'websocket' ? 'Live-Ereignisse' : 'Polling-Rückfall'} · Abgleich: ${date(data.last_sync)} · Übertragung: ${date(data.last_publish)} · Wartend: ${data.pending_events || 0} · Zusammengefasst: ${data.coalesced_events || 0} · HA-Eingang: ${date(data.last_ha_event)} · Gesendet: ${data.published || 0}` + (data.last_error ? ` · Fehler: ${data.last_error}` : '') + (data.stream_error ? ` · Live-Verbindung: ${data.stream_error}` : '') + (data.dropped_events ? ` · Überlast/Neuabgleich: ${data.dropped_events}` : '');
     }
 
     function attrKey(entity, attr) {
@@ -707,6 +716,31 @@ INDEX_HTML = """<!doctype html>
     document.getElementById('transmissions').addEventListener('click', () => { document.getElementById('transmissionsDialog').showModal(); loadTransfers(); });
     document.getElementById('refreshTransfers').addEventListener('click', loadTransfers);
     document.getElementById('closeTransfers').addEventListener('click', () => document.getElementById('transmissionsDialog').close());
+    document.getElementById('readingDiagnostics').addEventListener('click', async () => {
+      const output = document.getElementById('readingReport');
+      output.textContent = 'Prüfung läuft …';
+      document.getElementById('readingDialog').showModal();
+      try {
+        const data = await api('label-diagnostics');
+        output.textContent = data.enabled ? 'Automatische Gerätemesswerte sind gespeichert und aktiv.' : 'Automatische Gerätemesswerte sind nicht gespeichert/aktiv. Option aktivieren und speichern.';
+        const reasons = {included:'wird einbezogen',disabled:'in HA deaktiviert',missing_class_or_unit:'keine passende Klasse oder eindeutige Einheit',unsupported_class:'nicht unterstützte Messwertklasse'};
+        for (const root of data.roots || []) {
+          const block = document.createElement('div'), title = document.createElement('strong');
+          title.textContent = root.entity_id; block.append(title);
+          const info = document.createElement('p');
+          info.textContent = !root.device_linked ? 'Keine HA-Gerätezuordnung vorhanden.' : !root.candidates.length ? 'Keine Sensoren an dieser HA-Gerätezuordnung gefunden.' : 'Sensoren derselben HA-Gerätezuordnung:';
+          block.append(info);
+          for (const item of root.candidates) {
+            const line = document.createElement('p');
+            line.textContent = item.entity_id + ' · ' + (item.device_class || 'Klasse fehlt') + ' · ' + (item.unit || 'Einheit fehlt') + ' · ' + (reasons[item.reason] || item.reason) + (item.class_source === 'unit' ? ' (aus Einheit)' : '');
+            block.append(line);
+          }
+          output.append(block);
+        }
+        if (!data.roots?.length) output.append(' Keine gelabelten Entitäten erkannt. Label-ID und Verbindung prüfen.');
+      } catch (error) { output.textContent = error.message; }
+    });
+    document.getElementById('closeReadingDialog').addEventListener('click', () => document.getElementById('readingDialog').close());
     document.getElementById('transferSearch').addEventListener('input', renderTransfers);
     setInterval(() => { if (document.getElementById('transmissionsDialog').open) loadTransfers(); }, 3000);
     for (const input of document.querySelectorAll('[data-pem]')) input.addEventListener('change', async () => {
@@ -756,7 +790,8 @@ class RuntimeStatus:
         self.connected = False
         self.message = "Keine Verbindung"
         self.details = dict(ha_connected=False, mode="polling", last_sync=None, last_publish=None,
-                            published=0, last_error=None, stream_error=None, dropped_events=0)
+                            published=0, last_error=None, stream_error=None, dropped_events=0,
+                            pending_events=0, coalesced_events=0, last_ha_event=None, sync_pending=False)
 
     def update(self, **values):
         with self.lock:
@@ -1135,6 +1170,30 @@ def ha_state_time(entry):
         return None
 
 
+class LiveEventQueue:
+    """Snapshots/recovery first, then control states, then measurements."""
+    def __init__(self, maxsize=10000):
+        self.items = queue.PriorityQueue(maxsize=maxsize)
+        self.sequence = count()
+
+    def put_nowait(self, event):
+        priority = 0 if event[0] != "event" else 2 if event[1].get("entity_id", "").startswith("sensor.") else 1
+        self.items.put_nowait((priority, next(self.sequence), event))
+
+    def get_nowait(self):
+        return self.items.get_nowait()[2]
+
+    def qsize(self):
+        return self.items.qsize()
+
+    def empty(self):
+        return self.items.empty()
+
+    def urgent(self):
+        with self.items.mutex:
+            return bool(self.items.queue and self.items.queue[0][0] <= 1)
+
+
 class Bridge:
     def __init__(self, config, ha, client=None, status=None):
         self.config = config
@@ -1149,7 +1208,8 @@ class Bridge:
         self.sent_topics = {}
         self.transfer_results = {}
         self.data_lock = threading.RLock()
-        self.events = queue.Queue(maxsize=10000)
+        self.events = LiveEventQueue()
+        self.sync_pending = False
         self.states_cache = {}
         self.labeled_entities = frozenset()
         self.label_roots = None
@@ -1315,6 +1375,14 @@ class Bridge:
         selected = set(self.config.entities) | (self.labeled_entities & states.keys())
         commands = set(self.config.command_entities) | set(automatic_command_entities(self.labeled_entities))
         self.bridge_metadata = {entity: {"ha_entity_id": entity, "command_enabled": entity in commands} for entity in selected}
+        registry = {entry.get("entity_id"): entry for entry in self.label_registry}
+        for entity in self.labeled_entities & selected:
+            attrs = states.get(entity, {}).get("attributes", {})
+            if entity.startswith("sensor.") and isinstance(attrs, dict) and not attrs.get("device_class"):
+                inferred = reading_class(registry.get(entity, {}), attrs)
+                if inferred in READING_CLASSES:
+                    self.bridge_metadata[entity]["device_class"] = inferred
+                    self.auto_attributes.add((entity, "device_class"))
         for entity, attrs in self.bridge_metadata.items():
             values = self.attribute_map.setdefault(entity, [])
             for attr in attrs:
@@ -1337,14 +1405,26 @@ class Bridge:
         values.update(f"{key[1]}:light/{key[2]}" for key, _, _ in self.light_specs(self.states_cache))
         return values
 
+    def reading_diagnostics(self):
+        with self.data_lock:
+            return {"enabled": self.config.label_device_readings,
+                    "roots": related_reading_report(self.label_roots or [], self.label_registry, self.states_cache)}
+
+    def catalog_attributes(self, entity, states):
+        attrs = states.get(entity, {}).get("attributes", {})
+        if not isinstance(attrs, dict):
+            attrs = {}
+        attrs = {**attrs, **self.bridge_metadata.get(entity, {})}
+        return {name: attrs[name] for name in sorted(label_metadata(entity, attrs))}
+
     def poll(self, states=None):
         with self.data_lock:
             return self.sync_states(states)
 
-    def publish_value(self, key, topic, value):
+    def publish_value(self, key, topic, value, priority=False):
         previous = self.transfer_results.get(key, {})
         try:
-            self.publish(topic, value, throttle=True)
+            self.publish(topic, value, throttle=not priority)
         except Exception as error:
             self.transfer_results[key] = {**previous, "error": type(error).__name__}
             raise
@@ -1413,6 +1493,7 @@ class Bridge:
         return True
 
     def sync_states(self, states=None):
+        self.sync_pending = False
         generation = self.generation
         if generation != self.sent_generation:
             self.sent.clear()
@@ -1436,8 +1517,33 @@ class Bridge:
         active_keys.update(key for key, _, _ in self.light_specs(states, prefixes))
         self.transfer_results = {key: result for key, result in self.transfer_results.items() if key in active_keys}
         targets = set()
+        # Control feedback must precede all measurement/metadata bulk traffic.
+        for entity in sorted(state_entities):
+            if self.stop.is_set():
+                return
+            if entity.startswith("sensor."):
+                continue
+            entry = states.get(entity, {"state": "unavailable", "attributes": {}})
+            topic = self.topic(entity, "state", entry if entity in states else None, prefixes)
+            key, value = ("state", entity), str(entry.get("state", "unavailable"))
+            if self.sent.get(key) != value or self.sent_topics.get(key) != topic:
+                self.publish_value(key, topic, value, priority=True)
+                if self.inventory:
+                    self.inventory.remember(self.config, topic, entity)
+                self.sent[key], self.sent_topics[key] = value, topic
+        for key, topic, value in self.light_specs(states, prefixes):
+            if self.stop.is_set():
+                return
+            targets.add(topic)
+            if self.sent.get(key) != value or self.sent_topics.get(key) != topic:
+                self.publish_value(key, topic, value, priority=True)
+                if self.inventory:
+                    self.inventory.remember(self.config, topic, key[1], "light/" + key[2])
+                self.sent[key], self.sent_topics[key] = value, topic
         for entity in polled_entities:
             if self.stop.is_set():
+                return
+            if self.yield_to_controls():
                 return
             entry = states.get(entity, {"state": "unavailable", "attributes": {}})
             state = str(entry.get("state", "unavailable"))
@@ -1456,6 +1562,8 @@ class Bridge:
                 attributes = {}
             attributes = {**attributes, **self.bridge_metadata.get(entity, {})}
             for attribute in self.attribute_map.get(entity, []):
+                if self.yield_to_controls():
+                    return
                 value = encode_mqtt_payload(attributes.get(attribute, "unavailable"))
                 key = ("attribute", entity, attribute)
                 topic = self.topic(entity, f"attribute/{attribute}", entry if entity in states else None, prefixes)
@@ -1466,14 +1574,6 @@ class Bridge:
                         self.inventory.remember(self.config, topic, entity, attribute)
                     self.sent[key] = value
                     self.sent_topics[key] = topic
-        for key, topic, value in self.light_specs(states, prefixes):
-            targets.add(topic)
-            if self.sent.get(key) != value or self.sent_topics.get(key) != topic:
-                self.publish_value(key, topic, value)
-                if self.inventory:
-                    self.inventory.remember(self.config, topic, key[1], "light/" + key[2])
-                self.sent[key] = value
-                self.sent_topics[key] = topic
         selection_topic = f"{self.config.prefix}/selected_entities"
         # Prefix keeps ioBroker's MQTT JSON expansion from splitting this catalog.
         # Bind permissions to the exact current topic, including renamed devices.
@@ -1481,7 +1581,7 @@ class Bridge:
             "state_topic": self.topic(entity, "state", states.get(entity), prefixes),
             "command": self.bridge_metadata[entity]["command_enabled"],
             "features": sorted(light_features(states.get(entity, {}).get("attributes", {}))) if entity.startswith("light.") and entity in self.labeled_entities else [],
-            "attributes": {name: states.get(entity, {}).get("attributes", {})[name] for name in sorted(label_metadata(entity, states.get(entity, {}).get("attributes", {})))},
+            "attributes": self.catalog_attributes(entity, states),
         } for entity in sorted(state_entities)}, ensure_ascii=False, separators=(",", ":"))
         if self.sent.get(("selection",)) != selected_value:
             self.publish(selection_topic, selected_value)
@@ -1489,7 +1589,9 @@ class Bridge:
         targets.add(selection_topic)
         if self.inventory:
             self.inventory.remember(self.config, selection_topic, None)
-        self.publish(self.availability, "online")
+        if self.sent.get(("availability",)) != "online":
+            self.publish(self.availability, "online")
+            self.sent[("availability",)] = "online"
         targets.add(self.availability)
         if self.inventory:
             self.inventory.remember(self.config, self.availability, None)
@@ -1497,13 +1599,33 @@ class Bridge:
         if self.inventory:
             self.inventory.reconcile(self.config, targets)
         if self.status:
-            self.status.update(ha_connected=True, last_sync=time.time(), last_error=None)
+            self.status.update(ha_connected=True, last_sync=time.time(), last_error=None, sync_pending=False)
+
+    def yield_to_controls(self):
+        if not self.commands.empty() or isinstance(self.events, LiveEventQueue) and self.events.urgent():
+            self.sync_pending = True
+            if self.status:
+                self.status.update(sync_pending=True)
+            return True
+        return False
+
+    def reconcile_if_due(self, deadline, selection_changed=False):
+        now = time.monotonic()
+        fresh = selection_changed or now >= deadline or self.sent_generation != self.generation
+        if fresh or self.sync_pending:
+            self.poll(None if fresh else self.states_cache)
+        return time.monotonic() + self.config.interval if fresh else deadline
 
     def deliver_event(self, event):
         if event[0] == "event" and event[1].get("entity_id") not in self.event_entities:
             return
         try:
             self.events.put_nowait(event)
+            if self.status:
+                details = {"pending_events": self.events.qsize()}
+                if event[0] == "event":
+                    details["last_ha_event"] = time.time()
+                self.status.update(**details)
         except queue.Full:
             while not self.events.empty():
                 try:
@@ -1529,17 +1651,53 @@ class Bridge:
             if self.status:
                 self.status.update(mode="websocket", stream_error=None)
         elif kind == "event" and self.live:
-            entity = data["entity_id"]
-            incoming_time = ha_state_time(data.get("new_state"))
-            cached_time = ha_state_time(self.states_cache.get(entity))
-            if incoming_time is not None and cached_time is not None and incoming_time <= cached_time:
-                return
-            if data.get("new_state") is None:
-                self.states_cache.pop(entity, None)
-            else:
-                self.states_cache[entity] = data["new_state"]
-            if entity in self.config.entities or entity in self.attribute_map or entity in self.labeled_entities:
+            if self.apply_live_state(data):
                 self.poll(self.states_cache)
+
+    def apply_live_state(self, data):
+        entity = data["entity_id"]
+        incoming_time = ha_state_time(data.get("new_state"))
+        cached_time = ha_state_time(self.states_cache.get(entity))
+        if incoming_time is not None and cached_time is not None and incoming_time <= cached_time:
+            return False
+        if data.get("new_state") is None:
+            old_time = ha_state_time(data.get("old_state"))
+            if old_time is not None and cached_time is not None and old_time < cached_time:
+                return False
+            self.states_cache.pop(entity, None)
+        else:
+            self.states_cache[entity] = data["new_state"]
+        return entity in self.event_entities
+
+    def process_pending_events(self):
+        first = self.events.get_nowait()
+        if first[0] != "event" or not first[1].get("entity_id", "").startswith("sensor.") or self.events.qsize() < 32:
+            if self.status:
+                self.status.update(pending_events=self.events.qsize())
+            self.process_event(first)
+            return first[0]
+        batch, barrier = [first[1]], None
+        for _ in range(511):
+            try:
+                event = self.events.get_nowait()
+            except queue.Empty:
+                break
+            if event[0] != "event" or not event[1].get("entity_id", "").startswith("sensor."):
+                barrier = event
+                break
+            batch.append(event[1])
+        if barrier:
+            self.process_event(barrier)
+        if self.live:
+            changed = False
+            for data in batch:
+                changed = self.apply_live_state(data) or changed
+            if changed:
+                self.poll(self.states_cache)
+        if self.status:
+            collapsed = len(batch) - len({data["entity_id"] for data in batch})
+            self.status.update(pending_events=self.events.qsize(), coalesced_events=self.status.snapshot()["coalesced_events"] + collapsed)
+        return barrier[0] if barrier else "event"
 
     def cleanup(self, topics):
         with self.data_lock:
@@ -1587,9 +1745,10 @@ class Bridge:
                         labels_changed = self.refresh_label_selection()
                     next_label_refresh = time.monotonic() + self.config.interval
                 try:
-                    event = self.events.get_nowait()
-                    self.process_event(event)
-                    if event[0] == "fallback":
+                    event_kind = self.process_pending_events()
+                    if event_kind == "snapshot":
+                        next_poll = time.monotonic() + self.config.interval
+                    if event_kind == "fallback":
                         next_poll = 0
                 except queue.Empty:
                     pass
@@ -1599,11 +1758,9 @@ class Bridge:
                     next_poll = 0
                     if self.status:
                         self.status.update(mode="polling", last_error=type(error).__name__)
-                if labels_changed or (not self.live and time.monotonic() >= next_poll) or self.sent_generation != self.generation:
+                if labels_changed or self.sync_pending or time.monotonic() >= next_poll or self.sent_generation != self.generation:
                     try:
-                        # New label/device selections need fresh states because
-                        # unrelated events are intentionally not buffered.
-                        self.poll(self.states_cache if self.live and not labels_changed else None)
+                        next_poll = self.reconcile_if_due(next_poll, labels_changed)
                     except (OSError, ValueError, RuntimeError, KeyError) as error:
                         # Never log HTTP bodies, options, credentials or state payloads.
                         LOG.warning("Zustandsabgleich fehlgeschlagen (%s)", type(error).__name__)
@@ -1611,9 +1768,10 @@ class Bridge:
                             self.status.update(last_error=type(error).__name__)
                         try:
                             self.publish(self.availability, "offline")
+                            self.sent[("availability",)] = "offline"
                         except (OSError, RuntimeError, ValueError):
                             pass
-                    next_poll = time.monotonic() + self.config.interval
+                        next_poll = time.monotonic() + self.config.interval
                 try:
                     timeout = 0 if not self.events.empty() else (0.1 if self.live else min(0.5, max(0, next_poll - time.monotonic())))
                     command = self.commands.get(timeout=timeout)
@@ -1787,6 +1945,11 @@ class AppController:
             bridge = self.bridge
         return bridge.transmission_snapshot() if bridge else {"values": []}
 
+    def reading_diagnostics(self):
+        with self.lock:
+            bridge = self.bridge
+        return bridge.reading_diagnostics() if bridge and hasattr(bridge, 'reading_diagnostics') else {"enabled": False, "roots": []}
+
     def cleanup_retained(self, payload):
         if payload.get("confirm") is not True:
             raise ValueError("Retain-Löschung muss bestätigt werden")
@@ -1869,6 +2032,9 @@ def make_handler(controller):
             self.wfile.write(body)
 
         def do_GET(self):
+            if self.path.endswith("/api/label-diagnostics"):
+                self.send_json(HTTPStatus.OK, controller.reading_diagnostics())
+                return
             if self.path.split("?", 1)[0].endswith("/downloads/ugso-mqtt-role-mapper.js"):
                 body = (Path(__file__).parent / "iobroker" / "ugso-mqtt-role-mapper.js").read_bytes()
                 self.send_response(HTTPStatus.OK)
