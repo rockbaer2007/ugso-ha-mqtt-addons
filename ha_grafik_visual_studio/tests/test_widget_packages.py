@@ -51,6 +51,15 @@ def tiny_png():
 
 
 class WidgetPackageTests(unittest.TestCase):
+    def test_optional_capabilities_are_inert_and_legacy_packages_remain_valid(self):
+        data=manifest()
+        data['optionalCapabilities']=['history','future-extension']
+        self.assertEqual(read_package_zip(package_bytes(data))['optionalCapabilities'],data['optionalCapabilities'])
+        for invalid in ['history', ['https://example.invalid/script.js'], [True]]:
+            data['optionalCapabilities']=invalid
+            with self.assertRaises(ValueError):
+                read_package_zip(package_bytes(data))
+
     def test_additive_fields_keep_defaults_order_and_old_choices(self):
         old=manifest()
         old['widgets'][0]['defaults']['mode']='old'

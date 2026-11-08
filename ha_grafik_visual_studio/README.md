@@ -1,10 +1,10 @@
 # HA Grafik Visual Studio
 
-**Neu in 0.1.296:** Restliche Widget-Eigenschaften und Laufzeitmeldungen in DE/EN/FR, optionale Climate-Steuerung und Quellen-/Attribut-/Einheitenprüfung. Alte Projekte und Paketversionen bleiben gültig; neue Gruppen starten deaktiviert. [Anleitung DE/EN/FR](docs/widgets-0.1.296.md).
+**Neu in 0.1.297:** Eigenes Geräte-Set mit Kacheln und Grundriss-Markern, Tablet-Rückkehr, Inaktivitäts-Startseite, Überschriftenstatus, bedarfsgerechte Renderer und Paketaktualisierung. [Anleitung DE/EN/FR und Prüfstand](docs/devices-tablet-0.1.297.md). Vorhandene Projekte bleiben gültig. Die vorherigen [Erweiterungen in 0.1.296](docs/widgets-0.1.296.md) bleiben enthalten.
 
-**English:** Remaining widget properties/runtime messages gain DE/EN/FR, optional Climate controls and source/attribute/unit checks. Existing projects/packages remain valid; new groups start disabled.
+**English:** 0.1.297 adds native device tiles/floorplan markers, tablet return refresh, optional idle home navigation, live heading values, demand-loaded renderers and package refresh. Existing projects and settings remain valid. Device properties/runtime support DE/EN/FR; the general Studio shell remains DE/EN.
 
-**Français :** Les propriétés/messages restants proposent DE/EN/FR, des commandes climatiques et une vérification des sources/attributs/unités. Projets/paquets conservés ; nouveaux groupes désactivés.
+**Français :** La version 0.1.297 ajoute des tuiles et marqueurs d’appareils, l’actualisation au retour de la tablette, une page d’accueil après inactivité, des valeurs dans les titres, le chargement à la demande et l’actualisation des paquets. Projets et réglages conservés. Propriétés/messages des appareils en DE/EN/FR ; interface générale en DE/EN.
 
 **Neu in 0.1.295:** Material-Icons füllen den Rahmen. Universal bietet zusätzliche Bedienungen und Inhalte; Radialregler unterstützen Farbverläufe. Alte Taster bleiben im bisherigen Zyklusmodus. [Anleitung DE/EN/FR](docs/universal-0.1.295.md).
 

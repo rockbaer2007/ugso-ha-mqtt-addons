@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.297
+
+- Eigenes Geräte-Set: Schalter, Dimmer, farbiges Licht, Thermostat und Messwert jeweils als Kachel oder Grundriss-Marker mit Popup. HA-Fähigkeiten bestimmen die angebotenen Steuerelemente.
+- Tablet-Rückkehr aktualisiert Zustände ohne Seiten-Neuladen; optionale Inaktivitäts-Startseite erhält vorhandene Projekte und Einstellungen.
+- Optionale Live-Zustände und Attribute in Rahmen-/Geräteüberschriften, Zahlenformat und Einheiten.
+- Geräte, Wetter, Heizräume, Fensterübersicht, Vermieterbenachrichtigung, Technic-Statusliste und Material-Farbschemata laden ihre Renderer erst bei Bedarf.
+- Paketänderungen werden ohne Neustart erkannt und transaktional übernommen. Optionale Fähigkeiten sind deklarative Hinweise; unbekannte Fähigkeiten erhalten keine Berechtigungen.
+- Keine Übernahme von VIS-2-Quellcode oder -Grafiken; Web Components bleiben ein eigenes Folgevorhaben.
+
 ## 0.1.296
 
 - Add project/per-widget DE/EN/FR language choices for Special, gauges, data flow and the seven remaining bundled packages; translate properties, options and runtime messages while retaining user text and technical IDs.

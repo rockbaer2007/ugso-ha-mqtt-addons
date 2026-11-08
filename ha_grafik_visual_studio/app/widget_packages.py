@@ -90,8 +90,11 @@ def _short_text(value, limit=120):
 
 def validate_manifest(manifest):
     """Reject unknown executable features and malformed widget definitions."""
-    if not isinstance(manifest, dict) or not {"format", "apiVersion", "id", "name", "version", "license", "widgets"} <= set(manifest) or set(manifest) - {"format", "apiVersion", "id", "name", "version", "license", "widgets", "icon"}:
+    if not isinstance(manifest, dict) or not {"format", "apiVersion", "id", "name", "version", "license", "widgets"} <= set(manifest) or set(manifest) - {"format", "apiVersion", "id", "name", "version", "license", "widgets", "icon", "optionalCapabilities"}:
         raise ValueError("Das Paketmanifest hat ungültige oder fehlende Felder.")
+    capabilities = manifest.get("optionalCapabilities", [])
+    if not isinstance(capabilities, list) or len(capabilities) > 32 or any(not isinstance(item, str) or not re.fullmatch(r"[a-z][a-z0-9-]{0,63}", item) for item in capabilities):
+        raise ValueError("Ungültige optionale Paketfähigkeiten.")
     if "icon" in manifest and (not isinstance(manifest["icon"], str) or not ICON_PATH.fullmatch(manifest["icon"])):
         raise ValueError("Paketbild muss eine SVG- oder PNG-Datei unter icons/ sein.")
     package_id = manifest["id"]

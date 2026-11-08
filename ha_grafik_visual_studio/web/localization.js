@@ -3,6 +3,8 @@ const LANGUAGE_KEY = "ha_grafik_visual_studio_language";
 
 // German is the source language of the editor. Keep saved widget data and user text untouched.
 const ENGLISH = {
+"Geräte":"Devices","Schalter · Kachel":"Switch · Tile","Schalter · Grundriss":"Switch · Floor plan","Dimmer · Kachel":"Dimmer · Tile","Dimmer · Grundriss":"Dimmer · Floor plan","Farbiges Licht · Kachel":"Color light · Tile","Farbiges Licht · Grundriss":"Color light · Floor plan","Thermostat · Kachel":"Thermostat · Tile","Thermostat · Grundriss":"Thermostat · Floor plan","Messwert · Kachel":"Measurement · Tile","Messwert · Grundriss":"Measurement · Floor plan",
+"Zustände bei Tablet-Rückkehr aktualisieren":"Refresh states when returning to the tablet","Startseite nach Inaktivität (Sekunden, 0 = aus)":"Home page after inactivity (seconds, 0 = off)","Inaktivitäts-Startseite":"Inactivity home page","Status in Überschrift":"Status in heading","Renderer konnte nicht geladen werden":"Could not load renderer","verfügbar":"available","nicht unterstützt":"not supported",
 "CSS-Stil aktivieren/deaktivieren":"Enable/disable CSS styling",
 "Stil":"Style",
 "Eingangspunkt aktivieren":"Enable input point",

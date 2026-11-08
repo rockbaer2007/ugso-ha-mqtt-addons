@@ -1,0 +1,9 @@
+const translations={
+  'Geräte':['Devices','Appareils'],'Schalter':['Switch','Interrupteur'],'Dimmer':['Dimmer','Variateur'],'Farbiges Licht':['Color light','Lumière colorée'],'Thermostat':['Thermostat','Thermostat'],'Messwert':['Measurement','Mesure'],
+  'Gerät':['Device','Appareil'],'Home-Assistant-Entität':['Home Assistant entity','Entité Home Assistant'],'Darstellung':['Presentation','Présentation'],'Kachel':['Tile','Tuile'],'Grundriss':['Floor plan','Plan'],'Nur lesen':['Read only','Lecture seule'],'Name anzeigen':['Show name','Afficher le nom'],'Status anzeigen':['Show state','Afficher l’état'],'Symbol':['Icon','Icône'],'Akzentfarbe':['Accent color','Couleur d’accent'],
+  'Status in Überschrift':['Status in heading','État dans le titre'],'Attribut (optional)':['Attribute (optional)','Attribut (facultatif)'],'Einheit (leer = automatisch)':['Unit (empty = automatic)','Unité (vide = automatique)'],'Nachkommastellen':['Decimal places','Décimales'],
+  'Name':['Name','Nom'],'Größe und Position':['Size and position','Taille et position'],
+};
+export const deviceText=(text,locale)=>translations[text]?.[locale==='fr'?1:locale==='en'?0:-1]||text;
+export const deviceLabel=(text,locale)=>text.split(' · ').map(part=>deviceText(part,locale)).join(' · ');
+export function localizeDeviceGroups(groups,locale,fallback=text=>text){const t=text=>deviceText(text,locale)===text?fallback(text):deviceText(text,locale);return groups.map((group,index)=>({...group,id:group.id||`${index}-${group.label.toLocaleLowerCase('de').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}`,label:t(group.label),hint:group.hint?t(group.hint):group.hint,fields:group.fields.map(field=>({...field,label:t(field.label),...(field.options?{options:field.options.map(value=>typeof value==='string'?{value,label:t(value)}:{...value,label:t(value.label)})}:{})}))}));}

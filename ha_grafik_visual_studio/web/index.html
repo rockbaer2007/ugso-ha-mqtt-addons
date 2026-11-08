@@ -173,6 +173,9 @@
         <p class="property-hint">Andockpunkte und ihre Belegungszähler sind standardmäßig gelb. Der separate Ausgangspunkt ist standardmäßig hellblau. Beide Farben gelten nur im Editor.</p>
       </fieldset>
       <label>Bei Projektänderungen laden <select id="settings-reload"><option value="reload">Alle Browser neu laden</option><option value="manual">Nicht automatisch neu laden</option></select></label>
+      <label class="settings-check"><input id="settings-refresh-return" type="checkbox"> Zustände bei Tablet-Rückkehr aktualisieren</label>
+      <label>Startseite nach Inaktivität (Sekunden, 0 = aus) <input id="settings-idle-seconds" type="number" min="0" max="86400" step="1"></label>
+      <label>Inaktivitäts-Startseite <select id="settings-idle-page"></select></label>
       <label>Material Design: Projektstandard <select id="settings-material-design-style"><option value="material3">Material 3</option><option value="legacy">Klassisch</option></select></label>
       <label class="settings-check"><input id="settings-dark-reconnect" type="checkbox"> Dunkler Bildschirm zum erneuten Verbinden</label>
       <label>Zustands-Entprellzeit (Millisekunden) <input id="settings-debounce" type="number" min="0" max="10000" step="10"></label>

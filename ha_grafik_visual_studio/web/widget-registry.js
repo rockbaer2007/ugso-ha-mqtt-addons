@@ -13,6 +13,7 @@ export function registerWidgetSet(set) {
   const generalCss = [...registered.widgets, ...types.values()].flatMap(widget => widget.propertyGroups).find(group => group.css && group.label === "CSS Allgemein");
   sets.set(set.id, registered);
   for (const widget of registered.widgets) {
+    if(set.externalPackage)widget.packageOwner=set.id;
     if (generalCss && !widget.propertyGroups.some(group => group.css && group.label === "CSS Allgemein")) {
       widget.propertyGroups.push({ ...structuredClone(generalCss), id: "css-general-required" });
     }
@@ -39,6 +40,17 @@ export function initializeWidgetCaption(widget) {
 }
 
 export function getWidgetSets() { return [...sets.values()]; }
+
+/** Transactional package replacement. Keep removed definitions for already open projects. */
+export function replaceExternalWidgetSets(replacements){
+  const oldSets=new Map(sets),oldTypes=new Map(types);
+  try{
+    unregisterExternalWidgetSets();
+    for(const [type,definition]of types)if(definition.packageOwner)types.delete(type);
+    for(const set of replacements)registerWidgetSet(set);
+    for(const [type,definition] of oldTypes)if(!types.has(type))types.set(type,definition);
+  }catch(error){sets.clear();types.clear();for(const [id,set]of oldSets)sets.set(id,set);for(const [id,type]of oldTypes)types.set(id,type);throw error;}
+}
 
 export function unregisterExternalWidgetSets() {
   for (const [id, set] of sets) {

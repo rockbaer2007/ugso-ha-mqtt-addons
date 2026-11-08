@@ -1,4 +1,4 @@
-import { getWidgetSets, getWidgetDefinition, registerWidgetSet, unregisterExternalWidgetSets, initializeWidgetCaption } from "./widget-registry.js";
+import { getWidgetSets, getWidgetDefinition, registerWidgetSet, replaceExternalWidgetSets, initializeWidgetCaption } from "./widget-registry.js";
 import { mountPackageBrowser, packageIcon } from "./package-browser.js";
 import {cssGroups} from './widget-sets/core.js';
 import {completeCssGroups,cardCssEnabled,applyCardCss} from './card-css.js';
@@ -11,10 +11,22 @@ import { interactiveLocale, interactiveText, interactiveGroups, localizeInteract
 import { CLIMATE_ATTRIBUTES, climateOptionsGroup, renderClimateControls } from './climate-controls.js';
 import { isRestWidget, restLocale, restText, restLanguageGroup, restGroups, localizeRestProperties, markRestRuntime, observeRestRuntime } from './rest-locales.js';
 import { sourceGroups, sourceEntries, sourceAttributes, resolveSource, mapDisplaySources } from './source-bindings.js';
-import { renderWeather } from "./weather-widget.js";
-import { renderHeatingRooms } from "./heating-rooms.js";
-import { renderWindowOverview } from "./window-overview.js";
-import { renderLandlordNotification } from "./landlord-notification.js";
+import {createRendererLoader} from './renderer-loader.js';
+import {installRuntimeLifecycle} from './runtime-lifecycle.js';
+import {headingStatusGroup,headingStatus} from './heading-status.js';
+import {packageCapabilities} from './optional-capabilities.js';
+import {localizeDeviceGroups,deviceLabel} from './device-locales.js';
+const rendererReady=()=>{if(!state.project)return;runtimeMode?renderRuntimeStageWhenReady():renderStage();};
+const deviceRenderer=createRendererLoader(()=>import('./devices.js'),rendererReady);
+const weatherRenderer=createRendererLoader(()=>import('./weather-widget.js'),rendererReady);
+function renderDeferred(loader,name,args){const module=loader.get();if(module)return module[name](...args);void loader.load();const node=document.createElement('span');node.textContent=loader.error()?uiText('Renderer konnte nicht geladen werden'):uiText('Wird geladen …');return node;}
+const renderWeather=(...args)=>renderDeferred(weatherRenderer,'renderWeather',args);
+const heatingRoomsRenderer=createRendererLoader(()=>import('./heating-rooms.js'),rendererReady);
+const renderHeatingRooms=(...args)=>renderDeferred(heatingRoomsRenderer,'renderHeatingRooms',args);
+const windowOverviewRenderer=createRendererLoader(()=>import('./window-overview.js'),rendererReady);
+const renderWindowOverview=(...args)=>renderDeferred(windowOverviewRenderer,'renderWindowOverview',args);
+const landlordRenderer=createRendererLoader(()=>import('./landlord-notification.js'),rendererReady);
+const renderLandlordNotification=(...args)=>renderDeferred(landlordRenderer,'renderLandlordNotification',args);
 import { heatingParamsBindings, renderHeatingParams } from "./heating-params.js";
 import { technicBindings, renderTechnicWindow, syncTechnicControls } from "./technic-window.js";
 import { TECHNIC_SWITCH_ICONS, renderTechnicSwitch } from "./technic-switch.js";
@@ -22,8 +34,10 @@ import { technicLightBindings, renderTechnicLight } from "./technic-light.js";
 import { technicRoomBindings, technicRoomUrl, renderTechnicRoom, syncTechnicRoom } from "./technic-room.js";
 import { renderTechnicClock, updateTechnicClocks } from "./technic-clock.js";
 import { temperatureBindings, renderTemperature, syncTemperatureHistory } from "./technic-temperature.js";
-import { renderTechnicStatusList } from "./technic-status-list.js";
-import { renderMaterialColorSchemes } from "./material-color-schemes.js";
+const statusListRenderer=createRendererLoader(()=>import('./technic-status-list.js'),rendererReady);
+const renderTechnicStatusList=(...args)=>renderDeferred(statusListRenderer,'renderTechnicStatusList',args);
+const colorSchemesRenderer=createRendererLoader(()=>import('./material-color-schemes.js'),rendererReady);
+const renderMaterialColorSchemes=(...args)=>renderDeferred(colorSchemesRenderer,'renderMaterialColorSchemes',args);
 import { renderMaterialDialog, materialDialogGroups, syncMaterialDialogs, materialIframeUrl } from "./material-dialog.js";
 import { renderMaterialWidget, materialGroups, materialBindings } from "./material-widgets.js";
 import { cleanupMaterialNavigation } from "./material-navigation.js";
@@ -144,6 +158,7 @@ import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
 import { tabCount, ownTabSurface, allProjectWidgets, tabTarget, canEmbedTab, reidentifyTabWidgets, visibleTabSurfaces } from "./tabs-widget.js";
 import "./widget-sets/core.js";
+import "./widget-sets/devices.js";
 import "./widget-sets/basic2.js";
 import "./widget-sets/special.js";
 import "./widget-sets/dataflow.js";
@@ -283,8 +298,10 @@ const commonWidgetGroups = [
 
 function widgetPropertyGroups(widget) {
   const groups=baseWidgetPropertyGroups(widget);
+  if(widget.type==='border'||getWidgetDefinition(widget.type).deviceWidget)groups.push(headingStatusGroup);
   if(isRestWidget(widget)){groups.push(restLanguageGroup);groups.push(sourceGroups(widget,state.entityStates,Object.fromEntries(groups.flatMap(group=>group.fields).map(field=>[field.key,field.label]))));}
   if(getWidgetDefinition(widget.type).render?.kind==='technic-temperature')groups.push(climateOptionsGroup);
+  if(getWidgetDefinition(widget.type).deviceWidget)return localizeDeviceGroups(groups,projectWidgetLanguage(),text=>restText(text,projectWidgetLanguage()));
   return groups;
 }
 function projectWidgetLanguage(){return ['de','en','fr'].includes(state.project?.settings?.widgetLocale)?state.project.settings.widgetLocale:document.documentElement.lang||'de';}
@@ -812,6 +829,10 @@ async function fetchEntityStates(ids) {
     const dropdownIds = new Set(visibleWidgets().filter(widget => widget.type === "dropdown" && ids.slice(offset, offset + 100).includes(widget.entityId)).map(widget => widget.entityId));
     for(const widget of visibleWidgets())if(isIndustrialWeather(widget) && ids.slice(offset,offset+100).includes(widget.entityId))for(const name of ["temperature","temperature_unit","humidity","wind_speed","wind_speed_unit"])query.append("attribute",`${widget.entityId}|${name}`);
     for (const id of dropdownIds) query.append("attribute", `${id}|options`);
+    for(const widget of visibleWidgets()){
+      if(widget.headingStatusEnabled&&ids.slice(offset,offset+100).includes(widget.headingEntityId))for(const name of [widget.headingAttribute||'unit_of_measurement'])query.append('attribute',`${widget.headingEntityId}|${name}`);
+      if(getWidgetDefinition(widget.type).deviceWidget&&ids.slice(offset,offset+100).includes(widget.entityId))for(const name of ['friendly_name','unit_of_measurement','supported_features','supported_color_modes','brightness','rgb_color','min_temp','max_temp','target_temp_step','temperature','current_temperature'])query.append('attribute',`${widget.entityId}|${name}`);
+    }
     for (const widget of visibleWidgets()) if (widget.type === "interactive-table" && widget.entityAttribute && ids.slice(offset, offset + 100).includes(widget.entityId)) query.append("attribute", `${widget.entityId}|${widget.entityAttribute}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "room-table" && widget.tableAttribute && ids.slice(offset, offset + 100).includes(widget.entityId)) query.append("attribute", `${widget.entityId}|${widget.tableAttribute}`);
     for (const widget of visibleWidgets()) if (getWidgetDefinition(widget.type).render?.kind === "technic-window" && ids.slice(offset, offset + 100).includes(widget.coverEntityId)) for (const name of ["current_position", "supported_features"]) query.append("attribute", `${widget.coverEntityId}|${name}`);
@@ -864,6 +885,7 @@ async function fetchEntityStates(ids) {
 function editorLiveEntityIds() {
   // Include the external industrial output in live state polling.
   return [...new Set(visibleWidgets().flatMap((widget) => [
+    ...(widget.headingStatusEnabled?[widget.headingEntityId]:[]),
     ...(isEnergy(widget) ? energyBindings(widget) : []),
     ...(isPrinter(widget) ? printerBindings(widget) : []),
     ...(isSolar(widget) ? solarBindings(widget) : []),
@@ -922,6 +944,7 @@ async function refreshEditorLiveStates() {
 function runtimeLiveEntityIds() {
   // Energy sources must also be polled on the read-only runtime surface.
   return [...new Set(visibleWidgets().flatMap((widget) => [
+    ...(widget.headingStatusEnabled?[widget.headingEntityId]:[]),
     ...(isPrinter(widget) ? printerBindings(widget) : []),
     ...(isSolar(widget) ? solarBindings(widget) : []),
     ...(getWidgetDefinition(widget.type).render?.kind === "material-widget" ? materialBindings(widget) : []),
@@ -1067,6 +1090,8 @@ function scheduleLineboxHelperOutputs() {
 }
 
 function renderRuntimeStageWhenReady() {
+  for(const node of document.querySelectorAll('.device-card'))node.updateDevice?.();
+  if(document.querySelector('.device-popup[open],.device-card[data-writing="true"]')||document.activeElement?.closest('.device-controls')){runtimeRenderDeferred=true;return;}
   if (helperWriteQueue.size || document.querySelector(".input-value-control[data-auto-pending='true'], .industrial-gauge[data-dragging='true'], .radial-slider[data-dragging='true'], .technic-light[data-dragging='true'], .technic-temperature[data-dragging='true'], .styled-dropdown.is-open, .material-widget[data-dragging='true'], .material-widget[data-material-editing='true'], .material-widget[data-material-menu-open='true'], .material-widget[data-material-writing='true'], .climate-controls[data-writing='true']") || document.activeElement?.matches(".input-value-control[data-editing='true'], .widget-input[data-editing='true'], .input-value-confirm, input[type='range'][data-dragging='true'], .climate-controls input, .climate-controls select")) {
     runtimeRenderDeferred = true;
     return;
@@ -1199,7 +1224,7 @@ async function writeIndustrialOutput(widget, value) {
 
 if (runtimeMode) {
   window.setInterval(() => { void refreshRuntimeStates(); }, 5000);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshRuntimeStates(); });
+  installRuntimeLifecycle({settings:()=>state.project?.settings||{},pages:()=>state.project?.pages||[],current:()=>state.project?.currentPageId,navigate:selectProjectPage,refresh:async()=>{await refreshRuntimeStates();await checkWidgetPackageChanges();}});
 } else {
   window.setInterval(() => { void refreshEditorLiveStates(); }, 5000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) void refreshEditorLiveStates(); });
@@ -1256,7 +1281,7 @@ function renderPalette() {
       } else state.collapsedWidgetSets.add(set.id);
     });
     const summary = document.createElement("summary");
-    summary.textContent = set.widgets.some(isRestWidget)?restText(set.label,projectWidgetLanguage()):set.label;
+    summary.textContent = set.id==='devices'?deviceLabel(set.label,projectWidgetLanguage()):set.widgets.some(isRestWidget)?restText(set.label,projectWidgetLanguage()):set.label;
     const list = document.createElement("div");
     list.className = "widget-list";
     for (const definition of widgets) {
@@ -1265,7 +1290,7 @@ function renderPalette() {
       button.dataset.widgetType = definition.type;
       const label = document.createElement("span");
       label.className = "widget-choice-label";
-      label.textContent = isRestWidget(definition)?restText(definition.label,projectWidgetLanguage()):definition.label;
+      label.textContent = definition.deviceWidget?deviceLabel(definition.label,projectWidgetLanguage()):isRestWidget(definition)?restText(definition.label,projectWidgetLanguage()):definition.label;
       const preview = document.createElement("span");
       preview.className = "widget-choice-preview";
       preview.dataset.kind = definition.preview?.kind || "symbol";
@@ -1273,6 +1298,7 @@ function renderPalette() {
       const interactivePreview = renderInteractivePreview(definition.type, document);
       if (interactivePreview) {
         preview.dataset.kind = "interactive"; preview.append(interactivePreview);
+      } else if(definition.deviceWidget){const image=document.createElement('img');image.alt='';setIconImageSource(image,definition.icon);preview.append(image);
       } else if (definition.iconSvg) {
         if(isMaterialDefinition(definition)){preview.dataset.kind='material';if(definition.packageId==='ugso.materialdesign')preview.dataset.paddedIcon='true';}
         const icon = document.createElement("img"); icon.src = definition.iconSvg; icon.alt = ""; preview.append(icon);
@@ -1410,6 +1436,7 @@ function renderWidgetFinder() {
     const preview = document.createElement("span"); preview.className = "widget-choice-preview widget-selector-preview"; preview.dataset.kind = definition.preview?.kind || "symbol";
     const interactivePreview = renderInteractivePreview(definition.type, document);
     if (interactivePreview) { preview.dataset.kind = "interactive"; preview.append(interactivePreview); }
+    else if(definition.deviceWidget){const image=document.createElement('img');image.alt='';setIconImageSource(image,definition.icon);preview.append(image);}
     else if(isMaterialDefinition(definition)){preview.dataset.kind='material';if(definition.packageId==='ugso.materialdesign')preview.dataset.paddedIcon='true';if(definition.iconSvg){const image=document.createElement('img');image.src=definition.iconSvg;image.alt='';preview.append(image);}else preview.append(renderMaterialPreview(definition,document));}
     else for (const lineText of definition.preview?.lines || [definition.icon || "□"]) { const line = document.createElement("span"); line.textContent = lineText; preview.append(line); }
     const name = document.createElement("span"); name.className = "widget-selector-name"; name.textContent = widgetDisplayName(widget);
@@ -3429,6 +3456,7 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       const header = document.createElement("span"); header.className = "border-header";
       Object.assign(header.style, appearance.header);
       const heading = document.createElement("span"); heading.className = "border-title"; heading.append(borderTitleFragment(widget.title, document));
+      const status=headingStatus(widget,state.entityStates,projectWidgetLanguage());if(status){const value=document.createElement('span');value.className='heading-status';value.textContent=` · ${status}`;heading.append(value);}
       Object.assign(heading.style, appearance.title);
       content.append(header, heading);
     } else if (widget.type === "button") {
@@ -3976,6 +4004,13 @@ function renderStage(surface = null, target = null, surfaceChain = []) {
       content.style.background = widget.colorBg || "transparent";
       content.style.borderRadius = `${Math.max(0, Number(widget.borderRadius) || 0)}px`;
       content.append(renderTechnicClock(widget, document));
+    } else if (getWidgetDefinition(widget.type).render?.kind === "device") {
+      content.style.background='transparent';
+      const module=deviceRenderer.get();
+      if(module){
+        content.append(module.renderDevice(widget,document,{runtime:runtimeMode,getEntry:()=>state.entityStates[widget.entityId],locale:projectWidgetLanguage(),icon:setIconImageSource,settled:()=>{void refreshRuntimeStates();},write:async(path,body)=>{const response=await fetch(`api/${path}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!response.ok||!(await response.json()).accepted)throw new Error('HA action failed');await refreshRuntimeStates();}}));
+        const status=headingStatus(widget,state.entityStates,projectWidgetLanguage());if(status){const value=document.createElement('output');value.className='heading-status';value.textContent=status;content.prepend(value);}
+      }else{content.textContent=deviceRenderer.error()?uiText('Renderer konnte nicht geladen werden'):uiText('Wird geladen …');void deviceRenderer.load();}
     } else if (getWidgetDefinition(widget.type).render?.kind === "material-widget") {
       const materialNode=renderMaterialWidget(widget, document, {
         packageVersion: getWidgetDefinition(widget.type).packageVersion, surface:dashboardSurfaceKey,isActive:()=>runtimeMode && state.projectId===materialProjectId && stage.isConnected && [...stage.children].some(node=>node.dataset.widgetId===widget.id),
@@ -5499,19 +5534,28 @@ async function fetchWidgetPackages() {
   return (await response.json()).packages;
 }
 
-async function loadWidgetPackages() {
+let widgetPackageSignature=null,widgetPackageCheckPending=false;
+async function checkWidgetPackageChanges(){
+  if(widgetPackageCheckPending||document.hidden)return;
+  widgetPackageCheckPending=true;
+  try{await loadWidgetPackages(true);}finally{widgetPackageCheckPending=false;}
+}
+setInterval(()=>{if(state.project)void checkWidgetPackageChanges();},30000);
+async function loadWidgetPackages(onlyChanged=false) {
   try {
     const packages = await fetchWidgetPackages();
-    unregisterExternalWidgetSets();
-    for (const manifest of packages) {
-      registerWidgetSet({
+    const signature=JSON.stringify(packages);
+    if(onlyChanged&&signature===widgetPackageSignature)return;
+    const replacements=packages.map(manifest=>({
         id: manifest.id, label: manifest.name, externalPackage: true,
         widgets: manifest.widgets.map(widget => ({
           ...widget, packageId: manifest.id, packageVersion:manifest.version, definitionVersion: manifest.apiVersion, iconSvg: widget.iconData || "icons/text.svg", preview: { kind: "svg", lines: [] },
           propertyGroups: widget.propertyGroups.map(group => ({ ...group, ...(widget.render.kind === "chart" && group.label.startsWith("CSS ") ? { css: true, defaultEnabled: true } : {}), fields: group.fields.map(field => widget.render.kind === "material-color-schemes" && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { legacy: "Klassisch", material3: "Material 3", project: "Projektstandard", light: "Hell", dark: "Dunkel" }[value] || value })) } : ["technic-window", "technic-switch", "technic-light", "technic-temperature"].includes(widget.render.kind) && ["handle", "namePosition", "valueType", "iconKey"].includes(field.key) && field.type === "select" ? { ...field, options: field.options.map(value => ({ value, label: { left: "Links", right: "Rechts", top: "Oben", bottom: "Unten", bool: "Wahr / Falsch", number: "0 / 1", ...TECHNIC_SWITCH_ICONS }[value] || value })) } : field) })),
         })),
-      });
-    }
+      }));
+    replaceExternalWidgetSets(replacements);
+    widgetPackageSignature=signature;
+    if(onlyChanged&&state.project){runtimeMode?renderRuntimeStageWhenReady():render();}
   } catch (error) { console.warn("Widget-Pakete:", error); }
 }
 
@@ -5531,6 +5575,7 @@ async function renderWidgetPackageList() {
       const name = document.createElement("div"); name.textContent = manifest.name;
       const meta = document.createElement("div"); meta.className = "settings-package-meta";
       meta.textContent = `${manifest.id} · ${manifest.version} · API ${manifest.apiVersion} · ${manifest.widgets.length} Widget(s) · ${manifest.license}`;
+      const capabilities=packageCapabilities(manifest);if(capabilities.length)meta.textContent+=' · '+capabilities.map(item=>`${item.name}: ${uiText(item.supported?'verfügbar':'nicht unterstützt')}`).join(', ');
       info.append(name, meta);
       const reload = document.createElement("button"); reload.type = "button"; reload.title = uiText("Paketliste neu laden"); reload.setAttribute("aria-label", reload.title);
       const reloadIcon = document.createElement("img"); reloadIcon.src = "icons/refresh.svg"; reloadIcon.alt = ""; reload.append(reloadIcon);
@@ -5688,6 +5733,10 @@ function openSettingsDialog() {
   $("#settings-output-dock-color").value = /^#[0-9a-f]{6}$/i.test(settings.outputDockColor || "") ? settings.outputDockColor : "#74c0fc";
   $("#settings-housing-snap-color").value = /^#[0-9a-f]{6}$/i.test(settings.housingSnapColor || "") ? settings.housingSnapColor : "#c792ea";
   $("#settings-reload").value = settings.reloadMode || "reload";
+  $("#settings-refresh-return").checked=settings.refreshOnReturn!==false;
+  $("#settings-idle-seconds").value=settings.idleHomeSeconds||0;
+  const idlePage=$("#settings-idle-page");idlePage.replaceChildren();
+  for(const page of state.project.pages.filter(page=>page.visible!==false)){const option=document.createElement('option');option.value=page.id;option.textContent=page.name;idlePage.append(option);}idlePage.value=settings.idleHomePageId||'';
   $("#settings-dark-reconnect").checked = Boolean(settings.darkReconnect);
   $("#settings-debounce").value = settings.debounceMs ?? 200;
   $("#settings-instance").value = settings.browserInstanceId || createRandomId().slice(0, 8);
@@ -5780,6 +5829,9 @@ $("#settings-save").addEventListener("click", async (event) => {
     outputDockColor: /^#[0-9a-f]{6}$/i.test($("#settings-output-dock-color").value) ? $("#settings-output-dock-color").value : "#74c0fc",
     housingSnapColor: /^#[0-9a-f]{6}$/i.test($("#settings-housing-snap-color").value) ? $("#settings-housing-snap-color").value : "#c792ea",
     reloadMode: $("#settings-reload").value,
+    refreshOnReturn:$("#settings-refresh-return").checked,
+    idleHomeSeconds:Math.max(0,Math.min(86400,Number($("#settings-idle-seconds").value)||0)),
+    idleHomePageId:$("#settings-idle-page").value,
     darkReconnect: $("#settings-dark-reconnect").checked,
     debounceMs: Math.max(0, Math.min(10000, Number($("#settings-debounce").value) || 0)),
     browserInstanceId: $("#settings-instance").value.trim(),
