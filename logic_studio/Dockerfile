@@ -1,6 +1,6 @@
 FROM python:3.13-alpine
 WORKDIR /app
-COPY server.py THIRD-PARTY.txt ./
+COPY server.py LICENSE THIRD-PARTY.txt ./
 COPY ha_import.py requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY web/ ./web/
