@@ -1,5 +1,17 @@
 # To-do: HA Grafik Visual Studio
 
+## Aktueller Stand 0.1.299 (8. November 2026)
+
+- [x] Geräte-Set, Tablet-Rückkehr, optionale Inaktivitäts-Startseite, Live-Werte in Überschriften und bedarfsgerechte Renderer (0.1.297).
+- [x] Kompakte Miniaturpalette mit Beschreibungen, UGSo-Kacheln nur mit Namen, Inline-Runtime neben den Seitenreitern und separate Runtime (0.1.299, einschließlich der lokal geprüften 0.1.298).
+- [x] Zuletzt benutzt unter der Suche: zwölf unterschiedliche Widgettypen und Einklappzustand browserlokal speichern. Auf .177 und .193 geprüft; Projekte und Einstellungen erhalten.
+- [ ] Als nächstes empfohlen: vollständigen Projekt-Export/Import mit lokalen Medien, Paketabhängigkeiten und Importvorschau entwickeln. Vorhandene Projekte nicht überschreiben; Widget-JSON-Export bleibt erhalten. Umsetzung noch nicht begonnen.
+- [ ] Praktische Geräte-/Recorder-/Companion- und Tablet-Schlaf-/Aufweckprüfungen ergänzen; die bisherigen Tests belegen keine vollständige Hardwareabdeckung.
+- [ ] Allgemeine Studio-Oberfläche vollständig auf Französisch ergänzen. Widget-/Projekttexte und Dokumentation unterstützen bereits DE/EN/FR.
+- [ ] Web Components als separates größeres Folgevorhaben bewerten. Noch keine implementierte Funktion.
+
+Die älteren Einzelaufgaben unten sind historisch gewachsen. Teilfunktionen können bereits verfügbar sein; der aktuelle Umfang ist in der Open-Source-Doku und im Changelog beschrieben. Eigenständige Runtime und Koppel-App bleiben größere Folgevorhaben.
+
 ## Sprachen
 
 - [x] Home-Assistant-Sprache automatisch übernehmen und in den App-Einstellungen eine Auswahl **Automatisch / Deutsch / English** anbieten.
@@ -13,7 +25,7 @@
 - [x] Widget-, Tool- und Paketbilder zusätzlich als geprüftes PNG zulassen. Die Standard-Icons der Studio-Buttons bleiben SVG. Erledigt in 0.1.83.
 - [x] Tool-Schnittstelle 0.1 mit lokaler `.tp.zip`-Installation, geprüftem Manifest, Tool-Liste, Vorschau, bestätigter Seitenaktion und Rückgängig. Erledigt in 0.1.82; weitere Tool-Aktionen und Berechtigungen folgen später.
 - [x] Den Einstellungen-Dialog in **Allgemein**, **Widget-Pakete** und **Tools** aufteilen; die Paket-Tabs zeigen kompakte, scrollbar begrenzte Leerlisten. Erledigt in 0.1.79.
-- [ ] Die Paketverwaltung erweitern: GitHub-Installation, Update-Suche/-Prüfung, Kompatibilitätsstatus und angeforderte Fähigkeiten. Lokale Widget-ZIP-Installation ist seit 0.1.80, lokale Tool-ZIP-Installation seit 0.1.82 vorhanden.
+- [x] Paketverwaltung mit GitHub-Installation, Community-Katalog, kompatiblen angebotenen Updates und optionalen deklarativen Fähigkeiten erweitern. Paketänderungen werden ab 0.1.297 ohne Neustart übernommen; unbekannte Fähigkeiten gewähren keine zusätzlichen Rechte. Erweiterte Berechtigungsverträge bleiben davon getrennt.
 - [ ] Ein vollständiges Demo-Widget-Paket mit Quellcode, Paketdatei, Tests und DE/EN-Dokumentation einschließlich Ordnerstruktur und Einstiegspunkten bereitstellen.
 - [ ] Ein vollständiges Demo-Tool-Paket mit Quellcode, Paketdatei, Tests, Ergebnisvorschau, Rückgängig-Funktion und derselben DE/EN-Strukturdokumentation bereitstellen.
 - [ ] Einen webbasierten Grundgerüst-Generator für Widget- oder Tool-Pakete bauen. Eingaben sollen unter anderem Name, Paket-ID, Icon, Beschreibung, Sprache, Kompatibilitätsversion sowie passende Widget-Eigenschaften oder Tool-Kontexte und Rechte umfassen.
