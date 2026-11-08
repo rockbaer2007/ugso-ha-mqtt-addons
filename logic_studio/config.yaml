@@ -1,0 +1,23 @@
+name: UGSo Logic Studio
+version: "0.1.6"
+slug: logic_studio
+description: Grafischer Funktionsplan-Editor mit HA-Entitätsauswahl und YAML-/JavaScript-Export
+url: https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/logic_studio
+stage: experimental
+arch:
+  - amd64
+  - aarch64
+startup: application
+boot: auto
+init: false
+homeassistant_api: true
+ingress: true
+ingress_port: 8097
+panel_icon: mdi:graph
+panel_title: Logic Studio
+options: {}
+schema: {}
+map:
+  - type: homeassistant_config
+    read_only: true
+    path: /ha-config

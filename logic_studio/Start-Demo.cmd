@@ -1,0 +1,5 @@
+@echo off
+cd /d "%~dp0"
+where py >nul 2>nul
+if errorlevel 1 (python server.py --demo-entities) else (py -3 server.py --demo-entities)
+pause

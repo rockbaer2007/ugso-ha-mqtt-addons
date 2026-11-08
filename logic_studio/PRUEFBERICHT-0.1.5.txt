@@ -1,0 +1,65 @@
+UGSo Logic Studio 0.1.5 – lokaler HA-Import-Test, 08.11.2026
+===========================================================
+
+Sicherung und Umfang
+- Quellstand 0.1.4 vor Änderungen als ZIP im Downloadordner gesichert.
+- .193: vollständige HA-Sicherung „Logic Studio vor HA-Import 0.1.5 2026-11-08“,
+  194,13 MB, erfolgreich abgeschlossen. Ältere Sicherungen erhalten.
+- Originalplan zusätzlich als Logic-Studio-Originalplan-vor-0.1.5.logic.json
+  im Downloadordner erhalten. Vorhandene Dateien und Einstellungen nicht ersetzt.
+- Neue schreibgeschützte Einbindung des HA-Konfigurationsordners vom Nutzer
+  am Aktionszeitpunkt ausdrücklich freigegeben. Kein Schreiben in HA-Dateien.
+- Nur lokale App-Dateien auf .193 aktualisiert. Keine Veröffentlichung.
+
+Implementierung
+- 53 zusätzliche native HA-Bausteintypen in passenden neuen/bestehenden Gruppen.
+- Automationen, Skripte und Blueprints aus HA-Dateien, Datei oder Text einlesen.
+- Quelle vor Parsen unter /data/ha-source-backups/<Zeitstempel>/ kopieren.
+- FLOW-Verbindungen für Reihenfolge und verschachtelte Zweige; REFERENCE-
+  Verbindungen für !input. Nicht erkannte Abschnitte als YAML_ORIGINAL erhalten.
+- Eingaben mit Selektoren/Sektionen, Skriptfelder, Originalschlüssel und Datentypen.
+- Native HA-YAML-Ausgabe mit Exportprüfung. Keine automatische JS-Übersetzung.
+- ⋮ pro Baustein: Eigenschaften, Duplizieren ohne Leitungen und Löschen mit
+  Leitungen. Beide Änderungen sind rückgängig machbar.
+- PyYAML ist nun lokale Python-Abhängigkeit; Installationshilfe liegt bei.
+
+Lokale automatische Prüfung
+- npm test: 22 Node-Tests erfolgreich; bisherige Wert-/Zustandsexporte weiterhin OK.
+- python -m unittest discover -s tests -p 'test_*.py': 8 Tests erfolgreich.
+- Verschachtelte IF/CHOOSE/PARALLEL/REPEAT-Zweige, Skriptfelder, Blueprint-Sektionen,
+  Parameterverweise, unbekannte Daten und alte HA-Schlüssel bleiben inhaltlich gleich.
+- YAML-Tags werden als Daten behandelt, keine Ausführung/Secret-Auflösung.
+- Größen-/Tiefenlimits, doppelte Schlüssel, gefährliche Pfade, falsche Anschlüsse,
+  unverbundene Bausteine und fehlende Parameterleitungen werden abgefangen.
+- Quelldateien bleiben identisch; Kopie vor Parsing auch bei ungültiger Quelle.
+- API-Direktimport, Datei-/Textparser und Abweisung fremder Herkunft geprüft.
+
+Browserprüfung .193 (HA Core 2026.10.4)
+- App 0.1.5 installiert, im Ingress erreichbar, Kategorien und Menü sichtbar.
+- Originalplan fünf Bausteine / drei Leitungen; AND-Favorit erhalten.
+- Eigenschaften öffnet passende Felder. Duplizieren erzeugt sechs Bausteine,
+  lässt drei Leitungen bestehen. Löschen/Rückgängig und erneutes Rückgängig
+  stellen den Originalplan mit fünf Bausteinen / drei Leitungen wieder her.
+- Direkte HA-Suche: automations.yaml und scripts.yaml leer, korrekte Leermeldung.
+- Vier vorhandene Blueprint-Dateien gefunden (Automation, Skript, Template).
+- „Motion-activated Light“ als neun Bausteine / 13 Leitungen importiert und
+  als native YAML mit !input-Verweisen exportiert.
+- Automation-Beispiel per Text: sieben Bausteine / sechs Leitungen.
+- Skript-Beispiel per Text: sechs Bausteine / fünf Leitungen, Felder erhalten.
+- Blueprint-Beispiel per Datei: vier Bausteine / vier Leitungen.
+- Alle drei Browser-Exporte strukturell mit den Eingaben verglichen: identisch.
+- Verbundenen Blueprint-Parameter gelöscht: Leitungen entfernt, Ausgabe gesperrt.
+  Rückgängig: vollständige Wiederherstellung und erfolgreiche Exportprüfung.
+- Originalplan nach jedem Import zurückgeholt; keine HA-Testgeräte/Automationen
+  angelegt oder geschaltet. Keine endgültigen HA-Löschungen notwendig.
+- Abschließender App-Neubau und Neuladen: Originalplan weiterhin fünf Bausteine /
+  drei Verbindungen, AND-Favorit erhalten. Neuer Skriptplan besitzt SEQUENCE und
+  FIELDS; neu verbundener SCRIPT_INPUT wird korrekt unter fields ausgegeben.
+- Bilder unter docs/screenshots/0.1.5-*.png für spätere Doku gesichert.
+
+Bewusste Grenzen
+Native Detailoptionen sind zunächst JSON-Eigenschaften, keine vollständigen
+HA-Formulare. Kommentare, YAML-Anker und Formatierung werden nicht rekonstruiert.
+Semantische HA-Validierung und Ausführung erfolgen nach eigener Prüfung in HA.
+Kein automatischer Import beliebiger !include-Dateien oder externer URLs.
+Keine öffentliche Freigabe; bestehende Wertpläne bleiben weiter nutzbar.

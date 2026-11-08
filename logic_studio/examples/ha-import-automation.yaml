@@ -1,0 +1,18 @@
+alias: Logic Studio Import Demo
+description: Safe import fixture. No device is controlled.
+triggers:
+  - trigger: event
+    event_type: logic_studio_demo_only
+conditions: []
+actions:
+  - if:
+      - condition: template
+        value_template: "{{ true }}"
+    then:
+      - variables:
+          result: 42
+      - stop: Demo complete
+    else:
+      - delay:
+          seconds: 1
+mode: single

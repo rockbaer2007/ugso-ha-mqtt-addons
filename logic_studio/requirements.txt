@@ -1,0 +1,2 @@
+# YAML parsing only: safe loader, custom HA tags preserved as data.
+PyYAML==6.0.3

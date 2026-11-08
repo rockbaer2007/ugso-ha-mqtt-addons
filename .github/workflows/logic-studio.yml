@@ -1,0 +1,32 @@
+name: Logic Studio checks
+on:
+  push:
+    paths:
+      - logic_studio/**
+      - .github/workflows/logic-studio.yml
+  pull_request:
+    paths:
+      - logic_studio/**
+      - .github/workflows/logic-studio.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: logic_studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: npm test
+      - run: python -m unittest discover -s tests -p 'test_*.py'
+      - run: docker build -t logic-studio:test .
+      - run: docker run --rm logic-studio:test python -c "from ha_import import parse_documents; assert parse_documents('alias: Test\nsequence: []', 'script')[0]['kind'] == 'script'"

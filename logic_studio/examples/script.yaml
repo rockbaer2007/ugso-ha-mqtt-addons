@@ -1,0 +1,70 @@
+# UGSo Logic Studio 0.1.3
+# Im HA-YAML-Editor einer einzelnen Automation/eines Skripts einfügen.
+alias: "Freigabe UND Anwesenheit"
+description: "Erstellt mit UGSo Logic Studio. Vor Verwendung Ziele prüfen."
+sequence:
+  -
+    alias: "Eingänge als Momentaufnahme lesen"
+    variables:
+      raw0: "{{ states(\"input_boolean.demo_freigabe\") }}"
+      raw1: "{{ states(\"input_boolean.demo_anwesend\") }}"
+  -
+    alias: "Eingang prüfen: input_boolean.demo_freigabe"
+    condition: "template"
+    value_template: "{{ (raw0 is boolean) or (raw0 in ['on','off','true','false']) }}"
+  -
+    alias: "Eingang prüfen: input_boolean.demo_anwesend"
+    condition: "template"
+    value_template: "{{ (raw1 is boolean) or (raw1 in ['on','off','true','false']) }}"
+  -
+    alias: "Freigabe"
+    variables:
+      v0: "{{ (raw0 in [true,'on','true']) }}"
+  -
+    alias: "Logikergebnis prüfen: Freigabe"
+    condition: "template"
+    value_template: "{{ v0 is boolean }}"
+  -
+    alias: "Anwesenheit"
+    variables:
+      v1: "{{ (raw1 in [true,'on','true']) }}"
+  -
+    alias: "Logikergebnis prüfen: Anwesenheit"
+    condition: "template"
+    value_template: "{{ v1 is boolean }}"
+  -
+    alias: "UND"
+    variables:
+      v2: "{{ (v0 and v1) }}"
+  -
+    alias: "Logikergebnis prüfen: UND"
+    condition: "template"
+    value_template: "{{ v2 is boolean }}"
+  -
+    alias: "Licht nur bei Abweichung"
+    if:
+      -
+        alias: "Zielzustand abweichend"
+        condition: "template"
+        value_template: "{{ not is_state(\"input_boolean.demo_licht\", 'on' if v2 else 'off') }}"
+    then:
+      -
+        alias: "Licht"
+        choose:
+          -
+            conditions:
+              -
+                alias: "Ausgang EIN"
+                condition: "template"
+                value_template: "{{ v2 }}"
+            sequence:
+              -
+                action: "input_boolean.turn_on"
+                target:
+                  entity_id: "input_boolean.demo_licht"
+        default:
+          -
+            action: "input_boolean.turn_off"
+            target:
+              entity_id: "input_boolean.demo_licht"
+mode: "restart"

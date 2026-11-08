@@ -1,0 +1,90 @@
+UGSo Logic Studio 0.1.6 – HA-Export und Zustandserhalt
+=====================================================
+Vor Verwendung sichern und Entitäten/Ziele kontrollieren. Die App liest HA
+nur; Import und Ausführung erfolgen ausdrücklich im HA-Editor.
+
+STATE_IN: Im Entitätsdialog Zustand oder Attribut wählen, z. B. brightness,
+temperature, battery_level, min, max, step. Signaltyp prüfen. Weitere skalare
+Attribute sind über ihren Namen eintragbar. Fehlende/unverfügbare Eingänge
+stoppen vor Speicher- und Geräteaktionen.
+
+STATE_OUT:
+BOOL = switch/light/input_boolean ein/aus.
+NUMBER = input_number.set_value, innerhalb der min/max-Grenzen.
+TEXT = input_text.set_value, innerhalb der min/max-Textlänge.
+BRIGHTNESS = light, 0–100 PROZENT, 0 schaltet aus.
+Das brightness-Attribut liefert 0–255: bei Bedarf in Prozent umrechnen.
+Fähigkeiten der echten Leuchte kontrollieren.
+
+33 Typen sind exportierbar. Neu: RS (Reset hat Vorrang), SR (Set hat Vorrang),
+R_TRIG/F_TRIG, TON/TOF/TP/BLINK, CTU/CTD/CTUD. Pins CV, ET und QU/QD sind
+getrennt verbindbar. Zeitwerte in MILLISEKUNDEN; Zähler 0–2147483647.
+Regler, Kalender und eigene Unterpläne bleiben nicht exportierbare Vorlagen.
+
+Speicher:
+Ein input_text je Zustandsbaustein, min 0, max 255, KEIN initial-Wert.
+Die UI-Vorgabe ist nur 100! Helferdefinition herunterladen oder Package
+exportieren. Leer/neu und unbekannt startet frisch; unavailable stoppt.
+Defekte oder typfremde v1:-Speicher werden nicht überschrieben.
+Helfer-ID im Baustein frei wählbar; automatisch ls_<Export-ID>_<Block-ID>.
+IDs erhalten und keinen Helfer mit zwei aktiven Plänen gemeinsam verwenden.
+Merker/Zählstände werden von HA wiederhergestellt. Timer speichern absolute
+Zeitpunkte und berücksichtigen die vergangene Zeit nach Wiederkehr.
+Rückwärts korrigierte Uhr startet das Intervall neu.
+Offline-Änderungen lassen sich nicht rekonstruieren. Keine Echtzeit-SPS und
+kein verlustfreier Hardware-Impulszähler.
+
+Automation:
+Zustands-/Attributänderung löst aus; mit Speicher zusätzlich HA-Start und
+jede Sekunde. Immer queued/serialisiert. Auflösung ungefähr eine Sekunde
+plus HA-Ausführungszeit; keine Millisekunden-Garantie. Kurze Pulse können
+zwischen Abtastungen liegen. Nur geänderter Speicher wird geschrieben.
+Frischer Speicher/HA-Start initialisiert Flanken ohne künstlichen Impuls.
+
+Skript:
+Ein Schritt je Aufruf. Timer brauchen wiederholte Aufrufe. Nach HA-/Host-
+Neustart beim ersten Aufruf logic_seed: true übergeben. Kein eigener Takt.
+
+JavaScript:
+ES-Modul run(...), kein direkt ausführbares ioBroker-Skript. Host liefert
+readState/readAttribute/callAction und loadMemory/saveMemory. Aufrufe
+serialisieren, jede Sekunde auswerten, Unix-Millisekunden als now.
+Speicher dauerhaft/atomar sichern, einmal boot:true nach Host-Neustart.
+Die App führt exportiertes JavaScript nicht selbst aus.
+
+Export:
+- HA-Editor: EIN neuer Automation-/Skript-Eintrag > In YAML bearbeiten.
+  Helfer vorher separat anlegen.
+- Datei: Listen-/Skriptschlüssel passend in gesicherte Dateien einordnen.
+- Package: input_text plus Automation/Skript zusammen. Eindeutige IDs,
+  unter vorhandener homeassistant.packages-Konfiguration einbinden,
+  Konfiguration prüfen und HA neu starten. Nichts doppelt definieren.
+Vorhandene Systemdateien niemals durch den Export ersetzen.
+Zwischen Geräteaktionen besteht keine Transaktion/Rückrollfunktion.
+
+Simulation:
+▶ = ein Schritt; +1 s bewegt virtuelle Uhr; Zurücksetzen leert nur den
+flüchtigen Simulationsspeicher. Demowerte, keine Geräteaktionen.
+
+EN: STATE_IN selects a state or scalar attribute. Outputs support Boolean,
+bounded numbers/text and brightness percent. Each stateful block needs one
+persistent input_text (max 255, no initial). Automations evaluate serially
+every second and on state/start events. Scripts advance once per call;
+use logic_seed:true on the first call after restart. JS requires its own
+serialized persistent host and boot:true once after restart. Timer inputs
+are milliseconds; HA resolution is about one second, not real time.
+Offline transitions cannot be reconstructed. Preserve existing IDs/files.
+
+FR : STATE_IN sélectionne un état ou attribut scalaire. Sorties booléennes,
+nombres/textes bornés et luminosité en pourcentage. Un input_text persistant
+par bloc avec mémoire (max 255, sans initial). Automations sérialisées chaque
+seconde et sur événements. Scripts : un pas par appel, logic_seed:true au
+premier appel après redémarrage. JS nécessite un hôte persistant dédié.
+Temps en millisecondes, résolution HA d'environ une seconde. Les changements
+hors ligne ne sont pas reconstitués. Conserver les identifiants et fichiers.
+
+https://www.home-assistant.io/integrations/input_text/
+https://www.home-assistant.io/integrations/input_number/
+https://www.home-assistant.io/integrations/light/
+https://www.home-assistant.io/docs/configuration/packages/
+https://www.home-assistant.io/integrations/script/

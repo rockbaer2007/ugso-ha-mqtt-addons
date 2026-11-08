@@ -1,0 +1,7 @@
+[
+  {"entity_id":"input_boolean.demo_freigabe","state":"on","attributes":{"friendly_name":"Demo Freigabe"}},
+  {"entity_id":"input_boolean.demo_anwesend","state":"on","attributes":{"friendly_name":"Demo Anwesenheit"}},
+  {"entity_id":"input_boolean.demo_licht","state":"off","attributes":{"friendly_name":"Demo Licht"}},
+  {"entity_id":"sensor.demo_temperatur","state":"21.5","attributes":{"friendly_name":"Demo Temperatur","unit_of_measurement":"°C","device_class":"temperature"}},
+  {"entity_id":"sensor.demo_fehlt","state":"unavailable","attributes":{"friendly_name":"Demo nicht verfügbar"}}
+]

@@ -1,0 +1,17 @@
+alias: Logic Studio Import Script
+fields:
+  name:
+    name: Demo name
+    default: Test
+    selector:
+      text: {}
+sequence:
+  - variables:
+      message: "Hello {{ name }}"
+  - repeat:
+      count: 2
+      sequence:
+        - delay:
+            milliseconds: 10
+  - stop: Demo complete
+mode: single

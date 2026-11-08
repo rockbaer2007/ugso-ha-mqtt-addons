@@ -1,0 +1,64 @@
+import {flowDefinitions,flowTypes,noteTypes,baseConfig,slotPaths,flowPins} from './flow-catalog.js?v=0.1.6';
+let serial=0;
+const clean=value=>{if(JSON.stringify(value).length>800000)throw Error('HA-Konfiguration zu groß.');const walk=(x,depth=0)=>{if(depth>35)throw Error('HA-Verschachtelung zu tief.');if(typeof x==='number'&&!Number.isFinite(x))throw Error('Ungültige Zahl.');if(x&&typeof x==='object'&&Object.hasOwn(x,'$haTag')&&(!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(x.$haTag)||typeof x.value!=='string'||Object.keys(x).length!==2))throw Error('Ungültiger HA-Tag.');if(x&&typeof x==='object')for(const [k,v]of Object.entries(x)){if(['__proto__','constructor','prototype'].includes(k))throw Error('Unzulässiger Konfigurationsschlüssel.');walk(v,depth+1);}};walk(value);return structuredClone(value);};
+const pathKeys=path=>{if(typeof path!=='string'||!path||path.split('.').some(k=>!k||['__proto__','constructor','prototype'].includes(k)))throw Error('Ungültiger Konfigurationspfad.');return path.split('.');};
+const get=(obj,path)=>pathKeys(path).reduce((v,k)=>v?.[k],obj);
+function set(obj,path,value){const ks=pathKeys(path);let x=obj;for(let i=0;i<ks.length-1;i++)x=x[ks[i]]??=(/^\d+$/.test(ks[i+1])?[]:{});x[ks.at(-1)]=value;}
+function del(obj,path){const ks=pathKeys(path),p=ks.pop(),x=ks.reduce((v,k)=>v?.[k],obj);if(x)delete x[p];}
+export function configOf(b){try{return clean(JSON.parse(b.params.config||'{}'));}catch(e){throw Error(b.name+': Konfiguration als gültiges JSON erforderlich. '+e.message);}}
+export function classify(c,trigger=false){
+ if(!c||typeof c!=='object'||Array.isArray(c))return 'YAML_ORIGINAL';
+ if(trigger){const name={state:'STATE',numeric_state:'NUMERIC',time:'TIME',time_pattern:'INTERVAL',sun:'SUN',event:'EVENT',device:'DEVICE',homeassistant:'HA',mqtt:'MQTT',template:'TEMPLATE',zone:'ZONE',webhook:'WEBHOOK',tag:'TAG',conversation:'SENTENCE'}[c.trigger||c.platform];return name?'TRIGGER_'+name:'YAML_ORIGINAL';}
+ if(c.condition!==undefined)return 'CONDITION';if(c.if!==undefined)return 'IF_ELSE';if(c.choose!==undefined)return 'CHOOSE';if(c.parallel!==undefined)return 'PARALLEL';
+ if(c.repeat)return c.repeat.for_each!==undefined?'FOR_EACH':c.repeat.while!==undefined?'REPEAT_WHILE':c.repeat.until!==undefined?'REPEAT_UNTIL':'REPEAT_COUNT';
+ for(const [key,type]of [['sequence','SEQUENCE'],['delay','DELAY'],['wait_template','WAIT_TEMPLATE'],['wait_for_trigger','WAIT_TRIGGER'],['variables','VARIABLES'],['stop','STOP'],['event','EVENT_FIRE']])if(c[key]!==undefined)return type;
+ if(c.action||c.service)return String(c.action||c.service).startsWith('script.')?'SCRIPT_CALL':'ACTION';return 'YAML_ORIGINAL';
+}
+function children(c){const out={};if(!c||typeof c!=='object')return out;for(const p of ['sequence','if','then','else','default','parallel','wait_for_trigger','repeat.sequence','repeat.while','repeat.until','conditions'])if(Array.isArray(get(c,p)))out[p.toUpperCase().replaceAll('.','_')]=p;
+ if(Array.isArray(c.choose))c.choose.forEach((branch,i)=>{for(const k of ['conditions','sequence'])if(Array.isArray(branch[k]))out[(k==='conditions'?'WHEN_':'CASE_')+(i+1)]='choose.'+i+'.'+k;});return out;}
+function refs(value,result=new Set()){if(value&&typeof value==='object'){if(value.$haTag==='input'&&typeof value.value==='string')result.add(value.value);else Object.values(value).forEach(v=>refs(v,result));}return [...result];}
+const paramType=d=>{const s=Object.keys(d?.selector||{})[0]||'text';return 'BP_INPUT_'+({entity:'ENTITY',device:'DEVICE',target:'TARGET',number:'NUMBER',boolean:'BOOLEAN',text:'TEXT',select:'SELECT',duration:'DURATION',time:'TIME',action:'ACTION',trigger:'TRIGGER',condition:'CONDITION',object:'OBJECT'}[s]||'OBJECT');};
+export function importFlow(config,kind='automation',name='HA-Import'){
+ const original=clean(config);if(!original||typeof original!=='object'||Array.isArray(original))throw Error('Einen einzelnen HA-Eintrag auswählen.');
+ if(original.blueprint)kind='blueprint';const domain=kind==='blueprint'?original.blueprint.domain:kind;if(!['automation','script','template'].includes(domain))throw Error('Unbekannte Blueprint-Domain.');
+ const plan={format:'ugso.logic/1',version:'0.1.6',name:original.blueprint?.name||original.alias||name,target:kind,blocks:[],links:[]};serial=0;
+ function node(type,cfg,slots={},depth=0){if(plan.blocks.length>=200)throw Error('Import überschreitet 200 Bausteine.');const n={id:'bf'+(++serial),type,name:cfg?.alias||type+'_'+serial,comment:'',x:30+depth*260,y:30+(serial-1)*155,params:{config:JSON.stringify(cfg,null,2),slots:JSON.stringify(slots)}};plan.blocks.push(n);return n;}
+ const root=node('FLOW_ROOT',original);root.name=plan.name;root.params.kind=kind;const rootConfig=clean(original),rootSlots={};
+ function chain(items,parent,port,depth,trigger=false){let previous;for(const value of items){const cfg=clean(value),slots=children(cfg),n=node(classify(cfg,trigger),cfg,slots,depth);plan.links.push({from:previous?[previous.id,'NEXT']:[parent.id,port],to:[n.id,'DO']});previous=n;for(const [key,path]of Object.entries(slots)){const sub=get(cfg,path);chain(sub,n,key,depth+1,path==='wait_for_trigger');del(cfg,path);}n.params.config=JSON.stringify(cfg,null,2);}}
+ for(const key of domain==='automation'?['triggers','trigger','conditions','condition','actions','action']:domain==='script'?['sequence']:[]){if(rootConfig[key]!==undefined){rootSlots[key.toUpperCase()]=key;const values=Array.isArray(rootConfig[key])?rootConfig[key]:[rootConfig[key]];root.params['single_'+key]=!Array.isArray(rootConfig[key]);chain(values,root,key.toUpperCase(),1,['triggers','trigger'].includes(key));delete rootConfig[key];}}
+ const inputs=[],inputBlocks=new Map();
+ if(kind==='blueprint'){
+  let prev;function addInputs(map,path=''){for(const [key,d]of Object.entries(map||{})){if(d?.input){addInputs(d.input,path+key+'.input.');continue;}const n=node(paramType(d),d,{},1);n.name=d?.name||key;n.params.key=key;n.params.path=path+key;inputs.push(path+key);inputBlocks.set(key,n);plan.links.push({from:prev?[prev.id,'NEXT']:[root.id,'PARAMETERS'],to:[n.id,'DO']});prev=n;}}
+  addInputs(original.blueprint?.input);rootSlots.PARAMETERS='__inputs';root.params.inputPaths=JSON.stringify(inputs);
+ }
+ if(domain==='script'){root.params.hadFields=Object.hasOwn(original,'fields');rootSlots.FIELDS='__fields';let prev;for(const [key,c]of Object.entries(original.fields||{})){const n=node('SCRIPT_INPUT',c,{},1);n.name=c.name||key;n.params.key=key;plan.links.push({from:prev?[prev.id,'NEXT']:[root.id,'FIELDS'],to:[n.id,'DO']});prev=n;}delete rootConfig.fields;}
+ root.params.config=JSON.stringify(rootConfig,null,2);root.params.slots=JSON.stringify(rootSlots);
+ for(const n of [...plan.blocks]){if(n.type.startsWith('BP_INPUT_'))continue;const names=refs(configOf(n));n.params.refs=JSON.stringify(names);for(const key of names){let source=inputBlocks.get(key);if(!source){source=node('BP_INPUT_REF',{input:key});source.params.key=key;inputBlocks.set(key,source);}plan.links.push({from:[source.id,'VALUE'],to:[n.id,'REF_'+key]});}}
+ if(plan.links.length>500)throw Error('Zu viele Verbindungen.');return plan;
+}
+export function newFlow(kind='automation'){return importFlow(kind==='blueprint'?{blueprint:{name:'Neuer Blueprint',domain:'automation',input:{}},triggers:[],conditions:[],actions:[],mode:'single'}:kind==='script'?{alias:'Neues HA-Skript',sequence:[],mode:'single'}:{alias:'Neue HA-Automation',triggers:[],conditions:[],actions:[],mode:'single'},kind);}
+export function isFlow(p){return p.blocks.some(b=>flowTypes.has(b.type)&&!noteTypes.has(b.type));}
+export function validateFlow(p){
+ const map=new Map(p.blocks.map(b=>[b.id,b])),incoming=new Set(),outgoing=new Set();
+ for(const b of p.blocks)if(flowTypes.has(b.type)){flowPins(b,'inputs');flowPins(b,'outputs');configOf(b);}
+ for(const l of p.links){const a=map.get(l.from[0]),b=map.get(l.to[0]);if(!a||!b||!flowTypes.has(a.type)||!flowTypes.has(b.type))throw Error('Ablaufverbindung zu fehlendem oder unpassendem Baustein.');const out=flowPins(a,'outputs').find(x=>x.id===l.from[1]),input=flowPins(b,'inputs').find(x=>x.id===l.to[1]);if(!out||!input||out.type!==input.type)throw Error('Ungültiger Ablauf- oder Parameteranschluss.');const key=l.to.join('.');if(incoming.has(key))throw Error('Anschluss hat mehrere Quellen.');incoming.add(key);if(out.type==='FLOW'){const from=l.from.join('.');if(outgoing.has(from))throw Error('Ablaufanschluss hat mehrere Nachfolger.');outgoing.add(from);}}
+}
+export function exportFlow(p){
+ validateFlow(p);
+ if(p.target==='javascript')throw Error('Native HA-Abläufe sind nur als HA-YAML exportierbar; keine automatische JavaScript-Übersetzung.');
+ const roots=p.blocks.filter(b=>b.type==='FLOW_ROOT');if(roots.length!==1)throw Error('Genau ein FLOW_ROOT erforderlich. Für Ablaufbausteine einen neuen HA-Ablaufplan anlegen.');
+ const root=roots[0],byId=new Map(p.blocks.map(b=>[b.id,b])),outgoing=new Map(),parents=new Set(),used=new Set([root.id]);
+ for(const l of p.links){const a=byId.get(l.from[0]),b=byId.get(l.to[0]);if(!a||!b)throw Error('Verbindung zu fehlendem Baustein.');if(l.to[1].startsWith('REF_')){const key=l.to[1].slice(4);if(l.from[1]!=='VALUE'||(a.params.key||configOf(a).input)!==key)throw Error('Parameterverweis passt nicht zum Eingabeschlüssel.');continue;}
+  if(l.to[1]!=='DO'||!flowPins(a,'outputs').some(pin=>pin.id===l.from[1]&&pin.type==='FLOW'))throw Error('Ungültige Ablaufleitung.');const key=l.from.join('.');if(outgoing.has(key)||parents.has(b.id))throw Error('Ablaufanschluss darf nur einen Nachfolger und einen Vorgänger besitzen.');outgoing.set(key,b.id);parents.add(b.id);
+ }
+ const walk=(parent,port)=>{const result=[];let id=outgoing.get(parent.id+'.'+port);while(id){if(used.has(id))throw Error('Zyklus oder mehrfach verwendeter Ablaufbaustein.');used.add(id);const b=byId.get(id);if(!flowTypes.has(b.type)||noteTypes.has(b.type))throw Error('Wert-/Hinweisbaustein kann nicht als HA-Aktion ausgeführt werden.');let cfg=configOf(b);for(const [slot,path]of Object.entries(slotPaths(b))){if(path.startsWith('__'))throw Error('Parameterzweig nur am FLOW_ROOT erlaubt.');set(cfg,path,walk(b,slot));}result.push({block:b,config:cfg});id=outgoing.get(b.id+'.NEXT');}return result.map(x=>({...x,config:unwrapChildren(x.config)}));};
+ // Child walks return records so root parameters keep their keys; nested branches use configs only.
+ function unwrapChildren(x){if(Array.isArray(x))return x.map(v=>v?.block&&'config'in v?v.config:unwrapChildren(v));if(x&&typeof x==='object')return Object.fromEntries(Object.entries(x).map(([k,v])=>[k,unwrapChildren(v)]));return x;}
+ const config=configOf(root),kind=root.params.kind||p.target;
+ if(kind!==p.target)throw Error('Ausgabe muss zur Art des FLOW_ROOT passen: '+kind+'.');
+ if(kind==='blueprint'){for(const path of JSON.parse(root.params.inputPaths||'[]'))del(config.blueprint.input,path);}
+ for(const [slot,path]of Object.entries(slotPaths(root))){const records=walk(root,slot);if(path==='__inputs'){if(kind!=='blueprint')throw Error('Blueprint-Eingaben nur im Blueprint erlaubt.');if(!records.length&&!config.blueprint?.input)continue;config.blueprint??={name:p.name,domain:'automation',input:{}};config.blueprint.input??={};for(const {block,config:c}of records){if(!/^BP_INPUT_/.test(block.type))throw Error('Blueprint-Eingabe erwartet.');const key=block.params.path||block.params.key;if(!key||!/^[a-zA-Z_][a-zA-Z0-9_.]*$/.test(key)||/(__proto__|constructor|prototype)/.test(key))throw Error('Eingabeschlüssel fehlt oder ist ungültig.');if(get(config.blueprint.input,key)!==undefined)throw Error('Doppelter Parameterpfad: '+key);set(config.blueprint.input,key,c);}}else if(path==='__fields'){if((kind==='blueprint'?config.blueprint?.domain:kind)!=='script')throw Error('Skriptfelder nur im Skript erlaubt.');if(!records.length&&!root.params.hadFields)continue;config.fields={};for(const {block,config:c}of records){if(block.type!=='SCRIPT_INPUT'||!/^\w+$/.test(block.params.key||''))throw Error('Skriptfeld-Schlüssel fehlt.');if(Object.hasOwn(config.fields,block.params.key))throw Error('Doppelter Skriptfeld-Schlüssel.');config.fields[block.params.key]=c;}}else{const values=records.map(r=>r.config);set(config,path,root.params['single_'+path]&&values.length===1?values[0]:values);}}
+ for(const b of p.blocks){if(!used.has(b.id)&&!noteTypes.has(b.type)&&b.type!=='COMMENT')throw Error('Nicht verbundener Baustein: '+b.name+'. Kein stilles Weglassen.');for(const key of refs(configOf(b)))if(!p.links.some(l=>l.to[0]===b.id&&l.to[1]==='REF_'+key))throw Error('Parameterverbindung fehlt: '+key+' bei '+b.name);}
+ if(config.blueprint){const declared=new Set();function keys(map){for(const [k,d]of Object.entries(map||{})){if(d?.input)keys(d.input);else declared.add(k);}}keys(config.blueprint.input);for(const key of refs(config))if(!declared.has(key))throw Error('Blueprint-Eingabe fehlt: '+key);}
+ return clean(config);
+}

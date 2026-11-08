@@ -1,0 +1,86 @@
+UGSo Logic Studio 0.1.6 – HA-Import (lokaler Test)
+================================================
+
+DE
+1. Eigenen Plan mit „Projekt“ sichern. „HA importieren“ öffnen.
+2. Bereich Automationen, Skripte oder Blueprints wählen. „Aus HA einlesen“
+   liest automations.yaml, scripts.yaml oder Blueprint-Dateien. Vor dem Parsen
+   sichert die App die Originaldatei mit unverändertem Dateinamen unter
+   /data/ha-source-backups/<Zeitstempel>/. Die HA-Konfiguration ist nur lesend
+   eingebunden. secrets.yaml wird nicht geöffnet; !secret und !include werden
+   als Verweise erhalten, nicht aufgelöst. Keine Konfigurationsdatei wird geändert.
+3. Alternativ YAML/JSON als Datei oder Text einlesen. Bei !include in der
+   Hauptdatei die tatsächlich referenzierte Datei manuell importieren.
+4. Eintrag auswählen, Vorschau prüfen, dann „Import übernehmen“. Vor dem
+   Wechsel wird der aktuelle Plan zusätzlich im Browserspeicher gesichert.
+   JSON-Projektdatei bleibt die empfohlene unabhängige Sicherung.
+5. Orange FLOW-Leitungen legen die Reihenfolge fest: Ausgang des Elternzweigs
+   an DO des ersten Bausteins, NEXT an DO des nächsten. Verschachtelte Zweige
+   haben eigene Anschlüsse (z. B. IF, THEN, ELSE, CASE_1). Gelbe VALUE/REF-
+   Leitungen zeigen Blueprint-Parameterverwendungen. Die Konfiguration enthält
+   diese zusätzlich als {$haTag:"input",value:"name"}; beim Export entsteht !input.
+6. Eigenschaften bearbeiten über Zahnrad oder ⋮ > Eigenschaften. Native
+   HA-Optionen stehen als JSON im Feld „HA-Konfiguration“. Zweigpfade sind die
+   Zuordnung von Anschlussnamen zu HA-Feldern. Beispiel CHOOSE:
+   {"WHEN_1":"choose.0.conditions","CASE_1":"choose.0.sequence","DEFAULT":"default"}
+   Einen weiteren Zweig als WHEN_2/CASE_2 auf choose.1 ergänzen. Fehlerhafte JSON-
+   Eingaben müssen korrigiert werden. Nicht verbundene ausführbare Bausteine
+   sperren den Export. Eine Notiz wird nicht ausgeführt.
+7. Blueprint-Eingaben über PARAMETERS verbinden. Schlüssel und Parameterpfad
+   müssen eindeutig sein; innerhalb einer Sektion z. B. settings.input.entity.
+   Skriptfelder über FIELDS verbinden. „Planart“ und Ausgabe müssen übereinstimmen.
+8. ⋮ > Duplizieren kopiert den Baustein einschließlich Eigenschaften, jedoch
+   ohne Leitungen. Speicher-/Parameterschlüssel bei Bedarf eindeutig setzen.
+   ⋮ > Löschen entfernt den Baustein und seine Leitungen. Rückgängig stellt sie her.
+9. „Ausgabe ansehen“ erzeugt native HA-YAML. Erst prüfen, dann selbst in HA
+   installieren. Die App schreibt weder Automationen noch Skripte zurück und
+   führt sie nicht aus. Native HA-Abläufe können nicht automatisch als JavaScript
+   oder als anderer Plantyp übersetzt werden. Wertpläne unterstützen weiterhin
+   ihre bisherigen Automation-/Skript-/JavaScript-Exporte und Simulation.
+
+Kategorien: Home Assistant, Auslöser, Ablaufsteuerung, Schleifen, Variablen und
+Kontext, Blueprint-Eingaben; Zeit ergänzt DELAY/WAIT_TEMPLATE/WAIT_TRIGGER.
+Experte ergänzt TEMPLATE/YAML_ORIGINAL; Struktur ergänzt FLOW_ROOT und GROUP.
+Die bisherigen Logik-, Speicher-, Zähler-, Rechen- und weiteren Gruppen bleiben.
+Nicht erkannte HA-Abschnitte bleiben als YAML_ORIGINAL erhalten. Kein vollständiger
+semantischer HA-Prüfer: Inhalte, Ziele, Templates und Selektoren selbst prüfen.
+Kommentare, Formatierung und YAML-Anker werden nicht originalgetreu rekonstruiert.
+Grenzen: 1 MB Datei, 200 Bausteine, 500 Leitungen, begrenzte Verschachtelung.
+Direkte Dateisuche umfasst höchstens 250 Blueprint-Dateien in üblichen Ordnern.
+
+EN
+Use “HA importieren”, select automations/scripts/blueprints, then read from HA
+or parse a YAML/JSON file or pasted text. Select an entry and inspect the preview.
+Applying an import backs up the current plan in browser storage; download a project
+JSON for an independent backup first. The app saves source files before parsing
+under /data/ha-source-backups/<timestamp>/ using their original relative names.
+HA configuration is mounted read-only. Secrets/includes remain unresolved tags.
+FLOW wires represent execution order and nested branches; VALUE/REF wires show
+blueprint input usage. Native properties are edited as JSON, branch mappings in
+“Zweigpfade”. Parameter keys/paths and script field keys must be unique.
+The per-block ⋮ menu offers properties, duplicate (without wires), and delete
+(including wires); undo restores deletion. Export produces native HA YAML only.
+No automatic execution, installation, write-back or JavaScript translation.
+Unknown sections remain structured original data. Review HA semantics yourself.
+Comments, anchors and formatting are not preserved. Existing dataflow projects,
+settings, exports and simulation remain available. Limits: 1 MB, 200 blocks,
+500 wires; source discovery reads up to 250 blueprint files in standard folders.
+
+FR
+Ouvrir « HA importieren », choisir automatisations/scripts/blueprints, puis lire
+depuis HA ou analyser un fichier YAML/JSON ou du texte. Vérifier l’aperçu avant
+importation. Le plan courant est sauvegardé dans le navigateur ; télécharger
+d’abord le projet JSON pour une sauvegarde indépendante. Les sources sont copiées
+avant analyse sous /data/ha-source-backups/<horodatage>/ avec leur nom relatif.
+La configuration HA est montée en lecture seule. Les secrets et inclusions
+restent des références non résolues. Les liens FLOW représentent l’ordre et les
+branches ; VALUE/REF montrent l’utilisation des paramètres de blueprint.
+Les propriétés HA et les chemins de branche sont modifiables en JSON. Les clés
+des paramètres/champs doivent être uniques. Le menu ⋮ propose propriétés,
+duplication sans liens et suppression avec liens ; Annuler restaure la suppression.
+L’export produit uniquement le YAML HA natif : aucune exécution, installation,
+réécriture dans HA ou traduction JavaScript automatique. Les sections inconnues
+sont conservées comme données originales structurées. Vérifier la sémantique HA.
+Commentaires, ancres et mise en forme ne sont pas conservés. Les anciens plans,
+réglages, exports et simulations restent disponibles. Limites : 1 Mo, 200 blocs,
+500 liens ; recherche limitée à 250 fichiers blueprint dans les dossiers habituels.

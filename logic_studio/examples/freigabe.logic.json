@@ -1,0 +1,90 @@
+{
+  "format": "ugso.logic/1",
+  "version": "0.1.3",
+  "name": "Freigabe UND Anwesenheit",
+  "target": "automation",
+  "blocks": [
+    {
+      "id": "b94559622eacf87df7e874dfd600ea2f0",
+      "type": "STATE_IN",
+      "name": "Freigabe",
+      "comment": "",
+      "x": 70,
+      "y": 90,
+      "params": {
+        "oid": "input_boolean.demo_freigabe",
+        "type": "BOOL",
+        "demo": true
+      }
+    },
+    {
+      "id": "bafb869864b638fb6283b869abeefb942",
+      "type": "STATE_IN",
+      "name": "Anwesenheit",
+      "comment": "",
+      "x": 70,
+      "y": 330,
+      "params": {
+        "oid": "input_boolean.demo_anwesend",
+        "type": "BOOL",
+        "demo": true
+      }
+    },
+    {
+      "id": "b733425dcf693cec285bade0a9a0f7380",
+      "type": "AND",
+      "name": "UND",
+      "comment": "",
+      "x": 390,
+      "y": 180,
+      "params": {
+        "IN1": true,
+        "IN2": true
+      }
+    },
+    {
+      "id": "b9a5076e355dac9da2184a0fe1dc6168e",
+      "type": "STATE_OUT",
+      "name": "Licht",
+      "comment": "",
+      "x": 720,
+      "y": 180,
+      "params": {
+        "oid": "input_boolean.demo_licht",
+        "IN": false
+      }
+    }
+  ],
+  "links": [
+    {
+      "from": [
+        "bafb869864b638fb6283b869abeefb942",
+        "Q"
+      ],
+      "to": [
+        "b733425dcf693cec285bade0a9a0f7380",
+        "IN2"
+      ]
+    },
+    {
+      "from": [
+        "b733425dcf693cec285bade0a9a0f7380",
+        "OUT"
+      ],
+      "to": [
+        "b9a5076e355dac9da2184a0fe1dc6168e",
+        "IN"
+      ]
+    },
+    {
+      "from": [
+        "b94559622eacf87df7e874dfd600ea2f0",
+        "Q"
+      ],
+      "to": [
+        "b733425dcf693cec285bade0a9a0f7380",
+        "IN1"
+      ]
+    }
+  ]
+}

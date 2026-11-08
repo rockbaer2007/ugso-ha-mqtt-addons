@@ -1,0 +1,17 @@
+blueprint:
+  name: Logic Studio Import Blueprint
+  description: Safe blueprint import fixture. No device is controlled.
+  domain: automation
+  input:
+    event:
+      name: Event name
+      default: logic_studio_demo_only
+      selector:
+        text: {}
+triggers:
+  - trigger: event
+    event_type: !input event
+conditions: []
+actions:
+  - stop: Demo complete
+mode: single
