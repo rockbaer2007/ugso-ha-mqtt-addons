@@ -1,7 +1,7 @@
-import {pins} from './catalog.js?v=0.1.7';
-import {haConfig,exportOptions} from './ha-export.js?v=0.1.7';
-import {statefulTypes,timedTypes,statefulStep,statefulTemplate,memoryId} from './stateful.js?v=0.1.7';
-import {outputMode,outputAction,validateOutput} from './output.js?v=0.1.7';
+import {pins} from './catalog.js?v=0.1.8';
+import {haConfig,exportOptions} from './ha-export.js?v=0.1.8';
+import {statefulTypes,timedTypes,statefulStep,statefulTemplate,memoryId} from './stateful.js?v=0.1.8';
+import {outputMode,outputAction,validateOutput} from './output.js?v=0.1.8';
 const q=JSON.stringify;
 
 export function compileGraph(p,defs,{analyze,cast,expression,yaml,VERSION}){

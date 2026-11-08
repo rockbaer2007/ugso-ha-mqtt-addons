@@ -1,4 +1,4 @@
-import {analyze} from './core.js?v=0.1.7';
+import {analyze} from './core.js?v=0.1.8';
 
 // Both pointer gestures and keyboard/click connections use this gate.
 export function connectionCandidate(plan,defs,start,end){

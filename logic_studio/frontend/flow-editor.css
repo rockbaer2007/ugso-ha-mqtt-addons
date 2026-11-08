@@ -1,0 +1,25 @@
+#viewport{overflow:hidden;background:var(--canvas);min-height:200px}
+#flow-root{height:100%;width:100%;position:absolute;inset:0;--overview-mask:#25374a55}
+#flow-root .react-flow{background:var(--canvas)}
+.logic-flow-node{width:210px}
+.logic-flow-node .block{position:relative;left:auto;top:auto;width:210px}
+.logic-flow-node .block header{touch-action:none}
+.logic-flow-node .pin::before,.logic-flow-node .pin::after{display:none}
+.logic-flow-node .pin .logic-handle{width:12px;height:12px;min-width:12px;min-height:12px;border:1px solid var(--block);border-radius:50%;cursor:crosshair;top:50%}
+.logic-flow-node .pin:not(.out) .logic-handle{left:-11px}
+.logic-flow-node .pin.out .logic-handle{right:-11px}
+.logic-handle.compatible{outline:2px solid #38d984;outline-offset:3px}
+.logic-handle.incompatible{opacity:.4}
+.logic-handle.incompatible:hover{outline:2px solid #ff596c;outline-offset:3px}
+.pin.pending .logic-handle{outline:2px solid var(--ink);outline-offset:3px}
+.react-flow__node-logic{border:0;padding:0;background:none}
+.react-flow__node-logic.selected .block{outline:2px solid var(--selection);outline-offset:3px}
+.react-flow__edge-path,.react-flow__connection-path{stroke:var(--wire);stroke-width:2.5}
+.react-flow__edge:hover .react-flow__edge-path{stroke:var(--danger);stroke-width:4}
+.react-flow__connection-path{stroke-dasharray:5 4}
+.react-flow__minimap{border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.react-flow__minimap-mask{stroke:var(--selection);stroke-width:1}
+.react-flow__attribution{background:var(--panel);color:var(--ink);font-size:10px}
+.react-flow__attribution a{color:var(--secondary)}
+.react-flow__pane{cursor:grab}
+.react-flow__pane.dragging{cursor:grabbing}

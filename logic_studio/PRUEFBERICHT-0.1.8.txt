@@ -1,0 +1,87 @@
+UGSo Logic Studio 0.1.8 – React-Flow-Umstellung
+8. November 2026, lokaler Test, noch nicht veröffentlicht
+
+Vorheriger Quellstand, Paketdateien und userdata wurden als ZIP im
+Downloadordner gesichert. Originale und vorhandene HA-Installationen erhalten.
+Die lokalen Testserver verwenden output/reactflow-test-data bzw.
+output/reactflow-packaged-test. Anschließend ausschließlich auf .193 geprüft.
+
+Technik
+-------
+React Flow @xyflow/react 12.12.1, React/React DOM 19.3.1.
+Die Zeichenfläche läuft mit echten React-Flow-Nodes, Handles und Kanten;
+die vorhandenen Logic-Studio-Eingabefelder werden in eigene Nodes eingebunden.
+Typprüfung und Compiler bleiben getrennte Fachlogik. Projektformat, Browser-
+Schlüssel, HA-App-ID und /data-Speicherorte wurden nicht umbenannt.
+Alle Bibliotheken und Produktions-Lizenzen liegen lokal unter web/vendor.
+Es werden weder CDN noch npm beim App-Start benötigt.
+
+Prüfung
+-------
+- npm run build erfolgreich; Produktionsbundle für JS und CSS erstellt.
+- 29 Node-Tests erfolgreich: bestehende Compiler-/Import-/Speicherprüfungen
+  plus Handles aller 109 Definitionen, unveränderte Export-/Projektabbildung,
+  Rückwärtsverbindungen und begrenzte Koordinaten.
+- 5 Python-Tests erfolgreich: HA-Import, Speicherung, Backups, Konflikte,
+  Entitätsmetadaten und unerlaubte Schreib-/Dateizugriffe.
+- Lokaler Chrome-Test auf 127.0.0.1:4181: BOOL-Verbindung mit echter Maus
+  in beide Richtungen gezogen, STRING nach BOOL mit Typmeldung abgewiesen.
+- Tastaturverbindung mit Enter, Rückgängig, Drei-Punkte-Menü und Duplizieren
+  mit Rückgängig geprüft. Feldfokus gegenüber dem ersten Umbau korrigiert.
+- Verschieben mit Maus und Pfeiltasten aktualisiert gespeicherte X/Y-Werte.
+- Zusätzliche AND-Eingänge werden mit ihren Handles angezeigt.
+- MiniMap-Ziehen ändert den Ausschnitt, +/- ändert den Zoom.
+- Verschachtelten HA-Skriptablauf mit Bedingung, Then/Else, Delay und Stop
+  eingelesen und wieder strukturerhaltend als YAML ausgegeben.
+- Ausgabevorschau und schrittweise Demo-Simulation geprüft.
+- Fertiges HA-App-Verzeichnis auf 127.0.0.1:4182 direkt mit Python gestartet:
+  vier Beispielbausteine, drei Leitungen, Raster, MiniMap und Alles anzeigen.
+- Keine Logic-Studio-Konsolenfehler beobachtet; Browser-Erweiterungsfehler
+  wurden getrennt behandelt.
+
+Bild: docs/screenshots/0.1.8-react-flow-local.jpg
+
+HA-Test auf .193 und Docker, 08.11.2026
+--------------------------------------
+- Frische Vollsicherung 80f23b74, „Logic Studio vor React Flow 0.1.8
+  2026-11-08“, 16:27 Uhr, 198,47 MB, erfolgreich abgeschlossen.
+  Alle älteren Sicherungen erhalten; zusätzlich App-Update-Sicherung aktiviert.
+- Originale App-Dateien zusätzlich auf dem PC gesichert:
+  Downloads/Logic-Studio-193-Appdateien-vor-0.1.8.zip (34 Dateien).
+  Originalplan: Logic-Studio-193-Originalplan-vor-0.1.8.logic.json.
+- Bestehende lokale App local_logic_studio von 0.1.7 auf 0.1.8 aktualisiert.
+  Installierte und neueste Version 0.1.8 im HA-Update-Dialog bestätigt.
+  Testsystem: Proxmox amd64, HA Core 2026.10.4, 8 GB RAM, 4 vCPU.
+- Vorhandener Plan: 5 Bausteine, 3 Leitungen. Nach allen Tests und Neuladen
+  JSON mit Original verglichen: bis auf version vollständig identisch,
+  einschließlich IDs, Positionen, Parameter und Reihenfolge der Leitungen.
+- BOOL-Verbindung per Maus entfernt und erneut gezogen; 2 -> 3 Leitungen.
+  STRING -> BOOL abgewiesen; Anzahl bleibt 2. Belegtes BOOL-Ziel ebenfalls
+  abgewiesen. Alle Änderungen anschließend mit Rückgängig zurückgenommen.
+- Baustein per Maus verschoben: X/Y 120/120 sichtbar; zurückgenommen.
+  Duplizieren erzeugt 6 statt 5 Bausteine ohne zusätzliche Leitung;
+  Rückgängig stellt 5/3 wieder her.
+- Zoom +/- und Alles anzeigen sowie MiniMap-Ziehen geprüft. MiniMap ändert
+  den Ausschnitt, ohne gespeicherte Bausteinpositionen zu verändern.
+- HA-Entitätsauswahl lädt reale Entitäten und Metadaten lesend; geschlossen,
+  ohne die bestehende Zuordnung zu verändern. Keine Geräteaktion ausgeführt.
+- Eigenes Skript-YAML mit If/Then/Else, Delay und Stop importiert (5/4),
+  als YAML strukturerhaltend ausgegeben, danach Originalplan wiederhergestellt.
+  Kein Skript und keine Automation in HA angelegt oder ausgeführt.
+- Nach vollständigem Neuladen: AND-Favorit, eingeklappte „Eigene Bausteine“
+  und zuletzt benutzt STATE_IN/SCRIPT_INPUT/TON unverändert.
+- App bleibt auf .193 installiert und läuft. .177 nicht verändert.
+- Docker Desktop 29.7.2: HA-App-Image erfolgreich gebaut, Python-/PyYAML-
+  Import und gebündelte React-Flow-Dateien im Container geprüft. HTTP-Smoke-
+  Test im lokalen Servermodus im Container: /api/info und Vendor-JS 200.
+  Externer Zugriff auf HA-Modus ohne Ingress wird erwartungsgemäß mit 403
+  abgewiesen; keine Zugriffsbeschränkung abgeschaltet. Testcontainer beendet.
+
+Bild: docs/screenshots/0.1.8-react-flow-193.jpg
+
+Offen vor Veröffentlichung
+--------------------------
+Hell/Dunkel folgt weiterhin dem Browser; kein neuer manueller Umschalttest.
+Kein vollständiger Ausführungstest aller HA-Blocktypen nach der Canvas-Migration;
+die bestehenden Compiler-/Import-Tests sind erfolgreich.
+Keine Veröffentlichung oder Änderungen am Sammelrepo in diesem Arbeitsschritt.

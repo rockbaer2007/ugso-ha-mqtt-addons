@@ -17,7 +17,7 @@ Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetrage
 - [MQTT-Client](mqtt_client/README.md): ausgewählte HA-Zustände an einen externen Broker (z. B. ioBroker) senden, optional mit Ein/Aus-Befehlen zurück an HA.
 - [HA Grafik Visual Studio](ha_grafik_visual_studio/README.md): **experimentelles** Grundgerüst für eine grafische HA-Visualisierung mit getrenntem Editor- und Runtime-Modus.
 - [Blocks for HA](blocks_for_ha/DOCS.md): **experimentelle** HA-App für native Automationen aus visuellen Blocks, mit YAML-Import/-Export und HA-Ingress.
-- [UGSo Logic Studio](logic_studio/README.md): **0.1.7 – öffentliches Testupdate.** Typgeprüfte Maus-Ziehverbindungen, Miniübersicht mit Navigation sowie Funktionspläne und native Automation-/Skript-/Blueprint-Importe. Auf .193 geprüft; Originalplan und Einstellungen erhalten. Wertpläne als YAML oder JavaScript mit Host-Schnittstelle; native Abläufe als YAML. Lesender Zugriff und Quellsicherungen, Oberfläche derzeit Deutsch, Doku DE/EN/FR. [Dokumentation](https://opensource.ugso-software.de/projects/logic-studio/).
+- [UGSo Logic Studio](logic_studio/README.md): **0.1.8 – öffentliches Testupdate mit React Flow.** Typgeprüfte Maus-Ziehverbindungen, verschiebbare/zoombare MiniMap sowie Funktionspläne und native Automation-/Skript-/Blueprint-Importe. Auf .193 und im Docker-Container geprüft; Originalplan und Einstellungen erhalten. Bibliotheken lokal gebündelt, kein CDN. Wertpläne als YAML oder JavaScript mit Host-Schnittstelle; native Abläufe als YAML. Lesender Zugriff und Quellsicherungen, Oberfläche derzeit Deutsch, Doku DE/EN/FR. [Dokumentation](https://opensource.ugso-software.de/projects/logic-studio/).
 
 ## Weitere Projekte
 

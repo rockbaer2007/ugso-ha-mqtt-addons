@@ -7,7 +7,15 @@ analyze.ts, generate.ts and docs/de/fbd.md.
 The metadata extract web/reference-blocks.json retains pin names, types,
 parameters and defaults; runtime code was removed. web/catalog.js adapts
 HA inputs/outputs. No ioBroker editor, generated runtime or artwork included.
-The graph model, editor and restricted HA exporters are an independent prototype.
+The graph model and restricted HA exporters are an independent prototype.
+
+Since 0.1.8 the editor canvas uses React Flow (@xyflow/react, MIT), React and
+React DOM (MIT). Dependencies are bundled locally in web/vendor; no CDN is used.
+The complete production dependency license texts are included in
+web/vendor/THIRD-PARTY-LICENSES.txt. The React Flow attribution remains visible.
+Sources: https://reactflow.dev/ and https://github.com/xyflow/xyflow .
+Build: npm ci, then npm run build (Node 22+). Running the packaged Python/HA
+app does not require Node.js, npm, or access to the npm registry.
 
 Runtime YAML parsing: PyYAML 6.0.3, MIT license, https://pyyaml.org/ .
 Installed by pip during the HA container build; its license remains in the

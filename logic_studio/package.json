@@ -1,1 +1,21 @@
-{"name":"ugso-logic-studio","version":"0.1.7","private":true,"type":"module","scripts":{"test":"node --test tests/*.test.mjs","test:server":"python -m unittest discover -s tests -p test_server.py","start":"python server.py","start:demo":"python server.py --demo-entities"}}
+{
+  "name": "ugso-logic-studio",
+  "version": "0.1.8",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:server": "python -m unittest discover -s tests -p test_server.py",
+    "start": "python server.py",
+    "start:demo": "python server.py --demo-entities",
+    "build": "node tools/build-web.mjs"
+  },
+  "dependencies": {
+    "@xyflow/react": "^12.12.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}

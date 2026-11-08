@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.8
+
+- Replace the canvas with React Flow and custom Logic Studio blocks and typed ports.
+- Bundle React, React DOM, React Flow and their licenses locally; no CDN required.
+- Pannable/zoomable MiniMap, viewport panning, zoom and fit-to-view.
+- Preserve legacy project JSON, app ID, /data, preferences and entity assignments.
+- Preserve shared type checks, keyboard connections, menus, undo and import/export.
+- Verified existing 0.1.7 installation on .193; original plan and palette unchanged
+  after test cleanup and reload. Docker build and container smoke test passed.
+- 29 Node tests and 8 Python tests pass, including security checks.
+
 ## 0.1.7
 
 - Public experimental update after real pointer tests on .193 (HA Core 2026.10.4).

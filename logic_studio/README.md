@@ -1,15 +1,20 @@
 # UGSo Logic Studio
 
-**0.1.7 · public experimental test update / öffentliches experimentelles Testupdate.**
+**0.1.8 · React Flow migration / public experimental update.**
 
-New: mouse-drag connections with a crosshair, preview and typed target
-validation. BOOL connects to BOOL, INT may widen to REAL, ANY remains universal.
-Occupied inputs and cycles are rejected. Escape cancels; undo restores changes.
-A bottom-right overview shows block positions and the viewport; click or use
-arrow/Home/End keys to navigate. Its reference link opens React Flow in a new tab;
-this editor canvas is independently implemented. Verified on .193 with HA Core
-2026.10.4: compatible wires connect; wrong types and occupied inputs are rejected.
-The original plan and all palette preferences were preserved after the update.
+The canvas now uses React Flow with custom Logic Studio nodes, typed handles,
+smooth-step connections, panning, zoom and a pannable/zoomable MiniMap. React,
+React DOM and React Flow are bundled locally with their license texts. No CDN
+or browser internet connection is needed. Existing project JSON, app workspace,
+preferences, HA entity mapping and import/export contracts remain unchanged.
+BOOL connects only to BOOL; INT may widen to REAL and explicit ANY remains universal.
+Menus, keyboard connections, undo/redo and simulation use the existing logic.
+The existing app ID, settings and project storage are preserved during updates.
+
+Local 0.1.8 update verified on HA test host .193: typed mouse connections,
+move/undo, duplicate, zoom/MiniMap, entity picker and native script round-trip.
+Original plan and palette preferences survived reload. Docker build and container
+HTTP smoke test passed. See `PRUEFBERICHT-0.1.8.txt` for the pre-release tests.
 
 A visual function-block editor for Home Assistant. Build typed dataflow plans
 or import native automations, scripts and blueprints as nested flow diagrams.
@@ -19,7 +24,7 @@ is attributed in [THIRD-PARTY.txt](THIRD-PARTY.txt). MIT license.
 [DE documentation](https://opensource.ugso-software.de/projects/logic-studio/) ·
 [EN documentation](https://opensource.ugso-software.de/en/projects/logic-studio/) ·
 [FR documentation](https://opensource.ugso-software.de/fr/projects/logic-studio/) ·
-[Downloads](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/logic-studio-v0.1.7)
+[Downloads](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/logic-studio-v0.1.8)
 
 ## Home Assistant test installation
 
@@ -40,8 +45,7 @@ before switching. No automatic migration, uninstall or replacement.
 
 ## Available in this test release
 
-- Palette, search, favorites, recent blocks, typed drag wires, overview navigation,
-  properties and undo/redo. 26 Node and eight Python tests pass.
+- Palette, search, favorites, recent blocks, typed wires, properties and undo/redo.
 - Per-block **⋮ → Properties / Duplicate / Delete** (German UI labels).
 - 33 implemented dataflow types: logical/math/selection operations plus persistent
   latches, edges, timers and counters. Other reference types are marked templates.
@@ -74,9 +78,12 @@ The release ZIP includes both source and `addon/logic_studio/` for local app tes
 
 ```sh
 python -m pip install -r requirements-dev.txt
+npm ci
+npm run build
 npm test
 python -m unittest discover -s tests -p 'test_*.py'
-docker build -t logic-studio:test .
+python tools/package.py
+docker build -t logic-studio:test output/ha-app/logic_studio
 ```
 
 ## Rückmeldungen / feedback / retours

@@ -1,4 +1,4 @@
-UGSo Logic Studio 0.1.7 – HA-App und lokaler Test
+UGSo Logic Studio 0.1.8 – React Flow / öffentliche Testversion
 ============================================
 
 Start unter Windows: ZIP vollständig entpacken, dann Start.cmd doppelklicken.
@@ -12,6 +12,20 @@ Nicht die index.html per Doppelklick öffnen: Module benötigen den lokalen HTTP
 
 Enthalten
 ---------
+Neu in 0.1.8: Die Zeichenfläche verwendet jetzt React Flow. Bausteine am Kopf
+verschieben; freie Fläche ziehen zum Verschieben des Ausschnitts. Zoomen über
+die +/- Buttons oder Strg+Mausrad. Die Miniübersicht ist verschieb- und zoombar.
+Typprüfung, Baustein-Menüs, Simulation und HA-Import/-Export bleiben erhalten.
+Vorhandene Projektdateien und gespeicherte App-Einstellungen werden weiterhin
+im gleichen Format geladen. Keine neue App-ID, kein Zurücksetzen von /data.
+React, React Flow und ihre Lizenzen sind lokal enthalten; kein CDN erforderlich.
+Entwickler: npm ci && npm run build. Für das fertige ZIP ist kein Node nötig.
+GitHub-Testupdate 0.1.8. Lokales Update auf .193 erfolgreich
+geprüft: Mausverbindungen, Typprüfung, Verschieben, Zoom/MiniMap, Entitätsauswahl
+und HA-Skript-Import/-Export. Originalplan und Palette bleiben nach Neuladen
+erhalten. Docker-Build und Container-Smoke-Test ebenfalls erfolgreich.
+Details und Prüfbilder: PRUEFBERICHT-0.1.8.txt und docs/screenshots/.
+
 Neu in 0.1.7 (lokaler Test): Verbindungen mit gedrückter Maustaste ziehen.
 Am farbigen Anschluss starten: Kreuzcursor, Leitungsvorschau und grün markierte
 passende Ziele. Rote Markierung bedeutet unpassender Typ oder belegter Eingang.
@@ -19,7 +33,7 @@ BOOL nur an BOOL; INT darf ohne Umwandlung an REAL, ANY ist ausdrücklich univer
 Am Ziel loslassen. Auf freier Fläche oder mit Esc abbrechen. Eine bestehende
 Leitung bleibt dabei erhalten. Pro Eingang genau eine Leitung; Rückkopplungen
 werden abgewiesen. Tastatur: Ausgang per Tab wählen, Enter, Eingang und Enter.
-Vorhandene Pläne und Einstellungen bleiben erhalten. Öffentliches Testupdate 0.1.7.
+Vorhandene Pläne und Einstellungen bleiben erhalten. Noch keine Veröffentlichung.
 Rechts unten: Miniübersicht mit Bausteinpositionen und sichtbarem Ausschnitt.
 Klick zum Navigieren; mit Tab fokussiert auch Pfeiltasten, Pos1 und Ende.
 Der Link „Referenz: React Flow“ öffnet das Vorbild in einem neuen Tab;
