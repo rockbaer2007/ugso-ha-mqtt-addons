@@ -6,6 +6,7 @@ Prüfung am 8. November 2026. Enthält außerdem die bisher lokal vorbereitete P
 
 - Vollständiger PC-Arbeitsstand vor der Änderung: `Studio-Arbeitsstand-0.1.298-vor-Zuletzt-benutzt-20261108.zip` im Downloadordner.
 - Frische abgeschlossene HA-Vollsicherungen vor Deployment: .177 `32b2aedd`, .193 `bb0cfd18`.
+- Nach ausdrücklicher Freigabe ausschließlich das alte Vollbackup `16de31bd` auf .177 gelöscht. Die Oberfläche bestätigt drei manuelle Vollbackups; `32b2aedd`, `832d0f41` und `8b5f6122` sowie das App-Update-Backup bleiben erhalten. Auf .193 keine Sicherung gelöscht.
 - Nur App-Code aktualisiert; vorhandene Projekte und Einstellungen erhalten. Studio bleibt auf beiden Hosts installiert.
 - Browserpräferenzen liegen separat unter `gvs-recent-widgets-v1`: maximal zwölf eindeutige Widgettypen, zuletzt eingefügter zuerst, eigener Einklappzustand. Keine Synchronisierung oder Änderung an Projektdateien. Ohne verfügbaren Browserspeicher funktioniert die Liste für die Sitzung.
 
