@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.299
+
+- Add Recently used below the palette search: up to twelve unique widget types, newest insertion first, independent collapse state and browser-local persistence.
+- Reuse palette miniatures, descriptions and UGSo name-only tiles; respect search and installed packages without writing recent history to project files.
+- Include the previously local 0.1.298 palette and isolated inline-runtime improvements.
+
+## 0.1.298 (local test)
+
+- Three-column palette tiles with miniatures, larger hover/focus previews and descriptions; retain supplied package artwork. UGSo/SVG line entries remain name-only.
+- Start/stop beside project page tabs runs an isolated runtime over the canvas. Save first; lock editor controls and shortcuts; preserve selection, history and scroll when stopping.
+- Keep the separate runtime-window link; remove the old menu mode links. Preview page changes do not change the editor page; validate iframe page messages by origin, source and project pages.
+- Verify local save failure/concurrency, real HA update/start/stop/page switching and separate runtime on .177/.193; preserve projects/settings and take fresh backups.
+
 ## 0.1.297
 
 - Eigenes Geräte-Set: Schalter, Dimmer, farbiges Licht, Thermostat und Messwert jeweils als Kachel oder Grundriss-Marker mit Popup. HA-Fähigkeiten bestimmen die angebotenen Steuerelemente.

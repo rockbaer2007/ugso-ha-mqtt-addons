@@ -1,5 +1,11 @@
 # HA Grafik Visual Studio
 
+**Neu in 0.1.299:** „Zuletzt benutzt“ unter der Suche, bis zu zwölf unterschiedliche Widgettypen, einklappbar und browserlokal gespeichert. Miniaturen und Beschreibungen entsprechen der Palette; UGSo bleibt namensbasiert. Enthält außerdem die bisher lokal geprüfte dreispaltige Palette und Start/Stopp neben den Seitenreitern aus 0.1.298. Projekte und Einstellungen bleiben erhalten.
+
+**English:** 0.1.299 adds a collapsible, browser-local Recently used section with up to twelve distinct widget types and the same palette previews. Includes the three-column palette and inline runtime start/stop tested in 0.1.298. Existing projects/settings are preserved.
+
+**Français :** La version 0.1.299 ajoute Utilisés récemment, repliable et enregistré dans le navigateur, avec douze types distincts et les mêmes aperçus. Inclut la palette à trois colonnes et le démarrage/arrêt intégré testés dans 0.1.298. Projets/réglages conservés.
+
 **Neu in 0.1.297:** Eigenes Geräte-Set mit Kacheln und Grundriss-Markern, Tablet-Rückkehr, Inaktivitäts-Startseite, Überschriftenstatus, bedarfsgerechte Renderer und Paketaktualisierung. [Anleitung DE/EN/FR und Prüfstand](docs/devices-tablet-0.1.297.md). Vorhandene Projekte bleiben gültig. Die vorherigen [Erweiterungen in 0.1.296](docs/widgets-0.1.296.md) bleiben enthalten.
 
 **English:** 0.1.297 adds native device tiles/floorplan markers, tablet return refresh, optional idle home navigation, live heading values, demand-loaded renderers and package refresh. Existing projects and settings remain valid. Device properties/runtime support DE/EN/FR; the general Studio shell remains DE/EN.

@@ -1,6 +1,10 @@
 import { getWidgetSets, getWidgetDefinition, registerWidgetSet, replaceExternalWidgetSets, initializeWidgetCaption } from "./widget-registry.js";
 import { mountPackageBrowser, packageIcon } from "./package-browser.js";
 import {cssGroups} from './widget-sets/core.js';
+import {createInlineRuntime,previewUrl} from './inline-runtime.js';
+import {nameOnlyPalette,paletteDescription,deviceMiniature} from './palette-preview.js';
+import {createRecentWidgets,recentWidgetText} from './recent-widgets.js';
+const recentWidgets=createRecentWidgets({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)});
 import {completeCssGroups,cardCssEnabled,applyCardCss} from './card-css.js';
 import { entitySearchMatches } from "./entity-search.js";
 import { PALETTE_COLORS, allocatePaletteColors } from "./palette-colors.js";
@@ -220,6 +224,24 @@ const params = new URLSearchParams(location.search);
 const runtimeMode = location.pathname.endsWith("/runtime") || params.get("mode") === "runtime";
 const tableRuntimeCache = new Map();
 const rootRuntimeMode = runtimeMode;
+let inlinePageId=null;
+let inlineExternalHref=null;
+const inlineLocks=new Map();
+function lockInlineEditor(){for(const node of document.querySelectorAll('.toolbar > :not(.mode-switch),#palette-panel,#properties-panel,.stage-scroll')){if(!inlineLocks.has(node))inlineLocks.set(node,node.inert);node.inert=true;node.classList.add('preview-locked');}}
+const inlineRuntime=createInlineRuntime({save:async()=>{lockInlineEditor();await projectSaveCompletion;return saveProject();},enter:()=>{
+  inlinePageId=currentPage().id;
+  inlineExternalHref=document.querySelector('#runtime-tab-link').href;
+  lockInlineEditor();
+  const frame=document.querySelector('#inline-runtime-frame');frame.src=previewUrl(document.baseURI,state.projectId,inlinePageId,state.tabEditor);frame.hidden=false;
+  document.body.classList.add('inline-preview');hidePaletteHelp();renderEditorPageTabs();
+},leave:()=>{
+  const frame=document.querySelector('#inline-runtime-frame');frame.hidden=true;frame.removeAttribute('src');
+  for(const [node,inert]of inlineLocks){node.inert=inert;node.classList.remove('preview-locked');}inlineLocks.clear();inlinePageId=null;document.body.classList.remove('inline-preview');renderEditorPageTabs();
+  if(inlineExternalHref)document.querySelector('#runtime-tab-link').href=inlineExternalHref;inlineExternalHref=null;
+}});
+function selectInlinePage(pageId){if(!state.project.pages.some(p=>p.id===pageId&&p.visible!==false))return;inlinePageId=pageId;document.querySelector('#inline-runtime-frame').src=previewUrl(document.baseURI,state.projectId,pageId);const external=new URL(previewUrl(document.baseURI,state.projectId,pageId));external.searchParams.delete('inlinePreview');document.querySelector('#runtime-tab-link').href=external.href;renderEditorPageTabs();}
+window.addEventListener('message',event=>{if(!inlineRuntime.active||event.origin!==location.origin||event.source!==document.querySelector('#inline-runtime-frame').contentWindow||event.data?.type!=='studio-preview-page')return;if(state.project.pages.some(p=>p.id===event.data.pageId&&p.visible!==false)){inlinePageId=event.data.pageId;renderEditorPageTabs();}});
+document.addEventListener('keydown',event=>{if(inlineRuntime.busy&&!event.target.closest?.('#inline-runtime-toggle,#editor-page-tabs,#runtime-tab-link')){event.preventDefault();event.stopImmediatePropagation();}},true);
 const workspace = $("#workspace");
 const stage = $("#stage");
 const stageCanvas = $("#stage-canvas");
@@ -916,6 +938,7 @@ function editorLiveEntityIds() {
 }
 
 async function refreshEditorLiveStates() {
+  if(inlineRuntime.busy)return;
   if (runtimeMode || !state.project || document.hidden || editorNumberRequestPending) return;
   const pageId = currentPage().id;
   const ids = editorLiveEntityIds();
@@ -1244,6 +1267,7 @@ if (!runtimeMode) setInterval(() => {
 }, 250);
 
 function renderPalette() {
+  hidePaletteHelp();
   const palette = $("#palette");
   palette.replaceChildren();
   const search = $("#palette-search").value.trim().toLocaleLowerCase();
@@ -1273,7 +1297,7 @@ function renderPalette() {
       if (search) return;
       if (group.open) {
         state.collapsedWidgetSets.delete(set.id);
-        for (const other of palette.querySelectorAll(".widget-group")) {
+        for (const other of palette.querySelectorAll(".widget-group:not(.widget-recent)")) {
           if (other === group) continue;
           other.open = false;
           state.collapsedWidgetSets.add(other.dataset.widgetSetId);
@@ -1308,8 +1332,10 @@ function renderPalette() {
         line.textContent = lineText;
         preview.append(line);
       }
-      button.append(label, preview);
-      button.addEventListener("click", () => addWidget(definition));
+      const nameOnly=nameOnlyPalette(set,definition);
+      const miniature=definition.iconSvg?null:isGauge(definition)?renderGauge({...definition.defaults,type:definition.type,width:120,height:60,showTitle:false,entityId:''},document,{runtime:false}):deviceMiniature(definition,document);if(miniature){preview.replaceChildren(miniature);preview.dataset.kind='miniature';}
+      if(nameOnly){button.classList.add('name-only');button.append(label);}else{button.append(preview,label);}
+      wirePaletteButton(button,set,definition);
       list.append(button);
     }
     group.append(summary, list);
@@ -1321,9 +1347,41 @@ function renderPalette() {
     empty.textContent = uiText("Keine Widgets gefunden");
     palette.append(empty);
   }
+  const recent=recentWidgets.entries(widgetSets).map(item=>({...item,source:palette.querySelector(`.widget-choice[data-widget-type="${CSS.escape(item.definition.type)}"]`)})).filter(item=>item.source);
+  if(!search||recent.length){
+    const group=document.createElement('details');group.className='widget-group widget-recent';group.dataset.widgetSetId='recent';group.open=search?true:!recentWidgets.collapsed;
+    const summary=document.createElement('summary');summary.textContent=recentWidgetText('title',projectWidgetLanguage());group.append(summary);
+    group.addEventListener('toggle',()=>{if(!search)recentWidgets.setCollapsed(!group.open);});
+    const list=document.createElement('div');list.className='widget-list';
+    for(const {set,definition,source}of recent){const button=source.cloneNode(true);wirePaletteButton(button,set,definition);list.append(button);}
+    if(!recent.length){const empty=document.createElement('p');empty.className='palette-empty';empty.textContent=recentWidgetText('empty',projectWidgetLanguage());group.append(empty);}else group.append(list);
+    palette.prepend(group);
+  }
 }
 
+function wirePaletteButton(button,set,definition){
+  const preview=button.querySelector('.widget-choice-preview'),label=button.querySelector('.widget-choice-label');
+  const help=()=>showPaletteHelp(button,preview,label.textContent,nameOnlyPalette(set,definition)?'':paletteDescription(definition,projectWidgetLanguage()));
+  button.addEventListener('pointerenter',help);button.addEventListener('focus',help);
+  button.addEventListener('pointerleave',()=>{if(document.activeElement!==button)hidePaletteHelp();});button.addEventListener('blur',hidePaletteHelp);
+  button.addEventListener('click',()=>addWidget(definition));
+}
+
+let paletteHelp=null;
+function hidePaletteHelp(){paletteHelp?.remove();paletteHelp=null;}
+function showPaletteHelp(button,preview,name,description){
+  hidePaletteHelp();if(inlineRuntime.busy)return;
+  const tip=document.createElement('div');tip.className='palette-help';tip.setAttribute('role','tooltip');
+  const title=document.createElement('strong');title.textContent=name;tip.append(title);
+  if(description){const image=preview.cloneNode(true);image.classList.add('palette-help-preview');tip.append(image);const text=document.createElement('p');text.textContent=description;tip.append(text);}
+  document.body.append(tip);paletteHelp=tip;const anchor=button.getBoundingClientRect(),box=tip.getBoundingClientRect();
+  tip.style.left=`${Math.max(4,Math.min(innerWidth-box.width-8,anchor.right+8))}px`;tip.style.top=`${Math.max(4,Math.min(innerHeight-box.height-8,anchor.top))}px`;
+}
+document.querySelector('#palette-panel').addEventListener('scroll',hidePaletteHelp,true);
+window.addEventListener('resize',hidePaletteHelp);
+
 function selectProjectPage(pageId) {
+  if(inlineRuntime.busy){if(inlineRuntime.active)selectInlinePage(pageId);return;}
   if (!state.project.pages.some(page => page.id === pageId && (!runtimeMode || page.visible))) return;
   closeWidgetContextMenu(); toggleWidgetSelector(false);
   state.tabEditor = null; state.tabReturn = null; state.editingGroupId = null;
@@ -1342,7 +1400,8 @@ function renderEditorPageTabs() {
   tabs.hidden = runtimeMode;
   if (runtimeMode) { stage.removeAttribute("role"); stage.removeAttribute("aria-labelledby"); return; }
   for (const [index, page] of state.project.pages.entries()) {
-    const active = !state.tabEditor && page.id === state.project.currentPageId;
+    if(inlinePageId&&!page.visible)continue;
+    const active = inlinePageId?page.id===inlinePageId:!state.tabEditor && page.id === state.project.currentPageId;
     const button = document.createElement("button"); button.type = "button";
     button.id = `editor-page-tab-${index}`; button.dataset.pageId = page.id;
     button.className = `editor-page-tab${page.visible ? "" : " hidden-page"}`;
@@ -1358,9 +1417,11 @@ function renderEditorPageTabs() {
     button.addEventListener("keydown", event => {
       if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
       event.preventDefault();
-      const length = state.project.pages.length;
+      const pages=inlinePageId?state.project.pages.filter(p=>p.visible!==false):state.project.pages;
+      const index=pages.findIndex(p=>p.id===page.id);
+      const length = pages.length;
       const next = event.key === "Home" ? 0 : event.key === "End" ? length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + length) % length;
-      selectProjectPage(state.project.pages[next].id);
+      selectProjectPage(pages[next].id);
       const selected = tabs.querySelector('[aria-selected="true"]');
       selected?.focus({preventScroll: true}); selected?.scrollIntoView({block: "nearest", inline: "nearest"});
     });
@@ -3076,6 +3137,7 @@ function addWidget(definition) {
     if (widget.verticalStart === true) setFreeConnectionOrientation(widget, true, page.page.width, page.page.height);
   }
   page.widgets.push(widget);
+  recentWidgets.record(definition.type);
   setSingleWidgetSelection(id);
   render();
   $("#status").textContent = `${widget.name} hinzugefügt`;
@@ -5384,6 +5446,8 @@ function renderProperties() {
 }
 
 function render() {
+  if(inlineRuntime.busy){renderEditorPageTabs();return;}
+  if(runtimeMode&&params.get('inlinePreview')==='1'&&window.parent!==window)window.parent.postMessage({type:'studio-preview-page',pageId:state.project.currentPageId},location.origin);
   applyProjectCss();
   const page = currentPage();
   updateWidgetActionButtons();
@@ -5400,12 +5464,8 @@ function render() {
   workspace.classList.toggle("runtime", runtimeMode);
   document.body.classList.toggle("runtime-mode", runtimeMode);
   document.body.classList.toggle("editor-mode", !runtimeMode);
-  $("#editor-link").classList.toggle("active", !runtimeMode);
-  $("#runtime-link").classList.toggle("active", runtimeMode);
   const projectQuery = `project=${encodeURIComponent(state.projectId)}`;
-  $("#editor-link").href = `?mode=editor&${projectQuery}`;
   const tabQuery = state.tabEditor ? `&page=${encodeURIComponent(state.project.currentPageId)}&tabsWidget=${encodeURIComponent(state.tabEditor.ownerId)}&tabsIndex=${state.tabEditor.index}&embedded=1` : "";
-  $("#runtime-link").href = `?mode=runtime&${projectQuery}${tabQuery}`;
   const runtimeTabUrl = new URL("runtime", document.baseURI);
   runtimeTabUrl.search = new URLSearchParams({ mode: "runtime", project: state.projectId, page: state.tabEditor ? state.project.currentPageId : page.id,
     ...(state.tabEditor ? { tabsWidget: state.tabEditor.ownerId, tabsIndex: state.tabEditor.index, embedded: "1" } : {}) }).toString();
@@ -5447,7 +5507,7 @@ $("#widget-import").addEventListener("click", () => $("#widget-import-file").cli
 $("#widget-import-file").addEventListener("change", (event) => { if (event.target.files[0]) void importWidgets(event.target.files[0]); });
 document.addEventListener("keydown", (event) => {
   const editing = [event.target, document.activeElement].some(element => element instanceof HTMLElement && (element.isContentEditable || element.closest("input, textarea, select, [role='textbox']")));
-  if (runtimeMode || event.defaultPrevented || editing || document.querySelector("dialog[open]")) return;
+  if (runtimeMode || inlineRuntime.busy || event.defaultPrevented || editing || document.querySelector("dialog[open]")) return;
   if (event.key === "Delete" && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
     if (event.repeat || !selectedWidgets().length) return;
     event.preventDefault();
@@ -5502,10 +5562,16 @@ for (const [id, key, max] of [["page-width", "width", 7680], ["page-height", "he
 $("#save").addEventListener("click", async () => {
   await saveProject();
 });
-for (const id of ["runtime-link", "runtime-tab-link"]) {
+$("#inline-runtime-toggle").addEventListener('click',async()=>{
+  const button=$('#inline-runtime-toggle');button.disabled=true;
+  try{if(inlineRuntime.active)inlineRuntime.stop();else await inlineRuntime.start();}
+  catch{$('#status').textContent=uiText('Runtime konnte nicht gestartet werden');}
+  finally{button.disabled=false;button.textContent=inlineRuntime.active?'■':'▶';const label=uiText(inlineRuntime.active?'Runtime stoppen':'Runtime starten');button.title=label;button.setAttribute('aria-label',label);button.setAttribute('aria-pressed',String(inlineRuntime.active));}
+});
+for (const id of ["runtime-tab-link"]) {
   const link = $("#" + id);
   const openRuntime = async event => {
-    if (runtimeMode || (event.type === "auxclick" && event.button !== 1)) return;
+    if (runtimeMode || inlineRuntime.active || (event.type === "auxclick" && event.button !== 1)) return;
     event.preventDefault();
     const newTab = link.target === "_blank" || event.button === 1 || event.ctrlKey || event.metaKey || event.shiftKey;
     const target = link.href;
@@ -5934,7 +6000,7 @@ document.querySelectorAll(".collapse").forEach((button) => button.addEventListen
   panel.classList.toggle("collapsed");
   const collapsed = panel.classList.contains("collapsed");
   const isPalette = panel.classList.contains("palette");
-  workspace.style.setProperty(isPalette ? "--left-panel-width" : "--right-panel-width", collapsed ? "34px" : isPalette ? "225px" : "260px");
+  workspace.style.setProperty(isPalette ? "--left-panel-width" : "--right-panel-width", collapsed ? "34px" : isPalette ? "320px" : "260px");
   panel.querySelector(".panel-content").hidden = collapsed;
   button.textContent = collapsed ? (isPalette ? "›" : "‹") : (isPalette ? "‹" : "›");
 }));
