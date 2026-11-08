@@ -1,4 +1,4 @@
-import {importFlow,newFlow} from './flow.js?v=0.1.8';
+import {importFlow,newFlow} from './flow.js?v=0.1.12';
 export function connectImport({apply,report}){
  const dialog=document.createElement('dialog');dialog.id='ha-import';dialog.innerHTML='<header><strong>HA importieren · nur lesen</strong><button aria-label="HA-Import schließen">✕</button></header><p>Auswahl, Vorschau und danach übernehmen. Der bisherige Plan wird vorher gesichert; HA bleibt unverändert.</p><label>Bereich<select id="ha-kind"><option value="automation">Automationen</option><option value="script">Skripte</option><option value="blueprint">Blueprints</option></select></label><div class="import-actions"><button id="ha-list">Aus HA einlesen</button><label class="file-button">YAML-/JSON-Datei<input type="file" accept=".yaml,.yml,.json" id="ha-file"></label></div><label>YAML oder JSON<textarea id="ha-source" spellcheck="false"></textarea></label><button id="ha-parse">Vorschau erstellen</button><label>Eintrag auswählen<select id="ha-items"></select></label><p role="status" id="ha-preview">Noch kein Eintrag geladen.</p><footer><button id="ha-apply" disabled>Import übernehmen</button><button id="ha-new">Neuen HA-Ablaufplan anlegen</button></footer>';
  document.body.append(dialog);const $=s=>dialog.querySelector(s);let items=[],candidate=null,sequence=0;
@@ -11,5 +11,5 @@ export function connectImport({apply,report}){
  $('#ha-kind').onchange=()=>{sequence++;showItems([]);};$('#ha-source').oninput=()=>{sequence++;candidate=null;$('#ha-apply').disabled=true;$('#ha-preview').textContent='Text geändert – Vorschau erneut erstellen.';};
  $('#ha-parse').onclick=parse;$('#ha-items').onchange=preview;$('#ha-apply').onclick=()=>{if(!candidate)return;apply(candidate);dialog.close();report('HA-Import übernommen; alter Plan gesichert. Originalkonfiguration in HA unverändert.');};
  $('#ha-new').onclick=()=>{apply(newFlow($('#ha-kind').value));dialog.close();};dialog.querySelector('header button').onclick=()=>{sequence++;dialog.close();};
- const button=document.createElement('button');button.textContent='HA importieren';button.onclick=()=>dialog.showModal();document.querySelector('.actions').append(button);
+ const button=document.createElement('button');button.id='ha-import-open';button.textContent='HA importieren';button.onclick=()=>dialog.showModal();document.querySelector('.actions').append(button);
 }

@@ -12,6 +12,17 @@ from server import LogicServer, Store, public_entity
 
 
 class ServerTests(unittest.TestCase):
+    def test_language_preferences_survive_restart_without_changing_plan(self):
+        with tempfile.TemporaryDirectory() as root:
+            plan={'format':'ugso.logic/1','name':'Mein Plan','blocks':[],'links':[]}
+            for locale in ('de','en','fr'):
+                store=Store(root)
+                payload={'revision':store.read('lang')['revision'],'plan':plan,'preferences':{'language':locale,'favorites':['AND'],'recent':['STATE_IN'],'collapsed':['memory']}}
+                store.write('lang',payload)
+                saved=Store(root).read('lang')
+                self.assertEqual(saved['plan'],plan)
+                self.assertEqual(saved['preferences'],payload['preferences'])
+
     def test_entity_metadata_without_arbitrary_attributes(self):
         entity = public_entity({'entity_id':'sensor.test','state':'21.2','attributes':{'friendly_name':'Test','latitude':42,'device_class':'temperature','unit_of_measurement':'°C'}})
         self.assertEqual(entity['signal_type'], 'REAL')

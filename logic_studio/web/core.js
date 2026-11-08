@@ -1,8 +1,8 @@
-import {pins,supported} from './catalog.js?v=0.1.8';
-import {exportOptions} from './ha-export.js?v=0.1.8';
-import {compileGraph,scanGraph} from './compiler.js?v=0.1.8';
-import {isFlow,exportFlow,validateFlow} from './flow.js?v=0.1.8';
-export const VERSION='0.1.8';
+import {pins,supported} from './catalog.js?v=0.1.12';
+import {exportOptions} from './ha-export.js?v=0.1.12';
+import {compileGraph,scanGraph} from './compiler.js?v=0.1.12';
+import {isFlow,exportFlow,validateFlow} from './flow.js?v=0.1.12';
+export const VERSION='0.1.12';
 export const emptyPlan=()=>({format:'ugso.logic/1',version:VERSION,name:'Neuer Funktionsplan',target:'automation',blocks:[],links:[]});
 const targets=['automation','script','blueprint','javascript'],safeKey=k=>/^[A-Za-z][A-Za-z0-9_]*$/.test(k)&&!['constructor','prototype','__proto__'].includes(k);
 export function loadPlan(data,defs){

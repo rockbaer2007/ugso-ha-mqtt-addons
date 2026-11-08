@@ -1,6 +1,23 @@
 # UGSo Logic Studio
 
-**0.1.8 · React Flow migration / public experimental update.**
+**0.1.12 · DE/EN/FR interface / public experimental update.**
+
+Choose German, English or French in the header. Menus, block descriptions,
+entity picker, import/export dialogs and documentation help switch without
+reloading. Language is saved with browser/app preferences. Custom names,
+entity IDs, parameter values and generated YAML/JavaScript remain unchanged.
+
+Documentation shows implemented keyboard shortcuts and the selected block's
+description and ports. Entity selection is available through the icon beside
+the HA entity ID in STATE_IN/STATE_OUT properties. Toolbar groups separate
+undo/redo, project actions, simulation and output; simulation buttons retain
+equal dimensions and individual borders. Project includes New project and
+Load example entries, in addition to the direct New button.
+
+Verified on .193 after a full backup and local update from 0.1.8: DE/EN/FR,
+documentation, real HA entity reads, browser reload and app restart. Project
+JSON is identical except for the version; generated YAML is identical between
+languages. See PRUEFBERICHT-0.1.12.txt and docs/images/0.1.12/.
 
 The canvas now uses React Flow with custom Logic Studio nodes, typed handles,
 smooth-step connections, panning, zoom and a pannable/zoomable MiniMap. React,
@@ -24,7 +41,7 @@ is attributed in [THIRD-PARTY.txt](THIRD-PARTY.txt). MIT license.
 [DE documentation](https://opensource.ugso-software.de/projects/logic-studio/) ·
 [EN documentation](https://opensource.ugso-software.de/en/projects/logic-studio/) ·
 [FR documentation](https://opensource.ugso-software.de/fr/projects/logic-studio/) ·
-[Downloads](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/logic-studio-v0.1.8)
+[Downloads](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/logic-studio-v0.1.12)
 
 ## Home Assistant test installation
 
@@ -46,7 +63,7 @@ before switching. No automatic migration, uninstall or replacement.
 ## Available in this test release
 
 - Palette, search, favorites, recent blocks, typed wires, properties and undo/redo.
-- Per-block **⋮ → Properties / Duplicate / Delete** (German UI labels).
+- Per-block **⋮ → Properties / Duplicate / Delete**, with DE/EN/FR UI labels.
 - 33 implemented dataflow types: logical/math/selection operations plus persistent
   latches, edges, timers and counters. Other reference types are marked templates.
 - Dataflow output: HA automation YAML, HA script YAML or a JavaScript function
@@ -55,8 +72,8 @@ before switching. No automatic migration, uninstall or replacement.
   inputs and original/unknown segments. Import YAML/JSON from file, text or HA.
 - Native flow export preserves structure and `!input` references, and is YAML-only.
 
-Native detail properties currently use **JSON**. The editor UI is currently
-**German**; the initial documentation is DE/EN/FR. No automatic HA write-back or
+Native detail properties currently use **JSON**. The editor UI and documentation
+support **DE/EN/FR**. No automatic HA write-back or
 device control. Exports require manual review/installation; native HA flows are
 not simulated or automatically translated into JavaScript. Comments, formatting
 and YAML anchors are not preserved. Full HA semantic validation remains in HA.

@@ -18,3 +18,27 @@
 .overview-selected{stroke:#fff;stroke-width:2;vector-effect:non-scaling-stroke}
 .overview-viewport{fill:#89bdff14;stroke:#8fcaff;stroke-width:1;vector-effect:non-scaling-stroke;pointer-events:none}
 @media(prefers-color-scheme:light){.plan-overview{background:#f2f6fc;color:#26364a}.plan-overview svg{background:#e3eaf4}.plan-overview a{color:#245b8a}}
+.entity-field{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:5px;align-items:stretch;margin-top:5px}
+#properties .entity-field input{min-width:0;margin:0}
+.entity-picker-button{display:grid;place-items:center;width:34px;min-height:34px;padding:6px;align-self:stretch}
+.entity-picker-button svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
+.entity-picker-button:focus-visible{outline:2px solid var(--accent,#5ca9ff);outline-offset:2px}
+.simulation-controls{display:flex;flex-wrap:wrap;align-items:stretch;gap:6px}
+.actions .simulation-controls button{width:180px;height:35px;white-space:nowrap;margin:0;border:1px solid var(--border,#324155);border-radius:5px;padding:8px 10px}
+.actions{align-items:center}
+.toolbar-group{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.toolbar-group+.toolbar-group,.toolbar-group+.simulation-controls,.simulation-controls+.toolbar-group{border-left:1px solid var(--border,#324155);padding-left:9px;margin-left:3px}
+.history-controls button{width:34px;padding:7px}
+.project-controls>button{min-width:88px}
+.project-menu{position:relative;display:flex;align-items:stretch}
+.project-menu>#save{border-radius:5px 0 0 5px}
+.project-menu>button:nth-child(2){border-radius:0 5px 5px 0;border-left:0;min-width:27px;padding:6px}
+.project-menu-items{position:absolute;z-index:200;top:calc(100% + 5px);left:0;min-width:175px;padding:5px;background:var(--panel,#111c2a);border:1px solid var(--border,#324155);border-radius:6px;box-shadow:0 6px 18px #0005}
+.project-menu-items[hidden]{display:none}
+.project-menu-items button{display:block;width:100%;text-align:left;min-height:35px}
+.output-controls label{display:flex;align-items:center;gap:5px;white-space:nowrap}
+.output-controls select{margin:0;min-width:180px;max-width:240px;height:35px}
+@media(max-width:740px){.actions{margin-left:0}.output-controls label{width:auto}.toolbar-group{max-width:100%}.output-controls select{min-width:140px;max-width:200px}}
+.shortcut-help{margin-bottom:16px;border-bottom:1px solid var(--border,#425064);padding-bottom:12px}.shortcut-help table{width:100%;font-size:12px;border-spacing:0 10px}.shortcut-help th{text-align:left;width:42%;vertical-align:top;padding-right:12px}.shortcut-help td{overflow-wrap:anywhere}
+.language-choice{display:flex;align-items:center;gap:6px;font-size:11px;white-space:nowrap}
+.language-choice select{height:35px;margin:0;padding:6px;max-width:100px}

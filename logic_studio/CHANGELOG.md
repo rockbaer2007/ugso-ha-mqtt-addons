@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.12
+
+- German, English and French interface with a persisted live language selector.
+- Translated menus, descriptions, entity picker, import/export and documentation.
+- Documentation tab lists implemented keyboard shortcuts and selected block ports.
+- Entity picker icon beside the HA entity field in STATE_IN/STATE_OUT properties.
+- Grouped project, simulation and output actions; separate equal-sized simulation buttons.
+- Project menu includes New project and Load example.
+- Preserve project format, app ID, /data, custom names, entity IDs and generated code.
+- Verified update on .193: original five-block/three-wire plan unchanged except version;
+  language survives browser reload and app restart, YAML is identical across languages.
+- 31 Node tests and 9 Python tests pass, including preference persistence tests.
+- Release container build and HTTP/locale-asset smoke test pass.
+
 ## 0.1.8
 
 - Replace the canvas with React Flow and custom Logic Studio blocks and typed ports.

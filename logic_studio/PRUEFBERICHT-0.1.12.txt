@@ -1,0 +1,40 @@
+Logic Studio 0.1.12 – Test auf Home Assistant .193
+2026-11-08, ausschließlich 192.168.178.193, keine Veröffentlichung
+
+Sicherungen vor dem Update:
+- HA-Vollbackup 820b56cd, „Custom backup 2026.10.4“, 198.61 MB.
+  Enthält HA-Einstellungen/Verlauf, SSL, Medien, Share und alle Apps.
+- PC-Quellsicherung im Downloadordner:
+  Logic-Studio-193-vor-0.1.12-20261108-174521.zip (43 Dateien).
+- Vorheriger Plan: Logic-Studio-Test-193.logic (5).json.
+- Zusätzlich beim Update App-Backup der bisherigen Version 0.1.8 aktiviert.
+
+Ablauf:
+- Nur /addons/logic_studio mit dem lokalen 0.1.12-Paket aktualisiert.
+  File Studio legt für überschriebene Dateien Sicherheitskopien an.
+- Lokale App in HA von 0.1.8 auf 0.1.12 aktualisiert; keine Deinstallation,
+  kein Zurücksetzen von /data und keine Änderung der App-Berechtigungen.
+- Gespeichertes App-Projekt geladen; vorhandener Browserstand zuvor gesichert.
+- Vorhandener Plan: 5 Bausteine, 3 Verbindungen; unveränderte Namen und IDs.
+
+Ergebnisse:
+- DE, EN und FR live umschaltbar, ohne Neuladen der Oberfläche.
+- Dokumentation in allen drei Sprachen: Tastenkürzel, Bausteinbeschreibung,
+  Ein- und Ausgänge. Dokumentationsreiter wird als aktiv angezeigt.
+- Englischer Entitätsdialog liest reale HA-Entitäten; keine Entität neu zugeordnet.
+- Exporthinweise in EN/FR korrekt; erzeugtes YAML (3052 Zeichen) ist identisch.
+- FR bleibt nach Browser-Neuladen und nach Neustart nur der App erhalten.
+- Erneutes Laden des serverseitigen App-Projekts bestätigt FR als gespeicherte
+  Sprache. Abschließend wieder Deutsch eingestellt und gespeichert.
+- Projektdatei nach Test: Logic-Studio-Test-193.logic (6).json.
+  JSON-Vergleich mit der vorherigen Datei: ausschließlich version 0.1.8 -> 0.1.12;
+  alle anderen Projektdaten sind identisch, einschließlich Positionen und Werten.
+- Keine App-Fehler in den aufgezeichneten Browser-Konsolenmeldungen von .193.
+- Keine Automationen ausgeführt, keine Geräte geschaltet, keine Testobjekte angelegt.
+- Studio bleibt installiert und läuft auf .193. Alle HA-Backups bleiben erhalten.
+
+Bildnachweise:
+docs/screenshots/0.1.12-193-de-documentation.png
+docs/screenshots/0.1.12-193-en-documentation.png
+docs/screenshots/0.1.12-193-fr-documentation.png
+docs/screenshots/0.1.12-193-neustart-de.png

@@ -14,7 +14,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
 
-VERSION = '0.1.8'
+VERSION = '0.1.12'
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 1_000_000
 OUTPUT_DOMAINS = {'switch', 'light', 'input_boolean', 'input_number', 'input_text'}
@@ -76,6 +76,8 @@ class Store:
             raise ValueError('Projektlimit überschritten.')
         clean_prefs = {k: [v for v in preferences.get(k, []) if isinstance(v, str)][:100]
                        for k in ('favorites', 'recent', 'collapsed') if isinstance(preferences.get(k, []), list)}
+        if preferences.get('language') in ('de', 'en', 'fr'):
+            clean_prefs['language'] = preferences['language']
         with self.lock:
             old = self.read(user)
             if payload['revision'] != old['revision']:

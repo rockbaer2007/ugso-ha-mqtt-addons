@@ -1,5 +1,17 @@
-UGSo Logic Studio 0.1.8 – React Flow / öffentliche Testversion
+UGSo Logic Studio 0.1.12 – DE/EN/FR / öffentliche Testversion
 ============================================
+
+DE: Sprache oben wählen: Deutsch, English oder Français. Die Auswahl bleibt
+nach Neuladen und App-Neustart erhalten. Dokumentation zeigt Tastenkürzel
+und Bausteinhilfe. Entitätsauswahl über das Icon neben HA-Entity-ID.
+EN: Choose German, English or French in the header. Language is saved across
+reloads and app restarts. Documentation shows shortcuts and block help.
+FR: Choisissez allemand, anglais ou français dans l’en-tête. Le choix reste
+mémorisé après rechargement et redémarrage. Documentation affiche l’aide.
+
+Vor dem Update sichern, dieselbe App aktualisieren und /data erhalten.
+Eigene Namen, IDs, Werte und erzeugter Code bleiben unverändert.
+Auf .193 geprüft; siehe PRUEFBERICHT-0.1.12.txt und docs/images/0.1.12/.
 
 Start unter Windows: ZIP vollständig entpacken, dann Start.cmd doppelklicken.
 Voraussetzung: Python 3 und PyYAML. Einmal Install-Abhaengigkeiten.cmd starten
@@ -20,7 +32,7 @@ Vorhandene Projektdateien und gespeicherte App-Einstellungen werden weiterhin
 im gleichen Format geladen. Keine neue App-ID, kein Zurücksetzen von /data.
 React, React Flow und ihre Lizenzen sind lokal enthalten; kein CDN erforderlich.
 Entwickler: npm ci && npm run build. Für das fertige ZIP ist kein Node nötig.
-GitHub-Testupdate 0.1.8. Lokales Update auf .193 erfolgreich
+Früherer Prüfstand 0.1.8: Lokales Update auf .193 erfolgreich
 geprüft: Mausverbindungen, Typprüfung, Verschieben, Zoom/MiniMap, Entitätsauswahl
 und HA-Skript-Import/-Export. Originalplan und Palette bleiben nach Neuladen
 erhalten. Docker-Build und Container-Smoke-Test ebenfalls erfolgreich.

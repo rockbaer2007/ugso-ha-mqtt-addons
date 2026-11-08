@@ -1,5 +1,5 @@
 name: UGSo Logic Studio
-version: "0.1.8"
+version: "0.1.12"
 slug: logic_studio
 description: Grafischer Funktionsplan-Editor mit HA-Entitätsauswahl und YAML-/JavaScript-Export
 url: https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/logic_studio
