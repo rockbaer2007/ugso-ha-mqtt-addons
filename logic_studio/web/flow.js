@@ -1,4 +1,4 @@
-import {flowDefinitions,flowTypes,noteTypes,baseConfig,slotPaths,flowPins} from './flow-catalog.js?v=0.1.6';
+import {flowDefinitions,flowTypes,noteTypes,baseConfig,slotPaths,flowPins} from './flow-catalog.js?v=0.1.7';
 let serial=0;
 const clean=value=>{if(JSON.stringify(value).length>800000)throw Error('HA-Konfiguration zu groß.');const walk=(x,depth=0)=>{if(depth>35)throw Error('HA-Verschachtelung zu tief.');if(typeof x==='number'&&!Number.isFinite(x))throw Error('Ungültige Zahl.');if(x&&typeof x==='object'&&Object.hasOwn(x,'$haTag')&&(!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(x.$haTag)||typeof x.value!=='string'||Object.keys(x).length!==2))throw Error('Ungültiger HA-Tag.');if(x&&typeof x==='object')for(const [k,v]of Object.entries(x)){if(['__proto__','constructor','prototype'].includes(k))throw Error('Unzulässiger Konfigurationsschlüssel.');walk(v,depth+1);}};walk(value);return structuredClone(value);};
 const pathKeys=path=>{if(typeof path!=='string'||!path||path.split('.').some(k=>!k||['__proto__','constructor','prototype'].includes(k)))throw Error('Ungültiger Konfigurationspfad.');return path.split('.');};
@@ -21,7 +21,7 @@ const paramType=d=>{const s=Object.keys(d?.selector||{})[0]||'text';return 'BP_I
 export function importFlow(config,kind='automation',name='HA-Import'){
  const original=clean(config);if(!original||typeof original!=='object'||Array.isArray(original))throw Error('Einen einzelnen HA-Eintrag auswählen.');
  if(original.blueprint)kind='blueprint';const domain=kind==='blueprint'?original.blueprint.domain:kind;if(!['automation','script','template'].includes(domain))throw Error('Unbekannte Blueprint-Domain.');
- const plan={format:'ugso.logic/1',version:'0.1.6',name:original.blueprint?.name||original.alias||name,target:kind,blocks:[],links:[]};serial=0;
+ const plan={format:'ugso.logic/1',version:'0.1.7',name:original.blueprint?.name||original.alias||name,target:kind,blocks:[],links:[]};serial=0;
  function node(type,cfg,slots={},depth=0){if(plan.blocks.length>=200)throw Error('Import überschreitet 200 Bausteine.');const n={id:'bf'+(++serial),type,name:cfg?.alias||type+'_'+serial,comment:'',x:30+depth*260,y:30+(serial-1)*155,params:{config:JSON.stringify(cfg,null,2),slots:JSON.stringify(slots)}};plan.blocks.push(n);return n;}
  const root=node('FLOW_ROOT',original);root.name=plan.name;root.params.kind=kind;const rootConfig=clean(original),rootSlots={};
  function chain(items,parent,port,depth,trigger=false){let previous;for(const value of items){const cfg=clean(value),slots=children(cfg),n=node(classify(cfg,trigger),cfg,slots,depth);plan.links.push({from:previous?[previous.id,'NEXT']:[parent.id,port],to:[n.id,'DO']});previous=n;for(const [key,path]of Object.entries(slots)){const sub=get(cfg,path);chain(sub,n,key,depth+1,path==='wait_for_trigger');del(cfg,path);}n.params.config=JSON.stringify(cfg,null,2);}}

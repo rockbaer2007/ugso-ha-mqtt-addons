@@ -1,0 +1,58 @@
+UGSo Logic Studio 0.1.7 – Mausverbindungen und Miniübersicht
+==========================================================
+Lokaler Test am 08.11.2026 auf 192.168.178.193, HA Core 2026.10.4.
+Keine Veröffentlichung, kein Push, keine anderen HA-Systeme verändert.
+
+Sicherung vor Update
+- Vollsicherung 1e25b4f6, 08.11.2026 15:43, 198,44 MB, abgeschlossen.
+  HA zeigt sie als „Custom backup 2026.10.4“; Einstellungen/Verlauf, SSL,
+  Medien, Share und alle fünf installierten Apps enthalten.
+- Zusätzlich App-Sicherung beim Update von 0.1.5 auf 0.1.7 aktiviert.
+- Vorhandene HA-Backups erhalten; auf .193 keine Aufbewahrungslöschung.
+- Quellstand und App-Dateien vor Update separat als ZIP in Downloads gesichert.
+- Originalplan UND Workspace einschließlich Favoriten, Zuletzt benutzt und
+  eingeklappter Bereiche als JSON in Downloads gesichert.
+
+Neue Bedienung und Typregeln
+- Am Anschluss gedrückte Maustaste, Kreuzcursor und Leitungsvorschau.
+- Passende Ziele grün; unpassende oder belegte Eingänge rot markiert.
+- Gleiche Signaltypen, INT nach REAL und explizite ANY-Anschlüsse erlaubt.
+  BOOL nimmt weder STRING noch REAL/INT ohne ausdrücklich passenden Baustein an.
+- Pro Eingang eine Leitung; gleiche Seite, fehlende Anschlüsse, Selbstverbindung,
+  Rückkopplung und mehr als 500 Leitungen werden abgewiesen.
+- Pointer und Tastatur verwenden dieselbe Prüfung; keine automatische Änderung
+  des gewählten Signaltyps oder bestehender Leitungen.
+- Maus außerhalb eines Zielanschlusses loslassen oder Esc: Abbruch ohne neue Leitung.
+- Miniübersicht rechts unten: farbige Bausteine, Rahmen des sichtbaren Ausschnitts,
+  Klicknavigation sowie Pfeiltasten/Pos1/Ende. Reagiert auf Scrollen, Zoom und Layout.
+- Referenzlink https://reactflow.dev/ mit target=_blank und noopener/noreferrer.
+  Zeichenfläche weiterhin eigene Umsetzung; kein eingebundenes React Flow.
+
+Echter Maus-Ziehtest im Chrome-Browser auf .193
+- Freigabe.Q (BOOL) auf freien UND.IN1 (BOOL): verbunden, drei Leitungen.
+- Sun Nächster Aufgang.Q (STRING) auf freien UND.IN1 (BOOL): abgewiesen mit
+  „STRING passt nicht zu BOOL“, weiterhin zwei Leitungen.
+- Freigabe.Q (BOOL) auf belegten UND.IN2: abgewiesen mit
+  „nur eine Verbindung erlaubt“, vorhandene Leitung unverändert.
+- Gegenrichtung vom freien UND.IN1 zum Ausgang Freigabe.Q: verbunden.
+- Änderungen über Rückgängig vollständig zurückgenommen.
+- Abschließender Vergleich mit JSON-Sicherung: Originalplan inhaltlich identisch
+  (nur Versionsfeld 0.1.7), fünf Bausteine, drei Verbindungen, alle Parameter,
+  Namen, Entity-IDs, Positionen und Paletteinstellungen erhalten.
+- Miniübersicht: Klick verschiebt Ausschnitt von (0,0) auf (748,681), Pos1 auf (0,0).
+  Fünf Bausteinrechtecke und Ausschnittrahmen sichtbar; Referenzlink geprüft.
+- Supervisor-Update zeigt installierte/neueste lokale Version 0.1.7.
+- App läuft weiter; keine Geräte geschaltet, keine HA-Automationen erzeugt.
+
+Automatische Prüfungen
+- 26 Node-Tests erfolgreich, einschließlich Typprüfung und Zoom-Anschlusspunkten,
+  Zahlenaufweitung, Belegung, Richtung, Zyklen und Miniübersicht-Koordinaten.
+- Acht Python-Tests erfolgreich: API, Projektablage, HA-Import und Quellschutz.
+- JavaScript-Syntaxprüfung und git diff --check erfolgreich.
+- Neues ZIP enthält vollständigen lokalen Quellstand und addon/logic_studio.
+  Originaldaten, Zugangsdaten und Workspace-Backups sind nicht im Test-ZIP.
+- Prüfbilder unter docs/screenshots/0.1.7-193-*.png enthalten.
+
+Grenzen
+Native HA-Details weiterhin JSON; UI derzeit Deutsch. Exportumsetzung und
+bekannte Laufzeitgrenzen aus 0.1.6 bleiben bestehen. Keine öffentliche Freigabe.

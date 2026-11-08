@@ -1,5 +1,5 @@
 // Native Home Assistant configuration. No write-back or execution in the editor.
-import {statefulTypes,memoryId} from './stateful.js?v=0.1.6';
+import {statefulTypes,memoryId} from './stateful.js?v=0.1.7';
 export function exportOptions(plan) {
  const o=plan.exportOptions||{};
  const mode=o.mode??'restart',format=o.format??'editor';

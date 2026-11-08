@@ -1,6 +1,15 @@
 # UGSo Logic Studio
 
-**0.1.6 · first public test release / erste öffentliche Testversion.**
+**0.1.7 · public experimental test update / öffentliches experimentelles Testupdate.**
+
+New: mouse-drag connections with a crosshair, preview and typed target
+validation. BOOL connects to BOOL, INT may widen to REAL, ANY remains universal.
+Occupied inputs and cycles are rejected. Escape cancels; undo restores changes.
+A bottom-right overview shows block positions and the viewport; click or use
+arrow/Home/End keys to navigate. Its reference link opens React Flow in a new tab;
+this editor canvas is independently implemented. Verified on .193 with HA Core
+2026.10.4: compatible wires connect; wrong types and occupied inputs are rejected.
+The original plan and all palette preferences were preserved after the update.
 
 A visual function-block editor for Home Assistant. Build typed dataflow plans
 or import native automations, scripts and blueprints as nested flow diagrams.
@@ -10,7 +19,7 @@ is attributed in [THIRD-PARTY.txt](THIRD-PARTY.txt). MIT license.
 [DE documentation](https://opensource.ugso-software.de/projects/logic-studio/) ·
 [EN documentation](https://opensource.ugso-software.de/en/projects/logic-studio/) ·
 [FR documentation](https://opensource.ugso-software.de/fr/projects/logic-studio/) ·
-[Downloads](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/logic-studio-v0.1.6)
+[Downloads](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/logic-studio-v0.1.7)
 
 ## Home Assistant test installation
 
@@ -31,7 +40,8 @@ before switching. No automatic migration, uninstall or replacement.
 
 ## Available in this test release
 
-- Palette, search, favorites, recent blocks, typed wires, properties and undo/redo.
+- Palette, search, favorites, recent blocks, typed drag wires, overview navigation,
+  properties and undo/redo. 26 Node and eight Python tests pass.
 - Per-block **⋮ → Properties / Duplicate / Delete** (German UI labels).
 - 33 implemented dataflow types: logical/math/selection operations plus persistent
   latches, edges, timers and counters. Other reference types are marked templates.

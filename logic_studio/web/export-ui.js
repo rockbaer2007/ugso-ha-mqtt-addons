@@ -1,7 +1,7 @@
-import {isFlow} from './flow.js?v=0.1.6';
-import {compile} from './core.js?v=0.1.6';
-import {exportOptions,memoryHelpers} from './ha-export.js?v=0.1.6';
-import {statefulTypes} from './stateful.js?v=0.1.6';
+import {isFlow} from './flow.js?v=0.1.7';
+import {compile} from './core.js?v=0.1.7';
+import {exportOptions,memoryHelpers} from './ha-export.js?v=0.1.7';
+import {statefulTypes} from './stateful.js?v=0.1.7';
 
 export function connectExport({getPlan,defs,update,report}) {
  const $=s=>document.querySelector(s),dialog=$('#output'),form=document.createElement('div');

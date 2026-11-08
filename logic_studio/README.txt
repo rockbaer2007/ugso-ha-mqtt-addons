@@ -1,4 +1,4 @@
-UGSo Logic Studio 0.1.6 – HA-App und lokaler Test
+UGSo Logic Studio 0.1.7 – HA-App und lokaler Test
 ============================================
 
 Start unter Windows: ZIP vollständig entpacken, dann Start.cmd doppelklicken.
@@ -12,6 +12,19 @@ Nicht die index.html per Doppelklick öffnen: Module benötigen den lokalen HTTP
 
 Enthalten
 ---------
+Neu in 0.1.7 (lokaler Test): Verbindungen mit gedrückter Maustaste ziehen.
+Am farbigen Anschluss starten: Kreuzcursor, Leitungsvorschau und grün markierte
+passende Ziele. Rote Markierung bedeutet unpassender Typ oder belegter Eingang.
+BOOL nur an BOOL; INT darf ohne Umwandlung an REAL, ANY ist ausdrücklich universell.
+Am Ziel loslassen. Auf freier Fläche oder mit Esc abbrechen. Eine bestehende
+Leitung bleibt dabei erhalten. Pro Eingang genau eine Leitung; Rückkopplungen
+werden abgewiesen. Tastatur: Ausgang per Tab wählen, Enter, Eingang und Enter.
+Vorhandene Pläne und Einstellungen bleiben erhalten. Öffentliches Testupdate 0.1.7.
+Rechts unten: Miniübersicht mit Bausteinpositionen und sichtbarem Ausschnitt.
+Klick zum Navigieren; mit Tab fokussiert auch Pfeiltasten, Pos1 und Ende.
+Der Link „Referenz: React Flow“ öffnet das Vorbild in einem neuen Tab;
+die aktuelle Zeichenfläche bleibt eine eigene Implementierung.
+
 Neu in 0.1.5: HA-Import für Automationen, Skripte und Blueprints; native
 Ablaufkategorien, verschachtelte Zweige, Blueprint-Eingaben und Parameterverweise.
 Drei-Punkte-Menü je Baustein: Eigenschaften, Duplizieren, Löschen.

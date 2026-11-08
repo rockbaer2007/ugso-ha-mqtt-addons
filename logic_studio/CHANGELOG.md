@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.7
+
+- Public experimental update after real pointer tests on .193 (HA Core 2026.10.4).
+- Original five-block/three-wire plan and all palette preferences preserved.
+
+- Bottom-right overview shows block positions and the visible editor region.
+- Click overview or use arrow/Home/End keys to navigate; reference opens React Flow in a new tab.
+
+- Drag connections with the mouse held down, crosshair cursor and wire preview.
+- Highlight valid and incompatible or occupied target pins; explain rejected links.
+- Shared validation for pointer and keyboard connections, including cycles and limits.
+- Preserve explicit signal types: BOOL to BOOL, INT to REAL widening and ANY pins.
+- Escape and cancelled drags leave the plan unchanged; connections support undo.
+- Independent implementation informed by ioBroker FBD's documented interaction.
+
 ## 0.1.6
 
 - First public experimental release in the UGSo HA Apps shared repository.
