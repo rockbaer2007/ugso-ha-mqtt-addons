@@ -69,10 +69,43 @@ function restoreProjects() {
 
 function sidebarBounds() {
   const style = getComputedStyle(studioLayout);
-  const rem = parseFloat(getComputedStyle(document.documentElement).fontSize);
-  const min = parseFloat(style.getPropertyValue('--sidebar-min')) * rem;
-  const editorMin = parseFloat(style.getPropertyValue('--editor-min')) * rem;
-  return [min, Math.max(min, studioLayout.clientWidth - projectSplitter.offsetWidth - editorMin)];
+  const min = parseFloat(style.getPropertyValue('--sidebar-min'));
+  const max = studioLayout.clientWidth - projectSplitter.offsetWidth - parseFloat(style.getPropertyValue('--editor-min'));
+  return [Math.min(min, max), max];
+}
+
+let sidebarMeasureFrame;
+function scheduleSidebarMeasure() {
+  if (sidebarMeasureFrame !== undefined) return;
+  sidebarMeasureFrame = requestAnimationFrame(() => {
+    sidebarMeasureFrame = undefined;
+    const list = $('projects');
+    const listLeft = list.getBoundingClientRect().left;
+    const range = document.createRange();
+    let rowsWidth = 0;
+    for (const label of list.querySelectorAll('.project-row-name, summary > span')) {
+      const row = label.closest('summary, .project-row');
+      const ancestor = row.matches('summary') ? row.parentElement.parentElement : row.parentElement;
+      if (ancestor.closest('details:not([open])') || !label.getClientRects().length) continue;
+      range.selectNodeContents(label);
+      const style = getComputedStyle(label);
+      const actions = label.nextElementSibling?.getBoundingClientRect().width ?? 0;
+      rowsWidth = Math.max(rowsWidth, label.getBoundingClientRect().left - listLeft +
+        range.getBoundingClientRect().width + parseFloat(style.paddingLeft) +
+        parseFloat(style.paddingRight) + actions);
+    }
+    const sidebarStyle = getComputedStyle(projectSidebar);
+    const padding = parseFloat(sidebarStyle.paddingLeft) + parseFloat(sidebarStyle.paddingRight);
+    const controlsWidth = id => [...$(id).children]
+      .filter(child => !child.hidden && child.id !== 'project-menu')
+      .reduce((width, child) => width + child.getBoundingClientRect().width, 0);
+    const toolbarWidth = Math.max(controlsWidth('project-header'), controlsWidth('project-filters')) + 4;
+    const automaticLimit = Math.max(toolbarWidth + padding, studioLayout.clientWidth * 0.5);
+    const width = Math.ceil(Math.min(automaticLimit,
+      Math.max(toolbarWidth, rowsWidth + list.offsetWidth - list.clientWidth) + padding));
+    studioLayout.style.setProperty('--sidebar-min', width + 'px');
+    updateSplitterAria();
+  });
 }
 
 function updateSplitterAria() {
@@ -84,7 +117,7 @@ function updateSplitterAria() {
 
 function setSidebarWidth(width) {
   const [min, max] = sidebarBounds();
-  studioLayout.style.setProperty('--sidebar-width', Math.min(max, Math.max(min, width)) + 'px');
+  studioLayout.style.setProperty('--sidebar-width', width <= min ? 'var(--sidebar-min)' : Math.min(max, width) + 'px');
   updateSplitterAria();
 }
 
@@ -117,6 +150,10 @@ projectSplitter.onkeydown = event => {
   setSidebarWidth(target);
 };
 new ResizeObserver(updateSplitterAria).observe(projectSidebar);
+new ResizeObserver(scheduleSidebarMeasure).observe(studioLayout);
+new MutationObserver(scheduleSidebarMeasure).observe(projectSidebar, {
+  childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['open'],
+});
 
 function element(tag, text) {
   const node = document.createElement(tag);
@@ -400,6 +437,7 @@ function renderProjectList() {
     const summary = element('summary');
     summary.innerHTML = '<svg class="project-folder-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="folder-closed" d="M3 5h7l2 2h9v12H3z"/><path class="folder-open" d="M3 19V5h7l2 2h7v3M3 19l3-9h16l-3 9z"/></svg>';
     const folderLabel = element('span', name);
+    folderLabel.title = name;
     if (folder && folder !== 'common' && folder !== 'global') folderLabel.dataset.userText = '';
     if (folder === 'common' || folder === 'global') folderLabel.className = 'folder-label-' + folder;
     summary.append(folderLabel);

@@ -1,6 +1,10 @@
-# HA Logic Studio Pro 0.1.11
+# HA Logic Studio Pro 0.1.12
 
 Öffentliche Testversion mit eigenem App-Slug `ha_logic_studio_pro`. Die App startet manuell und verwendet ihren eigenen Datenspeicher.
+
+In Version 0.1.12 richtet sich die Mindestbreite der linken Projektspalte nach den sichtbaren Skript- und Ordnernamen samt Einrückungen und Symbolen. Der Anfasser bleibt zum Verbreitern verfügbar. Lange Namen werden bei Platzmangel gekürzt und bleiben als Tooltip lesbar. Die Projektliste hat keinen horizontalen Scrollbalken.
+
+Auf .193 mit Home Assistant 2026.11.1 im Ingress geprüft: 294 px mit offenem Hauptordner, 232 px eingeklappt und 446 px nach Ziehen am Anfasser. Die sechs vorhandenen Projekte waren nach dem Update weiterhin vorhanden.
 
 In Version 0.1.11 lassen sich Leitungen am belegten Zieleingang greifen und auf einen anderen passenden Eingang ziehen. Loslassen auf freier Fläche entfernt die Leitung. Rückgängig stellt sie wieder her. Die Simulation zeigt Zahlen, Texte und Zeiten direkt am Zieleingang an.
 

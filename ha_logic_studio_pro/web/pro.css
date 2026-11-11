@@ -38,7 +38,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 .project-tab { display: flex; flex: none; gap: .15rem; white-space: nowrap; }
 .project-tab button:first-child { max-width: 16rem; overflow: hidden; text-overflow: ellipsis; }
-main { --sidebar-min: 15.5rem; --splitter-width: .85rem; --editor-min: 3rem; display: grid; grid-template-columns: clamp(var(--sidebar-min), var(--sidebar-width, var(--sidebar-min)), calc(100% - var(--splitter-width) - var(--editor-min))) var(--splitter-width) minmax(0, 1fr); min-height: 100vh; }
+main { --sidebar-min: 233px; --splitter-width: .85rem; --editor-min: 45px; display: grid; grid-template-columns: min(max(var(--sidebar-min), var(--sidebar-width, var(--sidebar-min))), calc(100% - var(--splitter-width) - var(--editor-min))) var(--splitter-width) minmax(0, 1fr); min-height: 100vh; }
 aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .75rem; height: 100dvh; position: sticky; top: 0; }
 #project-splitter { position: relative; background: #101a28; border-inline: 1px solid #304258; cursor: col-resize; touch-action: none; }
 #project-splitter::after { content: ""; position: sticky; top: calc(50dvh - 1.3rem); display: block; width: .4rem; height: 2.6rem; margin: 0 auto; background: #8fa5c0; border-radius: .3rem; }
@@ -60,7 +60,7 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
 #project-message { font-size: .78rem; color: #b6c9e0; }
 #projects button[draggable="true"] { cursor: grab; }
 #projects [data-drop-target] { outline: 2px solid #77a5db; outline-offset: -2px; }
-#project-filters { display: flex; flex: none; align-items: center; gap: .1rem; margin-top: auto; padding-top: .45rem; border-top: 1px solid #304258; overflow-x: auto; }
+#project-filters { display: flex; flex: none; align-items: center; gap: .1rem; margin-top: auto; padding-top: .45rem; border-top: 1px solid #304258; }
 #project-filters button { display: grid; flex: none; place-items: center; width: 1.17rem; height: 1.7rem; padding: 0; border-color: transparent; background: transparent; }
 #project-filters button:hover { border-color: #77a5db; }
 #project-filters svg { width: 1.12rem; height: 1.12rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -76,8 +76,9 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
 #project-filters button[data-filter="stopped"][aria-pressed="true"] { color: #ffadad; }
 #project-filters button[data-filter="problem"][aria-pressed="true"] { color: #fff098; }
 #projects .empty-project-filter { color: #a7bfdc; font-size: .85rem; }
-#projects { display: grid; gap: .35rem; overflow: auto; padding-bottom: .45rem; }
+#projects { display: grid; grid-template-columns: minmax(0, 1fr); gap: .35rem; overflow: hidden auto; scrollbar-gutter: stable; padding-bottom: .45rem; }
 #projects summary { display: flex; align-items: center; gap: .3rem; list-style: none; cursor: pointer; padding: .25rem 0; font-size: .85rem; }
+#projects summary > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #projects summary::-webkit-details-marker { display: none; }
 #projects .project-folder-icon { flex: none; width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
 #projects details:not([open]) > summary .folder-open,
@@ -145,5 +146,5 @@ dialog::backdrop { background: #080d16b8; }
 .rule-form fieldset { display: flex; flex-wrap: wrap; gap: .5rem; border: 1px solid #435571; }
 .rule-form label { display: grid; gap: .25rem; }
 .block-workspace { height: 56vh; min-height: 20rem; margin-top: .75rem; }
-@media (max-width: 640px) { main { grid-template-columns: minmax(0, 1fr); } aside { position: static; height: auto; max-height: 40dvh; } #project-splitter { display: none; } #projects { grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); } }
+@media (max-width: 640px) { main { grid-template-columns: minmax(0, 1fr); } aside { position: static; height: auto; max-height: 40dvh; } #project-splitter { display: none; } #project-header, #project-filters { flex-wrap: wrap; } }
 @media (max-width: 640px) { .work-area:has(.empty-editor) #editor { min-height: 60dvh; } }
