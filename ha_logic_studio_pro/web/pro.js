@@ -10,8 +10,12 @@ const projectSidebar = $('project-sidebar');
 const projectSplitter = $('project-splitter');
 const projects = new Map();
 const openTabs = new Set();
-const icons = {yaml: '▤', rules: '⚡', blocks: '▦', 'blocks-js': '▦', flow: '◇', javascript: 'JS', typescript: 'TS'};
+const icons = {yaml: '{ }', rules: 'ϟ', blocks: '', 'blocks-js': '', flow: '', javascript: 'JS', typescript: 'TS'};
 const runnable = type => ['javascript', 'typescript', 'blocks-js'].includes(type);
+let runtimeJobs = {};
+let runtimeRequest = false;
+const runtimeState = id => runtimeJobs[id]?.state ?? 'stopped';
+const runtimeActive = id => ['starting', 'running'].includes(runtimeState(id));
 let active;
 let blocks;
 let blocksRender;
@@ -29,6 +33,10 @@ let draggedProject;
 const collapsedProjectGroups = new Set();
 const projectFolders = new Map([['common', 'Allgemeine Skripte'], ['global', 'Globale Skripte'], ['', 'Hauptordner']]);
 const projectStorageKey = 'ha-logic-studio-pro-projects-v1';
+const recoveryKey = projectStorageKey + '-recovery';
+let projectRevision = null;
+let pendingSave;
+let saveInProgress = false;
 const languageKey = 'ha-logic-studio-pro-language';
 let locale = 'de';
 try {
@@ -37,25 +45,58 @@ try {
 } catch {}
 
 function projectMessage(text) {
-  $('project-message').textContent = text;
+  $('project-message').textContent = translatePro(text, locale);
   $('project-message').hidden = !text;
 }
 
 function saveProjects() {
+  const entries = [...projects].map(([id, {protocol, running, problem, ...draft}]) => [id, draft]);
+  const tree = {folders: [...projectFolders], projects: entries};
   try {
-    const entries = [...projects].map(([id, {protocol, running, problem, ...draft}]) => [id, draft]);
-    localStorage.setItem(projectStorageKey, JSON.stringify({folders: [...projectFolders], projects: entries}));
-    return true;
+    localStorage.setItem(recoveryKey, JSON.stringify({revision: projectRevision, tree}));
   } catch {
-    projectMessage('Projekte konnten in diesem Browser nicht gespeichert werden.');
-    return false;
+    if (projectRevision === null) {
+      projectMessage('Projektbaum konnte nicht gespeichert werden.');
+      return false;
+    }
   }
+  pendingSave = tree;
+  void flushProjects();
+  return true;
 }
 
-function restoreProjects() {
+async function flushProjects() {
+  if (saveInProgress || projectRevision === null || !pendingSave) return;
+  saveInProgress = true;
   try {
-    const saved = JSON.parse(localStorage.getItem(projectStorageKey));
-    if (!saved || !Array.isArray(saved.folders) || !Array.isArray(saved.projects)) return;
+    while (pendingSave) {
+      const tree = pendingSave;
+      const response = await fetch('./api/pro-projects', {
+        method: 'PUT', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({revision: projectRevision, tree}),
+      });
+      if (response.status === 409) {
+        projectRevision = null;
+        projectMessage('Der Projektbaum wurde in einem anderen Browser geändert. Sichere den lokalen Entwurf über das Projektmenü.');
+        return;
+      }
+      if (!response.ok) throw new Error('Save failed');
+      projectRevision = (await response.json()).revision;
+      if (tree === pendingSave) {
+        pendingSave = undefined;
+        try { localStorage.removeItem(recoveryKey); } catch {}
+      } else {
+        try { localStorage.setItem(recoveryKey, JSON.stringify({revision: projectRevision, tree: pendingSave})); } catch {}
+      }
+    }
+    projectMessage('');
+  } catch {
+    projectMessage('Projektbaum konnte nicht auf dem Server gespeichert werden. Der lokale Entwurf ist im Projektmenü verfügbar.');
+  } finally { saveInProgress = false; }
+}
+
+function loadProjectTree(saved) {
+    if (!Array.isArray(saved?.folders) || !Array.isArray(saved?.projects)) return;
     for (const [id, name] of saved.folders) {
       if (typeof id === 'string' && typeof name === 'string' && !projectFolders.has(id)) projectFolders.set(id, name);
     }
@@ -65,8 +106,30 @@ function restoreProjects() {
         protocol: [], running: runnable(draft.type) ? false : undefined});
       nextId = Math.max(nextId, Number(id));
     }
+}
+
+async function restoreProjects() {
+  let legacy, recovery;
+  try { legacy = JSON.parse(localStorage.getItem(projectStorageKey)); } catch {}
+  try { recovery = JSON.parse(localStorage.getItem(recoveryKey)); } catch {}
+  try {
+    const response = await fetch('./api/pro-projects');
+    if (!response.ok) throw new Error('Load failed');
+    const {revision, tree} = await response.json();
+    projectRevision = revision;
+    if (recovery?.tree && (recovery.revision === revision || (revision === 0 && recovery.revision === null))) {
+      loadProjectTree(recovery.tree);
+      saveProjects();
+    } else if (tree) {
+      loadProjectTree(tree);
+      if (recovery?.tree) projectMessage('Ein älterer lokaler Entwurf ist im Projektmenü verfügbar.');
+    } else if (legacy?.projects?.length || legacy?.folders?.length > 3) {
+      loadProjectTree(legacy);
+      saveProjects();
+    }
   } catch {
-    projectMessage('Die gespeicherte Projektliste konnte nicht gelesen werden.');
+    loadProjectTree(recovery?.tree ?? legacy);
+    projectMessage('Projektbaum konnte nicht vom Server geladen werden.');
   }
 }
 
@@ -182,6 +245,12 @@ function recordProtocol(project, text, error = false) {
   if (projects.get(active) === project) renderProtocol();
 }
 
+function protocolEntries(project) {
+  const runtime = runtimeJobs[active]?.messages ?? [];
+  return [...(project?.protocol ?? []), ...runtime.map(entry => ({...entry,
+    time: new Date(entry.time).toLocaleTimeString(), text: 'Runtime · ' + entry.text}))];
+}
+
 function setProjectProblem(project, problem) {
   if (Boolean(project.problem) === problem) return;
   project.problem = problem;
@@ -200,12 +269,13 @@ function renderProtocol() {
     ? '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 14h18"/></svg>'
     : '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M14 4v16"/></svg>';
   const lines = $('protocol-lines');
-  lines.replaceChildren(...(project?.protocol || []).map(entry => {
+  const entries = protocolEntries(project);
+  lines.replaceChildren(...entries.map(entry => {
     const line = element('p', `[${entry.time}] ${entry.text}`);
     line.dataset.error = String(entry.error);
     return line;
   }));
-  if (project && !project.protocol.length) lines.append(element('p', 'Noch keine Protokolleinträge.'));
+  if (project && !entries.length) lines.append(element('p', 'Noch keine Protokolleinträge.'));
   lines.scrollTop = lines.scrollHeight;
 }
 
@@ -231,7 +301,7 @@ $('protocol-download').onclick = event => {
     return;
   }
   if (protocolUrl) URL.revokeObjectURL(protocolUrl);
-  const lines = project.protocol.map(({time, text}) => `[${time}] ${text}`);
+  const lines = protocolEntries(project).map(({time, text}) => `[${time}] ${text}`);
   protocolUrl = URL.createObjectURL(new Blob(
     [[project.name, ...lines].join('\n') + '\n'], {type: 'text/plain;charset=utf-8'},
   ));
@@ -248,15 +318,26 @@ function add(project) {
 }
 
 const projectFilters = [
-  ['running', 'M9 5v14m6-14v14', 'Nur laufende Skripte anzeigen', project => project.running === true],
-  ['stopped', 'm8 5 12 7-12 7z', 'Nur angehaltene Skripte anzeigen', project => project.running === false],
-  ['problem', 'M12 3 2 20h20zM12 9v4m0 3h.01', 'Nur Skripte mit Problemen anzeigen', project => project.problem === true],
-  ['blocks', 'M4 4h6a2 2 0 1 1 4 0h6v6a2 2 0 1 0 0 4v6H4z', 'Nur Blockly anzeigen', project => ['blocks', 'blocks-js'].includes(project.type)],
-  ['javascript', 'm8 6-6 6 6 6m8-12 6 6-6 6m-3-14-2 16', 'Nur JavaScript anzeigen'],
-  ['typescript', 'M3 4h12v4m-6-4v16m-3 0h6m6-8v8m-3-8h6', 'Nur TypeScript anzeigen'],
-  ['rules', 'm3 7 2 2 3-4m3 3h10M3 15l2 2 3-4m3 3h10', 'Nur Rules anzeigen'],
-  ['flow', 'M3 3h6v6H3zm12 12h6v6h-6zM9 6h9v9', 'Nur FBD anzeigen'],
+  ['running', 'M9 5v14m6-14v14', 'Nur laufende Skripte anzeigen', (_, id) => runtimeActive(id)],
+  ['stopped', 'm8 5 12 7-12 7z', 'Nur angehaltene Skripte anzeigen', (project, id) => runnable(project.type) && !runtimeActive(id)],
+  ['problem', 'M12 3 2 20h20zM12 9v4m0 3h.01', 'Nur Skripte mit Problemen anzeigen', (project, id) => project.problem === true || runtimeState(id) === 'error'],
+  ['blocks', null, 'Nur Blocks A anzeigen'],
+  ['blocks-js', null, 'Nur Blocks JS anzeigen'],
+  ['javascript', null, 'Nur JavaScript anzeigen'],
+  ['typescript', null, 'Nur TypeScript anzeigen'],
+  ['rules', null, 'Nur Regeln anzeigen'],
+  ['flow', null, 'Nur Funktionspläne anzeigen'],
+  ['yaml', null, 'Nur HA-YAML anzeigen'],
 ];
+function scriptTypeButton(type, action) {
+  const control = button('', action);
+  const icon = element('span', icons[type]);
+  icon.className = 'project-type-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  control.dataset.scriptType = type;
+  control.append(icon);
+  return control;
+}
 function projectIconButton(path, label, action) {
   const control = button('', action);
   control.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${path}"/></svg>`;
@@ -264,13 +345,236 @@ function projectIconButton(path, label, action) {
   control.setAttribute('aria-label', label);
   return control;
 }
+
+const editorIcons = {
+  locate: 'M12 2v5m0 10v5M2 12h5m10 0h5M12 5a7 7 0 1 0 0 14 7 7 0 0 0 0-14z',
+  restart: 'M20 10a8 8 0 1 0 0 5M20 4v6h-6',
+  play: 'M7 4l14 8-14 8z',
+  test: 'M8 3h8m-6 0v7l-5 9a1 1 0 0 0 1 2h12a1 1 0 0 0 1-2l-5-9V3M8 15h8',
+  step: 'M3 5l10 7-10 7zM18 8v8m-4-4h8',
+  preview: 'M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6zm10-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
+  undo: 'M3 10h10a6 6 0 0 1 6 6M3 10l5-5m-5 5 5 5',
+  redo: 'M21 10H11a6 6 0 0 0-6 6m16-6-5-5m5 5-5 5',
+  code: 'M8 6l-6 6 6 6m8-12 6 6-6 6',
+  time: 'M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4v6l4 2',
+  sun: 'M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z',
+  entity: 'M9 5H5v16h14V5h-4m-6-2h6v4H9zm-1 8h8m-8 4h8m-8 3h6',
+  assist: 'M4 20l12-12 4 4L8 24M13 11l4 4M19 2v4m-2-2h4M8 4v4M6 6h4',
+  export: 'M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5',
+  import: 'M12 16V4m-5 5 5-5 5 5M4 16v5h16v-5',
+  check: 'M4 22V3m0 1c5-4 10 4 16 0v10c-6 4-11-4-16 0',
+  tools: 'M14 6l4 4 3-3a6 6 0 0 1-7 8l-7 7-4-4 7-7a6 6 0 0 1 8-8z',
+  help: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM9 9a3 3 0 1 1 3 3v2m0 3h.01',
+};
+
+const flowOutputLabels = {
+  automation: 'HA-Automation · YAML',
+  script: 'HA-Skript · YAML',
+  blueprint: 'HA-Blueprint · YAML',
+  javascript: 'JavaScript · HA-Schnittstelle',
+};
+
+function toolIcon(group, icon, label, action) {
+  const control = projectIconButton(editorIcons[icon], label, action);
+  control.classList.add('editor-icon-button');
+  control.disabled = !action;
+  group.append(control);
+  return control;
+}
+
+function updateEngineControl(control, id) {
+  const state = runtimeState(id);
+  const isRunning = runtimeActive(id);
+  const label = isRunning ? 'Runtime stoppen' : 'In Runtime starten';
+  control.dataset.projectRun = isRunning ? 'running' : 'stopped';
+  control.title = translatePro(label, locale);
+  control.setAttribute('aria-label', label);
+  control.querySelector('path').setAttribute('d', isRunning ? 'M7 5h3v14H7zm7 0h3v14h-3z' : editorIcons.play);
+  control.disabled = sortingProjects || runtimeRequest;
+  const status = control.parentElement.querySelector('[data-runtime-status]');
+  if (status) status.textContent = translatePro({starting: 'Runtime startet …', running: 'Skript läuft',
+    stopped: 'Skript läuft nicht', error: 'Runtime-Fehler'}[state], locale);
+}
+
+function syncRuntime(next) {
+  if (JSON.stringify(runtimeJobs) === JSON.stringify(next)) return;
+  const old = runtimeJobs;
+  runtimeJobs = next;
+  if ([...new Set([...Object.keys(old), ...Object.keys(next)])].some(id => old[id]?.state !== next[id]?.state)) {
+    renderProjectList();
+    const control = editor.querySelector('[data-runtime-control]');
+    if (control) updateEngineControl(control, active);
+  }
+  renderProtocol();
+}
+
+async function pollRuntime() {
+  if (runtimeRequest) return;
+  try {
+    const response = await fetch('./api/pro-runtime');
+    if (response.ok && !runtimeRequest) syncRuntime(await response.json());
+  } catch {}
+}
+
+async function controlRuntime(id, command) {
+  const project = projects.get(id);
+  if (runtimeRequest || !project) return;
+  runtimeRequest = true;
+  try {
+    const payload = {id, command};
+    if (command !== 'stop') {
+      await flushProjects();
+      if (projectRevision === null || pendingSave || saveInProgress) throw new Error('Projekt zuerst auf dem Server speichern.');
+      payload.revision = projectRevision;
+      if (project.type === 'blocks-js') {
+        const {generateBlocks} = await import('./vendor/pro-blocks.js');
+        payload.source = generateBlocks(project.workspace, project.name);
+      }
+    }
+    const response = await fetch('./api/pro-runtime', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error);
+    syncRuntime(result);
+  } catch (error) { recordProtocol(project, error.message, true); }
+  finally {
+    runtimeRequest = false;
+    renderProjectList();
+    const control = editor.querySelector('[data-runtime-control]');
+    if (control) updateEngineControl(control, active);
+  }
+}
+
+void pollRuntime();
+setInterval(pollRuntime, 1500);
+
+function editorTools(row, project, {undo, redo} = {}) {
+  const left = element('div'), right = element('div');
+  left.className = 'editor-tool-group';
+  right.className = 'editor-tool-group editor-tool-right';
+  row.prepend(left);
+  row.append(right);
+  toolIcon(left, 'locate', 'Projekt in der Liste zeigen', () => {
+    const item = [...$('projects').querySelectorAll('.project-row-name')]
+      .find(node => node.getAttribute('aria-current') === 'true');
+    for (let parent = item?.parentElement; parent; parent = parent.parentElement) {
+      if (parent.tagName === 'DETAILS') parent.open = true;
+    }
+    item?.scrollIntoView({block: 'nearest'});
+    item?.focus({preventScroll: true});
+  });
+  const unavailable = 'Server-Engine noch nicht verfügbar';
+  const id = active;
+  const canRun = runnable(project.type);
+  toolIcon(left, 'restart', canRun ? 'Runtime neu starten' : unavailable,
+    canRun ? () => controlRuntime(id, 'restart') : undefined);
+  const play = toolIcon(left, 'play', unavailable,
+    canRun ? () => controlRuntime(id, runtimeActive(id) ? 'stop' : 'start') : undefined);
+  play.classList.add('engine-play');
+  const status = element('span', 'Skript läuft nicht');
+  left.append(status);
+  if (canRun) {
+    play.dataset.runtimeControl = '';
+    status.dataset.runtimeStatus = '';
+    updateEngineControl(play, id);
+  }
+  if (undo) toolIcon(left, 'undo', 'Rückgängig', undo);
+  if (redo) toolIcon(left, 'redo', 'Wiederholen', redo);
+  return right;
+}
+
+function editorDialog(title, content) {
+  const dialog = element('dialog');
+  dialog.className = 'editor-tool-dialog';
+  const close = button('Schließen', () => dialog.close());
+  dialog.append(element('h2', title), content, close);
+  dialog.addEventListener('close', () => dialog.remove(), {once: true});
+  document.body.append(dialog);
+  dialog.showModal();
+  return dialog;
+}
+
+function showSource(source) {
+  const code = element('textarea');
+  code.readOnly = true;
+  code.value = source;
+  code.setAttribute('aria-label', 'Quelltext');
+  editorDialog('Quelltext', code);
+  code.focus();
+  code.select();
+}
+
+async function editorEntities(query) {
+  const response = await fetch('./api/entities?q=' + encodeURIComponent(query));
+  if (!response.ok) throw new Error('HA-Entitäten sind nicht verfügbar.');
+  return (await response.json()).items;
+}
+
+async function showSun(project) {
+  try {
+    const [sun] = (await editorEntities('sun.sun')).filter(item => item.entity_id === 'sun.sun');
+    if (!sun) throw new Error('Entität sun.sun ist nicht verfügbar.');
+    const rows = element('dl');
+    for (const [key, label] of Object.entries({next_rising: 'Nächster Sonnenaufgang',
+      next_setting: 'Nächster Sonnenuntergang', next_dawn: 'Nächste Morgendämmerung',
+      next_dusk: 'Nächste Abenddämmerung', next_noon: 'Nächster Sonnenhöchststand',
+      next_midnight: 'Nächste solare Mitternacht'})) {
+      if (sun.attributes[key]) rows.append(element('dt', label),
+        element('dd', new Date(sun.attributes[key]).toLocaleString(locale)));
+    }
+    if (!rows.children.length) rows.append(element('dd', 'Keine Sonnenzeiten verfügbar.'));
+    if (projects.get(active) === project) editorDialog('Astronomische Ereignisse', rows);
+  } catch (error) { recordProtocol(project, error.message, true); }
+}
+
+function debugTools(project) {
+  const content = element('div');
+  const show = element('label', 'Protokoll anzeigen ');
+  const checkbox = element('input');
+  checkbox.type = 'checkbox';
+  checkbox.checked = !protocolHidden;
+  checkbox.onchange = () => { protocolHidden = !checkbox.checked; renderProtocol(); };
+  show.append(checkbox);
+  content.append(show, button('Protokoll leeren', () => {
+    project.protocol.length = 0;
+    renderProtocol();
+  }));
+  editorDialog('Debug-Einstellungen', content);
+}
+
+function exportEditorData(name, data) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'}));
+  const link = element('a');
+  link.href = url;
+  link.download = name.replace(/[^\p{L}\p{N}_-]+/gu, '_') + '.json';
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function importEditorData(project, parse) {
+  const input = element('input');
+  input.type = 'file';
+  input.accept = '.json,.js,.txt,.xml';
+  input.onchange = async () => {
+    try {
+      const [file] = input.files;
+      if (!file || projects.get(active) !== project) return;
+      if (file.size > 1_000_000) throw new Error('Datei zu groß.');
+      const data = await parse(await file.text(), file.name);
+      if (projects.get(active) === project) add(data);
+    } catch (error) { recordProtocol(project, error.message, true); }
+  };
+  input.click();
+}
 const filterControls = element('div');
 filterControls.className = 'project-filter-controls';
 for (const [id, path, label, matches = project => project.type === id] of projectFilters) {
-  const filter = projectIconButton(path, label, () => {
+  const toggleFilter = () => {
     projectFilter = projectFilter?.id === id ? undefined : {id, matches};
     renderProjectList();
-  });
+  };
+  const filter = path ? projectIconButton(path, label, toggleFilter) : scriptTypeButton(id, toggleFilter);
+  filter.title = label;
+  filter.setAttribute('aria-label', label);
   filter.dataset.filter = id;
   filterControls.append(filter);
 }
@@ -376,7 +680,8 @@ function projectDropTarget(node, folder, before) {
 }
 
 function projectButton(id, project) {
-  const item = button(icons[project.type] + ' ' + project.name, () => show(id));
+  const item = scriptTypeButton(project.type, () => show(id));
+  item.append(document.createTextNode(' ' + project.name));
   item.setAttribute('aria-current', String(active === id));
   return item;
 }
@@ -391,15 +696,9 @@ function projectRow(id, project) {
   const actions = element('div');
   actions.className = 'project-row-actions';
   if (runnable(project.type)) {
-    const run = projectIconButton(project.running ? 'M6 4h4v16H6zm8 0h4v16h-4z' : 'M6 3l15 9-15 9z',
-      (project.running ? 'Testlauf läuft: ' : 'Testlauf starten: ') + project.name, () => {
-        show(id);
-        if (project.type === 'blocks-js') void runBlocks(project);
-        else editor.querySelector('[data-run-javascript]')?.click();
-      });
-    run.dataset.projectRun = project.running ? 'running' : 'stopped';
-    run.disabled = sortingProjects || Boolean(project.running);
+    const run = projectIconButton(editorIcons.play, 'In Runtime starten', () => controlRuntime(id, runtimeActive(id) ? 'stop' : 'start'));
     actions.append(run);
+    updateEngineControl(run, id);
   }
   const remove = projectIconButton('M9 3h6l1 2h5v2H3V5h5zm-4 6h14l-1 12H6z', 'Projekt löschen: ' + project.name, () => {
     if (!window.confirm('Projekt „' + project.name + '“ löschen?')) return;
@@ -410,7 +709,7 @@ function projectRow(id, project) {
   });
   remove.dataset.projectDelete = '';
   // The embedded Funktionsplan has its own stored workspace.
-  remove.disabled = sortingProjects || project.type === 'flow' || Boolean(project.running);
+  remove.disabled = sortingProjects || project.type === 'flow' || Boolean(project.running) || runtimeActive(id);
   const open = projectIconButton('M6 4h15v16H6v-4m0-8V4M2 12h13m-4-4 4 4-4 4', 'Projekt öffnen: ' + project.name, () => show(id));
   open.disabled = sortingProjects;
   actions.append(remove, open);
@@ -423,8 +722,8 @@ function renderProjectList() {
     filter.setAttribute('aria-pressed', String(filter.dataset.filter === projectFilter?.id));
   }
   const query = searchProjects.value.trim().toLocaleLowerCase();
-  const visible = [...projects].filter(([, project]) => sortingProjects ||
-    ((!projectFilter || projectFilter.matches(project)) && project.name.toLocaleLowerCase().includes(query)));
+  const visible = [...projects].filter(([id, project]) => sortingProjects ||
+    ((!projectFilter || projectFilter.matches(project, id)) && project.name.toLocaleLowerCase().includes(query)));
   const list = $('projects');
   list.replaceChildren();
   let rootGroup;
@@ -535,12 +834,63 @@ function show(id, refresh = false) {
   renderProtocol();
   const project = projects.get(id);
   if (project.type === 'flow') {
+    const panel = element('section');
+    panel.className = 'project-panel flow-tools';
+    editor.prepend(panel);
+    const childClick = id => flowFrame?.contentDocument?.getElementById(id)?.click();
+    const right = editorTools(toolbar(panel, project), project, {
+      undo: () => childClick('undo'), redo: () => childClick('redo'),
+    });
+    const simulation = element('div');
+    simulation.className = 'editor-tool-group';
+    simulation.setAttribute('role', 'group');
+    simulation.setAttribute('aria-label', 'Simulation');
+    right.before(simulation);
+    toolIcon(simulation, 'test', '▶ Simulation', () => childClick('simulate'));
+    toolIcon(simulation, 'step', 'Simulation +1 s', () => childClick('simulation-advance'));
+    toolIcon(simulation, 'restart', 'Simulation zurücksetzen', () => childClick('simulation-reset'));
+    toolIcon(right, 'sun', 'Astronomische Ereignisse', () => showSun(project));
+    right.append(button('FBD → JS', () => {
+      flowFrame?.contentDocument?.dispatchEvent(new CustomEvent('pro-export-js', {detail: {
+        success: showSource,
+        failure: error => recordProtocol(project, error, true),
+      }}));
+    }));
+    toolIcon(right, 'tools', 'Debug-Einstellungen', () => debugTools(project));
+    const output = element('select');
+    output.className = 'flow-output';
+    output.setAttribute('aria-label', 'Ausgabe');
+    output.disabled = true;
+    output.onchange = () => {
+      const target = flowFrame?.contentDocument?.getElementById('target');
+      if (!target || target.value === output.value) return;
+      target.value = output.value;
+      target.dispatchEvent(new Event('change', {bubbles: true}));
+    };
+    right.append(output);
+    toolIcon(right, 'preview', 'Ausgabe ansehen', () => childClick('export'));
+    const syncOutput = () => {
+      const control = editor.querySelector('.flow-output');
+      const target = flowFrame?.contentDocument?.getElementById('target');
+      if (!control || !target) return;
+      if (!control.options.length) {
+        for (const option of target.options) {
+          const copy = element('option', flowOutputLabels[option.value] ?? option.textContent);
+          copy.value = option.value;
+          control.append(copy);
+        }
+      }
+      control.value = target.value;
+      control.disabled = false;
+    };
     if (!flowFrame) {
       flowFrame = element('iframe');
       flowFrame.title = 'Funktionsplan';
       flowFrame.src = './funktionsplan.html?pro=' + locale;
       flowFrame.addEventListener('load', () => {
         const doc = flowFrame.contentDocument;
+        doc?.addEventListener('pro-fbd-render', syncOutput);
+        syncOutput();
         const bottom = doc?.getElementById('bottom');
         if (bottom) bottom.hidden = true;
         for (const id of ['status', 'issues']) {
@@ -565,6 +915,7 @@ function show(id, refresh = false) {
       editor.append(flowFrame);
     }
     flowFrame.hidden = false;
+    syncOutput();
     return;
   }
   const panel = element('section');
@@ -709,7 +1060,46 @@ function renderRules(panel, project) {
     actions: [action('then')],
     otherwise: fields.elseEntity || fields.elseAction ? action('else') : undefined,
   });
-  row.append(button('Als HA-YAML öffnen', () => openGenerated(project, read, report)));
+  const source = () => {
+    const data = read();
+    validateYaml(makeYaml({name: project.name, kind: 'automation', ...data}), 'automation');
+    const literal = JSON.stringify;
+    const call = item => 'ha.callAction(' + literal(item.action) + ', ' + literal(item.entity) + ');';
+    const matches = item => 'ha.readState(' + literal(item.entity) + ') === ' + literal(item.state);
+    const actions = data.actions.map(call).join('\n    ');
+    const branch = data.condition
+      ? 'if (' + matches(data.condition) + ') {\n    ' + actions + '\n  }' +
+        (data.otherwise ? ' else {\n    ' + call(data.otherwise) + '\n  }' : '')
+      : actions;
+    return 'ha.onState(' + literal(data.triggers[0].entity) + ', () => {\n  if (' +
+      matches(data.triggers[0]) + ') {\n    ' + branch + '\n  }\n});\n';
+  };
+  const convert = open => {
+    try {
+      const javascript = source();
+      if (open) add({type: 'javascript', name: project.name + ' · JS', source: javascript});
+      else showSource(javascript);
+    } catch (error) { report(error.message, true); }
+  };
+  const right = editorTools(row, project);
+  toolIcon(right, 'code', 'Quelltext anzeigen', () => convert(false));
+  toolIcon(right, 'sun', 'Astronomische Ereignisse', () => showSun(project));
+  toolIcon(right, 'export', 'Regel exportieren', () => exportEditorData(project.name, {type: 'rules', fields}));
+  toolIcon(right, 'import', 'Regel importieren', () => importEditorData(project, (text, name) => {
+    const data = JSON.parse(text);
+    if (data?.type !== 'rules' || !data.fields || Array.isArray(data.fields) ||
+        typeof data.fields !== 'object' || Object.values(data.fields).some(value => typeof value !== 'string')) {
+      throw new Error('Ungültige Rules-Datei.');
+    }
+    const allowed = ['triggerEntity', 'triggerState', 'conditionEntity', 'conditionState',
+      'thenAction', 'thenEntity', 'elseAction', 'elseEntity'];
+    const imported = Object.fromEntries(allowed.filter(key => Object.hasOwn(data.fields, key))
+      .map(key => [key, data.fields[key]]));
+    return {type: 'rules', name: name.replace(/\.json$/i, ''), fields: imported};
+  }));
+  right.append(button('Rules → JS', () => convert(true)),
+    button('Als HA-YAML öffnen', () => openGenerated(project, read, report)));
+  toolIcon(right, 'tools', 'Debug-Einstellungen', () => debugTools(project));
   panel.append(form);
 }
 
@@ -722,7 +1112,7 @@ async function renderBlocks(panel, project, id) {
   workspace.className = 'block-workspace';
   panel.append(workspace);
   try {
-    const {mountBlocks} = await import('./vendor/pro-blocks.js');
+    const {mountBlocks, importIoBroker, validateBlockSnapshot} = await import('./vendor/pro-blocks.js');
     if (blocksRender !== renderToken || active !== id || !panel.isConnected) return;
     blocks = mountBlocks(workspace, project.workspace, saved => {
       project.workspace = saved;
@@ -739,29 +1129,53 @@ async function renderBlocks(panel, project, id) {
         add({type: 'yaml', name: project.name + ' · YAML', kind: 'automation', source});
       } catch (error) { report(error.message, true); }
     };
-    if (project.type === 'blocks-js') {
-      row.append(button('Testlauf starten', () => runBlocks(project)),
-        button('JavaScript öffnen', () => {
-          try { add({type: 'javascript', name: project.name + ' · JS', source: blocks.generate(project.name)}); }
-          catch (error) { report(error.message, true); }
-        }), button('ioBroker-Blockly importieren', () => {
-          const input = element('input');
-          input.type = 'file';
-          input.accept = '.js,.txt,.xml';
-          input.onchange = async () => {
-            try {
-              const file = input.files[0];
-              if (!file || active !== id) return;
-              if (file.size > 2_000_000) throw new Error('Datei zu groß.');
-              const {importIoBroker} = await import('./vendor/pro-blocks.js');
-              const imported = importIoBroker(await file.text());
-              if (active !== id) return;
-              add({type: 'blocks-js', name: file.name.replace(/\.[^.]+$/, ''), workspace: imported});
-            } catch (error) { report(error.message, true); }
-          };
-          input.click();
-        }));
-    } else row.append(button('Als HA-YAML öffnen', openYaml));
+    const isJavaScript = project.type === 'blocks-js';
+    const right = isJavaScript ? editorTools(row, project, blocks) : row;
+    const source = () => {
+      if (isJavaScript) return blocks.generate(project.name);
+      if (blocks.usesAutomation()) return blocks.automationYaml(project.name);
+      return makeYaml({name: project.name, kind: 'automation', ...read()});
+    };
+    const safely = action => () => {
+      try { action(source()); }
+      catch (error) { report(error.message, true); }
+    };
+    right.append(button('Entitäts-ID', () => {
+      const id = blocks.selectedEntity();
+      editorDialog('Entitäts-ID', element('p', id || 'Einen Block mit einer HA-Entität auswählen.'));
+    }));
+    toolIcon(right, 'code', 'Quelltext anzeigen', safely(showSource));
+    toolIcon(right, 'export', 'Blöcke exportieren', () => exportEditorData(project.name,
+      {type: project.type, workspace: blocks.exportSelection()}));
+    toolIcon(right, 'import', 'Blöcke importieren', () => importEditorData(project, (text, filename) => {
+      const name = filename.replace(/\.[^.]+$/, '');
+      if (!filename.toLowerCase().endsWith('.json')) {
+        if (!isJavaScript) throw new Error('Für Blocks A eine exportierte JSON-Datei auswählen.');
+        return {type: project.type, name, workspace: importIoBroker(text)};
+      }
+      const data = JSON.parse(text);
+      if (data?.type !== project.type) throw new Error('Die Datei gehört zu einem anderen Blockly-Editor.');
+      validateBlockSnapshot(data.workspace);
+      return {type: project.type, name, workspace: data.workspace};
+    }));
+    toolIcon(right, 'check', 'Blöcke prüfen', safely(output => {
+      if (!isJavaScript) validateYaml(output, 'automation');
+      setProjectProblem(project, false);
+      report('Prüfung erfolgreich.');
+    }));
+    if (isJavaScript) {
+      right.append(button('Testlauf starten', () => runBlocks(project)));
+      toolIcon(right, 'sun', 'Astronomische Ereignisse', () => showSun(project));
+      right.append(button('Blockly → JS', safely(output => add({
+        type: 'javascript', name: project.name + ' · JS', source: output,
+      }))));
+    } else {
+      toolIcon(right, 'undo', 'Rückgängig', blocks.undo);
+      toolIcon(right, 'redo', 'Wiederholen', blocks.redo);
+      toolIcon(right, 'sun', 'Astronomische Ereignisse', () => showSun(project));
+      right.append(button('Als HA-YAML öffnen', openYaml));
+    }
+    toolIcon(right, 'tools', 'Debug-Einstellungen', () => debugTools(project));
   } catch (error) {
     report(error.message, true);
   }
@@ -815,8 +1229,69 @@ function renderJavaScript(panel, project) {
   });
   run.dataset.runJavascript = '';
   run.disabled = Boolean(project.running);
-  row.append(run);
-  panel.append(element('p', 'Testlauf mit Demo-Zuständen und protokollierten HA-Aktionen.'));
+  const right = editorTools(row, project, {undo: () => codeEditor?.undo(), redo: () => codeEditor?.redo()});
+  right.append(run);
+  toolIcon(right, 'code', 'Quelltext anzeigen', () => showSource(project.source));
+  toolIcon(right, 'time', 'Zeitplan einfügen', () => {
+    const content = element('div');
+    const cron = element('input');
+    cron.value = '0 7 * * *';
+    cron.setAttribute('aria-label', 'CRON-Ausdruck');
+    const status = element('p');
+    content.append(cron, button('Einfügen', async () => {
+      try {
+        const {scheduleTrigger} = await import('./vendor/pro-blocks.js');
+        const schedule = scheduleTrigger(cron.value);
+        if (!dialog.open || projects.get(active) !== project) return;
+        dialog.close();
+        codeEditor?.insert('ha.schedule(' + JSON.stringify(schedule) + ', () => {\n});\n');
+      } catch (error) { status.textContent = error.message; }
+    }), status);
+    const dialog = editorDialog('Zeitplan einfügen', content);
+  });
+  toolIcon(right, 'assist', 'Codebeispiel einfügen', () => {
+    const choices = element('div');
+    for (const [label, snippet] of [
+      ['Zustand lesen', 'const state = ha.readState("binary_sensor.bewegung");\nha.log(state);\n'],
+      ['Auf Zustandswechsel reagieren', 'ha.onState("binary_sensor.bewegung", () => {\n  ha.log("Zustand geändert");\n});\n'],
+      ['HA-Aktion mit Parametern', 'ha.callAction("light.turn_on", "light.flur", {brightness_pct: 30});\n'],
+    ]) {
+      choices.append(button(label, () => { dialog.close(); codeEditor?.insert(snippet); }));
+    }
+    const dialog = editorDialog('Codebeispiel einfügen', choices);
+  });
+  toolIcon(right, 'sun', 'Astronomische Ereignisse', () => showSun(project));
+  toolIcon(right, 'entity', 'HA-Entität einfügen', () => {
+    const content = element('div'), query = element('input'), results = element('ul');
+    query.type = 'search';
+    query.setAttribute('aria-label', 'HA-Entität suchen');
+    const search = async () => {
+      try {
+        const items = await editorEntities(query.value);
+        if (!dialog.open) return;
+        results.replaceChildren(...items.map(item => {
+          const row = element('li');
+          const pick = button(item.entity_id, () => {
+            dialog.close();
+            codeEditor?.insert(JSON.stringify(item.entity_id));
+          });
+          pick.dataset.userText = '';
+          row.append(pick);
+          return row;
+        }));
+        if (!items.length) results.append(element('li', 'Keine passenden Entitäten.'));
+      } catch (error) { results.replaceChildren(element('li', error.message)); }
+    };
+    content.append(query, button('Suchen', search), results);
+    const dialog = editorDialog('HA-Entität einfügen', content);
+    query.onkeydown = event => { if (event.key === 'Enter') void search(); };
+    void search();
+  });
+  toolIcon(right, 'tools', 'Debug-Einstellungen', () => debugTools(project));
+  toolIcon(right, 'help', 'Skript-API anzeigen', () => editorDialog('Skript-API', element('pre',
+    'ha.readState(entity)\nha.readAttribute(entity, attribute)\nha.callAction(action, entity, data)\n' +
+    'ha.onState(entity, callback)\nha.onEvent(event, callback)\nha.schedule(schedule, callback)\n' +
+    'ha.timeout(name, ms, callback)\nha.log(message)')));
   renderCode(panel, project);
 }
 
@@ -961,9 +1436,19 @@ $('yaml-file').onchange = async event => {
 const empty = element('p', 'Ein Skript aus der Projektliste öffnen oder mit ＋ ein neues erstellen.');
 empty.className = 'empty-editor';
 editor.append(empty);
-restoreProjects();
+await restoreProjects();
 renderProjectList();
 syncLanguage();
+fetch('./api/info').then(response => response.ok ? response.json() : null).then(info => {
+  if (info?.version) $('pro-version').textContent = info.version + ' · ';
+}).catch(() => {});
+$('download-project-draft').onclick = () => {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(recoveryKey))?.tree; } catch {}
+  const tree = saved ?? {folders: [...projectFolders], projects: [...projects].map(
+    ([id, {protocol, running, problem, ...project}]) => [id, project])};
+  download('logic-studio-pro-projekte.json', JSON.stringify(tree, null, 2));
+};
 const language = connectLanguage({
   picker: false,
   getLanguage: () => locale,

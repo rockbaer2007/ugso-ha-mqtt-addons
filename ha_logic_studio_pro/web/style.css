@@ -42,4 +42,4 @@
 .shortcut-help{margin-bottom:16px;border-bottom:1px solid var(--border,#425064);padding-bottom:12px}.shortcut-help table{width:100%;font-size:12px;border-spacing:0 10px}.shortcut-help th{text-align:left;width:42%;vertical-align:top;padding-right:12px}.shortcut-help td{overflow-wrap:anywhere}
 .language-choice{display:flex;align-items:center;gap:6px;font-size:11px;white-space:nowrap}
 .language-choice select{height:35px;margin:0;padding:6px;max-width:100px}
-[data-embedded-pro] :is(header > .brand,#left > h2){display:none}
+[data-embedded-pro] :is(body > header,#left > h2){display:none}

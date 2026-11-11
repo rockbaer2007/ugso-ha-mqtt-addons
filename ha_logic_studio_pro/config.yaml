@@ -1,8 +1,7 @@
 name: HA Logic Studio Pro
-version: "0.1.16"
+version: "0.1.23"
 slug: ha_logic_studio_pro
-description: Funktionsplan, Rules, Blocks A, Blocks JS, HA-YAML und JavaScript-Testlauf
-url: https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/ha_logic_studio_pro
+description: Interner Test mit Funktionsplan, Rules, Blocks, HA-YAML und JavaScript-Testlauf
 stage: experimental
 arch:
   - amd64
@@ -15,8 +14,18 @@ ingress: true
 ingress_port: 8097
 panel_icon: mdi:graph
 panel_title: Logic Studio Pro
-options: {}
-schema: {}
+panel_admin: true
+options:
+  runtime_read_entities: []
+  runtime_write_entities: []
+  runtime_events: []
+schema:
+  runtime_read_entities:
+    - str
+  runtime_write_entities:
+    - str
+  runtime_events:
+    - str
 map:
   - type: homeassistant_config
     read_only: true

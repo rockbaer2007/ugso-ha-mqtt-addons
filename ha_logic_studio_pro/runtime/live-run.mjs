@@ -1,0 +1,182 @@
+import {getQuickJS, shouldInterruptAfterDeadline} from 'quickjs-emscripten';
+import {connectHomeAssistant} from './ha-connection.mjs';
+import {scheduleClock, scheduleMatcher} from './live-schedule.mjs';
+
+function report(type, text = '') {
+  process.stdout.write(JSON.stringify({type, text: text.slice(0, 1000)}) + '\n');
+}
+
+try {
+  const {source, language, homeAssistant} = JSON.parse(await readInput());
+  let code = source;
+  if (language === 'typescript') {
+    const {default: ts} = await import('typescript');
+    const result = ts.transpileModule(source, {fileName: 'project.ts', reportDiagnostics: true,
+      compilerOptions: {target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None}});
+    const error = result.diagnostics?.find(item => item.category === ts.DiagnosticCategory.Error);
+    if (error) throw new Error(ts.flattenDiagnosticMessageText(error.messageText, '\n'));
+    code = result.outputText;
+  }
+  const engine = await getQuickJS();
+  const runtime = engine.newRuntime();
+  runtime.setMemoryLimit(16 * 1024 * 1024);
+  runtime.setMaxStackSize(256 * 1024);
+  const vm = runtime.newContext();
+  // HA event data is passed as JSON, separate from the project source.
+  const scheduled = new Map();
+  let ticker;
+  let failed = false;
+  function fail(error) {
+    if (failed) return;
+    failed = true;
+    clearInterval(ticker);
+    report('error', error.message);
+    process.exitCode = 1;
+    setImmediate(() => process.exit(1));
+  }
+  function dispatch(event) {
+    if (failed) return;
+    try { evaluate(`studioDispatch(JSON.parse(${JSON.stringify(JSON.stringify(event))}))`); }
+    catch (error) { fail(error); }
+  }
+  const ha = homeAssistant ? await connectHomeAssistant(homeAssistant, dispatch, fail) : null;
+  const localTime = scheduleClock(ha?.timezone);
+  function evaluate(code) {
+    runtime.setInterruptHandler(shouldInterruptAfterDeadline(Date.now() + 500));
+    const result = vm.evalCode(code, 'project.js');
+    if (result.error) {
+      const message = vm.getProp(result.error, 'message');
+      try { throw new Error(vm.getString(message).slice(0, 1000)); }
+      finally { message.dispose(); result.error.dispose(); }
+    }
+    result.value.dispose();
+  }
+  let windowStart = Date.now(), messages = 0;
+  const logger = vm.newFunction('report', value => {
+    if (Date.now() - windowStart >= 1000) { windowStart = Date.now(); messages = 0; }
+    if (++messages <= 20) report('log', vm.getString(value));
+  });
+  vm.setProp(vm.global, 'runtimeLog', logger);
+  logger.dispose();
+  const bridge = vm.newFunction('bridge', (command, payload) => {
+    if (vm.typeof(command) !== 'string' || vm.typeof(payload) !== 'string') throw new Error('Ungültige HA-Anfrage.');
+    const text = vm.getString(payload);
+    if (Buffer.byteLength(text) > 48_000) throw new Error('HA-Anfrage zu groß.');
+    const args = JSON.parse(text);
+    const operation = vm.getString(command);
+    if (operation === 'schedule') {
+      if (scheduled.size >= 32) throw new Error('Maximal 32 Zeitpläne pro Skript.');
+      scheduled.set(args[0], scheduleMatcher(args[1]));
+      return vm.undefined;
+    }
+    if (!ha) throw new Error('Live-HA-Anbindung nur in der Home-Assistant-App verfügbar.');
+    if (operation === 'state') {
+      const state = ha.state(args[0]);
+      return vm.newString(JSON.stringify(state ? {state: state.state, attributes: state.attributes} : null));
+    }
+    if (operation === 'event') ha.subscribe(args[0]);
+    else if (operation === 'action') ha.call(args[0], args[1], args[2]);
+    else throw new Error('Unbekannte HA-Anfrage.');
+    return vm.undefined;
+  });
+  vm.setProp(vm.global, 'runtimeBridge', bridge);
+  bridge.dispose();
+  evaluate(`'use strict';
+    const {tick, studioDispatch} = ((report, bridge, run) => {
+      const timers = new Map();
+      const handlers = [];
+      const call = (operation, ...args) => bridge(operation, JSON.stringify(args));
+      const state = entity => JSON.parse(call('state', entity));
+      const register = (type, target, attribute, callback) => {
+        if (handlers.length >= 32 || typeof callback !== 'function') throw new Error('Ungültiger Auslöser.');
+        const index = handlers.length;
+        if (type === 'schedule') call('schedule', index, target);
+        else if (type === 'event') call('event', target);
+        else call('state', target);
+        handlers.push({type, target, attribute, callback});
+      };
+      function timer(name, delay, callback, repeat) {
+        if (typeof name !== 'string' || name.length > 128 || typeof callback !== 'function' ||
+            !Number.isSafeInteger(delay) || delay < 0 || delay > 2147483647 ||
+            (!timers.has(name) && timers.size >= 32)) throw new Error('Invalid timer');
+        const period = Math.max(50, delay);
+        timers.set(name, {due: Date.now() + period, period, callback, repeat});
+      }
+      const log = value => report(String(value).slice(0, 1000));
+      const callAction = (action, entity, data = {}) => call('action', action, entity, data);
+      const ha = Object.freeze({log, timeout: (n,d,fn) => timer(n,d,fn,false),
+        interval: (n,d,fn) => timer(n,d,fn,true), cancelTimer: n => timers.delete(n),
+        readState: entity => state(entity)?.state ?? 'unknown',
+        readAttribute: (entity, name) => state(entity)?.attributes?.[name] ?? null,
+        getState: entity => {
+          const value = state(entity)?.state;
+          return value == null ? null : {val: value === 'on' ? true : value === 'off' ? false : value};
+        },
+        setState: (entity, value) => {
+          if (typeof value !== 'boolean') throw new Error('setState erwartet true oder false.');
+          return callAction(entity.split('.')[0] + '.turn_' + (value ? 'on' : 'off'), entity);
+        },
+        setNumber: (entity, value) => callAction('input_number.set_value', entity, {value}),
+        setText: (entity, value) => callAction('input_text.set_value', entity, {value}), callAction,
+        onState: (entity, callback) => register('state', entity, null, callback),
+        onAttribute: (entity, key, callback) => register('attribute', entity, key, callback),
+        onEvent: (name, callback) => register('event', name, null, callback),
+        schedule: (pattern, callback) => register('schedule', pattern, null, callback)});
+      delete globalThis.runtimeLog;
+      delete globalThis.runtimeBridge;
+      globalThis.getState = ha.getState;
+      globalThis.setState = ha.setState;
+      run(ha, log);
+      const tick = now => {
+        for (const [name, item] of [...timers]) {
+          if (item.due > now || timers.get(name) !== item) continue;
+          if (item.repeat) item.due = now + item.period;
+          else timers.delete(name);
+          item.callback();
+        }
+      };
+      const studioDispatch = event => {
+        if (event.type === 'schedule') { handlers[event.index]?.callback(event); return; }
+        for (const {type, target, attribute, callback} of handlers.slice()) {
+          if (type === 'event' && event.type === 'event' && target === event.name) callback(event.data);
+          if (event.type !== 'state' || target !== event.entity) continue;
+          if (type === 'state' && event.previous?.state !== event.current?.state) callback(event);
+          if (type === 'attribute' && JSON.stringify(event.previous?.attributes?.[attribute]) !==
+              JSON.stringify(event.current?.attributes?.[attribute])) callback(event);
+        }
+      };
+      return {tick, studioDispatch};
+    })(runtimeLog, runtimeBridge, (ha, log) => {\n${code}\n});`);
+  ha?.start();
+  report('running');
+  // A started project stays loaded until stopped, even when it has no timers.
+  let previousSecond = Math.floor(Date.now() / 1000);
+  ticker = setInterval(() => {
+    try {
+      const now = Date.now();
+      evaluate(`tick(${now})`);
+      const second = Math.floor(now / 1000);
+      if (second <= previousSecond) return;
+      previousSecond = second;
+      if (!scheduled.size) return;
+      const time = localTime(now);
+      for (const [index, matches] of scheduled) {
+        if (matches(time)) dispatch({type: 'schedule', index, time: time.clock, weekday: time.weekday});
+      }
+    } catch (error) { fail(error); }
+  }, 50);
+} catch (error) {
+  report('error', error.message);
+  process.exit(1);
+}
+
+async function readInput() {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of process.stdin) {
+    size += chunk.length;
+    if (size > 400_000) throw new Error('Input too large');
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}

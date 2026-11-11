@@ -9,13 +9,15 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 import threading
+from collections import deque
 from urllib.parse import parse_qs, quote, urlsplit
 from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
 
-VERSION = '0.1.16'
+VERSION = '0.1.23'
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 1_000_000
 TEST_RUN_SLOTS = threading.BoundedSemaphore(2)
@@ -24,7 +26,8 @@ BOOL_DOMAINS = {'switch', 'light', 'input_boolean', 'binary_sensor'}
 SAFE_ATTRIBUTES = {'brightness', 'temperature', 'current_temperature', 'target_temperature',
                    'battery', 'battery_level', 'humidity', 'current_humidity', 'voltage', 'current',
                    'power', 'energy', 'min', 'max', 'step', 'min_temp', 'max_temp', 'effect',
-                   'color_temp_kelvin', 'min_color_temp_kelvin', 'max_color_temp_kelvin'}
+                   'color_temp_kelvin', 'min_color_temp_kelvin', 'max_color_temp_kelvin',
+                   'next_rising', 'next_setting', 'next_dawn', 'next_dusk', 'next_noon', 'next_midnight'}
 
 
 def public_entity(item):
@@ -57,16 +60,19 @@ class NoRedirect(HTTPRedirectHandler):
 
 
 class Store:
+    prefix = 'workspace'
+    empty = {'revision': 0, 'plan': None, 'preferences': None}
+
     def __init__(self, root):
         self.root = Path(root)
         self.lock = threading.Lock()
 
     def path(self, user):
-        return self.root / ('workspace-' + hashlib.sha256(user.encode()).hexdigest()[:32] + '.json')
+        return self.root / (self.prefix + '-' + hashlib.sha256(user.encode()).hexdigest()[:32] + '.json')
 
     def read(self, user):
         path = self.path(user)
-        return json.loads(path.read_text(encoding='utf-8')) if path.exists() else {'revision': 0, 'plan': None, 'preferences': None}
+        return json.loads(path.read_text(encoding='utf-8')) if path.exists() else self.empty.copy()
 
     def write(self, user, payload):
         if not isinstance(payload, dict) or type(payload.get('revision')) is not int:
@@ -80,9 +86,12 @@ class Store:
                        for k in ('favorites', 'recent', 'collapsed') if isinstance(preferences.get(k, []), list)}
         if preferences.get('language') in ('de', 'en', 'fr'):
             clean_prefs['language'] = preferences['language']
+        return self.commit(user, payload['revision'], {'plan': plan, 'preferences': clean_prefs})
+
+    def commit(self, user, revision, content):
         with self.lock:
             old = self.read(user)
-            if payload['revision'] != old['revision']:
+            if revision != old['revision']:
                 return None
             self.root.mkdir(parents=True, exist_ok=True)
             path = self.path(user)
@@ -92,12 +101,110 @@ class Store:
                 (backups / f'{path.stem}-{old["revision"]:08d}.json').write_bytes(path.read_bytes())
                 for expired in sorted(backups.glob(path.stem + '-*.json'))[:-10]:
                     expired.unlink()
-            result = {'revision': old['revision'] + 1, 'plan': plan, 'preferences': clean_prefs,
+            result = {'revision': old['revision'] + 1, **content,
                       'saved_at': datetime.now(timezone.utc).isoformat()}
             temp = path.with_suffix('.tmp')
             temp.write_text(json.dumps(result, ensure_ascii=False), encoding='utf-8')
             temp.replace(path)
             return result
+
+
+class ProjectStore(Store):
+    prefix = 'pro-projects'
+    empty = {'revision': 0, 'tree': None}
+
+    def write(self, user, payload):
+        if not isinstance(payload, dict) or type(payload.get('revision')) is not int:
+            raise ValueError('Revision fehlt.')
+        tree = payload.get('tree')
+        if not isinstance(tree, dict) or set(tree) != {'folders', 'projects'}:
+            raise ValueError('Ungültiger Projektbaum.')
+        for key in ('folders', 'projects'):
+            entries = tree[key]
+            if not isinstance(entries, list) or len(entries) > 1000:
+                raise ValueError('Ungültige Projektliste.')
+            seen = set()
+            for entry in entries:
+                if not isinstance(entry, list) or len(entry) != 2:
+                    raise ValueError('Ungültiger Projekteintrag.')
+                entry_id, value = entry
+                if not isinstance(entry_id, str) or len(entry_id) > 128 or entry_id in seen:
+                    raise ValueError('Ungültige Projekt-ID.')
+                seen.add(entry_id)
+                if key == 'folders':
+                    if not isinstance(value, str):
+                        raise ValueError('Ungültiger Ordner.')
+                elif not re.fullmatch(r'[0-9]{1,15}', entry_id) or not isinstance(value, dict) or not isinstance(value.get('name'), str) or value.get('type') not in (
+                        'yaml', 'rules', 'blocks', 'blocks-js', 'flow', 'javascript', 'typescript'):
+                    raise ValueError('Ungültiges Projekt.')
+        return self.commit(user, payload['revision'], {'tree': tree})
+
+
+class ScriptRuntime:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.jobs = {}
+
+    def status(self, user):
+        with self.lock:
+            return {key[1]: {'state': job['state'], 'messages': list(job['messages'])}
+                    for key, job in self.jobs.items() if key[0] == user}
+
+    def control(self, user, project_id, command, source=None, language=None, home_assistant=None):
+        key = (user, project_id)
+        with self.lock:
+            previous = self.jobs.get(key)
+            if previous and previous['process'].poll() is None:
+                if command == 'start':
+                    raise ValueError('Skript läuft bereits.')
+                previous['state'] = 'stopped'
+                previous['process'].terminate()
+                previous['process'].wait(timeout=2)
+            if command == 'stop':
+                return
+            if sum(job['process'].poll() is None for job in self.jobs.values()) >= 4:
+                raise ValueError('Maximal vier laufende Skripte.')
+            if key not in self.jobs and len(self.jobs) >= 64:
+                expired = next((k for k, j in self.jobs.items() if j['process'].poll() is not None), None)
+                if expired is not None:
+                    del self.jobs[expired]
+            env = {key: value for key, value in os.environ.items()
+                   if key.upper() in {'PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR'}}
+            with tempfile.TemporaryFile() as input_file:
+                input_file.write(json.dumps({'source': source, 'language': language, 'homeAssistant': home_assistant}).encode())
+                input_file.seek(0)
+                process = subprocess.Popen(['node', str(ROOT / 'runtime' / 'live-run.mjs')], stdin=input_file,
+                                           stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, encoding='utf-8', env=env,
+                                           creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+            job = {'process': process, 'state': 'starting', 'messages': deque(maxlen=100)}
+            self.jobs[key] = job
+            threading.Thread(target=self.collect, args=(job,), daemon=True).start()
+
+    def collect(self, job):
+        process = job['process']
+        with process.stdout as stream:
+            for line in stream:
+                message = json.loads(line)
+                with self.lock:
+                    if job['state'] == 'stopped':
+                        continue
+                    kind = message['type']
+                    if kind in ('running', 'error'):
+                        job['state'] = kind
+                    if message['text']:
+                        job['messages'].append({'text': message['text'], 'error': kind == 'error',
+                                                'time': datetime.now(timezone.utc).isoformat()})
+        with self.lock:
+            if process.wait() and job['state'] not in ('error', 'stopped'):
+                job['state'] = 'error'
+            elif job['state'] != 'error':
+                job['state'] = 'stopped'
+
+    def close(self):
+        with self.lock:
+            for job in self.jobs.values():
+                if job['process'].poll() is None:
+                    job['process'].terminate()
 
 
 class LogicServer(ThreadingHTTPServer):
@@ -106,8 +213,36 @@ class LogicServer(ThreadingHTTPServer):
     def __init__(self, address, data_dir, supervisor=False, demo=False, config_root=None):
         super().__init__(address, Handler)
         self.store = Store(data_dir)
+        self.projects = ProjectStore(data_dir)
+        self.runtime = ScriptRuntime()
         self.supervisor, self.demo = supervisor, demo
         self.sources=SourceReader(config_root,Path(data_dir)/'ha-source-backups') if config_root else None
+        self.runtime_options = Path(data_dir) / 'options.json'
+
+    def live_runtime_config(self):
+        if not self.supervisor:
+            return None
+        token = os.environ.get('SUPERVISOR_TOKEN')
+        if not token:
+            raise ValueError('HA-Verbindung für die Runtime nicht verfügbar.')
+        options = json.loads(self.runtime_options.read_text(encoding='utf-8')) if self.runtime_options.exists() else {}
+        result = {'token': token}
+        for option, key, pattern in (
+            ('runtime_read_entities', 'readable', r'[a-z][a-z0-9_]*\.[a-z0-9_]+'),
+            ('runtime_write_entities', 'writable', r'[a-z][a-z0-9_]*\.[a-z0-9_]+'),
+            ('runtime_events', 'events', r'[a-z][a-z0-9_]*'),
+        ):
+            values = options.get(option, [])
+            if not isinstance(values, list) or len(values) > 128 or any(
+                not isinstance(value, str) or len(value) > 128 or not re.fullmatch(pattern, value) for value in values
+            ):
+                raise ValueError('Ungültige Runtime-Freigabe: ' + option)
+            result[key] = list(dict.fromkeys(values))
+        return result
+
+    def server_close(self):
+        self.runtime.close()
+        super().server_close()
 
     def entities(self):
         if self.demo:
@@ -173,6 +308,10 @@ class Handler(SimpleHTTPRequestHandler):
                 self.reply(200, {'items': items[offset:offset+100], 'total': len(items), 'offset': offset, 'demo': self.server.demo})
             elif route.path == '/api/workspace':
                 self.reply(200, self.server.store.read(self.user()))
+            elif route.path == '/api/pro-projects':
+                self.reply(200, self.server.projects.read(self.user()))
+            elif route.path == '/api/pro-runtime' and self.runtime_user():
+                self.reply(200, self.server.runtime.status(self.user()))
             elif route.path == '/api/ha-sources':
                 if not self.server.sources:raise ValueError('Kein HA-Konfigurationsordner eingebunden. YAML-Datei oder Text importieren.')
                 kind=parse_qs(route.query).get('kind',['automation'])[0]
@@ -194,7 +333,9 @@ class Handler(SimpleHTTPRequestHandler):
         if not self.allowed():
             self.reply(403, {'error': 'Zugriff verweigert.'})
             return
-        if urlsplit(self.path).path != '/api/workspace':
+        stores = {'/api/workspace': self.server.store, '/api/pro-projects': self.server.projects}
+        store = stores.get(urlsplit(self.path).path)
+        if store is None:
             self.reply(404, {'error': 'Nur Projektspeicherung erlaubt; keine HA-Schreibaktionen.'})
             return
         if self.headers.get_content_type() != 'application/json' or self.headers.get('Sec-Fetch-Site') == 'cross-site':
@@ -205,7 +346,7 @@ class Handler(SimpleHTTPRequestHandler):
             if length <= 0 or length > MAX_BODY:
                 self.reply(413, {'error': 'Maximal 1 MB.'})
                 return
-            result = self.server.store.write(self.user(), json.loads(self.rfile.read(length)))
+            result = store.write(self.user(), json.loads(self.rfile.read(length)))
             self.reply(409 if result is None else 200, {'error': 'Projekt wurde in einem anderen Fenster geändert.'} if result is None else {'revision': result['revision'], 'saved_at': result['saved_at']})
         except (ValueError, TypeError):
             self.reply(400, {'error': 'Ungültiges Projekt.'})
@@ -222,6 +363,9 @@ class Handler(SimpleHTTPRequestHandler):
         if path == '/api/pro-test-run':
             self.run_javascript_preview()
             return
+        if path == '/api/pro-runtime':
+            self.control_runtime()
+            return
         if path!='/api/parse-ha':
             self.reply(404,{'error':'Nur lesender YAML-Import erlaubt.'});return
         try:
@@ -232,6 +376,46 @@ class Handler(SimpleHTTPRequestHandler):
             self.reply(200,{'items':items})
         except Exception:
             self.reply(400,{'error':'YAML/JSON ungültig, zu groß oder nicht als HA-Eintrag unterstützt. Keine Datei verändert.'})
+
+    def runtime_user(self):
+        return not self.server.supervisor or bool(self.headers.get('X-Remote-User-Id'))
+
+    def control_runtime(self):
+        if not self.runtime_user():
+            self.reply(403, {'error': 'Benutzerkennung fehlt.'})
+            return
+        try:
+            length = int(self.headers.get('Content-Length', '0'))
+            if not 1 <= length <= 400_000:
+                raise ValueError('Ungültige Runtime-Anfrage.')
+            payload = json.loads(self.rfile.read(length))
+            if not isinstance(payload, dict):
+                raise ValueError('Ungültige Runtime-Anfrage.')
+            project_id, command = payload.get('id'), payload.get('command')
+            if not isinstance(project_id, str) or not re.fullmatch(r'[0-9]{1,15}', project_id) or command not in ('start', 'stop', 'restart'):
+                raise ValueError('Ungültiger Runtime-Befehl.')
+            user = self.user()
+            if command == 'stop':
+                self.server.runtime.control(user, project_id, command)
+            else:
+                saved = self.server.projects.read(user)
+                if payload.get('revision') != saved['revision']:
+                    raise ValueError('Projektstand neu laden.')
+                project = dict((saved['tree'] or {}).get('projects', [])).get(project_id, {})
+                kind = project.get('type')
+                if kind not in ('javascript', 'typescript', 'blocks-js'):
+                    raise ValueError('Projekttyp kann nicht in der Runtime gestartet werden.')
+                source = payload.get('source') if kind == 'blocks-js' else project.get('source')
+                if not isinstance(source, str) or not source.strip() or len(source.encode('utf-8')) > 64_000:
+                    raise ValueError('Quelltext fehlt oder überschreitet 64 KB.')
+                self.server.runtime.control(user, project_id, command, source,
+                                            'typescript' if kind == 'typescript' else 'javascript',
+                                            self.server.live_runtime_config())
+            self.reply(200, self.server.runtime.status(user))
+        except (ValueError, UnicodeError) as error:
+            self.reply(400, {'error': str(error)})
+        except (OSError, subprocess.SubprocessError):
+            self.reply(503, {'error': 'Runtime konnte nicht gestartet werden.'})
 
     def export_yaml(self):
         if (not self.allowed() or self.headers.get('Sec-Fetch-Site') == 'cross-site'

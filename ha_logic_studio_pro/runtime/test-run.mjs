@@ -1,4 +1,5 @@
 import {getQuickJS, shouldInterruptAfterDeadline} from 'quickjs-emscripten';
+import {simulatedEvents} from './simulated-events.mjs';
 
 const maxSource = 64_000;
 const maxTrace = 100;
@@ -29,6 +30,7 @@ export async function testRun(source, language = 'javascript') {
     try {
       const trace = [];
       const states = {...demoStates};
+      const attributes = {'light.flur': {brightness: 128}, 'sensor.demo_temperature': {unit_of_measurement: '°C'}};
       const record = entry => {
         if (trace.length >= maxTrace) throw new Error('Maximal 100 Protokolleinträge je Testlauf.');
         trace.push(entry);
@@ -53,8 +55,38 @@ export async function testRun(source, language = 'javascript') {
             record({type: 'read', entity: target, state});
             return vm.newString(state);
           },
-          callAction(action, entity) {
-            record({type: 'action', action: identifier(action), entity: identifier(entity)});
+          readAttribute(entity, attribute) {
+            const target = identifier(entity);
+            const key = stringArg(attribute, 128);
+            const values = attributes[target];
+            const value = values && Object.hasOwn(values, key) ? values[key] : null;
+            record({type: 'attribute', entity: target, attribute: key, value});
+            if (value === null) return vm.null;
+            return typeof value === 'number' ? vm.newNumber(value) : vm.newString(value);
+          },
+          callAction(action, entity, data) {
+            const entry = {type: 'action', action: identifier(action), entity: identifier(entity)};
+            if (data) {
+              const parsed = JSON.parse(stringArg(data, 8192));
+              if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Aktionsdaten müssen ein Objekt sein.');
+              entry.data = parsed;
+            }
+            record(entry);
+          },
+          setNumber(entity, value) {
+            const target = identifier(entity);
+            if (!target.startsWith('input_number.') || !value || vm.typeof(value) !== 'number' ||
+                !Number.isFinite(vm.getNumber(value))) throw new Error('input_number und endliche Zahl erwartet.');
+            const number = vm.getNumber(value);
+            record({type: 'action', action: 'input_number.set_value', entity: target, data: {value: number}});
+            states[target] = String(number);
+          },
+          setText(entity, value) {
+            const target = identifier(entity);
+            if (!target.startsWith('input_text.')) throw new Error('input_text erwartet.');
+            const message = stringArg(value);
+            record({type: 'action', action: 'input_text.set_value', entity: target, data: {value: message}});
+            states[target] = message;
           },
           getState(entity) {
             const target = identifier(entity);
@@ -101,12 +133,15 @@ export async function testRun(source, language = 'javascript') {
           }
         }
         vm.setProp(vm.global, 'ha', api);
+        const report = vm.newFunction('reportSimulatedEvent', value => record(JSON.parse(stringArg(value, 32_000))));
+        try {
+          vm.setProp(vm.global, 'reportSimulatedEvent', report);
+        } finally { report.dispose(); }
       } finally {
         api.dispose();
       }
-      const result = vm.evalCode('"use strict";\nObject.freeze(ha);\n' +
-        'globalThis.getState = ha.getState; globalThis.setState = ha.setState;\n' +
-        'globalThis.log = value => ha.log(String(value));\n' + source, 'projekt.js');
+      const result = vm.evalCode('"use strict";\n' + simulatedEvents +
+        '(ha, reportSimulatedEvent, function () {\n' + source + '\n});', 'projekt.js');
       if (result.error) {
         try {
           const message = vm.getProp(result.error, 'message');
