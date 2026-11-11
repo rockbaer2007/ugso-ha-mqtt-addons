@@ -157,7 +157,7 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
 }
 dialog { width: min(40rem, 94vw); background: #162335; color: inherit; border: 1px solid #435571; border-radius: .7rem; }
 dialog::backdrop { background: #080d16b8; }
-#project-dialog { width: min(60rem, 94vw); max-height: 90vh; }
+#project-dialog { width: min(68rem, 94vw); max-height: 90vh; }
 .project-details { display: grid; gap: .45rem; }
 .project-details h2 { margin: .25rem 0 .75rem; }
 .project-details label { color: #b6c9e0; font-size: .85rem; }

@@ -10,7 +10,8 @@ const projectSidebar = $('project-sidebar');
 const projectSplitter = $('project-splitter');
 const projects = new Map();
 const openTabs = new Set();
-const icons = {yaml: '▤', rules: '⚡', blocks: '▦', flow: '◇', javascript: 'JS', typescript: 'TS'};
+const icons = {yaml: '▤', rules: '⚡', blocks: '▦', 'blocks-js': '▦', flow: '◇', javascript: 'JS', typescript: 'TS'};
+const runnable = type => type === 'javascript' || type === 'blocks-js';
 let active;
 let blocks;
 let blocksRender;
@@ -61,7 +62,7 @@ function restoreProjects() {
     for (const [id, draft] of saved.projects) {
       if (!/^\d+$/.test(id) || !draft || !Object.hasOwn(icons, draft.type) || typeof draft.name !== 'string') continue;
       projects.set(id, {...draft, folder: projectFolders.has(draft.folder) ? draft.folder : '',
-        protocol: [], running: draft.type === 'javascript' ? false : undefined});
+        protocol: [], running: runnable(draft.type) ? false : undefined});
       nextId = Math.max(nextId, Number(id));
     }
   } catch {
@@ -250,7 +251,7 @@ const projectFilters = [
   ['running', 'M9 5v14m6-14v14', 'Nur laufende Skripte anzeigen', project => project.running === true],
   ['stopped', 'm8 5 12 7-12 7z', 'Nur angehaltene Skripte anzeigen', project => project.running === false],
   ['problem', 'M12 3 2 20h20zM12 9v4m0 3h.01', 'Nur Skripte mit Problemen anzeigen', project => project.problem === true],
-  ['blocks', 'M4 4h6a2 2 0 1 1 4 0h6v6a2 2 0 1 0 0 4v6H4z', 'Nur Blockly anzeigen'],
+  ['blocks', 'M4 4h6a2 2 0 1 1 4 0h6v6a2 2 0 1 0 0 4v6H4z', 'Nur Blockly anzeigen', project => ['blocks', 'blocks-js'].includes(project.type)],
   ['javascript', 'm8 6-6 6 6 6m8-12 6 6-6 6m-3-14-2 16', 'Nur JavaScript anzeigen'],
   ['typescript', 'M3 4h12v4m-6-4v16m-3 0h6m6-8v8m-3-8h6', 'Nur TypeScript anzeigen'],
   ['rules', 'm3 7 2 2 3-4m3 3h10M3 15l2 2 3-4m3 3h10', 'Nur Rules anzeigen'],
@@ -389,13 +390,17 @@ function projectRow(id, project) {
   name.title = project.name;
   const actions = element('div');
   actions.className = 'project-row-actions';
-  const run = projectIconButton(project.running ? 'M6 4h4v16H6zm8 0h4v16h-4z' : 'M6 3l15 9-15 9z',
-    (project.running ? 'Testlauf läuft: ' : 'Testlauf starten: ') + project.name, () => {
-    show(id);
-    editor.querySelector('[data-run-javascript]')?.click();
-  });
-  run.dataset.projectRun = project.running ? 'running' : 'stopped';
-  run.disabled = sortingProjects || project.type !== 'javascript' || Boolean(project.running);
+  if (runnable(project.type)) {
+    const run = projectIconButton(project.running ? 'M6 4h4v16H6zm8 0h4v16h-4z' : 'M6 3l15 9-15 9z',
+      (project.running ? 'Testlauf läuft: ' : 'Testlauf starten: ') + project.name, () => {
+        show(id);
+        if (project.type === 'blocks-js') void runBlocks(project);
+        else editor.querySelector('[data-run-javascript]')?.click();
+      });
+    run.dataset.projectRun = project.running ? 'running' : 'stopped';
+    run.disabled = sortingProjects || Boolean(project.running);
+    actions.append(run);
+  }
   const remove = projectIconButton('M9 3h6l1 2h5v2H3V5h5zm-4 6h14l-1 12H6z', 'Projekt löschen: ' + project.name, () => {
     if (!window.confirm('Projekt „' + project.name + '“ löschen?')) return;
     closeTab(id);
@@ -408,7 +413,7 @@ function projectRow(id, project) {
   remove.disabled = sortingProjects || project.type === 'flow' || Boolean(project.running);
   const open = projectIconButton('M6 4h15v16H6v-4m0-8V4M2 12h13m-4-4 4 4-4 4', 'Projekt öffnen: ' + project.name, () => show(id));
   open.disabled = sortingProjects;
-  actions.append(run, remove, open);
+  actions.append(remove, open);
   row.append(name, actions);
   return {row, name};
 }
@@ -567,7 +572,7 @@ function show(id, refresh = false) {
   editor.append(panel);
   if (project.type === 'yaml') renderYaml(panel, project);
   if (project.type === 'rules') renderRules(panel, project);
-  if (project.type === 'blocks') renderBlocks(panel, project, id);
+  if (project.type === 'blocks' || project.type === 'blocks-js') renderBlocks(panel, project, id);
   if (project.type === 'javascript') renderJavaScript(panel, project);
   if (project.type === 'typescript') {
     toolbar(panel, project);
@@ -727,12 +732,51 @@ async function renderBlocks(panel, project, id) {
     blocks = mountBlocks(workspace, project.workspace, saved => {
       project.workspace = saved;
       if (!sortingProjects) saveProjects();
-    }, locale);
+    }, locale, project.type === 'blocks-js' ? 'js' : 'yaml');
     const read = blocks.read;
-    row.append(button('Als HA-YAML öffnen', () => openGenerated(project, read, report)));
+    if (project.type === 'blocks-js') {
+      row.append(button('Testlauf starten', () => runBlocks(project)),
+        button('JavaScript öffnen', () => {
+          try { add({type: 'javascript', name: project.name + ' · JS', source: blocks.generate()}); }
+          catch (error) { report(error.message, true); }
+        }), button('ioBroker-Blockly importieren', () => {
+          const input = element('input');
+          input.type = 'file';
+          input.accept = '.js,.txt,.xml';
+          input.onchange = async () => {
+            try {
+              const file = input.files[0];
+              if (!file || active !== id) return;
+              if (file.size > 2_000_000) throw new Error('Datei zu groß.');
+              const {importIoBroker} = await import('./vendor/pro-blocks.js');
+              const imported = importIoBroker(await file.text());
+              if (active !== id) return;
+              add({type: 'blocks-js', name: file.name.replace(/\.[^.]+$/, ''), workspace: imported});
+            } catch (error) { report(error.message, true); }
+          };
+          input.click();
+        }));
+    } else row.append(button('Als HA-YAML öffnen', () => openGenerated(project, read, report)));
   } catch (error) {
     report(error.message, true);
   }
+}
+
+async function runBlocks(project) {
+  if (project.running) return;
+  project.running = true;
+  renderProjectList();
+  try {
+    const {generateBlocks} = await import('./vendor/pro-blocks.js');
+    const source = generateBlocks(project.workspace);
+    const response = await fetch('./api/pro-test-run', {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({source}),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error);
+    recordProtocol(project, JSON.stringify(result.trace, null, 2));
+  } catch (error) { recordProtocol(project, error.message, true); }
+  finally { project.running = false; renderProjectList(); }
 }
 
 function renderJavaScript(panel, project) {
@@ -862,7 +906,10 @@ $('project-dialog').onclose = () => {
       chooseProjectDetails({type: 'rules', name: 'Neue Regel'});
       break;
     case 'blocks':
-      chooseProjectDetails({type: 'blocks', name: 'Neues Blockprojekt'});
+      chooseProjectDetails({type: 'blocks', name: 'Neues Blockprojekt · YAML'});
+      break;
+    case 'blocks-js':
+      chooseProjectDetails({type: 'blocks-js', name: 'Neues Blockprojekt · JS'});
       break;
     case 'flow': {
       const id = [...projects].find(([, project]) => project.type === 'flow')?.[0];
@@ -920,6 +967,6 @@ const language = connectLanguage({
     try { localStorage.setItem(languageKey, value); } catch {}
     syncLanguage();
     const project = projects.get(active);
-    if (project?.type === 'blocks') show(active, true);
+    if (project?.type === 'blocks' || project?.type === 'blocks-js') show(active, true);
   },
 });

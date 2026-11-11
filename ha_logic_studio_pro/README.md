@@ -1,20 +1,16 @@
-# HA Logic Studio Pro 0.1.13
+# HA Logic Studio Pro 0.1.14
+
+- **Blocks A** exportiert HA-Automationen als YAML. Vorhandene Blockly-Projekte öffnen sich weiterhin in diesem Modus. HA-Skripte und HA-Automationen haben in der Projektliste kein Play-Symbol.
+- **Blocks JS** erzeugt JavaScript und testet es mit Demo-Zuständen. HA-Aktionen erscheinen im Protokoll und werden nicht ausgeführt.
+- Der ioBroker-Import liest den gespeicherten Blockly-Plan aus dem Export. Unbekannte Bausteine bleiben als rote Platzhalter sichtbar und blockieren die Ausgabe, bis sie ersetzt sind. Entitäten müssen auf HA-IDs angepasst werden.
 
 Öffentliche Testversion mit eigenem App-Slug `ha_logic_studio_pro`. Die App startet manuell und verwendet ihren eigenen Datenspeicher.
 
-Version 0.1.13 ergänzt Syntaxfarben und Zeilennummern für JavaScript und TypeScript. Kommentare erscheinen grün, Zeichenketten orange und Schlüsselwörter blau. Der Editor passt seine Farben an das helle oder dunkle Browserdesign an. Über **＋ → TypeScript** lässt sich ein neuer Entwurf erstellen und bearbeiten. Die Ausführung von TypeScript ist noch nicht verfügbar. Für JavaScript steht der bisherige Testlauf mit Demo-Zuständen zur Verfügung.
-
-In Version 0.1.12 richtet sich die Mindestbreite der linken Projektspalte nach den sichtbaren Skript- und Ordnernamen samt Einrückungen und Symbolen. Der Anfasser bleibt zum Verbreitern verfügbar. Lange Namen werden bei Platzmangel gekürzt und bleiben als Tooltip lesbar. Die Projektliste hat keinen horizontalen Scrollbalken.
-
-Auf .193 mit Home Assistant 2026.11.1 im Ingress geprüft: 294 px mit offenem Hauptordner, 232 px eingeklappt und 446 px nach Ziehen am Anfasser. Die sechs vorhandenen Projekte waren nach dem Update weiterhin vorhanden.
-
-In Version 0.1.11 lassen sich Leitungen am belegten Zieleingang greifen und auf einen anderen passenden Eingang ziehen. Loslassen auf freier Fläche entfernt die Leitung. Rückgängig stellt sie wieder her. Die Simulation zeigt Zahlen, Texte und Zeiten direkt am Zieleingang an.
-
-Version 0.1.9 zeigt in der Skriptliste geschlossene und offene Ordnersymbole passend zum Zustand der jeweiligen Gruppe.
-
-Version 0.1.8 zeigt Skripte in 28 px hohen Zeilen mit rahmenlosen Aktionen. Die Auswahl färbt die gesamte Zeile blau. Auf .193 mit Home Assistant 2026.11.1 wurden Zeilenhöhe, Auswahl, Öffnen und der simulierte JavaScript-Testlauf geprüft.
-
 Die App im UGSo-App-Repository unter **HA Logic Studio Pro** installieren oder aktualisieren. Die GitHub-Ausgabe hat in Home Assistant eine eigene Installationskennung. Bei einem Wechsel aus „Local apps“ die bisherige Installation für browsergespeicherte Entwürfe behalten. YAML und Funktionspläne können als Dateien exportiert werden.
+
+Auf .193 mit Home Assistant 2026.11.1 geprüft: YAML-Automation mit Auslöser und Aktion, JavaScript-Testlauf und ioBroker-Import mit verbundenem Uhrzeitblock und Platzhalter für `exec`. 39 automatisierte Tests bestanden.
+
+Seit 0.1.13 zeigen JavaScript und TypeScript Syntaxfarben und Zeilennummern. Die Projektspalte passt seit 0.1.12 ihre Mindestbreite an die sichtbaren Namen an. Im Funktionsplan lassen sich seit 0.1.11 Verbindungen umhängen; Signalwerte werden direkt am Zieleingang angezeigt. TypeScript-Ausführung ist weiterhin offen.
 
 Nach dem Start **Weboberfläche öffnen**. Über **＋ → HA-YAML** ein Skript oder eine Automation erstellen. Vorhandene YAML-Dateien können geöffnet, bearbeitet, auf Syntax und Grundstruktur geprüft und exportiert werden. Die Ausführung einer exportierten Konfiguration übernimmt Home Assistant nach dem manuellen Übernehmen.
 
