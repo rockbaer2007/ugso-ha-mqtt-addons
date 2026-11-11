@@ -32,7 +32,7 @@ const messages = {
   'Code schreiben und testen': ['Write and test code', 'Écrire et tester du code'],
   'Typisierter Code · geplant': ['Typed code · planned', 'Code typé · prévu'],
   'Skripte und Automationen': ['Scripts and automations', 'Scripts et automatisations'],
-  '0.1.8 · Interner Test': ['0.1.8 · Internal test', '0.1.8 · Test interne'],
+  '0.1.9 · Interner Test': ['0.1.9 · Internal test', '0.1.9 · Test interne'],
   'Keine passenden Projekte.': ['No matching projects.', 'Aucun projet correspondant.'],
   'Ein Skript aus der Projektliste öffnen oder mit ＋ ein neues erstellen.': ['Open a script from the project list or use ＋ to create one.', 'Ouvrez un script dans la liste ou utilisez ＋ pour en créer un.'],
   'Nur laufende Skripte anzeigen': ['Show running scripts only', 'Afficher uniquement les scripts en cours'],

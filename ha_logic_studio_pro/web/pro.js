@@ -398,6 +398,7 @@ function renderProjectList() {
       }
     };
     const summary = element('summary');
+    summary.innerHTML = '<svg class="project-folder-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="folder-closed" d="M3 5h7l2 2h9v12H3z"/><path class="folder-open" d="M3 19V5h7l2 2h7v3M3 19l3-9h16l-3 9z"/></svg>';
     const folderLabel = element('span', name);
     if (folder && folder !== 'common' && folder !== 'global') folderLabel.dataset.userText = '';
     if (folder === 'common' || folder === 'global') folderLabel.className = 'folder-label-' + folder;

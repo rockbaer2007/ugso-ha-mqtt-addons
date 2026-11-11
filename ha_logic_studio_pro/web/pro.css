@@ -77,7 +77,11 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
 #project-filters button[data-filter="problem"][aria-pressed="true"] { color: #fff098; }
 #projects .empty-project-filter { color: #a7bfdc; font-size: .85rem; }
 #projects { display: grid; gap: .35rem; overflow: auto; padding-bottom: .45rem; }
-#projects summary { cursor: pointer; padding: .25rem 0; font-size: .85rem; }
+#projects summary { display: flex; align-items: center; gap: .3rem; list-style: none; cursor: pointer; padding: .25rem 0; font-size: .85rem; }
+#projects summary::-webkit-details-marker { display: none; }
+#projects .project-folder-icon { flex: none; width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+#projects details:not([open]) > summary .folder-open,
+#projects details[open] > summary .folder-closed { display: none; }
 #projects .folder-label-common { color: #fff1a6; }
 #projects .folder-label-global { color: #89e6a0; }
 @media (prefers-color-scheme: light) {
