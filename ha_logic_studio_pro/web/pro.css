@@ -122,6 +122,39 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
 .editor-toolbar { padding-left: 0; }
 .editor-toolbar input { max-width: 100%; }
 .yaml-source { width: 100%; min-height: 55vh; margin-top: .75rem; resize: vertical; font-family: Consolas, monospace; }
+.script-code {
+  --code-comment: #91ba79;
+  --code-keyword: #75baff;
+  --code-string: #e6a589;
+  --code-literal: #bed8a6;
+  --code-type: #5fd6bf;
+  --code-function: #e9dca0;
+  border: 1px solid #435571;
+  border-radius: .4rem;
+  overflow: hidden;
+  background: #1e1e1e;
+  color: #ededed;
+}
+.script-code .cm-editor { height: 55dvh; min-height: 14rem; }
+.script-code .cm-scroller { font-family: Consolas, monospace; }
+.script-code .cm-content { caret-color: currentColor; }
+.script-code .cm-gutters { background: #252526; color: #b3bac4; border-color: #414141; }
+.script-code :is(.cm-activeLine, .cm-activeLineGutter) { background: #8080801c; }
+.script-code .cm-editor.cm-focused { outline: 2px solid #a2ccff; outline-offset: -2px; }
+@media (prefers-color-scheme: light) {
+  .script-code {
+    --code-comment: #38682e;
+    --code-keyword: #174b9d;
+    --code-string: #963a24;
+    --code-literal: #35642d;
+    --code-type: #006e5d;
+    --code-function: #715414;
+    color-scheme: light;
+    color: #202020;
+    background: #fafafa;
+  }
+  .script-code .cm-gutters { background: #eeeeef; color: #575e68; border-color: #ccc; }
+}
 dialog { width: min(40rem, 94vw); background: #162335; color: inherit; border: 1px solid #435571; border-radius: .7rem; }
 dialog::backdrop { background: #080d16b8; }
 #project-dialog { width: min(60rem, 94vw); max-height: 90vh; }

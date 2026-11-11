@@ -1,6 +1,7 @@
 import {makeYaml, validateYaml} from './pro-yaml-model.js';
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
+import {mountCodeEditor} from './vendor/pro-code.js';
 
 const $ = id => document.getElementById(id);
 const editor = $('editor');
@@ -9,12 +10,13 @@ const projectSidebar = $('project-sidebar');
 const projectSplitter = $('project-splitter');
 const projects = new Map();
 const openTabs = new Set();
-const icons = {yaml: '▤', rules: '⚡', blocks: '▦', flow: '◇', javascript: 'JS'};
+const icons = {yaml: '▤', rules: '⚡', blocks: '▦', flow: '◇', javascript: 'JS', typescript: 'TS'};
 let active;
 let blocks;
 let blocksRender;
 let yamlDialogAction;
 let flowFrame;
+let codeEditor;
 let nextId = 0;
 let protocolHidden = false;
 let protocolRight = false;
@@ -489,6 +491,8 @@ function renderNavigation() {
 }
 
 function leaveEditor() {
+  codeEditor?.destroy();
+  codeEditor = undefined;
   blocksRender = undefined;
   if (blocks) {
     projects.get(active).workspace = blocks.snapshot();
@@ -565,6 +569,11 @@ function show(id, refresh = false) {
   if (project.type === 'rules') renderRules(panel, project);
   if (project.type === 'blocks') renderBlocks(panel, project, id);
   if (project.type === 'javascript') renderJavaScript(panel, project);
+  if (project.type === 'typescript') {
+    toolbar(panel, project);
+    panel.append(element('p', 'TypeScript bearbeiten. Die Ausführung ist noch nicht verfügbar.'));
+    renderCode(panel, project);
+  }
 }
 
 function toolbar(panel, project) {
@@ -758,7 +767,23 @@ function renderJavaScript(panel, project) {
   run.disabled = Boolean(project.running);
   row.append(run);
   panel.append(element('p', 'Testlauf mit Demo-Zuständen und protokollierten HA-Aktionen.'));
-  sourceArea(panel, project, 'JavaScript-Quelltext');
+  renderCode(panel, project);
+}
+
+function renderCode(panel, project) {
+  const typescript = project.type === 'typescript';
+  const host = element('div');
+  host.className = 'script-code';
+  panel.append(host);
+  codeEditor = mountCodeEditor(host, {
+    source: project.source,
+    typescript,
+    label: typescript ? 'TypeScript-Quelltext' : 'JavaScript-Quelltext',
+    onChange: source => {
+      project.source = source;
+      if (!sortingProjects) saveProjects();
+    },
+  });
 }
 
 const templates = {
@@ -848,6 +873,10 @@ $('project-dialog').onclose = () => {
     case 'javascript':
       chooseProjectDetails({type: 'javascript', name: 'Neues JavaScript', running: false, source:
         'const motion = ha.readState("binary_sensor.bewegung");\nif (motion === "on") ha.callAction("light.turn_on", "light.flur");\nha.log(motion);\n'});
+      break;
+    case 'typescript':
+      chooseProjectDetails({type: 'typescript', name: 'Neues TypeScript', source:
+        '// Typisierter Beispielcode\nconst temperature: number = 21;\n'});
       break;
   }
 };

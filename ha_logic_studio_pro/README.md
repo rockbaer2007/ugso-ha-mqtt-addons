@@ -1,6 +1,8 @@
-# HA Logic Studio Pro 0.1.12
+# HA Logic Studio Pro 0.1.13
 
 Öffentliche Testversion mit eigenem App-Slug `ha_logic_studio_pro`. Die App startet manuell und verwendet ihren eigenen Datenspeicher.
+
+Version 0.1.13 ergänzt Syntaxfarben und Zeilennummern für JavaScript und TypeScript. Kommentare erscheinen grün, Zeichenketten orange und Schlüsselwörter blau. Der Editor passt seine Farben an das helle oder dunkle Browserdesign an. Über **＋ → TypeScript** lässt sich ein neuer Entwurf erstellen und bearbeiten. Die Ausführung von TypeScript ist noch nicht verfügbar. Für JavaScript steht der bisherige Testlauf mit Demo-Zuständen zur Verfügung.
 
 In Version 0.1.12 richtet sich die Mindestbreite der linken Projektspalte nach den sichtbaren Skript- und Ordnernamen samt Einrückungen und Symbolen. Der Anfasser bleibt zum Verbreitern verfügbar. Lange Namen werden bei Platzmangel gekürzt und bleiben als Tooltip lesbar. Die Projektliste hat keinen horizontalen Scrollbalken.
 
