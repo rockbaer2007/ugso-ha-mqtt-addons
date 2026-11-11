@@ -19,7 +19,7 @@ export function graphEdges(links) {
     id: JSON.stringify([link.from, link.to]),
     source: link.from[0], sourceHandle: handleId('outputs', link.from[1]),
     target: link.to[0], targetHandle: handleId('inputs', link.to[1]),
-    type: 'smoothstep', data: {index}, ariaLabel: `Verbindung ${index + 1}`,
+    type: 'smoothstep', reconnectable: 'target', data: {index}, ariaLabel: `Verbindung ${index + 1}`,
   }));
 }
 

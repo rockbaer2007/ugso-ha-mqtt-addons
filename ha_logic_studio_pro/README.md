@@ -1,6 +1,8 @@
-# HA Logic Studio Pro 0.1.9
+# HA Logic Studio Pro 0.1.11
 
 Öffentliche Testversion mit eigenem App-Slug `ha_logic_studio_pro`. Die App startet manuell und verwendet ihren eigenen Datenspeicher.
+
+In Version 0.1.11 lassen sich Leitungen am belegten Zieleingang greifen und auf einen anderen passenden Eingang ziehen. Loslassen auf freier Fläche entfernt die Leitung. Rückgängig stellt sie wieder her. Die Simulation zeigt Zahlen, Texte und Zeiten direkt am Zieleingang an.
 
 Version 0.1.9 zeigt in der Skriptliste geschlossene und offene Ordnersymbole passend zum Zustand der jeweiligen Gruppe.
 

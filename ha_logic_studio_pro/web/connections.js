@@ -1,13 +1,14 @@
 import {analyze} from './core.js?v=0.1.12';
 
 // Both pointer gestures and keyboard/click connections use this gate.
-export function connectionCandidate(plan,defs,start,end){
+export function connectionCandidate(plan,defs,start,end,replacing){
  if(!start||!end||start.side===end.side)throw Error('Ausgang mit Eingang verbinden.');
  const source=start.side==='outputs'?start:end,target=start.side==='inputs'?start:end;
  if(source.block===target.block)throw Error('Keine Verbindung zum selben Baustein.');
- if(plan.links.length>=500)throw Error('Maximal 500 Verbindungen.');
+ const links=plan.links.filter(link=>link!==replacing);
+ if(links.length>=500)throw Error('Maximal 500 Verbindungen.');
  const link={from:[source.block,source.pin],to:[target.block,target.pin]};
- const candidate={...plan,links:[...plan.links,link]},errors=analyze(candidate,defs,false).errors;
+ const candidate={...plan,links:[...links,link]},errors=analyze(candidate,defs,false).errors;
  if(errors.length)throw Error(errors.join(' '));
  return link;
 }
