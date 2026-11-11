@@ -1,0 +1,1583 @@
+[
+  {
+    "type": "AND",
+    "category": "logic",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "BOOL"
+      }
+    ],
+    "extensible": {
+      "prefix": "IN",
+      "type": "BOOL",
+      "default": true,
+      "min": 2,
+      "max": 16
+    }
+  },
+  {
+    "type": "OR",
+    "category": "logic",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "BOOL"
+      }
+    ],
+    "extensible": {
+      "prefix": "IN",
+      "type": "BOOL",
+      "default": false,
+      "min": 2,
+      "max": 16
+    }
+  },
+  {
+    "type": "XOR",
+    "category": "logic",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "BOOL"
+      }
+    ],
+    "extensible": {
+      "prefix": "IN",
+      "type": "BOOL",
+      "default": false,
+      "min": 2,
+      "max": 16
+    }
+  },
+  {
+    "type": "NOT",
+    "category": "logic",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "BOOL",
+        "default": false
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "BOOL"
+      }
+    ]
+  },
+  {
+    "type": "RS",
+    "category": "memory",
+    "inputs": [
+      {
+        "id": "S",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "R1",
+        "type": "BOOL",
+        "default": false
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Q1",
+        "type": "BOOL"
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "SR",
+    "category": "memory",
+    "inputs": [
+      {
+        "id": "S1",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "R",
+        "type": "BOOL",
+        "default": false
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Q1",
+        "type": "BOOL"
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "R_TRIG",
+    "category": "memory",
+    "inputs": [
+      {
+        "id": "CLK",
+        "type": "BOOL",
+        "default": false
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": "BOOL"
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "F_TRIG",
+    "category": "memory",
+    "inputs": [
+      {
+        "id": "CLK",
+        "type": "BOOL",
+        "default": false
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": "BOOL"
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "TON",
+    "category": "timers",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "PT",
+        "type": "TIME",
+        "param": true,
+        "default": 1000
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": "BOOL"
+      },
+      {
+        "id": "ET",
+        "type": "TIME"
+      }
+    ],
+    "stateful": true,
+    "timeDependent": true
+  },
+  {
+    "type": "TOF",
+    "category": "timers",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "PT",
+        "type": "TIME",
+        "param": true,
+        "default": 1000
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": "BOOL"
+      },
+      {
+        "id": "ET",
+        "type": "TIME"
+      }
+    ],
+    "stateful": true,
+    "timeDependent": true
+  },
+  {
+    "type": "TP",
+    "category": "timers",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "PT",
+        "type": "TIME",
+        "param": true,
+        "default": 1000
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": "BOOL"
+      },
+      {
+        "id": "ET",
+        "type": "TIME"
+      }
+    ],
+    "stateful": true,
+    "timeDependent": true
+  },
+  {
+    "type": "BLINK",
+    "category": "timers",
+    "inputs": [
+      {
+        "id": "EN",
+        "type": "BOOL",
+        "default": true
+      },
+      {
+        "id": "TH",
+        "type": "TIME",
+        "param": true,
+        "default": 1000
+      },
+      {
+        "id": "TL",
+        "type": "TIME",
+        "param": true,
+        "default": 1000
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": "BOOL"
+      }
+    ],
+    "stateful": true,
+    "timeDependent": true
+  },
+  {
+    "type": "CTU",
+    "category": "counters",
+    "inputs": [
+      {
+        "id": "CU",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "R",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "PV",
+        "type": "INT",
+        "param": true,
+        "default": 10
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": "BOOL"
+      },
+      {
+        "id": "CV",
+        "type": "INT"
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "CTD",
+    "category": "counters",
+    "inputs": [
+      {
+        "id": "CD",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "LD",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "PV",
+        "type": "INT",
+        "param": true,
+        "default": 10
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": "BOOL"
+      },
+      {
+        "id": "CV",
+        "type": "INT"
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "CTUD",
+    "category": "counters",
+    "inputs": [
+      {
+        "id": "CU",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "CD",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "R",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "LD",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "PV",
+        "type": "INT",
+        "param": true,
+        "default": 10
+      }
+    ],
+    "outputs": [
+      {
+        "id": "QU",
+        "type": "BOOL"
+      },
+      {
+        "id": "QD",
+        "type": "BOOL"
+      },
+      {
+        "id": "CV",
+        "type": "INT"
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "GT",
+    "category": "compare",
+    "inputs": [
+      {
+        "id": "IN1",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "IN2",
+        "type": "REAL",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "BOOL"
+      }
+    ]
+  },
+  {
+    "type": "GE",
+    "category": "compare",
+    "inputs": [
+      {
+        "id": "IN1",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "IN2",
+        "type": "REAL",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "BOOL"
+      }
+    ]
+  },
+  {
+    "type": "LT",
+    "category": "compare",
+    "inputs": [
+      {
+        "id": "IN1",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "IN2",
+        "type": "REAL",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "BOOL"
+      }
+    ]
+  },
+  {
+    "type": "LE",
+    "category": "compare",
+    "inputs": [
+      {
+        "id": "IN1",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "IN2",
+        "type": "REAL",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "BOOL"
+      }
+    ]
+  },
+  {
+    "type": "EQ",
+    "category": "compare",
+    "inputs": [
+      {
+        "id": "IN1",
+        "type": "ANY",
+        "default": 0
+      },
+      {
+        "id": "IN2",
+        "type": "ANY",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "BOOL"
+      }
+    ]
+  },
+  {
+    "type": "NE",
+    "category": "compare",
+    "inputs": [
+      {
+        "id": "IN1",
+        "type": "ANY",
+        "default": 0
+      },
+      {
+        "id": "IN2",
+        "type": "ANY",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "BOOL"
+      }
+    ]
+  },
+  {
+    "type": "SEL",
+    "category": "select",
+    "inputs": [
+      {
+        "id": "G",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "IN0",
+        "type": {
+          "param": "type"
+        },
+        "default": 0
+      },
+      {
+        "id": "IN1",
+        "type": {
+          "param": "type"
+        },
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": {
+          "param": "type"
+        }
+      }
+    ],
+    "params": [
+      {
+        "id": "type",
+        "type": "ENUM",
+        "options": [
+          "BOOL",
+          "INT",
+          "REAL",
+          "TIME",
+          "STRING"
+        ],
+        "default": "REAL"
+      }
+    ]
+  },
+  {
+    "type": "MUX",
+    "category": "select",
+    "inputs": [
+      {
+        "id": "K",
+        "type": "INT",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": {
+          "param": "type"
+        }
+      }
+    ],
+    "params": [
+      {
+        "id": "type",
+        "type": "ENUM",
+        "options": [
+          "BOOL",
+          "INT",
+          "REAL",
+          "TIME",
+          "STRING"
+        ],
+        "default": "REAL"
+      }
+    ],
+    "extensible": {
+      "prefix": "IN",
+      "type": {
+        "param": "type"
+      },
+      "default": 0,
+      "min": 2,
+      "max": 16,
+      "start": 0
+    }
+  },
+  {
+    "type": "LIMIT",
+    "category": "select",
+    "inputs": [
+      {
+        "id": "MN",
+        "type": "REAL",
+        "param": true,
+        "default": 0
+      },
+      {
+        "id": "IN",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "MX",
+        "type": "REAL",
+        "param": true,
+        "default": 100
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "REAL"
+      }
+    ]
+  },
+  {
+    "type": "ADD",
+    "category": "arithmetic",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "REAL"
+      }
+    ],
+    "extensible": {
+      "prefix": "IN",
+      "type": "REAL",
+      "default": 0,
+      "min": 2,
+      "max": 16
+    }
+  },
+  {
+    "type": "MUL",
+    "category": "arithmetic",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "REAL"
+      }
+    ],
+    "extensible": {
+      "prefix": "IN",
+      "type": "REAL",
+      "default": 1,
+      "min": 2,
+      "max": 16
+    }
+  },
+  {
+    "type": "SUB",
+    "category": "arithmetic",
+    "inputs": [
+      {
+        "id": "IN1",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "IN2",
+        "type": "REAL",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "REAL"
+      }
+    ]
+  },
+  {
+    "type": "DIV",
+    "category": "arithmetic",
+    "inputs": [
+      {
+        "id": "IN1",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "IN2",
+        "type": "REAL",
+        "default": 1
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "REAL"
+      }
+    ]
+  },
+  {
+    "type": "MIN",
+    "category": "arithmetic",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "REAL"
+      }
+    ],
+    "extensible": {
+      "prefix": "IN",
+      "type": "REAL",
+      "default": 0,
+      "min": 2,
+      "max": 16
+    }
+  },
+  {
+    "type": "MAX",
+    "category": "arithmetic",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "REAL"
+      }
+    ],
+    "extensible": {
+      "prefix": "IN",
+      "type": "REAL",
+      "default": 0,
+      "min": 2,
+      "max": 16
+    }
+  },
+  {
+    "type": "ROUND",
+    "category": "arithmetic",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "DIGITS",
+        "type": "INT",
+        "param": true,
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "REAL"
+      }
+    ]
+  },
+  {
+    "type": "TO_BOOL",
+    "category": "convert",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "ANY",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "BOOL"
+      }
+    ]
+  },
+  {
+    "type": "TO_INT",
+    "category": "convert",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "ANY",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "INT"
+      }
+    ]
+  },
+  {
+    "type": "TO_REAL",
+    "category": "convert",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "ANY",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "REAL"
+      }
+    ]
+  },
+  {
+    "type": "TO_TIME",
+    "category": "convert",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "ANY",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "TIME"
+      }
+    ]
+  },
+  {
+    "type": "TO_STRING",
+    "category": "convert",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "ANY",
+        "default": ""
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "STRING"
+      }
+    ]
+  },
+  {
+    "type": "CONCAT",
+    "category": "convert",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "STRING"
+      }
+    ],
+    "extensible": {
+      "prefix": "IN",
+      "type": "ANY",
+      "default": "",
+      "min": 2,
+      "max": 16
+    }
+  },
+  {
+    "type": "HYST",
+    "category": "control",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "HIGH",
+        "type": "REAL",
+        "param": true,
+        "default": 1
+      },
+      {
+        "id": "LOW",
+        "type": "REAL",
+        "param": true,
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": "BOOL"
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "RAMP",
+    "category": "control",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "UP",
+        "type": "REAL",
+        "param": true,
+        "default": 1
+      },
+      {
+        "id": "DOWN",
+        "type": "REAL",
+        "param": true,
+        "default": 1
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "REAL"
+      }
+    ],
+    "stateful": true,
+    "timeDependent": true
+  },
+  {
+    "type": "PT1",
+    "category": "control",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "T",
+        "type": "TIME",
+        "param": true,
+        "default": 10000
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "REAL"
+      }
+    ],
+    "stateful": true,
+    "timeDependent": true
+  },
+  {
+    "type": "PID",
+    "category": "control",
+    "inputs": [
+      {
+        "id": "SP",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "PV",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "KP",
+        "type": "REAL",
+        "param": true,
+        "default": 1
+      },
+      {
+        "id": "TN",
+        "type": "TIME",
+        "param": true,
+        "default": 0
+      },
+      {
+        "id": "TV",
+        "type": "TIME",
+        "param": true,
+        "default": 0
+      },
+      {
+        "id": "YMIN",
+        "type": "REAL",
+        "param": true,
+        "default": 0
+      },
+      {
+        "id": "YMAX",
+        "type": "REAL",
+        "param": true,
+        "default": 100
+      },
+      {
+        "id": "RST",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "HOLD",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "MAN",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "YMAN",
+        "type": "REAL",
+        "default": 0
+      },
+      {
+        "id": "DB",
+        "type": "REAL",
+        "param": true,
+        "default": 0
+      },
+      {
+        "id": "INV",
+        "type": "BOOL",
+        "param": true,
+        "default": false
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Y",
+        "type": "REAL"
+      }
+    ],
+    "stateful": true,
+    "timeDependent": true
+  },
+  {
+    "type": "CHARCURVE",
+    "category": "control",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "REAL",
+        "default": 0
+      }
+    ],
+    "outputs": [
+      {
+        "id": "OUT",
+        "type": "REAL"
+      }
+    ],
+    "extensible": {
+      "prefix": "X",
+      "paired": [
+        "Y"
+      ],
+      "type": "REAL",
+      "default": 0,
+      "step": 10,
+      "min": 2,
+      "max": 10
+    }
+  },
+  {
+    "type": "STATE_IN",
+    "category": "iobroker",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": {
+          "param": "type"
+        }
+      }
+    ],
+    "params": [
+      {
+        "id": "oid",
+        "type": "OID",
+        "required": true
+      },
+      {
+        "id": "type",
+        "type": "ENUM",
+        "options": [
+          "BOOL",
+          "INT",
+          "REAL",
+          "STRING"
+        ],
+        "default": "REAL"
+      }
+    ]
+  },
+  {
+    "type": "STATE_OUT",
+    "category": "iobroker",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": "ANY",
+        "default": false
+      }
+    ],
+    "outputs": [],
+    "params": [
+      {
+        "id": "oid",
+        "type": "OID",
+        "required": true
+      },
+      {
+        "id": "ack",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "minInterval",
+        "type": "TIME",
+        "default": 0
+      }
+    ]
+  },
+  {
+    "type": "CONST",
+    "category": "iobroker",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": {
+          "param": "type"
+        }
+      }
+    ],
+    "params": [
+      {
+        "id": "type",
+        "type": "ENUM",
+        "options": [
+          "BOOL",
+          "INT",
+          "REAL",
+          "TIME",
+          "STRING"
+        ],
+        "default": "REAL"
+      },
+      {
+        "id": "value",
+        "type": {
+          "param": "type"
+        },
+        "default": 0
+      }
+    ]
+  },
+  {
+    "type": "CLOCK",
+    "category": "calendar",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "TOD",
+        "type": "TIME",
+        "clock": true
+      },
+      {
+        "id": "HOUR",
+        "type": "INT"
+      },
+      {
+        "id": "MIN",
+        "type": "INT"
+      },
+      {
+        "id": "WDAY",
+        "type": "INT"
+      },
+      {
+        "id": "DAY",
+        "type": "INT"
+      },
+      {
+        "id": "MONTH",
+        "type": "INT"
+      },
+      {
+        "id": "YEAR",
+        "type": "INT"
+      }
+    ],
+    "stateful": true,
+    "timeDependent": true
+  },
+  {
+    "type": "TIMEWINDOW",
+    "category": "calendar",
+    "inputs": [
+      {
+        "id": "START",
+        "type": "TIME",
+        "param": true,
+        "default": 28800000,
+        "clock": true
+      },
+      {
+        "id": "END",
+        "type": "TIME",
+        "param": true,
+        "default": 79200000,
+        "clock": true
+      }
+    ],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": "BOOL"
+      }
+    ],
+    "params": [
+      {
+        "id": "days",
+        "type": "ENUM",
+        "options": [
+          "all",
+          "weekdays",
+          "weekend"
+        ],
+        "default": "all"
+      }
+    ],
+    "timeDependent": true
+  },
+  {
+    "type": "SCHEDULE",
+    "category": "calendar",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": "BOOL"
+      }
+    ],
+    "params": [
+      {
+        "id": "cron",
+        "type": "CRON",
+        "default": "0 8 * * *",
+        "required": true
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "ASTRO",
+    "category": "calendar",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": "BOOL"
+      },
+      {
+        "id": "START",
+        "type": "TIME",
+        "clock": true
+      },
+      {
+        "id": "END",
+        "type": "TIME",
+        "clock": true
+      }
+    ],
+    "params": [
+      {
+        "id": "start",
+        "type": "ENUM",
+        "options": [
+          "nightEnd",
+          "nauticalDawn",
+          "dawn",
+          "sunrise",
+          "sunriseEnd",
+          "goldenHourEnd",
+          "solarNoon",
+          "goldenHour",
+          "sunsetStart",
+          "sunset",
+          "dusk",
+          "nauticalDusk",
+          "night",
+          "nadir"
+        ],
+        "default": "sunset"
+      },
+      {
+        "id": "startOffset",
+        "type": "INT",
+        "default": 0
+      },
+      {
+        "id": "end",
+        "type": "ENUM",
+        "options": [
+          "nightEnd",
+          "nauticalDawn",
+          "dawn",
+          "sunrise",
+          "sunriseEnd",
+          "goldenHourEnd",
+          "solarNoon",
+          "goldenHour",
+          "sunsetStart",
+          "sunset",
+          "dusk",
+          "nauticalDusk",
+          "night",
+          "nadir"
+        ],
+        "default": "sunrise"
+      },
+      {
+        "id": "endOffset",
+        "type": "INT",
+        "default": 0
+      }
+    ],
+    "timeDependent": true
+  },
+  {
+    "type": "LOG",
+    "category": "messages",
+    "inputs": [
+      {
+        "id": "TRIG",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "IN",
+        "type": "ANY",
+        "default": ""
+      }
+    ],
+    "outputs": [],
+    "params": [
+      {
+        "id": "text",
+        "type": "STRING",
+        "default": "%s"
+      },
+      {
+        "id": "level",
+        "type": "ENUM",
+        "options": [
+          "info",
+          "warn",
+          "error",
+          "debug"
+        ],
+        "default": "info"
+      },
+      {
+        "id": "when",
+        "type": "ENUM",
+        "options": [
+          "edge",
+          "change"
+        ],
+        "default": "edge"
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "NOTIFY",
+    "category": "messages",
+    "inputs": [
+      {
+        "id": "TRIG",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "IN",
+        "type": "ANY",
+        "default": ""
+      }
+    ],
+    "outputs": [],
+    "params": [
+      {
+        "id": "text",
+        "type": "STRING",
+        "default": "%s"
+      },
+      {
+        "id": "category",
+        "type": "ENUM",
+        "options": [
+          "message",
+          "alert"
+        ],
+        "default": "message"
+      },
+      {
+        "id": "when",
+        "type": "ENUM",
+        "options": [
+          "edge",
+          "change"
+        ],
+        "default": "edge"
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "SENDTO",
+    "category": "messages",
+    "inputs": [
+      {
+        "id": "TRIG",
+        "type": "BOOL",
+        "default": false
+      },
+      {
+        "id": "IN",
+        "type": "ANY",
+        "default": ""
+      }
+    ],
+    "outputs": [],
+    "params": [
+      {
+        "id": "instance",
+        "type": "INSTANCE",
+        "required": true
+      },
+      {
+        "id": "text",
+        "type": "STRING",
+        "default": "%s"
+      },
+      {
+        "id": "title",
+        "type": "STRING",
+        "default": ""
+      },
+      {
+        "id": "command",
+        "type": "STRING",
+        "default": "send"
+      },
+      {
+        "id": "when",
+        "type": "ENUM",
+        "options": [
+          "edge",
+          "change"
+        ],
+        "default": "edge"
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "JS",
+    "category": "expert",
+    "inputs": [],
+    "outputs": [],
+    "extensible": {
+      "prefix": "IN",
+      "type": "ANY",
+      "default": 0,
+      "min": 0,
+      "max": 8,
+      "count": 2
+    },
+    "extensibleOutputs": {
+      "prefix": "OUT",
+      "type": "ANY",
+      "min": 1,
+      "max": 8
+    },
+    "params": [
+      {
+        "id": "code",
+        "type": "CODE",
+        "default": "return IN1;"
+      }
+    ],
+    "stateful": true
+  },
+  {
+    "type": "FB_IN",
+    "category": "interface",
+    "inputs": [],
+    "outputs": [
+      {
+        "id": "Q",
+        "type": {
+          "param": "type"
+        }
+      }
+    ],
+    "params": [
+      {
+        "id": "pin",
+        "type": "NAME",
+        "required": true
+      },
+      {
+        "id": "type",
+        "type": "ENUM",
+        "options": [
+          "BOOL",
+          "INT",
+          "REAL",
+          "TIME",
+          "STRING"
+        ],
+        "default": "BOOL"
+      },
+      {
+        "id": "value",
+        "type": {
+          "param": "type"
+        },
+        "default": false
+      }
+    ]
+  },
+  {
+    "type": "FB_OUT",
+    "category": "interface",
+    "inputs": [
+      {
+        "id": "IN",
+        "type": {
+          "param": "type"
+        },
+        "default": false
+      }
+    ],
+    "outputs": [],
+    "params": [
+      {
+        "id": "pin",
+        "type": "NAME",
+        "required": true
+      },
+      {
+        "id": "type",
+        "type": "ENUM",
+        "options": [
+          "BOOL",
+          "INT",
+          "REAL",
+          "TIME",
+          "STRING"
+        ],
+        "default": "BOOL"
+      }
+    ]
+  }
+]
