@@ -1,6 +1,6 @@
-# HA Logic Studio Pro 0.1.15
+# HA Logic Studio Pro 0.1.16
 
-Blocks A und Blocks JS verwenden den integrierten Katalog von Blocks for HA. Blocks JS kann HA-Automationspläne im Testprotokoll anzeigen oder als YAML öffnen. Der ioBroker-Import erkennt jetzt zusätzlich Zustandswerte, unmittelbare boolesche Schaltbefehle, Protokollblöcke und Konvertierungen.
+Blocks A und Blocks JS verwenden den integrierten Katalog von Blocks for HA. Blocks JS kann HA-Automationspläne im Testprotokoll anzeigen. Der ioBroker-Import erkennt Zustandswerte, unmittelbare boolesche Schaltbefehle, Protokollblöcke und Konvertierungen.
 
 JavaScript und TypeScript teilen sich den Testlauf mit Demo-Zuständen und den Aufrufen `getState`, `setState` und `log`. TypeScript wird vor der Ausführung transpiliert. Vollständige Typprüfung und dauerhafte Auslöser stehen noch aus.
 
@@ -18,7 +18,7 @@ Seit 0.1.13 zeigen JavaScript und TypeScript Syntaxfarben und Zeilennummern. Die
 
 Nach dem Start **Weboberfläche öffnen**. Über **＋ → HA-YAML** ein Skript oder eine Automation erstellen. Vorhandene YAML-Dateien können geöffnet, bearbeitet, auf Syntax und Grundstruktur geprüft und exportiert werden. Die Ausführung einer exportierten Konfiguration übernimmt Home Assistant nach dem manuellen Übernehmen.
 
-Rules und Blocks erzeugen über **Als HA-YAML öffnen** einen separaten bearbeitbaren Tab. Der Funktionsplan bringt den bisherigen Editor mit Import, Export, Simulation und Entitätsauswahl mit.
+Rules und Blocks A erzeugen über **Als HA-YAML öffnen** einen separaten bearbeitbaren Tab. Der Funktionsplan bringt den bisherigen Editor mit Import, Export, Simulation und Entitätsauswahl mit.
 
 JavaScript-Testläufe verwenden Demo-Zustände und protokollieren simulierte HA-Aktionen im Editor. Projekte und Ordner werden im aktuellen Browser gespeichert. Zum Verschieben die Sortierpfeile anklicken, Skripte in einen Ordner oder vor einen anderen Eintrag ziehen und mit den roten Pfeilen speichern.
 

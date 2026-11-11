@@ -731,7 +731,6 @@ async function renderBlocks(panel, project, id) {
     const read = blocks.read;
     const openYaml = () => {
       if (!blocks.usesAutomation()) {
-        if (project.type === 'blocks-js') return report('Für YAML einen HA-Automationsblock mit Auslöser und Aktion verbinden.', true);
         return openGenerated(project, read, report);
       }
       try {
@@ -761,7 +760,7 @@ async function renderBlocks(panel, project, id) {
             } catch (error) { report(error.message, true); }
           };
           input.click();
-        }), button('Als HA-YAML öffnen', openYaml));
+        }));
     } else row.append(button('Als HA-YAML öffnen', openYaml));
   } catch (error) {
     report(error.message, true);
