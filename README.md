@@ -6,7 +6,7 @@ Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetrage
 
 ## Enthaltene Add-ons
 
-- [HA Logic Studio Pro](ha_logic_studio_pro/README.md) **0.1.23**, öffentliche Testversion mit serverseitiger JavaScript-/TypeScript-Runtime, Live-HA-Anbindung, Blocks JS und Funktionsplan.
+- [HA Logic Studio Pro](ha_logic_studio_pro/README.md) **0.1.26**, öffentliche Testversion mit serverseitiger Funktionsplan-Ausführung und Werkzeugleiste in DE/EN/FR.
 
 - [Dashboard-Benutzerverwaltung](dashboard_user_manager/README.md): **0.1.4**, Benutzer als Checkbox-Spalten für alle Ansichten oder einzeln zuordnen. Automatische DE/EN/FR-Oberfläche, Vorschau-freies Speichern mit Dashboard-Backup und Konflikterkennung. [DE](https://opensource.ugso-software.de/projects/dashboard-user-manager/) / [EN](https://opensource.ugso-software.de/en/projects/dashboard-user-manager/) / [FR](https://opensource.ugso-software.de/fr/projects/dashboard-user-manager/). Bestehende lokale Apps bleiben separate Installationen.
 

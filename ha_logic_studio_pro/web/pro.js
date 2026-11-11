@@ -11,7 +11,9 @@ const projectSplitter = $('project-splitter');
 const projects = new Map();
 const openTabs = new Set();
 const icons = {yaml: '{ }', rules: 'ϟ', blocks: '', 'blocks-js': '', flow: '', javascript: 'JS', typescript: 'TS'};
-const runnable = type => ['javascript', 'typescript', 'blocks-js'].includes(type);
+const runnable = type => ['javascript', 'typescript', 'blocks-js', 'flow'].includes(type);
+const checkpoints = new Map();
+let flowProjectId, legacyChecked = false;
 let runtimeJobs = {};
 let runtimeRequest = false;
 const runtimeState = id => runtimeJobs[id]?.state ?? 'stopped';
@@ -36,7 +38,7 @@ const projectStorageKey = 'ha-logic-studio-pro-projects-v1';
 const recoveryKey = projectStorageKey + '-recovery';
 let projectRevision = null;
 let pendingSave;
-let saveInProgress = false;
+let saveInProgress;
 const languageKey = 'ha-logic-studio-pro-language';
 let locale = 'de';
 try {
@@ -49,8 +51,30 @@ function projectMessage(text) {
   $('project-message').hidden = !text;
 }
 
+const editable = ['name', 'source', 'workspace', 'fields', 'graph'];
+function snapshot(project) {
+  return structuredClone(Object.fromEntries(editable.map(key => [key, project[key]])));
+}
+
+function captureFlow() {
+  const project = projects.get(flowProjectId);
+  if (!project) return;
+  flowFrame?.contentDocument?.dispatchEvent(new CustomEvent('pro-fbd-read', {detail: ({plan}) => {
+    project.graph = {...project.graph, plan};
+  }}));
+}
+
+function commitEditor(id) {
+  const project = projects.get(id);
+  if (active === id && project.type === 'flow') captureFlow();
+  if (active === id && blocks) project.workspace = blocks.snapshot();
+  checkpoints.set(id, snapshot(project));
+  return saveProjects();
+}
+
 function saveProjects() {
-  const entries = [...projects].map(([id, {protocol, running, problem, ...draft}]) => [id, draft]);
+  const entries = [...projects].map(([id, {protocol, running, problem, ...draft}]) =>
+    [id, {...draft, ...checkpoints.get(id)}]);
   const tree = {folders: [...projectFolders], projects: entries};
   try {
     localStorage.setItem(recoveryKey, JSON.stringify({revision: projectRevision, tree}));
@@ -65,9 +89,14 @@ function saveProjects() {
   return true;
 }
 
-async function flushProjects() {
-  if (saveInProgress || projectRevision === null || !pendingSave) return;
-  saveInProgress = true;
+function flushProjects() {
+  if (saveInProgress) return saveInProgress;
+  if (projectRevision === null || !pendingSave) return;
+  saveInProgress = writePendingProjects().finally(() => { saveInProgress = undefined; });
+  return saveInProgress;
+}
+
+async function writePendingProjects() {
   try {
     while (pendingSave) {
       const tree = pendingSave;
@@ -92,7 +121,7 @@ async function flushProjects() {
     projectMessage('');
   } catch {
     projectMessage('Projektbaum konnte nicht auf dem Server gespeichert werden. Der lokale Entwurf ist im Projektmenü verfügbar.');
-  } finally { saveInProgress = false; }
+  }
 }
 
 function loadProjectTree(saved) {
@@ -371,7 +400,6 @@ const flowOutputLabels = {
   automation: 'HA-Automation · YAML',
   script: 'HA-Skript · YAML',
   blueprint: 'HA-Blueprint · YAML',
-  javascript: 'JavaScript · HA-Schnittstelle',
 };
 
 function toolIcon(group, icon, label, action) {
@@ -387,13 +415,13 @@ function updateEngineControl(control, id) {
   const isRunning = runtimeActive(id);
   const label = isRunning ? 'Runtime stoppen' : 'In Runtime starten';
   control.dataset.projectRun = isRunning ? 'running' : 'stopped';
-  control.title = translatePro(label, locale);
+  control.title = label;
   control.setAttribute('aria-label', label);
   control.querySelector('path').setAttribute('d', isRunning ? 'M7 5h3v14H7zm7 0h3v14h-3z' : editorIcons.play);
   control.disabled = sortingProjects || runtimeRequest;
   const status = control.parentElement.querySelector('[data-runtime-status]');
-  if (status) status.textContent = translatePro({starting: 'Runtime startet …', running: 'Skript läuft',
-    stopped: 'Skript läuft nicht', error: 'Runtime-Fehler'}[state], locale);
+  if (status) status.textContent = {starting: 'Runtime startet …', running: 'Skript läuft',
+    stopped: 'Skript läuft nicht', error: 'Runtime-Fehler'}[state];
 }
 
 function syncRuntime(next) {
@@ -423,6 +451,7 @@ async function controlRuntime(id, command) {
   try {
     const payload = {id, command};
     if (command !== 'stop') {
+      if (active === id && !commitEditor(id)) throw new Error('Projekt konnte nicht gespeichert werden.');
       await flushProjects();
       if (projectRevision === null || pendingSave || saveInProgress) throw new Error('Projekt zuerst auf dem Server speichern.');
       payload.revision = projectRevision;
@@ -795,6 +824,7 @@ function renderNavigation() {
 }
 
 function leaveEditor() {
+  captureFlow();
   codeEditor?.destroy();
   codeEditor = undefined;
   blocksRender = undefined;
@@ -833,6 +863,7 @@ function show(id, refresh = false) {
   renderNavigation();
   renderProtocol();
   const project = projects.get(id);
+  if (!checkpoints.has(id)) checkpoints.set(id, snapshot(project));
   if (project.type === 'flow') {
     const panel = element('section');
     panel.className = 'project-panel flow-tools';
@@ -868,6 +899,27 @@ function show(id, refresh = false) {
       target.dispatchEvent(new Event('change', {bubbles: true}));
     };
     right.append(output);
+    const mode = element('select');
+    for (const [value, label] of [['auto', 'Automatisch'], ['cycle', 'Fester Zyklus']]) {
+      const option = element('option', label);
+      option.value = value;
+      mode.append(option);
+    }
+    mode.setAttribute('aria-label', 'FBD-Ausführung');
+    const interval = element('input');
+    interval.type = 'number';
+    interval.min = '100';
+    interval.max = '60000';
+    interval.setAttribute('aria-label', 'Zyklus in Millisekunden');
+    mode.value = project.graph?.mode ?? 'auto';
+    interval.value = project.graph?.interval ?? 200;
+    interval.hidden = mode.value !== 'cycle';
+    mode.onchange = interval.onchange = () => {
+      interval.hidden = mode.value !== 'cycle';
+      project.graph = {...project.graph, mode: mode.value, interval: Number(interval.value)};
+    };
+    mode.onchange();
+    right.append(mode, interval);
     toolIcon(right, 'preview', 'Ausgabe ansehen', () => childClick('export'));
     const syncOutput = () => {
       const control = editor.querySelector('.flow-output');
@@ -875,7 +927,9 @@ function show(id, refresh = false) {
       if (!control || !target) return;
       if (!control.options.length) {
         for (const option of target.options) {
-          const copy = element('option', flowOutputLabels[option.value] ?? option.textContent);
+          const label = flowOutputLabels[option.value];
+          if (!label) continue;
+          const copy = element('option', label);
           copy.value = option.value;
           control.append(copy);
         }
@@ -883,12 +937,34 @@ function show(id, refresh = false) {
       control.value = target.value;
       control.disabled = false;
     };
+    let flowLoaded = false;
+    const loadFlow = () => {
+      const doc = flowFrame.contentDocument;
+      if (flowLoaded || !doc?.documentElement.hasAttribute('data-embedded-pro')) return;
+      flowLoaded = true;
+      if (!legacyChecked && !project.graph.plan) {
+        doc.dispatchEvent(new CustomEvent('pro-fbd-read', {detail: ({plan}) => {
+          if (plan.blocks.length) project.graph.plan = plan;
+        }}));
+      }
+      legacyChecked = true;
+      doc.dispatchEvent(new CustomEvent('pro-fbd-load', {detail: project.graph.plan}));
+      flowProjectId = id;
+    };
+    if (flowFrame && flowProjectId !== id) {
+      flowFrame.remove();
+      flowFrame = undefined;
+      flowProjectId = undefined;
+    }
     if (!flowFrame) {
       flowFrame = element('iframe');
+      flowProjectId = id;
       flowFrame.title = 'Funktionsplan';
       flowFrame.src = './funktionsplan.html?pro=' + locale;
+      flowFrame.addEventListener('pro-fbd-ready', () => { loadFlow(); syncOutput(); syncLanguage(); });
       flowFrame.addEventListener('load', () => {
         const doc = flowFrame.contentDocument;
+        loadFlow();
         doc?.addEventListener('pro-fbd-render', syncOutput);
         syncOutput();
         const bottom = doc?.getElementById('bottom');
@@ -915,6 +991,7 @@ function show(id, refresh = false) {
       editor.append(flowFrame);
     }
     flowFrame.hidden = false;
+    loadFlow();
     syncOutput();
     return;
   }
@@ -937,10 +1014,24 @@ function toolbar(panel, project) {
   name.onchange = () => {
     project.name = name.value.trim() || project.name;
     name.value = project.name;
-    if (!sortingProjects) saveProjects();
     renderNavigation();
   };
   row.append(name);
+  const id = active;
+  const save = button('Speichern', () => commitEditor(id));
+  const cancel = button('Abbrechen', () => {
+    const saved = checkpoints.get(id);
+    if (!saved) return;
+    leaveEditor();
+    flowFrame?.remove();
+    flowFrame = undefined;
+    flowProjectId = undefined;
+    Object.assign(project, structuredClone(saved));
+    show(id, true);
+  });
+  save.className = 'editor-commit';
+  cancel.className = 'editor-discard';
+  row.append(save, cancel);
   panel.append(row);
   return row;
 }
@@ -1333,7 +1424,7 @@ function updateProjectId() {
 
 function chooseProjectDetails(draft) {
   projectDraft = draft;
-  projectName.value = draft.name;
+  projectName.value = translatePro(draft.name, locale);
   projectFolder.replaceChildren(...[...projectFolders].map(([id, name]) => {
     const option = element('option', name);
     option.value = id;

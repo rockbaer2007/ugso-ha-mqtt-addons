@@ -10,6 +10,9 @@ import {mountFlow} from './vendor/flow-editor.js?v=0.1.12';
 import {boundedPosition} from './flow-model.js?v=0.1.12';
 import {connectLanguage,translate,locales} from './i18n.js?v=0.1.12';
 const $=s=>document.querySelector(s),KEY='ha-logic-studio-pro-flow-v1',PREF='ha-logic-studio-pro-preferences-v1';
+const defaultPlanName = emptyPlan().name;
+const proLocale = new URLSearchParams(location.search).get('pro');
+const embeddedInPro = window.parent !== window && locales.includes(proLocale);
 const defs=adapt(await (await fetch('./reference-blocks.json',{cache:'no-store'})).json()),byType=new Map(defs.map(d=>[d.type,d]));
 let plan=emptyPlan(),selected=null,pending=null,zoom=1,tab='all',docs=false,history=[],future=[],values=new Map(),prefs={favorites:[],recent:[],collapsed:[]};
 let haConnection=null,flowCanvas=null;
@@ -23,7 +26,7 @@ function el(tag,cls,text){const n=document.createElement(tag);if(cls)n.className
 function status(text){$('#status').textContent=text;}
 function renderShortcuts(root){const section=el('details','shortcut-help');section.open=true;section.append(el('summary',null,'Tastenkürzel'));const table=el('table');for(const [key,label]of [['Ctrl+Z / Ctrl+Y','Rückgängig / wiederholen'],['Del','Ausgewähltes löschen'],['Esc','Verbindung abbrechen / Menü schließen'],['Enter / Space','Anschluss wählen / verbinden'],['Maus ziehen','Vom Ausgang zum passenden Eingang verbinden']]){const row=el('tr');row.append(el('th',null,key),el('td',null,label));table.append(row);}section.append(table,el('p',null,'Baustein auswählen: darunter erscheinen seine Beschreibung und Anschlüsse. Die Simulation führt keine HA-Aktionen aus.'));root.append(section);}
 function checkpoint(){history.push(JSON.stringify(plan));if(history.length>50)history.shift();future=[];values.clear();}
-function persist(){if(!write(KEY,plan))status('Browserspeicher nicht verfügbar – Projekt bitte als Datei sichern.');}
+function persist(){if(!document.documentElement.hasAttribute('data-embedded-pro')&&!write(KEY,plan))status('Browserspeicher nicht verfügbar – Projekt bitte als Datei sichern.');}
 function change(fn){checkpoint();fn();persist();render();}
 function color(type){return ({BOOL:'#38d984',REAL:'#22c9ec',INT:'#578cff',TIME:'#ffbf27',STRING:'#b7db68',ANY:'#adb6c3',FLOW:'#ffa632',REFERENCE:'#e8d266'})[type]||'#b7b0fc';}
 function accent(d){return categories.find(c=>c[0]===d.category)?.[2]||'#888';}
@@ -59,12 +62,16 @@ function renderProperties(){const root=$('#properties');root.replaceChildren();i
 function remove(){if(!selected)return;change(()=>{plan.blocks=plan.blocks.filter(b=>b.id!==selected);plan.links=plan.links.filter(l=>l.from[0]!==selected&&l.to[0]!==selected);selected=null;pending=null;});}
 function blockMenu(b){const box=el('div','block-menu'),button=el('button',null,'⋮'),menu=el('div','block-menu-items');button.title='Baustein-Menü '+b.name;button.setAttribute('aria-label',button.title);button.setAttribute('aria-expanded','false');menu.hidden=true;menu.setAttribute('role','menu');for(const [label,action]of [['Eigenschaften',()=>{selected=b.id;docs=false;render();}],['Duplizieren',()=>change(()=>{if(plan.blocks.length>=200){status('Maximal 200 Bausteine.');return;}const copy=structuredClone(b);copy.id=createBlock(byType.get(b.type)).id;copy.name=b.name+' Kopie';copy.x+=40;copy.y+=40;plan.blocks.push(copy);selected=copy.id;})],['Löschen',()=>{selected=b.id;remove();}]]){const item=el('button',null,label);item.setAttribute('role','menuitem');item.onclick=e=>{e.stopPropagation();menu.hidden=true;action();};menu.append(item);}button.onclick=e=>{e.stopPropagation();for(const other of document.querySelectorAll('.block-menu-items'))if(other!==menu)other.hidden=true;menu.hidden=!menu.hidden;button.setAttribute('aria-expanded',String(!menu.hidden));};box.append(button,menu);return box;}
 document.addEventListener('click',e=>{if(!e.target.closest('.block-menu'))for(const menu of document.querySelectorAll('.block-menu-items'))menu.hidden=true;});document.addEventListener('keydown',e=>{if(e.key==='Escape')for(const menu of document.querySelectorAll('.block-menu-items'))menu.hidden=true;});
-function render(){renderPalette();renderNodes();renderProperties();$('#target').value=plan.target;$('#name').value=plan.name;$('#count').textContent=plan.blocks.length+' Bausteine · '+plan.links.length+' Verbindungen';$('#undo').disabled=!history.length;$('#redo').disabled=!future.length;const issues=analyze(plan,byType).errors;$('#issues').textContent=issues.length?issues.join('\n'):'Grundprüfung erfolgreich. Ausgabevorschau vor Verwendung kontrollieren.';if(document.documentElement.hasAttribute('data-embedded-pro'))document.dispatchEvent(new Event('pro-fbd-render'));}
+function render(){renderPalette();renderNodes();renderProperties();$('#target').value=outputPlan().target;const name=$('#name');name.placeholder=defaultPlanName;name.value=plan.name===defaultPlanName?'':plan.name;$('#count').textContent=plan.blocks.length+' Bausteine · '+plan.links.length+' Verbindungen';$('#undo').disabled=!history.length;$('#redo').disabled=!future.length;const issues=analyze(plan,byType).errors;$('#issues').textContent=issues.length?issues.join('\n'):'Grundprüfung erfolgreich. Ausgabevorschau vor Verwendung kontrollieren.';if(document.documentElement.hasAttribute('data-embedded-pro'))document.dispatchEvent(new Event('pro-fbd-render'));}
+function outputPlan(){
+  return document.documentElement.hasAttribute('data-embedded-pro') && plan.target==='javascript'
+    ? {...plan,target:'automation'} : plan;
+}
 function download(name,text,type){const url=URL.createObjectURL(new Blob([text],{type})),a=el('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function filename(){return plan.name.replace(/[^a-zA-Z0-9_-]+/g,'-').slice(0,70)||'logic-plan';}
 function backup(){const backups=safeRead(KEY+'-backups')||[];write(KEY+'-backups',[{at:new Date().toISOString(),plan},...backups].slice(0,5));}
 function chooseHA(entity){const current=plan.blocks.find(b=>b.id===selected);if(!current)throw Error('Baustein fehlt.');const candidate=structuredClone(plan),b=candidate.blocks.find(n=>n.id===selected);b.params=entityParameters(b.params,entity,b.type);if(b.name===b.type||b.name.startsWith(b.type+'_'))b.name=entity.name;const errors=analyze(candidate,byType,false).errors;if(errors.length)throw Error('Auswahl passt nicht zu vorhandenen Verbindungen: '+errors.join(' ')+' Verbindung zuerst lösen oder Signaltyp manuell wählen.');change(()=>plan=candidate);status('HA-Entität übernommen: '+entity.entity_id+' · nur gelesen, keine Geräteaktion.');}
-haConnection=connectHA({getPlan:()=>plan,getPreferences:()=>prefs,hasLocal:()=>!!safeRead(KEY),selected:()=>plan.blocks.find(b=>b.id===selected),choose:chooseHA,report:status,restore:data=>{const restored=loadPlan(data.plan,byType);backup();checkpoint();plan=restored;if(data.preferences)for(const k of Object.keys(prefs))if(Array.isArray(data.preferences[k]))prefs[k]=data.preferences[k].filter(v=>typeof v==='string').slice(0,100);if(locales.includes(data.preferences?.language))prefs.language=data.preferences.language;write(KEY,plan);write(PREF,prefs);selected=null;pending=null;render();status('App-Projekt geladen; vorheriger Browserstand gesichert.');}});
+haConnection=connectHA({workspace:!embeddedInPro,getPlan:()=>plan,getPreferences:()=>prefs,hasLocal:()=>!!safeRead(KEY),selected:()=>plan.blocks.find(b=>b.id===selected),choose:chooseHA,report:status,restore:data=>{const restored=loadPlan(data.plan,byType);backup();checkpoint();plan=restored;if(data.preferences)for(const k of Object.keys(prefs))if(Array.isArray(data.preferences[k]))prefs[k]=data.preferences[k].filter(v=>typeof v==='string').slice(0,100);if(locales.includes(data.preferences?.language))prefs.language=data.preferences.language;write(KEY,plan);write(PREF,prefs);selected=null;pending=null;render();status('App-Projekt geladen; vorheriger Browserstand gesichert.');}});
 $('#save').onclick=()=>download(filename()+'.logic.json',JSON.stringify(plan,null,2),'application/json');$('#open').onclick=()=>$('#file').click();$('#file').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>1_000_000)throw Error('Maximal 1 MB.');const next=loadPlan(JSON.parse(await file.text()),byType);backup();change(()=>{plan=next;selected=null;pending=null;});status('Projekt geladen; vorheriger Stand lokal gesichert und per Rückgängig erreichbar.');}catch(error){status('Import abgebrochen: '+error.message);}e.target.value='';};
 $('#new').onclick=()=>{backup();change(()=>{plan=emptyPlan();selected=null;pending=null;});};$('#example').onclick=()=>{backup();change(()=>{plan=emptyPlan();plan.name='Freigabe UND Anwesenheit';const a=createBlock(byType.get('STATE_IN'),70,90),b=createBlock(byType.get('STATE_IN'),70,330),and=createBlock(byType.get('AND'),390,180),out=createBlock(byType.get('STATE_OUT'),720,180);a.params.oid='input_boolean.demo_freigabe';a.params.demo=true;a.name='Freigabe';b.params.oid='input_boolean.demo_anwesend';b.params.demo=true;b.name='Anwesenheit';and.name='UND';out.params.oid='input_boolean.demo_licht';out.name='Licht';plan.blocks=[a,b,and,out];plan.links=[{from:[a.id,'Q'],to:[and.id,'IN1']},{from:[b.id,'Q'],to:[and.id,'IN2']},{from:[and.id,'OUT'],to:[out.id,'IN']}];selected=and.id;pending=null;});};
 $('#undo').onclick=()=>{if(!history.length)return;future.push(JSON.stringify(plan));plan=JSON.parse(history.pop());selected=null;pending=null;values.clear();persist();render();};$('#redo').onclick=()=>{if(!future.length)return;history.push(JSON.stringify(plan));plan=JSON.parse(future.pop());selected=null;pending=null;values.clear();persist();render();};$('#target').onchange=e=>change(()=>plan.target=e.target.value);$('#name').onchange=e=>change(()=>plan.name=e.target.value||'Funktionsplan');$('#search').oninput=renderPalette;for(const button of document.querySelectorAll('[data-tab]'))button.onclick=()=>{tab=button.dataset.tab;document.querySelectorAll('[data-tab]').forEach(n=>n.classList.toggle('active',n===button));renderPalette();};$('#properties-tab').onclick=()=>{docs=false;$('#properties-tab').classList.add('active');$('#docs-tab').classList.remove('active');renderProperties();};$('#docs-tab').onclick=()=>{docs=true;$('#docs-tab').classList.add('active');$('#properties-tab').classList.remove('active');renderProperties();};$('#simulate').onclick=()=>{try{const result=scan(plan,byType,{memory:simulationMemory,now:simulationNow});simulationMemory=result.memory;values=result.values;simulationSignals=result.signals;renderNodes();status('Simulationsschritt – nur Demowerte, keine HA-Aktionen.');}catch(e){status('Simulation nicht möglich: '+e.message);}};
@@ -89,7 +96,7 @@ flowCanvas=mountFlow($('#flow-root'),{
 });
 render();
 
-connectExport({getPlan:()=>plan,defs:byType,update:options=>change(()=>plan.exportOptions=options),report:status});
+connectExport({getPlan:outputPlan,defs:byType,update:options=>change(()=>plan.exportOptions=options),report:status});
 if (new URLSearchParams(location.search).has('pro')) {
   document.addEventListener('pro-export-js', event => {
     try { event.detail.success(compile({...plan, target: 'javascript'}, byType)); }
@@ -101,12 +108,17 @@ const advanceSimulation=el('button',null,'Simulation +1 s');advanceSimulation.id
 connectImport({apply:next=>{backup();change(()=>{plan=loadPlan(next,byType);selected=null;pending=null;simulationMemory={};});},report:status});
 import {arrangeToolbar} from './toolbar.js?v=0.1.12';
 arrangeToolbar();
-const proLocale = new URLSearchParams(location.search).get('pro');
-const embeddedInPro = window.parent !== window && locales.includes(proLocale);
 document.documentElement.toggleAttribute('data-embedded-pro', embeddedInPro);
 if (embeddedInPro) {
+  document.addEventListener('pro-fbd-read', event => event.detail({plan: structuredClone(plan)}));
+  document.addEventListener('pro-fbd-load', event => {
+    plan = event.detail ? loadPlan(event.detail, byType) : emptyPlan();
+    selected = null; pending = null; history = []; future = []; values.clear();
+    simulationMemory = {}; simulationSignals.clear(); simulationNow = Date.now();
+    render();
+  });
   prefs.language = proLocale;
-  renderPalette();
+  render();
 }
 const language = connectLanguage({
   picker: !embeddedInPro,
@@ -114,3 +126,4 @@ const language = connectLanguage({
   setLanguage: locale => {prefs.language=locale;write(PREF,prefs);renderPalette();},
 });
 if (embeddedInPro) document.addEventListener('pro-language', event => language.changeLanguage(event.detail));
+if (embeddedInPro) window.frameElement?.dispatchEvent(new Event('pro-fbd-ready'));

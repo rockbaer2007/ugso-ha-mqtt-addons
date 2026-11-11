@@ -58,7 +58,7 @@ export const messages = {
  'Vergleich':['Comparison','Comparaison'], 'Auswahl':['Selection','Sélection'], 'Arithmetik':['Arithmetic','Arithmétique'],
  'Umwandlung':['Conversion','Conversion'], 'Regelung':['Control','Régulation'], 'Kalender':['Calendar','Calendrier'],
  'Meldungen':['Messages','Messages'], 'Experte':['Expert','Expert'], 'Eigene Bausteine':['Custom blocks','Blocs personnalisés'], 'Struktur':['Structure','Structure'],
- 'Planname':['Plan name','Nom du plan'], 'Eigenschaften':['Properties','Propriétés'], 'Dokumentation':['Documentation','Documentation'],
+ 'Planname':['Plan name','Nom du plan'], 'Neuer Funktionsplan':['New function plan','Nouveau plan fonctionnel'], 'Eigenschaften':['Properties','Propriétés'], 'Dokumentation':['Documentation','Documentation'],
  'Funktionsplan':['Function plan','Plan fonctionnel'], 'Instanzname':['Instance name','Nom de l’instance'], 'Kommentar':['Comment','Commentaire'],
  'HA-Entity-ID':['HA entity ID','Identifiant d’entité HA'], 'HA-Entität auswählen':['Select HA entity','Choisir une entité HA'],
  'HA-Konfiguration (JSON)':['HA configuration (JSON)','Configuration HA (JSON)'], 'Zweigpfade (JSON)':['Branch paths (JSON)','Chemins des branches (JSON)'],

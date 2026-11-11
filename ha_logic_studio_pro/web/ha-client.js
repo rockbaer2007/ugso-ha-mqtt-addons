@@ -1,5 +1,5 @@
 // Ingress-relative URLs; credentials stay in the Python process.
-export function connectHA({getPlan,getPreferences,hasLocal,restore,selected,choose,report}) {
+export function connectHA({getPlan,getPreferences,hasLocal,restore,selected,choose,report,workspace=true}) {
  const badge=document.createElement('span');badge.id='ha-connection';badge.textContent='App-Verbindung prüfen …';document.querySelector('.planbar').append(badge);
  const reload=document.createElement('button');reload.id='app-project';reload.textContent='App-Projekt laden';reload.title='Gespeichertes App-Projekt laden; Browserstand vorher sichern.';document.querySelector('.actions').append(reload);
  const dialog=document.createElement('dialog');dialog.id='entity-dialog';
@@ -7,7 +7,7 @@ export function connectHA({getPlan,getPreferences,hasLocal,restore,selected,choo
  document.body.append(dialog);const find=s=>dialog.querySelector(s),info=find('.entity-info'),results=find('.entity-results');
  let revision=0,ready=false,blocked=false,timer,busy=false,pending=false,mode='local',offset=0,requestId=0,blockId=null;
  async function api(path,options={}) {const response=await fetch('./api/'+path,{cache:'no-store',...options});let data;try{data=await response.json();}catch{throw Error('App-Server nicht erreichbar. Für lokale Entitäten Start-Demo.cmd verwenden.');}if(!response.ok){const error=Error(data.error||'App-Anfrage fehlgeschlagen.');error.conflict=response.status===409;throw error;}return data;}
- function saveSoon(){if(!ready||blocked)return;clearTimeout(timer);timer=setTimeout(save,250);}
+ function saveSoon(){if(!workspace||!ready||blocked)return;clearTimeout(timer);timer=setTimeout(save,250);}
  async function save(){if(busy){pending=true;return;}busy=true;try{const data=await api('workspace',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision,plan:getPlan(),preferences:getPreferences()})});revision=data.revision;badge.textContent=(mode==='homeassistant'?'HA-App':mode==='demo'?'Demo':'Lokal')+' · Projekt gespeichert';}catch(e){if(e.conflict)blocked=true;badge.textContent=e.conflict?'Speicherkonflikt · Datei sichern / App-Projekt laden':'App-Speicherung fehlgeschlagen · Projekt als Datei sichern';report(e.message);}finally{busy=false;if(pending){pending=false;saveSoon();}}}
  async function load(){clearTimeout(timer);try{const data=await api('workspace');if(data.plan)restore(data);revision=data.revision;blocked=false;badge.textContent='App-Projekt geladen · Revision '+revision;}catch(e){report(e.message);}}
  reload.onclick=()=>{if(busy){report('Speicherung läuft. Bitte kurz erneut versuchen.');return;}load();};
@@ -15,5 +15,6 @@ export function connectHA({getPlan,getPreferences,hasLocal,restore,selected,choo
  function show(){const b=selected();if(!b||!['STATE_IN','STATE_OUT'].includes(b.type)){report('Zuerst einen STATE_IN oder STATE_OUT auswählen.');return;}blockId=b.id;offset=0;find('input').value='';find('select').value='';dialog.showModal();search();}
  find('header button').onclick=()=>{requestId++;dialog.close();};find('form').onsubmit=e=>{e.preventDefault();offset=0;search();};find('select').onchange=()=>{offset=0;search();};find('#entity-prev').onclick=()=>{offset=Math.max(0,offset-100);search();};find('#entity-next').onclick=()=>{offset+=100;search();};
  async function init(){try{const meta=await api('info');mode=meta.mode;badge.title=meta.entities_available?'Entitäten vom HA-App-Server lesen.':'Lokal ohne HA. Für Beispielentitäten Start-Demo.cmd verwenden.';const data=await api('workspace');revision=data.revision;if(data.plan&&!hasLocal())restore(data);else if(data.plan&&hasLocal()&&(JSON.stringify(data.plan)!==JSON.stringify(getPlan())||JSON.stringify(data.preferences)!==JSON.stringify(getPreferences()))){blocked=true;badge.textContent='Browserstand erhalten · App-Projekt laden oder als Datei sichern';}ready=true;if(!blocked){badge.textContent=mode==='homeassistant'?'HA-App · Entitätsauswahl bereit':mode==='demo'?'Lokaler Demo-Modus':'Lokal · keine HA-Verbindung';if(!data.plan&&hasLocal())saveSoon();}}catch(e){badge.textContent='Statischer Modus · kein App-Speicher';reload.disabled=true;}}
- init();return {saveSoon,show};
+ if(workspace)init();else {badge.textContent='HA-Entitätsauswahl';reload.hidden=true;}
+ return {saveSoon,show};
 }

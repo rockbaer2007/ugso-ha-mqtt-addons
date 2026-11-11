@@ -17,7 +17,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
 
-VERSION = '0.1.23'
+VERSION = '0.1.26'
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 1_000_000
 TEST_RUN_SLOTS = threading.BoundedSemaphore(2)
@@ -173,7 +173,8 @@ class ScriptRuntime:
             with tempfile.TemporaryFile() as input_file:
                 input_file.write(json.dumps({'source': source, 'language': language, 'homeAssistant': home_assistant}).encode())
                 input_file.seek(0)
-                process = subprocess.Popen(['node', str(ROOT / 'runtime' / 'live-run.mjs')], stdin=input_file,
+                runner = 'fbd-run.mjs' if language == 'flow' else 'live-run.mjs'
+                process = subprocess.Popen(['node', str(ROOT / 'runtime' / runner)], stdin=input_file,
                                            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, encoding='utf-8', env=env,
                                            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             job = {'process': process, 'state': 'starting', 'messages': deque(maxlen=100)}
@@ -403,13 +404,14 @@ class Handler(SimpleHTTPRequestHandler):
                     raise ValueError('Projektstand neu laden.')
                 project = dict((saved['tree'] or {}).get('projects', [])).get(project_id, {})
                 kind = project.get('type')
-                if kind not in ('javascript', 'typescript', 'blocks-js'):
+                if kind not in ('javascript', 'typescript', 'blocks-js', 'flow'):
                     raise ValueError('Projekttyp kann nicht in der Runtime gestartet werden.')
-                source = payload.get('source') if kind == 'blocks-js' else project.get('source')
+                source = (json.dumps(project['graph']) if kind == 'flow' and isinstance(project.get('graph'), dict)
+                          else payload.get('source') if kind == 'blocks-js' else project.get('source'))
                 if not isinstance(source, str) or not source.strip() or len(source.encode('utf-8')) > 64_000:
                     raise ValueError('Quelltext fehlt oder überschreitet 64 KB.')
                 self.server.runtime.control(user, project_id, command, source,
-                                            'typescript' if kind == 'typescript' else 'javascript',
+                                            kind if kind in ('typescript', 'flow') else 'javascript',
                                             self.server.live_runtime_config())
             self.reply(200, self.server.runtime.status(user))
         except (ValueError, UnicodeError) as error:
