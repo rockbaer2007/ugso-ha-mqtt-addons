@@ -15,7 +15,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
 
-VERSION = '0.1.14'
+VERSION = '0.1.15'
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 1_000_000
 TEST_RUN_SLOTS = threading.BoundedSemaphore(2)
@@ -267,6 +267,9 @@ class Handler(SimpleHTTPRequestHandler):
             source = payload.get('source') if isinstance(payload, dict) else None
             if not isinstance(source, str) or not source.strip() or len(source.encode('utf-8')) > 64_000:
                 raise ValueError()
+            language = payload.get('language', 'javascript')
+            if language not in ('javascript', 'typescript'):
+                raise ValueError()
         except (ValueError, UnicodeError):
             self.reply(400, {'error': 'JavaScript-Quelltext mit höchstens 64 KB eingeben.'})
             return
@@ -278,7 +281,7 @@ class Handler(SimpleHTTPRequestHandler):
                    if key.upper() in {'PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR'}}
             result = subprocess.run(
                 ['node', str(ROOT / 'runtime' / 'test-run.mjs'), '--stdin'],
-                input=json.dumps({'source': source}), encoding='utf-8',
+                input=json.dumps({'source': source, 'language': language}), encoding='utf-8',
                 capture_output=True, timeout=5, env=env, check=True,
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
             )

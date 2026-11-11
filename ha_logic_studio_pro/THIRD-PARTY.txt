@@ -18,6 +18,13 @@ Build: npm ci, then npm run build (Node 22+). Running the packaged Python/HA
 app does not require Node.js, npm, or access to the npm registry.
 
 Runtime YAML parsing: PyYAML 6.0.3, MIT license, https://pyyaml.org/ .
+
+The shared native Blockly catalog and HA YAML exporter come from UGSo Blocks
+for HA 0.1.66, Apache-2.0, source revision d9c88d73d28b09110c9cdd64224cea0321d1f22d:
+https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/d9c88d73d28b09110c9cdd64224cea0321d1f22d/blocks_for_ha
+The imported catalog lives under frontend/blocks-for-ha. Logic Studio Pro
+adapts its language selection and editor integration. The license ships as
+web/vendor/blocks-for-ha-LICENSE.txt.
 Installed by pip during the HA container build; its license remains in the
 installed package metadata. Jinja2 is a BSD-licensed development/test dependency
 only, not required by the running app.

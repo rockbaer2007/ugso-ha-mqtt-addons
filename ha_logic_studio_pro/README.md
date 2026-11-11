@@ -1,4 +1,8 @@
-# HA Logic Studio Pro 0.1.14
+# HA Logic Studio Pro 0.1.15
+
+Blocks A und Blocks JS verwenden den integrierten Katalog von Blocks for HA. Blocks JS kann HA-Automationspläne im Testprotokoll anzeigen oder als YAML öffnen. Der ioBroker-Import erkennt jetzt zusätzlich Zustandswerte, unmittelbare boolesche Schaltbefehle, Protokollblöcke und Konvertierungen.
+
+JavaScript und TypeScript teilen sich den Testlauf mit Demo-Zuständen und den Aufrufen `getState`, `setState` und `log`. TypeScript wird vor der Ausführung transpiliert. Vollständige Typprüfung und dauerhafte Auslöser stehen noch aus.
 
 - **Blocks A** exportiert HA-Automationen als YAML. Vorhandene Blockly-Projekte öffnen sich weiterhin in diesem Modus. HA-Skripte und HA-Automationen haben in der Projektliste kein Play-Symbol.
 - **Blocks JS** erzeugt JavaScript und testet es mit Demo-Zuständen. HA-Aktionen erscheinen im Protokoll und werden nicht ausgeführt.
@@ -8,9 +12,9 @@
 
 Die App im UGSo-App-Repository unter **HA Logic Studio Pro** installieren oder aktualisieren. Die GitHub-Ausgabe hat in Home Assistant eine eigene Installationskennung. Bei einem Wechsel aus „Local apps“ die bisherige Installation für browsergespeicherte Entwürfe behalten. YAML und Funktionspläne können als Dateien exportiert werden.
 
-Auf .193 mit Home Assistant 2026.11.1 geprüft: YAML-Automation mit Auslöser und Aktion, JavaScript-Testlauf und ioBroker-Import mit verbundenem Uhrzeitblock und Platzhalter für `exec`. 39 automatisierte Tests bestanden.
+Für 0.1.15 sind 42 lokale Tests bestanden. Auf .193 wurde zuvor 0.1.14 mit Home Assistant 2026.11.1 geprüft.
 
-Seit 0.1.13 zeigen JavaScript und TypeScript Syntaxfarben und Zeilennummern. Die Projektspalte passt seit 0.1.12 ihre Mindestbreite an die sichtbaren Namen an. Im Funktionsplan lassen sich seit 0.1.11 Verbindungen umhängen; Signalwerte werden direkt am Zieleingang angezeigt. TypeScript-Ausführung ist weiterhin offen.
+Seit 0.1.13 zeigen JavaScript und TypeScript Syntaxfarben und Zeilennummern. Die Projektspalte passt seit 0.1.12 ihre Mindestbreite an die sichtbaren Namen an. Im Funktionsplan lassen sich seit 0.1.11 Verbindungen umhängen und Signalwerte werden direkt am Zieleingang angezeigt.
 
 Nach dem Start **Weboberfläche öffnen**. Über **＋ → HA-YAML** ein Skript oder eine Automation erstellen. Vorhandene YAML-Dateien können geöffnet, bearbeitet, auf Syntax und Grundstruktur geprüft und exportiert werden. Die Ausführung einer exportierten Konfiguration übernimmt Home Assistant nach dem manuellen Übernehmen.
 

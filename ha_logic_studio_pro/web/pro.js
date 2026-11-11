@@ -11,7 +11,7 @@ const projectSplitter = $('project-splitter');
 const projects = new Map();
 const openTabs = new Set();
 const icons = {yaml: '▤', rules: '⚡', blocks: '▦', 'blocks-js': '▦', flow: '◇', javascript: 'JS', typescript: 'TS'};
-const runnable = type => type === 'javascript' || type === 'blocks-js';
+const runnable = type => ['javascript', 'typescript', 'blocks-js'].includes(type);
 let active;
 let blocks;
 let blocksRender;
@@ -573,12 +573,7 @@ function show(id, refresh = false) {
   if (project.type === 'yaml') renderYaml(panel, project);
   if (project.type === 'rules') renderRules(panel, project);
   if (project.type === 'blocks' || project.type === 'blocks-js') renderBlocks(panel, project, id);
-  if (project.type === 'javascript') renderJavaScript(panel, project);
-  if (project.type === 'typescript') {
-    toolbar(panel, project);
-    panel.append(element('p', 'TypeScript bearbeiten. Die Ausführung ist noch nicht verfügbar.'));
-    renderCode(panel, project);
-  }
+  if (project.type === 'javascript' || project.type === 'typescript') renderJavaScript(panel, project);
 }
 
 function toolbar(panel, project) {
@@ -734,10 +729,21 @@ async function renderBlocks(panel, project, id) {
       if (!sortingProjects) saveProjects();
     }, locale, project.type === 'blocks-js' ? 'js' : 'yaml');
     const read = blocks.read;
+    const openYaml = () => {
+      if (!blocks.usesAutomation()) {
+        if (project.type === 'blocks-js') return report('Für YAML einen HA-Automationsblock mit Auslöser und Aktion verbinden.', true);
+        return openGenerated(project, read, report);
+      }
+      try {
+        const source = blocks.automationYaml(project.name);
+        validateYaml(source, 'automation');
+        add({type: 'yaml', name: project.name + ' · YAML', kind: 'automation', source});
+      } catch (error) { report(error.message, true); }
+    };
     if (project.type === 'blocks-js') {
       row.append(button('Testlauf starten', () => runBlocks(project)),
         button('JavaScript öffnen', () => {
-          try { add({type: 'javascript', name: project.name + ' · JS', source: blocks.generate()}); }
+          try { add({type: 'javascript', name: project.name + ' · JS', source: blocks.generate(project.name)}); }
           catch (error) { report(error.message, true); }
         }), button('ioBroker-Blockly importieren', () => {
           const input = element('input');
@@ -755,8 +761,8 @@ async function renderBlocks(panel, project, id) {
             } catch (error) { report(error.message, true); }
           };
           input.click();
-        }));
-    } else row.append(button('Als HA-YAML öffnen', () => openGenerated(project, read, report)));
+        }), button('Als HA-YAML öffnen', openYaml));
+    } else row.append(button('Als HA-YAML öffnen', openYaml));
   } catch (error) {
     report(error.message, true);
   }
@@ -768,7 +774,8 @@ async function runBlocks(project) {
   renderProjectList();
   try {
     const {generateBlocks} = await import('./vendor/pro-blocks.js');
-    const source = generateBlocks(project.workspace);
+    const source = blocks && projects.get(active) === project ? blocks.generate(project.name) :
+      generateBlocks(project.workspace, project.name);
     const response = await fetch('./api/pro-test-run', {
       method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({source}),
     });
@@ -792,7 +799,7 @@ function renderJavaScript(panel, project) {
       const response = await fetch('./api/pro-test-run', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({source: project.source}),
+        body: JSON.stringify({source: project.source, language: project.type}),
       });
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.error);
