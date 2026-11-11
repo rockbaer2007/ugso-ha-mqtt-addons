@@ -85,17 +85,32 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
   #projects .folder-label-common { color: #664900; background: #fff3c4; }
   #projects .folder-label-global { color: #17542c; background: #e0f6e6; }
 }
-#projects .project-row { display: flex; align-items: center; gap: .25rem; min-width: 0; margin: .2rem 0 .2rem .55rem; }
-#projects .project-row-name { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#projects .project-row { display: flex; min-width: 0; height: 28px; }
+#projects .project-row:hover { background: #1a283b; }
+#projects .project-row:has(.project-row-name[aria-current="true"]) { background: #23497c; }
+#projects .project-row-name {
+  min-width: 0;
+  flex: 1;
+  padding: 0 .4rem 0 .55rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: .9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 #projects .project-row-actions { display: flex; align-self: stretch; flex: none; gap: .15rem; margin-left: auto; }
-#projects .project-row-actions button { display: grid; place-items: center; width: 1.65rem; padding: 0; border-color: transparent; background: transparent; }
-#projects .project-row-actions button:not(:disabled):hover { border-color: #77a5db; }
+#projects .project-row-actions button { display: grid; place-items: center; width: 1.65rem; padding: 0; border: 0; background: transparent; }
+#projects .project-row-actions button:not(:disabled):hover { background: #a2ccff26; }
+#projects .project-row button:focus-visible { outline-offset: -2px; }
 #projects .project-row-actions svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 #projects [data-project-run] { color: #ff6767; }
 #projects [data-project-run="running"] { color: #7de1a1; opacity: 1; }
 #projects [data-project-delete] { color: #fff; }
 #projects :is([data-project-run], [data-project-delete]) svg { fill: currentColor; stroke: none; }
-#projects details details { margin-left: .75rem; }
+#projects details details > summary { margin-left: .75rem; }
+#projects details details .project-row-name { padding-left: 1.3rem; }
 #projects button { text-align: left; overflow-wrap: anywhere; }
 #editor { padding: .8rem; }
 #editor iframe { width: 100%; height: 78vh; border: 0; }

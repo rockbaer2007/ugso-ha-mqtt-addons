@@ -1,5 +1,5 @@
 name: HA Logic Studio Pro
-version: "0.1.7"
+version: "0.1.8"
 slug: ha_logic_studio_pro
 description: Funktionsplan, Rules, Blocks, HA-YAML und JavaScript-Testlauf
 url: https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/ha_logic_studio_pro
