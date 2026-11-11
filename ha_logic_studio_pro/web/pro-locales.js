@@ -1,6 +1,43 @@
 import {messages as flowMessages} from './locales.js';
 
 const messages = {
+  'Zustand lesen': ['Read state', 'Lire un état'],
+  'Auf Zustandswechsel reagieren': ['React to a state change', 'Réagir à un changement d’état'],
+  'HA-Aktion mit Parametern': ['HA action with parameters', 'Action HA avec paramètres'],
+  'Ungültige Rules-Datei.': ['Invalid rules file.', 'Fichier de règles non valide.'],
+  'Für Blocks A eine exportierte JSON-Datei auswählen.': ['Select an exported JSON file for Blocks A.', 'Sélectionnez un fichier JSON exporté pour Blocks A.'],
+  'Die Datei gehört zu einem anderen Blockly-Editor.': ['The file belongs to a different Blockly editor.', 'Le fichier provient d’un autre éditeur Blockly.'],
+  "Quelltext anzeigen": ["View source", "Afficher le code source"],
+  "Quelltext": ["Source code", "Code source"],
+  "Regel exportieren": ["Export rule", "Exporter la règle"],
+  "Regel importieren": ["Import rule", "Importer une règle"],
+  "Entitäts-ID": ["Entity ID", "Identifiant d’entité"],
+  "Einen Block mit einer HA-Entität auswählen.": ["Select a block with an HA entity.", "Sélectionnez un bloc associé à une entité HA."],
+  "Blöcke exportieren": ["Export blocks", "Exporter les blocs"],
+  "Blöcke importieren": ["Import blocks", "Importer des blocs"],
+  "Blöcke prüfen": ["Validate blocks", "Valider les blocs"],
+  "Prüfung erfolgreich.": ["Validation passed.", "Validation réussie."],
+  "Zeitplan einfügen": ["Insert schedule", "Insérer une planification"],
+  "Codebeispiel einfügen": ["Insert code example", "Insérer un exemple de code"],
+  "HA-Entität einfügen": ["Insert HA entity", "Insérer une entité HA"],
+  "HA-Entität suchen": ["Search for an HA entity", "Rechercher une entité HA"],
+  "Keine passenden Entitäten.": ["No matching entities.", "Aucune entité correspondante."],
+  "Suchen": ["Search", "Rechercher"],
+  "Einfügen": ["Insert", "Insérer"],
+  "CRON-Ausdruck": ["Cron expression", "Expression cron"],
+  "Skript-API anzeigen": ["View scripting API", "Afficher l’API de script"],
+  "Skript-API": ["Scripting API", "API de script"],
+  "Protokoll leeren": ["Clear log", "Vider le journal"],
+  "Datei zu groß.": ["File is too large.", "Le fichier est trop volumineux."],
+  "HA-Entitäten sind nicht verfügbar.": ["HA entities are unavailable.", "Les entités HA sont indisponibles."],
+  "Entität sun.sun ist nicht verfügbar.": ["Entity sun.sun is unavailable.", "L’entité sun.sun est indisponible."],
+  "Keine Sonnenzeiten verfügbar.": ["Solar times are unavailable.", "Les horaires solaires sont indisponibles."],
+  "Nächster Sonnenaufgang": ["Next sunrise", "Prochain lever du soleil"],
+  "Nächster Sonnenuntergang": ["Next sunset", "Prochain coucher du soleil"],
+  "Nächste Morgendämmerung": ["Next dawn", "Prochaine aube"],
+  "Nächste Abenddämmerung": ["Next dusk", "Prochain crépuscule"],
+  "Nächster Sonnenhöchststand": ["Next solar noon", "Prochain midi solaire"],
+  "Nächste solare Mitternacht": ["Next solar midnight", "Prochain minuit solaire"],
   'Speichern': ['Save', 'Enregistrer'],
   'Abbrechen': ['Cancel', 'Annuler'],
   'FBD-Ausführung': ['FBD execution', 'Exécution FBD'],
@@ -134,6 +171,14 @@ export function translatePro(text, locale) {
   const source = text.trim();
   const direct = messages[source] ?? flowMessages[source];
   if (direct) return text.replace(source, () => direct[index]);
+  const yamlValidation = /^YAML-Syntax und Grundstruktur gültig \((\d+) Eintrag\/Einträge\)\.$/.exec(source);
+  if (yamlValidation) {
+    const count = Number(yamlValidation[1]);
+    const status = locale === 'en'
+      ? `YAML syntax and structure are valid (${count} ${count === 1 ? 'entry' : 'entries'}).`
+      : `La syntaxe et la structure YAML sont valides (${count} ${count === 1 ? 'entrée' : 'entrées'}).`;
+    return text.replace(source, () => status);
+  }
   const action = /^(Testlauf starten|Testlauf läuft|Projekt löschen|Projekt öffnen): (.+)$/.exec(source);
   return action ? actionLabels[action[1]][index] + ': ' + action[2] : text;
 }

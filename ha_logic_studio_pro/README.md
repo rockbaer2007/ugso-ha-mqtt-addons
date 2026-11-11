@@ -1,6 +1,6 @@
-# HA Logic Studio Pro 0.1.26
+# HA Logic Studio Pro 0.1.28
 
-Der Funktionsplan startet über **Play** auf dem HA-Server. **Automatisch** reagiert auf freigegebene Eingänge, **Fester Zyklus** wertet den Plan alle 100 bis 60.000 ms aus. Die Simulation bleibt separat. **Speichern** übernimmt den Entwurf, **Abbrechen** lädt den gespeicherten Stand. Die Werkzeugleiste unterstützt DE/EN/FR.
+Die Werkzeugleisten und Dialoge der Editoren wurden in Deutsch, Englisch und Französisch ergänzt. Der Funktionsplan startet über **Play** auf dem HA-Server. **Automatisch** reagiert auf freigegebene Eingänge. **Fester Zyklus** wertet den Plan alle 100 bis 60.000 ms aus. **Speichern** übernimmt den Entwurf. **Abbrechen** lädt den zuletzt gespeicherten Stand.
 
 Der Projektbaum liegt pro Home-Assistant-Benutzer im App-Datenspeicher.
 Zur Übernahme vorhandener Browserprojekte beim ersten Start den bisherigen
