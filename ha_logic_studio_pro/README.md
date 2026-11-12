@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.42
+# HA Logic Studio Pro 0.1.43
+
+Die Textpalette in Blocks JS folgt der ioBroker-Vorlage. Zwei HA-Blöcke liefern den Anzeigenamen einer Entität und den Messwert mit Einheit. Zahlenformat „System“ verwendet die Sprache des Editors.
+
+The Blocks JS text palette follows the ioBroker layout. Two HA blocks provide the entity display name and the measurement with its unit. The System number format uses the editor language.
+
+La palette Texte de Blocks JS suit la présentation d’ioBroker. Deux blocs HA fournissent le nom affiché de l’entité et la mesure avec son unité. Le format numérique Système utilise la langue de l’éditeur.
 
 Die Mathematikpalette in Blocks JS folgt der ioBroker-Vorlage und enthält Rundung auf Nachkommastellen. Zwei HA-Blöcke lesen Zahlen aus Zuständen und Attributen. Ungültige Werte ergeben `null`.
 
