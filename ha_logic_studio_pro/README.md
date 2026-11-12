@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.34
+# HA Logic Studio Pro 0.1.35
+
+**DE:** „Konvertierung“ in Blocks JS folgt der Anordnung und Beschriftung von ioBroker. „nach Datum/Zeit“ gibt Millisekunden aus und kann HA-Zeitstempel in Sekunden als Quelle verwenden. „Datum/Zeit … nach …“ liefert ein Datum-Objekt, lokales Datum oder Uhrzeit in der HA-Zeitzone oder ISO-Text in UTC. „Zeitdifferenz formatieren“ erwartet Millisekunden. „nach Logikwert“ erkennt unter anderem `on`/`off` und `1`/`0`. „HA-Zustand verfügbar?“ prüft den gelesenen Wert vor einer Konvertierung.
+
+**EN:** Blocks JS Conversion follows the ioBroker layout. “to date/time” outputs milliseconds and accepts HA timestamps in seconds as a source. “date/time … to …” outputs a Date object, local date or time in the HA time zone, or UTC ISO text. “format time difference” takes milliseconds. “to boolean” recognises values including `on`/`off` and `1`/`0`. “HA state available?” checks the value before conversion.
+
+**FR :** La catégorie Conversion reprend la disposition d’ioBroker. « en date/heure » produit des millisecondes et accepte les horodatages HA en secondes. « date/heure … vers … » produit un objet Date, une date ou une heure dans le fuseau HA, ou un texte ISO en UTC. « formater la durée » attend des millisecondes. « en booléen » reconnaît notamment `on`/`off` et `1`/`0`. « État HA disponible ? » vérifie la valeur avant la conversion.
 
 **DE:** Blocks JS bietet unter „Datum und Zeit“ zwei Zeitvergleiche, den aktuellen Datumswert und Zeitberechnungen. Testlauf und Play verwenden die HA-Zeitzone. Zeitfenster schließen den Beginn ein und das Ende aus und können über Mitternacht laufen. Ganze Tage behalten die lokale Uhrzeit bei, soweit sie am Zieltag existiert; Stunden und kleinere Einheiten sind verstrichene Zeit.
 
