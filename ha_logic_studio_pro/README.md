@@ -1,4 +1,8 @@
-# HA Logic Studio Pro 0.1.32
+# HA Logic Studio Pro 0.1.33
+
+**Blocks JS → Sendto** enthält zwei neue violette AWTRIX-NG-Blöcke. **Benachrichtigung** bietet Nachricht, Farbe, Ton, Icon, Wiederholungen, Dauer, Stapeln, Aufwecken und Halten. **Sound abspielen** akzeptiert einen gespeicherten Tonnamen oder RTTTL.
+
+Das MQTT-Präfix aus AWTRIX-NG in den Block eintragen und die verwendeten Topics unter `runtime_mqtt_topics` freigeben, etwa `awtrixNG/cmd/notify` und `awtrixNG/cmd/audio/play`. Die HA-MQTT-Integration und AWTRIX-NG müssen denselben Broker verwenden. Die Blöcke senden ohne Retain. [AWTRIX-NG-MQTT-Dokumentation](https://ang.blueforcer.de/esp32/reference/mqtt/)
 
 **Blocks JS → Sendto** enthält MQTT-Nachricht senden, HA-Benachrichtigung senden und HA-Ereignis senden. Der Testlauf zeigt die Aufrufe im Protokoll. Für **Play** gelten die Freigaben in der App-Konfiguration.
 
