@@ -43,3 +43,10 @@
 .language-choice{display:flex;align-items:center;gap:6px;font-size:11px;white-space:nowrap}
 .language-choice select{height:35px;margin:0;padding:6px;max-width:100px}
 [data-embedded-pro] :is(body > header,#left > h2){display:none}
+.live-pin[hidden],.live-evaluated[hidden],.fbd-live-issue[hidden],.live-diagnosis-active .input-signal,.live-diagnosis-active .result{display:none}
+.live-pin{min-width:0;max-width:54px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink);background:var(--panel);padding:2px 3px;border-radius:4px;font:10px monospace}
+.live-pin[data-live-side="outputs"]{margin-left:auto}
+.live-pin[data-live-side="outputs"]:not([hidden]) + .pin.out{margin-left:0}
+.has-live-signals .pinrow :is(input,select){display:none}
+.live-evaluated{padding:3px 6px;color:var(--secondary);font-size:10px}
+.fbd-live-issue{position:absolute;z-index:5;top:8px;right:8px;max-width:calc(100% - 16px);padding:6px 9px;background:var(--panel);color:var(--ink);border:1px solid var(--danger);border-radius:6px;overflow-wrap:anywhere}

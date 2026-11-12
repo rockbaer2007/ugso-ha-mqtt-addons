@@ -39,6 +39,19 @@ try {
     targets.add(b.params.oid);
   }
   let memory = {}, boot = true, previousError, failed = false;
+  let pendingDiagnosis, lastDiagnosis = 0;
+  const displayValue = value => typeof value === 'string' && value.length > 160 ? value.slice(0, 159) + '…' : value ?? null;
+  const displayPins = pins => Object.fromEntries(Object.entries(pins).map(([name, value]) => [name, displayValue(value)]));
+  function flushDiagnosis() {
+    if (!pendingDiagnosis || process.stdout.writableNeedDrain) return;
+    process.stdout.write(JSON.stringify({type: 'fbd-diagnosis', diagnosis: pendingDiagnosis}) + '\n');
+    pendingDiagnosis = undefined;
+    lastDiagnosis = Date.now();
+  }
+  function diagnose(diagnosis) {
+    pendingDiagnosis = diagnosis;
+    if (Date.now() - lastDiagnosis >= 1000) flushDiagnosis();
+  }
   const last = new Map();
   const inputValue = (b, state) => b.params.attribute ? state?.attributes?.[b.params.attribute] : state?.state;
   const stop = error => { failed = true; fail(error); };
@@ -49,7 +62,11 @@ try {
   function run() {
     if (failed) return;
     try {
-      const result = scan(plan, defs, {memory, boot, readInput: b => inputValue(b, ha.state(b.params.oid))});
+      const blocks = [];
+      const result = scan(plan, defs, {memory, boot, readInput: b => inputValue(b, ha.state(b.params.oid)),
+        observe: (block, inputs, outputs, evaluatedAt) => {
+          blocks.push({id: block.id, inputs: displayPins(inputs), outputs: displayPins(outputs), evaluatedAt});
+        }});
       const writes = outputs.map(b => {
         const entity = b.params.oid, mode = outputMode(b);
         const meta = ha.state(entity)?.attributes ?? {};
@@ -66,14 +83,17 @@ try {
         ha.call(command.action, entity, data);
         last.set(entity, value);
       }
+      diagnose({blocks});
     } catch (error) {
       if (error.message !== previousError) report('log', 'FBD-Auswertung angehalten: ' + error.message);
       previousError = error.message;
+      diagnose({error: displayValue(error.message), blocks: []});
     }
   }
   ha.start();
   report('running', mode === 'cycle' ? 'FBD läuft im Zyklus (' + interval + ' ms).' : 'FBD reagiert auf HA-Eingangsänderungen.');
   run();
+  setInterval(flushDiagnosis, 1000).unref();
   if (mode === 'cycle' || plan.blocks.some(b => timedTypes.has(b.type))) {
     setInterval(run, mode === 'cycle' ? interval : 100);
   }

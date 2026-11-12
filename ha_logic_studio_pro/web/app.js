@@ -18,6 +18,37 @@ let plan=emptyPlan(),selected=null,pending=null,zoom=1,tab='all',docs=false,hist
 let haConnection=null,flowCanvas=null;
 let simulationMemory={},simulationNow=Date.now();
 let simulationSignals=new Map();
+let liveDiagnosis, liveNodes = new Map();
+const diagnosisText = {
+ de: ['Letzte Auswertung', 'Live-Auswertung pausiert', 'Eingang', 'Ausgang'],
+ en: ['Last evaluation', 'Live evaluation paused', 'Input', 'Output'],
+ fr: ['Dernière évaluation', 'Évaluation en direct suspendue', 'Entrée', 'Sortie'],
+};
+const signalText = value => value == null ? '—' : typeof value === 'string' ? value || '""' : String(value);
+function paintDiagnosis() {
+ const [last, paused, input, output] = diagnosisText[prefs.language] ?? diagnosisText.de;
+ const issue = $('#fbd-live-issue');
+ if (issue) {
+  issue.hidden = !liveDiagnosis?.error;
+  issue.textContent = liveDiagnosis?.error ? paused + ': ' + liveDiagnosis.error : '';
+ }
+ for (const [id, node] of liveNodes) {
+  const block = liveDiagnosis?.blocks.get(id);
+  node.classList.toggle('has-live-signals', Boolean(block));
+  node.classList.toggle('live-diagnosis-active', Boolean(liveDiagnosis));
+  for (const badge of node.querySelectorAll('[data-live-pin]')) {
+   const {livePin, liveSide} = badge.dataset;
+   const pins = block?.[liveSide];
+   badge.hidden = !pins || !Object.hasOwn(pins, livePin);
+   badge.textContent = badge.hidden ? '' : signalText(pins[livePin]);
+   badge.title = (liveSide === 'inputs' ? input : output) + ' ' + livePin + ': ' + badge.textContent;
+  }
+  const time = node.querySelector('.live-evaluated');
+  time.hidden = !block;
+  const stamp = block ? new Date(block.evaluatedAt).toLocaleTimeString(prefs.language ?? 'de', {hour12:false}) : '';
+  time.textContent = block ? last + ': ' + stamp : '';
+ }
+}
 const safeRead=(key)=>{try{return JSON.parse(localStorage.getItem(key));}catch{return null;}},write=(key,data)=>{try{localStorage.setItem(key,JSON.stringify(data));if(key===KEY||key===PREF)haConnection?.saveSoon();return true;}catch{return false;}};
 try{const saved=safeRead(KEY);if(saved){plan=loadPlan(saved,byType);write(KEY,plan);}}catch(e){$('#status').textContent='Gespeichertes Projekt unverändert belassen: '+e.message;}
 const pref=safeRead(PREF)||safeRead('ugso-logic-preferences-v1');if(pref){for(const k of Object.keys(prefs))if(Array.isArray(pref[k]))prefs[k]=pref[k].filter(v=>typeof v==='string').slice(0,100);if(locales.includes(pref.language))prefs.language=pref.language;write(PREF,prefs);}
@@ -38,9 +69,21 @@ function pinButton(b,p,side){const n=el('button','pin '+(side==='outputs'?'out':
 function createNodeElement(b){const d=byType.get(b.type),node=el('article','block'+(selected===b.id?' selected':''));node.dataset.id=b.id;node.style.setProperty('--accent',accent(d));const head=el('header');head.append(el('strong',null,b.name));const cog=el('button',null,'⚙');cog.title='Eigenschaften '+b.name;cog.onclick=()=>{selected=b.id;render();};head.append(cog);head.append(blockMenu(b));node.append(head,el('div','typename',b.type));if(['STATE_IN','STATE_OUT'].includes(b.type))node.append(el('div','entity',(b.params.oid||'Keine HA-Entität gewählt')+(b.params.attribute?' · '+b.params.attribute:'')));if(b.type==='CONST'){const row=el('div','pinrow');row.append(field(b.params.type,b.params.value,v=>change(()=>b.params.value=v)));node.append(row);}if(b.type==='COMMENT')node.append(el('div','entity',b.params.text));
  const ins=pins(d,b,'inputs'),outs=pins(d,b,'outputs');for(let i=0;i<Math.max(ins.length,outs.length);i++){const row=el('div','pinrow');if(ins[i]){const p=ins[i];row.append(pinButton(b,p,'inputs'));if(!['FLOW','REFERENCE'].includes(p.type)&&!plan.links.some(l=>l.to[0]===b.id&&l.to[1]===p.id))row.append(field(p.type,b.params[p.id]??p.default,v=>change(()=>b.params[p.id]=v)));}if(outs[i])row.append(pinButton(b,outs[i],'outputs'));node.append(row);}if(values.has(b.id))node.append(el('div','result','Demo: '+String(values.get(b.id))));if(!supported.has(b.type)&&!flowTypes.has(b.type)&&b.type!=='COMMENT')node.append(el('div','limited','Vorlage · Export folgt'));for(const control of node.querySelectorAll('button,input,select,textarea,.block-menu')){control.classList.add('nodrag','nopan');control.addEventListener('keydown',e=>e.stopPropagation());}return node;}
 function renderNodes(){
+ liveNodes = new Map();
  const incoming = new Map(plan.links.map(link => [JSON.stringify(link.to), link.from]));
  const nodes = plan.blocks.map(b => {
   const element = createNodeElement(b);
+  if (embeddedInPro) {
+   liveNodes.set(b.id, element);
+   for (const pin of element.querySelectorAll('.pin')) {
+    const badge = el('span', 'live-pin');
+    badge.dataset.livePin = pin.dataset.pin;
+    badge.dataset.liveSide = pin.dataset.side;
+    if (pin.dataset.side === 'outputs') pin.before(badge);
+    else pin.after(badge);
+   }
+   element.append(el('div','live-evaluated'));
+  }
   for (const pin of element.querySelectorAll('.pin[data-side="inputs"]')) {
    const source = incoming.get(JSON.stringify([b.id, pin.dataset.pin]));
    if (!source) continue;
@@ -56,6 +99,7 @@ function renderNodes(){
   }
   return {id:b.id,type:'logic',position:{x:b.x,y:b.y},selected:selected===b.id,dragHandle:'.block header',data:{element,accent:accent(byType.get(b.type))}};
  });
+ paintDiagnosis();
  flowCanvas?.render({nodes,links:plan.links,grid:$('#grid').getAttribute('aria-pressed')==='true'});
 }
 function renderProperties(){const root=$('#properties');root.replaceChildren();if(docs)renderShortcuts(root);const b=plan.blocks.find(n=>n.id===selected);if(!b){if(docs)return;root.append(el('h3',null,'Funktionsplan'),el('p',null,'Baustein links anklicken oder auf die Fläche ziehen. Am Anschluss Maustaste halten, zum passenden Ziel ziehen und loslassen. BOOL verbindet nur mit BOOL; INT darf an REAL. Esc bricht ab. Die Ausgabe ist auswählbar; nicht unterstützte Bausteine sperren den Export.'),el('p',null,`${defs.length} Definitionen · Werte und HA-Abläufe · keine Live-Ausführung.`));return;}const d=byType.get(b.type);root.append(el('h3',null,b.type),el('p',null,description(d)));if(docs){for(const side of ['inputs','outputs'])root.append(el('p',null,(side==='inputs'?'Eingänge: ':'Ausgänge: ')+pins(d,b,side).map(p=>p.id+' ('+p.type+')').join(', ')));root.append(el('p',null,'Referenz: ioBroker.javascript a1dde1a · Metadaten MIT. Export- und Simulationsumfang ist gesondert ausgewiesen. 33 Werttypen exportierbar; native HA-Abläufe zusätzlich als YAML. Speicher, Flanken, Timer und Zähler benötigen einen Speicher-Host. Regler und eigene Unterpläne folgen später.'));return;}function prop(label,type,value,set,options,picker=false){const l=el('label',null,label),input=field(type,value,v=>change(()=>set(v)),options);if(picker){input.setAttribute('aria-label',label);const row=el('span','entity-field'),button=el('button','entity-picker-button');button.type='button';button.title='HA-Entität auswählen';button.setAttribute('aria-label','HA-Entität auswählen für '+b.name);const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('aria-hidden','true');icon.innerHTML='<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 12h2m4 0h2M8 17h2m4 0h2"/>';button.append(icon);button.onclick=e=>{e.preventDefault();haConnection?.show();};row.append(input,button);l.append(row);}else l.append(input);root.append(l);}prop('Instanzname','STRING',b.name,v=>b.name=v);prop('Kommentar','STRING',b.comment,v=>b.comment=v);for(const p of d.params||[]){const label=({config:'HA-Konfiguration (JSON)',slots:'Zweigpfade (JSON)',kind:'Planart',key:'Parameter-/Feldschlüssel',path:'Parameterpfad',oid:'HA-Entity-ID',mode:'Ausgangsmodus (BRIGHTNESS = 0–100 %)',attribute:'Attribut (leer = Zustand)',memory:'Speicher-Helfer input_text (leer = Export-ID)',type:'Signaltyp',demo:'Demo-Eingang (nur Simulation)',value:'Wert',text:'Kommentartext'})[p.id]||p.id;prop(label,resolved(p.type,b),b.params[p.id]??p.default,v=>{if(p.id==='mode'&&v!==b.params.mode)b.params.IN=v==='TEXT'?'':v==='BOOL'?false:0;if(d.flow&&['slots','config'].includes(p.id))flowPins({...b,params:{...b.params,[p.id]:v}},'outputs');b.params[p.id]=v;},p.options,p.id==='oid'&&['STATE_IN','STATE_OUT'].includes(b.type));}if(d.extensible)prop('Anzahl Eingänge','INT',pins(d,b,'inputs').length,v=>b.params.inputCount=Math.min(d.extensible.max,Math.max(d.extensible.min,v)));if(d.extensibleOutputs)prop('Anzahl Ausgänge','INT',pins(d,b,'outputs').length,v=>b.params.outputCount=Math.min(d.extensibleOutputs.max,Math.max(d.extensibleOutputs.min,v)));for(const p of pins(d,b,'inputs').filter(p=>!['FLOW','REFERENCE'].includes(p.type)))prop('Eingang '+p.id,p.type,b.params[p.id]??p.default,v=>b.params[p.id]=v);prop('X','INT',b.x,v=>b.x=Math.max(10,Math.min(12000,v)));prop('Y','INT',b.y,v=>b.y=Math.max(10,Math.min(60000,v)));const del=el('button','delete','Baustein entfernen');del.onclick=()=>remove();root.append(del);}
@@ -111,6 +155,15 @@ arrangeToolbar();
 document.documentElement.toggleAttribute('data-embedded-pro', embeddedInPro);
 if (embeddedInPro) {
   document.addEventListener('pro-fbd-read', event => event.detail({plan: structuredClone(plan)}));
+  const liveIssue = el('div', 'fbd-live-issue');
+  liveIssue.id = 'fbd-live-issue';
+  liveIssue.hidden = true;
+  liveIssue.setAttribute('role', 'status');
+  $('#viewport').append(liveIssue);
+  document.addEventListener('pro-fbd-diagnosis', ({detail}) => {
+   liveDiagnosis = detail?.blocks ? {...detail, blocks: new Map(detail.blocks.map(block => [block.id, block]))} : undefined;
+   paintDiagnosis();
+  });
   document.addEventListener('pro-fbd-load', event => {
     plan = event.detail ? loadPlan(event.detail, byType) : emptyPlan();
     selected = null; pending = null; history = []; future = []; values.clear();

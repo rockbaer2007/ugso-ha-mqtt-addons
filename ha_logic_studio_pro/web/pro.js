@@ -71,12 +71,22 @@ function refreshRuntimeControls(id = active) {
       control.disabled = sortingProjects || runtimeRequest || hasUnsavedChanges(id);
     } else updateEngineControl(control, id);
   }
+  if (flowProjectId === id && active === id) sendFlowDiagnosis();
+}
+
+function sendFlowDiagnosis() {
+  if (flowProjectId !== active) return;
+  const job = runtimeJobs[active];
+  flowFrame?.contentDocument?.dispatchEvent(new CustomEvent('pro-fbd-diagnosis', {
+    detail: job?.state === 'running' && !hasUnsavedChanges(active) ? job.diagnosis : undefined,
+  }));
 }
 
 function captureFlow() {
   const project = projects.get(flowProjectId);
-  if (!project) return;
-  flowFrame?.contentDocument?.dispatchEvent(new CustomEvent('pro-fbd-read', {detail: ({plan}) => {
+  const doc = flowFrame?.contentDocument;
+  if (!project || !doc?.documentElement.hasAttribute('data-pro-plan-loaded')) return;
+  doc.dispatchEvent(new CustomEvent('pro-fbd-read', {detail: ({plan}) => {
     project.graph = {...project.graph, plan};
   }}));
 }
@@ -456,14 +466,17 @@ function syncRuntime(next) {
     refreshRuntimeControls();
   }
   renderProtocol();
+  sendFlowDiagnosis();
 }
 
 async function pollRuntime() {
   if (runtimeRequest) return;
   try {
     const response = await fetch('./api/pro-runtime');
-    if (response.ok && !runtimeRequest) syncRuntime(await response.json());
+    if (response.ok && !runtimeRequest) { syncRuntime(await response.json()); return; }
   } catch {}
+  if (!runtimeRequest) syncRuntime(Object.fromEntries(Object.entries(runtimeJobs)
+    .map(([id, {diagnosis, ...job}]) => [id, job])));
 }
 
 async function controlRuntime(id, command) {
@@ -1092,8 +1105,10 @@ function show(id, refresh = false) {
         }}));
       }
       legacyChecked = true;
+      doc.documentElement.setAttribute('data-pro-plan-loaded', '');
       doc.dispatchEvent(new CustomEvent('pro-fbd-load', {detail: project.graph.plan}));
       flowProjectId = id;
+      sendFlowDiagnosis();
     };
     if (flowFrame && flowProjectId !== id) {
       flowFrame.remove();
@@ -1104,14 +1119,14 @@ function show(id, refresh = false) {
       flowFrame = element('iframe');
       flowProjectId = id;
       flowFrame.title = 'Funktionsplan';
-      flowFrame.src = './funktionsplan.html?pro=' + locale;
+      flowFrame.src = './funktionsplan.html?v=0.1.63&pro=' + locale;
       flowFrame.addEventListener('pro-fbd-ready', () => { loadFlow(); syncOutput(); syncLanguage(); });
       flowFrame.addEventListener('load', () => {
         const doc = flowFrame.contentDocument;
         loadFlow();
         doc?.addEventListener('pro-fbd-render', () => {
           syncOutput();
-          if (active === id) {
+          if (flowLoaded && active === id) {
             captureFlow();
             refreshRuntimeControls(id);
           }

@@ -47,16 +47,17 @@ export function scanGraph(p,defs,options,{analyze,cast,operation}){
  const values=new Map(),signals=new Map(),memory=structuredClone(options.memory||{}),now=options.now??Date.now();
  for(const b of order){
   if(b.type==='COMMENT')continue;
-  let value,outputs;
+  let value,outputs,args={};
   if(b.type==='STATE_IN'){const raw=options.readInput?options.readInput(b):b.params.demo;if(raw==null||['unknown','unavailable'].includes(raw))throw Error('Eingangswert nicht verfügbar: '+b.name);value=cast(raw,b.params.type);}
   else if(b.type==='CONST')value=cast(b.params.value,b.params.type);
   else{
-   const args=Object.fromEntries(pins(defs.get(b.type),b,'inputs').map(pin=>{const s=incoming.get(b.id+'.'+pin.id);return [pin.id,s?signals.get(s.join('.')):cast(b.params[pin.id]??pin.default,pin.type)];}));
+   args=Object.fromEntries(pins(defs.get(b.type),b,'inputs').map(pin=>{const s=incoming.get(b.id+'.'+pin.id);return [pin.id,s?signals.get(s.join('.')):cast(b.params[pin.id]??pin.default,pin.type)];}));
    if(statefulTypes.has(b.type)){const result=statefulStep(b.type,args,memory[b.id]||{},now,options.boot||false);memory[b.id]=result.state;outputs=result.outputs;value=outputs[pins(defs.get(b.type),b,'outputs')[0].id];}
    else value=b.type==='STATE_OUT'?args.IN:operation(b.type,Object.values(args));
   }
   if(typeof value==='number'&&!Number.isFinite(value))throw Error('Ungültiges Zahlenergebnis.');
   values.set(b.id,value);for(const pin of pins(defs.get(b.type),b,'outputs'))signals.set(b.id+'.'+pin.id,outputs?outputs[pin.id]:value);
+  options.observe?.(b, args, Object.fromEntries(pins(defs.get(b.type),b,'outputs').map(pin=>[pin.id,signals.get(b.id+'.'+pin.id)])), now);
  }
  return {values,signals,memory};
 }

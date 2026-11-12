@@ -1,4 +1,6 @@
-# HA Logic Studio Pro 0.1.62
+# HA Logic Studio Pro 0.1.63
+
+**Interner Teststand:** Der laufende Funktionsplan zeigt Ein- und Ausgangswerte direkt an den Anschlüssen und den Zeitpunkt der letzten Auswertung pro Baustein.
 
 Rules unterstützt Von/Nach, Attribute, Mindestdauer, numerische Bedingungen sowie HA-Aktionen mit JSON-Parametern und Verzögerungen. Die erzeugte YAML wurde auf .193 mit Testhelfern live geprüft. Erweiterte Regeln werden als HA-YAML exportiert.
 

@@ -17,7 +17,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
 
-VERSION = '0.1.62'
+VERSION = '0.1.63'
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 1_000_000
 TEST_RUN_SLOTS = threading.BoundedSemaphore(2)
@@ -145,10 +145,18 @@ class ScriptRuntime:
         self.lock = threading.Lock()
         self.jobs = {}
 
-    def status(self, user):
+    def status(self, user, read_projects):
         with self.lock:
-            return {key[1]: {'state': job['state'], 'messages': list(job['messages'])}
-                    for key, job in self.jobs.items() if key[0] == user}
+            result = {key[1]: {'state': job['state'], 'messages': list(job['messages'])}
+                      for key, job in self.jobs.items() if key[0] == user}
+            live = [(key[1], job['flow_source'], job['diagnosis']) for key, job in self.jobs.items()
+                    if key[0] == user and job['state'] == 'running' and 'diagnosis' in job]
+        if live:
+            projects = dict((read_projects()['tree'] or {}).get('projects', []))
+            for project_id, source, diagnosis in live:
+                if json.loads(source) == projects.get(project_id, {}).get('graph'):
+                    result[project_id]['diagnosis'] = diagnosis
+        return result
 
     def control(self, user, project_id, command, source=None, language=None, home_assistant=None):
         key = (user, project_id)
@@ -178,6 +186,8 @@ class ScriptRuntime:
                                            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, encoding='utf-8', env=env,
                                            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             job = {'process': process, 'state': 'starting', 'messages': deque(maxlen=100)}
+            if language == 'flow':
+                job['flow_source'] = source
             self.jobs[key] = job
             threading.Thread(target=self.collect, args=(job,), daemon=True).start()
 
@@ -190,6 +200,10 @@ class ScriptRuntime:
                     if job['state'] == 'stopped':
                         continue
                     kind = message['type']
+                    if kind == 'fbd-diagnosis':
+                        if 'flow_source' in job:
+                            job['diagnosis'] = message['diagnosis']
+                        continue
                     if kind in ('running', 'error'):
                         job['state'] = kind
                     if message['text']:
@@ -358,7 +372,8 @@ class Handler(SimpleHTTPRequestHandler):
             elif route.path == '/api/pro-projects':
                 self.reply(200, self.server.projects.read(self.user()))
             elif route.path == '/api/pro-runtime' and self.runtime_user():
-                self.reply(200, self.server.runtime.status(self.user()))
+                user = self.user()
+                self.reply(200, self.server.runtime.status(user, lambda: self.server.projects.read(user)))
             elif route.path == '/api/ha-sources':
                 if not self.server.sources:raise ValueError('Kein HA-Konfigurationsordner eingebunden. YAML-Datei oder Text importieren.')
                 kind=parse_qs(route.query).get('kind',['automation'])[0]
@@ -459,7 +474,7 @@ class Handler(SimpleHTTPRequestHandler):
                 self.server.runtime.control(user, project_id, command, source,
                                             kind if kind in ('typescript', 'flow') else 'javascript',
                                             self.server.live_runtime_config())
-            self.reply(200, self.server.runtime.status(user))
+            self.reply(200, self.server.runtime.status(user, lambda: self.server.projects.read(user)))
         except (ValueError, UnicodeError) as error:
             self.reply(400, {'error': str(error)})
         except (OSError, subprocess.SubprocessError):
