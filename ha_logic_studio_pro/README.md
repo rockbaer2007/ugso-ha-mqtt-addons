@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.41
+# HA Logic Studio Pro 0.1.42
+
+Die Mathematikpalette in Blocks JS folgt der ioBroker-Vorlage und enthält Rundung auf Nachkommastellen. Zwei HA-Blöcke lesen Zahlen aus Zuständen und Attributen. Ungültige Werte ergeben `null`.
+
+The Blocks JS math palette follows the ioBroker layout and includes rounding to decimal places. Two HA blocks read numbers from states and attributes. Invalid values return `null`.
+
+La palette Mathématiques de Blocks JS suit la présentation d’ioBroker et permet d’arrondir à un nombre de décimales. Deux blocs HA lisent les nombres depuis les états et les attributs. Une valeur invalide renvoie `null`.
 
 Die Schleifenpalette in Blocks JS folgt der ioBroker-Vorlage. „Zustand von Entität“ liest eine angeschlossene Entitäts-ID, etwa aus der Schleifenvariable einer Liste.
 
