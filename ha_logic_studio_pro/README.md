@@ -1,4 +1,8 @@
-# HA Logic Studio Pro 0.1.53
+# HA Logic Studio Pro 0.1.54
+
+**Sendto:** „Nachricht an anderes Skript“ und „Skriptnachricht empfangen“ verwenden dieselbe Empfangsadresse und denselben Nachrichtennamen. Im Empfangsblock liefert „Daten der Skriptnachricht“ die Nutzdaten. Für die Live-Runtime `logic_studio_script_message` unter `runtime_events` freigeben und das Empfängerskript zuerst starten. Im Testlauf können Sender und Empfänger zusammen in einem Projekt geprüft werden.
+
+**ioBroker-Import:** Der Import übernimmt statisch adressierte Einweg-Nachrichten und ihre Daten. Die ioBroker-Skript-ID wird als Empfangsadresse übernommen und muss beim Empfänger eingetragen werden. Varianten mit Antwort und dynamischem Ziel bleiben als nicht unterstützte Originalblöcke erhalten.
 
 - Blocks JS unterstützt direkte Funktionsrückgaben und freie Zeitdifferenzformate mit ioBroker-Import.
 

@@ -6,6 +6,7 @@ export const simulatedEvents = String.raw`
   const handlers = [];
   const namedSchedules = new Map();
   const timers = new Map();
+  const scriptMessages = [];
   let now = 0;
   const invoke = (callback, ...args) => {
     const result = callback(...args);
@@ -40,7 +41,14 @@ export const simulatedEvents = String.raw`
     ${guestTimeApi}
     publishMqtt: (topic, message, retain = false) => report(JSON.stringify({type: 'mqtt', topic, message, retain})),
     notify: (entity, message, title = '') => report(JSON.stringify({type: 'notify', entity, message, title})),
-    fireEvent: (event, data = {}) => report(JSON.stringify({type: 'event', event, data})),
+    fireEvent(event, data = {}) {
+      const encoded = JSON.stringify({type: 'event', event, data});
+      report(encoded);
+      if (event === 'logic_studio_script_message') {
+        if (scriptMessages.length >= 32) throw new Error('Simulated script message limit reached');
+        scriptMessages.push(JSON.parse(encoded).data);
+      }
+    },
     callAction(action, entity, data) {
       return data === undefined ? api.callAction(action, entity) : api.callAction(action, entity, JSON.stringify(data));
     },
@@ -80,6 +88,7 @@ export const simulatedEvents = String.raw`
     invoke(callback);
   }
   for (const {type, target, attribute, callback} of handlers.slice()) {
+    if (type === 'event' && target === 'logic_studio_script_message') continue;
     report(JSON.stringify({type: 'simulated-event', event: type, target, attribute}));
     if (type === 'state') {
       invoke(callback, {type: 'state', entity: target, previous: {state: 'off'}, current: {state: 'on'}});
@@ -95,6 +104,12 @@ export const simulatedEvents = String.raw`
     } else {
       invoke(callback);
     }
+  }
+  for (const data of scriptMessages) {
+    for (const {type, target, callback} of handlers.slice()) {
+      if (type === 'event' && target === 'logic_studio_script_message') invoke(callback, data);
+    }
+    await Promise.resolve();
   }
   for (let steps = 0; timers.size; steps++) {
     if (steps >= 64) throw new Error('Simulated timer limit reached');
