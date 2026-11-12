@@ -110,11 +110,22 @@ export function timeOperations(timeZone, now = Date.now) {
     }
     if (operation === 'duration') {
       if (typeof a !== 'number' || !Number.isFinite(a) || Math.abs(a) > Number.MAX_SAFE_INTEGER ||
-          !['hh:mm:ss', 'hh:mm', 'h:m:s', 'h:m', 'mm:ss', 'm:s'].includes(b)) throw new Error('Zeitdifferenz in Millisekunden erwartet / Expected a duration in milliseconds.');
-      const seconds = Math.floor(Math.abs(a) / 1000);
-      const pad = value => String(value).padStart(2, '0');
-      const values = {h: Math.floor(seconds / 3600), m: Math.floor(seconds / 60) % (b.startsWith('h') ? 60 : Infinity), s: seconds % 60};
-      return (a < 0 ? '-' : '') + b.split(':').map(part => part.length === 2 ? pad(values[part[0]]) : values[part]).join(':');
+          typeof b !== 'string' || b.length > 512) throw new Error('Ungültige Zeitdifferenz oder Format / Invalid duration or format.');
+      let remaining = Math.abs(a);
+      let pattern = b || 'hh:mm:ss';
+      // Consume only units that occur in the pattern, from largest to smallest.
+      for (const [size, single, double] of [
+        [86400000, /(?<!\\)[DTД]/g, /(?<!\\)(?:DD|TT|ДД)/g],
+        [3600000, /(?<!\\)[hSч]/g, /(?<!\\)(?:hh|SS|чч)/g],
+        [60000, /(?<!\\)[mм]/g, /(?<!\\)(?:mm|мм)/g],
+        [1000, /(?<!\\)[sс]/g, /(?<!\\)(?:ss|сс)/g],
+      ]) {
+        if (pattern.search(single) < 0) continue;
+        const value = String(Math.floor(remaining / size));
+        remaining %= size;
+        pattern = pattern.replace(double, value.padStart(2, '0')).replace(single, value);
+      }
+      return (a < 0 ? '-' : '') + pattern.replace(/\\([DTДhSчmмsс])/g, '$1');
     }
     if (operation === 'current') {
       const ms = now();
