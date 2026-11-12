@@ -1,4 +1,8 @@
-# HA Logic Studio Pro 0.1.44
+# HA Logic Studio Pro 0.1.45
+
+- **DE** Der ioBroker-Import in Blocks JS übernimmt Textblöcke, Schleifen, Mehrfach-UND/ODER sowie benannte Zeitpläne, Stopp und CRON-Werte.
+- **EN** The ioBroker import into Blocks JS preserves text blocks, loops, multi-input AND/OR, named schedules, stop and CRON values.
+- **FR** L’import ioBroker dans Blocks JS reprend les blocs de texte, les boucles, les ET/OU à plusieurs entrées, les horaires nommés, leur arrêt et les valeurs CRON.
 
 Blocks JS bietet benannte Zeitpläne mit Stoppblock und zwei CRON-Wertblöcke. Benannte Pläne akzeptieren fünf oder sechs numerische CRON-Felder und verwenden die Home-Assistant-Zeitzone.
 
