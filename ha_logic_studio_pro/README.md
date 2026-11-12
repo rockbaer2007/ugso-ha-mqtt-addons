@@ -1,4 +1,6 @@
-# HA Logic Studio Pro 0.1.60
+# HA Logic Studio Pro 0.1.61
+
+Der YAML-Export schützt Zustandswerte wie `on` und `off` davor, beim Einlesen als Wahrheitswerte interpretiert zu werden. Auf dem HA-Testsystem .193 wurden Zustandswechsel, HA-Ereignis und Uhrzeit sowie UND, ODER und NICHT mit je zwei Aktionen in DANN und SONST live geprüft.
 
 Der Rules-Editor hat eine kompakte Seitenleiste. Eine Regel kann mehrere Auslöser haben. Zustandsbedingungen lassen sich mit UND, ODER oder NICHT kombinieren. DANN und SONST unterstützen mehrere Aktionen in Eingabereihenfolge.
 

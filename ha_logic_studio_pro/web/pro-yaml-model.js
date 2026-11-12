@@ -1,5 +1,8 @@
 import {parseDocument, stringify} from './vendor/pro-yaml.js';
 
+// Home Assistant's YAML editor can interpret unquoted on/off and times as YAML 1.1 scalars.
+const stringifyForHa = config => stringify(config, {version: '1.1'});
+
 const identifier = /^[a-z0-9_]+\.[a-z0-9_]+$/;
 const modes = new Set(['single', 'restart', 'queued', 'parallel']);
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -130,9 +133,9 @@ export function makeYaml({name, kind, triggers = [], condition, conditions = con
   if (elseActions.length) sequence = [{if: checks, then: sequence, else: actionList(elseActions)}];
   else if (kind === 'script') sequence = [...checks, ...sequence];
   const config = {alias: name, mode: 'single'};
-  if (kind === 'script') return stringify({...config, sequence});
+  if (kind === 'script') return stringifyForHa({...config, sequence});
   if (!triggers.length) throw new Error('Für eine HA-Automation einen Auslöser hinzufügen.');
-  return stringify({
+  return stringifyForHa({
     ...config,
     triggers: triggers.map(({entity, state, type, time, event}) => {
       if (type === 'time') {
