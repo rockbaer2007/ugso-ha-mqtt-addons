@@ -1,4 +1,6 @@
-# HA Logic Studio Pro 0.1.57
+# HA Logic Studio Pro 0.1.58
+
+Blocks JS: Skripte starten und stoppen, Automationen aktivieren, deaktivieren oder mit optionaler Bedingungspruefung ausloesen.
 
 **Funktionen:** Blocks JS bietet unter „Funktionen“ zwei JavaScript-Definitionen mit und ohne Ergebnis. Parameter werden über das Zahnrad, der Code über „…“ bearbeitet. Aufrufblöcke erscheinen nach der Definition in der Palette. Beim ioBroker-Import bleiben Code und Parameter erhalten. ioBroker-spezifische APIs im importierten Code müssen für die HA-Runtime angepasst werden.
 

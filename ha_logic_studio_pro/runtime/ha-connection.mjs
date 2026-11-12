@@ -9,6 +9,7 @@ const actions = new Map([
   ['input_number', ['set_value']], ['input_text', ['set_value']],
   ['input_select', ['select_option']], ['button', ['press']], ['input_button', ['press']],
   ['script', ['turn_on', 'turn_off']],
+  ['automation', ['turn_on', 'turn_off', 'trigger']],
 ]);
 export const supportedActions = [...actions].flatMap(([domain, services]) => services.map(service => domain + '.' + service));
 
