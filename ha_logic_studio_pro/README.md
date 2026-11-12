@@ -1,4 +1,8 @@
-# HA Logic Studio Pro 0.1.45
+# HA Logic Studio Pro 0.1.46
+
+- **DE** Blocks JS übernimmt weitere ioBroker-Blöcke für System, Datum und Zeit, Trigger, Timer, Objekte, Fallunterscheidungen, Funktionen sowie ausgewählte MQTT- und AWTRIX-Nachrichten. Bei AWTRIX nach dem Import das MQTT-Präfix eintragen.
+- **EN** Blocks JS imports more ioBroker system, date, trigger, timer, object, switch, procedure, MQTT and AWTRIX blocks. Set the MQTT prefix for imported AWTRIX blocks.
+- **FR** Blocks JS importe davantage de blocs ioBroker pour le système, les dates, les déclencheurs, les minuteries, les objets, les fonctions et certains messages MQTT et AWTRIX. Renseignez le préfixe MQTT des blocs AWTRIX importés.
 
 - **DE** Der ioBroker-Import in Blocks JS übernimmt Textblöcke, Schleifen, Mehrfach-UND/ODER sowie benannte Zeitpläne, Stopp und CRON-Werte.
 - **EN** The ioBroker import into Blocks JS preserves text blocks, loops, multi-input AND/OR, named schedules, stop and CRON values.
