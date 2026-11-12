@@ -1,4 +1,6 @@
-# HA Logic Studio Pro 0.1.58
+# HA Logic Studio Pro 0.1.59
+
+**Rules:** Der Assistent führt durch Auslöser, Bedingungen, Aktionen und YAML-Vorschau. Unterstützt werden Zustandswechsel, tägliche Uhrzeiten und HA-Ereignisse. Änderungen am Projekt werden erst mit „Speichern“ dauerhaft übernommen.
 
 Blocks JS: Skripte starten und stoppen, Automationen aktivieren, deaktivieren oder mit optionaler Bedingungspruefung ausloesen.
 

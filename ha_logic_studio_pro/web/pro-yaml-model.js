@@ -66,7 +66,15 @@ export function makeYaml({name, kind, triggers = [], condition, actions, otherwi
   if (!triggers.length) throw new Error('Für eine HA-Automation einen Auslöser hinzufügen.');
   return stringify({
     ...config,
-    triggers: triggers.map(({entity, state}) => {
+    triggers: triggers.map(({entity, state, type, time, event}) => {
+      if (type === 'time') {
+        if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error('Uhrzeit im Format HH:MM eingeben.');
+        return {trigger: 'time', at: time + ':00'};
+      }
+      if (type === 'event') {
+        if (!/^[a-zA-Z0-9_]+$/.test(event)) throw new Error('Gültigen HA-Ereignistyp eingeben.');
+        return {trigger: 'event', event_type: event};
+      }
       if (!identifier.test(entity) || !state.trim()) throw new Error('Gültige Auslöserentität und Zustand eingeben.');
       return {trigger: 'state', entity_id: entity, to: state};
     }),

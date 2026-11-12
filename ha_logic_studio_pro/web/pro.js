@@ -1263,36 +1263,155 @@ function renderRules(panel, project) {
   const form = element('div');
   form.className = 'rule-form';
   const fields = project.fields ||= {};
-  function group(title, prefix, labels) {
+  const wording = {
+    de: ['Assistent', 'Regel Schritt für Schritt erstellen', 'Löst aus', 'Bedingungen', 'Aktionen', 'Übersicht', 'Zurück', 'Weiter', 'Übernehmen', 'Abbrechen', 'Zustand', 'Zeitplan', 'HA-Ereignis', 'Entität', 'Ziel-Entität', 'Uhrzeit', 'Ereignistyp', 'HA-Aktion', 'FALLS', 'UND', 'DANN', 'SONST', 'ohne Bedingung', 'Auswählen'],
+    en: ['Wizard', 'Create a rule step by step', 'Trigger', 'Conditions', 'Actions', 'Review', 'Back', 'Next', 'Apply', 'Cancel', 'State', 'Schedule', 'HA event', 'Entity', 'Target entity', 'Time', 'Event type', 'HA action', 'WHEN', 'AND', 'THEN', 'ELSE', 'no condition', 'Choose'],
+    fr: ['Assistant', 'Créer une règle étape par étape', 'Déclencheur', 'Conditions', 'Actions', 'Récapitulatif', 'Retour', 'Suivant', 'Appliquer', 'Annuler', 'État', 'Horaire', 'Événement HA', 'Entité', 'Entité cible', 'Heure', 'Type d’événement', 'Action HA', 'QUAND', 'ET', 'ALORS', 'SINON', 'sans condition', 'Choisir'],
+  };
+  const [wizard, title, triggerStep, conditionStep, actionStep, review, back, next, apply, cancel,
+    status, schedule, event, entity, target, time, eventType, service, when, and, then, otherwise, empty, choose] =
+    wording[locale] ?? wording.en;
+  const ruleLabels = {trigger: when, condition: and, then, else: otherwise};
+  const triggerKinds = [['state', status, 'ϟ'], ['time', schedule, '◷'], ['event', event, '✉']];
+  function group(prefix, data, refresh, expanded = false) {
     const fieldset = element('fieldset');
-    fieldset.append(element('legend', title));
+    fieldset.dataset.ruleGroup = prefix;
+    fieldset.append(element('legend', ruleLabels[prefix]));
+    const kind = data.triggerType || 'state';
+    if (prefix === 'trigger') {
+      const kinds = element('div');
+      kinds.className = 'rule-kinds';
+      for (const [value, label, symbol] of triggerKinds) {
+        const item = button('', () => { data.triggerType = value; refresh(); });
+        item.append(element('span', symbol), element('span', label));
+        item.setAttribute('aria-pressed', String(kind === value));
+        kinds.append(item);
+      }
+      fieldset.append(kinds);
+    }
+    const labels = prefix === 'trigger' && kind === 'time' ? [['Time', time]] :
+      prefix === 'trigger' && kind === 'event' ? [['Event', eventType]] :
+      prefix === 'trigger' || prefix === 'condition' ? [['Entity', entity], ['State', status]] :
+      [['Action', service], ['Entity', target]];
+    const inputs = element('div');
+    inputs.className = 'rule-inputs';
     for (const [key, labelText] of labels) {
       const label = element('label', labelText);
       const input = element('input');
       const name = prefix + key;
-      input.value = fields[name] || '';
-      input.oninput = () => {
-        fields[name] = input.value.trim();
-      };
-      label.append(input);
-      fieldset.append(label);
+      input.value = data[name] || '';
+      if (key === 'Time') input.type = 'time';
+      input.oninput = () => { data[name] = input.value.trim(); };
+      const line = element('span');
+      line.append(input);
+      if (key === 'Entity') {
+        line.append(button(choose, () => openBlockEntity({}, input.value, value => {
+          input.value = value;
+          input.oninput();
+        }, value => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value))));
+      }
+      label.append(line);
+      inputs.append(label);
     }
-    form.append(fieldset);
+    if (prefix === 'condition' || prefix === 'else') {
+      const disclosure = element('details');
+      disclosure.open = expanded || labels.some(([key]) => data[prefix + key]);
+      disclosure.append(element('summary', prefix === 'condition' && !disclosure.open ? empty : ruleLabels[prefix]), inputs);
+      disclosure.ontoggle = () => { disclosure.firstChild.textContent = prefix === 'condition' && !disclosure.open ? empty : ruleLabels[prefix]; };
+      fieldset.append(disclosure);
+    } else fieldset.append(inputs);
+    return fieldset;
   }
-  const stateFields = [['Entity', 'Entität'], ['State', 'Zustand']];
-  const actionFields = [['Action', 'HA-Aktion'], ['Entity', 'Ziel-Entität']];
-  group('FALLS · Zustandswechsel', 'trigger', stateFields);
-  group('UND · Optional', 'condition', stateFields);
-  group('DANN', 'then', actionFields);
-  group('SONST · Optional', 'else', actionFields);
-  const state = prefix => ({entity: fields[prefix + 'Entity'] || '', state: fields[prefix + 'State'] || ''});
-  const action = prefix => ({entity: fields[prefix + 'Entity'] || '', action: fields[prefix + 'Action'] || ''});
-  const read = () => ({
-    triggers: fields.triggerEntity || fields.triggerState ? [state('trigger')] : [],
-    condition: fields.conditionEntity || fields.conditionState ? state('condition') : undefined,
-    actions: [action('then')],
-    otherwise: fields.elseEntity || fields.elseAction ? action('else') : undefined,
-  });
+  const read = (data = fields) => {
+    const state = prefix => ({entity: data[prefix + 'Entity'] || '', state: data[prefix + 'State'] || ''});
+    const action = prefix => ({entity: data[prefix + 'Entity'] || '', action: data[prefix + 'Action'] || ''});
+    const trigger = data.triggerType === 'time' ? {type: 'time', time: data.triggerTime} :
+      data.triggerType === 'event' ? {type: 'event', event: data.triggerEvent} :
+      data.triggerEntity || data.triggerState ? state('trigger') : null;
+    return {
+      triggers: trigger ? [trigger] : [],
+      condition: data.conditionEntity || data.conditionState ? state('condition') : undefined,
+      actions: [action('then')],
+      otherwise: data.elseEntity || data.elseAction ? action('else') : undefined,
+    };
+  };
+  const renderForm = (focusGroup) => {
+    const heading = element('header');
+    heading.append(element('span', title), button('✦ ' + wizard, openWizard));
+    const palette = element('nav');
+    palette.className = 'rule-palette';
+    palette.setAttribute('aria-label', title);
+    palette.append(button('✦ ' + wizard, openWizard));
+    const sections = Object.keys(ruleLabels).map(key => group(key, fields, renderForm));
+    for (const [value, label, symbol] of triggerKinds) {
+      const item = button(symbol + ' ' + label, () => {
+        fields.triggerType = value;
+        renderForm('trigger');
+      });
+      item.setAttribute('aria-pressed', String((fields.triggerType || 'state') === value));
+      palette.append(item);
+    }
+    for (const [index, label] of [[1, conditionStep], [2, actionStep]]) {
+      palette.append(button(label, () => {
+        const section = sections[index];
+        const disclosure = section.querySelector('details');
+        if (disclosure) disclosure.open = true;
+        section.querySelector('input')?.focus();
+      }));
+    }
+    const bands = element('div');
+    bands.className = 'rule-form';
+    bands.append(heading, ...sections);
+    form.replaceChildren(palette, bands);
+    if (focusGroup === 'trigger') sections[0].querySelector('input')?.focus();
+  };
+  form.classList.add('rules-editor');
+  function openWizard() {
+    const draft = {...fields};
+    const body = element('div');
+    const dialog = editorDialog(title, body);
+    dialog.classList.add('rules-wizard');
+    dialog.lastElementChild.remove();
+    let step = 0;
+    const render = () => {
+      const steps = element('ol');
+      [triggerStep, conditionStep, actionStep, review].forEach((label, index) => {
+        const item = element('li', (index + 1) + ' · ' + label);
+        if (index === step) item.setAttribute('aria-current', 'step');
+        steps.append(item);
+      });
+      const content = element('div');
+      content.className = 'rule-form';
+      const controls = element('footer');
+      const previous = button(back, () => { step--; render(); });
+      previous.disabled = step === 0;
+      const proceed = button(step === 3 ? apply : next, () => {
+        if (step === 3) {
+          Object.assign(fields, draft);
+          renderForm();
+          dialog.close();
+        } else { step++; render(); }
+      });
+      if (step < 3) {
+        for (const key of [['trigger'], ['condition'], ['then', 'else']][step]) content.append(group(key, draft, render, key !== 'else'));
+      } else {
+        try {
+          const yaml = makeYaml({name: project.name, kind: 'automation', ...read(draft)});
+          validateYaml(yaml, 'automation');
+          content.append(element('pre', yaml));
+        } catch (error) {
+          proceed.disabled = true;
+          const message = element('p', error.message);
+          message.setAttribute('role', 'alert');
+          content.append(message);
+        }
+      }
+      controls.append(previous, button(cancel, () => dialog.close()), proceed);
+      body.replaceChildren(steps, content, controls);
+    };
+    render();
+  }
+  renderForm();
   const source = () => {
     const data = read();
     validateYaml(makeYaml({name: project.name, kind: 'automation', ...data}), 'automation');
@@ -1304,8 +1423,12 @@ function renderRules(panel, project) {
       ? 'if (' + matches(data.condition) + ') {\n    ' + actions + '\n  }' +
         (data.otherwise ? ' else {\n    ' + call(data.otherwise) + '\n  }' : '')
       : actions;
-    return 'ha.onState(' + literal(data.triggers[0].entity) + ', () => {\n  if (' +
-      matches(data.triggers[0]) + ') {\n    ' + branch + '\n  }\n});\n';
+    const trigger = data.triggers[0];
+    if (trigger.type === 'time') return 'ha.schedule(' + literal({trigger: 'time', at: trigger.time + ':00'}) +
+      ', () => {\n  ' + branch + '\n});\n';
+    if (trigger.type === 'event') return 'ha.onEvent(' + literal(trigger.event) + ', () => {\n  ' + branch + '\n});\n';
+    return 'ha.onState(' + literal(trigger.entity) + ', () => {\n  if (' +
+      matches(trigger) + ') {\n    ' + branch + '\n  }\n});\n';
   };
   const convert = open => {
     try {
@@ -1324,7 +1447,7 @@ function renderRules(panel, project) {
         typeof data.fields !== 'object' || Object.values(data.fields).some(value => typeof value !== 'string')) {
       throw new Error('Ungültige Rules-Datei.');
     }
-    const allowed = ['triggerEntity', 'triggerState', 'conditionEntity', 'conditionState',
+    const allowed = ['triggerType', 'triggerTime', 'triggerEvent', 'triggerEntity', 'triggerState', 'conditionEntity', 'conditionState',
       'thenAction', 'thenEntity', 'elseAction', 'elseEntity'];
     const imported = Object.fromEntries(allowed.filter(key => Object.hasOwn(data.fields, key))
       .map(key => [key, data.fields[key]]));
