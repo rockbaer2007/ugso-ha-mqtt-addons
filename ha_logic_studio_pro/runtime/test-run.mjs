@@ -6,7 +6,7 @@ import {timeOperations} from './ha-time.mjs';
 const maxSource = 64_000;
 const maxTrace = 100;
 const id = /^[a-z0-9_]+\.[a-z0-9_]+$/;
-const demoStates = Object.freeze({'binary_sensor.bewegung': 'on', 'light.flur': 'off'});
+const demoStates = Object.freeze({'binary_sensor.bewegung': 'on', 'light.flur': 'off', 'sensor.demo_temperature': '21'});
 
 export async function testRun(source, language = 'javascript', timeZone, start = Date.now()) {
   let elapsed = 0;

@@ -1,4 +1,5 @@
 import {guestTimeApi} from './ha-time.mjs';
+import {importedSystem} from './imported-system.mjs';
 // Runs inside QuickJS. Each test has its own event queue and virtual timers.
 export const simulatedEvents = String.raw`
 (async (api, report, run) => {
@@ -32,8 +33,10 @@ export const simulatedEvents = String.raw`
     const next = base > timeRequest('current', ['unix']) ? base : timeRequest('shift', [base, 1, 'd']);
     return next + offset * 60_000;
   };
+  ${importedSystem}
   const ha = Object.freeze({
     ...api,
+    importedControl, importedStateValue,
     ${guestTimeApi}
     publishMqtt: (topic, message, retain = false) => report(JSON.stringify({type: 'mqtt', topic, message, retain})),
     notify: (entity, message, title = '') => report(JSON.stringify({type: 'notify', entity, message, title})),

@@ -2,6 +2,7 @@ import {getQuickJS, shouldInterruptAfterDeadline} from 'quickjs-emscripten';
 import {connectHomeAssistant} from './ha-connection.mjs';
 import {cronMatcher, dateTimeSchedule, scheduleClock, scheduleMatcher, sunSchedule} from './live-schedule.mjs';
 import {guestTimeApi, sunTimeAttributes, timeOperations} from './ha-time.mjs';
+import {importedSystem} from './imported-system.mjs';
 
 function report(type, text = '') {
   process.stdout.write(JSON.stringify({type, text: text.slice(0, 1000)}) + '\n');
@@ -119,7 +120,8 @@ try {
     }
     if (operation === 'state') {
       const state = ha.state(args[0]);
-      return vm.newString(JSON.stringify(state ? {state: state.state, attributes: state.attributes} : null));
+      return vm.newString(JSON.stringify(state ? {state: state.state, attributes: state.attributes,
+        last_updated: state.last_updated, last_changed: state.last_changed} : null));
     }
     if (operation === 'event') ha.subscribe(args[0]);
     else if (operation === 'action') ha.call(args[0], args[1], args[2]);
@@ -161,7 +163,8 @@ try {
       const callAction = (action, entity, data = {}) => call('action', action, entity, data);
       const timeRequest = (op, args) => JSON.parse(call('time', op, args));
       const astroTimeRequest = (event, offset) => Number(call('astroTime', event, offset));
-      const ha = Object.freeze({${guestTimeApi} log, timeout: (n,d,fn) => timer(n,d,fn,false),
+      ${importedSystem}
+      const ha = Object.freeze({${guestTimeApi} importedControl, importedStateValue, log, timeout: (n,d,fn) => timer(n,d,fn,false),
         pause: delay => new Promise(resolve => timer(Symbol(), delay, resolve, false)),
         publishMqtt: (topic, message, retain = false) => call('publishMqtt', topic, message, retain),
         notify: (entity, message, title = '') => call('notify', entity, message, title),

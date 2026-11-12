@@ -1,4 +1,8 @@
-# HA Logic Studio Pro 0.1.49
+# HA Logic Studio Pro 0.1.50
+
+- **DE:** Der ioBroker-Systemimport erhält verbundene Schaltwerte, Verzögerungen und die Felder Wert, letzte Aktualisierung, letzte Änderung, Anzeigename und Einheit. Die ioBroker-ID bleibt sichtbar. Über das Feld HA-Entität wird das Ziel ausdrücklich ausgewählt.
+- **EN:** The ioBroker system import preserves connected control values, delays, and state value, last update, last change, display name and unit. The ioBroker ID stays visible. Select the target explicitly in the HA entity field.
+- **FR :** L’import système ioBroker conserve les valeurs de commande connectées, les délais, la valeur, la dernière actualisation, la dernière modification, le nom affiché et l’unité. L’identifiant ioBroker reste visible. Sélectionnez explicitement la cible dans le champ Entité HA.
 
 - **DE:** Blocks JS wartet auch in eigenen Funktionen auf den Pause-Block, einschließlich verschachtelter Aufrufe und Rückgabewerte. Freie ioBroker-Datumsformate bleiben beim Import editierbar. Die Ausgabe nutzt die HA-Zeitzone.
 - **EN:** Blocks JS now awaits Pause inside custom procedures, including nested calls and return values. Custom ioBroker date formats remain editable after import. Formatting uses the HA time zone.
