@@ -1,7 +1,7 @@
 Bundled license information:
 
-@blockly/field-multilineinput/dist/index.js:
 @blockly/field-colour/dist/index.js:
+@blockly/field-multilineinput/dist/index.js:
 @blockly/field-slider/dist/index.js:
 @blockly/field-date/dist/index.js:
 @blockly/field-dependent-dropdown/dist/index.js:

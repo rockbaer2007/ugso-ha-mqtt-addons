@@ -1,3 +1,5 @@
+import {historyRange, historyRows} from './history.mjs';
+
 const endpoint = 'ws://supervisor/core/websocket';
 const entityPattern = /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/;
 const eventPattern = /^[a-z][a-z0-9_]{0,127}$/;
@@ -134,6 +136,14 @@ export async function connectHomeAssistant({token, readable, writable, events, m
       state(entity) {
         if (!allowed.has(entity)) throw new Error('HA-Entität nicht freigegeben: ' + entity);
         return states.get(entity) ?? null;
+      },
+      async history(entity, start, end, mode, step, count) {
+        if (typeof entity !== 'string' || !allowed.has(entity)) throw new Error('HA-Entität nicht freigegeben: ' + entity);
+        const range = historyRange(start, end, mode, step, count);
+        const result = await send({type: 'history/history_during_period', entity_ids: [entity],
+          start_time: new Date(start).toISOString(), end_time: new Date(end).toISOString(),
+          include_start_time_state: false, significant_changes_only: false, no_attributes: true});
+        return historyRows(result?.[entity] ?? [], range);
       },
       subscribe(type) {
         if (!eventPattern.test(type) || type === 'state_changed' || !permittedEvents.has(type)) {

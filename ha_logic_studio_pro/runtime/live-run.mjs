@@ -26,6 +26,7 @@ try {
   const vm = runtime.newContext();
   // HA event data is passed as JSON, separate from the project source.
   const scheduled = new Map();
+  let historyRequests = 0;
   let ticker;
   let failed = false;
   function fail(error) {
@@ -123,7 +124,13 @@ try {
       return vm.newString(JSON.stringify(state ? {state: state.state, attributes: state.attributes,
         last_updated: state.last_updated, last_changed: state.last_changed} : null));
     }
-    if (operation === 'event') ha.subscribe(args[0]);
+    if (operation === 'history') {
+      if (historyRequests >= 4) throw new Error('Maximal vier gleichzeitige Verlaufsabfragen.');
+      const [id, ...query] = args;
+      historyRequests++;
+      ha.history(...query).then(rows => dispatch({type: 'history', id, rows}), fail)
+        .finally(() => { historyRequests--; });
+    } else if (operation === 'event') ha.subscribe(args[0]);
     else if (operation === 'action') ha.call(args[0], args[1], args[2]);
     else if (['publishMqtt', 'notify', 'fireEvent'].includes(operation)) ha.sendto(operation, args);
     else throw new Error('Unbekannte HA-Anfrage.');
@@ -136,6 +143,8 @@ try {
       const timers = new Map();
       const handlers = [];
       const namedSchedules = new Map();
+      const historyCallbacks = new Map();
+      let historyId = 0;
       const call = (operation, ...args) => bridge(operation, JSON.stringify(args));
       const invoke = (callback, ...args) => {
         const result = callback(...args);
@@ -189,6 +198,11 @@ try {
         onImportedState: (entity, condition, callback) => register('importedState', entity, condition, callback),
         onAttribute: (entity, key, callback) => register('attribute', entity, key, callback),
         onEvent: (name, callback) => register('event', name, null, callback),
+        history(entity, start, end, mode, step, count, callback) {
+          const id = ++historyId;
+          call('history', id, entity, Number(start), Number(end), mode, step, count);
+          historyCallbacks.set(id, callback);
+        },
         schedule: (pattern, callback) => register('schedule', pattern, null, callback),
         namedSchedule(name, cron, callback) {
           if (typeof name !== 'string' || !name.trim() || name.length > 128 || typeof callback !== 'function') throw new Error('Ungültiger benannter Zeitplan.');
@@ -215,6 +229,12 @@ try {
         }
       };
       const studioDispatch = event => {
+        if (event.type === 'history') {
+          const callback = historyCallbacks.get(event.id);
+          historyCallbacks.delete(event.id);
+          if (callback) invoke(callback, event.rows);
+          return;
+        }
         if (event.type === 'schedule') {
           const callback = typeof event.index === 'string' ? namedSchedules.get(event.index) : handlers[event.index]?.callback;
           if (callback) invoke(callback, event);

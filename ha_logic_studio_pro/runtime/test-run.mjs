@@ -2,6 +2,7 @@ import {getQuickJS, shouldInterruptAfterDeadline} from 'quickjs-emscripten';
 import {simulatedEvents} from './simulated-events.mjs';
 import {importedNamedScheduleMatcher, scheduleMatcher} from './live-schedule.mjs';
 import {timeOperations} from './ha-time.mjs';
+import {historyRange, historyRows} from './history.mjs';
 
 const maxSource = 64_000;
 const maxTrace = 100;
@@ -53,6 +54,15 @@ export async function testRun(source, language = 'javascript', timeZone, start =
       const api = vm.newObject();
       try {
         const methods = {
+          sampleHistory(entity, query) {
+            const target = identifier(entity);
+            const range = historyRange(...JSON.parse(stringArg(query, 256)));
+            const sample = states[target];
+            const rows = sample === undefined ? [] : [{last_updated: new Date(range.start).toISOString(), state: sample}];
+            const points = historyRows(rows, range);
+            record({type: 'history', entity: target, rows: points});
+            return vm.newString(JSON.stringify(points));
+          },
           validateCron(source) {
             importedNamedScheduleMatcher(stringArg(source, 4096));
             return vm.undefined;

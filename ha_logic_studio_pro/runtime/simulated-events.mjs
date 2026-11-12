@@ -56,6 +56,10 @@ export const simulatedEvents = String.raw`
     onImportedState: (entity, condition, callback) => register('importedState', entity, condition, callback),
     onAttribute: (entity, attribute, callback) => register('attribute', entity, attribute, callback),
     onEvent: (event, callback) => register('event', event, null, callback),
+    history(entity, start, end, mode, step, count, callback) {
+      const rows = api.sampleHistory(entity, JSON.stringify([Number(start), Number(end), mode, step, count]));
+      invoke(callback, JSON.parse(rows));
+    },
     schedule(schedule, callback) {
       const source = JSON.stringify(schedule);
       api.validateSchedule(source);

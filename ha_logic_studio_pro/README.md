@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.55
+# HA Logic Studio Pro 0.1.57
+
+**Funktionen:** Blocks JS bietet unter „Funktionen“ zwei JavaScript-Definitionen mit und ohne Ergebnis. Parameter werden über das Zahnrad, der Code über „…“ bearbeitet. Aufrufblöcke erscheinen nach der Definition in der Palette. Beim ioBroker-Import bleiben Code und Parameter erhalten. ioBroker-spezifische APIs im importierten Code müssen für die HA-Runtime angepasst werden.
+
+**Verlauf:** Blocks JS → Sendto → „Verlauf abfragen“ liest Recorder-Daten einer freigegebenen HA-Entität. Ohne Zeitangaben gilt der aktuelle Tag in der HA-Zeitzone. Die Eingänge erwarten Millisekunden oder Datum-Objekte. Der Ergebnisblock liefert im nachgelagerten Abschnitt eine Liste aus `{ts, val}`. Min, Max und Mittelwert berücksichtigen numerische Zustände. „Anzahl“ zählt aufgezeichnete Zustände pro Intervall. Der Testlauf verwendet Demodaten.
+
+Beim ioBroker-Import bleiben Zeitraum, Aggregation, Schritt, Anzahl und angeschlossene Blöcke erhalten. Ordne der importierten Objekt-ID eine HA-Entität zu. Die Daten stammen aus dem HA-Recorder, dessen Aufzeichnung und Aggregation von der ioBroker-Historie abweichen können. Dynamisch berechnete Objekt-IDs bleiben als nicht unterstützte Originalblöcke erhalten.
 
 **CallMeBot:** In Blocks JS → Sendto erscheint WhatsApp beziehungsweise Signal, sobald der zugehörige MQTT-Profilsensor verfügbar ist. Nach einer Änderung der Verfügbarkeit den Editor erneut öffnen. Vorhandene Blöcke und Profil-IDs bleiben erhalten. Für die Live-Runtime das jeweilige Topic `ugso/callmebot/send` oder `ugso/callmebot_signal/send` unter `runtime_mqtt_topics` freigeben. Testläufe protokollieren die MQTT-Nachricht lokal.
 
