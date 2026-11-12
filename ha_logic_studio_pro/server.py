@@ -17,7 +17,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
 
-VERSION = '0.1.61'
+VERSION = '0.1.62'
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 1_000_000
 TEST_RUN_SLOTS = threading.BoundedSemaphore(2)
@@ -266,6 +266,19 @@ class LogicServer(ThreadingHTTPServer):
     def entities(self):
         return sorted(filter(None, (public_entity(item) for item in self.entity_states())), key=lambda x: (x['name'].casefold(), x['entity_id']))
 
+    def action_names(self):
+        if not self.supervisor or not os.environ.get('SUPERVISOR_TOKEN'):
+            return []
+        request = Request('http://supervisor/core/api/services', headers={
+            'Authorization': 'Bearer ' + os.environ['SUPERVISOR_TOKEN'], 'Accept': 'application/json'})
+        with build_opener(NoRedirect).open(request, timeout=12) as response:
+            body = response.read(10_000_001)
+        if len(body) > 10_000_000:
+            raise ValueError('Aktionsliste zu groß.')
+        return sorted({f'{item["domain"]}.{service}'
+                       for item in json.loads(body) for service in item['services']
+                       if re.fullmatch(r'[a-z0-9_]+', item['domain']) and re.fullmatch(r'[a-z0-9_]+', service)})
+
     def callmebot_catalogs(self):
         sources = {'ugso_callmebot': 'whatsapp', 'ugso_callmebot_signal': 'signal'}
         catalogs = {}
@@ -329,6 +342,8 @@ class Handler(SimpleHTTPRequestHandler):
                                  'entities_available': bool(self.server.demo or self.server.supervisor), 'read_only_ha': True})
             elif route.path == '/api/callmebot':
                 self.reply(200, self.server.callmebot_catalogs() if self.server.supervisor or self.server.demo else {})
+            elif route.path == '/api/rules-actions':
+                self.reply(200, {'items': self.server.action_names()})
             elif route.path == '/api/entities':
                 query = parse_qs(route.query)
                 search = query.get('q', [''])[0].casefold()[:200]

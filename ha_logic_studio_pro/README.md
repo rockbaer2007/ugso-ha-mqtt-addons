@@ -1,4 +1,6 @@
-# HA Logic Studio Pro 0.1.61
+# HA Logic Studio Pro 0.1.62
+
+Rules unterstützt Von/Nach, Attribute, Mindestdauer, numerische Bedingungen sowie HA-Aktionen mit JSON-Parametern und Verzögerungen. Die erzeugte YAML wurde auf .193 mit Testhelfern live geprüft. Erweiterte Regeln werden als HA-YAML exportiert.
 
 Der YAML-Export schützt Zustandswerte wie `on` und `off` davor, beim Einlesen als Wahrheitswerte interpretiert zu werden. Auf dem HA-Testsystem .193 wurden Zustandswechsel, HA-Ereignis und Uhrzeit sowie UND, ODER und NICHT mit je zwei Aktionen in DANN und SONST live geprüft.
 

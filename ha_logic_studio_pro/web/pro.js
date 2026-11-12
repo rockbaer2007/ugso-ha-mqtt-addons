@@ -575,10 +575,14 @@ function openBlockEntity(spec, current, apply, validate) {
     en: ['Choose an attribute', 'Search attributes', 'Apply', 'No matching attributes.', 'HA attributes are unavailable.', 'Enter an attribute name.'],
     fr: ['Choisir un attribut', 'Rechercher un attribut', 'Appliquer', 'Aucun attribut correspondant.', 'Les attributs HA sont indisponibles.', 'Saisissez un nom d’attribut.'],
   };
-  const pickerLabels = spec.kind === 'attribute' ? attributeLabels : labels;
+  const actionLabels = {
+    de: ['HA-Aktion auswählen', 'Nach Aktion suchen', 'Übernehmen', 'Keine passenden Aktionen.', 'HA-Aktionen sind nicht verfügbar.', 'Gültige Aktions-ID eingeben.'],
+    en: ['Choose an HA action', 'Search actions', 'Apply', 'No matching actions.', 'HA actions are unavailable.', 'Enter a valid action ID.'],
+    fr: ['Choisir une action HA', 'Rechercher une action', 'Appliquer', 'Aucune action correspondante.', 'Les actions HA sont indisponibles.', 'Saisissez un identifiant d’action valide.'],
+  };
+  const pickerLabels = spec.kind === 'attribute' ? attributeLabels : spec.kind === 'action' ? actionLabels : labels;
   const [entityTitle, placeholder, accept, empty, unavailable, invalid] = pickerLabels[locale] ?? pickerLabels.en;
-  const actionTitle = {de: 'HA-Aktion auswählen', en: 'Choose an HA action', fr: 'Choisir une action HA'};
-  const title = spec.kind === 'action' ? (actionTitle[locale] ?? actionTitle.en) : entityTitle;
+  const title = entityTitle;
   const content = element('div');
   const search = element('input');
   search.type = 'search';
@@ -589,7 +593,7 @@ function openBlockEntity(spec, current, apply, validate) {
   list.style.overflowY = 'auto';
   const input = element('input');
   input.value = current;
-  input.setAttribute('aria-label', spec.kind === 'attribute' ? title : 'entity_id');
+  input.setAttribute('aria-label', spec.kind ? title : 'entity_id');
   input.oninput = () => input.setCustomValidity('');
   const submit = () => {
     const value = input.value.trim();
@@ -613,12 +617,14 @@ function openBlockEntity(spec, current, apply, validate) {
     try {
       const domains = spec.domains?.length ? spec.domains : spec.numeric ? ['sensor', 'input_number', 'number'] : [''];
       const attributeChoices = async () => {
+        if (!spec.entity) return [];
         const response = await fetch('./api/entities?' + new URLSearchParams({q: spec.entity}), {signal: controller.signal});
         if (!response.ok) throw new Error(unavailable);
         const entity = (await response.json()).items.find(item => item.entity_id === spec.entity);
         return Object.keys(entity?.attributes ?? {});
       };
-      const choices = spec.kind === 'attribute' ? await attributeChoices() : spec.choices;
+      const choices = spec.kind === 'attribute' ? await attributeChoices() :
+        spec.loadChoices ? await spec.loadChoices(controller.signal) : spec.choices;
       const pages = choices ? [choices.filter(id => id.toLowerCase().includes(search.value.trim().toLowerCase()))
         .map(id => ({entity_id: id, name: id}))] : await Promise.all(domains.map(async domain => {
         const query = new URLSearchParams({q: search.value.trim(), domain});
@@ -659,6 +665,20 @@ function openBlockEntity(spec, current, apply, validate) {
   dialog.addEventListener('close', () => { clearTimeout(timer); request?.abort(); });
   search.focus();
   void refresh();
+}
+
+function openRuleAction(current, apply) {
+  const common = ['homeassistant.turn_on', 'homeassistant.turn_off', 'homeassistant.toggle',
+    'input_number.set_value', 'input_text.set_value', 'light.turn_on', 'notify.send_message'];
+  let catalog;
+  openBlockEntity({kind: 'action', loadChoices: async signal => {
+    if (catalog) return catalog;
+    const response = await fetch('./api/rules-actions', {signal});
+    if (!response.ok) return common;
+    const {items} = await response.json();
+    catalog = items.length ? items : common;
+    return catalog;
+  }}, current, apply, value => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value));
 }
 
 async function showSun(project) {
@@ -1273,6 +1293,11 @@ function renderRules(panel, project) {
     wording[locale] ?? wording.en;
   const ruleLabels = {triggers: when, conditions: and, actions: then, elseActions: otherwise};
   const triggerKinds = [['state', status, 'ϟ'], ['time', schedule, '◷'], ['event', event, '✉']];
+  const [from, to, attribute, hold, numeric, above, below, delay, seconds, parameters, actionType] = ({
+    de: ['Von', 'Nach', 'Attribut (optional)', 'Mindestdauer (Sekunden)', 'Zahlenwert', 'Über', 'Unter', 'Verzögerung', 'Sekunden', 'Parameter (JSON)', 'Schritttyp'],
+    en: ['From', 'To', 'Attribute (optional)', 'Minimum duration (seconds)', 'Numeric state', 'Above', 'Below', 'Delay', 'Seconds', 'Parameters (JSON)', 'Step type'],
+    fr: ['De', 'À', 'Attribut (facultatif)', 'Durée minimale (secondes)', 'État numérique', 'Au-dessus de', 'En dessous de', 'Délai', 'Secondes', 'Paramètres (JSON)', 'Type d’étape'],
+  })[locale] ?? ['From', 'To', 'Attribute (optional)', 'Minimum duration (seconds)', 'Numeric state', 'Above', 'Below', 'Delay', 'Seconds', 'Parameters (JSON)', 'Step type'];
   const [remove, addItem, all, any, none] = ({
     de: ['Entfernen', 'Hinzufügen', 'Alle (UND)', 'Mindestens eine (ODER)', 'Keine (NICHT)'],
     en: ['Remove', 'Add', 'All (AND)', 'At least one (OR)', 'None (NOT)'],
@@ -1304,25 +1329,57 @@ function renderRules(panel, project) {
       fieldset.append(select);
     }
     for (const [index, entry] of data[key].entries()) {
-      const stateFields = [['entity', entity], ['state', status]];
-      const labels = key === 'triggers' && entry.type === 'time' ? [['time', time]] :
-        key === 'triggers' && entry.type === 'event' ? [['event', eventType]] :
-        key === 'triggers' || key === 'conditions' ? stateFields : [['action', service], ['entity', target]];
       const inputs = element('div');
       inputs.className = 'rule-inputs';
+      const isAction = key === 'actions' || key === 'elseActions';
+      if (key === 'conditions' || isAction) {
+        const caption = element('label', isAction ? actionType : conditionStep);
+        const select = element('select');
+        const options = isAction ? [['action', service], ['delay', delay]] : [['state', status], ['numeric', numeric]];
+        for (const [value, name] of options) {
+          const option = element('option', name);
+          option.value = value;
+          select.append(option);
+        }
+        select.value = entry.type || options[0][0];
+        select.onchange = () => { entry.type = select.value; changed(); refresh(); };
+        caption.append(select);
+        inputs.append(caption);
+      }
+      let labels;
+      if (key === 'triggers') {
+        if (entry.type === 'time') labels = [['time', time]];
+        else if (entry.type === 'event') labels = [['event', eventType]];
+        else labels = [['entity', entity], ['attribute', attribute], ['from', from], ['state', to], ['seconds', hold]];
+      } else if (key === 'conditions') {
+        labels = [['entity', entity], ['attribute', attribute],
+          ...(entry.type === 'numeric' ? [['above', above], ['below', below]] : [['state', status]])];
+      } else {
+        labels = entry.type === 'delay' ? [['seconds', seconds]] : [['action', service], ['entity', target], ['data', parameters]];
+      }
       for (const [name, caption] of labels) {
         const label = element('label', caption);
-        const input = element('input');
+        const input = element(name === 'data' ? 'textarea' : 'input');
         input.value = entry[name] || '';
         if (name === 'time') input.type = 'time';
+        if (name === 'seconds') { input.type = 'number'; input.min = '1'; input.step = '1'; }
+        if (name === 'above' || name === 'below') { input.type = 'number'; input.step = 'any'; }
+        if (name === 'data') { input.rows = 2; input.placeholder = '{}'; }
         input.oninput = () => { entry[name] = input.value.trim(); changed(); };
         const line = element('span');
         line.append(input);
-        if (name === 'entity') {
-          line.append(button(choose, () => openBlockEntity({}, input.value, value => {
+        if (name === 'action') {
+          line.append(button(choose, () => openRuleAction(input.value, value => {
             input.value = value;
             input.oninput();
-          }, value => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value))));
+          })));
+        }
+        if (name === 'entity' || name === 'attribute') {
+          line.append(button(choose, () => openBlockEntity(
+            name === 'attribute' ? {kind: 'attribute', entity: entry.entity} : {}, input.value, value => {
+            input.value = value;
+            input.oninput();
+          }, value => name === 'attribute' ? Boolean(value) : /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value))));
         }
         label.append(line);
         inputs.append(label);
