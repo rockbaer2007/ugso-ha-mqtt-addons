@@ -1,4 +1,4 @@
-# HA Logic Studio Pro 0.1.52
+# HA Logic Studio Pro 0.1.53
 
 - Blocks JS unterstützt direkte Funktionsrückgaben und freie Zeitdifferenzformate mit ioBroker-Import.
 

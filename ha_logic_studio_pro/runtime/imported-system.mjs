@@ -1,5 +1,5 @@
 // Shared by the live and simulated QuickJS environments.
-export const importedSystem = `
+export const importedSystem = String.raw`
   const importedEventValue = (event, part) => {
     const value = event?.[part]?.state;
     return value === 'on' ? true : value === 'off' ? false : value ?? null;
@@ -24,8 +24,42 @@ export const importedSystem = `
     }
   }
   const pendingImportedControls = new Map();
-  function importedControl(entity, value, toggle, delay, clearRunning) {
+  function importedTarget(source, entries) {
+    const target = typeof source === 'string' && entries.find(([id]) => id === source);
+    if (!target) throw new Error('Keine HA-Zuordnung für ioBroker-ID: ' + String(source));
+    return target[1];
+  }
+  function importedAttribute(object, path) {
+    let keys = Array.isArray(path) ? path : null;
+    if (!keys) {
+      if (typeof path !== 'string' || !path || path.length > 4096) return null;
+      if (object != null && Object.hasOwn(object, path)) keys = [path];
+      else {
+        keys = [];
+        const segment = /(?:^|\.)([^.\[\]]+)|\[(?:(\d+)|"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\]/gy;
+        let match;
+        let end = 0;
+        while ((match = segment.exec(path))) {
+          keys.push(match[1] ?? match[2] ?? (match[3] ?? match[4]).replace(/\\(.)/g, '$1'));
+          end = segment.lastIndex;
+        }
+        if (end !== path.length) return null;
+      }
+    }
+    if (!keys.length || keys.length > 128) return null;
+    for (const key of keys) {
+      if ((typeof key !== 'string' && typeof key !== 'number') ||
+          ['__proto__', 'prototype', 'constructor'].includes(key) ||
+          object == null || !Object.hasOwn(object, key)) return null;
+      object = object[key];
+    }
+    return object ?? null;
+  }
+  function importedControl(entity, value, toggle, delay, clearRunning, update = false) {
     const domain = entity.split('.')[0];
+    if (update && !['input_boolean', 'input_number', 'input_text'].includes(domain)) {
+      throw new Error('Aktualisiere benötigt einen HA-Helfer: ' + entity);
+    }
     let execute;
     if (['light', 'switch', 'input_boolean', 'fan'].includes(domain)) {
       if (toggle) {

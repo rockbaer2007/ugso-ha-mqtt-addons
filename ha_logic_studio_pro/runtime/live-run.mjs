@@ -164,7 +164,7 @@ try {
       const timeRequest = (op, args) => JSON.parse(call('time', op, args));
       const astroTimeRequest = (event, offset) => Number(call('astroTime', event, offset));
       ${importedSystem}
-      const ha = Object.freeze({${guestTimeApi} importedControl, importedStateValue, importedEventValue, log, timeout: (n,d,fn) => timer(n,d,fn,false),
+      const ha = Object.freeze({${guestTimeApi} importedControl, importedStateValue, importedEventValue, importedTarget, importedAttribute, log, timeout: (n,d,fn) => timer(n,d,fn,false),
         pause: delay => new Promise(resolve => timer(Symbol(), delay, resolve, false)),
         publishMqtt: (topic, message, retain = false) => call('publishMqtt', topic, message, retain),
         notify: (entity, message, title = '') => call('notify', entity, message, title),

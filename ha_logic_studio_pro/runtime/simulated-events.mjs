@@ -36,7 +36,7 @@ export const simulatedEvents = String.raw`
   ${importedSystem}
   const ha = Object.freeze({
     ...api,
-    importedControl, importedStateValue, importedEventValue,
+    importedControl, importedStateValue, importedEventValue, importedTarget, importedAttribute,
     ${guestTimeApi}
     publishMqtt: (topic, message, retain = false) => report(JSON.stringify({type: 'mqtt', topic, message, retain})),
     notify: (entity, message, title = '') => report(JSON.stringify({type: 'notify', entity, message, title})),
