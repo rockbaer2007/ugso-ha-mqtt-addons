@@ -1,4 +1,6 @@
-# HA Logic Studio Pro 0.1.28
+# HA Logic Studio Pro 0.1.29
+
+Alle Editoren übernehmen Entwürfe erst mit **Speichern**. **Abbrechen** verwirft die Änderungen seit dem letzten Speichern. Bei einem neuen Projekt verwirft es den ganzen Entwurf. **Play** und **Neustart** sind bei ungespeicherten Änderungen gesperrt. Laufende Skripte lassen sich weiterhin stoppen. Testläufe können den aktuellen Entwurf verwenden.
 
 Die Werkzeugleisten und Dialoge der Editoren wurden in Deutsch, Englisch und Französisch ergänzt. Der Funktionsplan startet über **Play** auf dem HA-Server. **Automatisch** reagiert auf freigegebene Eingänge. **Fester Zyklus** wertet den Plan alle 100 bis 60.000 ms aus. **Speichern** übernimmt den Entwurf. **Abbrechen** lädt den zuletzt gespeicherten Stand.
 
@@ -10,7 +12,7 @@ einen JSON-Download für lokale Entwürfe.
 Blocks JS ergänzt HA-Auslöser, Attribute, parametrisierte Aktionen, Helferwerte,
 Timer und Programmstruktur. Der JS-/TS-Testlauf simuliert Ereignisse und Timer.
 
-Beide Blockly-Editoren enthalten den integrierten Katalog von Blocks for HA 0.1.66. Blocks A exportiert native Home-Assistant-Automationen. Blocks JS enthält zusätzlich JavaScript-Blöcke und kann native HA-Pläne im Testprotokoll anzeigen.
+Blocks A verwendet den Katalog von Blocks for HA 0.1.66 und exportiert native Home-Assistant-Automationen. Entitäten lassen sich direkt im jeweiligen Blockfeld auswählen. Blocks JS bietet eine eigene Palette für JavaScript mit HA-Entitäten, Aktionen und Auslösern.
 
 **Play** startet JavaScript, TypeScript und den von Blocks JS erzeugten Code in einem serverseitigen QuickJS-Prozess. **Stopp** beendet ihn. Browserwechsel und geschlossene Tabs beenden ihn nicht. Nach einem App-Neustart müssen Skripte erneut gestartet werden. TypeScript wird transpiliert.
 

@@ -13,6 +13,7 @@ const openTabs = new Set();
 const icons = {yaml: '{ }', rules: 'ϟ', blocks: '', 'blocks-js': '', flow: '', javascript: 'JS', typescript: 'TS'};
 const runnable = type => ['javascript', 'typescript', 'blocks-js', 'flow'].includes(type);
 const checkpoints = new Map();
+const unsavedProjects = new Set();
 let flowProjectId, legacyChecked = false;
 let runtimeJobs = {};
 let runtimeRequest = false;
@@ -56,6 +57,22 @@ function snapshot(project) {
   return structuredClone(Object.fromEntries(editable.map(key => [key, project[key]])));
 }
 
+function hasUnsavedChanges(id) {
+  const project = projects.get(id);
+  const saved = checkpoints.get(id);
+  return unsavedProjects.has(id) || Boolean(project && saved &&
+    editable.some(key => JSON.stringify(project[key]) !== JSON.stringify(saved[key])));
+}
+
+function refreshRuntimeControls(id = active) {
+  for (const control of document.querySelectorAll('[data-runtime-project]')) {
+    if (control.dataset.runtimeProject !== id) continue;
+    if (control.dataset.runtimeRestart === 'true') {
+      control.disabled = sortingProjects || runtimeRequest || hasUnsavedChanges(id);
+    } else updateEngineControl(control, id);
+  }
+}
+
 function captureFlow() {
   const project = projects.get(flowProjectId);
   if (!project) return;
@@ -69,11 +86,14 @@ function commitEditor(id) {
   if (active === id && project.type === 'flow') captureFlow();
   if (active === id && blocks) project.workspace = blocks.snapshot();
   checkpoints.set(id, snapshot(project));
-  return saveProjects();
+  unsavedProjects.delete(id);
+  const accepted = saveProjects();
+  refreshRuntimeControls(id);
+  return accepted;
 }
 
 function saveProjects() {
-  const entries = [...projects].map(([id, {protocol, running, problem, ...draft}]) =>
+  const entries = [...projects].filter(([id]) => !unsavedProjects.has(id)).map(([id, {protocol, running, problem, ...draft}]) =>
     [id, {...draft, ...checkpoints.get(id)}]);
   const tree = {folders: [...projectFolders], projects: entries};
   try {
@@ -133,6 +153,7 @@ function loadProjectTree(saved) {
       if (!/^\d+$/.test(id) || !draft || !Object.hasOwn(icons, draft.type) || typeof draft.name !== 'string') continue;
       projects.set(id, {...draft, folder: projectFolders.has(draft.folder) ? draft.folder : '',
         protocol: [], running: runnable(draft.type) ? false : undefined});
+      checkpoints.set(id, snapshot(projects.get(id)));
       nextId = Math.max(nextId, Number(id));
     }
 }
@@ -342,7 +363,7 @@ $('protocol-download').onclick = event => {
 function add(project) {
   const id = String(++nextId);
   projects.set(id, {...project, protocol: []});
-  if (!sortingProjects) saveProjects();
+  unsavedProjects.add(id);
   show(id);
 }
 
@@ -413,12 +434,14 @@ function toolIcon(group, icon, label, action) {
 function updateEngineControl(control, id) {
   const state = runtimeState(id);
   const isRunning = runtimeActive(id);
-  const label = isRunning ? 'Runtime stoppen' : 'In Runtime starten';
+  const blocked = !isRunning && hasUnsavedChanges(id);
+  const label = isRunning ? 'Runtime stoppen' : blocked ? 'Änderungen zuerst speichern oder abbrechen.' : 'In Runtime starten';
+  control.dataset.runtimeProject = id;
   control.dataset.projectRun = isRunning ? 'running' : 'stopped';
-  control.title = label;
-  control.setAttribute('aria-label', label);
+  control.title = translatePro(label, locale);
+  control.setAttribute('aria-label', control.title);
   control.querySelector('path').setAttribute('d', isRunning ? 'M7 5h3v14H7zm7 0h3v14h-3z' : editorIcons.play);
-  control.disabled = sortingProjects || runtimeRequest;
+  control.disabled = sortingProjects || runtimeRequest || blocked;
   const status = control.parentElement.querySelector('[data-runtime-status]');
   if (status) status.textContent = {starting: 'Runtime startet …', running: 'Skript läuft',
     stopped: 'Skript läuft nicht', error: 'Runtime-Fehler'}[state];
@@ -430,8 +453,7 @@ function syncRuntime(next) {
   runtimeJobs = next;
   if ([...new Set([...Object.keys(old), ...Object.keys(next)])].some(id => old[id]?.state !== next[id]?.state)) {
     renderProjectList();
-    const control = editor.querySelector('[data-runtime-control]');
-    if (control) updateEngineControl(control, active);
+    refreshRuntimeControls();
   }
   renderProtocol();
 }
@@ -447,17 +469,19 @@ async function pollRuntime() {
 async function controlRuntime(id, command) {
   const project = projects.get(id);
   if (runtimeRequest || !project) return;
+  if (command !== 'stop' && hasUnsavedChanges(id)) return;
   runtimeRequest = true;
   try {
     const payload = {id, command};
     if (command !== 'stop') {
-      if (active === id && !commitEditor(id)) throw new Error('Projekt konnte nicht gespeichert werden.');
+      if (unsavedProjects.has(id)) throw new Error('Projekt zuerst auf dem Server speichern.');
       await flushProjects();
       if (projectRevision === null || pendingSave || saveInProgress) throw new Error('Projekt zuerst auf dem Server speichern.');
       payload.revision = projectRevision;
       if (project.type === 'blocks-js') {
         const {generateBlocks} = await import('./vendor/pro-blocks.js');
-        payload.source = generateBlocks(project.workspace, project.name);
+        const saved = checkpoints.get(id);
+        payload.source = generateBlocks(saved.workspace, saved.name);
       }
     }
     const response = await fetch('./api/pro-runtime', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
@@ -468,8 +492,7 @@ async function controlRuntime(id, command) {
   finally {
     runtimeRequest = false;
     renderProjectList();
-    const control = editor.querySelector('[data-runtime-control]');
-    if (control) updateEngineControl(control, active);
+    refreshRuntimeControls();
   }
 }
 
@@ -494,7 +517,7 @@ function editorTools(row, project, {undo, redo} = {}) {
   const unavailable = 'Server-Engine noch nicht verfügbar';
   const id = active;
   const canRun = runnable(project.type);
-  toolIcon(left, 'restart', canRun ? 'Runtime neu starten' : unavailable,
+  const restart = toolIcon(left, 'restart', canRun ? 'Runtime neu starten' : unavailable,
     canRun ? () => controlRuntime(id, 'restart') : undefined);
   const play = toolIcon(left, 'play', unavailable,
     canRun ? () => controlRuntime(id, runtimeActive(id) ? 'stop' : 'start') : undefined);
@@ -502,6 +525,9 @@ function editorTools(row, project, {undo, redo} = {}) {
   const status = element('span', 'Skript läuft nicht');
   left.append(status);
   if (canRun) {
+    restart.dataset.runtimeProject = id;
+    restart.dataset.runtimeRestart = 'true';
+    restart.disabled = sortingProjects || runtimeRequest || hasUnsavedChanges(id);
     play.dataset.runtimeControl = '';
     status.dataset.runtimeStatus = '';
     updateEngineControl(play, id);
@@ -536,6 +562,87 @@ async function editorEntities(query) {
   const response = await fetch('./api/entities?q=' + encodeURIComponent(query));
   if (!response.ok) throw new Error('HA-Entitäten sind nicht verfügbar.');
   return (await response.json()).items;
+}
+
+function openBlockEntity(spec, current, apply, validate) {
+  const labels = {
+    de: ['Entität auswählen', 'Nach Name oder ID suchen', 'Übernehmen', 'Keine passenden Entitäten.', 'HA-Entitäten sind nicht verfügbar.', 'Passende Entitäts-ID eingeben.'],
+    en: ['Choose an entity', 'Search by name or ID', 'Apply', 'No matching entities.', 'HA entities are unavailable.', 'Enter a valid entity ID.'],
+    fr: ['Choisir une entité', 'Rechercher par nom ou identifiant', 'Appliquer', 'Aucune entité correspondante.', 'Les entités HA sont indisponibles.', 'Saisissez un identifiant valide.'],
+  };
+  const [title, placeholder, accept, empty, unavailable, invalid] = labels[locale] ?? labels.en;
+  const content = element('div');
+  const search = element('input');
+  search.type = 'search';
+  search.placeholder = placeholder;
+  search.setAttribute('aria-label', placeholder);
+  const list = element('ul');
+  list.style.maxHeight = '45vh';
+  list.style.overflowY = 'auto';
+  const input = element('input');
+  input.value = current;
+  input.setAttribute('aria-label', 'entity_id');
+  input.oninput = () => input.setCustomValidity('');
+  const submit = () => {
+    const value = input.value.trim();
+    if (!validate(value)) {
+      input.setCustomValidity(invalid);
+      input.reportValidity();
+      return;
+    }
+    apply(value);
+    dialog.close();
+  };
+  const applyButton = button(accept, submit);
+  applyButton.dataset.userText = '';
+  content.append(search, list, input, applyButton);
+  const dialog = editorDialog(title, content);
+  let request, timer;
+  const refresh = async () => {
+    request?.abort();
+    const controller = new AbortController();
+    request = controller;
+    try {
+      const domains = spec.domains?.length ? spec.domains : spec.numeric ? ['sensor', 'input_number', 'number'] : [''];
+      const pages = await Promise.all(domains.map(async domain => {
+        const query = new URLSearchParams({q: search.value.trim(), domain});
+        const response = await fetch('./api/entities?' + query, {signal: controller.signal});
+        if (!response.ok) throw new Error(unavailable);
+        return (await response.json()).items;
+      }));
+      if (controller.signal.aborted || !dialog.open) return;
+      const entities = pages.flat();
+      list.replaceChildren(...entities.map(({entity_id, name}) => {
+        const item = element('li');
+        const choose = button(name + ' · ' + entity_id, () => {
+          if (spec.listOnly || (spec.structured && input.value.trim().startsWith('['))) {
+            let existing;
+            try { existing = JSON.parse(input.value); } catch {}
+            const ids = new Set(Array.isArray(existing) ? existing : []);
+            if (ids.has(entity_id)) ids.delete(entity_id);
+            else ids.add(entity_id);
+            input.value = JSON.stringify([...ids]);
+          } else input.value = entity_id;
+          input.setCustomValidity('');
+        });
+        choose.dataset.userText = '';
+        item.append(choose);
+        return item;
+      }));
+      if (!entities.length) list.append(element('li', empty));
+    } catch {
+      if (!controller.signal.aborted && dialog.open) list.replaceChildren(element('li', unavailable));
+    }
+  };
+  search.oninput = () => {
+    clearTimeout(timer);
+    request?.abort();
+    timer = setTimeout(refresh, 150);
+  };
+  input.onkeydown = event => { if (event.key === 'Enter') submit(); };
+  dialog.addEventListener('close', () => { clearTimeout(timer); request?.abort(); });
+  search.focus();
+  void refresh();
 }
 
 async function showSun(project) {
@@ -733,6 +840,8 @@ function projectRow(id, project) {
     if (!window.confirm('Projekt „' + project.name + '“ löschen?')) return;
     closeTab(id);
     projects.delete(id);
+    checkpoints.delete(id);
+    unsavedProjects.delete(id);
     saveProjects();
     renderNavigation();
   });
@@ -830,7 +939,6 @@ function leaveEditor() {
   blocksRender = undefined;
   if (blocks) {
     projects.get(active).workspace = blocks.snapshot();
-    if (!sortingProjects) saveProjects();
     blocks.dispose();
     blocks = undefined;
   }
@@ -917,8 +1025,8 @@ function show(id, refresh = false) {
     mode.onchange = interval.onchange = () => {
       interval.hidden = mode.value !== 'cycle';
       project.graph = {...project.graph, mode: mode.value, interval: Number(interval.value)};
+      refreshRuntimeControls(id);
     };
-    mode.onchange();
     right.append(mode, interval);
     toolIcon(right, 'preview', 'Ausgabe ansehen', () => childClick('export'));
     const syncOutput = () => {
@@ -965,7 +1073,13 @@ function show(id, refresh = false) {
       flowFrame.addEventListener('load', () => {
         const doc = flowFrame.contentDocument;
         loadFlow();
-        doc?.addEventListener('pro-fbd-render', syncOutput);
+        doc?.addEventListener('pro-fbd-render', () => {
+          syncOutput();
+          if (active === id) {
+            captureFlow();
+            refreshRuntimeControls(id);
+          }
+        });
         syncOutput();
         const bottom = doc?.getElementById('bottom');
         if (bottom) bottom.hidden = true;
@@ -1015,11 +1129,25 @@ function toolbar(panel, project) {
     project.name = name.value.trim() || project.name;
     name.value = project.name;
     renderNavigation();
+    refreshRuntimeControls();
   };
   row.append(name);
   const id = active;
   const save = button('Speichern', () => commitEditor(id));
   const cancel = button('Abbrechen', () => {
+    if (unsavedProjects.has(id)) {
+      closeTab(id);
+      unsavedProjects.delete(id);
+      checkpoints.delete(id);
+      projects.delete(id);
+      if (flowProjectId === id) {
+        flowFrame?.remove();
+        flowFrame = undefined;
+        flowProjectId = undefined;
+      }
+      renderNavigation();
+      return;
+    }
     const saved = checkpoints.get(id);
     if (!saved) return;
     leaveEditor();
@@ -1044,7 +1172,6 @@ function sourceArea(panel, project, label, onEdit) {
   area.value = project.source;
   area.oninput = () => {
     project.source = area.value;
-    if (!sortingProjects) saveProjects();
     onEdit?.();
   };
   panel.append(area);
@@ -1130,7 +1257,6 @@ function renderRules(panel, project) {
       input.value = fields[name] || '';
       input.oninput = () => {
         fields[name] = input.value.trim();
-        if (!sortingProjects) saveProjects();
       };
       label.append(input);
       fieldset.append(label);
@@ -1207,8 +1333,8 @@ async function renderBlocks(panel, project, id) {
     if (blocksRender !== renderToken || active !== id || !panel.isConnected) return;
     blocks = mountBlocks(workspace, project.workspace, saved => {
       project.workspace = saved;
-      if (!sortingProjects) saveProjects();
-    }, locale, project.type === 'blocks-js' ? 'js' : 'yaml');
+      refreshRuntimeControls(id);
+    }, locale, project.type === 'blocks-js' ? 'js' : 'yaml', openBlockEntity);
     const read = blocks.read;
     const openYaml = () => {
       if (!blocks.usesAutomation()) {
@@ -1231,7 +1357,7 @@ async function renderBlocks(panel, project, id) {
       try { action(source()); }
       catch (error) { report(error.message, true); }
     };
-    right.append(button('Entitäts-ID', () => {
+    if (isJavaScript) right.append(button('Entitäts-ID', () => {
       const id = blocks.selectedEntity();
       editorDialog('Entitäts-ID', element('p', id || 'Einen Block mit einer HA-Entität auswählen.'));
     }));
@@ -1397,7 +1523,7 @@ function renderCode(panel, project) {
     label: typescript ? 'TypeScript-Quelltext' : 'JavaScript-Quelltext',
     onChange: source => {
       project.source = source;
-      if (!sortingProjects) saveProjects();
+      refreshRuntimeControls();
     },
   });
 }

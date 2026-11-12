@@ -45,6 +45,7 @@ const messages = {
   'Fester Zyklus': ['Fixed cycle', 'Cycle fixe'],
   'Zyklus in Millisekunden': ['Cycle in milliseconds', 'Cycle en millisecondes'],
   'In Runtime starten': ['Start in runtime', 'Démarrer dans le moteur'],
+  'Änderungen zuerst speichern oder abbrechen.': ['Save or discard changes first.', 'Enregistrez ou annulez d’abord les modifications.'],
   'Runtime stoppen': ['Stop runtime', 'Arrêter le moteur'],
   'Runtime neu starten': ['Restart runtime', 'Redémarrer le moteur'],
   'Runtime startet …': ['Runtime starting …', 'Démarrage du moteur…'],
