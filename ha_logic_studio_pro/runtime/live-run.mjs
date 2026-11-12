@@ -76,6 +76,7 @@ try {
     }
     if (operation === 'event') ha.subscribe(args[0]);
     else if (operation === 'action') ha.call(args[0], args[1], args[2]);
+    else if (['publishMqtt', 'notify', 'fireEvent'].includes(operation)) ha.sendto(operation, args);
     else throw new Error('Unbekannte HA-Anfrage.');
     return vm.undefined;
   });
@@ -105,6 +106,9 @@ try {
       const log = value => report(String(value).slice(0, 1000));
       const callAction = (action, entity, data = {}) => call('action', action, entity, data);
       const ha = Object.freeze({log, timeout: (n,d,fn) => timer(n,d,fn,false),
+        publishMqtt: (topic, message, retain = false) => call('publishMqtt', topic, message, retain),
+        notify: (entity, message, title = '') => call('notify', entity, message, title),
+        fireEvent: (name, data = {}) => call('fireEvent', name, data),
         interval: (n,d,fn) => timer(n,d,fn,true), cancelTimer: n => timers.delete(n),
         readState: entity => state(entity)?.state ?? 'unknown',
         stateSnapshot: entity => call('state', entity),

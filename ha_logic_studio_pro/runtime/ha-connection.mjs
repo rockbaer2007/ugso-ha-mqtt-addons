@@ -23,11 +23,31 @@ export function actionCommand(action, entity, data, writable) {
   return {type: 'call_service', domain, service, target: {entity_id: entity}, service_data: data};
 }
 
-export async function connectHomeAssistant({token, readable, writable, events}, dispatch, fail, Socket = WebSocket) {
+export function sendtoCommand(operation, args, {mqttTopics, writeTargets, permittedEvents}) {
+  const [target, message, option] = args;
+  if (operation === 'publishMqtt') {
+    if (typeof target !== 'string' || !mqttTopics.has(target) || /[+#\0]/.test(target)) throw new Error('MQTT-Topic nicht freigegeben.');
+    if (typeof message !== 'string' || typeof option !== 'boolean') throw new Error('MQTT-Nachricht oder Retain ungültig.');
+    return {type: 'call_service', domain: 'mqtt', service: 'publish', service_data: {topic: target, payload: message, retain: option}};
+  }
+  if (operation === 'notify') {
+    if (typeof target !== 'string' || !target.startsWith('notify.') || !writeTargets.has(target)) throw new Error('HA-Benachrichtigungsempfänger nicht freigegeben.');
+    if (typeof message !== 'string' || typeof option !== 'string') throw new Error('HA-Benachrichtigung ungültig.');
+    return {type: 'call_service', domain: 'notify', service: 'send_message', target: {entity_id: target},
+      service_data: {message, ...(option ? {title: option} : {})}};
+  }
+  if (operation !== 'fireEvent' || typeof target !== 'string' || !target.startsWith('logic_studio_') ||
+      !eventPattern.test(target) || !permittedEvents.has(target)) throw new Error('HA-Ereignis nicht zum Senden freigegeben.');
+  if (!message || typeof message !== 'object' || Array.isArray(message)) throw new Error('Ereignisdaten müssen ein Objekt sein.');
+  return {type: 'fire_event', event_type: target, event_data: message};
+}
+
+export async function connectHomeAssistant({token, readable, writable, events, mqttTopics = []}, dispatch, fail, Socket = WebSocket) {
   const socket = new Socket(endpoint);
   const allowed = new Set([...readable, ...writable]);
   const permittedEvents = new Set(events);
   const writeTargets = new Set(writable);
+  const sendtoPermissions = {mqttTopics: new Set(mqttTopics), writeTargets, permittedEvents};
   const states = new Map();
   const pending = new Map();
   const subscriptions = new Map();
@@ -126,6 +146,7 @@ export async function connectHomeAssistant({token, readable, writable, events}, 
         }
       },
       call(action, entity, data) { send(actionCommand(action, entity, data, writeTargets)).catch(fail); },
+      sendto(operation, args) { send(sendtoCommand(operation, args, sendtoPermissions)).catch(fail); },
     };
   } catch (error) {
     abort(error);

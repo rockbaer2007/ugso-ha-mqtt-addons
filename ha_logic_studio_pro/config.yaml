@@ -1,5 +1,5 @@
 name: HA Logic Studio Pro
-version: "0.1.31"
+version: "0.1.32"
 slug: ha_logic_studio_pro
 description: Interner Test mit Funktionsplan, Rules, Blocks, HA-YAML und JavaScript-Testlauf
 stage: experimental
@@ -19,12 +19,15 @@ options:
   runtime_read_entities: []
   runtime_write_entities: []
   runtime_events: []
+  runtime_mqtt_topics: []
 schema:
   runtime_read_entities:
     - str
   runtime_write_entities:
     - str
   runtime_events:
+    - str
+  runtime_mqtt_topics:
     - str
 map:
   - type: homeassistant_config

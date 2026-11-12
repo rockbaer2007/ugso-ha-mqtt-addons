@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.31
+# HA Logic Studio Pro 0.1.32
+
+**Blocks JS → Sendto** enthält MQTT-Nachricht senden, HA-Benachrichtigung senden und HA-Ereignis senden. Der Testlauf zeigt die Aufrufe im Protokoll. Für **Play** gelten die Freigaben in der App-Konfiguration.
+
+- **MQTT:** MQTT-Integration in HA einrichten und das genaue Topic unter `runtime_mqtt_topics` eintragen. **Retain** ist standardmäßig aus.
+- **Benachrichtigung:** Die gewünschte `notify.*`-Entität unter `runtime_write_entities` eintragen. Der Block verwendet `notify.send_message` mit Nachricht und optionalem Titel.
+- **Ereignis:** Einen eigenen Namen mit Präfix `logic_studio_` unter `runtime_events` eintragen. Ein Datenobjekt ist optional. Derselbe Ereignisname kann im Trigger „Bei Ereignis“ oder in einer HA-Automation verwendet werden.
 
 **Blocks JS → Aktionen** bietet HA-Aktion, HA-Aktion mit Daten, Taster drücken und Option auswählen. Die rosafarbenen Blöcke orientieren sich bei Form und Feldanordnung an ioBroker.
 

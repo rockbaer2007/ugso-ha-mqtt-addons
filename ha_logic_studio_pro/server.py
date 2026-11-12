@@ -17,7 +17,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
 
-VERSION = '0.1.31'
+VERSION = '0.1.32'
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 1_000_000
 TEST_RUN_SLOTS = threading.BoundedSemaphore(2)
@@ -232,6 +232,7 @@ class LogicServer(ThreadingHTTPServer):
             ('runtime_read_entities', 'readable', r'[a-z][a-z0-9_]*\.[a-z0-9_]+'),
             ('runtime_write_entities', 'writable', r'[a-z][a-z0-9_]*\.[a-z0-9_]+'),
             ('runtime_events', 'events', r'[a-z][a-z0-9_]*'),
+            ('runtime_mqtt_topics', 'mqttTopics', r'[^+#\x00-\x1f\x7f]+'),
         ):
             values = options.get(option, [])
             if not isinstance(values, list) or len(values) > 128 or any(

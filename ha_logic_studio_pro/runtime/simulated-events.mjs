@@ -17,6 +17,9 @@ export const simulatedEvents = String.raw`
   };
   const ha = Object.freeze({
     ...api,
+    publishMqtt: (topic, message, retain = false) => report(JSON.stringify({type: 'mqtt', topic, message, retain})),
+    notify: (entity, message, title = '') => report(JSON.stringify({type: 'notify', entity, message, title})),
+    fireEvent: (event, data = {}) => report(JSON.stringify({type: 'event', event, data})),
     callAction(action, entity, data) {
       return data === undefined ? api.callAction(action, entity) : api.callAction(action, entity, JSON.stringify(data));
     },
