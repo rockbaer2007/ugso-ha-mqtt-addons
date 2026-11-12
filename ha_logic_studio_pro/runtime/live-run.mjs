@@ -1,6 +1,6 @@
 import {getQuickJS, shouldInterruptAfterDeadline} from 'quickjs-emscripten';
 import {connectHomeAssistant} from './ha-connection.mjs';
-import {scheduleClock, scheduleMatcher} from './live-schedule.mjs';
+import {dateTimeSchedule, scheduleClock, scheduleMatcher, sunSchedule} from './live-schedule.mjs';
 import {guestTimeApi, timeOperations} from './ha-time.mjs';
 
 function report(type, text = '') {
@@ -69,10 +69,24 @@ try {
     if (operation === 'time') return vm.newString(JSON.stringify(time(...args)));
     if (operation === 'schedule') {
       if (scheduled.size >= 32) throw new Error('Maximal 32 Zeitpläne pro Skript.');
-      scheduled.set(args[0], scheduleMatcher(args[1]));
+      const matches = scheduleMatcher(args[1]);
+      scheduled.set(args[0], (_now, _previous, local) => matches(local));
       return vm.undefined;
     }
     if (!ha) throw new Error('Live-HA-Anbindung nur in der Home-Assistant-App verfügbar.');
+    if (operation === 'sunSchedule' || operation === 'dateTimeSchedule') {
+      if (scheduled.size >= 32) throw new Error('Maximal 32 Zeitpläne pro Skript.');
+      const [index, target, offset] = args;
+      const entity = operation === 'sunSchedule' ? 'sun.sun' : target;
+      if (operation === 'dateTimeSchedule' && (typeof entity !== 'string' || !/^input_datetime\.[a-z0-9_]+$/.test(entity))) {
+        throw new Error('input_datetime erwartet.');
+      }
+      ha.state(entity);
+      scheduled.set(index, operation === 'sunSchedule'
+        ? sunSchedule(() => ha.state(entity), target, offset, Date.now())
+        : dateTimeSchedule(() => ha.state(entity), value => time('convert', [value, 'ms', 'ms'])));
+      return vm.undefined;
+    }
     if (operation === 'state') {
       const state = ha.state(args[0]);
       return vm.newString(JSON.stringify(state ? {state: state.state, attributes: state.attributes} : null));
@@ -95,6 +109,8 @@ try {
         if (handlers.length >= 32 || typeof callback !== 'function') throw new Error('Ungültiger Auslöser.');
         const index = handlers.length;
         if (type === 'schedule') call('schedule', index, target);
+        else if (type === 'sun') call('sunSchedule', index, target, attribute);
+        else if (type === 'datetime') call('dateTimeSchedule', index, target);
         else if (type === 'event') call('event', target);
         else call('state', target);
         handlers.push({type, target, attribute, callback});
@@ -130,7 +146,9 @@ try {
         onState: (entity, callback) => register('state', entity, null, callback),
         onAttribute: (entity, key, callback) => register('attribute', entity, key, callback),
         onEvent: (name, callback) => register('event', name, null, callback),
-        schedule: (pattern, callback) => register('schedule', pattern, null, callback)});
+        schedule: (pattern, callback) => register('schedule', pattern, null, callback),
+        onSun: (event, callback, offset = 0) => register('sun', event, offset, callback),
+        scheduleFromDateTime: (entity, callback) => register('datetime', entity, null, callback)});
       delete globalThis.runtimeLog;
       delete globalThis.runtimeBridge;
       globalThis.getState = ha.getState;
@@ -160,6 +178,7 @@ try {
   report('running');
   // A started project stays loaded until stopped, even when it has no timers.
   let previousSecond = Math.floor(Date.now() / 1000);
+  let previousScheduleCheck = Date.now();
   ticker = setInterval(() => {
     try {
       const now = Date.now();
@@ -168,10 +187,12 @@ try {
       if (second <= previousSecond) return;
       previousSecond = second;
       if (!scheduled.size) return;
-      const time = localTime(now);
+      const local = localTime(now);
+      const date = time('current', ['day']);
       for (const [index, matches] of scheduled) {
-        if (matches(time)) dispatch({type: 'schedule', index, time: time.clock, weekday: time.weekday});
+        if (matches(now, previousScheduleCheck, local, date)) dispatch({type: 'schedule', index, time: local.clock, weekday: local.weekday});
       }
+      previousScheduleCheck = now;
     } catch (error) { fail(error); }
   }, 50);
 } catch (error) {

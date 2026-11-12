@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.36
+# HA Logic Studio Pro 0.1.37
+
+**DE:** „Astro“ führt Aktionen bei Sonnenaufgang oder Sonnenuntergang mit bis zu ±1440 Minuten Versatz aus. Dazu `sun.sun` zum Lesen freigeben. „Zeitplan aus Zeit-Zustand“ liest einen freigegebenen `input_datetime`-Helfer in der HA-Zeitzone. Nur Uhrzeit bedeutet täglich, nur Datum bedeutet Mitternacht, Datum plus Uhrzeit bedeutet einmalig. Änderungen am Helfer wirken sofort auf den nächsten Termin. Ein positiver Astro-Versatz benötigt eine laufende Runtime, die den ursprünglichen Sonnenzeitpunkt bereits kennt.
+
+**EN:** Astro runs at sunrise or sunset with an offset of up to ±1440 minutes. Allow read access to `sun.sun`. Schedule from time state uses a permitted `input_datetime` helper in the HA time zone. Time-only runs daily, date-only at midnight, and date plus time once. Edits update the next occurrence. A positive Astro offset requires a running runtime that has already seen the original sun event time.
+
+**FR :** Astro se déclenche au lever ou au coucher du soleil, avec un décalage maximal de ±1440 minutes. Autorisez la lecture de `sun.sun`. Le bloc Horaire depuis un état horaire utilise un auxiliaire `input_datetime` autorisé dans le fuseau HA. Une heure seule se répète chaque jour, une date seule se déclenche à minuit, et la date avec l’heure une seule fois. Les changements actualisent la prochaine échéance. Un décalage Astro positif nécessite une exécution qui connaît déjà l’heure initiale de l’événement solaire.
 
 **DE:** Blocks JS → Trigger nutzt das ioBroker-Layout. „Falls Entität“ und „Falls Entitäten“ reagieren auf Zustandswechsel und können den Zielzustand filtern. Mehrere IDs werden durch Kommas getrennt. „Wert“ liefert im Entitätstrigger den alten oder neuen Zustand bzw. Attributwert oder die Entitäts-ID. „Zeitplan“ öffnet den CRON-Dialog. Testläufe simulieren Zustandswechsel von off zu on und Attributwechsel von 0 zu 1.
 
@@ -52,7 +58,7 @@ Die Live-Runtime verwendet die HA-WebSocket-API. In der App-Konfiguration stehen
 
 - `ha.readState` und `ha.readAttribute` lesen die zuletzt bestätigten Werte. `ha.onState` und `ha.onAttribute` reagieren auf Änderungen. `ha.onEvent` verarbeitet freigegebene Ereignistypen.
 - `ha.callAction` sendet Aktionen an einzeln freigegebene Ziele. Unterstützt werden Schaltaktionen für Licht, Lüfter, Schalter und Umschalt-Helfer, Wertänderungen für Zahlen-, Text- und Auswahlhelfer sowie Taster. HA bestätigt die Aktion asynchron. Bei einer Ablehnung oder einem Verbindungsverlust stoppt das Skript mit einer Meldung im Protokoll.
-- `ha.schedule` verarbeitet die von Blocks JS erzeugten Zeitmuster und festen Uhrzeiten samt Wochentagen in der HA-Zeitzone. Verpasste Ausführungen werden nicht nachgeholt. Astro-Auslöser sind noch offen.
+- `ha.schedule` verarbeitet die von Blocks JS erzeugten Zeitmuster und festen Uhrzeiten samt Wochentagen in der HA-Zeitzone. `ha.onSun` und `ha.scheduleFromDateTime` ergänzen dynamische Termine aus HA-Entitäten. Termine vor dem Runtime-Start werden nicht nachgeholt.
 - Der **Testlauf** verwendet weiterhin Demo-Zustände und simulierte Ereignisse. **Play** verwendet die Live-Verbindung in Home Assistant.
 
 - **Blocks A** exportiert HA-Automationen als YAML. Vorhandene Blockly-Projekte öffnen sich weiterhin in diesem Modus. HA-Skripte und HA-Automationen haben in der Projektliste kein Play-Symbol.
