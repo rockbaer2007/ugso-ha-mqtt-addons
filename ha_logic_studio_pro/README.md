@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.35
+# HA Logic Studio Pro 0.1.36
+
+**DE:** Blocks JS → Trigger nutzt das ioBroker-Layout. „Falls Entität“ und „Falls Entitäten“ reagieren auf Zustandswechsel und können den Zielzustand filtern. Mehrere IDs werden durch Kommas getrennt. „Wert“ liefert im Entitätstrigger den alten oder neuen Zustand bzw. Attributwert oder die Entitäts-ID. „Zeitplan“ öffnet den CRON-Dialog. Testläufe simulieren Zustandswechsel von off zu on und Attributwechsel von 0 zu 1.
+
+**EN:** Blocks JS → Triggers follows the ioBroker layout. Single-entity and multi-entity triggers react to state changes and can filter by target state. Separate IDs with commas. The Value block returns the old or new state or attribute value, or the entity ID. Schedule opens the CRON editor. Test runs simulate off to on and attribute changes from 0 to 1.
+
+**FR :** Blocks JS → Déclencheurs reprend la présentation d’ioBroker. Les déclencheurs d’une ou plusieurs entités réagissent aux changements d’état et peuvent filtrer l’état cible. Séparez les identifiants par des virgules. Le bloc Valeur renvoie l’état ou l’attribut ancien ou nouveau, ou l’identifiant de l’entité. Horaire ouvre l’éditeur CRON. Les tests simulent un changement de off à on et des changements d’attribut de 0 à 1.
 
 **DE:** „Konvertierung“ in Blocks JS folgt der Anordnung und Beschriftung von ioBroker. „nach Datum/Zeit“ gibt Millisekunden aus und kann HA-Zeitstempel in Sekunden als Quelle verwenden. „Datum/Zeit … nach …“ liefert ein Datum-Objekt, lokales Datum oder Uhrzeit in der HA-Zeitzone oder ISO-Text in UTC. „Zeitdifferenz formatieren“ erwartet Millisekunden. „nach Logikwert“ erkennt unter anderem `on`/`off` und `1`/`0`. „HA-Zustand verfügbar?“ prüft den gelesenen Wert vor einer Konvertierung.
 

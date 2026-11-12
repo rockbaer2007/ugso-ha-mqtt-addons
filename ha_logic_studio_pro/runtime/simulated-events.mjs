@@ -43,7 +43,14 @@ export const simulatedEvents = String.raw`
   run();
   for (const {type, target, attribute, callback} of handlers.slice()) {
     report(JSON.stringify({type: 'simulated-event', event: type, target, attribute}));
-    callback();
+    if (type === 'state') {
+      callback({type: 'state', entity: target, previous: {state: 'off'}, current: {state: 'on'}});
+    } else if (type === 'attribute') {
+      callback({type: 'state', entity: target, previous: {attributes: {[attribute]: 0}},
+        current: {attributes: {[attribute]: 1}}});
+    } else {
+      callback();
+    }
   }
   for (let steps = 0; timers.size; steps++) {
     if (steps >= 64) throw new Error('Simulated timer limit reached');
