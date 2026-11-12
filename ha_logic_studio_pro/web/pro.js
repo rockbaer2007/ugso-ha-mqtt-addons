@@ -1345,12 +1345,16 @@ async function renderBlocks(panel, project, id) {
   workspace.className = 'block-workspace';
   panel.append(workspace);
   try {
-    const {mountBlocks, importIoBroker, validateBlockSnapshot} = await import('./vendor/pro-blocks.js');
+    const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
+      import('./vendor/pro-blocks.js'),
+      project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
+        .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
+    ]);
     if (blocksRender !== renderToken || active !== id || !panel.isConnected) return;
     blocks = mountBlocks(workspace, project.workspace, saved => {
       project.workspace = saved;
       refreshRuntimeControls(id);
-    }, locale, project.type === 'blocks-js' ? 'js' : 'yaml', openBlockEntity);
+    }, locale, project.type === 'blocks-js' ? 'js' : 'yaml', openBlockEntity, callmebotCatalogs);
     const read = blocks.read;
     const openYaml = () => {
       if (!blocks.usesAutomation()) {

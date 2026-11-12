@@ -1,4 +1,6 @@
-# HA Logic Studio Pro 0.1.54
+# HA Logic Studio Pro 0.1.55
+
+**CallMeBot:** In Blocks JS → Sendto erscheint WhatsApp beziehungsweise Signal, sobald der zugehörige MQTT-Profilsensor verfügbar ist. Nach einer Änderung der Verfügbarkeit den Editor erneut öffnen. Vorhandene Blöcke und Profil-IDs bleiben erhalten. Für die Live-Runtime das jeweilige Topic `ugso/callmebot/send` oder `ugso/callmebot_signal/send` unter `runtime_mqtt_topics` freigeben. Testläufe protokollieren die MQTT-Nachricht lokal.
 
 **Sendto:** „Nachricht an anderes Skript“ und „Skriptnachricht empfangen“ verwenden dieselbe Empfangsadresse und denselben Nachrichtennamen. Im Empfangsblock liefert „Daten der Skriptnachricht“ die Nutzdaten. Für die Live-Runtime `logic_studio_script_message` unter `runtime_events` freigeben und das Empfängerskript zuerst starten. Im Testlauf können Sender und Empfänger zusammen in einem Projekt geprüft werden.
 

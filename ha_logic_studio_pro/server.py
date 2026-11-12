@@ -17,7 +17,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
 
-VERSION = '0.1.54'
+VERSION = '0.1.55'
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 1_000_000
 TEST_RUN_SLOTS = threading.BoundedSemaphore(2)
@@ -246,7 +246,7 @@ class LogicServer(ThreadingHTTPServer):
         self.runtime.close()
         super().server_close()
 
-    def entities(self):
+    def entity_states(self):
         if self.demo:
             data = json.loads((ROOT / 'examples' / 'entities-demo.json').read_text(encoding='utf-8'))
         elif self.supervisor and os.environ.get('SUPERVISOR_TOKEN'):
@@ -261,7 +261,35 @@ class LogicServer(ThreadingHTTPServer):
             raise ConnectionError('Keine HA-Verbindung.')
         if not isinstance(data, list):
             raise ValueError('Ungültige HA-Antwort.')
-        return sorted(filter(None, (public_entity(item) for item in data)), key=lambda x: (x['name'].casefold(), x['entity_id']))
+        return data
+
+    def entities(self):
+        return sorted(filter(None, (public_entity(item) for item in self.entity_states())), key=lambda x: (x['name'].casefold(), x['entity_id']))
+
+    def callmebot_catalogs(self):
+        sources = {'ugso_callmebot': 'whatsapp', 'ugso_callmebot_signal': 'signal'}
+        catalogs = {}
+        for item in self.entity_states():
+            if not isinstance(item, dict) or not str(item.get('entity_id', '')).startswith('sensor.'):
+                continue
+            if not str(item.get('state', '')).isdigit():
+                continue
+            attrs = item.get('attributes')
+            if not isinstance(attrs, dict):
+                continue
+            source = attrs.get('source')
+            profiles = attrs.get('profiles')
+            if not isinstance(source, str) or source not in sources or not isinstance(profiles, list) or len(profiles) > 16:
+                continue
+            public = {}
+            for profile in profiles:
+                if not isinstance(profile, dict):
+                    continue
+                pid, name = profile.get('id'), profile.get('name')
+                if isinstance(pid, str) and re.fullmatch(r'[a-z][a-z0-9_]{0,39}', pid) and isinstance(name, str):
+                    public[pid] = name[:80]
+            catalogs[sources[source]] = public
+        return catalogs
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -299,6 +327,8 @@ class Handler(SimpleHTTPRequestHandler):
             if route.path == '/api/info':
                 self.reply(200, {'version': VERSION, 'mode': 'homeassistant' if self.server.supervisor else 'demo' if self.server.demo else 'local',
                                  'entities_available': bool(self.server.demo or self.server.supervisor), 'read_only_ha': True})
+            elif route.path == '/api/callmebot':
+                self.reply(200, self.server.callmebot_catalogs() if self.server.supervisor or self.server.demo else {})
             elif route.path == '/api/entities':
                 query = parse_qs(route.query)
                 search = query.get('q', [''])[0].casefold()[:200]
