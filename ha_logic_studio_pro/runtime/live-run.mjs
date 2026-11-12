@@ -1,6 +1,7 @@
 import {getQuickJS, shouldInterruptAfterDeadline} from 'quickjs-emscripten';
 import {connectHomeAssistant} from './ha-connection.mjs';
 import {scheduleClock, scheduleMatcher} from './live-schedule.mjs';
+import {guestTimeApi, timeOperations} from './ha-time.mjs';
 
 function report(type, text = '') {
   process.stdout.write(JSON.stringify({type, text: text.slice(0, 1000)}) + '\n');
@@ -41,6 +42,7 @@ try {
   }
   const ha = homeAssistant ? await connectHomeAssistant(homeAssistant, dispatch, fail) : null;
   const localTime = scheduleClock(ha?.timezone);
+  const time = timeOperations(ha?.timezone);
   function evaluate(code) {
     runtime.setInterruptHandler(shouldInterruptAfterDeadline(Date.now() + 500));
     const result = vm.evalCode(code, 'project.js');
@@ -64,6 +66,7 @@ try {
     if (Buffer.byteLength(text) > 48_000) throw new Error('HA-Anfrage zu groß.');
     const args = JSON.parse(text);
     const operation = vm.getString(command);
+    if (operation === 'time') return vm.newString(JSON.stringify(time(...args)));
     if (operation === 'schedule') {
       if (scheduled.size >= 32) throw new Error('Maximal 32 Zeitpläne pro Skript.');
       scheduled.set(args[0], scheduleMatcher(args[1]));
@@ -105,7 +108,8 @@ try {
       }
       const log = value => report(String(value).slice(0, 1000));
       const callAction = (action, entity, data = {}) => call('action', action, entity, data);
-      const ha = Object.freeze({log, timeout: (n,d,fn) => timer(n,d,fn,false),
+      const timeRequest = (op, args) => JSON.parse(call('time', op, args));
+      const ha = Object.freeze({${guestTimeApi} log, timeout: (n,d,fn) => timer(n,d,fn,false),
         publishMqtt: (topic, message, retain = false) => call('publishMqtt', topic, message, retain),
         notify: (entity, message, title = '') => call('notify', entity, message, title),
         fireEvent: (name, data = {}) => call('fireEvent', name, data),

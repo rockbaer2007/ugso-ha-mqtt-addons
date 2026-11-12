@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.33
+# HA Logic Studio Pro 0.1.34
+
+**DE:** Blocks JS bietet unter „Datum und Zeit“ zwei Zeitvergleiche, den aktuellen Datumswert und Zeitberechnungen. Testlauf und Play verwenden die HA-Zeitzone. Zeitfenster schließen den Beginn ein und das Ende aus und können über Mitternacht laufen. Ganze Tage behalten die lokale Uhrzeit bei, soweit sie am Zieltag existiert; Stunden und kleinere Einheiten sind verstrichene Zeit.
+
+**EN:** Blocks JS offers two time comparisons, the current date value and time arithmetic under “Date and time”. Test runs and Play use the HA time zone. Time ranges include the start, exclude the end and can span midnight. Whole days preserve local wall time where it exists on the target day; hours and smaller units are elapsed time.
+
+**FR :** La catégorie « Date et heure » de Blocks JS propose deux comparaisons horaires, la date actuelle et des calculs de date et d’heure. Le test et l’exécution utilisent le fuseau horaire de HA. Les plages incluent le début, excluent la fin et peuvent traverser minuit. Les jours entiers conservent l’heure locale lorsqu’elle existe le jour cible ; les heures et unités inférieures mesurent le temps écoulé.
 
 **Blocks JS → Sendto** enthält zwei neue violette AWTRIX-NG-Blöcke. **Benachrichtigung** bietet Nachricht, Farbe, Ton, Icon, Wiederholungen, Dauer, Stapeln, Aufwecken und Halten. **Sound abspielen** akzeptiert einen gespeicherten Tonnamen oder RTTTL.
 

@@ -17,7 +17,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
 
-VERSION = '0.1.33'
+VERSION = '0.1.34'
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 1_000_000
 TEST_RUN_SLOTS = threading.BoundedSemaphore(2)
@@ -466,9 +466,22 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             env = {key: value for key, value in os.environ.items()
                    if key.upper() in {'PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR'}}
+            time_zone = None
+            if self.server.supervisor and not self.server.demo:
+                try:
+                    req = Request('http://supervisor/core/api/config', headers={
+                        'Authorization': 'Bearer ' + os.environ['SUPERVISOR_TOKEN'],
+                        'Accept': 'application/json'})
+                    with build_opener(NoRedirect).open(req, timeout=4) as response:
+                        time_zone = json.loads(response.read(1_000_001))['time_zone']
+                    if not isinstance(time_zone, str) or not time_zone:
+                        raise ValueError()
+                except (OSError, ValueError, KeyError, TypeError):
+                    self.reply(503, {'error': 'Home-Assistant-Zeitzone für den Testlauf nicht verfügbar.'})
+                    return
             result = subprocess.run(
                 ['node', str(ROOT / 'runtime' / 'test-run.mjs'), '--stdin'],
-                input=json.dumps({'source': source, 'language': language}), encoding='utf-8',
+                input=json.dumps({'source': source, 'language': language, 'timeZone': time_zone}), encoding='utf-8',
                 capture_output=True, timeout=5, env=env, check=True,
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
             )

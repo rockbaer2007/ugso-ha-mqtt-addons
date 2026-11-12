@@ -1,3 +1,4 @@
+import {guestTimeApi} from './ha-time.mjs';
 // Runs inside QuickJS. Each test has its own event queue and virtual timers.
 export const simulatedEvents = String.raw`
 ((api, report, run) => {
@@ -15,8 +16,10 @@ export const simulatedEvents = String.raw`
         typeof callback !== 'function' || timers.size >= 32) throw new Error('Invalid simulated timer');
     timers.set(name, {at: now + delay, delay, callback, remaining: repeat ? 2 : 1});
   };
+  const timeRequest = (op, args) => JSON.parse(api.timeRequest(op, JSON.stringify(args), String(now)));
   const ha = Object.freeze({
     ...api,
+    ${guestTimeApi}
     publishMqtt: (topic, message, retain = false) => report(JSON.stringify({type: 'mqtt', topic, message, retain})),
     notify: (entity, message, title = '') => report(JSON.stringify({type: 'notify', entity, message, title})),
     fireEvent: (event, data = {}) => report(JSON.stringify({type: 'event', event, data})),
