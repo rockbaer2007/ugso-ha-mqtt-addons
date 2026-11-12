@@ -1,6 +1,6 @@
 FROM python:3.13-alpine
 WORKDIR /app
-RUN apk add --no-cache nodejs npm
+RUN apk add --no-cache nodejs npm icu-data-full
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund
 COPY runtime/ ./runtime/

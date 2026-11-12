@@ -1,4 +1,8 @@
-# HA Logic Studio Pro 0.1.48
+# HA Logic Studio Pro 0.1.49
+
+- **DE:** Blocks JS wartet auch in eigenen Funktionen auf den Pause-Block, einschließlich verschachtelter Aufrufe und Rückgabewerte. Freie ioBroker-Datumsformate bleiben beim Import editierbar. Die Ausgabe nutzt die HA-Zeitzone.
+- **EN:** Blocks JS now awaits Pause inside custom procedures, including nested calls and return values. Custom ioBroker date formats remain editable after import. Formatting uses the HA time zone.
+- **FR :** Blocks JS attend la fin d’une pause dans les fonctions personnalisées, y compris pour les appels imbriqués et les valeurs de retour. Les formats de date libres d’ioBroker restent modifiables après importation. Le fuseau horaire de HA est utilisé.
 
 - **DE** Blocks JS ergänzt Pause, Tages-, Wochen- und Monatsgrenzen, Sonnenzeiten als Wert und weitere Zeitformate. Sonnenzeiten verwenden in der Runtime die nächsten Ereignisse aus der freigegebenen Entität `sun.sun`.
 - **EN** Blocks JS adds Pause, calendar boundaries, sun-time values and more time formats. Live sun-time values use the next events from the allowed `sun.sun` entity.

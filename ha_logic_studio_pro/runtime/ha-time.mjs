@@ -54,6 +54,29 @@ export function timeOperations(timeZone, now = Date.now) {
     if (!match) throw new Error('Uhrzeit als HH:mm oder Datum / Expected HH:mm or a date.');
     return +match[1] * 60 + +match[2];
   };
+  const formatCustom = (ms, pattern, language) => {
+    if (typeof pattern !== 'string' || pattern.length > 512) throw new Error('Invalid date format.');
+    const p = parts(ms);
+    const locale = typeof language === 'string' && /^[a-z]{2}(?:-[a-z]{2})?$/.test(language) ? language : 'en';
+    const word = options => new Intl.DateTimeFormat(locale, {timeZone, ...options}).formatToParts(ms);
+    const values = {
+      YYYY: p.year, YY: p.year.slice(-2), MM: p.month, M: +p.month, DD: p.day, D: +p.day,
+      hh: p.hour, h: +p.hour, mm: p.minute, m: +p.minute, ss: p.second, s: +p.second,
+      sss: String((ms % 1000 + 1000) % 1000).padStart(3, '0'),
+    };
+    const aliases = {JJJJ:'YYYY', ГГГГ:'YYYY', JJ:'YY', ГГ:'YY', ММ:'MM', М:'M', TT:'DD', ДД:'DD',
+      T:'D', Д:'D', SS:'hh', чч:'hh', S:'h', ч:'h', мм:'mm', м:'m', ссс:'sss', сс:'ss', с:'s',
+      НН:'WW', Н:'W', ООО:'OOO', ОО:'OO', О:'O'};
+    return (pattern || 'DD.MM.YYYY').replace(
+      /YYYY|JJJJ|ГГГГ|OOO|ООО|sss|ссс|YY|JJ|ГГ|MM|ММ|DD|TT|ДД|hh|SS|чч|mm|мм|ss|сс|WW|НН|OO|ОО|[MМDTDДhSчmмsсWНOО]/g,
+      token => {
+        const key = aliases[token] ?? token;
+        if (Object.hasOwn(values, key)) return values[key];
+        const type = key.startsWith('W') ? 'weekday' : 'month';
+        return word({[type]: key.length === 1 ? 'short' : 'long',
+          ...(key === 'OOO' ? {day: 'numeric'} : {})}).find(part => part.type === type).value;
+      });
+  };
   const format = (ms, key) => {
     const p = parts(ms);
     if (key === 'clock') return p.hour + ':' + p.minute;
@@ -78,6 +101,7 @@ export function timeOperations(timeZone, now = Date.now) {
     throw new Error('Ungültiges Datumsformat / Invalid date format.');
   };
   return (operation, [a, b, c, d]) => {
+    if (operation === 'formatDate') return formatCustom(dateValue(a, 'ms').getTime(), b, c);
     if (operation === 'convert') {
       const date = dateValue(a, b);
       if (c === 'date' || c === 'ms') return date.getTime();
@@ -140,6 +164,7 @@ export function timeOperations(timeZone, now = Date.now) {
 }
 
 export const guestTimeApi = `
+  formatDate: (input, pattern, locale) => timeRequest('formatDate', [input instanceof Date ? input.getTime() : input, pattern, locale]),
   convertDate: (input, unit, format) => {
     const isDate = input instanceof Date;
     const result = timeRequest('convert', [isDate ? input.getTime() : input, isDate ? 'ms' : unit, format]);
