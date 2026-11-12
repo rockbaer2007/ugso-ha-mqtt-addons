@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.43
+# HA Logic Studio Pro 0.1.44
+
+Blocks JS bietet benannte Zeitpläne mit Stoppblock und zwei CRON-Wertblöcke. Benannte Pläne akzeptieren fünf oder sechs numerische CRON-Felder und verwenden die Home-Assistant-Zeitzone.
+
+Blocks JS adds named schedules, a stop block, and two CRON value blocks. Named schedules accept five or six numeric CRON fields and use the Home Assistant time zone.
+
+Blocks JS ajoute des horaires nommés, un bloc d’arrêt et deux blocs de valeur CRON. Les horaires nommés acceptent cinq ou six champs CRON numériques et utilisent le fuseau horaire de Home Assistant.
 
 Die Textpalette in Blocks JS folgt der ioBroker-Vorlage. Zwei HA-Blöcke liefern den Anzeigenamen einer Entität und den Messwert mit Einheit. Zahlenformat „System“ verwendet die Sprache des Editors.
 

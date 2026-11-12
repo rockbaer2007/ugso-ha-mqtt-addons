@@ -1,6 +1,6 @@
 import {getQuickJS, shouldInterruptAfterDeadline} from 'quickjs-emscripten';
 import {connectHomeAssistant} from './ha-connection.mjs';
-import {dateTimeSchedule, scheduleClock, scheduleMatcher, sunSchedule} from './live-schedule.mjs';
+import {cronMatcher, dateTimeSchedule, scheduleClock, scheduleMatcher, sunSchedule} from './live-schedule.mjs';
 import {guestTimeApi, timeOperations} from './ha-time.mjs';
 
 function report(type, text = '') {
@@ -73,6 +73,17 @@ try {
       scheduled.set(args[0], (_now, _previous, local) => matches(local));
       return vm.undefined;
     }
+    if (operation === 'namedSchedule') {
+      const [name, cron] = args;
+      if (!scheduled.has(name) && scheduled.size >= 32) throw new Error('Maximal 32 Zeitpläne pro Skript.');
+      const matches = cronMatcher(cron);
+      scheduled.set(name, (_now, _previous, local, date) => matches(local, date));
+      return vm.undefined;
+    }
+    if (operation === 'stopSchedule') {
+      scheduled.delete(args[0]);
+      return vm.undefined;
+    }
     if (!ha) throw new Error('Live-HA-Anbindung nur in der Home-Assistant-App verfügbar.');
     if (operation === 'sunSchedule' || operation === 'dateTimeSchedule') {
       if (scheduled.size >= 32) throw new Error('Maximal 32 Zeitpläne pro Skript.');
@@ -103,6 +114,7 @@ try {
     const {tick, studioDispatch} = ((report, bridge, run) => {
       const timers = new Map();
       const handlers = [];
+      const namedSchedules = new Map();
       const call = (operation, ...args) => bridge(operation, JSON.stringify(args));
       const state = entity => JSON.parse(call('state', entity));
       const register = (type, target, attribute, callback) => {
@@ -149,6 +161,15 @@ try {
         onAttribute: (entity, key, callback) => register('attribute', entity, key, callback),
         onEvent: (name, callback) => register('event', name, null, callback),
         schedule: (pattern, callback) => register('schedule', pattern, null, callback),
+        namedSchedule(name, cron, callback) {
+          if (typeof name !== 'string' || !name.trim() || name.length > 128 || typeof callback !== 'function') throw new Error('Ungültiger benannter Zeitplan.');
+          call('namedSchedule', name, cron);
+          namedSchedules.set(name, callback);
+        },
+        stopSchedule(name) {
+          call('stopSchedule', name);
+          namedSchedules.delete(name);
+        },
         onSun: (event, callback, offset = 0) => register('sun', event, offset, callback),
         scheduleFromDateTime: (entity, callback) => register('datetime', entity, null, callback)});
       delete globalThis.runtimeLog;
@@ -165,7 +186,11 @@ try {
         }
       };
       const studioDispatch = event => {
-        if (event.type === 'schedule') { handlers[event.index]?.callback(event); return; }
+        if (event.type === 'schedule') {
+          const callback = typeof event.index === 'string' ? namedSchedules.get(event.index) : handlers[event.index]?.callback;
+          callback?.(event);
+          return;
+        }
         for (const {type, target, attribute, callback} of handlers.slice()) {
           if (type === 'event' && event.type === 'event' && target === event.name) callback(event.data);
           if (event.type !== 'state' || target !== event.entity) continue;
@@ -191,7 +216,8 @@ try {
       if (!scheduled.size) return;
       const local = localTime(now);
       const date = time('current', ['day']);
-      for (const [index, matches] of scheduled) {
+      for (const [index, matches] of [...scheduled]) {
+        if (scheduled.get(index) !== matches) continue;
         if (matches(now, previousScheduleCheck, local, date)) dispatch({type: 'schedule', index, time: local.clock, weekday: local.weekday});
       }
       previousScheduleCheck = now;

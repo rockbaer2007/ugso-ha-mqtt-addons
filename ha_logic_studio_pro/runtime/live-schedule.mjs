@@ -1,6 +1,39 @@
 const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const clock = /^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/;
 
+export function cronMatcher(source) {
+  const invalid = () => { throw new Error('Ungültiger CRON-Ausdruck. / Invalid CRON expression.'); };
+  if (typeof source !== 'string' || source.length > 256) invalid();
+  const fields = source.trim().split(/\s+/);
+  if (fields.length === 5) fields.unshift('0');
+  if (fields.length !== 6) invalid();
+  const bounds = [[0, 59], [0, 59], [0, 23], [1, 31], [1, 12], [0, 7]];
+  const values = fields.map((field, index) => {
+    const [min, max] = bounds[index];
+    const allowed = new Set();
+    for (const part of field.split(',')) {
+      const match = /^(\*|\d+(?:-\d+)?)(?:\/(\d+))?$/.exec(part);
+      if (!match) invalid();
+      const step = Number(match[2] ?? 1);
+      const [first, last] = match[1] === '*' ? [min, max] : match[1].split('-').map(Number);
+      const end = last ?? (match[2] ? max : first);
+      if (first < min || end > max || first > end || step < 1 || step > max - min + 1) invalid();
+      for (let value = first; value <= end; value += step) allowed.add(index === 5 && value === 7 ? 0 : value);
+    }
+    return allowed;
+  });
+  return (local, date) => {
+    const [hour, minute, second] = local.clock.split(':').map(Number);
+    const [, month, day] = date.split('-').map(Number);
+    const dayMatches = values[3].has(day);
+    const weekdayMatches = values[5].has(days.indexOf(local.weekday));
+    const calendarMatches = fields[3] === '*' || fields[5] === '*'
+      ? dayMatches && weekdayMatches : dayMatches || weekdayMatches;
+    return values[0].has(second) && values[1].has(minute) && values[2].has(hour) &&
+      values[4].has(month) && calendarMatches;
+  };
+}
+
 export function scheduleMatcher(schedule) {
   if (schedule?.trigger === 'time_pattern') {
     const matchers = ['hours', 'minutes', 'seconds'].map((key, index) => {

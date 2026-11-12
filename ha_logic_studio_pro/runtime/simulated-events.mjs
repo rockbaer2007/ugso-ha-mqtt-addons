@@ -3,6 +3,7 @@ import {guestTimeApi} from './ha-time.mjs';
 export const simulatedEvents = String.raw`
 ((api, report, run) => {
   const handlers = [];
+  const namedSchedules = new Map();
   const timers = new Map();
   let now = 0;
   const register = (type, target, attribute, callback) => {
@@ -30,6 +31,13 @@ export const simulatedEvents = String.raw`
     onAttribute: (entity, attribute, callback) => register('attribute', entity, attribute, callback),
     onEvent: (event, callback) => register('event', event, null, callback),
     schedule: (schedule, callback) => register('schedule', JSON.stringify(schedule), null, callback),
+    namedSchedule(name, cron, callback) {
+      if (typeof name !== 'string' || !name.trim() || name.length > 128 || typeof callback !== 'function' ||
+          (!namedSchedules.has(name) && namedSchedules.size >= 32)) throw new Error('Ungültiger benannter Zeitplan.');
+      api.validateCron(cron);
+      namedSchedules.set(name, callback);
+    },
+    stopSchedule: name => namedSchedules.delete(name),
     onSun: (event, callback, offset = 0) => register('sun', event, offset, callback),
     scheduleFromDateTime: (entity, callback) => register('datetime', entity, null, callback),
     timeout: (name, delay, callback) => timer(name, delay, callback, false),
@@ -43,6 +51,11 @@ export const simulatedEvents = String.raw`
   globalThis.log = value => ha.log(String(value));
   delete globalThis.reportSimulatedEvent;
   run();
+  for (const [name, callback] of [...namedSchedules]) {
+    if (namedSchedules.get(name) !== callback) continue;
+    report(JSON.stringify({type: 'simulated-event', event: 'schedule', target: name}));
+    callback();
+  }
   for (const {type, target, attribute, callback} of handlers.slice()) {
     report(JSON.stringify({type: 'simulated-event', event: type, target, attribute}));
     if (type === 'state') {

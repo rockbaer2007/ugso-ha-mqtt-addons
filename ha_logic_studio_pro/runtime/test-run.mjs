@@ -1,5 +1,6 @@
 import {getQuickJS, shouldInterruptAfterDeadline} from 'quickjs-emscripten';
 import {simulatedEvents} from './simulated-events.mjs';
+import {cronMatcher} from './live-schedule.mjs';
 import {timeOperations} from './ha-time.mjs';
 
 const maxSource = 64_000;
@@ -52,6 +53,10 @@ export async function testRun(source, language = 'javascript', timeZone, start =
       const api = vm.newObject();
       try {
         const methods = {
+          validateCron(source) {
+            cronMatcher(stringArg(source, 256));
+            return vm.undefined;
+          },
           stateSnapshot(entity) {
             const target = identifier(entity);
             const snapshot = Object.hasOwn(states, target)
