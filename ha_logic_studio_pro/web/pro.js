@@ -570,7 +570,13 @@ function openBlockEntity(spec, current, apply, validate) {
     en: ['Choose an entity', 'Search by name or ID', 'Apply', 'No matching entities.', 'HA entities are unavailable.', 'Enter a valid entity ID.'],
     fr: ['Choisir une entité', 'Rechercher par nom ou identifiant', 'Appliquer', 'Aucune entité correspondante.', 'Les entités HA sont indisponibles.', 'Saisissez un identifiant valide.'],
   };
-  const [entityTitle, placeholder, accept, empty, unavailable, invalid] = labels[locale] ?? labels.en;
+  const attributeLabels = {
+    de: ['Attribut auswählen', 'Nach Attribut suchen', 'Übernehmen', 'Keine passenden Attribute.', 'HA-Attribute sind nicht verfügbar.', 'Attributnamen eingeben.'],
+    en: ['Choose an attribute', 'Search attributes', 'Apply', 'No matching attributes.', 'HA attributes are unavailable.', 'Enter an attribute name.'],
+    fr: ['Choisir un attribut', 'Rechercher un attribut', 'Appliquer', 'Aucun attribut correspondant.', 'Les attributs HA sont indisponibles.', 'Saisissez un nom d’attribut.'],
+  };
+  const pickerLabels = spec.kind === 'attribute' ? attributeLabels : labels;
+  const [entityTitle, placeholder, accept, empty, unavailable, invalid] = pickerLabels[locale] ?? pickerLabels.en;
   const actionTitle = {de: 'HA-Aktion auswählen', en: 'Choose an HA action', fr: 'Choisir une action HA'};
   const title = spec.kind === 'action' ? (actionTitle[locale] ?? actionTitle.en) : entityTitle;
   const content = element('div');
@@ -583,7 +589,7 @@ function openBlockEntity(spec, current, apply, validate) {
   list.style.overflowY = 'auto';
   const input = element('input');
   input.value = current;
-  input.setAttribute('aria-label', 'entity_id');
+  input.setAttribute('aria-label', spec.kind === 'attribute' ? title : 'entity_id');
   input.oninput = () => input.setCustomValidity('');
   const submit = () => {
     const value = input.value.trim();
@@ -606,7 +612,14 @@ function openBlockEntity(spec, current, apply, validate) {
     request = controller;
     try {
       const domains = spec.domains?.length ? spec.domains : spec.numeric ? ['sensor', 'input_number', 'number'] : [''];
-      const pages = spec.choices ? [spec.choices.filter(id => id.includes(search.value.trim().toLowerCase()))
+      const attributeChoices = async () => {
+        const response = await fetch('./api/entities?' + new URLSearchParams({q: spec.entity}), {signal: controller.signal});
+        if (!response.ok) throw new Error(unavailable);
+        const entity = (await response.json()).items.find(item => item.entity_id === spec.entity);
+        return Object.keys(entity?.attributes ?? {});
+      };
+      const choices = spec.kind === 'attribute' ? await attributeChoices() : spec.choices;
+      const pages = choices ? [choices.filter(id => id.toLowerCase().includes(search.value.trim().toLowerCase()))
         .map(id => ({entity_id: id, name: id}))] : await Promise.all(domains.map(async domain => {
         const query = new URLSearchParams({q: search.value.trim(), domain});
         const response = await fetch('./api/entities?' + query, {signal: controller.signal});

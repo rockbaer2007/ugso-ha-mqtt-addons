@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.39
+# HA Logic Studio Pro 0.1.40
+
+Die Kategorie „Logik“ in Blocks JS folgt der Reihenfolge und Farbgebung von ioBroker. Dazu kommen drei HA-Prüfungen für Verfügbarkeit, Zustand und vorhandene Attribute.
+
+The Logic category in Blocks JS follows the ioBroker order and colour scheme. Three HA checks cover availability, state, and attribute presence.
+
+La catégorie Logique de Blocks JS reprend l’ordre et les couleurs d’ioBroker. Trois vérifications HA couvrent la disponibilité, l’état et la présence d’un attribut.
 
 **DE:** Die dynamischen Timeout- und Intervallblöcke übernehmen Millisekunden aus einem Zahlenblock oder einer Berechnung. „Verzögerung“ und „Intervall“ geben den Namen des gewählten aktiven Timers zurück, sonst `null`.
 
