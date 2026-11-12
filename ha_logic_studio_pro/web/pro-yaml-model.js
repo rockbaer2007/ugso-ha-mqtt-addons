@@ -4,6 +4,71 @@ const identifier = /^[a-z0-9_]+\.[a-z0-9_]+$/;
 const modes = new Set(['single', 'restart', 'queued', 'parallel']);
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 
+export function readRuleFields(fields) {
+  if (!object(fields)) throw new Error('Ungültige Rules-Datei.');
+  if (Object.hasOwn(fields, 'triggers')) {
+    const lists = {triggers: ['type', 'entity', 'state', 'time', 'event'],
+      conditions: ['entity', 'state'], actions: ['action', 'entity'], elseActions: ['action', 'entity']};
+    const rule = {conditionMode: fields.conditionMode};
+    if (!['and', 'or', 'not'].includes(rule.conditionMode)) throw new Error('Ungültige Rules-Datei.');
+    for (const [key, names] of Object.entries(lists)) {
+      if (!Array.isArray(fields[key])) throw new Error('Ungültige Rules-Datei.');
+      rule[key] = fields[key].map(entry => {
+        if (!object(entry) || Object.values(entry).some(value => typeof value !== 'string') ||
+            (key === 'triggers' && !['state', 'time', 'event'].includes(entry.type))) {
+          throw new Error('Ungültige Rules-Datei.');
+        }
+        return Object.fromEntries(names.filter(name => Object.hasOwn(entry, name)).map(name => [name, entry[name]]));
+      });
+    }
+    return rule;
+  }
+  if (Object.values(fields).some(value => typeof value !== 'string')) throw new Error('Ungültige Rules-Datei.');
+  const state = key => ({entity: fields[key + 'Entity'] || '', state: fields[key + 'State'] || ''});
+  const action = key => ({entity: fields[key + 'Entity'] || '', action: fields[key + 'Action'] || ''});
+  const triggers = [];
+  if (fields.triggerType === 'time') triggers.push({type: 'time', time: fields.triggerTime || ''});
+  else if (fields.triggerType === 'event') triggers.push({type: 'event', event: fields.triggerEvent || ''});
+  else if (fields.triggerEntity || fields.triggerState) triggers.push({type: 'state', ...state('trigger')});
+  return {
+    triggers,
+    conditionMode: 'and',
+    conditions: fields.conditionEntity || fields.conditionState ? [state('condition')] : [],
+    actions: fields.thenEntity || fields.thenAction ? [action('then')] : [],
+    elseActions: fields.elseEntity || fields.elseAction ? [action('else')] : [],
+  };
+}
+
+export function makeRulesJavaScript(name, rule) {
+  makeYaml({name, kind: 'automation', ...rule});
+  const literal = JSON.stringify;
+  const matches = ({entity, state}) => 'ha.readState(' + literal(entity) + ') === ' + literal(state);
+  const calls = (actions, indent) => actions.map(({action, entity}) =>
+    indent + 'ha.callAction(' + literal(action) + ', ' + literal(entity) + ');');
+  const lines = ['function runRule() {'];
+  if (rule.conditions.length) {
+    let check = rule.conditions.map(matches).join(rule.conditionMode === 'and' ? ' && ' : ' || ');
+    if (rule.conditionMode === 'not') check = '!(' + check + ')';
+    lines.push('  if (' + check + ') {', ...calls(rule.actions, '    '));
+    if (rule.elseActions.length) lines.push('  } else {', ...calls(rule.elseActions, '    '));
+    lines.push('  }');
+  } else {
+    lines.push(...calls(rule.actions, '  '));
+  }
+  lines.push('}', '');
+  for (const trigger of rule.triggers) {
+    if (trigger.type === 'time') {
+      lines.push('ha.schedule(' + literal({trigger: 'time', at: trigger.time + ':00'}) + ', runRule);');
+    } else if (trigger.type === 'event') {
+      lines.push('ha.onEvent(' + literal(trigger.event) + ', runRule);');
+    } else {
+      lines.push('ha.onState(' + literal(trigger.entity) + ', () => {',
+        '  if (' + matches(trigger) + ') runRule();', '});');
+    }
+  }
+  return lines.join('\n') + '\n';
+}
+
 export function validateYaml(source, kind) {
   if (!['script', 'automation'].includes(kind)) throw new Error('HA-YAML-Typ ist ungültig.');
   if (!source.trim() || new TextEncoder().encode(source).length > 1_000_000) {
@@ -47,19 +112,22 @@ export function validateYaml(source, kind) {
   return entries.length;
 }
 
-export function makeYaml({name, kind, triggers = [], condition, actions, otherwise}) {
+export function makeYaml({name, kind, triggers = [], condition, conditions = condition ? [condition] : [],
+  conditionMode = 'and', actions, otherwise, elseActions = otherwise ? [otherwise] : []}) {
   if (!actions.length) throw new Error('Mindestens eine HA-Aktion hinzufügen.');
   const actionList = list => list.map(({action, entity}) => {
-    if (!identifier.test(action) || !identifier.test(entity)) throw new Error('Gültige Aktion und Ziel-Entität eingeben.');
+    if (!identifier.test(action || '') || !identifier.test(entity || '')) throw new Error('Gültige Aktion und Ziel-Entität eingeben.');
     return {action, target: {entity_id: entity}};
   });
-  if (otherwise && !condition) throw new Error('Der SONST-Zweig benötigt eine Bedingung.');
-  const checks = condition ? [{condition: 'state', entity_id: condition.entity, state: condition.state}] : [];
-  if (condition && (!identifier.test(condition.entity) || !condition.state.trim())) {
-    throw new Error('Gültige Bedingungsentität und Zustand eingeben.');
-  }
+  if (elseActions.length && !conditions.length) throw new Error('Der SONST-Zweig benötigt eine Bedingung.');
+  if (!['and', 'or', 'not'].includes(conditionMode)) throw new Error('Ungültige Bedingungsverknüpfung.');
+  const states = conditions.map(({entity, state}) => {
+    if (!identifier.test(entity || '') || !state?.trim()) throw new Error('Gültige Bedingungsentität und Zustand eingeben.');
+    return {condition: 'state', entity_id: entity, state};
+  });
+  const checks = conditionMode === 'and' || !states.length ? states : [{condition: conditionMode, conditions: states}];
   let sequence = actionList(actions);
-  if (otherwise) sequence = [{if: checks, then: sequence, else: actionList([otherwise])}];
+  if (elseActions.length) sequence = [{if: checks, then: sequence, else: actionList(elseActions)}];
   else if (kind === 'script') sequence = [...checks, ...sequence];
   const config = {alias: name, mode: 'single'};
   if (kind === 'script') return stringify({...config, sequence});
@@ -72,13 +140,13 @@ export function makeYaml({name, kind, triggers = [], condition, actions, otherwi
         return {trigger: 'time', at: time + ':00'};
       }
       if (type === 'event') {
-        if (!/^[a-zA-Z0-9_]+$/.test(event)) throw new Error('Gültigen HA-Ereignistyp eingeben.');
+        if (!/^[a-zA-Z0-9_]+$/.test(event || '')) throw new Error('Gültigen HA-Ereignistyp eingeben.');
         return {trigger: 'event', event_type: event};
       }
-      if (!identifier.test(entity) || !state.trim()) throw new Error('Gültige Auslöserentität und Zustand eingeben.');
+      if (!identifier.test(entity || '') || !state?.trim()) throw new Error('Gültige Auslöserentität und Zustand eingeben.');
       return {trigger: 'state', entity_id: entity, to: state};
     }),
-    conditions: otherwise ? [] : checks,
+    conditions: elseActions.length ? [] : checks,
     actions: sequence,
   });
 }

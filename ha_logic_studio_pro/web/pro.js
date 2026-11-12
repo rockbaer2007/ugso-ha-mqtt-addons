@@ -1,4 +1,4 @@
-import {makeYaml, validateYaml} from './pro-yaml-model.js';
+import {makeYaml, validateYaml, readRuleFields, makeRulesJavaScript} from './pro-yaml-model.js';
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
 import {mountCodeEditor} from './vendor/pro-code.js';
@@ -1271,103 +1271,129 @@ function renderRules(panel, project) {
   const [wizard, title, triggerStep, conditionStep, actionStep, review, back, next, apply, cancel,
     status, schedule, event, entity, target, time, eventType, service, when, and, then, otherwise, empty, choose] =
     wording[locale] ?? wording.en;
-  const ruleLabels = {trigger: when, condition: and, then, else: otherwise};
+  const ruleLabels = {triggers: when, conditions: and, actions: then, elseActions: otherwise};
   const triggerKinds = [['state', status, 'ϟ'], ['time', schedule, '◷'], ['event', event, '✉']];
-  function group(prefix, data, refresh, expanded = false) {
+  const [remove, addItem, all, any, none] = ({
+    de: ['Entfernen', 'Hinzufügen', 'Alle (UND)', 'Mindestens eine (ODER)', 'Keine (NICHT)'],
+    en: ['Remove', 'Add', 'All (AND)', 'At least one (OR)', 'None (NOT)'],
+    fr: ['Supprimer', 'Ajouter', 'Toutes (ET)', 'Au moins une (OU)', 'Aucune (NON)'],
+  })[locale] ?? ['Remove', 'Add', 'All (AND)', 'At least one (OR)', 'None (NOT)'];
+  let rules = readRuleFields(fields);
+  let category = 'triggers';
+  const update = () => { project.fields = rules; };
+  function append(data, key, kind = 'state') {
+    const entry = key === 'triggers' ? {type: kind} : {};
+    data[key].push(entry);
+    return entry;
+  }
+  function group(key, data, refresh, changed, allowAdd) {
     const fieldset = element('fieldset');
-    fieldset.dataset.ruleGroup = prefix;
-    fieldset.append(element('legend', ruleLabels[prefix]));
-    const kind = data.triggerType || 'state';
-    if (prefix === 'trigger') {
-      const kinds = element('div');
-      kinds.className = 'rule-kinds';
-      for (const [value, label, symbol] of triggerKinds) {
-        const item = button('', () => { data.triggerType = value; refresh(); });
-        item.append(element('span', symbol), element('span', label));
-        item.setAttribute('aria-pressed', String(kind === value));
-        kinds.append(item);
+    fieldset.dataset.ruleGroup = {triggers: 'trigger', conditions: 'condition', actions: 'then', elseActions: 'else'}[key];
+    fieldset.append(element('legend', ruleLabels[key]));
+    if (key === 'conditions' && !data[key].length) fieldset.append(element('small', empty));
+    if (key === 'conditions' && data[key].length) {
+      const select = element('select');
+      select.setAttribute('aria-label', conditionStep);
+      for (const [value, label] of [['and', all], ['or', any], ['not', none]]) {
+        const option = element('option', label);
+        option.value = value;
+        select.append(option);
       }
-      fieldset.append(kinds);
+      select.value = data.conditionMode;
+      select.onchange = () => { data.conditionMode = select.value; changed(); };
+      fieldset.append(select);
     }
-    const labels = prefix === 'trigger' && kind === 'time' ? [['Time', time]] :
-      prefix === 'trigger' && kind === 'event' ? [['Event', eventType]] :
-      prefix === 'trigger' || prefix === 'condition' ? [['Entity', entity], ['State', status]] :
-      [['Action', service], ['Entity', target]];
-    const inputs = element('div');
-    inputs.className = 'rule-inputs';
-    for (const [key, labelText] of labels) {
-      const label = element('label', labelText);
-      const input = element('input');
-      const name = prefix + key;
-      input.value = data[name] || '';
-      if (key === 'Time') input.type = 'time';
-      input.oninput = () => { data[name] = input.value.trim(); };
-      const line = element('span');
-      line.append(input);
-      if (key === 'Entity') {
-        line.append(button(choose, () => openBlockEntity({}, input.value, value => {
-          input.value = value;
-          input.oninput();
-        }, value => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value))));
+    for (const [index, entry] of data[key].entries()) {
+      const stateFields = [['entity', entity], ['state', status]];
+      const labels = key === 'triggers' && entry.type === 'time' ? [['time', time]] :
+        key === 'triggers' && entry.type === 'event' ? [['event', eventType]] :
+        key === 'triggers' || key === 'conditions' ? stateFields : [['action', service], ['entity', target]];
+      const inputs = element('div');
+      inputs.className = 'rule-inputs';
+      for (const [name, caption] of labels) {
+        const label = element('label', caption);
+        const input = element('input');
+        input.value = entry[name] || '';
+        if (name === 'time') input.type = 'time';
+        input.oninput = () => { entry[name] = input.value.trim(); changed(); };
+        const line = element('span');
+        line.append(input);
+        if (name === 'entity') {
+          line.append(button(choose, () => openBlockEntity({}, input.value, value => {
+            input.value = value;
+            input.oninput();
+          }, value => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value))));
+        }
+        label.append(line);
+        inputs.append(label);
       }
-      label.append(line);
-      inputs.append(label);
+      const deleteItem = button('×', () => {
+        data[key].splice(index, 1);
+        changed();
+        refresh();
+      });
+      deleteItem.className = 'rule-remove';
+      deleteItem.setAttribute('aria-label', remove + ' ' + (index + 1));
+      inputs.append(deleteItem);
+      fieldset.append(inputs);
     }
-    if (prefix === 'condition' || prefix === 'else') {
-      const disclosure = element('details');
-      disclosure.open = expanded || labels.some(([key]) => data[prefix + key]);
-      disclosure.append(element('summary', prefix === 'condition' && !disclosure.open ? empty : ruleLabels[prefix]), inputs);
-      disclosure.ontoggle = () => { disclosure.firstChild.textContent = prefix === 'condition' && !disclosure.open ? empty : ruleLabels[prefix]; };
-      fieldset.append(disclosure);
-    } else fieldset.append(inputs);
+    if (allowAdd) {
+      const choices = key === 'triggers' ? triggerKinds : [[null, addItem, '+']];
+      const controls = element('div');
+      controls.className = 'rule-inline';
+      for (const [kind, label, icon] of choices) {
+        controls.append(button(icon + ' ' + label, () => {
+          append(data, key, kind);
+          changed();
+          refresh();
+        }));
+      }
+      fieldset.append(controls);
+    }
     return fieldset;
   }
-  const read = (data = fields) => {
-    const state = prefix => ({entity: data[prefix + 'Entity'] || '', state: data[prefix + 'State'] || ''});
-    const action = prefix => ({entity: data[prefix + 'Entity'] || '', action: data[prefix + 'Action'] || ''});
-    const trigger = data.triggerType === 'time' ? {type: 'time', time: data.triggerTime} :
-      data.triggerType === 'event' ? {type: 'event', event: data.triggerEvent} :
-      data.triggerEntity || data.triggerState ? state('trigger') : null;
-    return {
-      triggers: trigger ? [trigger] : [],
-      condition: data.conditionEntity || data.conditionState ? state('condition') : undefined,
-      actions: [action('then')],
-      otherwise: data.elseEntity || data.elseAction ? action('else') : undefined,
-    };
-  };
   const renderForm = (focusGroup) => {
-    const heading = element('header');
-    heading.append(element('span', title), button('✦ ' + wizard, openWizard));
     const palette = element('nav');
     palette.className = 'rule-palette';
     palette.setAttribute('aria-label', title);
     palette.append(button('✦ ' + wizard, openWizard));
-    const sections = Object.keys(ruleLabels).map(key => group(key, fields, renderForm));
-    for (const [value, label, symbol] of triggerKinds) {
-      const item = button(symbol + ' ' + label, () => {
-        fields.triggerType = value;
-        renderForm('trigger');
-      });
-      item.setAttribute('aria-pressed', String((fields.triggerType || 'state') === value));
-      palette.append(item);
+    const tabs = element('div');
+    tabs.className = 'rule-palette-tabs';
+    for (const [key, label, icon] of [['triggers', triggerStep, 'ϟ'], ['conditions', conditionStep, '?'], ['actions', actionStep, '↳']]) {
+      const tab = button(icon, () => { category = key; renderForm(); form.querySelector('[aria-pressed="true"]')?.focus(); });
+      tab.setAttribute('aria-label', label);
+      tab.setAttribute('aria-pressed', String(key === category));
+      tab.title = label;
+      tabs.append(tab);
     }
-    for (const [index, label] of [[1, conditionStep], [2, actionStep]]) {
-      palette.append(button(label, () => {
-        const section = sections[index];
-        const disclosure = section.querySelector('details');
-        if (disclosure) disclosure.open = true;
-        section.querySelector('input')?.focus();
-      }));
+    palette.append(tabs);
+    const choices = category === 'triggers' ? triggerKinds.map(([kind, label, icon]) => [category, label, icon, kind]) :
+      category === 'conditions' ? [[category, status, '?']] :
+        [['actions', then, '↳'], ['elseActions', otherwise, '↳']];
+    for (const [key, label, icon, kind] of choices) {
+      const item = button(icon + ' ' + label, () => {
+        append(rules, key, kind);
+        update();
+        renderForm(key);
+      });
+      item.className = 'rule-palette-item';
+      palette.append(item);
     }
     const bands = element('div');
     bands.className = 'rule-form';
-    bands.append(heading, ...sections);
+    for (const key of Object.keys(ruleLabels)) {
+      if (key !== 'elseActions' || rules[key].length) bands.append(group(key, rules, renderForm, update, false));
+    }
     form.replaceChildren(palette, bands);
-    if (focusGroup === 'trigger') sections[0].querySelector('input')?.focus();
+    if (focusGroup) {
+      const index = Object.keys(ruleLabels).indexOf(focusGroup);
+      const inputs = bands.children[index]?.querySelectorAll('input');
+      if (inputs?.length) inputs[inputs.length - 2]?.focus();
+    }
   };
   form.classList.add('rules-editor');
   function openWizard() {
-    const draft = {...fields};
+    const draft = structuredClone(rules);
     const body = element('div');
     const dialog = editorDialog(title, body);
     dialog.classList.add('rules-wizard');
@@ -1387,16 +1413,19 @@ function renderRules(panel, project) {
       previous.disabled = step === 0;
       const proceed = button(step === 3 ? apply : next, () => {
         if (step === 3) {
-          Object.assign(fields, draft);
+          rules = draft;
+          update();
           renderForm();
           dialog.close();
         } else { step++; render(); }
       });
       if (step < 3) {
-        for (const key of [['trigger'], ['condition'], ['then', 'else']][step]) content.append(group(key, draft, render, key !== 'else'));
+        for (const key of [['triggers'], ['conditions'], ['actions', 'elseActions']][step]) {
+          content.append(group(key, draft, render, () => {}, true));
+        }
       } else {
         try {
-          const yaml = makeYaml({name: project.name, kind: 'automation', ...read(draft)});
+          const yaml = makeYaml({name: project.name, kind: 'automation', ...draft});
           validateYaml(yaml, 'automation');
           content.append(element('pre', yaml));
         } catch (error) {
@@ -1412,24 +1441,7 @@ function renderRules(panel, project) {
     render();
   }
   renderForm();
-  const source = () => {
-    const data = read();
-    validateYaml(makeYaml({name: project.name, kind: 'automation', ...data}), 'automation');
-    const literal = JSON.stringify;
-    const call = item => 'ha.callAction(' + literal(item.action) + ', ' + literal(item.entity) + ');';
-    const matches = item => 'ha.readState(' + literal(item.entity) + ') === ' + literal(item.state);
-    const actions = data.actions.map(call).join('\n    ');
-    const branch = data.condition
-      ? 'if (' + matches(data.condition) + ') {\n    ' + actions + '\n  }' +
-        (data.otherwise ? ' else {\n    ' + call(data.otherwise) + '\n  }' : '')
-      : actions;
-    const trigger = data.triggers[0];
-    if (trigger.type === 'time') return 'ha.schedule(' + literal({trigger: 'time', at: trigger.time + ':00'}) +
-      ', () => {\n  ' + branch + '\n});\n';
-    if (trigger.type === 'event') return 'ha.onEvent(' + literal(trigger.event) + ', () => {\n  ' + branch + '\n});\n';
-    return 'ha.onState(' + literal(trigger.entity) + ', () => {\n  if (' +
-      matches(trigger) + ') {\n    ' + branch + '\n  }\n});\n';
-  };
+  const source = () => makeRulesJavaScript(project.name, rules);
   const convert = open => {
     try {
       const javascript = source();
@@ -1440,21 +1452,14 @@ function renderRules(panel, project) {
   const right = editorTools(row, project);
   toolIcon(right, 'code', 'Quelltext anzeigen', () => convert(false));
   toolIcon(right, 'sun', 'Astronomische Ereignisse', () => showSun(project));
-  toolIcon(right, 'export', 'Regel exportieren', () => exportEditorData(project.name, {type: 'rules', fields}));
+  toolIcon(right, 'export', 'Regel exportieren', () => exportEditorData(project.name, {type: 'rules', fields: rules}));
   toolIcon(right, 'import', 'Regel importieren', () => importEditorData(project, (text, name) => {
     const data = JSON.parse(text);
-    if (data?.type !== 'rules' || !data.fields || Array.isArray(data.fields) ||
-        typeof data.fields !== 'object' || Object.values(data.fields).some(value => typeof value !== 'string')) {
-      throw new Error('Ungültige Rules-Datei.');
-    }
-    const allowed = ['triggerType', 'triggerTime', 'triggerEvent', 'triggerEntity', 'triggerState', 'conditionEntity', 'conditionState',
-      'thenAction', 'thenEntity', 'elseAction', 'elseEntity'];
-    const imported = Object.fromEntries(allowed.filter(key => Object.hasOwn(data.fields, key))
-      .map(key => [key, data.fields[key]]));
-    return {type: 'rules', name: name.replace(/\.json$/i, ''), fields: imported};
+    if (data?.type !== 'rules') throw new Error('Ungültige Rules-Datei.');
+    return {type: 'rules', name: name.replace(/\.json$/i, ''), fields: readRuleFields(data.fields)};
   }));
   right.append(button('Rules → JS', () => convert(true)),
-    button('Als HA-YAML öffnen', () => openGenerated(project, read, report)));
+    button('Als HA-YAML öffnen', () => openGenerated(project, () => rules, report)));
   toolIcon(right, 'tools', 'Debug-Einstellungen', () => debugTools(project));
   panel.append(form);
 }

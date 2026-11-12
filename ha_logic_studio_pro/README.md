@@ -1,4 +1,6 @@
-# HA Logic Studio Pro 0.1.59
+# HA Logic Studio Pro 0.1.60
+
+Der Rules-Editor hat eine kompakte Seitenleiste. Eine Regel kann mehrere Auslöser haben. Zustandsbedingungen lassen sich mit UND, ODER oder NICHT kombinieren. DANN und SONST unterstützen mehrere Aktionen in Eingabereihenfolge.
 
 **Rules:** Der Assistent führt durch Auslöser, Bedingungen, Aktionen und YAML-Vorschau. Unterstützt werden Zustandswechsel, tägliche Uhrzeiten und HA-Ereignisse. Änderungen am Projekt werden erst mit „Speichern“ dauerhaft übernommen.
 
