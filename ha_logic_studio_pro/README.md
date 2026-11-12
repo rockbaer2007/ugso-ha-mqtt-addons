@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.37
+# HA Logic Studio Pro 0.1.38
+
+**DE:** Blocks JS bietet unter „Timeouts“ feste Dauerfelder in ms, s und min und getrennte Stoppblöcke mit Namensauswahl. Unter „Objekt“ lassen sich Eigenschaften über das Zahnrad ergänzen, setzen, entfernen, prüfen und auflisten.
+
+**EN:** Blocks JS Timeouts offers fixed durations in ms, s and min and separate stop blocks with a name selector. Object blocks build objects with the gear menu and set, remove, check and list properties.
+
+**FR :** Blocks JS propose des durées fixes en ms, s et min et des blocs d’arrêt distincts avec sélection du nom. Les blocs Objet créent des objets via la roue dentée et permettent de définir, supprimer, vérifier et lister leurs propriétés.
 
 **DE:** „Astro“ führt Aktionen bei Sonnenaufgang oder Sonnenuntergang mit bis zu ±1440 Minuten Versatz aus. Dazu `sun.sun` zum Lesen freigeben. „Zeitplan aus Zeit-Zustand“ liest einen freigegebenen `input_datetime`-Helfer in der HA-Zeitzone. Nur Uhrzeit bedeutet täglich, nur Datum bedeutet Mitternacht, Datum plus Uhrzeit bedeutet einmalig. Änderungen am Helfer wirken sofort auf den nächsten Termin. Ein positiver Astro-Versatz benötigt eine laufende Runtime, die den ursprünglichen Sonnenzeitpunkt bereits kennt.
 

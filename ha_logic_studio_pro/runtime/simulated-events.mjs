@@ -14,7 +14,7 @@ export const simulatedEvents = String.raw`
     if (typeof name !== 'string' || !name.trim() || !Number.isSafeInteger(delay) ||
         delay < 0 || (repeat && delay === 0) || delay > 2147483647 ||
         typeof callback !== 'function' || timers.size >= 32) throw new Error('Invalid simulated timer');
-    timers.set(name, {at: now + delay, delay, callback, remaining: repeat ? 2 : 1});
+    timers.set(name, {at: now + delay, delay, callback, repeat, remaining: repeat ? 2 : 1});
   };
   const timeRequest = (op, args) => JSON.parse(api.timeRequest(op, JSON.stringify(args), String(now)));
   const ha = Object.freeze({
@@ -34,7 +34,7 @@ export const simulatedEvents = String.raw`
     scheduleFromDateTime: (entity, callback) => register('datetime', entity, null, callback),
     timeout: (name, delay, callback) => timer(name, delay, callback, false),
     interval: (name, delay, callback) => timer(name, delay, callback, true),
-    cancelTimer: name => timers.delete(name),
+    cancelTimer: (name, repeat) => (repeat === undefined || timers.get(name)?.repeat === repeat) && timers.delete(name),
   });
   globalThis.ha = ha;
   globalThis.getState = ha.getState;
