@@ -1,23 +1,37 @@
 import {guestTimeApi} from './ha-time.mjs';
 // Runs inside QuickJS. Each test has its own event queue and virtual timers.
 export const simulatedEvents = String.raw`
-((api, report, run) => {
+(async (api, report, run) => {
   const handlers = [];
   const namedSchedules = new Map();
   const timers = new Map();
   let now = 0;
+  const invoke = (callback, ...args) => {
+    const result = callback(...args);
+    if (result && typeof result.then === 'function') result.catch(error => {
+      globalThis.studioTestError = String(error?.message ?? error);
+    });
+  };
   const register = (type, target, attribute, callback) => {
     if (typeof target !== 'string' || !target.trim() || typeof callback !== 'function' ||
         handlers.length >= 32) throw new Error('Invalid simulated event subscription');
     handlers.push({type, target, attribute, callback});
   };
   const timer = (name, delay, callback, repeat) => {
-    if (typeof name !== 'string' || !name.trim() || !Number.isSafeInteger(delay) ||
+    if ((typeof name !== 'symbol' && (typeof name !== 'string' || !name.trim())) || !Number.isSafeInteger(delay) ||
         delay < 0 || (repeat && delay === 0) || delay > 2147483647 ||
         typeof callback !== 'function' || timers.size >= 32) throw new Error('Invalid simulated timer');
     timers.set(name, {at: now + delay, delay, callback, repeat, remaining: repeat ? 2 : 1});
   };
   const timeRequest = (op, args) => JSON.parse(api.timeRequest(op, JSON.stringify(args), String(now)));
+  const astroTimeRequest = (event, offset) => {
+    const hours = {sunrise: 6, sunset: 18, dawn: 5, dusk: 19, solarNoon: 12, nadir: 0};
+    if (!Object.hasOwn(hours, event) || !Number.isFinite(offset) || Math.abs(offset) > 1440) throw new Error('Invalid sun time.');
+    const day = timeRequest('current', ['day']);
+    const base = timeRequest('convert', [day + 'T' + String(hours[event]).padStart(2, '0') + ':00', 'ms', 'ms']);
+    const next = base > timeRequest('current', ['unix']) ? base : timeRequest('shift', [base, 1, 'd']);
+    return next + offset * 60_000;
+  };
   const ha = Object.freeze({
     ...api,
     ${guestTimeApi}
@@ -41,6 +55,7 @@ export const simulatedEvents = String.raw`
     onSun: (event, callback, offset = 0) => register('sun', event, offset, callback),
     scheduleFromDateTime: (entity, callback) => register('datetime', entity, null, callback),
     timeout: (name, delay, callback) => timer(name, delay, callback, false),
+    pause: delay => new Promise(resolve => timer(Symbol(), delay, resolve, false)),
     interval: (name, delay, callback) => timer(name, delay, callback, true),
     cancelTimer: (name, repeat) => (repeat === undefined || timers.get(name)?.repeat === repeat) && timers.delete(name),
     timerReference: (name, repeat) => timers.get(name)?.repeat === repeat ? name : null,
@@ -50,21 +65,21 @@ export const simulatedEvents = String.raw`
   globalThis.setState = ha.setState;
   globalThis.log = value => ha.log(String(value));
   delete globalThis.reportSimulatedEvent;
-  run();
+  invoke(run);
   for (const [name, callback] of [...namedSchedules]) {
     if (namedSchedules.get(name) !== callback) continue;
     report(JSON.stringify({type: 'simulated-event', event: 'schedule', target: name}));
-    callback();
+    invoke(callback);
   }
   for (const {type, target, attribute, callback} of handlers.slice()) {
     report(JSON.stringify({type: 'simulated-event', event: type, target, attribute}));
     if (type === 'state') {
-      callback({type: 'state', entity: target, previous: {state: 'off'}, current: {state: 'on'}});
+      invoke(callback, {type: 'state', entity: target, previous: {state: 'off'}, current: {state: 'on'}});
     } else if (type === 'attribute') {
-      callback({type: 'state', entity: target, previous: {attributes: {[attribute]: 0}},
+      invoke(callback, {type: 'state', entity: target, previous: {attributes: {[attribute]: 0}},
         current: {attributes: {[attribute]: 1}}});
     } else {
-      callback();
+      invoke(callback);
     }
   }
   for (let steps = 0; timers.size; steps++) {
@@ -73,8 +88,9 @@ export const simulatedEvents = String.raw`
     now = next.at;
     if (--next.remaining === 0) timers.delete(name);
     else next.at += next.delay;
-    report(JSON.stringify({type: 'simulated-timer', name, elapsedMs: now}));
-    next.callback();
+    if (typeof name === 'string') report(JSON.stringify({type: 'simulated-timer', name, elapsedMs: now}));
+    invoke(next.callback);
+    await Promise.resolve();
   }
 })
 `;

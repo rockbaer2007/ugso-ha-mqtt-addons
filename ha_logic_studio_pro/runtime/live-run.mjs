@@ -1,7 +1,7 @@
 import {getQuickJS, shouldInterruptAfterDeadline} from 'quickjs-emscripten';
 import {connectHomeAssistant} from './ha-connection.mjs';
 import {cronMatcher, dateTimeSchedule, scheduleClock, scheduleMatcher, sunSchedule} from './live-schedule.mjs';
-import {guestTimeApi, timeOperations} from './ha-time.mjs';
+import {guestTimeApi, sunTimeAttributes, timeOperations} from './ha-time.mjs';
 
 function report(type, text = '') {
   process.stdout.write(JSON.stringify({type, text: text.slice(0, 1000)}) + '\n');
@@ -52,6 +52,12 @@ try {
       finally { message.dispose(); result.error.dispose(); }
     }
     result.value.dispose();
+    const jobs = runtime.executePendingJobs(2048);
+    if (jobs.error) {
+      try { throw new Error(vm.dump(jobs.error)?.message || 'JavaScript job failed.'); }
+      finally { jobs.error.dispose(); }
+    }
+    if (runtime.hasPendingJob()) throw new Error('Zu viele ausstehende JavaScript-Jobs.');
   }
   let windowStart = Date.now(), messages = 0;
   const logger = vm.newFunction('report', value => {
@@ -66,6 +72,19 @@ try {
     if (Buffer.byteLength(text) > 48_000) throw new Error('HA-Anfrage zu groß.');
     const args = JSON.parse(text);
     const operation = vm.getString(command);
+    if (operation === 'projectError') {
+      fail(new Error(String(args[0]).slice(0, 1000)));
+      return vm.undefined;
+    }
+    if (operation === 'astroTime') {
+      const [event, offset] = args;
+      const attribute = Object.hasOwn(sunTimeAttributes, event) && sunTimeAttributes[event];
+      const ms = attribute && ha ? Date.parse(ha.state('sun.sun')?.attributes?.[attribute]) : NaN;
+      if (!Number.isFinite(ms) || !Number.isFinite(offset) || Math.abs(offset) > 1440) {
+        throw new Error('Sonnenzeit aus sun.sun nicht verfügbar / Sun time unavailable.');
+      }
+      return vm.newString(String(ms + offset * 60_000));
+    }
     if (operation === 'time') return vm.newString(JSON.stringify(time(...args)));
     if (operation === 'schedule') {
       if (scheduled.size >= 32) throw new Error('Maximal 32 Zeitpläne pro Skript.');
@@ -116,6 +135,10 @@ try {
       const handlers = [];
       const namedSchedules = new Map();
       const call = (operation, ...args) => bridge(operation, JSON.stringify(args));
+      const invoke = (callback, ...args) => {
+        const result = callback(...args);
+        if (result && typeof result.then === 'function') result.catch(error => call('projectError', String(error?.message ?? error)));
+      };
       const state = entity => JSON.parse(call('state', entity));
       const register = (type, target, attribute, callback) => {
         if (handlers.length >= 32 || typeof callback !== 'function') throw new Error('Ungültiger Auslöser.');
@@ -128,7 +151,7 @@ try {
         handlers.push({type, target, attribute, callback});
       };
       function timer(name, delay, callback, repeat) {
-        if (typeof name !== 'string' || name.length > 128 || typeof callback !== 'function' ||
+        if ((typeof name !== 'symbol' && (typeof name !== 'string' || name.length > 128)) || typeof callback !== 'function' ||
             !Number.isSafeInteger(delay) || delay < 0 || delay > 2147483647 ||
             (!timers.has(name) && timers.size >= 32)) throw new Error('Invalid timer');
         const period = Math.max(50, delay);
@@ -137,7 +160,9 @@ try {
       const log = value => report(String(value).slice(0, 1000));
       const callAction = (action, entity, data = {}) => call('action', action, entity, data);
       const timeRequest = (op, args) => JSON.parse(call('time', op, args));
+      const astroTimeRequest = (event, offset) => Number(call('astroTime', event, offset));
       const ha = Object.freeze({${guestTimeApi} log, timeout: (n,d,fn) => timer(n,d,fn,false),
+        pause: delay => new Promise(resolve => timer(Symbol(), delay, resolve, false)),
         publishMqtt: (topic, message, retain = false) => call('publishMqtt', topic, message, retain),
         notify: (entity, message, title = '') => call('notify', entity, message, title),
         fireEvent: (name, data = {}) => call('fireEvent', name, data),
@@ -176,33 +201,35 @@ try {
       delete globalThis.runtimeBridge;
       globalThis.getState = ha.getState;
       globalThis.setState = ha.setState;
-      run(ha, log);
+      invoke(run, ha, log);
       const tick = now => {
         for (const [name, item] of [...timers]) {
           if (item.due > now || timers.get(name) !== item) continue;
           if (item.repeat) item.due = now + item.period;
           else timers.delete(name);
-          item.callback();
+          invoke(item.callback);
         }
       };
       const studioDispatch = event => {
         if (event.type === 'schedule') {
           const callback = typeof event.index === 'string' ? namedSchedules.get(event.index) : handlers[event.index]?.callback;
-          callback?.(event);
+          if (callback) invoke(callback, event);
           return;
         }
         for (const {type, target, attribute, callback} of handlers.slice()) {
-          if (type === 'event' && event.type === 'event' && target === event.name) callback(event.data);
+          if (type === 'event' && event.type === 'event' && target === event.name) invoke(callback, event.data);
           if (event.type !== 'state' || target !== event.entity) continue;
-          if (type === 'state' && event.previous?.state !== event.current?.state) callback(event);
+          if (type === 'state' && event.previous?.state !== event.current?.state) invoke(callback, event);
           if (type === 'attribute' && JSON.stringify(event.previous?.attributes?.[attribute]) !==
-              JSON.stringify(event.current?.attributes?.[attribute])) callback(event);
+              JSON.stringify(event.current?.attributes?.[attribute])) invoke(callback, event);
         }
       };
       return {tick, studioDispatch};
-    })(runtimeLog, runtimeBridge, (ha, log) => {\n${code}\n});`);
-  ha?.start();
-  report('running');
+    })(runtimeLog, runtimeBridge, async (ha, log) => {\n${code}\n});`);
+  if (!failed) {
+    ha?.start();
+    report('running');
+  }
   // A started project stays loaded until stopped, even when it has no timers.
   let previousSecond = Math.floor(Date.now() / 1000);
   let previousScheduleCheck = Date.now();

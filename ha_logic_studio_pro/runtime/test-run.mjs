@@ -159,7 +159,8 @@ export async function testRun(source, language = 'javascript', timeZone, start =
         api.dispose();
       }
       const result = vm.evalCode('"use strict";\n' + simulatedEvents +
-        '(ha, reportSimulatedEvent, function () {\n' + source + '\n});', 'projekt.js');
+        '(ha, reportSimulatedEvent, async function () {\n' + source +
+        '\n}).catch(error => { globalThis.studioTestError = String(error?.message ?? error); });', 'projekt.js');
       if (result.error) {
         try {
           const message = vm.getProp(result.error, 'message');
@@ -173,6 +174,16 @@ export async function testRun(source, language = 'javascript', timeZone, start =
         }
       }
       result.value.dispose();
+      const jobs = runtime.executePendingJobs(2048);
+      if (jobs.error) {
+        try { throw new Error(vm.dump(jobs.error)?.message || 'JavaScript-Testlauf fehlgeschlagen.'); }
+        finally { jobs.error.dispose(); }
+      }
+      if (runtime.hasPendingJob()) throw new Error('JavaScript-Testlauf hat zu viele ausstehende Jobs.');
+      const error = vm.getProp(vm.global, 'studioTestError');
+      try {
+        if (vm.typeof(error) === 'string') throw new Error(vm.getString(error).slice(0, 1000));
+      } finally { error.dispose(); }
       return {ok: true, trace};
     } finally {
       vm.dispose();

@@ -1,4 +1,8 @@
-# HA Logic Studio Pro 0.1.47
+# HA Logic Studio Pro 0.1.48
+
+- **DE** Blocks JS ergänzt Pause, Tages-, Wochen- und Monatsgrenzen, Sonnenzeiten als Wert und weitere Zeitformate. Sonnenzeiten verwenden in der Runtime die nächsten Ereignisse aus der freigegebenen Entität `sun.sun`.
+- **EN** Blocks JS adds Pause, calendar boundaries, sun-time values and more time formats. Live sun-time values use the next events from the allowed `sun.sun` entity.
+- **FR** Blocks JS ajoute Pause, les limites calendaires, les heures solaires et de nouveaux formats. En exécution réelle, les prochaines heures solaires proviennent de l’entité autorisée `sun.sun`.
 
 - **DE** Blocks JS ergänzt Listenoperationen und vier Farbblöcke. Der ioBroker-Import übernimmt die Listen- und Farbblöcke samt Eingängen.
 - **EN** Blocks JS adds list operations and four colour blocks. The ioBroker importer preserves these list and colour blocks and their inputs.

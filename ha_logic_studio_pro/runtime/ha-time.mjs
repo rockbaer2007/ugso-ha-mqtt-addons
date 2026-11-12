@@ -1,4 +1,11 @@
-const units = {ms: 1, s: 1000, min: 60_000, h: 3_600_000, d: 86_400_000};
+const units = {ms: 1, s: 1000, min: 60_000, h: 3_600_000, d: 86_400_000, w: 604_800_000};
+export const sunTimeAttributes = Object.freeze({
+  sunrise: 'next_rising', sunset: 'next_setting', dawn: 'next_dawn',
+  dusk: 'next_dusk', solarNoon: 'next_noon', nadir: 'next_midnight',
+});
+export const datePatterns = ['YYYY.MM.DD', 'YYYY/MM/DD', 'YY.MM.DD', 'YY/MM/DD',
+  'DD.MM.YYYY', 'DD/MM/YYYY', 'DD.MM.YY', 'DD/MM/YY', 'MM/DD/YYYY', 'MM/DD/YY',
+  'DD.MM.', 'DD/MM', 'MM.DD', 'MM/DD', 'hh:mm:ss', 'hh:mm:ss.sss'];
 const clockPattern = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const isoPattern = /^(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}:\d{2})(?::(\d{2})(?:\.(\d+))?)?(Z|[+-]\d{2}:?\d{2})?)?$/i;
 
@@ -47,29 +54,60 @@ export function timeOperations(timeZone, now = Date.now) {
     if (!match) throw new Error('Uhrzeit als HH:mm oder Datum / Expected HH:mm or a date.');
     return +match[1] * 60 + +match[2];
   };
+  const format = (ms, key) => {
+    const p = parts(ms);
+    if (key === 'clock') return p.hour + ':' + p.minute;
+    if (key === 'day') return p.year + '-' + p.month + '-' + p.day;
+    const millisecond = (ms % 1000 + 1000) % 1000;
+    if (datePatterns.includes(key)) {
+      const tokens = {YYYY: p.year, YY: p.year.slice(-2), MM: p.month, DD: p.day,
+        hh: p.hour, mm: p.minute, ss: p.second, sss: String(millisecond).padStart(3, '0')};
+      return key.replace(/YYYY|YY|MM|DD|hh|mm|sss|ss/g, token => tokens[token]);
+    }
+    const localDate = new Date(wall(ms));
+    const weekday = localDate.getUTCDay() || 7;
+    const values = {ms: millisecond, s: +p.second, m: +p.minute, h: +p.hour, d: +p.day,
+      M: +p.month, y: +p.year - 1900, fy: +p.year, wd: weekday,
+      sid: +p.hour * 3600 + +p.minute * 60 + +p.second, mid: +p.hour * 60 + +p.minute};
+    if (Object.hasOwn(values, key)) return values[key];
+    if (key === 'cw') {
+      localDate.setUTCHours(0, 0, 0, 0);
+      localDate.setUTCDate(localDate.getUTCDate() + 4 - weekday);
+      return Math.ceil(((localDate - Date.UTC(localDate.getUTCFullYear(), 0, 1)) / units.d + 1) / 7);
+    }
+    throw new Error('Ungültiges Datumsformat / Invalid date format.');
+  };
   return (operation, [a, b, c, d]) => {
     if (operation === 'convert') {
       const date = dateValue(a, b);
       if (c === 'date' || c === 'ms') return date.getTime();
       if (c === 'iso') return date.toISOString();
-      const p = parts(date);
-      if (c === 'clock') return p.hour + ':' + p.minute;
-      if (c === 'day') return p.year + '-' + p.month + '-' + p.day;
+      return format(date.getTime(), c);
     }
     if (operation === 'duration') {
       if (typeof a !== 'number' || !Number.isFinite(a) || Math.abs(a) > Number.MAX_SAFE_INTEGER ||
-          !['hh:mm:ss', 'hh:mm'].includes(b)) throw new Error('Zeitdifferenz in Millisekunden erwartet / Expected a duration in milliseconds.');
+          !['hh:mm:ss', 'hh:mm', 'h:m:s', 'h:m', 'mm:ss', 'm:s'].includes(b)) throw new Error('Zeitdifferenz in Millisekunden erwartet / Expected a duration in milliseconds.');
       const seconds = Math.floor(Math.abs(a) / 1000);
       const pad = value => String(value).padStart(2, '0');
-      const duration = pad(Math.floor(seconds / 3600)) + ':' + pad(Math.floor(seconds / 60) % 60);
-      return (a < 0 ? '-' : '') + duration + (b === 'hh:mm:ss' ? ':' + pad(seconds % 60) : '');
+      const values = {h: Math.floor(seconds / 3600), m: Math.floor(seconds / 60) % (b.startsWith('h') ? 60 : Infinity), s: seconds % 60};
+      return (a < 0 ? '-' : '') + b.split(':').map(part => part.length === 2 ? pad(values[part[0]]) : values[part]).join(':');
     }
     if (operation === 'current') {
       const ms = now();
       if (a === 'date' || a === 'unix') return ms;
-      const p = parts(ms);
-      if (a === 'clock') return p.hour + ':' + p.minute;
-      if (a === 'day') return p.year + '-' + p.month + '-' + p.day;
+      return format(ms, a);
+    }
+    if (operation === 'boundary') {
+      const match = /^(day|week|month)(Start|End)$/.exec(a);
+      if (!match) throw new Error('Ungültige Kalendergrenze / Invalid calendar boundary.');
+      const local = new Date(wall(now()));
+      local.setUTCHours(0, 0, 0, 0);
+      if (match[1] === 'week') local.setUTCDate(local.getUTCDate() - ((local.getUTCDay() + 6) % 7));
+      if (match[1] === 'month') local.setUTCDate(1);
+      if (match[2] === 'Start') return fromWall(local.getTime());
+      if (match[1] === 'month') local.setUTCMonth(local.getUTCMonth() + 1);
+      else local.setUTCDate(local.getUTCDate() + (match[1] === 'week' ? 7 : 1));
+      return fromWall(local.getTime()) - 1;
     }
     if (operation === 'compare') {
       const value = clock(d === null ? now() : d), start = clock(b);
@@ -108,6 +146,8 @@ export const guestTimeApi = `
     return format === 'date' ? new Date(result) : result;
   },
   formatDuration: (milliseconds, format) => timeRequest('duration', [milliseconds, format]),
+  calendarBoundary: type => timeRequest('boundary', [type]),
+  astroTime: (event, offset) => new Date(astroTimeRequest(event, offset)),
   compareTime: (op, start, end = null, at = null) => {
     const raw = value => value instanceof Date ? value.getTime() : value;
     return timeRequest('compare', [op, raw(start), raw(end), raw(at)]);
