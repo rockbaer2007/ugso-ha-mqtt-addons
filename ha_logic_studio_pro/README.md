@@ -1,4 +1,6 @@
-# HA Logic Studio Pro 0.1.30
+# HA Logic Studio Pro 0.1.31
+
+**Blocks JS → Aktionen** bietet HA-Aktion, HA-Aktion mit Daten, Taster drücken und Option auswählen. Die rosafarbenen Blöcke orientieren sich bei Form und Feldanordnung an ioBroker.
 
 **Blocks JS → System** enthält die Lese- und Steuerblöcke in der vertrauten ioBroker-Anordnung. Schalten und Umschalten unterstützen eine optionale Verzögerung. Aktionen für HA-Skripte unterliegen der Liste freigegebener Schreibziele.
 

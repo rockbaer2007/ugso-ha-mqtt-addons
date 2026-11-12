@@ -570,7 +570,9 @@ function openBlockEntity(spec, current, apply, validate) {
     en: ['Choose an entity', 'Search by name or ID', 'Apply', 'No matching entities.', 'HA entities are unavailable.', 'Enter a valid entity ID.'],
     fr: ['Choisir une entité', 'Rechercher par nom ou identifiant', 'Appliquer', 'Aucune entité correspondante.', 'Les entités HA sont indisponibles.', 'Saisissez un identifiant valide.'],
   };
-  const [title, placeholder, accept, empty, unavailable, invalid] = labels[locale] ?? labels.en;
+  const [entityTitle, placeholder, accept, empty, unavailable, invalid] = labels[locale] ?? labels.en;
+  const actionTitle = {de: 'HA-Aktion auswählen', en: 'Choose an HA action', fr: 'Choisir une action HA'};
+  const title = spec.kind === 'action' ? (actionTitle[locale] ?? actionTitle.en) : entityTitle;
   const content = element('div');
   const search = element('input');
   search.type = 'search';
@@ -604,7 +606,8 @@ function openBlockEntity(spec, current, apply, validate) {
     request = controller;
     try {
       const domains = spec.domains?.length ? spec.domains : spec.numeric ? ['sensor', 'input_number', 'number'] : [''];
-      const pages = await Promise.all(domains.map(async domain => {
+      const pages = spec.choices ? [spec.choices.filter(id => id.includes(search.value.trim().toLowerCase()))
+        .map(id => ({entity_id: id, name: id}))] : await Promise.all(domains.map(async domain => {
         const query = new URLSearchParams({q: search.value.trim(), domain});
         const response = await fetch('./api/entities?' + query, {signal: controller.signal});
         if (!response.ok) throw new Error(unavailable);
@@ -614,7 +617,7 @@ function openBlockEntity(spec, current, apply, validate) {
       const entities = pages.flat();
       list.replaceChildren(...entities.map(({entity_id, name}) => {
         const item = element('li');
-        const choose = button(name + ' · ' + entity_id, () => {
+        const choose = button(name === entity_id ? name : name + ' · ' + entity_id, () => {
           if (spec.listOnly || (spec.structured && input.value.trim().startsWith('['))) {
             let existing;
             try { existing = JSON.parse(input.value); } catch {}

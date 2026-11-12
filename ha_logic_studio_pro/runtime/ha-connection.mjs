@@ -8,6 +8,7 @@ const actions = new Map([
   ['input_select', ['select_option']], ['button', ['press']], ['input_button', ['press']],
   ['script', ['turn_on', 'turn_off']],
 ]);
+export const supportedActions = [...actions].flatMap(([domain, services]) => services.map(service => domain + '.' + service));
 
 export function actionCommand(action, entity, data, writable) {
   if (!entityPattern.test(entity) || !writable.has(entity)) throw new Error('HA-Ziel nicht für Aktionen freigegeben: ' + entity);
