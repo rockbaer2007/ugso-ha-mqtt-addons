@@ -161,6 +161,7 @@ import { sliderScale, sliderLiveValue } from "./slider-scale.js";
 import { sliderStyle, updateSliderFill } from "./slider-style.js";
 import { groupMembers, groupBounds, translateGroup, remapGroups } from "./widget-groups.js";
 import { tabCount, ownTabSurface, allProjectWidgets, tabTarget, canEmbedTab, reidentifyTabWidgets, visibleTabSurfaces } from "./tabs-widget.js";
+import { copyPage, freePageName, pageTransferLimit, readPageTransfer, writePageTransfer } from "./page-transfer.js";
 import "./widget-sets/core.js";
 import "./widget-sets/devices.js";
 import "./widget-sets/basic2.js";
@@ -1398,6 +1399,10 @@ function renderEditorPageTabs() {
   tabs.setAttribute("aria-label", uiText("Projektseiten"));
   tabs.replaceChildren();
   tabs.hidden = runtimeMode;
+  $("#page-transfer-actions").hidden = runtimeMode || inlineRuntime.busy || Boolean(state.tabEditor);
+  const french = document.documentElement.lang === "fr";
+  $("#page-export").textContent = french ? "Exporter la page" : uiText("Seite exportieren");
+  $("#page-import").textContent = french ? "Importer une page" : uiText("Seite importieren");
   if (runtimeMode) { stage.removeAttribute("role"); stage.removeAttribute("aria-labelledby"); return; }
   for (const [index, page] of state.project.pages.entries()) {
     if(inlinePageId&&!page.visible)continue;
@@ -2296,9 +2301,144 @@ function addPage() {
 }
 
 function duplicatePage(page) {
-  const copy = structuredClone(page); copy.id = makePageId(); copy.name = `${page.name} (Kopie)`;
-  for (const widget of copy.widgets) { widget.id = `widget-${state.nextId++}`; reidentifyTabWidgets(widget, () => `widget-${state.nextId++}`, () => `group-${createRandomId()}`); }
-  state.project.pages.push(copy); state.project.currentPageId = copy.id; setSingleWidgetSelection(null); render();
+  const name = freePageName(`${page.name} (Kopie)`, state.project.pages);
+  insertPageCopy(page, name);
+}
+
+function insertPageCopy(source, name, replace) {
+  const copy = copyPage(source, {
+    id: replace?.id ?? makePageId(), name,
+    widgetId: () => `widget-${state.nextId++}`,
+    groupId: () => `group-${createRandomId()}`,
+    validateWidget: widget => {
+      getWidgetDefinition(widget.type);
+      if (widget.dataFlowVariant) getWidgetDefinition(widget.dataFlowVariant);
+    },
+  });
+  recordHistorySnapshot();
+  if (replace) state.project.pages.splice(state.project.pages.indexOf(replace), 1, copy);
+  else state.project.pages.push(copy);
+  selectProjectPage(copy.id);
+}
+
+function pageTransferDialog(mode) {
+  const locale = document.documentElement.lang;
+  const tr = (de, en, fr) => locale === "fr" ? fr : locale === "en" ? en : de;
+  const dialog = document.createElement("dialog");
+  dialog.className = "studio-dialog page-transfer-dialog";
+  const heading = document.createElement("h2");
+  const source = document.createElement("textarea");
+  source.rows = 10;
+  source.spellcheck = false;
+  source.setAttribute("aria-label", "JSON");
+  const message = document.createElement("p");
+  message.setAttribute("role", "status");
+  const actions = document.createElement("div");
+  actions.className = "dialog-actions";
+  const button = (label, run) => {
+    const control = document.createElement("button");
+    control.type = "button";
+    control.textContent = label;
+    control.addEventListener("click", run);
+    actions.append(control);
+    return control;
+  };
+  dialog.append(heading, source, message);
+  if (mode === "export") {
+    const page = currentPage();
+    heading.textContent = tr("Seite exportieren", "Export page", "Exporter la page");
+    source.readOnly = true;
+    source.value = writePageTransfer(page);
+    button(tr("Datei herunterladen", "Download file", "Télécharger le fichier"), () => {
+      const url = URL.createObjectURL(new Blob([source.value], {type: "application/json"}));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = (page.name.replace(/[^\p{L}\p{N}_.-]+/gu, "-") || "studio-page") + ".studio-page.json";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    button(tr("Kopieren", "Copy", "Copier"), async () => {
+      try {
+        await navigator.clipboard.writeText(source.value);
+        message.textContent = tr("Kopiert", "Copied", "Copié");
+      } catch {
+        source.focus();
+        source.select();
+        message.textContent = tr("JSON markiert. Mit Strg+C oder Cmd+C kopieren.", "JSON selected. Press Ctrl+C or Cmd+C to copy.", "JSON sélectionné. Copiez avec Ctrl+C ou Cmd+C.");
+      }
+    });
+  } else {
+    heading.textContent = tr("Seite importieren", "Import page", "Importer une page");
+    source.placeholder = tr("Datei hier ablegen oder JSON einfügen", "Drop a file here or paste JSON", "Déposez un fichier ici ou collez le JSON");
+    const file = document.createElement("input");
+    file.type = "file";
+    file.accept = ".json,application/json";
+    file.setAttribute("aria-label", tr("Datei öffnen", "Open file", "Ouvrir un fichier"));
+    const pageList = document.createElement("select");
+    const name = document.createElement("input");
+    name.maxLength = 160;
+    const label = (text, input) => {
+      const node = document.createElement("label");
+      node.append(text, input);
+      return node;
+    };
+    const pageField = label(tr("Quellseite", "Source page", "Page source"), pageList);
+    const nameField = label(tr("Seitenname", "Page name", "Nom de la page"), name);
+    dialog.append(file, pageField, nameField);
+    let pages = [];
+    const propose = () => {
+      const page = pages[Number(pageList.value)];
+      name.value = page ? freePageName(page.name, state.project.pages) : "";
+    };
+    const parse = () => {
+      pages = [];
+      message.textContent = "";
+      try { if (source.value.trim()) pages = readPageTransfer(source.value); }
+      catch { message.textContent = tr("Ungültige Studio-Seite oder Projektdatei.", "Invalid Studio page or project file.", "Fichier de page ou de projet Studio invalide."); }
+      pageList.replaceChildren(...pages.map((page, index) => new Option(page.name, String(index))));
+      pageField.hidden = pages.length < 2;
+      nameField.hidden = !pages.length;
+      apply.disabled = !pages.length;
+      propose();
+    };
+    const loadFile = async selected => {
+      if (!selected) return;
+      if (selected.size > pageTransferLimit) {
+        message.textContent = tr("Datei zu groß.", "File is too large.", "Fichier trop volumineux.");
+        return;
+      }
+      try { source.value = await selected.text(); parse(); }
+      catch { message.textContent = tr("Datei konnte nicht gelesen werden.", "Could not read the file.", "Impossible de lire le fichier."); }
+    };
+    const apply = button(tr("Importieren", "Import", "Importer"), () => {
+      const page = pages[Number(pageList.value)];
+      const title = name.value.trim();
+      if (!page || !title) { name.focus(); return; }
+      const existing = state.project.pages.find(item => item.name.toLocaleLowerCase() === title.toLocaleLowerCase());
+      if (existing && !window.confirm(tr(`Seite „${existing.name}“ ersetzen?`, `Replace page “${existing.name}”?`, `Remplacer la page « ${existing.name} » ?`))) return;
+      try {
+        insertPageCopy(page, title, existing);
+      } catch {
+        message.textContent = tr("Seite konnte nicht importiert werden. Prüfe, ob die benötigten Widget-Pakete installiert sind.", "Could not import the page. Check that the required widget packages are installed.", "Impossible d’importer la page. Vérifiez que les packs de widgets requis sont installés.");
+        return;
+      }
+      dialog.close();
+    });
+    source.addEventListener("input", parse);
+    source.addEventListener("dragover", event => event.preventDefault());
+    source.addEventListener("drop", event => {
+      event.preventDefault();
+      void loadFile(event.dataTransfer?.files[0]);
+    });
+    file.addEventListener("change", () => { void loadFile(file.files[0]); });
+    pageList.addEventListener("change", propose);
+    parse();
+  }
+  button(tr("Schließen", "Close", "Fermer"), () => dialog.close());
+  dialog.append(actions);
+  document.body.append(dialog);
+  dialog.addEventListener("close", () => dialog.remove(), {once: true});
+  dialog.showModal();
 }
 
 function deletePage(page) {
@@ -5505,6 +5645,8 @@ $("#widget-layer-down").addEventListener("click", () => changeSelectedWidgetLaye
 $("#widget-export").addEventListener("click", exportSelectedWidget);
 $("#widget-import").addEventListener("click", () => $("#widget-import-file").click());
 $("#widget-import-file").addEventListener("change", (event) => { if (event.target.files[0]) void importWidgets(event.target.files[0]); });
+$("#page-export").addEventListener("click", () => pageTransferDialog("export"));
+$("#page-import").addEventListener("click", () => pageTransferDialog("import"));
 document.addEventListener("keydown", (event) => {
   const editing = [event.target, document.activeElement].some(element => element instanceof HTMLElement && (element.isContentEditable || element.closest("input, textarea, select, [role='textbox']")));
   if (runtimeMode || inlineRuntime.busy || event.defaultPrevented || editing || document.querySelector("dialog[open]")) return;

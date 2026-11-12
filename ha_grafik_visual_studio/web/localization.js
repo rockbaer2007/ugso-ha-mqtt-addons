@@ -648,6 +648,7 @@ Object.assign(ENGLISH, {
   "In Runtime sichtbar": "Visible in runtime", "In Runtime ausgeblendet": "Hidden in runtime",
   "Ausblenden": "Hide", "Einblenden": "Show", "Seitennamen bearbeiten": "Edit page name",
   "Name der Seite": "Page name", "Seite duplizieren": "Duplicate page", "Seite löschen": "Delete page",
+  "Seite exportieren": "Export page", "Seite importieren": "Import page",
   "Verwendete Filterschlüssel": "Filter keys used", "Die ausgewählten Widgets besitzen keinen aktivierten Filterschlüssel.": "The selected widgets have no active filter key.",
   "Widget-Filter aufgehoben": "Widget filter cleared", "Entitäten und Zustände werden von Home Assistant geladen …": "Loading entities and states from Home Assistant …",
   "Zustand": "State", "unbekannt": "unknown", "Ohne Gerät": "Without device",

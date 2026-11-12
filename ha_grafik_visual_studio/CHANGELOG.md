@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.300
+
+- Export and import individual pages beside the page tabs, including pages from Studio project files.
+- Preserve internal widget references when importing or duplicating a page.
+- Verified on .177 and .193 after full backups.
+
 ## 0.1.299
 
 - Add Recently used below the palette search: up to twelve unique widget types, newest insertion first, independent collapse state and browser-local persistence.

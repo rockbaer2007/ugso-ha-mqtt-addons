@@ -565,6 +565,16 @@ body.runtime-mode #inline-runtime-toggle{display:none}
 .stage-meta { min-height: 40px; display: flex; align-items: center; gap: 10px; padding: 4px 10px; color: var(--muted); border-bottom: 1px solid var(--line); font-size: 12px; }
 .editor-page-tabs { display:flex; flex:1 1 auto; min-width:0; gap:4px; overflow-x:auto; scrollbar-width:thin; }
 .editor-page-tabs[hidden] { display:none; }
+.page-transfer-actions { display:flex; flex:none; gap:4px; }
+.page-transfer-actions[hidden], .page-transfer-dialog label[hidden] { display:none; }
+.page-transfer-dialog { width:min(620px, 94vw); }
+.page-transfer-dialog textarea { width:100%; box-sizing:border-box; font-family:monospace; }
+.page-transfer-dialog label { display:grid; gap:4px; margin-block:8px; }
+@media (max-width: 1050px) {
+  .stage-meta { flex-wrap:wrap; }
+  .editor-page-tabs { flex-basis:calc(100% - 54px); }
+  .stage-meta-text { flex:1 1 0; }
+}
 .editor-page-tab { flex:none; max-width:220px; height:30px; padding:4px 12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:transparent; color:var(--muted); border-radius:5px 5px 0 0; }
 .editor-page-tab[aria-selected="true"] { color:var(--text); background:var(--panel); border-bottom:2px solid var(--accent); }
 .editor-page-tab.hidden-page { border-style:dashed; }
