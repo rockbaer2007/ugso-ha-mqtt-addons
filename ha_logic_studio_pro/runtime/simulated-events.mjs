@@ -35,6 +35,7 @@ export const simulatedEvents = String.raw`
     timeout: (name, delay, callback) => timer(name, delay, callback, false),
     interval: (name, delay, callback) => timer(name, delay, callback, true),
     cancelTimer: (name, repeat) => (repeat === undefined || timers.get(name)?.repeat === repeat) && timers.delete(name),
+    timerReference: (name, repeat) => timers.get(name)?.repeat === repeat ? name : null,
   });
   globalThis.ha = ha;
   globalThis.getState = ha.getState;

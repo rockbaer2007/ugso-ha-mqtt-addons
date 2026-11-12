@@ -131,6 +131,7 @@ try {
         fireEvent: (name, data = {}) => call('fireEvent', name, data),
         interval: (n,d,fn) => timer(n,d,fn,true),
         cancelTimer: (name, repeat) => (repeat === undefined || timers.get(name)?.repeat === repeat) && timers.delete(name),
+        timerReference: (name, repeat) => timers.get(name)?.repeat === repeat ? name : null,
         readState: entity => state(entity)?.state ?? 'unknown',
         stateSnapshot: entity => call('state', entity),
         readAttribute: (entity, name) => state(entity)?.attributes?.[name] ?? null,

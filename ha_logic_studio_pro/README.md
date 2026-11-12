@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.38
+# HA Logic Studio Pro 0.1.39
+
+**DE:** Die dynamischen Timeout- und Intervallblöcke übernehmen Millisekunden aus einem Zahlenblock oder einer Berechnung. „Verzögerung“ und „Intervall“ geben den Namen des gewählten aktiven Timers zurück, sonst `null`.
+
+**EN:** Dynamic timeout and interval blocks take milliseconds from a number block or a calculation. The Timeout and Interval reference blocks return the selected active timer’s name, or `null`.
+
+**FR :** Les blocs dynamiques acceptent une durée en millisecondes fournie par un bloc numérique ou un calcul. Les blocs Délai et Intervalle renvoient le nom du minuteur actif sélectionné, ou `null`.
 
 **DE:** Blocks JS bietet unter „Timeouts“ feste Dauerfelder in ms, s und min und getrennte Stoppblöcke mit Namensauswahl. Unter „Objekt“ lassen sich Eigenschaften über das Zahnrad ergänzen, setzen, entfernen, prüfen und auflisten.
 
