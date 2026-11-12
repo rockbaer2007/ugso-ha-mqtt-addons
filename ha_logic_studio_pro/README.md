@@ -1,4 +1,10 @@
-# HA Logic Studio Pro 0.1.40
+# HA Logic Studio Pro 0.1.41
+
+Die Schleifenpalette in Blocks JS folgt der ioBroker-Vorlage. „Zustand von Entität“ liest eine angeschlossene Entitäts-ID, etwa aus der Schleifenvariable einer Liste.
+
+The Blocks JS loop palette follows the ioBroker layout. The State of entity block reads a connected entity ID, for example from a list loop variable.
+
+La palette Boucles de Blocks JS suit la présentation d’ioBroker. Le bloc État de l’entité lit un identifiant connecté, par exemple celui fourni par une boucle sur une liste.
 
 Die Kategorie „Logik“ in Blocks JS folgt der Reihenfolge und Farbgebung von ioBroker. Dazu kommen drei HA-Prüfungen für Verfügbarkeit, Zustand und vorhandene Attribute.
 
