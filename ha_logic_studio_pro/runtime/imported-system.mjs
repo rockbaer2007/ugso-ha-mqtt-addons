@@ -1,5 +1,28 @@
 // Shared by the live and simulated QuickJS environments.
 export const importedSystem = `
+  const importedEventValue = (event, part) => {
+    const value = event?.[part]?.state;
+    return value === 'on' ? true : value === 'off' ? false : value ?? null;
+  };
+  function importedTriggerMatches(event, condition) {
+    if (!event.current) return false;
+    const current = importedEventValue(event, 'current');
+    const previous = importedEventValue(event, 'previous');
+    if (condition === 'any') return true;
+    if (condition === 'ne') return current !== previous;
+    if (condition === 'true' || condition === 'false') return current === (condition === 'true');
+    const number = value => typeof value === 'string' && value.trim() ? Number(value) : NaN;
+    const a = number(current);
+    const b = number(previous);
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+    switch (condition) {
+      case 'gt': return a > b;
+      case 'ge': return a >= b;
+      case 'lt': return a < b;
+      case 'le': return a <= b;
+      default: return false;
+    }
+  }
   const pendingImportedControls = new Map();
   function importedControl(entity, value, toggle, delay, clearRunning) {
     const domain = entity.split('.')[0];

@@ -1,4 +1,6 @@
-# HA Logic Studio Pro 0.1.50
+# HA Logic Studio Pro 0.1.51
+
+- Blocks JS übernimmt zusätzliche ioBroker-Zustandsbedingungen und JSON-Zeitpläne mit Uhrzeiten, Intervallen und Kalendertagen. ioBroker-IDs werden ausdrücklich HA-Entitäten zugeordnet.
 
 - **DE:** Der ioBroker-Systemimport erhält verbundene Schaltwerte, Verzögerungen und die Felder Wert, letzte Aktualisierung, letzte Änderung, Anzeigename und Einheit. Die ioBroker-ID bleibt sichtbar. Über das Feld HA-Entität wird das Ziel ausdrücklich ausgewählt.
 - **EN:** The ioBroker system import preserves connected control values, delays, and state value, last update, last change, display name and unit. The ioBroker ID stays visible. Select the target explicitly in the HA entity field.

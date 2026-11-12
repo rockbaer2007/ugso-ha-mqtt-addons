@@ -1,6 +1,6 @@
 import {getQuickJS, shouldInterruptAfterDeadline} from 'quickjs-emscripten';
 import {simulatedEvents} from './simulated-events.mjs';
-import {cronMatcher} from './live-schedule.mjs';
+import {importedNamedScheduleMatcher, scheduleMatcher} from './live-schedule.mjs';
 import {timeOperations} from './ha-time.mjs';
 
 const maxSource = 64_000;
@@ -54,7 +54,11 @@ export async function testRun(source, language = 'javascript', timeZone, start =
       try {
         const methods = {
           validateCron(source) {
-            cronMatcher(stringArg(source, 256));
+            importedNamedScheduleMatcher(stringArg(source, 4096));
+            return vm.undefined;
+          },
+          validateSchedule(source) {
+            scheduleMatcher(JSON.parse(stringArg(source, 8192)));
             return vm.undefined;
           },
           stateSnapshot(entity) {

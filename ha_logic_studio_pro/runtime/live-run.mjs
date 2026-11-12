@@ -1,6 +1,6 @@
 import {getQuickJS, shouldInterruptAfterDeadline} from 'quickjs-emscripten';
 import {connectHomeAssistant} from './ha-connection.mjs';
-import {cronMatcher, dateTimeSchedule, scheduleClock, scheduleMatcher, sunSchedule} from './live-schedule.mjs';
+import {importedNamedScheduleMatcher, dateTimeSchedule, scheduleClock, scheduleMatcher, sunSchedule} from './live-schedule.mjs';
 import {guestTimeApi, sunTimeAttributes, timeOperations} from './ha-time.mjs';
 import {importedSystem} from './imported-system.mjs';
 
@@ -90,13 +90,13 @@ try {
     if (operation === 'schedule') {
       if (scheduled.size >= 32) throw new Error('Maximal 32 Zeitpläne pro Skript.');
       const matches = scheduleMatcher(args[1]);
-      scheduled.set(args[0], (_now, _previous, local) => matches(local));
+      scheduled.set(args[0], (_now, _previous, local, date) => matches(local, date));
       return vm.undefined;
     }
     if (operation === 'namedSchedule') {
       const [name, cron] = args;
       if (!scheduled.has(name) && scheduled.size >= 32) throw new Error('Maximal 32 Zeitpläne pro Skript.');
-      const matches = cronMatcher(cron);
+      const matches = importedNamedScheduleMatcher(cron);
       scheduled.set(name, (_now, _previous, local, date) => matches(local, date));
       return vm.undefined;
     }
@@ -164,7 +164,7 @@ try {
       const timeRequest = (op, args) => JSON.parse(call('time', op, args));
       const astroTimeRequest = (event, offset) => Number(call('astroTime', event, offset));
       ${importedSystem}
-      const ha = Object.freeze({${guestTimeApi} importedControl, importedStateValue, log, timeout: (n,d,fn) => timer(n,d,fn,false),
+      const ha = Object.freeze({${guestTimeApi} importedControl, importedStateValue, importedEventValue, log, timeout: (n,d,fn) => timer(n,d,fn,false),
         pause: delay => new Promise(resolve => timer(Symbol(), delay, resolve, false)),
         publishMqtt: (topic, message, retain = false) => call('publishMqtt', topic, message, retain),
         notify: (entity, message, title = '') => call('notify', entity, message, title),
@@ -186,6 +186,7 @@ try {
         setNumber: (entity, value) => callAction('input_number.set_value', entity, {value}),
         setText: (entity, value) => callAction('input_text.set_value', entity, {value}), callAction,
         onState: (entity, callback) => register('state', entity, null, callback),
+        onImportedState: (entity, condition, callback) => register('importedState', entity, condition, callback),
         onAttribute: (entity, key, callback) => register('attribute', entity, key, callback),
         onEvent: (name, callback) => register('event', name, null, callback),
         schedule: (pattern, callback) => register('schedule', pattern, null, callback),
@@ -223,6 +224,7 @@ try {
           if (type === 'event' && event.type === 'event' && target === event.name) invoke(callback, event.data);
           if (event.type !== 'state' || target !== event.entity) continue;
           if (type === 'state' && event.previous?.state !== event.current?.state) invoke(callback, event);
+          if (type === 'importedState' && importedTriggerMatches(event, attribute)) invoke(callback, event);
           if (type === 'attribute' && JSON.stringify(event.previous?.attributes?.[attribute]) !==
               JSON.stringify(event.current?.attributes?.[attribute])) invoke(callback, event);
         }

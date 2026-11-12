@@ -1,3 +1,4 @@
+import {ioBrokerScheduleMatcher} from './iobroker-schedule.mjs';
 const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const clock = /^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$/;
 
@@ -35,6 +36,7 @@ export function cronMatcher(source) {
 }
 
 export function scheduleMatcher(schedule) {
+  if (schedule?.trigger === 'iobroker') return ioBrokerScheduleMatcher(schedule.schedule);
   if (schedule?.trigger === 'time_pattern') {
     const matchers = ['hours', 'minutes', 'seconds'].map((key, index) => {
       const max = index === 0 ? 23 : 59;
@@ -60,6 +62,11 @@ export function scheduleMatcher(schedule) {
     return time => times.has(time.clock) && weekday.includes(time.weekday);
   }
   throw new Error('Zeitplan unterstützt time und time_pattern.');
+}
+
+export function importedNamedScheduleMatcher(source) {
+  return typeof source === 'string' && source.trim().startsWith('{')
+    ? ioBrokerScheduleMatcher(JSON.parse(source)) : cronMatcher(source);
 }
 
 export function scheduleClock(timeZone) {

@@ -36,7 +36,7 @@ export const simulatedEvents = String.raw`
   ${importedSystem}
   const ha = Object.freeze({
     ...api,
-    importedControl, importedStateValue,
+    importedControl, importedStateValue, importedEventValue,
     ${guestTimeApi}
     publishMqtt: (topic, message, retain = false) => report(JSON.stringify({type: 'mqtt', topic, message, retain})),
     notify: (entity, message, title = '') => report(JSON.stringify({type: 'notify', entity, message, title})),
@@ -45,9 +45,14 @@ export const simulatedEvents = String.raw`
       return data === undefined ? api.callAction(action, entity) : api.callAction(action, entity, JSON.stringify(data));
     },
     onState: (entity, callback) => register('state', entity, null, callback),
+    onImportedState: (entity, condition, callback) => register('importedState', entity, condition, callback),
     onAttribute: (entity, attribute, callback) => register('attribute', entity, attribute, callback),
     onEvent: (event, callback) => register('event', event, null, callback),
-    schedule: (schedule, callback) => register('schedule', JSON.stringify(schedule), null, callback),
+    schedule(schedule, callback) {
+      const source = JSON.stringify(schedule);
+      api.validateSchedule(source);
+      register('schedule', source, null, callback);
+    },
     namedSchedule(name, cron, callback) {
       if (typeof name !== 'string' || !name.trim() || name.length > 128 || typeof callback !== 'function' ||
           (!namedSchedules.has(name) && namedSchedules.size >= 32)) throw new Error('Ungültiger benannter Zeitplan.');
@@ -78,6 +83,12 @@ export const simulatedEvents = String.raw`
     report(JSON.stringify({type: 'simulated-event', event: type, target, attribute}));
     if (type === 'state') {
       invoke(callback, {type: 'state', entity: target, previous: {state: 'off'}, current: {state: 'on'}});
+    } else if (type === 'importedState') {
+      const samples = [['off', 'on'], ['on', 'off'], ['on', 'on'], ['20', '21'], ['21', '20'], ['21', '21']];
+      for (const [previous, current] of samples) {
+        const event = {type: 'state', entity: target, previous: {state: previous}, current: {state: current}};
+        if (importedTriggerMatches(event, attribute)) invoke(callback, event);
+      }
     } else if (type === 'attribute') {
       invoke(callback, {type: 'state', entity: target, previous: {attributes: {[attribute]: 0}},
         current: {attributes: {[attribute]: 1}}});
