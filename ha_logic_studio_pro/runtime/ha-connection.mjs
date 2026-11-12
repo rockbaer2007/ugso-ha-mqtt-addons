@@ -6,6 +6,7 @@ const actions = new Map([
   ...switches.map(domain => [domain, ['turn_on', 'turn_off', 'toggle']]),
   ['input_number', ['set_value']], ['input_text', ['set_value']],
   ['input_select', ['select_option']], ['button', ['press']], ['input_button', ['press']],
+  ['script', ['turn_on', 'turn_off']],
 ]);
 
 export function actionCommand(action, entity, data, writable) {

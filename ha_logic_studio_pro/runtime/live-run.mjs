@@ -107,6 +107,7 @@ try {
       const ha = Object.freeze({log, timeout: (n,d,fn) => timer(n,d,fn,false),
         interval: (n,d,fn) => timer(n,d,fn,true), cancelTimer: n => timers.delete(n),
         readState: entity => state(entity)?.state ?? 'unknown',
+        stateSnapshot: entity => call('state', entity),
         readAttribute: (entity, name) => state(entity)?.attributes?.[name] ?? null,
         getState: entity => {
           const value = state(entity)?.state;

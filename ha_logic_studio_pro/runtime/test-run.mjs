@@ -49,6 +49,12 @@ export async function testRun(source, language = 'javascript') {
       const api = vm.newObject();
       try {
         const methods = {
+          stateSnapshot(entity) {
+            const target = identifier(entity);
+            const snapshot = Object.hasOwn(states, target)
+              ? {state: states[target], attributes: attributes[target] ?? {}} : null;
+            return vm.newString(JSON.stringify(snapshot));
+          },
           readState(entity) {
             const target = identifier(entity);
             const state = states[target] ?? 'unknown';
