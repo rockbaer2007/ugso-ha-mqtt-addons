@@ -52,7 +52,7 @@ function projectMessage(text) {
   $('project-message').hidden = !text;
 }
 
-const editable = ['name', 'source', 'workspace', 'fields', 'graph'];
+const editable = ['name', 'source', 'workspace', 'fields', 'graph', 'autostart'];
 function snapshot(project) {
   return structuredClone(Object.fromEntries(editable.map(key => [key, project[key]])));
 }
@@ -372,7 +372,7 @@ $('protocol-download').onclick = event => {
 
 function add(project) {
   const id = String(++nextId);
-  projects.set(id, {...project, protocol: []});
+  projects.set(id, {...project, autostart: false, protocol: []});
   unsavedProjects.add(id);
   show(id);
 }
@@ -745,10 +745,49 @@ function importEditorData(project, parse) {
       if (!file || projects.get(active) !== project) return;
       if (file.size > 1_000_000) throw new Error('Datei zu groß.');
       const data = await parse(await file.text(), file.name);
-      if (projects.get(active) === project) add(data);
+      if (projects.get(active) === project && data) add(data);
     } catch (error) { recordProtocol(project, error.message, true); }
   };
   input.click();
+}
+
+function reviewIoBrokerImport(name, workspace) {
+  const missing = new Map();
+  const sources = new Set();
+  function inspect(block) {
+    if (!block) return;
+    const metadata = block.extraState;
+    if (block.type === 'iob_placeholder') {
+      const type = metadata?.type ?? '?';
+      missing.set(type, (missing.get(type) ?? 0) + 1);
+    }
+    for (const source of [metadata?.source, ...(metadata?.sources ?? [])]) {
+      if (typeof source === 'string' && source) sources.add(source);
+    }
+    for (const input of Object.values(block.inputs ?? {})) inspect(input.block ?? input.shadow);
+    inspect(block.next?.block);
+  }
+  workspace.blocks.blocks.forEach(inspect);
+  const content = element('div');
+  function section(title, entries, empty) {
+    content.append(element('h3', title));
+    if (!entries.length) {
+      content.append(element('p', empty));
+      return;
+    }
+    const list = element('ul');
+    entries.forEach(entry => list.append(element('li', entry)));
+    content.append(list);
+  }
+  section('Nicht unterstützte Blöcke', [...missing].sort().map(([type, count]) => type + ' × ' + count),
+    'Keine nicht unterstützten Blöcke gefunden.');
+  section('ioBroker-IDs zur Zuordnung', [...sources].sort(), 'Keine festen ioBroker-IDs zur Zuordnung gefunden.');
+  content.append(element('p', 'Ersetze Platzhalter und ordne die ioBroker-IDs in den Blöcken zu. Prüfe anschließend den erzeugten JavaScript-Code.'));
+  content.append(button('Als Projekt öffnen', () => {
+    dialog.close();
+    add({type: 'blocks-js', name, workspace});
+  }));
+  const dialog = editorDialog('ioBroker-Import prüfen', content);
 }
 const filterControls = element('div');
 filterControls.className = 'project-filter-controls';
@@ -1184,6 +1223,19 @@ function toolbar(panel, project) {
   };
   row.append(name);
   const id = active;
+  if (['javascript', 'typescript', 'flow'].includes(project.type)) {
+    const label = element('label');
+    label.className = 'editor-autostart';
+    const toggle = element('input');
+    toggle.type = 'checkbox';
+    toggle.checked = project.autostart === true;
+    toggle.onchange = () => {
+      project.autostart = toggle.checked;
+      refreshRuntimeControls(id);
+    };
+    label.append(toggle, element('span', 'Beim Start der App ausführen'));
+    row.append(label);
+  }
   const save = button('Speichern', () => commitEditor(id));
   const cancel = button('Abbrechen', () => {
     if (unsavedProjects.has(id)) {
@@ -1588,7 +1640,8 @@ async function renderBlocks(panel, project, id) {
       const name = filename.replace(/\.[^.]+$/, '');
       if (!filename.toLowerCase().endsWith('.json')) {
         if (!isJavaScript) throw new Error('Für Blocks A eine exportierte JSON-Datei auswählen.');
-        return {type: project.type, name, workspace: importIoBroker(text)};
+        reviewIoBrokerImport(name, importIoBroker(text));
+        return;
       }
       const data = JSON.parse(text);
       if (data?.type !== project.type) throw new Error('Die Datei gehört zu einem anderen Blockly-Editor.');

@@ -1,4 +1,6 @@
-# HA Logic Studio Pro 0.1.63
+# HA Logic Studio Pro 0.1.65
+
+JavaScript, TypeScript und Funktionspläne können nach dem Speichern beim Start der HA-App automatisch ausgeführt werden. Ein manueller Stopp beendet die aktuelle Ausführung. Die gespeicherte Auswahl gilt für den nächsten App-Start. Die Werkzeugleiste zeigt den aktuellen Laufstatus separat an.
 
 **Interner Teststand:** Der laufende Funktionsplan zeigt Ein- und Ausgangswerte direkt an den Anschlüssen und den Zeitpunkt der letzten Auswertung pro Baustein.
 

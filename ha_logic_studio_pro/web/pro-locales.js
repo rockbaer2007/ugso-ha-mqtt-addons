@@ -1,6 +1,17 @@
 import {messages as flowMessages} from './locales.js';
 
 const messages = {
+  'Beim Start der App ausführen': ['Run when the app starts', 'Exécuter au démarrage de l’application'],
+  'ioBroker-Import prüfen': ['Review ioBroker import', 'Vérifier l’import ioBroker'],
+  'Nicht unterstützte Blöcke': ['Unsupported blocks', 'Blocs non pris en charge'],
+  'Keine nicht unterstützten Blöcke gefunden.': ['No unsupported blocks found.', 'Aucun bloc non pris en charge.'],
+  'ioBroker-IDs zur Zuordnung': ['ioBroker IDs to map', 'Identifiants ioBroker à associer'],
+  'Keine festen ioBroker-IDs zur Zuordnung gefunden.': ['No fixed ioBroker IDs to map.', 'Aucun identifiant ioBroker fixe à associer.'],
+  'Ersetze Platzhalter und ordne die ioBroker-IDs in den Blöcken zu. Prüfe anschließend den erzeugten JavaScript-Code.': [
+    'Replace placeholders and map the ioBroker IDs in the blocks. Then check the generated JavaScript.',
+    'Remplacez les blocs de substitution et associez les identifiants ioBroker dans les blocs. Vérifiez ensuite le JavaScript généré.',
+  ],
+  'Als Projekt öffnen': ['Open as project', 'Ouvrir comme projet'],
   'Zustand lesen': ['Read state', 'Lire un état'],
   'Auf Zustandswechsel reagieren': ['React to a state change', 'Réagir à un changement d’état'],
   'HA-Aktion mit Parametern': ['HA action with parameters', 'Action HA avec paramètres'],

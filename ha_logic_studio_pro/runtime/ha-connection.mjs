@@ -206,7 +206,15 @@ export async function connectHomeAssistant(config, dispatch, fail, Socket = WebS
       return;
     }
   }
-  current = await open();
+  for (let attempt = 0; ; attempt++) {
+    try {
+      current = await open();
+      break;
+    } catch (error) {
+      if (!config.startupRetry || attempt >= 9) throw error;
+      await new Promise(resolve => setTimeout(resolve, Math.min(1000 * 2 ** attempt, 15000)));
+    }
+  }
   return {
     timezone: current.timezone,
     connected: () => Boolean(current?.connected()),

@@ -17,7 +17,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
 
-VERSION = '0.1.64'
+VERSION = '0.1.65'
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 1_000_000
 TEST_RUN_SLOTS = threading.BoundedSemaphore(2)
@@ -113,6 +113,20 @@ class ProjectStore(Store):
     prefix = 'pro-projects'
     empty = {'revision': 0, 'tree': None}
 
+    def autostart_projects(self):
+        for path in sorted(self.root.glob('pro-projects-*.json')):
+            try:
+                saved = json.loads(path.read_text(encoding='utf-8'))
+                owner = saved.get('owner')
+                if not isinstance(owner, str) or self.path(owner) != path:
+                    continue
+                entries = (saved.get('tree') or {}).get('projects', [])
+                for project_id, project in entries:
+                    if project.get('autostart') is True:
+                        yield owner, project_id, project
+            except (OSError, ValueError, TypeError, AttributeError):
+                print('Ein Projektbaum konnte für den Autostart nicht gelesen werden.', flush=True)
+
     def write(self, user, payload):
         if not isinstance(payload, dict) or type(payload.get('revision')) is not int:
             raise ValueError('Revision fehlt.')
@@ -137,13 +151,39 @@ class ProjectStore(Store):
                 elif not re.fullmatch(r'[0-9]{1,15}', entry_id) or not isinstance(value, dict) or not isinstance(value.get('name'), str) or value.get('type') not in (
                         'yaml', 'rules', 'blocks', 'blocks-js', 'flow', 'javascript', 'typescript'):
                     raise ValueError('Ungültiges Projekt.')
-        return self.commit(user, payload['revision'], {'tree': tree})
+                if key == 'projects' and (type(value.get('autostart', False)) is not bool or
+                        (value.get('autostart') and value['type'] not in ('javascript', 'typescript', 'flow'))):
+                    raise ValueError('Ungültige Autostart-Einstellung.')
+        return self.commit(user, payload['revision'], {'tree': tree, 'owner': user})
+
+
+def runtime_source(project, blocks_source=None):
+    kind = project.get('type')
+    if kind not in ('javascript', 'typescript', 'blocks-js', 'flow'):
+        raise ValueError('Projekttyp kann nicht in der Runtime gestartet werden.')
+    if kind == 'flow':
+        graph = project.get('graph')
+        source = json.dumps(graph, ensure_ascii=False) if isinstance(graph, dict) else None
+    else:
+        source = blocks_source if kind == 'blocks-js' else project.get('source')
+    if not isinstance(source, str) or not source.strip() or len(source.encode('utf-8')) > 64_000:
+        raise ValueError('Quelltext fehlt oder überschreitet 64 KB.')
+    return source, kind if kind in ('typescript', 'flow') else 'javascript'
 
 
 class ScriptRuntime:
     def __init__(self):
         self.lock = threading.Lock()
         self.jobs = {}
+
+    def startup_error(self, user, project_id, error):
+        with self.lock:
+            if len(self.jobs) >= 64:
+                print('Weitere Autostart-Fehler: ' + str(error), flush=True)
+                return
+            self.jobs[(user, project_id)] = {'process': None, 'state': 'error', 'messages': deque([{
+                'text': str(error), 'error': True, 'time': datetime.now(timezone.utc).isoformat(),
+            }], maxlen=100)}
 
     def status(self, user, read_projects):
         with self.lock:
@@ -162,7 +202,7 @@ class ScriptRuntime:
         key = (user, project_id)
         with self.lock:
             previous = self.jobs.get(key)
-            if previous and previous['process'].poll() is None:
+            if previous and previous['process'] and previous['process'].poll() is None:
                 if command == 'start':
                     raise ValueError('Skript läuft bereits.')
                 previous['state'] = 'stopped'
@@ -170,10 +210,10 @@ class ScriptRuntime:
                 previous['process'].wait(timeout=2)
             if command == 'stop':
                 return
-            if sum(job['process'].poll() is None for job in self.jobs.values()) >= 4:
+            if sum(job['process'] is not None and job['process'].poll() is None for job in self.jobs.values()) >= 4:
                 raise ValueError('Maximal vier laufende Skripte.')
             if key not in self.jobs and len(self.jobs) >= 64:
-                expired = next((k for k, j in self.jobs.items() if j['process'].poll() is not None), None)
+                expired = next((k for k, j in self.jobs.items() if j['process'] is None or j['process'].poll() is not None), None)
                 if expired is not None:
                     del self.jobs[expired]
             env = {key: value for key, value in os.environ.items()
@@ -218,7 +258,7 @@ class ScriptRuntime:
     def close(self):
         with self.lock:
             for job in self.jobs.values():
-                if job['process'].poll() is None:
+                if job['process'] and job['process'].poll() is None:
                     job['process'].terminate()
 
 
@@ -259,6 +299,17 @@ class LogicServer(ThreadingHTTPServer):
     def server_close(self):
         self.runtime.close()
         super().server_close()
+
+    def start_configured_projects(self):
+        if not self.supervisor:
+            return
+        for user, project_id, project in self.projects.autostart_projects():
+            try:
+                source, language = runtime_source(project)
+                options = self.live_runtime_config()
+                self.runtime.control(user, project_id, 'start', source, language, {**options, 'startupRetry': True})
+            except (ValueError, OSError, subprocess.SubprocessError) as error:
+                self.runtime.startup_error(user, project_id, error)
 
     def entity_states(self):
         if self.demo:
@@ -464,16 +515,8 @@ class Handler(SimpleHTTPRequestHandler):
                 if payload.get('revision') != saved['revision']:
                     raise ValueError('Projektstand neu laden.')
                 project = dict((saved['tree'] or {}).get('projects', [])).get(project_id, {})
-                kind = project.get('type')
-                if kind not in ('javascript', 'typescript', 'blocks-js', 'flow'):
-                    raise ValueError('Projekttyp kann nicht in der Runtime gestartet werden.')
-                source = (json.dumps(project['graph']) if kind == 'flow' and isinstance(project.get('graph'), dict)
-                          else payload.get('source') if kind == 'blocks-js' else project.get('source'))
-                if not isinstance(source, str) or not source.strip() or len(source.encode('utf-8')) > 64_000:
-                    raise ValueError('Quelltext fehlt oder überschreitet 64 KB.')
-                self.server.runtime.control(user, project_id, command, source,
-                                            kind if kind in ('typescript', 'flow') else 'javascript',
-                                            self.server.live_runtime_config())
+                source, language = runtime_source(project, payload.get('source'))
+                self.server.runtime.control(user, project_id, command, source, language, self.server.live_runtime_config())
             self.reply(200, self.server.runtime.status(user, lambda: self.server.projects.read(user)))
         except (ValueError, UnicodeError) as error:
             self.reply(400, {'error': str(error)})
@@ -569,6 +612,7 @@ def main():
         if not args.no_browser and not args.ha_app:
             webbrowser.open(f'http://127.0.0.1:{args.port}/')
         try:
+            server.start_configured_projects()
             server.serve_forever()
         except KeyboardInterrupt:
             pass
