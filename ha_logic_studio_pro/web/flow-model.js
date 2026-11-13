@@ -27,3 +27,20 @@ export function boundedPosition(position) {
   if (!Number.isFinite(position.x) || !Number.isFinite(position.y)) throw Error('Ungültige Bausteinposition.');
   return {x: Math.max(10, Math.min(12000, position.x)), y: Math.max(10, Math.min(60000, position.y))};
 }
+export function arrangeBlocks(blocks, links) {
+  const columns = new Map();
+  const occupied = blocks.filter(block => block.pinned);
+  for (const block of blocks) {
+    const parents = links.filter(link => link.to[0] === block.id);
+    const column = Math.min(48, Math.max(0, ...parents.map(link => (columns.get(link.from[0]) ?? -1) + 1)));
+    columns.set(block.id, column);
+    if (block.pinned) continue;
+    block.x = 40 + column * 240;
+    block.y = 40;
+    while (occupied.some(other => Math.abs(other.x - block.x) < 230 && Math.abs(other.y - block.y) < 280)) {
+      block.y += 280;
+    }
+    if (block.y > 60000) throw new Error('Zu viele Bausteine in einer Spalte.');
+    occupied.push(block);
+  }
+}

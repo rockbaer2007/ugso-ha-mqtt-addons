@@ -7,7 +7,7 @@ import {flowTypes,flowPins} from './flow-catalog.js?v=0.1.12';
 import {connectExport} from './export-ui.js?v=0.1.12';
 import {connectionCandidate} from './connections.js?v=0.1.12';
 import {mountFlow} from './vendor/flow-editor.js?v=0.1.12';
-import {boundedPosition} from './flow-model.js?v=0.1.12';
+import {boundedPosition,arrangeBlocks} from './flow-model.js?v=0.1.65';
 import {connectLanguage,translate,locales} from './i18n.js?v=0.1.12';
 const $=s=>document.querySelector(s),KEY='ha-logic-studio-pro-flow-v1',PREF='ha-logic-studio-pro-preferences-v1';
 const defaultPlanName = emptyPlan().name;
@@ -73,6 +73,14 @@ function renderNodes(){
  const incoming = new Map(plan.links.map(link => [JSON.stringify(link.to), link.from]));
  const nodes = plan.blocks.map(b => {
   const element = createNodeElement(b);
+  if (embeddedInPro) {
+   const pin = el('button','nodrag nopan',b.pinned ? '◆' : '◇');
+   pin.title = b.pinned ? 'Baustein lösen' : 'Baustein anheften';
+   pin.setAttribute('aria-label', pin.title);
+   pin.setAttribute('aria-pressed', String(Boolean(b.pinned)));
+   pin.onclick = () => change(() => b.pinned = !b.pinned);
+   element.querySelector('header').append(pin);
+  }
   if (embeddedInPro) {
    liveNodes.set(b.id, element);
    for (const pin of element.querySelectorAll('.pin')) {
@@ -153,6 +161,15 @@ connectImport({apply:next=>{backup();change(()=>{plan=loadPlan(next,byType);sele
 import {arrangeToolbar} from './toolbar.js?v=0.1.12';
 arrangeToolbar();
 document.documentElement.toggleAttribute('data-embedded-pro', embeddedInPro);
+if (embeddedInPro) {
+  document.addEventListener('pro-fbd-arrange', () => {
+    const next = structuredClone(plan);
+    try {
+      arrangeBlocks(analyze(next, byType, false).order, next.links);
+      change(() => plan = next);
+    } catch (error) { status(error.message); }
+  });
+}
 if (embeddedInPro) {
   document.addEventListener('pro-fbd-read', event => event.detail({plan: structuredClone(plan)}));
   const liveIssue = el('div', 'fbd-live-issue');

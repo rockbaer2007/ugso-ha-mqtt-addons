@@ -1076,6 +1076,8 @@ function show(id, refresh = false) {
     toolIcon(simulation, 'test', '▶ Simulation', () => childClick('simulate'));
     toolIcon(simulation, 'step', 'Simulation +1 s', () => childClick('simulation-advance'));
     toolIcon(simulation, 'restart', 'Simulation zurücksetzen', () => childClick('simulation-reset'));
+    right.append(button('Automatisch anordnen', () =>
+      flowFrame?.contentDocument?.dispatchEvent(new Event('pro-fbd-arrange'))));
     toolIcon(right, 'sun', 'Astronomische Ereignisse', () => showSun(project));
     right.append(button('FBD → JS', () => {
       flowFrame?.contentDocument?.dispatchEvent(new CustomEvent('pro-export-js', {detail: {

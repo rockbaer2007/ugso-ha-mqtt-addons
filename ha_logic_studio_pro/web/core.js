@@ -9,6 +9,9 @@ export function loadPlan(data,defs){
  if(!data||data.format!=='ugso.logic/1'||!Array.isArray(data.blocks)||data.blocks.length>200||!Array.isArray(data.links)||data.links.length>500)throw Error('Ungültiges Projektformat oder Größenlimit überschritten.');
  const p=emptyPlan();p.name=String(data.name||p.name).slice(0,100);p.target=targets.includes(data.target)?data.target:'automation';if(data.exportOptions){const o=exportOptions({...p,exportOptions:data.exportOptions});p.exportOptions={...o};}const ids=new Set();
  for(const b of data.blocks){if(!b||!/^b[a-zA-Z0-9_]+$/.test(b.id)||ids.has(b.id)||!defs.has(b.type))throw Error('Unbekannter Baustein oder doppelte ID.');ids.add(b.id);const params={};for(const [k,v]of Object.entries(b.params||{})){if(!safeKey(k)||!['string','number','boolean'].includes(typeof v)||(typeof v==='number'&&!Number.isFinite(v))||String(v).length>20000)throw Error('Ungültiger Parameter.');params[k]=v;}p.blocks.push({id:b.id,type:b.type,name:String(b.name||b.type).slice(0,100),comment:String(b.comment||'').slice(0,2000),x:Math.max(10,Math.min(12000,Number(b.x)||10)),y:Math.max(10,Math.min(60000,Number(b.y)||10)),params});}
+ for (const [index, block] of data.blocks.entries()) {
+  if (block.pinned === true) p.blocks[index].pinned = true;
+ }
  for(const l of data.links){if(!l||!Array.isArray(l.from)||!Array.isArray(l.to)||l.from.length!==2||l.to.length!==2||![...l.from,...l.to].every(x=>typeof x==='string'))throw Error('Ungültige Verbindung.');p.links.push({from:[...l.from],to:[...l.to]});}const errors=analyze(p,defs,false).errors;if(errors.length)throw Error(errors.join('\n'));return p;
 }
 export function analyze(p,defs,forExport=true){
