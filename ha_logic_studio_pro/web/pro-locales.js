@@ -1,6 +1,22 @@
 import {messages as flowMessages} from './locales.js';
 
 const messages = {
+  'Nötige Codeanpassungen': ['Required code changes', 'Adaptations du code requises'],
+  'Shell-Befehl durch eine konfigurierte HA-Aktion ersetzen.': [
+    'Replace the shell command with a configured HA action.', 'Remplacez la commande shell par une action HA configurée.',
+  ],
+  'HTTP-Aufruf als HA-REST-Befehl konfigurieren und Antwortverarbeitung prüfen.': [
+    'Configure the HTTP call as an HA REST command and check response handling.',
+    'Configurez l’appel HTTP comme commande REST dans HA et vérifiez le traitement de la réponse.',
+  ],
+  'HA-Zustand im Block „Zustand lesen“ abfragen und den bisherigen Callback als Folgeblöcke einfügen.': [
+    'Read the HA state with the Read state block and move the callback body into the following blocks.',
+    'Lisez l’état HA avec le bloc Lire un état et déplacez le contenu du callback dans les blocs suivants.',
+  ],
+  'Platzhalter durch einen passenden Blocks-JS-Block ersetzen und Anschlüsse prüfen.': [
+    'Replace the placeholder with a suitable Blocks JS block and check its connections.',
+    'Remplacez le bloc de substitution par un bloc Blocks JS adapté et vérifiez ses connexions.',
+  ],
   'Zähler und Merker speichern': ['Retain counters and latches', 'Mémoriser les compteurs et les bascules'],
   'Berechnete ioBroker-IDs': ['Computed ioBroker IDs', 'Identifiants ioBroker calculés'],
   'Betroffene Blöcke': ['Affected blocks', 'Blocs concernés'],

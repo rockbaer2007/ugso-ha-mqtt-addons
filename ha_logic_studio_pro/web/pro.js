@@ -752,6 +752,12 @@ function importEditorData(project, parse) {
 }
 
 function reviewIoBrokerImport(name, workspace) {
+  const replacements = new Map([
+    ['exec', 'Shell-Befehl durch eine konfigurierte HA-Aktion ersetzen.'],
+    ['http_get', 'HTTP-Aufruf als HA-REST-Befehl konfigurieren und Antwortverarbeitung prüfen.'],
+    ['http_post', 'HTTP-Aufruf als HA-REST-Befehl konfigurieren und Antwortverarbeitung prüfen.'],
+    ['get_value_async', 'HA-Zustand im Block „Zustand lesen“ abfragen und den bisherigen Callback als Folgeblöcke einfügen.'],
+  ]);
   const missing = new Map();
   const sources = new Set();
   let dynamicIds = 0;
@@ -783,6 +789,10 @@ function reviewIoBrokerImport(name, workspace) {
   }
   section('Nicht unterstützte Blöcke', [...missing].sort().map(([type, count]) => type + ' × ' + count),
     'Keine nicht unterstützten Blöcke gefunden.');
+  if (missing.size) {
+    section('Nötige Codeanpassungen', [...missing.keys()].sort().map(type =>
+      type + ' — ' + translatePro(replacements.get(type) ?? 'Platzhalter durch einen passenden Blocks-JS-Block ersetzen und Anschlüsse prüfen.', locale)));
+  }
   section('ioBroker-IDs zur Zuordnung', [...sources].sort(), 'Keine festen ioBroker-IDs zur Zuordnung gefunden.');
   if (dynamicIds) {
     content.append(element('h3', 'Berechnete ioBroker-IDs'),
