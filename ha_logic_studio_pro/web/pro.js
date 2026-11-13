@@ -1314,21 +1314,16 @@ function sourceArea(panel, project, label, onEdit) {
 }
 
 function download(filename, content) {
-  document.getElementById('yaml-download-form')?.remove();
-  const form = element('form');
-  form.id = 'yaml-download-form';
-  form.method = 'post';
-  form.action = './api/pro-export-yaml';
-  form.hidden = true;
-  for (const [name, value] of Object.entries({filename, source: content})) {
-    const input = element('input');
-    input.type = 'hidden';
-    input.name = name;
-    input.value = value;
-    form.append(input);
-  }
-  document.body.append(form);
-  form.submit();
+  const type = filename.endsWith('.json') ? 'application/json' : 'application/yaml';
+  const url = URL.createObjectURL(new Blob([content], {type: type + ';charset=utf-8'}));
+  const link = element('a');
+  link.href = url;
+  link.download = filename;
+  link.hidden = true;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
 function renderYaml(panel, project) {
