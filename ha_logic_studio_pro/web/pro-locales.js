@@ -1,6 +1,13 @@
 import {messages as flowMessages} from './locales.js';
 
 const messages = {
+  'Zähler und Merker speichern': ['Retain counters and latches', 'Mémoriser les compteurs et les bascules'],
+  'Berechnete ioBroker-IDs': ['Computed ioBroker IDs', 'Identifiants ioBroker calculés'],
+  'Betroffene Blöcke': ['Affected blocks', 'Blocs concernés'],
+  'Hinterlege im Feld ID-Zuordnung (JSON) für jede mögliche ioBroker-ID die passende HA-Entität.': [
+    'In the ID mapping (JSON) field, map each possible ioBroker ID to its Home Assistant entity.',
+    'Dans le champ de correspondance des identifiants (JSON), associez chaque identifiant ioBroker possible à son entité Home Assistant.',
+  ],
   'Einzelschritt': ['Single step', 'Pas à pas'],
   'Automatisch anordnen': ['Arrange automatically', 'Organiser automatiquement'],
   'Beim Start der App ausführen': ['Run when the app starts', 'Exécuter au démarrage de l’application'],

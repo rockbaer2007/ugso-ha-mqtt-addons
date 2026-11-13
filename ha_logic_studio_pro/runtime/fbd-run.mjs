@@ -1,4 +1,5 @@
 import {readFileSync} from 'node:fs';
+import {retainedMemory} from './fbd-memory.mjs';
 import {adapt} from '../web/catalog.js';
 import {analyze, loadPlan, scan} from '../web/core.js';
 import {outputAction, outputMode, validateOutput} from '../web/output.js';
@@ -14,7 +15,7 @@ const fail = error => {
 };
 
 try {
-  const {source, homeAssistant: config} = JSON.parse(readFileSync(0, 'utf8'));
+  const {source, homeAssistant: config, memoryFile} = JSON.parse(readFileSync(0, 'utf8'));
   if (!config?.token) throw Error('FBD benötigt eine Live-Verbindung zu Home Assistant.');
   const {plan: raw, mode, interval} = JSON.parse(source);
   if (!raw || !Array.isArray(raw.blocks)) throw Error('Kein gespeicherter FBD-Plan vorhanden.');
@@ -38,7 +39,8 @@ try {
     if (targets.has(b.params.oid)) throw Error('Mehrere Ausgänge für ' + b.params.oid);
     targets.add(b.params.oid);
   }
-  let memory = {}, boot = true, previousError, failed = false;
+  const retained = retainedMemory(memoryFile, plan);
+  let memory = retained.load(), boot = true, previousError, failed = false;
   let pendingDiagnosis, lastDiagnosis = 0;
   const displayValue = value => typeof value === 'string' && value.length > 160 ? value.slice(0, 159) + '…' : value ?? null;
   const displayPins = pins => Object.fromEntries(Object.entries(pins).map(([name, value]) => [name, displayValue(value)]));
@@ -80,6 +82,7 @@ try {
         const value = validateOutput(mode, result.values.get(b.id), meta);
         return {entity, value, command: outputAction(entity, mode, value)};
       });
+      retained.save(result.memory);
       memory = result.memory;
       boot = false;
       if (previousError) report('log', 'FBD-Eingänge wieder gültig.');

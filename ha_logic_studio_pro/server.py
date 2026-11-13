@@ -17,7 +17,7 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
 
-VERSION = '0.1.65'
+VERSION = '0.1.66'
 ROOT = Path(__file__).resolve().parent
 MAX_BODY = 1_000_000
 TEST_RUN_SLOTS = threading.BoundedSemaphore(2)
@@ -175,6 +175,7 @@ class ScriptRuntime:
     def __init__(self):
         self.lock = threading.Lock()
         self.jobs = {}
+        self.memory_root = None
 
     def startup_error(self, user, project_id, error):
         with self.lock:
@@ -219,7 +220,11 @@ class ScriptRuntime:
             env = {key: value for key, value in os.environ.items()
                    if key.upper() in {'PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR'}}
             with tempfile.TemporaryFile() as input_file:
-                input_file.write(json.dumps({'source': source, 'language': language, 'homeAssistant': home_assistant}).encode())
+                payload = {'source': source, 'language': language, 'homeAssistant': home_assistant}
+                if language == 'flow' and json.loads(source).get('retainMemory') is True and self.memory_root:
+                    digest = hashlib.sha256(json.dumps([user, project_id], ensure_ascii=False).encode()).hexdigest()
+                    payload['memoryFile'] = str(self.memory_root / (digest + '.json'))
+                input_file.write(json.dumps(payload).encode())
                 input_file.seek(0)
                 runner = 'fbd-run.mjs' if language == 'flow' else 'live-run.mjs'
                 process = subprocess.Popen(['node', str(ROOT / 'runtime' / runner)], stdin=input_file,
@@ -270,6 +275,7 @@ class LogicServer(ThreadingHTTPServer):
         self.store = Store(data_dir)
         self.projects = ProjectStore(data_dir)
         self.runtime = ScriptRuntime()
+        self.runtime.memory_root = Path(data_dir).resolve() / 'fbd-memory'
         self.supervisor, self.demo = supervisor, demo
         self.sources=SourceReader(config_root,Path(data_dir)/'ha-source-backups') if config_root else None
         self.runtime_options = Path(data_dir) / 'options.json'

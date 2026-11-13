@@ -754,9 +754,11 @@ function importEditorData(project, parse) {
 function reviewIoBrokerImport(name, workspace) {
   const missing = new Map();
   const sources = new Set();
+  let dynamicIds = 0;
   function inspect(block) {
     if (!block) return;
     const metadata = block.extraState;
+    if (block.type === 'iob_get_dynamic_value') dynamicIds++;
     if (block.type === 'iob_placeholder') {
       const type = metadata?.type ?? '?';
       missing.set(type, (missing.get(type) ?? 0) + 1);
@@ -782,6 +784,11 @@ function reviewIoBrokerImport(name, workspace) {
   section('Nicht unterstützte Blöcke', [...missing].sort().map(([type, count]) => type + ' × ' + count),
     'Keine nicht unterstützten Blöcke gefunden.');
   section('ioBroker-IDs zur Zuordnung', [...sources].sort(), 'Keine festen ioBroker-IDs zur Zuordnung gefunden.');
+  if (dynamicIds) {
+    content.append(element('h3', 'Berechnete ioBroker-IDs'),
+      element('p', translatePro('Betroffene Blöcke', locale) + ' (' + dynamicIds + ')'),
+      element('p', 'Hinterlege im Feld ID-Zuordnung (JSON) für jede mögliche ioBroker-ID die passende HA-Entität.'));
+  }
   content.append(element('p', 'Ersetze Platzhalter und ordne die ioBroker-IDs in den Blöcken zu. Prüfe anschließend den erzeugten JavaScript-Code.'));
   content.append(button('Als Projekt öffnen', () => {
     dialog.close();
@@ -1106,6 +1113,17 @@ function show(id, refresh = false) {
       mode.append(option);
     }
     mode.setAttribute('aria-label', 'FBD-Ausführung');
+    const memoryOption = element('label');
+    memoryOption.className = 'editor-autostart';
+    const memoryToggle = element('input');
+    memoryToggle.type = 'checkbox';
+    memoryToggle.checked = project.graph?.retainMemory === true;
+    memoryToggle.onchange = () => {
+      project.graph = {...project.graph, retainMemory: memoryToggle.checked};
+      refreshRuntimeControls(id);
+    };
+    memoryOption.append(memoryToggle, element('span', 'Zähler und Merker speichern'));
+    right.append(memoryOption);
     const interval = element('input');
     interval.type = 'number';
     interval.min = '100';
