@@ -45,7 +45,7 @@ export function sendtoCommand(operation, args, {mqttTopics, writeTargets, permit
   return {type: 'fire_event', event_type: target, event_data: message};
 }
 
-export async function connectHomeAssistant({token, readable, writable, events, mqttTopics = []}, dispatch, fail, Socket = WebSocket) {
+async function openHomeAssistant({token, readable, writable, events, mqttTopics = []}, dispatch, fail, disconnected, Socket) {
   const socket = new Socket(endpoint);
   const allowed = new Set([...readable, ...writable]);
   const permittedEvents = new Set(events);
@@ -64,7 +64,7 @@ export async function connectHomeAssistant({token, readable, writable, events, m
       request.reject(error);
     }
     pending.clear();
-    if (ready) fail(error);
+    if (ready) disconnected(error);
     socket.close();
   };
   const authenticated = new Promise((resolve, reject) => {
@@ -85,12 +85,11 @@ export async function connectHomeAssistant({token, readable, writable, events, m
     const id = ++serial;
     const promise = new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        pending.delete(id);
-        reject(new Error('Zeitlimit für HA-Anfrage.'));
+        abort(new Error('Zeitlimit für HA-Anfrage.'));
       }, 8000);
       pending.set(id, {resolve, reject, timeout});
       try { socket.send(JSON.stringify({...command, id})); }
-      catch (error) { clearTimeout(timeout); pending.delete(id); reject(error); }
+      catch (error) { abort(error); }
     });
     return promise;
   }
@@ -130,9 +129,12 @@ export async function connectHomeAssistant({token, readable, writable, events, m
       }
     }
     initialChanges.clear();
+    if (closed) throw new Error('HA-WebSocket wurde getrennt.');
     ready = true;
     return {
       timezone: config.time_zone,
+      connected: () => !closed,
+      close: abort,
       start: () => { live = true; },
       state(entity) {
         if (!allowed.has(entity)) throw new Error('HA-Entität nicht freigegeben: ' + entity);
@@ -153,14 +155,80 @@ export async function connectHomeAssistant({token, readable, writable, events, m
         if (!subscriptions.has(type)) {
           const request = send({type: 'subscribe_events', event_type: type});
           subscriptions.set(type, request);
-          request.catch(fail);
+          return request.catch(error => { if (!closed) throw error; });
         }
       },
-      call(action, entity, data) { send(actionCommand(action, entity, data, writeTargets)).catch(fail); },
-      sendto(operation, args) { send(sendtoCommand(operation, args, sendtoPermissions)).catch(fail); },
+      call(action, entity, data) { send(actionCommand(action, entity, data, writeTargets)).catch(error => { if (!closed) fail(error); }); },
+      sendto(operation, args) { send(sendtoCommand(operation, args, sendtoPermissions)).catch(error => { if (!closed) fail(error); }); },
     };
   } catch (error) {
     abort(error);
     throw error;
   } finally { clearTimeout(authTimeout); }
+}
+
+export async function connectHomeAssistant(config, dispatch, fail, Socket = WebSocket, connectionChanged = () => {}) {
+  const subscriptions = new Set();
+  const entities = new Set([...config.readable, ...config.writable]);
+  const permittedEvents = new Set(config.events);
+  let current, previous, started = false, reconnecting = false;
+  const open = () => openHomeAssistant(config, dispatch, fail, lost, Socket);
+  async function lost(error) {
+    if (current) previous = new Map([...entities].map(entity => [entity, current.state(entity)]));
+    current = undefined;
+    if (reconnecting) return;
+    reconnecting = true;
+    connectionChanged(false, error);
+    for (let delay = 1000; ; delay = Math.min(delay * 2, 30000)) {
+      await new Promise(resolve => setTimeout(resolve, delay));
+      let candidate;
+      try {
+        candidate = await open();
+        for (const type of subscriptions) await candidate.subscribe(type);
+        if (!candidate.connected()) continue;
+      } catch (error) {
+        candidate?.close(error);
+        continue;
+      }
+      current = candidate;
+      reconnecting = false;
+      if (started) current.start();
+      const before = previous;
+      previous = undefined;
+      connectionChanged(true);
+      for (const entity of entities) {
+        const oldState = before?.get(entity) ?? null;
+        const newState = current?.state(entity) ?? null;
+        if (started && current && JSON.stringify(oldState) !== JSON.stringify(newState)) {
+          dispatch({type: 'state', entity, previous: oldState, current: newState});
+        }
+      }
+      return;
+    }
+  }
+  current = await open();
+  return {
+    timezone: current.timezone,
+    connected: () => Boolean(current?.connected()),
+    start() { started = true; current?.start(); },
+    state(entity) {
+      if (!entities.has(entity)) throw new Error('HA-Entität nicht freigegeben: ' + entity);
+      return current?.state(entity) ?? null;
+    },
+    subscribe(type) {
+      if (!eventPattern.test(type) || type === 'state_changed' || !permittedEvents.has(type)) {
+        throw new Error('HA-Ereignis nicht freigegeben: ' + type);
+      }
+      subscriptions.add(type);
+      current?.subscribe(type)?.catch(fail);
+    },
+    call(...args) { current?.call(...args); },
+    sendto(...args) { current?.sendto(...args); },
+    async history(...args) {
+      const connection = current;
+      if (!connection) return [];
+      try { return await connection.history(...args); }
+      catch (error) { if (current !== connection) return []; throw error; }
+    },
+  };
 }

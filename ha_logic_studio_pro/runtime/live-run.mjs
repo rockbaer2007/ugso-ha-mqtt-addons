@@ -42,7 +42,8 @@ try {
     try { evaluate(`studioDispatch(JSON.parse(${JSON.stringify(JSON.stringify(event))}))`); }
     catch (error) { fail(error); }
   }
-  const ha = homeAssistant ? await connectHomeAssistant(homeAssistant, dispatch, fail) : null;
+  const ha = homeAssistant ? await connectHomeAssistant(homeAssistant, dispatch, fail, WebSocket,
+    online => report('log', online ? 'HA-Verbindung wiederhergestellt.' : 'HA-Verbindung getrennt. Neuer Versuch folgt.')) : null;
   const localTime = scheduleClock(ha?.timezone);
   const time = timeOperations(ha?.timezone);
   function evaluate(code) {
@@ -261,6 +262,11 @@ try {
   ticker = setInterval(() => {
     try {
       const now = Date.now();
+      if (ha && !ha.connected()) {
+        previousSecond = Math.floor(now / 1000);
+        previousScheduleCheck = now;
+        return;
+      }
       evaluate(`tick(${now})`);
       const second = Math.floor(now / 1000);
       if (second <= previousSecond) return;

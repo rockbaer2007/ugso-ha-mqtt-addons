@@ -58,9 +58,16 @@ try {
   const ha = await connectHomeAssistant(config, event => {
     if (mode === 'auto' && event.type === 'state' && inputs.some(b => b.params.oid === event.entity &&
       !Object.is(inputValue(b, event.previous), inputValue(b, event.current)))) run();
-  }, stop);
+  }, stop, WebSocket, online => {
+    report('log', online ? 'HA-Verbindung wiederhergestellt.' : 'HA-Verbindung getrennt. Neuer Versuch folgt.');
+    if (online) run();
+    else {
+      diagnose({error: 'HA-Verbindung getrennt.', blocks: []});
+      flushDiagnosis();
+    }
+  });
   function run() {
-    if (failed) return;
+    if (failed || !ha.connected()) return;
     try {
       const blocks = [];
       const result = scan(plan, defs, {memory, boot, readInput: b => inputValue(b, ha.state(b.params.oid)),
