@@ -43,10 +43,18 @@ export function compileGraph(p,defs,{analyze,cast,expression,yaml,VERSION}){
 }
 
 export function scanGraph(p,defs,options,{analyze,cast,operation}){
+ const steps = scanSteps(p,defs,options,{analyze,cast,operation});
+ let next;
+ do { next = steps.next(); } while (!next.done);
+ return next.value;
+}
+
+export function* scanSteps(p,defs,options,{analyze,cast,operation}){
  const {errors,order,incoming}=analyze(p,defs);if(errors.length)throw Error(errors.join('\n'));
  const values=new Map(),signals=new Map(),memory=structuredClone(options.memory||{}),now=options.now??Date.now();
  for(const b of order){
   if(b.type==='COMMENT')continue;
+  yield {block:b, values, signals};
   let value,outputs,args={};
   if(b.type==='STATE_IN'){const raw=options.readInput?options.readInput(b):b.params.demo;if(raw==null||['unknown','unavailable'].includes(raw))throw Error('Eingangswert nicht verfügbar: '+b.name);value=cast(raw,b.params.type);}
   else if(b.type==='CONST')value=cast(b.params.value,b.params.type);

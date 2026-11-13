@@ -1,6 +1,7 @@
 import {messages as flowMessages} from './locales.js';
 
 const messages = {
+  'Einzelschritt': ['Single step', 'Pas à pas'],
   'Automatisch anordnen': ['Arrange automatically', 'Organiser automatiquement'],
   'Beim Start der App ausführen': ['Run when the app starts', 'Exécuter au démarrage de l’application'],
   'ioBroker-Import prüfen': ['Review ioBroker import', 'Vérifier l’import ioBroker'],

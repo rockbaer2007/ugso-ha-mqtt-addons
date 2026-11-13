@@ -1,5 +1,5 @@
 import {adapt,categories,pins,resolved,createBlock,description,supported} from './catalog.js?v=0.1.12';
-import {emptyPlan,loadPlan,analyze,compile,simulate,scan,VERSION} from './core.js?v=0.1.12';
+import {emptyPlan,loadPlan,analyze,compile,simulate,scan,simulationSteps,VERSION} from './core.js?v=0.1.65';
 import {connectHA} from './ha-client.js?v=0.1.12';
 import {entityParameters} from './entity-values.js?v=0.1.12';
 import {connectImport} from './import-ui.js?v=0.1.12';
@@ -18,6 +18,39 @@ let plan=emptyPlan(),selected=null,pending=null,zoom=1,tab='all',docs=false,hist
 let haConnection=null,flowCanvas=null;
 let simulationMemory={},simulationNow=Date.now();
 let simulationSignals=new Map();
+const breakpoints = new Set();
+let debugScan, debugPlan;
+function debugSimulation(single) {
+ try {
+  const current = JSON.stringify(plan);
+  let result;
+  if (!debugScan || debugPlan !== current) {
+   debugPlan = current;
+   debugScan = simulationSteps(plan, byType, {memory: simulationMemory, now: simulationNow});
+   result = debugScan.next();
+   if (!result.done && (single || !breakpoints.has(result.value.block.id))) result = debugScan.next();
+  } else {
+   result = debugScan.next();
+  }
+  while (!single && !result.done && !breakpoints.has(result.value.block.id)) {
+   result = debugScan.next();
+  }
+  if (result.done) {
+   simulationMemory = result.value.memory;
+   debugScan = undefined;
+   status('Simulationsschritt – nur Demowerte, keine HA-Aktionen.');
+  } else {
+   selected = result.value.block.id;
+   status('Simulation pausiert');
+  }
+  values = result.value.values;
+  simulationSignals = result.value.signals;
+  renderNodes();
+ } catch (error) {
+  debugScan = undefined;
+  status(error.message);
+ }
+}
 let liveDiagnosis, liveNodes = new Map();
 const diagnosisText = {
  de: ['Letzte Auswertung', 'Live-Auswertung pausiert', 'Eingang', 'Ausgang'],
@@ -80,6 +113,18 @@ function renderNodes(){
    pin.setAttribute('aria-pressed', String(Boolean(b.pinned)));
    pin.onclick = () => change(() => b.pinned = !b.pinned);
    element.querySelector('header').append(pin);
+   if (b.type !== 'COMMENT') {
+    const stop = el('button','nodrag nopan',breakpoints.has(b.id) ? '●' : '○');
+    stop.title = 'Haltepunkt';
+    stop.setAttribute('aria-label', stop.title);
+    stop.setAttribute('aria-pressed', String(breakpoints.has(b.id)));
+    stop.onclick = () => {
+     if (breakpoints.has(b.id)) breakpoints.delete(b.id);
+     else breakpoints.add(b.id);
+     renderNodes();
+    };
+    element.querySelector('header').append(stop);
+   }
   }
   if (embeddedInPro) {
    liveNodes.set(b.id, element);
@@ -162,6 +207,10 @@ import {arrangeToolbar} from './toolbar.js?v=0.1.12';
 arrangeToolbar();
 document.documentElement.toggleAttribute('data-embedded-pro', embeddedInPro);
 if (embeddedInPro) {
+  $('#simulate').onclick = () => debugSimulation(false);
+  document.addEventListener('pro-fbd-step', () => debugSimulation(true));
+  $('#simulation-reset').addEventListener('click', () => { debugScan = undefined; });
+  $('#simulation-advance').addEventListener('click', () => { debugScan = undefined; }, {capture: true});
   document.addEventListener('pro-fbd-arrange', () => {
     const next = structuredClone(plan);
     try {
@@ -182,6 +231,8 @@ if (embeddedInPro) {
    paintDiagnosis();
   });
   document.addEventListener('pro-fbd-load', event => {
+    debugScan = undefined;
+    breakpoints.clear();
     plan = event.detail ? loadPlan(event.detail, byType) : emptyPlan();
     selected = null; pending = null; history = []; future = []; values.clear();
     simulationMemory = {}; simulationSignals.clear(); simulationNow = Date.now();

@@ -1075,6 +1075,8 @@ function show(id, refresh = false) {
     right.before(simulation);
     toolIcon(simulation, 'test', '▶ Simulation', () => childClick('simulate'));
     toolIcon(simulation, 'step', 'Simulation +1 s', () => childClick('simulation-advance'));
+    toolIcon(simulation, 'step', 'Einzelschritt', () =>
+      flowFrame?.contentDocument?.dispatchEvent(new Event('pro-fbd-step')));
     toolIcon(simulation, 'restart', 'Simulation zurücksetzen', () => childClick('simulation-reset'));
     right.append(button('Automatisch anordnen', () =>
       flowFrame?.contentDocument?.dispatchEvent(new Event('pro-fbd-arrange'))));

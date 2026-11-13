@@ -1,6 +1,6 @@
 import {pins,supported} from './catalog.js?v=0.1.12';
 import {exportOptions} from './ha-export.js?v=0.1.12';
-import {compileGraph,scanGraph} from './compiler.js?v=0.1.12';
+import {compileGraph,scanGraph,scanSteps} from './compiler.js?v=0.1.65';
 import {isFlow,exportFlow,validateFlow} from './flow.js?v=0.1.12';
 export const VERSION='0.1.12';
 export const emptyPlan=()=>({format:'ugso.logic/1',version:VERSION,name:'Neuer Funktionsplan',target:'automation',blocks:[],links:[]});
@@ -25,6 +25,10 @@ export function analyze(p,defs,forExport=true){
 export function cast(v,type){if(type==='ANY'){if(typeof v==='number'&&!Number.isFinite(v))throw Error('Ungültige Zahl.');return v;}if(type==='STRING'){if(v===null||v===undefined)throw Error('Eingangswert nicht verfügbar.');return String(v);}if(v===null||v===undefined||['unknown','unavailable',''].includes(v))throw Error('Eingangswert nicht verfügbar.');if(type==='BOOL'){if([true,'on','true',1].includes(v))return true;if([false,'off','false',0].includes(v))return false;throw Error('Wert ist kein BOOL.');}if(['REAL','INT','TIME'].includes(type)){const n=Number(v);if(!Number.isFinite(n)||typeof v==='boolean'||(typeof v==='string'&&!v.trim()))throw Error('Wert ist keine gültige Zahl.');return type==='INT'?Math.trunc(n):n;}return String(v);}
 function operation(t,a){switch(t){case'AND':return a.every(Boolean);case'OR':return a.some(Boolean);case'XOR':return a.filter(Boolean).length%2===1;case'NOT':return !a[0];case'GT':return a[0]>a[1];case'GE':return a[0]>=a[1];case'LT':return a[0]<a[1];case'LE':return a[0]<=a[1];case'EQ':return a[0]===a[1];case'NE':return a[0]!==a[1];case'ADD':return a.reduce((x,y)=>x+y,0);case'MUL':return a.reduce((x,y)=>x*y,1);case'SUB':return a[0]-a[1];case'DIV':if(a[1]===0)throw Error('Division durch null.');return a[0]/a[1];case'MIN':return Math.min(...a);case'MAX':return Math.max(...a);case'SEL':return a[0]?a[2]:a[1];case'LIMIT':return Math.max(a[0],Math.min(a[2],a[1]));default:throw Error('Baustein noch nicht simuliert: '+t);}}
 export function scan(p,defs,options={}){if(isFlow(p))throw Error('HA-Abläufe werden nur in HA ausgeführt. Keine Editor-Simulation.');return scanGraph(p,defs,options,{analyze,cast,operation});}
+export function simulationSteps(plan, defs, options) {
+ if (isFlow(plan)) throw Error('HA-Abläufe werden nur in HA ausgeführt. Keine Editor-Simulation.');
+ return scanSteps(plan, defs, options, {analyze,cast,operation});
+}
 export function simulate(p,defs){return scan(p,defs).values;}
 const q=JSON.stringify;
 function checkedAssignments(assignments){return assignments.map(([name,expr])=>`  const ${name} = ${expr};\n  if (typeof ${name} === 'number' && !Number.isFinite(${name})) throw new Error('Invalid numeric result: ${name}');`).join('\n');}
