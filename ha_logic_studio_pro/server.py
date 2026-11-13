@@ -17,8 +17,8 @@ from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
 
-VERSION = '0.1.66'
 ROOT = Path(__file__).resolve().parent
+VERSION = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))['version']
 MAX_BODY = 1_000_000
 TEST_RUN_SLOTS = threading.BoundedSemaphore(2)
 OUTPUT_DOMAINS = {'switch', 'light', 'input_boolean', 'input_number', 'input_text'}

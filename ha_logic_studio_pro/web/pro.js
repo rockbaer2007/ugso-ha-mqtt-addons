@@ -1975,6 +1975,6 @@ const language = connectLanguage({
     try { localStorage.setItem(languageKey, value); } catch {}
     syncLanguage();
     const project = projects.get(active);
-    if (project?.type === 'blocks' || project?.type === 'blocks-js') show(active, true);
+    if (['blocks', 'blocks-js', 'rules'].includes(project?.type)) show(active, true);
   },
 });
