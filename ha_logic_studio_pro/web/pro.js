@@ -849,9 +849,7 @@ const newProjectControl = projectIconButton('M12 5v14M5 12h14', 'Neues Projekt',
   $('project-dialog').showModal();
 });
 const folderControl = projectIconButton('M3 7h7l2 2h9v11H3zM12 11v6m-3-3h6', 'Neuen Ordner erstellen', () => {
-  $('folder-name').value = '';
-  $('folder-dialog').returnValue = '';
-  $('folder-dialog').showModal();
+  openFolderDialog();
 });
 $('project-actions').append(menuControl, newProjectControl, folderControl);
 
@@ -990,6 +988,16 @@ function renderProjectList() {
     if (folder && folder !== 'common' && folder !== 'global') folderLabel.dataset.userText = '';
     if (folder === 'common' || folder === 'global') folderLabel.className = 'folder-label-' + folder;
     summary.append(folderLabel);
+    if (folder && folder !== 'common' && folder !== 'global') {
+      const rename = projectIconButton('M4 16v4h4L20 8l-4-4zM14 6l4 4',
+        translatePro('Ordner umbenennen', locale), event => {
+          event.preventDefault();
+          openFolderDialog(folder);
+        });
+      rename.className = 'project-folder-rename';
+      rename.disabled = sortingProjects;
+      summary.append(rename);
+    }
     group.append(summary);
     if (sortingProjects) projectDropTarget(group, folder);
     for (const [id, project] of entries) {
@@ -1881,10 +1889,32 @@ function projectSlug(name) {
     .replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 }
 
+let folderToRename;
+function openFolderDialog(folder) {
+  folderToRename = folder;
+  const dialog = $('folder-dialog');
+  $('folder-title').textContent = translatePro(folder ? 'Ordner umbenennen' : 'Neuen Ordner erstellen', locale);
+  $('folder-submit').textContent = translatePro(folder ? 'Speichern' : 'Erstellen', locale);
+  $('folder-name').value = projectFolders.get(folder) ?? '';
+  dialog.returnValue = '';
+  dialog.showModal();
+  $('folder-name').select();
+}
+
 $('folder-dialog').onclose = () => {
+  const folder = folderToRename;
+  folderToRename = undefined;
   if ($('folder-dialog').returnValue !== 'create') return;
   const name = $('folder-name').value.trim();
   if (!name) return;
+  if (folder !== undefined) {
+    const previousName = projectFolders.get(folder);
+    if (name === previousName || previousName === undefined) return;
+    projectFolders.set(folder, name);
+    if (!saveProjects()) projectFolders.set(folder, previousName);
+    renderProjectList();
+    return;
+  }
   const base = projectSlug(name) || 'ordner';
   let id = base;
   for (let number = 2; projectFolders.has(id); number++) id = base + '_' + number;

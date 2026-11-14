@@ -112,6 +112,7 @@ const messages = {
   'Sortierung speichern': ['Save order', 'Enregistrer l’ordre'],
   'Skripte ziehen und mit den roten Pfeilen speichern.': ['Drag scripts and use the red arrows to save.', 'Déplacez les scripts puis enregistrez avec les flèches rouges.'],
   'Neuen Ordner erstellen': ['Create folder', 'Créer un dossier'],
+  'Ordner umbenennen': ['Rename folder', 'Renommer le dossier'],
   'Breite der Projektliste': ['Project list width', 'Largeur de la liste des projets'],
   'Projektliste filtern': ['Filter project list', 'Filtrer la liste des projets'],
   'Geöffnete Projekte': ['Open projects', 'Projets ouverts'],

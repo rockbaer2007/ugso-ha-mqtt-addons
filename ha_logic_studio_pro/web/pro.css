@@ -81,6 +81,9 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
 #projects { display: grid; grid-template-columns: minmax(0, 1fr); gap: .35rem; overflow: hidden auto; scrollbar-gutter: stable; padding-bottom: .45rem; }
 #projects summary { display: flex; align-items: center; gap: .3rem; list-style: none; cursor: pointer; padding: .25rem 0; font-size: .85rem; }
 #projects summary > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#projects .project-folder-rename { display: grid; place-items: center; flex: none; width: 1.65rem; padding: .2rem; margin-left: auto; border: 0; background: transparent; }
+#projects .project-folder-rename:not(:disabled):hover { background: #a2ccff26; }
+#projects .project-folder-rename svg { width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.8; }
 #projects summary::-webkit-details-marker { display: none; }
 #projects .project-folder-icon { flex: none; width: 1rem; height: 1rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
 #projects details:not([open]) > summary .folder-open,
