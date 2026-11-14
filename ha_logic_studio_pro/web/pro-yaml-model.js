@@ -61,10 +61,10 @@ export function readRuleFields(fields) {
   if (!object(fields)) throw new Error('Ungültige Rules-Datei.');
   if (Object.hasOwn(fields, 'triggers')) {
     const actionFields = ['type', 'action', 'entity', 'data', 'seconds'];
-    const lists = {triggers: ['type', 'entity', 'state', 'from', 'attribute', 'seconds', 'time', 'event', 'above', 'below'],
+    const lists = {triggers: ['type', 'entity', 'state', 'from', 'attribute', 'seconds', 'time', 'event', 'above', 'below', 'offsetMinutes'],
       conditions: ['type', 'entity', 'state', 'attribute', 'above', 'below'],
       actions: actionFields, elseActions: actionFields};
-    const types = {triggers: ['state', 'time', 'event', 'numeric'], conditions: ['state', 'numeric'],
+    const types = {triggers: ['state', 'time', 'event', 'numeric', 'sun'], conditions: ['state', 'numeric'],
       actions: ['action', 'delay'], elseActions: ['action', 'delay']};
     const rule = {conditionMode: fields.conditionMode};
     if (!['and', 'or', 'not'].includes(rule.conditionMode)) throw new Error('Ungültige Rules-Datei.');
@@ -98,6 +98,9 @@ export function readRuleFields(fields) {
 
 export function makeRulesJavaScript(name, rule) {
   makeYaml({name, kind: 'automation', ...rule});
+  if (rule.triggers.some(t => t.type === 'sun')) {
+    throw new Error('Rules → JS: Sonnenaufgang und Sonnenuntergang benötigen HA-YAML.');
+  }
   if (rule.triggers.some(t => t.type === 'numeric')) {
     throw new Error('Rules → JS: Zahlenschwellen als Auslöser benötigen HA-YAML.');
   }
@@ -200,6 +203,15 @@ export function makeYaml({name, kind, triggers = [], condition, conditions = con
     ...config,
     triggers: triggers.map(entry => {
       const {entity, state, from, attribute, seconds, type, time, event} = entry;
+      if (type === 'sun') {
+        if (!['sunrise', 'sunset'].includes(event)) throw new Error('Sonnenaufgang oder Sonnenuntergang auswählen.');
+        const offsetMinutes = entry.offsetMinutes ?? '';
+        const offset = Number(offsetMinutes) * 60;
+        if (offsetMinutes !== '' && (!/^[+-]?\d+$/.test(offsetMinutes) || !Number.isSafeInteger(offset))) {
+          throw new Error('Zeitversatz in ganzen Minuten eingeben.');
+        }
+        return {trigger: 'sun', event, ...(offset ? {offset} : {})};
+      }
       if (type === 'time') {
         if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error('Uhrzeit im Format HH:MM eingeben.');
         return {trigger: 'time', at: time + ':00'};

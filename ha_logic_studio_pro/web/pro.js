@@ -1459,7 +1459,12 @@ function renderRules(panel, project) {
     wording[locale] ?? wording.en;
   const ruleLabels = {triggers: when, conditions: and, actions: then, elseActions: otherwise};
   const threshold = ({de: 'Zahlenschwelle', en: 'Numeric threshold', fr: 'Seuil numérique'})[locale] ?? 'Numeric threshold';
-  const triggerKinds = [['state', status, 'ϟ'], ['numeric', threshold, '↗'], ['time', schedule, '◷'], ['event', event, '✉']];
+  const [sun, sunrise, sunset, offsetMinutes] = ({
+    de: ['Sonnenaufgang / Sonnenuntergang', 'Sonnenaufgang', 'Sonnenuntergang', 'Zeitversatz in Minuten (− vorher, + nachher)'],
+    en: ['Sunrise / Sunset', 'Sunrise', 'Sunset', 'Offset in minutes (− before, + after)'],
+    fr: ['Lever / Coucher du soleil', 'Lever du soleil', 'Coucher du soleil', 'Décalage en minutes (− avant, + après)'],
+  })[locale];
+  const triggerKinds = [['state', status, 'ϟ'], ['numeric', threshold, '↗'], ['time', schedule, '◷'], ['sun', sun, '☀'], ['event', event, '✉']];
   const [from, to, attribute, hold, numeric, above, below, delay, seconds, parameters, actionType] = ({
     de: ['Von', 'Nach', 'Attribut (optional)', 'Mindestdauer (Sekunden)', 'Zahlenwert', 'Über', 'Unter', 'Verzögerung', 'Sekunden', 'Parameter (JSON)', 'Schritttyp'],
     en: ['From', 'To', 'Attribute (optional)', 'Minimum duration (seconds)', 'Numeric state', 'Above', 'Below', 'Delay', 'Seconds', 'Parameters (JSON)', 'Step type'],
@@ -1475,6 +1480,7 @@ function renderRules(panel, project) {
   const update = () => { project.fields = rules; };
   function append(data, key, kind = 'state') {
     const entry = key === 'triggers' ? {type: kind} : {};
+    if (kind === 'sun') entry.event = 'sunrise';
     data[key].push(entry);
     return entry;
   }
@@ -1516,6 +1522,7 @@ function renderRules(panel, project) {
       let labels;
       if (key === 'triggers') {
         if (entry.type === 'time') labels = [['time', time]];
+        else if (entry.type === 'sun') labels = [['event', sun], ['offsetMinutes', offsetMinutes]];
         else if (entry.type === 'event') labels = [['event', eventType]];
         else if (entry.type === 'numeric') labels = [['entity', entity], ['attribute', attribute], ['above', above], ['below', below], ['seconds', hold]];
         else labels = [['entity', entity], ['attribute', attribute], ['from', from], ['state', to], ['seconds', hold]];
@@ -1527,10 +1534,24 @@ function renderRules(panel, project) {
       }
       for (const [name, caption] of labels) {
         const label = element('label', caption);
+        if (entry.type === 'sun' && name === 'event') {
+          const select = element('select');
+          for (const [value, title] of [['sunrise', sunrise], ['sunset', sunset]]) {
+            const option = element('option', title);
+            option.value = value;
+            select.append(option);
+          }
+          select.value = entry.event;
+          select.onchange = () => { entry.event = select.value; changed(); };
+          label.append(select);
+          inputs.append(label);
+          continue;
+        }
         const input = element(name === 'data' ? 'textarea' : 'input');
         input.value = entry[name] || '';
         if (name === 'time') input.type = 'time';
         if (name === 'seconds') { input.type = 'number'; input.min = '1'; input.step = '1'; }
+        if (name === 'offsetMinutes') { input.type = 'number'; input.step = '1'; input.placeholder = '0'; }
         if (name === 'above' || name === 'below') { input.type = 'number'; input.step = 'any'; }
         if (name === 'data') { input.rows = 2; input.placeholder = '{}'; }
         input.oninput = () => { entry[name] = input.value.trim(); changed(); };
