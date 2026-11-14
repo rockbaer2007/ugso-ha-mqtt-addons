@@ -1464,7 +1464,9 @@ function renderRules(panel, project) {
     en: ['Sunrise / Sunset', 'Sunrise', 'Sunset', 'Offset in minutes (− before, + after)'],
     fr: ['Lever / Coucher du soleil', 'Lever du soleil', 'Coucher du soleil', 'Décalage en minutes (− avant, + après)'],
   })[locale];
-  const triggerKinds = [['state', status, 'ϟ'], ['numeric', threshold, '↗'], ['time', schedule, '◷'], ['sun', sun, '☀'], ['event', event, '✉']];
+  const helperTime = ({de: 'Uhrzeit aus Helfer', en: 'Time from helper', fr: 'Heure depuis un assistant'})[locale] ?? 'Time from helper';
+  const triggerKinds = [['state', status, 'ϟ'], ['numeric', threshold, '↗'], ['time', schedule, '◷'],
+    ['helper_time', helperTime, '◷'], ['sun', sun, '☀'], ['event', event, '✉']];
   const [from, to, attribute, hold, numeric, above, below, delay, seconds, parameters, actionType] = ({
     de: ['Von', 'Nach', 'Attribut (optional)', 'Mindestdauer (Sekunden)', 'Zahlenwert', 'Über', 'Unter', 'Verzögerung', 'Sekunden', 'Parameter (JSON)', 'Schritttyp'],
     en: ['From', 'To', 'Attribute (optional)', 'Minimum duration (seconds)', 'Numeric state', 'Above', 'Below', 'Delay', 'Seconds', 'Parameters (JSON)', 'Step type'],
@@ -1522,6 +1524,7 @@ function renderRules(panel, project) {
       let labels;
       if (key === 'triggers') {
         if (entry.type === 'time') labels = [['time', time]];
+        else if (entry.type === 'helper_time') labels = [['entity', helperTime]];
         else if (entry.type === 'sun') labels = [['event', sun], ['offsetMinutes', offsetMinutes]];
         else if (entry.type === 'event') labels = [['event', eventType]];
         else if (entry.type === 'numeric') labels = [['entity', entity], ['attribute', attribute], ['above', above], ['below', below], ['seconds', hold]];
@@ -1564,11 +1567,14 @@ function renderRules(panel, project) {
           })));
         }
         if (name === 'entity' || name === 'attribute') {
+          const helper = key === 'triggers' && entry.type === 'helper_time';
           line.append(button(choose, () => openBlockEntity(
-            name === 'attribute' ? {kind: 'attribute', entity: entry.entity} : {}, input.value, value => {
+            name === 'attribute' ? {kind: 'attribute', entity: entry.entity} :
+              helper ? {kind: 'entity_id', domains: ['input_datetime']} : {}, input.value, value => {
             input.value = value;
             input.oninput();
-          }, value => name === 'attribute' ? Boolean(value) : /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value))));
+          }, value => name === 'attribute' ? Boolean(value) :
+            (helper ? /^input_datetime\.[a-z0-9_]+$/ : /^[a-z0-9_]+\.[a-z0-9_]+$/).test(value))));
         }
         label.append(line);
         inputs.append(label);

@@ -64,7 +64,7 @@ export function readRuleFields(fields) {
     const lists = {triggers: ['type', 'entity', 'state', 'from', 'attribute', 'seconds', 'time', 'event', 'above', 'below', 'offsetMinutes'],
       conditions: ['type', 'entity', 'state', 'attribute', 'above', 'below'],
       actions: actionFields, elseActions: actionFields};
-    const types = {triggers: ['state', 'time', 'event', 'numeric', 'sun'], conditions: ['state', 'numeric'],
+    const types = {triggers: ['state', 'time', 'helper_time', 'event', 'numeric', 'sun'], conditions: ['state', 'numeric'],
       actions: ['action', 'delay'], elseActions: ['action', 'delay']};
     const rule = {conditionMode: fields.conditionMode};
     if (!['and', 'or', 'not'].includes(rule.conditionMode)) throw new Error('Ungültige Rules-Datei.');
@@ -132,6 +132,8 @@ export function makeRulesJavaScript(name, rule) {
   for (const trigger of rule.triggers) {
     if (trigger.type === 'time') {
       lines.push('ha.schedule(' + literal({trigger: 'time', at: trigger.time + ':00'}) + ', runRule);');
+    } else if (trigger.type === 'helper_time') {
+      lines.push('ha.scheduleFromDateTime(' + literal(trigger.entity) + ', runRule);');
     } else if (trigger.type === 'event') {
       lines.push('ha.onEvent(' + literal(trigger.event) + ', runRule);');
     } else {
@@ -203,6 +205,12 @@ export function makeYaml({name, kind, triggers = [], condition, conditions = con
     ...config,
     triggers: triggers.map(entry => {
       const {entity, state, from, attribute, seconds, type, time, event} = entry;
+      if (type === 'helper_time') {
+        if (!/^input_datetime\.[a-z0-9_]+$/.test(entity || '')) {
+          throw new Error('Einen Datum- und Uhrzeithelfer (input_datetime) auswählen.');
+        }
+        return {trigger: 'time', at: entity};
+      }
       if (type === 'sun') {
         if (!['sunrise', 'sunset'].includes(event)) throw new Error('Sonnenaufgang oder Sonnenuntergang auswählen.');
         const offsetMinutes = entry.offsetMinutes ?? '';
