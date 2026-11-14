@@ -174,6 +174,35 @@ export function makeRulesJavaScript(name, rule) {
   return lines.join('\n') + '\n';
 }
 
+export function importHaJson(source, kind, messages) {
+  if (!source.trim() || new TextEncoder().encode(source).length > 1_000_000) {
+    throw new Error(messages.size);
+  }
+  let data = JSON.parse(source);
+  if (object(data) && (Object.hasOwn(data, 'nodes') || Object.hasOwn(data, 'edges'))) {
+    // An imported HA automation can be represented by triggers feeding one raw action.
+    // Other FLODE graphs require interpreting their edges and node types.
+    const {nodes, edges, name, description, metadata} = data;
+    if (kind !== 'automation' || data.version !== 1 || !Array.isArray(nodes) || !Array.isArray(edges)) {
+      throw new Error(messages.graph);
+    }
+    const triggers = nodes.filter(node => node?.type === 'trigger');
+    const action = nodes.find(node => node?.type === 'action');
+    const raw = action?.data?._raw;
+    const ids = new Set(triggers.map(node => node.id));
+    if (!triggers.length || nodes.length !== triggers.length + 1 || !object(raw) ||
+        ids.has(action.id) || ids.size !== triggers.length || edges.length !== triggers.length ||
+        new Set(edges.map(edge => edge?.source)).size !== triggers.length ||
+        !edges.every(edge => ids.has(edge?.source) && edge.target === action.id)) {
+      throw new Error(messages.graph);
+    }
+    data = {...metadata, alias: name, description, triggers: triggers.map(node => node.data), actions: [raw]};
+  }
+  const yaml = stringifyForHa(data);
+  validateYaml(yaml, kind);
+  return yaml;
+}
+
 export function validateYaml(source, kind) {
   if (!['script', 'automation'].includes(kind)) throw new Error('HA-YAML-Typ ist ungültig.');
   if (!source.trim() || new TextEncoder().encode(source).length > 1_000_000) {

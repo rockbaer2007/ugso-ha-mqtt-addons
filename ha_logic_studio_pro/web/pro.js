@@ -1,6 +1,6 @@
 import {renderYamlPreview} from './yaml-preview.js?v=0.1.88';
 import {parseDocument} from './vendor/pro-yaml.js';
-import {makeYaml, validateYaml, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js';
+import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js?v=0.1.89';
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
 import {mountCodeEditor} from './vendor/pro-code.js';
@@ -1469,6 +1469,62 @@ function renderYaml(panel, project) {
     const name = project.name.replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 180) || 'logic-studio';
     download(name + '.' + project.kind + '.json', jsonSource.value);
   });
+  const jsonImportLabels = {
+    de: ['JSON importieren', 'JSON-Datei auswählen oder JSON einfügen', 'Importieren', 'Abbrechen', 'JSON als YAML-Entwurf übernommen.', 'Eine JSON-Datei mit höchstens 1 MB auswählen oder einfügen.', 'Dieser FLODE-Ablauf kann hier nicht importiert werden. Verwende den YAML-Export.'],
+    en: ['Import JSON', 'Choose a JSON file or paste JSON', 'Import', 'Cancel', 'JSON loaded as a YAML draft.', 'Choose or paste JSON up to 1 MB.', 'This FLODE graph cannot be imported here. Use its YAML export.'],
+    fr: ['Importer du JSON', 'Choisir un fichier JSON ou coller du JSON', 'Importer', 'Annuler', 'JSON chargé comme brouillon YAML.', 'Choisissez ou collez du JSON de 1 Mo maximum.', 'Ce graphe FLODE ne peut pas être importé ici. Utilisez son export YAML.'],
+  };
+  const [importTitle, importPrompt, importAction, cancelImport, imported, size, graph] = jsonImportLabels[locale] ?? jsonImportLabels.en;
+  const importDialog = element('dialog');
+  importDialog.className = 'editor-tool-dialog';
+  importDialog.setAttribute('aria-label', importTitle);
+  const file = element('input');
+  file.type = 'file';
+  file.accept = '.json,application/json';
+  file.setAttribute('aria-label', importTitle);
+  const input = element('textarea');
+  input.className = 'yaml-source';
+  input.setAttribute('aria-label', importPrompt);
+  const errorMessage = element('p');
+  errorMessage.setAttribute('role', 'alert');
+  const applyImport = button(importAction, () => {
+    try {
+      const nextSource = importHaJson(input.value, project.kind, {size, graph});
+      yaml.value = nextSource;
+      yaml.oninput();
+      selectView(1);
+      importDialog.close();
+      report(imported);
+    } catch (error) {
+      errorMessage.textContent = error.message;
+    }
+  });
+  file.onchange = async () => {
+    const selected = file.files[0];
+    if (!selected) return;
+    applyImport.disabled = true;
+    errorMessage.textContent = '';
+    input.value = '';
+    try {
+      if (selected.size > 1_000_000) throw new Error(size);
+      const content = await selected.text();
+      if (file.files[0] === selected && importDialog.open) input.value = content;
+    } catch (error) {
+      if (file.files[0] === selected && importDialog.open) errorMessage.textContent = error.message;
+    } finally {
+      if (file.files[0] === selected) applyImport.disabled = false;
+    }
+  };
+  importDialog.append(element('h2', importTitle), element('p', importPrompt), file, input,
+    errorMessage, applyImport, button(cancelImport, () => importDialog.close()));
+  row.append(button(importTitle, () => {
+    file.value = '';
+    input.value = '';
+    errorMessage.textContent = '';
+    applyImport.disabled = false;
+    importDialog.showModal();
+  }));
+  panel.append(importDialog);
   json.append(jsonDownload, jsonError, jsonSource);
   panel.append(json);
   const screens = [[graphicLabel, flow], ['YAML', yaml], [jsonLabel, json]];
