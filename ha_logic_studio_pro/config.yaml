@@ -1,5 +1,5 @@
 name: HA Logic Studio Pro
-version: "0.1.78"
+version: "0.1.79"
 slug: ha_logic_studio_pro
 description: Logikeditor und Runtime für Home Assistant mit Funktionsplan, Rules, Blocks, HA-YAML, JavaScript und TypeScript
 stage: stable

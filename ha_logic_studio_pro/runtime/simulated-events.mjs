@@ -99,7 +99,14 @@ export const simulatedEvents = String.raw`
     if (type === 'state') {
       invoke(callback, {type: 'state', entity: target, previous: {state: 'off'}, current: {state: 'on'}});
     } else if (type === 'importedState') {
-      const samples = [['off', 'on'], ['on', 'off'], ['on', 'on'], ['20', '21'], ['21', '20'], ['21', '21']];
+      const state = ha.readState(target);
+      const numeric = (state.trim() !== '' && Number.isFinite(Number(state))) ||
+        (state === 'unknown' && /^(sensor|number|input_number)\./.test(target));
+      const binary = /^(on|off)$/.test(state) ||
+        (state === 'unknown' && /^(binary_sensor|switch|light|fan|input_boolean)\./.test(target));
+      const samples = numeric ? [['20', '21'], ['21', '20'], ['21', '21']] :
+        binary ? [['off', 'on'], ['on', 'off'], ['on', 'on']] :
+        [['off', 'on'], ['on', 'off'], ['on', 'on'], ['20', '21'], ['21', '20'], ['21', '21']];
       for (const [previous, current] of samples) {
         const event = {type: 'state', entity: target, previous: {state: previous}, current: {state: current}};
         if (importedTriggerMatches(event, attribute)) invoke(callback, event);

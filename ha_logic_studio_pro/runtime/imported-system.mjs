@@ -60,6 +60,11 @@ export const importedSystem = String.raw`
     if (update && !['input_boolean', 'input_number', 'input_text'].includes(domain)) {
       throw new Error('Aktualisiere benötigt einen HA-Helfer: ' + entity);
     }
+    // HA sensor states are strings, including the numeric readings used by ioBroker.
+    if (update && domain === 'input_number' && typeof value === 'string' &&
+        /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value.trim())) {
+      value = Number(value);
+    }
     let execute;
     if (['light', 'switch', 'input_boolean', 'fan'].includes(domain)) {
       if (toggle) {

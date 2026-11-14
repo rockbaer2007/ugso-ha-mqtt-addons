@@ -768,64 +768,91 @@ function importEditorData(project, parse) {
   input.click();
 }
 
+
 function reviewIoBrokerImport(name, workspace) {
-  const replacements = new Map([
-    ['exec', 'Shell-Befehl durch eine konfigurierte HA-Aktion ersetzen.'],
-    ['http_get', 'HTTP-Aufruf als HA-REST-Befehl konfigurieren und Antwortverarbeitung prüfen.'],
-    ['http_post', 'HTTP-Aufruf als HA-REST-Befehl konfigurieren und Antwortverarbeitung prüfen.'],
-    ['get_value_async', 'HA-Zustand im Block „Zustand lesen“ abfragen und den bisherigen Callback als Folgeblöcke einfügen.'],
-  ]);
-  const missing = new Map();
-  const messageNotes = [];
-  const sources = new Set();
-  let dynamicIds = 0;
-  function inspect(block) {
-    if (!block) return;
-    const message = block.fields?.MESSAGE ?? 'customMessage';
-    if (block.type === 'ha_js_script_message_request') {
-      messageNotes.push('sendto_otherscript (' + message + ') — ' + translatePro('Empfangsadresse und Antwortverarbeitung prüfen. Ohne Antwort meldet der Block einen Timeout.', locale));
-    } else if (block.type === 'ha_js_script_message_dynamic') {
-      messageNotes.push('sendto_otherscript (' + message + ') — ' + translatePro('Der Zielausdruck muss die Empfangsadresse des Studio-Skripts liefern.', locale));
-    } else if (block.type === 'ha_js_script_message_receive') {
-      messageNotes.push('onMessage (' + message + ') — ' + translatePro('Empfangsadresse eintragen, die der Sender verwendet.', locale));
-    }
-    const metadata = block.extraState;
-    if (block.type === 'iob_get_dynamic_value') dynamicIds++;
-    if (block.type === 'iob_placeholder') {
-      const type = metadata?.type ?? '?';
-      missing.set(type, (missing.get(type) ?? 0) + 1);
-    }
-    for (const source of [metadata?.source, ...(metadata?.sources ?? [])]) {
-      if (typeof source === 'string' && source) sources.add(source);
-    }
-    for (const input of Object.values(block.inputs ?? {})) inspect(input.block ?? input.shadow);
-    inspect(block.next?.block);
-  }
-  workspace.blocks.blocks.forEach(inspect);
   const content = element('div');
-  function section(title, entries, empty) {
-    content.append(element('h3', title));
-    if (!entries.length) {
-      content.append(element('p', empty));
-      return;
+  const rows = element('ol');
+  const mappings = new Map();
+  const notes = {
+    iob_trigger: ['on / on_ext', 'HA-Entität als Auslöser zuordnen und die Triggerbedingung prüfen.'],
+    iob_update: ['update', 'Beschreibbaren HA-Helfer passend zum Wert wählen. Für einen numerischen Sensorwert eignet sich input_number.'],
+    iob_control: ['control', 'Steuerbare HA-Entität zuordnen und den verbundenen Wert prüfen.'],
+    iob_toggle: ['toggle', 'Schaltbare HA-Entität zuordnen.'],
+    iob_schedule_entity: ['schedule_by_id', 'Einen HA-Datums- und Uhrzeithelfer (input_datetime) zuordnen.'],
+    iob_get_dynamic_value: ['get_value_var', 'Alle berechneten ioBroker-IDs im Feld ID-Zuordnung (JSON) mit HA-Entitäten verknüpfen.'],
+    ha_js_trigger_value: ['on_source', 'Der Wert kommt aus dem umgebenden Trigger. Einheit und Datentyp des HA-Zustands prüfen.'],
+    ha_js_script_message_request: ['sendto_otherscript', 'Empfangsadresse und Antwortverarbeitung prüfen. Ohne Antwort meldet der Block einen Timeout.'],
+    ha_js_script_message_dynamic: ['sendto_otherscript', 'Der Zielausdruck muss die Empfangsadresse des Studio-Skripts liefern.'],
+    ha_js_script_message_receive: ['onMessage', 'Empfangsadresse eintragen, die der Sender verwendet.'],
+    ha_js_publish_mqtt: ['mqtt_sendmessage', 'MQTT-Topic und Broker-Konfiguration in HA prüfen.'],
+    ha_js_awtrix_notify: ['awtrix-ng', 'MQTT-Präfix des AWTRIX-Geräts eintragen.'],
+    ha_js_awtrix_sound: ['awtrix-ng_playsound', 'MQTT-Präfix des AWTRIX-Geräts eintragen.'],
+  };
+  const replacements = {
+    exec: 'Shell-Befehl durch eine konfigurierte HA-Aktion ersetzen.',
+    http_get: 'HTTP-Aufruf als HA-REST-Befehl konfigurieren und Antwortverarbeitung prüfen.',
+    http_post: 'HTTP-Aufruf als HA-REST-Befehl konfigurieren und Antwortverarbeitung prüfen.',
+    get_value_async: 'HA-Zustand im Block „Zustand lesen“ abfragen und den bisherigen Callback als Folgeblöcke einfügen.',
+  };
+  const allowedDomains = {
+    iob_update: ['input_boolean', 'input_number', 'input_text'],
+    iob_control: ['light', 'switch', 'input_boolean', 'fan', 'input_number', 'input_text'],
+    iob_toggle: ['light', 'switch', 'input_boolean', 'fan'],
+    iob_schedule_entity: ['input_datetime'],
+  };
+  function inspect(block, path) {
+    if (!block) return;
+    const fields = block.fields ?? {};
+    const metadata = block.extraState;
+    const targets = typeof metadata?.source === 'string' ? [[metadata.source, 'ENTITY']] :
+      (metadata?.sources ?? []).map((source, index) => [source, 'TARGET' + index]);
+    const placeholder = block.type === 'iob_placeholder';
+    const type = placeholder ? metadata?.type ?? '?' : notes[block.type]?.[0] ?? block.type;
+    const instruction = placeholder && Object.hasOwn(replacements, type) ? replacements[type] :
+      placeholder ? 'Platzhalter durch einen passenden Blocks-JS-Block ersetzen und Anschlüsse prüfen.' :
+      notes[block.type]?.[1] ?? (targets.length ? 'Passende HA-Entität zuordnen.' : 'Block übernommen.');
+    const row = element('li');
+    row.append(element('strong', path + ' · ' + type), element('p', translatePro(instruction, locale)));
+    if (block.type === 'ha_js_trigger_value') row.append(element('code', fields.PART ?? ''));
+    for (const [source, field] of targets) {
+      if (typeof source !== 'string' || !source) continue;
+      if (!mappings.has(source)) mappings.set(source, []);
+      const linked = mappings.get(source);
+      const line = element('p');
+      const target = button(fields[field] && fields[field] !== '—' ? fields[field] : 'HA-Entität zuordnen', () => {
+        const restrictions = linked.map(item => item.domains).filter(Boolean);
+        const domains = restrictions[0]?.filter(domain => restrictions.every(allowed => allowed.includes(domain)));
+        if (domains?.length === 0) return;
+        openBlockEntity({kind: 'entity_id', domains}, block.fields?.[field] === '—' ? '' : block.fields?.[field] ?? '', value => {
+          for (const item of linked) {
+            (item.block.fields ??= {})[item.field] = value;
+            item.target.textContent = value;
+          }
+        }, value => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value) && (!domains || domains.includes(value.split('.')[0])));
+      });
+      target.dataset.userText = '';
+      target.setAttribute('aria-label', 'HA-Entität zuordnen · ' + path + ' · ' + source);
+      linked.push({block, field, target, domains: allowedDomains[block.type]});
+      line.append(element('code', source), ' → ', target);
+      row.append(line);
     }
-    const list = element('ul');
-    entries.forEach(entry => list.append(element('li', entry)));
-    content.append(list);
+    rows.append(row);
+    for (const [slot, input] of Object.entries(block.inputs ?? {})) inspect(input.block ?? input.shadow, path + '/' + slot);
+    inspect(block.next?.block, path + '/↓');
   }
-  section('Nicht unterstützte Blöcke', [...missing].sort().map(([type, count]) => type + ' × ' + count),
-    'Keine nicht unterstützten Blöcke gefunden.');
-  if (missing.size || messageNotes.length) {
-    section('Nötige Codeanpassungen', [...missing.keys()].sort().map(type =>
-      type + ' — ' + translatePro(replacements.get(type) ?? 'Platzhalter durch einen passenden Blocks-JS-Block ersetzen und Anschlüsse prüfen.', locale)).concat(messageNotes));
+  workspace.blocks.blocks.forEach((block, index) => inspect(block, String(index + 1)));
+  for (const linked of mappings.values()) {
+    const restrictions = linked.map(item => item.domains).filter(Boolean);
+    if (restrictions.length && !restrictions[0].some(domain => restrictions.every(allowed => allowed.includes(domain)))) {
+      for (const {target} of linked) {
+        target.disabled = true;
+        target.textContent = 'Unterschiedliche HA-Entitätstypen erforderlich. Blöcke nach dem Öffnen anpassen.';
+      }
+    }
   }
-  section('ioBroker-IDs zur Zuordnung', [...sources].sort(), 'Keine festen ioBroker-IDs zur Zuordnung gefunden.');
-  if (dynamicIds) {
-    content.append(element('h3', 'Berechnete ioBroker-IDs'),
-      element('p', translatePro('Betroffene Blöcke', locale) + ' (' + dynamicIds + ')'),
-      element('p', 'Hinterlege im Feld ID-Zuordnung (JSON) für jede mögliche ioBroker-ID die passende HA-Entität.'));
-  }
-  content.append(element('p', 'Ersetze Platzhalter und ordne die ioBroker-IDs in den Blöcken zu. Prüfe anschließend den erzeugten JavaScript-Code.'));
+  rows.style.maxHeight = '55vh';
+  rows.style.overflowY = 'auto';
+  content.append(element('p', 'Prüfe die Zuordnung und Hinweise für jeden importierten Block.'), rows);
   content.append(button('Als Projekt öffnen', () => {
     dialog.close();
     add({type: 'blocks-js', name, workspace});
@@ -1710,6 +1737,20 @@ async function renderBlocks(panel, project, id) {
     toolIcon(expert, 'code', 'Quelltext anzeigen', safely(showSource));
     toolIcon(right, 'export', 'Blöcke exportieren', () => exportEditorData(project.name,
       {type: project.type, workspace: blocks.exportSelection()}));
+    if (isJavaScript) expert.append(button('ioBroker-Export einfügen', () => {
+      const content = element('div');
+      const input = element('textarea');
+      input.setAttribute('aria-label', 'ioBroker-Export');
+      const status = element('p');
+      content.append(input, status, button('Import prüfen', () => {
+        try {
+          const imported = importIoBroker(input.value);
+          pasteDialog.close();
+          reviewIoBrokerImport(project.name + ' · ioBroker', imported);
+        } catch (error) { status.textContent = error.message; }
+      }));
+      const pasteDialog = editorDialog('ioBroker-Export einfügen', content);
+    }));
     toolIcon(isJavaScript ? expert : right, 'import', 'Blöcke importieren', () => importEditorData(project, (text, filename) => {
       const name = filename.replace(/\.[^.]+$/, '');
       if (!filename.toLowerCase().endsWith('.json')) {
