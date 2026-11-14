@@ -771,10 +771,19 @@ function reviewIoBrokerImport(name, workspace) {
     ['get_value_async', 'HA-Zustand im Block „Zustand lesen“ abfragen und den bisherigen Callback als Folgeblöcke einfügen.'],
   ]);
   const missing = new Map();
+  const messageNotes = [];
   const sources = new Set();
   let dynamicIds = 0;
   function inspect(block) {
     if (!block) return;
+    const message = block.fields?.MESSAGE ?? 'customMessage';
+    if (block.type === 'ha_js_script_message_request') {
+      messageNotes.push('sendto_otherscript (' + message + ') — ' + translatePro('Empfangsadresse und Antwortverarbeitung prüfen. Ohne Antwort meldet der Block einen Timeout.', locale));
+    } else if (block.type === 'ha_js_script_message_dynamic') {
+      messageNotes.push('sendto_otherscript (' + message + ') — ' + translatePro('Der Zielausdruck muss die Empfangsadresse des Studio-Skripts liefern.', locale));
+    } else if (block.type === 'ha_js_script_message_receive') {
+      messageNotes.push('onMessage (' + message + ') — ' + translatePro('Empfangsadresse eintragen, die der Sender verwendet.', locale));
+    }
     const metadata = block.extraState;
     if (block.type === 'iob_get_dynamic_value') dynamicIds++;
     if (block.type === 'iob_placeholder') {
@@ -801,9 +810,9 @@ function reviewIoBrokerImport(name, workspace) {
   }
   section('Nicht unterstützte Blöcke', [...missing].sort().map(([type, count]) => type + ' × ' + count),
     'Keine nicht unterstützten Blöcke gefunden.');
-  if (missing.size) {
+  if (missing.size || messageNotes.length) {
     section('Nötige Codeanpassungen', [...missing.keys()].sort().map(type =>
-      type + ' — ' + translatePro(replacements.get(type) ?? 'Platzhalter durch einen passenden Blocks-JS-Block ersetzen und Anschlüsse prüfen.', locale)));
+      type + ' — ' + translatePro(replacements.get(type) ?? 'Platzhalter durch einen passenden Blocks-JS-Block ersetzen und Anschlüsse prüfen.', locale)).concat(messageNotes));
   }
   section('ioBroker-IDs zur Zuordnung', [...sources].sort(), 'Keine festen ioBroker-IDs zur Zuordnung gefunden.');
   if (dynamicIds) {

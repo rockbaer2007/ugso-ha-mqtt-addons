@@ -3,6 +3,7 @@ import {connectHomeAssistant} from './ha-connection.mjs';
 import {importedNamedScheduleMatcher, dateTimeSchedule, scheduleClock, scheduleMatcher, sunSchedule} from './live-schedule.mjs';
 import {guestTimeApi, sunTimeAttributes, timeOperations} from './ha-time.mjs';
 import {importedSystem} from './imported-system.mjs';
+import {scriptRequests} from './script-requests.mjs';
 
 function report(type, text = '') {
   process.stdout.write(JSON.stringify({type, text: text.slice(0, 1000)}) + '\n');
@@ -174,7 +175,8 @@ try {
       const timeRequest = (op, args) => JSON.parse(call('time', op, args));
       const astroTimeRequest = (event, offset) => Number(call('astroTime', event, offset));
       ${importedSystem}
-      const ha = Object.freeze({${guestTimeApi} importedControl, importedStateValue, importedEventValue, importedTarget, importedAttribute, log, timeout: (n,d,fn) => timer(n,d,fn,false),
+      ${scriptRequests}
+      const ha = Object.freeze({${guestTimeApi} requestScriptMessage, importedControl, importedStateValue, importedEventValue, importedTarget, importedAttribute, log, timeout: (n,d,fn) => timer(n,d,fn,false),
         pause: delay => new Promise(resolve => timer(Symbol(), delay, resolve, false)),
         publishMqtt: (topic, message, retain = false) => call('publishMqtt', topic, message, retain),
         notify: (entity, message, title = '') => call('notify', entity, message, title),
