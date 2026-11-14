@@ -1,20 +1,29 @@
 import {SourceMap} from 'node:module';
 
-export async function prepareSource(source, language) {
+export async function prepareSource(source, language, libraries = []) {
   let code = source;
   let map;
   let offset = 0;
   const file = 'studio-source.js';
   const originalLines = source.split(/\r\n|[\n\r\u2028\u2029]/).length;
-  if (language === 'typescript') {
+  let modules = [];
+  let prelude = '';
+  if (libraries.length) {
+    const {prepareLibraries, libraryPrelude} = await import('./shared-scripts.mjs');
+    modules = prepareLibraries(libraries);
+    prelude = libraryPrelude(modules);
+  }
+  if (language === 'typescript' || modules.some(module => module.file.endsWith('.ts'))) {
     const {checkTypeScript} = await import('./typescript-check.mjs');
-    const diagnostics = checkTypeScript(source);
+    const diagnostics = checkTypeScript(language === 'typescript' ? source : '', modules);
     if (diagnostics.length) {
       const error = new Error(diagnostics[0].message);
       error.line = diagnostics[0].line;
       error.diagnostics = diagnostics;
       throw error;
     }
+  }
+  if (language === 'typescript') {
     const {default: ts} = await import('typescript');
     const result = ts.transpileModule(source, {
       fileName: 'project.ts', reportDiagnostics: true,
@@ -35,6 +44,7 @@ export async function prepareSource(source, language) {
   return {
     file,
     wrap(prefix, suffix) {
+      prefix += prelude;
       offset = prefix.split('\n').length - 1;
       return prefix + code + suffix;
     },

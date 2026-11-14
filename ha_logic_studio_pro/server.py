@@ -156,7 +156,37 @@ class ProjectStore(Store):
                 if key == 'projects' and (type(value.get('autostart', False)) is not bool or
                         (value.get('autostart') and value['type'] not in ('javascript', 'typescript', 'flow'))):
                     raise ValueError('Ungültige Autostart-Einstellung.')
+                if key == 'projects':
+                    shared_script_ids(value.get('sharedScripts', []))
         return self.commit(user, payload['revision'], {'tree': tree, 'owner': user})
+
+
+def shared_script_ids(ids):
+    if (not isinstance(ids, list) or len(ids) > 8 or
+            any(not isinstance(item, str) or not re.fullmatch(r'[0-9]{1,15}', item) for item in ids) or
+            len(set(ids)) != len(ids)):
+        raise ValueError('Ungültige Auswahl globaler Skripte.')
+    return ids
+
+
+def shared_scripts(saved, ids, project_id=None):
+    ids = shared_script_ids(ids)
+    if not ids:
+        return []
+    projects = dict((saved['tree'] or {}).get('projects', []))
+    libraries = []
+    total = 0
+    for script_id in ids:
+        script = projects.get(script_id, {})
+        if (script_id == project_id or script.get('folder') != 'global' or
+                script.get('type') not in ('javascript', 'typescript')):
+            raise ValueError('Globales Skript fehlt oder ist nicht verfügbar: ' + script_id)
+        source, language = runtime_source(script)
+        total += len(source.encode('utf-8'))
+        if total > 64_000:
+            raise ValueError('Globale Skripte dürfen zusammen höchstens 64 KB umfassen.')
+        libraries.append({'id': script_id, 'name': script['name'][:100], 'source': source, 'language': language})
+    return libraries
 
 
 def runtime_source(project, blocks_source=None):
@@ -259,7 +289,7 @@ class ScriptRuntime:
                     result[project_id]['diagnosis'] = diagnosis
         return result
 
-    def control(self, user, project_id, command, source=None, language=None, home_assistant=None):
+    def control(self, user, project_id, command, source=None, language=None, home_assistant=None, libraries=None):
         key = (user, project_id)
         with self.lock:
             previous = self.jobs.get(key)
@@ -280,11 +310,12 @@ class ScriptRuntime:
             env = {key: value for key, value in os.environ.items()
                    if key.upper() in {'PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR'}}
             with tempfile.TemporaryFile() as input_file:
-                payload = {'source': source, 'language': language, 'homeAssistant': home_assistant}
+                payload = {'source': source, 'language': language, 'homeAssistant': home_assistant,
+                           'libraries': libraries or []}
                 if language == 'flow' and json.loads(source).get('retainMemory') is True and self.memory_root:
                     digest = hashlib.sha256(json.dumps([user, project_id], ensure_ascii=False).encode()).hexdigest()
                     payload['memoryFile'] = str(self.memory_root / (digest + '.json'))
-                input_file.write(json.dumps(payload).encode())
+                input_file.write(json.dumps(payload, ensure_ascii=False).encode('utf-8'))
                 input_file.seek(0)
                 runner = 'fbd-run.mjs' if language == 'flow' else 'live-run.mjs'
                 process = subprocess.Popen(['node', str(ROOT / 'runtime' / runner)], stdin=input_file,
@@ -373,7 +404,9 @@ class LogicServer(ThreadingHTTPServer):
             try:
                 source, language = runtime_source(project)
                 options = self.live_runtime_config()
-                self.runtime.control(user, project_id, 'start', source, language, {**options, 'startupRetry': True})
+                libraries = shared_scripts(self.projects.read(user), project.get('sharedScripts', []), project_id)
+                self.runtime.control(user, project_id, 'start', source, language,
+                                     {**options, 'startupRetry': True}, libraries)
             except (ValueError, OSError, subprocess.SubprocessError) as error:
                 self.runtime.startup_error(user, project_id, error)
 
@@ -585,7 +618,9 @@ class Handler(SimpleHTTPRequestHandler):
                     raise ValueError('Projektstand neu laden.')
                 project = dict((saved['tree'] or {}).get('projects', [])).get(project_id, {})
                 source, language = runtime_source(project, payload.get('source'))
-                self.server.runtime.control(user, project_id, command, source, language, self.server.live_runtime_config())
+                libraries = shared_scripts(saved, project.get('sharedScripts', []), project_id)
+                self.server.runtime.control(user, project_id, command, source, language,
+                                            self.server.live_runtime_config(), libraries)
             self.reply(200, self.server.runtime.status(user, lambda: self.server.projects.read(user)))
         except (ValueError, UnicodeError) as error:
             self.reply(400, {'error': str(error)})
@@ -630,8 +665,13 @@ class Handler(SimpleHTTPRequestHandler):
             if language not in ('javascript', 'typescript'):
                 raise ValueError()
             check_only = payload.get('checkOnly') is True and language == 'typescript'
-        except (ValueError, UnicodeError):
-            self.reply(400, {'error': 'JavaScript-Quelltext mit höchstens 64 KB eingeben.'})
+            ids = payload.get('sharedScripts', [])
+            if ids and not self.runtime_user():
+                self.reply(403, {'error': 'Benutzerkennung fehlt.'})
+                return
+            libraries = shared_scripts(self.server.projects.read(self.user()), ids) if ids else []
+        except (ValueError, UnicodeError) as error:
+            self.reply(400, {'error': str(error) or 'JavaScript-Quelltext mit höchstens 64 KB eingeben.'})
             return
         if not TEST_RUN_SLOTS.acquire(blocking=False):
             self.reply(429, {'error': 'Zwei Testläufe sind bereits aktiv.'})
@@ -655,7 +695,7 @@ class Handler(SimpleHTTPRequestHandler):
             result = subprocess.run(
                 ['node', str(ROOT / 'runtime' / 'test-run.mjs'), '--stdin'],
                 input=json.dumps({'source': source, 'language': language, 'timeZone': time_zone,
-                                  'checkOnly': check_only}), encoding='utf-8',
+                                  'checkOnly': check_only, 'libraries': libraries}, ensure_ascii=False), encoding='utf-8',
                 capture_output=True, timeout=5, env=env, check=True,
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
             )

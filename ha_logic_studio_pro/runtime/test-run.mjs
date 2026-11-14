@@ -10,14 +10,14 @@ const maxTrace = 100;
 const id = /^[a-z0-9_]+\.[a-z0-9_]+$/;
 const demoStates = Object.freeze({'binary_sensor.bewegung': 'on', 'light.flur': 'off', 'sensor.demo_temperature': '21'});
 
-export async function testRun(source, language = 'javascript', timeZone, start = Date.now()) {
+export async function testRun(source, language = 'javascript', timeZone, start = Date.now(), libraries) {
   let elapsed = 0;
   const time = timeOperations(timeZone ?? undefined, () => start + elapsed);
   if (typeof source !== 'string' || !source.trim() || Buffer.byteLength(source) > maxSource) {
     throw new Error('JavaScript-Quelltext mit höchstens 64 KB eingeben.');
   }
   if (!['javascript', 'typescript'].includes(language)) throw new Error('Unbekannte Skriptsprache.');
-  const project = await prepareSource(source, language);
+  const project = await prepareSource(source, language, libraries);
   const engine = await getQuickJS();
   const runtime = engine.newRuntime();
   runtime.setMemoryLimit(16 * 1024 * 1024);
@@ -202,11 +202,11 @@ if (process.argv.includes('--stdin')) {
       if (size > 400_000) throw new Error('Anfrage zu groß.');
       chunks.push(chunk);
     }
-    const {source, language, timeZone, checkOnly} = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    const {source, language, timeZone, checkOnly, libraries} = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     if (checkOnly) {
-      await prepareSource(source, language);
+      await prepareSource(source, language, libraries);
       process.stdout.write(JSON.stringify({ok: true}));
-    } else process.stdout.write(JSON.stringify(await testRun(source, language, timeZone)));
+    } else process.stdout.write(JSON.stringify(await testRun(source, language, timeZone, Date.now(), libraries)));
   } catch (error) {
     process.stdout.write(JSON.stringify({ok: false, error: error.message, line: error.line, diagnostics: error.diagnostics}));
   }

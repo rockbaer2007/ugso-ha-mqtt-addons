@@ -11,8 +11,8 @@ function report(type, text = '', line) {
 }
 
 try {
-  const {source, language, homeAssistant} = JSON.parse(await readInput());
-  const project = await prepareSource(source, language);
+  const {source, language, homeAssistant, libraries} = JSON.parse(await readInput());
+  const project = await prepareSource(source, language, libraries);
   const engine = await getQuickJS();
   const runtime = engine.newRuntime();
   runtime.setMemoryLimit(16 * 1024 * 1024);

@@ -53,7 +53,7 @@ function projectMessage(text) {
   $('project-message').hidden = !text;
 }
 
-const editable = ['name', 'source', 'workspace', 'fields', 'graph', 'autostart'];
+const editable = ['name', 'source', 'workspace', 'fields', 'graph', 'autostart', 'sharedScripts'];
 function snapshot(project) {
   return structuredClone(Object.fromEntries(editable.map(key => [key, project[key]])));
 }
@@ -1781,7 +1781,7 @@ function renderJavaScript(panel, project) {
       const response = await fetch('./api/pro-test-run', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({source, language: project.type, checkOnly}),
+        body: JSON.stringify({source, language: project.type, checkOnly, sharedScripts: project.sharedScripts}),
       });
       const result = await response.json();
       if (projects.get(active) === project && project.source === source) {
@@ -1815,6 +1815,43 @@ function renderJavaScript(panel, project) {
     check.disabled = Boolean(project.running);
     right.append(check);
   }
+  const sharedLabels = {
+    de: ['Globale Skripte', 'Gespeicherte Skripte auswählen. Mit export function werden Funktionen freigegeben.', 'Übernehmen', 'Keine globalen JavaScript- oder TypeScript-Skripte gespeichert.'],
+    en: ['Global scripts', 'Select saved scripts. Use export function to expose functions.', 'Apply', 'No global JavaScript or TypeScript scripts saved.'],
+    fr: ['Scripts globaux', 'Sélectionnez des scripts enregistrés. Utilisez export function pour exposer les fonctions.', 'Appliquer', 'Aucun script JavaScript ou TypeScript global enregistré.'],
+  };
+  const [sharedLabel, sharedHelp, sharedApply, sharedEmpty] = sharedLabels[document.documentElement.lang] ?? sharedLabels.de;
+  right.append(button(sharedLabel, () => {
+    const content = element('div');
+    content.append(element('p', sharedHelp));
+    const selected = new Set(project.sharedScripts ?? []);
+    const choices = [...projects].filter(([id, item]) => id !== active && checkpoints.has(id) && item.folder === 'global' &&
+      ['javascript', 'typescript'].includes(item.type));
+    if (!choices.length) content.append(element('p', sharedEmpty));
+    for (const [id, item] of choices) {
+      const label = element('label');
+      label.style.display = 'block';
+      const toggle = element('input');
+      toggle.type = 'checkbox';
+      toggle.checked = selected.has(id);
+      toggle.onchange = () => {
+        if (!toggle.checked) selected.delete(id);
+        else if (selected.size < 8) selected.add(id);
+        else toggle.checked = false;
+      };
+      label.append(toggle, element('span', item.name + ' · shared.script_' + id));
+      content.append(label);
+    }
+    const available = new Set(choices.map(([id]) => id));
+    const dialog = editorDialog(sharedLabel, content);
+    content.append(button(sharedApply, () => {
+      const scripts = [...selected].filter(id => available.has(id));
+      if (scripts.length) project.sharedScripts = scripts;
+      else delete project.sharedScripts;
+      refreshRuntimeControls();
+      dialog.close();
+    }));
+  }));
   const expert = expertTools(right);
   toolIcon(expert, 'code', 'Quelltext anzeigen', () => showSource(project.source));
   toolIcon(expert, 'time', 'Zeitplan einfügen', () => {
