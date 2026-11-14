@@ -1465,8 +1465,13 @@ function renderRules(panel, project) {
     fr: ['Lever / Coucher du soleil', 'Lever du soleil', 'Coucher du soleil', 'Décalage en minutes (− avant, + après)'],
   })[locale];
   const helperTime = ({de: 'Uhrzeit aus Helfer', en: 'Time from helper', fr: 'Heure depuis un assistant'})[locale] ?? 'Time from helper';
+  const [mqtt, topic, payload] = (({
+    de: ['MQTT-Nachricht', 'MQTT-Topic', 'Payload-Filter (optional)'],
+    en: ['MQTT message', 'MQTT topic', 'Payload filter (optional)'],
+    fr: ['Message MQTT', 'Topic MQTT', 'Filtre de contenu (facultatif)'],
+  })[locale] ?? ['MQTT message', 'MQTT topic', 'Payload filter (optional)']);
   const triggerKinds = [['state', status, 'ϟ'], ['numeric', threshold, '↗'], ['time', schedule, '◷'],
-    ['helper_time', helperTime, '◷'], ['sun', sun, '☀'], ['event', event, '✉']];
+    ['helper_time', helperTime, '◷'], ['sun', sun, '☀'], ['mqtt', mqtt, '✉'], ['event', event, '✉']];
   const [from, to, attribute, hold, numeric, above, below, delay, seconds, parameters, actionType] = ({
     de: ['Von', 'Nach', 'Attribut (optional)', 'Mindestdauer (Sekunden)', 'Zahlenwert', 'Über', 'Unter', 'Verzögerung', 'Sekunden', 'Parameter (JSON)', 'Schritttyp'],
     en: ['From', 'To', 'Attribute (optional)', 'Minimum duration (seconds)', 'Numeric state', 'Above', 'Below', 'Delay', 'Seconds', 'Parameters (JSON)', 'Step type'],
@@ -1525,6 +1530,7 @@ function renderRules(panel, project) {
       if (key === 'triggers') {
         if (entry.type === 'time') labels = [['time', time]];
         else if (entry.type === 'helper_time') labels = [['entity', helperTime]];
+        else if (entry.type === 'mqtt') labels = [['topic', topic], ['payload', payload]];
         else if (entry.type === 'sun') labels = [['event', sun], ['offsetMinutes', offsetMinutes]];
         else if (entry.type === 'event') labels = [['event', eventType]];
         else if (entry.type === 'numeric') labels = [['entity', entity], ['attribute', attribute], ['above', above], ['below', below], ['seconds', hold]];
@@ -1557,7 +1563,10 @@ function renderRules(panel, project) {
         if (name === 'offsetMinutes') { input.type = 'number'; input.step = '1'; input.placeholder = '0'; }
         if (name === 'above' || name === 'below') { input.type = 'number'; input.step = 'any'; }
         if (name === 'data') { input.rows = 2; input.placeholder = '{}'; }
-        input.oninput = () => { entry[name] = input.value.trim(); changed(); };
+        input.oninput = () => {
+          entry[name] = name === 'topic' || name === 'payload' ? input.value : input.value.trim();
+          changed();
+        };
         const line = element('span');
         line.append(input);
         if (name === 'action') {
