@@ -16,23 +16,27 @@ function duration(value) {
   return {seconds};
 }
 
+function numericLimits({above, below}, invalidMessage) {
+  const limits = {};
+  for (const [key, value] of [['above', above], ['below', below]]) {
+    if (!provided(value)) continue;
+    if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) || !Number.isFinite(Number(value))) {
+      throw new Error(invalidMessage);
+    }
+    limits[key] = Number(value);
+  }
+  if (!Object.keys(limits).length || (limits.above !== undefined && limits.below !== undefined && limits.above >= limits.below)) {
+    throw new Error('Mindestens eine gültige Zahlengrenze eingeben. „Über“ muss kleiner als „Unter“ sein.');
+  }
+  return limits;
+}
+
 function ruleCondition(entry) {
-  const {type, entity, state, attribute, above, below} = entry;
+  const {type, entity, state, attribute} = entry;
   if (!identifier.test(entity || '')) throw new Error('Gültige Bedingungsentität eingeben.');
   const target = {entity_id: entity, ...(provided(attribute) ? {attribute} : {})};
   if (type === 'numeric') {
-    const limits = {};
-    for (const [key, value] of [['above', above], ['below', below]]) {
-      if (!provided(value)) continue;
-      if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value) || !Number.isFinite(Number(value))) {
-        throw new Error('Eine gültige Zahl für die Bedingung eingeben.');
-      }
-      limits[key] = Number(value);
-    }
-    if (!Object.keys(limits).length || (limits.above !== undefined && limits.below !== undefined && limits.above >= limits.below)) {
-      throw new Error('Mindestens eine gültige Zahlengrenze eingeben. „Über“ muss kleiner als „Unter“ sein.');
-    }
-    return {condition: 'numeric_state', ...target, ...limits};
+    return {condition: 'numeric_state', ...target, ...numericLimits(entry, 'Eine gültige Zahl für die Bedingung eingeben.')};
   }
   if (!provided(state)) throw new Error('Einen Zustand für die Bedingung eingeben.');
   return {condition: 'state', ...target, state};
@@ -57,10 +61,10 @@ export function readRuleFields(fields) {
   if (!object(fields)) throw new Error('Ungültige Rules-Datei.');
   if (Object.hasOwn(fields, 'triggers')) {
     const actionFields = ['type', 'action', 'entity', 'data', 'seconds'];
-    const lists = {triggers: ['type', 'entity', 'state', 'from', 'attribute', 'seconds', 'time', 'event'],
+    const lists = {triggers: ['type', 'entity', 'state', 'from', 'attribute', 'seconds', 'time', 'event', 'above', 'below'],
       conditions: ['type', 'entity', 'state', 'attribute', 'above', 'below'],
       actions: actionFields, elseActions: actionFields};
-    const types = {triggers: ['state', 'time', 'event'], conditions: ['state', 'numeric'],
+    const types = {triggers: ['state', 'time', 'event', 'numeric'], conditions: ['state', 'numeric'],
       actions: ['action', 'delay'], elseActions: ['action', 'delay']};
     const rule = {conditionMode: fields.conditionMode};
     if (!['and', 'or', 'not'].includes(rule.conditionMode)) throw new Error('Ungültige Rules-Datei.');
@@ -94,6 +98,9 @@ export function readRuleFields(fields) {
 
 export function makeRulesJavaScript(name, rule) {
   makeYaml({name, kind: 'automation', ...rule});
+  if (rule.triggers.some(t => t.type === 'numeric')) {
+    throw new Error('Rules → JS: Zahlenschwellen als Auslöser benötigen HA-YAML.');
+  }
   if (rule.triggers.some(t => provided(t.from) || provided(t.attribute) || provided(t.seconds) ||
       ((!t.type || t.type === 'state') && !provided(t.state)))) {
     throw new Error('Rules → JS: Der erweiterte Zustandsauslöser benötigt HA-YAML.');
@@ -191,7 +198,8 @@ export function makeYaml({name, kind, triggers = [], condition, conditions = con
   if (!triggers.length) throw new Error('Für eine HA-Automation einen Auslöser hinzufügen.');
   return stringifyForHa({
     ...config,
-    triggers: triggers.map(({entity, state, from, attribute, seconds, type, time, event}) => {
+    triggers: triggers.map(entry => {
+      const {entity, state, from, attribute, seconds, type, time, event} = entry;
       if (type === 'time') {
         if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error('Uhrzeit im Format HH:MM eingeben.');
         return {trigger: 'time', at: time + ':00'};
@@ -201,6 +209,13 @@ export function makeYaml({name, kind, triggers = [], condition, conditions = con
         return {trigger: 'event', event_type: event};
       }
       if (!identifier.test(entity || '')) throw new Error('Gültige Auslöserentität eingeben.');
+      if (type === 'numeric') {
+        const limits = numericLimits(entry, 'Eine gültige Zahl für den Auslöser eingeben.');
+        const trigger = {trigger: 'numeric_state', entity_id: entity, ...limits};
+        if (provided(attribute)) trigger.attribute = attribute;
+        if (provided(seconds)) trigger.for = duration(seconds);
+        return trigger;
+      }
       const trigger = {trigger: 'state', entity_id: entity};
       if (provided(attribute)) trigger.attribute = attribute;
       if (provided(from)) trigger.from = from;

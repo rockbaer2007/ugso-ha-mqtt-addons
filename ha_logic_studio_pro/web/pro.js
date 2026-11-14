@@ -1458,7 +1458,8 @@ function renderRules(panel, project) {
     status, schedule, event, entity, target, time, eventType, service, when, and, then, otherwise, empty, choose] =
     wording[locale] ?? wording.en;
   const ruleLabels = {triggers: when, conditions: and, actions: then, elseActions: otherwise};
-  const triggerKinds = [['state', status, 'ϟ'], ['time', schedule, '◷'], ['event', event, '✉']];
+  const threshold = ({de: 'Zahlenschwelle', en: 'Numeric threshold', fr: 'Seuil numérique'})[locale] ?? 'Numeric threshold';
+  const triggerKinds = [['state', status, 'ϟ'], ['numeric', threshold, '↗'], ['time', schedule, '◷'], ['event', event, '✉']];
   const [from, to, attribute, hold, numeric, above, below, delay, seconds, parameters, actionType] = ({
     de: ['Von', 'Nach', 'Attribut (optional)', 'Mindestdauer (Sekunden)', 'Zahlenwert', 'Über', 'Unter', 'Verzögerung', 'Sekunden', 'Parameter (JSON)', 'Schritttyp'],
     en: ['From', 'To', 'Attribute (optional)', 'Minimum duration (seconds)', 'Numeric state', 'Above', 'Below', 'Delay', 'Seconds', 'Parameters (JSON)', 'Step type'],
@@ -1516,6 +1517,7 @@ function renderRules(panel, project) {
       if (key === 'triggers') {
         if (entry.type === 'time') labels = [['time', time]];
         else if (entry.type === 'event') labels = [['event', eventType]];
+        else if (entry.type === 'numeric') labels = [['entity', entity], ['attribute', attribute], ['above', above], ['below', below], ['seconds', hold]];
         else labels = [['entity', entity], ['attribute', attribute], ['from', from], ['state', to], ['seconds', hold]];
       } else if (key === 'conditions') {
         labels = [['entity', entity], ['attribute', attribute],
