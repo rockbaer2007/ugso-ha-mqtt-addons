@@ -1,4 +1,5 @@
 import {parseDocument, stringify} from './vendor/pro-yaml.js';
+import {mountYamlFlow} from './vendor/yaml-flow.js?v=0.1.87-1';
 
 export function renderYamlPreview(container, source, kind, labels) {
   const node = (tag, text, css) => {
@@ -8,44 +9,80 @@ export function renderYamlPreview(container, source, kind, labels) {
     return value;
   };
   const list = value => Array.isArray(value) ? value : value ? [value] : [];
-  const card = (title, value, role) => {
-    const details = node('details', '', 'yaml-flow-card');
-    details.dataset.role = role;
-    details.append(node('summary', title), node('pre', stringify(value)));
-    return details;
-  };
+  const unmount = [];
   const summary = (step, role) => {
     const type = step?.[role] ?? (role === 'action' ? step?.service : undefined);
     const target = step?.target?.entity_id ?? step?.entity_id ?? step?.target?.device_id;
-    return [(step?.alias || type || (step && Object.keys(step)[0]) || role),
-      step?.id, ...list(target)].filter(Boolean).join(' · ');
+    const names = list(target).map(id => String(id).replace(/^[^.]+\./, '').replaceAll('_', ' '));
+    return {
+      kind: type || (step && Object.keys(step)[0]) || role,
+      name: step?.alias || step?.id || names[0],
+      detail: [names.join(', '), list(step?.to ?? step?.options?.event_type).join(' / ')].filter(Boolean).join(' · '),
+    };
   };
-  function steps(values, role, depth = 0) {
-    const sequence = node('div', '', 'yaml-flow-sequence');
-    for (const step of list(values)) {
-      if (role !== 'action' || !Array.isArray(step?.choose) || depth >= 12) {
-        sequence.append(card(summary(step, role), step, role));
-        continue;
-      }
-      const choice = node('section', '', 'yaml-flow-choice');
-      choice.append(card(step.alias || 'choose', step, 'choice'));
-      const branches = node('div', '', 'yaml-flow-branches');
-      for (const [index, branch] of step.choose.entries()) {
-        const lane = node('section', '', 'yaml-flow-branch');
-        lane.append(node('strong', branch?.alias || labels.option + ' ' + (index + 1)),
-          steps(branch?.conditions, 'condition', depth + 1),
-          steps(branch?.sequence, 'action', depth + 1));
-        branches.append(lane);
-      }
-      if (Object.hasOwn(step, 'default')) {
-        const lane = node('section', '', 'yaml-flow-branch');
-        lane.append(node('strong', labels.default), steps(step.default, 'action', depth + 1));
-        branches.append(lane);
-      }
-      choice.append(branches);
-      sequence.append(choice);
+  function drawFlow(entry) {
+    const canvas = node('div', '', 'yaml-flow-canvas');
+    const edges = [];
+    const lanes = [];
+    function add(title, value, role, column, row, inputs) {
+      if (edges.length + lanes.length > 1000) throw new Error(labels.unavailable);
+      const item = String(lanes.length);
+      lanes.push({id: item, type: 'step', position: {x: (column - 1) * 265, y: row - 1},
+        data: {...(typeof title === 'string' ? {kind: title} : title), yaml: stringify(value), role, incoming: inputs.length > 0}});
+      for (const source of inputs) edges.push([source, item]);
+      return item;
     }
-    return sequence;
+    function steps(values, role, inputs, column, row, depth = 0) {
+      let nextRow = row + 1;
+      let output = inputs;
+      for (const step of list(values)) {
+        const choice = role === 'action' && Array.isArray(step?.choose);
+        const item = add(summary(step, role), step, choice ? 'choice' : role, column++, row, output);
+        output = [item];
+        if (!choice || depth >= 12) {
+          continue;
+        }
+        const branches = step.choose.map((branch, index) =>
+          [branch?.alias || labels.option + ' ' + (index + 1), branch]);
+        branches.push([labels.default, {sequence: step.default}]);
+        lanes[Number(item)].data.ports = branches.map(([title, branch]) => ({
+          title, detail: list(branch?.conditions).map(check => {
+            const info = summary(check, 'condition');
+            return [info.kind, info.name].filter(Boolean).join(' · ');
+          }).join(', '),
+        }));
+        const branchColumn = column;
+        let branchRow = row;
+        output = [];
+        for (const [index, [, branch]] of branches.entries()) {
+          const actions = steps(branch?.sequence, 'action', [{id: item, handle: String(index)}], branchColumn, branchRow, depth + 1);
+          column = Math.max(column, actions.column);
+          branchRow = actions.nextRow;
+          output.push(...actions.output);
+        }
+        nextRow = Math.max(nextRow, branchRow);
+      }
+      return {output, column, nextRow};
+    }
+    const triggers = list(entry.triggers ?? entry.trigger);
+    const inputs = triggers.map((step, index) =>
+      add(summary(step, 'trigger'), step, 'trigger', 1, index + 1, []));
+    const conditions = steps(entry.conditions ?? entry.condition, 'condition', inputs, inputs.length ? 2 : 1, 1);
+    steps(entry.sequence ?? entry.actions ?? entry.action, 'action', conditions.output, conditions.column, 1);
+    if (!lanes.length) add(labels.unavailable, entry, 'action', 1, 1, []);
+    const rows = [];
+    for (const {position, data} of lanes) {
+      rows[position.y] = Math.max(rows[position.y] ?? 0, 124, 108 + (data.ports?.length ?? 0) * 16);
+    }
+    const offsets = Array.from({length: rows.length});
+    let offset = 0;
+    for (let row = 0; row < rows.length; row++) {
+      offsets[row] = offset;
+      offset += rows[row] ?? 124;
+    }
+    for (const {position} of lanes) position.y = offsets[position.y];
+    unmount.push(mountYamlFlow(canvas, lanes, edges, labels));
+    return canvas;
   }
   container.replaceChildren();
   try {
@@ -60,23 +97,12 @@ export function renderYamlPreview(container, source, kind, labels) {
       if (!entry || typeof entry !== 'object' || Array.isArray(entry)) throw new Error(labels.unavailable);
       const flow = node('section', '', 'yaml-flow');
       flow.append(node('h3', entry.alias || name || labels.title));
-      const columns = node('div', '', 'yaml-flow-columns');
-      const groups = [
-        ['trigger', entry.triggers ?? entry.trigger],
-        ['condition', entry.conditions ?? entry.condition],
-        ['action', entry.sequence ?? entry.actions ?? entry.action],
-      ];
-      for (const [role, values] of groups) {
-        if (!list(values).length) continue;
-        const column = node('section', '', 'yaml-flow-column');
-        column.append(node('h4', labels[role]), steps(values, role));
-        columns.append(column);
-      }
-      if (!columns.childElementCount) columns.append(card(labels.unavailable, entry, 'action'));
-      flow.append(columns);
+      flow.append(drawFlow(entry));
       container.append(flow);
     }
   } catch (error) {
+    unmount.splice(0).forEach(dispose => dispose());
     container.replaceChildren(node('p', error.message));
   }
+  return () => unmount.splice(0).forEach(dispose => dispose());
 }

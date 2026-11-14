@@ -1,4 +1,5 @@
-import {renderYamlPreview} from './yaml-preview.js';
+import {renderYamlPreview} from './yaml-preview.js?v=0.1.87-1';
+import {parseDocument} from './vendor/pro-yaml.js';
 import {makeYaml, validateYaml, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js';
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
@@ -67,10 +68,16 @@ function hasUnsavedChanges(id) {
 }
 
 function refreshRuntimeControls(id = active) {
+  const dirty = hasUnsavedChanges(id);
+  if (id === active) {
+    for (const control of editor.querySelectorAll('.editor-commit, .editor-discard')) {
+      control.disabled = !dirty;
+    }
+  }
   for (const control of document.querySelectorAll('[data-runtime-project]')) {
     if (control.dataset.runtimeProject !== id) continue;
     if (control.dataset.runtimeRestart === 'true') {
-      control.disabled = sortingProjects || runtimeRequest || hasUnsavedChanges(id);
+      control.disabled = sortingProjects || runtimeRequest || dirty;
     } else updateEngineControl(control, id);
   }
   if (flowProjectId === id && active === id) sendFlowDiagnosis();
@@ -97,9 +104,15 @@ function commitEditor(id) {
   const project = projects.get(id);
   if (active === id && project.type === 'flow') captureFlow();
   if (active === id && blocks) project.workspace = blocks.snapshot();
+  const previous = checkpoints.get(id);
+  const wasNew = unsavedProjects.has(id);
   checkpoints.set(id, snapshot(project));
   unsavedProjects.delete(id);
   const accepted = saveProjects();
+  if (!accepted) {
+    checkpoints.set(id, previous);
+    if (wasNew) unsavedProjects.add(id);
+  }
   refreshRuntimeControls(id);
   return accepted;
 }
@@ -1110,6 +1123,7 @@ function renderNavigation() {
 }
 
 function leaveEditor() {
+  editor.querySelector('.project-panel')?.dispatchEvent(new Event('editor-close'));
   captureFlow();
   codeEditor?.destroy();
   codeEditor = undefined;
@@ -1249,10 +1263,14 @@ function show(id, refresh = false) {
         }}));
       }
       legacyChecked = true;
+      const saved = checkpoints.get(id);
+      const planWasDirty = JSON.stringify(project.graph.plan) !== JSON.stringify(saved.graph?.plan);
       doc.documentElement.setAttribute('data-pro-plan-loaded', '');
       doc.dispatchEvent(new CustomEvent('pro-fbd-load', {detail: project.graph.plan}));
       flowProjectId = id;
-      sendFlowDiagnosis();
+      captureFlow();
+      if (!planWasDirty) saved.graph = {...saved.graph, plan: structuredClone(project.graph.plan)};
+      refreshRuntimeControls(id);
     };
     if (flowFrame && flowProjectId !== id) {
       flowFrame.remove();
@@ -1320,12 +1338,12 @@ function toolbar(panel, project) {
   name.value = project.name;
   name.maxLength = 100;
   name.setAttribute('aria-label', 'Projektname');
-  name.onchange = () => {
+  name.oninput = () => {
     project.name = name.value.trim() || project.name;
-    name.value = project.name;
     renderNavigation();
     refreshRuntimeControls();
   };
+  name.onchange = () => { name.value = project.name; };
   row.append(name);
   const id = active;
   if (['javascript', 'typescript', 'flow'].includes(project.type)) {
@@ -1367,6 +1385,7 @@ function toolbar(panel, project) {
   });
   save.className = 'editor-commit';
   cancel.className = 'editor-discard';
+  save.disabled = cancel.disabled = !hasUnsavedChanges(id);
   row.append(save, cancel);
   panel.append(row);
   return row;
@@ -1380,6 +1399,7 @@ function sourceArea(panel, project, label, onEdit) {
   area.value = project.source;
   area.oninput = () => {
     project.source = area.value;
+    refreshRuntimeControls();
     onEdit?.();
   };
   panel.append(area);
@@ -1415,28 +1435,81 @@ function renderYaml(panel, project) {
       return false;
     }
   };
-  row.append(button('Prüfen', check), button('Exportieren', () => {
+  const yamlExport = button('Exportieren', () => {
     if (check()) {
       const name = project.name.replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 180) || 'logic-studio';
       download(name + '.' + project.kind + '.yaml', project.source);
     }
-  }));
+  });
   const [title, trigger, condition, action, option, fallback, unavailable] = ({
     de: ['Grafische Vorschau', 'Auslöser', 'Bedingungen', 'Aktionen', 'Option', 'Standard', 'Keine Vorschau verfügbar'],
     en: ['Visual preview', 'Triggers', 'Conditions', 'Actions', 'Option', 'Default', 'Preview unavailable'],
     fr: ['Aperçu graphique', 'Déclencheurs', 'Conditions', 'Actions', 'Option', 'Par défaut', 'Aperçu indisponible'],
   })[locale] ?? ['Visual preview', 'Triggers', 'Conditions', 'Actions', 'Option', 'Default', 'Preview unavailable'];
-  const preview = element('details');
+  const [graphicLabel, jsonLabel, downloadLabel] = ({
+    de: ['Grafisch', 'JSON-Export', 'JSON herunterladen'],
+    en: ['Graph', 'JSON export', 'Download JSON'],
+    fr: ['Graphique', 'Export JSON', 'Télécharger le JSON'],
+  })[locale] ?? ['Graph', 'JSON export', 'Download JSON'];
+  const views = element('div');
+  views.className = 'yaml-view-switch';
+  views.setAttribute('role', 'group');
+  views.setAttribute('aria-label', title);
+  row.append(views, button('Prüfen', check), yamlExport);
   const flow = element('div');
-  const refreshPreview = () => renderYamlPreview(flow, project.source, project.kind,
-    {title, trigger, condition, action, option, default: fallback, unavailable});
-  preview.append(element('summary', title), flow);
-  preview.ontoggle = () => { if (preview.open) refreshPreview(); };
-  panel.append(preview);
-  sourceArea(panel, project, label + ' YAML', () => {
-    report('Bearbeitet. Vor dem Export prüfen.');
-    if (preview.open) refreshPreview();
+  panel.append(flow);
+  const yaml = sourceArea(panel, project, label + ' YAML', () => report('Bearbeitet. Vor dem Export prüfen.'));
+  const json = element('section');
+  const jsonSource = element('textarea');
+  jsonSource.className = 'yaml-source';
+  jsonSource.readOnly = true;
+  jsonSource.setAttribute('aria-label', jsonLabel);
+  const jsonError = element('p');
+  const jsonDownload = button(downloadLabel, () => {
+    const name = project.name.replace(/[^\p{L}\p{N}_-]+/gu, '_').slice(0, 180) || 'logic-studio';
+    download(name + '.' + project.kind + '.json', jsonSource.value);
   });
+  json.append(jsonDownload, jsonError, jsonSource);
+  panel.append(json);
+  const screens = [[graphicLabel, flow], ['YAML', yaml], [jsonLabel, json]];
+  const controls = screens.map(([caption], index) => button(caption, () => selectView(index)));
+  let disposeFlow;
+  function closeFlow() {
+    disposeFlow?.();
+    disposeFlow = undefined;
+  }
+  panel.addEventListener('editor-close', closeFlow, {once: true});
+  const [zoomIn, zoomOut, fit] = ({
+    de: ['Vergrößern', 'Verkleinern', 'Alles einpassen'],
+    en: ['Zoom in', 'Zoom out', 'Fit all'],
+    fr: ['Agrandir', 'Réduire', 'Tout afficher'],
+  })[locale] ?? ['Zoom in', 'Zoom out', 'Fit all'];
+  function selectView(index) {
+    if (index !== 0) closeFlow();
+    screens.forEach(([, screen], position) => {
+      screen.hidden = position !== index;
+      controls[position].setAttribute('aria-pressed', String(position === index));
+    });
+    yamlExport.hidden = index === 2;
+    if (index === 0 && !disposeFlow) disposeFlow = renderYamlPreview(flow, project.source, project.kind,
+      {title, option, default: fallback, unavailable, zoomIn, zoomOut, fit});
+    if (index === 2) {
+      try {
+        validateYaml(project.source, project.kind);
+        jsonSource.value = JSON.stringify(parseDocument(project.source, {uniqueKeys: true})
+          .toJS({maxAliasCount: 30}), null, 2) + '\n';
+        jsonError.textContent = '';
+        jsonDownload.disabled = false;
+      } catch (error) {
+        jsonSource.value = '';
+        jsonError.textContent = error.message;
+        jsonDownload.disabled = true;
+      }
+      jsonError.hidden = !jsonError.textContent;
+    }
+  }
+  views.append(...controls);
+  selectView(0);
 }
 
 function chooseYaml(title, callback) {
@@ -1464,7 +1537,7 @@ function renderRules(panel, project) {
   const report = (text, error) => recordProtocol(project, text, error);
   const form = element('div');
   form.className = 'rule-form';
-  const fields = project.fields ||= {};
+  const fields = project.fields ?? {};
   const wording = {
     de: ['Assistent', 'Regel Schritt für Schritt erstellen', 'Löst aus', 'Bedingungen', 'Aktionen', 'Übersicht', 'Zurück', 'Weiter', 'Übernehmen', 'Abbrechen', 'Zustand', 'Zeitplan', 'HA-Ereignis', 'Entität', 'Ziel-Entität', 'Uhrzeit', 'Ereignistyp', 'HA-Aktion', 'FALLS', 'UND', 'DANN', 'SONST', 'ohne Bedingung', 'Auswählen'],
     en: ['Wizard', 'Create a rule step by step', 'Trigger', 'Conditions', 'Actions', 'Review', 'Back', 'Next', 'Apply', 'Cancel', 'State', 'Schedule', 'HA event', 'Entity', 'Target entity', 'Time', 'Event type', 'HA action', 'WHEN', 'AND', 'THEN', 'ELSE', 'no condition', 'Choose'],
@@ -1509,7 +1582,10 @@ function renderRules(panel, project) {
   })[locale] ?? ['Remove', 'Add', 'All (AND)', 'At least one (OR)', 'None (NOT)'];
   let rules = readRuleFields(fields);
   let category = 'triggers';
-  const update = () => { project.fields = rules; };
+  const update = () => {
+    project.fields = rules;
+    refreshRuntimeControls();
+  };
   function append(data, key, kind = 'state') {
     const entry = key === 'triggers' ? {type: kind} : {};
     if (kind === 'sun') entry.event = 'sunrise';
@@ -1793,10 +1869,15 @@ async function renderBlocks(panel, project, id) {
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);
     if (blocksRender !== renderToken || active !== id || !panel.isConnected) return;
+    const savedProject = checkpoints.get(id);
+    const workspaceWasDirty = JSON.stringify(project.workspace) !== JSON.stringify(savedProject.workspace);
     blocks = mountBlocks(workspace, project.workspace, saved => {
       project.workspace = saved;
       refreshRuntimeControls(id);
     }, locale, project.type === 'blocks-js' ? 'js' : 'yaml', openBlockEntity, callmebotCatalogs);
+    project.workspace = blocks.snapshot();
+    if (!workspaceWasDirty) savedProject.workspace = structuredClone(project.workspace);
+    refreshRuntimeControls(id);
     const read = blocks.read;
     const openYaml = () => {
       if (!blocks.usesAutomation()) {

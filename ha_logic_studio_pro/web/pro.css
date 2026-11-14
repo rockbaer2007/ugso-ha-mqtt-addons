@@ -132,6 +132,7 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
 .editor-autostart { display: inline-flex; align-items: center; gap: .35rem; }
 .editor-autostart input { margin: 0; }
 .editor-toolbar .editor-commit { background: #ffab28; color: #161009; border-color: transparent; font-weight: 650; }
+.editor-toolbar .editor-commit:disabled { background: #646d79; color: #fff; opacity: .75; }
 .editor-toolbar .editor-discard { background: #e4e8ee; color: #182232; border-color: transparent; }
 .editor-toolbar input[type=number] { width: 7ch; }
 .editor-tool-group { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem; }
@@ -147,19 +148,29 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
 .editor-tool-dialog textarea { width: 100%; min-height: 15rem; font-family: monospace; }
 .editor-tool-dialog li { margin: .25rem 0; }
 .yaml-source { width: 100%; min-height: 55vh; margin-top: .75rem; resize: vertical; font-family: Consolas, monospace; }
+.yaml-view-switch { display: inline-flex; flex-wrap: wrap; gap: .25rem; }
+.yaml-view-switch button[aria-pressed="true"] { background: #23497c; border-color: #77a5db; }
 .yaml-flow { margin-block: .75rem; }
-.yaml-flow-columns { display: flex; flex-wrap: wrap; gap: 1rem; }
-.yaml-flow-column { flex: 1 1 12rem; min-width: 0; }
-.yaml-flow-column:last-child { flex-grow: 3; }
-.yaml-flow-sequence { display: grid; gap: .65rem; }
-.yaml-flow-card { border: 1px solid currentColor; border-inline-start-width: .25rem; border-radius: .45rem; padding: .45rem .6rem; overflow-wrap: anywhere; }
-.yaml-flow-card summary { cursor: pointer; }
-.yaml-flow-card pre { overflow: auto; max-height: 18rem; }
-.yaml-flow-card[data-role="trigger"] { border-inline-start-color: #c89018; }
-.yaml-flow-card[data-role="condition"], .yaml-flow-card[data-role="choice"] { border-inline-start-color: #818cf8; }
-.yaml-flow-card[data-role="action"] { border-inline-start-color: #28a36a; }
-.yaml-flow-branches { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .75rem; margin-block-start: .65rem; }
-.yaml-flow-branch { display: grid; align-content: start; gap: .55rem; border-inline-start: 2px solid #818cf8; padding-inline-start: .55rem; min-width: 0; }
+.yaml-flow-canvas { height: clamp(20rem, 60vh, 48rem); border: 1px solid #435571; border-radius: .45rem; }
+.yaml-flow-canvas .react-flow__edge-path { stroke: #92a1b5; stroke-width: 1.5; }
+.yaml-flow-controls { position: absolute; left: .6rem; bottom: .6rem; display: flex; gap: .25rem; z-index: 5; }
+.yaml-flow-card { position: relative; box-sizing: border-box; width: 13rem; background: #1a283b; color: #e4edf9; border: 1px solid #435571; border-inline-start: .25rem solid var(--flow-accent); border-radius: .6rem; }
+.yaml-flow-card summary { box-sizing: border-box; display: flex; align-items: center; gap: .55rem; height: 76px; padding: .5rem; cursor: pointer; line-height: 1.25; font-size: .75rem; }
+.yaml-flow-icon { flex: none; display: grid; place-items: center; width: 1.65rem; height: 1.65rem; border-radius: .45rem; color: var(--flow-accent); background: color-mix(in srgb, var(--flow-accent) 16%, transparent); }
+.yaml-flow-copy { min-width: 0; display: grid; gap: .15rem; }
+.yaml-flow-copy > * { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.yaml-flow-copy small { text-transform: uppercase; letter-spacing: .04em; opacity: .8; }
+.yaml-flow-copy > span { opacity: .8; font-size: .68rem; }
+.yaml-flow-ports { display: grid; gap: .25rem; padding: 0 .6rem .55rem; text-align: right; }
+.yaml-flow-ports > div { position: relative; font-size: .66rem; line-height: 1; }
+.yaml-flow-ports span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.yaml-flow-ports .react-flow__handle { right: -.65rem; background: var(--flow-accent); }
+.yaml-flow-canvas .react-flow__minimap { width: 130px; height: 85px; border: 1px solid #435571; border-radius: .45rem; background: #131d2b; }
+.yaml-flow-canvas .react-flow__node:has(.yaml-flow-card[open]) { z-index: 10 !important; }
+.yaml-flow-card pre { position: absolute; inset: 100% 0 auto; box-sizing: border-box; margin: 0; padding: .6rem; background: inherit; border: 1px solid #435571; border-radius: .4rem; overflow: auto; max-height: 18rem; }
+.yaml-flow-card[data-role="trigger"] { --flow-accent: #c89018; }
+.yaml-flow-card[data-role="condition"], .yaml-flow-card[data-role="choice"], .yaml-flow-card[data-role="branch"] { --flow-accent: #818cf8; }
+.yaml-flow-card[data-role="action"] { --flow-accent: #28a36a; }
 .script-code {
   --code-comment: #91ba79;
   --code-keyword: #75baff;
