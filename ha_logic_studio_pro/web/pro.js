@@ -42,6 +42,7 @@ let pendingSave;
 let saveInProgress;
 const languageKey = 'ha-logic-studio-pro-language';
 let locale = 'de';
+let expertMode = false;
 try {
   const saved = localStorage.getItem(languageKey);
   if (locales.includes(saved)) locale = saved;
@@ -105,7 +106,7 @@ function commitEditor(id) {
 function saveProjects() {
   const entries = [...projects].filter(([id]) => !unsavedProjects.has(id)).map(([id, {protocol, running, problem, ...draft}]) =>
     [id, {...draft, ...checkpoints.get(id)}]);
-  const tree = {folders: [...projectFolders], projects: entries};
+  const tree = {folders: [...projectFolders], projects: entries, expertMode};
   try {
     localStorage.setItem(recoveryKey, JSON.stringify({revision: projectRevision, tree}));
   } catch {
@@ -156,6 +157,7 @@ async function writePendingProjects() {
 
 function loadProjectTree(saved) {
     if (!Array.isArray(saved?.folders) || !Array.isArray(saved?.projects)) return;
+    expertMode = saved.expertMode === true;
     for (const [id, name] of saved.folders) {
       if (typeof id === 'string' && typeof name === 'string' && !projectFolders.has(id)) projectFolders.set(id, name);
     }
@@ -439,6 +441,16 @@ function toolIcon(group, icon, label, action) {
   control.disabled = !action;
   group.append(control);
   return control;
+}
+
+function expertTools(group, label = 'Expertenwerkzeuge') {
+  const tools = element('details');
+  tools.className = 'editor-expert-tools';
+  const content = element('div');
+  content.className = 'editor-tool-group';
+  tools.append(element('summary', label), content);
+  group.append(tools);
+  return content;
 }
 
 function updateEngineControl(control, id) {
@@ -837,6 +849,16 @@ treeControls.append(
 $('project-filters').append(filterControls, treeControls);
 
 const projectMenu = $('project-menu');
+const expertModeControl = $('expert-mode');
+function syncExpertMode() {
+  expertModeControl.checked = expertMode;
+  studioLayout.toggleAttribute('data-expert-mode', expertMode);
+}
+expertModeControl.onchange = () => {
+  expertMode = expertModeControl.checked;
+  if (!saveProjects()) expertMode = !expertMode;
+  syncExpertMode();
+};
 const searchProjects = $('project-search');
 const menuControl = projectIconButton('M12 5h.01m0 7h.01m0 7h.01', 'Projektmenü', () => {
   projectMenu.hidden = !projectMenu.hidden;
@@ -1105,14 +1127,15 @@ function show(id, refresh = false) {
     toolIcon(simulation, 'restart', 'Simulation zurücksetzen', () => childClick('simulation-reset'));
     right.append(button('Automatisch anordnen', () =>
       flowFrame?.contentDocument?.dispatchEvent(new Event('pro-fbd-arrange'))));
-    toolIcon(right, 'sun', 'Astronomische Ereignisse', () => showSun(project));
-    right.append(button('FBD → JS', () => {
+    const expert = expertTools(right, 'Diagnose und Ausführung');
+    toolIcon(expert, 'sun', 'Astronomische Ereignisse', () => showSun(project));
+    expert.append(button('FBD → JS', () => {
       flowFrame?.contentDocument?.dispatchEvent(new CustomEvent('pro-export-js', {detail: {
         success: showSource,
         failure: error => recordProtocol(project, error, true),
       }}));
     }));
-    toolIcon(right, 'tools', 'Debug-Einstellungen', () => debugTools(project));
+    toolIcon(expert, 'tools', 'Debug-Einstellungen', () => debugTools(project));
     const output = element('select');
     output.className = 'flow-output';
     output.setAttribute('aria-label', 'Ausgabe');
@@ -1141,7 +1164,7 @@ function show(id, refresh = false) {
       refreshRuntimeControls(id);
     };
     memoryOption.append(memoryToggle, element('span', 'Zähler und Merker speichern'));
-    right.append(memoryOption);
+    expert.append(memoryOption);
     const interval = element('input');
     interval.type = 'number';
     interval.min = '100';
@@ -1155,7 +1178,7 @@ function show(id, refresh = false) {
       project.graph = {...project.graph, mode: mode.value, interval: Number(interval.value)};
       refreshRuntimeControls(id);
     };
-    right.append(mode, interval);
+    expert.append(mode, interval);
     toolIcon(right, 'preview', 'Ausgabe ansehen', () => childClick('export'));
     const syncOutput = () => {
       const control = editor.querySelector('.flow-output');
@@ -1609,8 +1632,9 @@ function renderRules(panel, project) {
     } catch (error) { report(error.message, true); }
   };
   const right = editorTools(row, project);
-  toolIcon(right, 'code', 'Quelltext anzeigen', () => convert(false));
-  toolIcon(right, 'sun', 'Astronomische Ereignisse', () => showSun(project));
+  const expert = expertTools(right);
+  toolIcon(expert, 'code', 'Quelltext anzeigen', () => convert(false));
+  toolIcon(expert, 'sun', 'Astronomische Ereignisse', () => showSun(project));
   toolIcon(right, 'export', 'Regel exportieren', () => exportEditorData(project.name, {type: 'rules', fields: rules}));
   toolIcon(right, 'import', 'Regel importieren', () => importEditorData(project, (text, name) => {
     const data = JSON.parse(text);
@@ -1619,7 +1643,7 @@ function renderRules(panel, project) {
   }));
   right.append(button('Rules → JS', () => convert(true)),
     button('Als HA-YAML öffnen', () => openGenerated(project, () => rules, report)));
-  toolIcon(right, 'tools', 'Debug-Einstellungen', () => debugTools(project));
+  toolIcon(expert, 'tools', 'Debug-Einstellungen', () => debugTools(project));
   panel.append(form);
 }
 
@@ -1668,10 +1692,11 @@ async function renderBlocks(panel, project, id) {
       const id = blocks.selectedEntity();
       editorDialog('Entitäts-ID', element('p', id || 'Einen Block mit einer HA-Entität auswählen.'));
     }));
-    toolIcon(right, 'code', 'Quelltext anzeigen', safely(showSource));
+    const expert = expertTools(right);
+    toolIcon(expert, 'code', 'Quelltext anzeigen', safely(showSource));
     toolIcon(right, 'export', 'Blöcke exportieren', () => exportEditorData(project.name,
       {type: project.type, workspace: blocks.exportSelection()}));
-    toolIcon(right, 'import', 'Blöcke importieren', () => importEditorData(project, (text, filename) => {
+    toolIcon(isJavaScript ? expert : right, 'import', 'Blöcke importieren', () => importEditorData(project, (text, filename) => {
       const name = filename.replace(/\.[^.]+$/, '');
       if (!filename.toLowerCase().endsWith('.json')) {
         if (!isJavaScript) throw new Error('Für Blocks A eine exportierte JSON-Datei auswählen.');
@@ -1690,17 +1715,17 @@ async function renderBlocks(panel, project, id) {
     }));
     if (isJavaScript) {
       right.append(button('Testlauf starten', () => runBlocks(project)));
-      toolIcon(right, 'sun', 'Astronomische Ereignisse', () => showSun(project));
-      right.append(button('Blockly → JS', safely(output => add({
+      toolIcon(expert, 'sun', 'Astronomische Ereignisse', () => showSun(project));
+      expert.append(button('Blockly → JS', safely(output => add({
         type: 'javascript', name: project.name + ' · JS', source: output,
       }))));
     } else {
       toolIcon(right, 'undo', 'Rückgängig', blocks.undo);
       toolIcon(right, 'redo', 'Wiederholen', blocks.redo);
-      toolIcon(right, 'sun', 'Astronomische Ereignisse', () => showSun(project));
+      toolIcon(expert, 'sun', 'Astronomische Ereignisse', () => showSun(project));
       right.append(button('Als HA-YAML öffnen', openYaml));
     }
-    toolIcon(right, 'tools', 'Debug-Einstellungen', () => debugTools(project));
+    toolIcon(expert, 'tools', 'Debug-Einstellungen', () => debugTools(project));
   } catch (error) {
     report(error.message, true);
   }
@@ -1756,8 +1781,9 @@ function renderJavaScript(panel, project) {
   run.disabled = Boolean(project.running);
   const right = editorTools(row, project, {undo: () => codeEditor?.undo(), redo: () => codeEditor?.redo()});
   right.append(run);
-  toolIcon(right, 'code', 'Quelltext anzeigen', () => showSource(project.source));
-  toolIcon(right, 'time', 'Zeitplan einfügen', () => {
+  const expert = expertTools(right);
+  toolIcon(expert, 'code', 'Quelltext anzeigen', () => showSource(project.source));
+  toolIcon(expert, 'time', 'Zeitplan einfügen', () => {
     const content = element('div');
     const cron = element('input');
     cron.value = '0 7 * * *';
@@ -1785,7 +1811,7 @@ function renderJavaScript(panel, project) {
     }
     const dialog = editorDialog('Codebeispiel einfügen', choices);
   });
-  toolIcon(right, 'sun', 'Astronomische Ereignisse', () => showSun(project));
+  toolIcon(expert, 'sun', 'Astronomische Ereignisse', () => showSun(project));
   toolIcon(right, 'entity', 'HA-Entität einfügen', () => {
     const content = element('div'), query = element('input'), results = element('ul');
     query.type = 'search';
@@ -1812,8 +1838,8 @@ function renderJavaScript(panel, project) {
     query.onkeydown = event => { if (event.key === 'Enter') void search(); };
     void search();
   });
-  toolIcon(right, 'tools', 'Debug-Einstellungen', () => debugTools(project));
-  toolIcon(right, 'help', 'Skript-API anzeigen', () => editorDialog('Skript-API', element('pre',
+  toolIcon(expert, 'tools', 'Debug-Einstellungen', () => debugTools(project));
+  toolIcon(expert, 'help', 'Skript-API anzeigen', () => editorDialog('Skript-API', element('pre',
     'ha.readState(entity)\nha.readAttribute(entity, attribute)\nha.callAction(action, entity, data)\n' +
     'ha.onState(entity, callback)\nha.onEvent(event, callback)\nha.schedule(schedule, callback)\n' +
     'ha.timeout(name, ms, callback)\nha.log(message)')));
@@ -1984,6 +2010,7 @@ const empty = element('p', 'Ein Skript aus der Projektliste öffnen oder mit ＋
 empty.className = 'empty-editor';
 editor.append(empty);
 await restoreProjects();
+syncExpertMode();
 renderProjectList();
 syncLanguage();
 fetch('./api/info').then(response => response.ok ? response.json() : null).then(info => {
@@ -1992,7 +2019,7 @@ fetch('./api/info').then(response => response.ok ? response.json() : null).then(
 $('download-project-draft').onclick = () => {
   let saved;
   try { saved = JSON.parse(localStorage.getItem(recoveryKey))?.tree; } catch {}
-  const tree = saved ?? {folders: [...projectFolders], projects: [...projects].map(
+  const tree = saved ?? {folders: [...projectFolders], expertMode, projects: [...projects].map(
     ([id, {protocol, running, problem, ...project}]) => [id, project])};
   download('logic-studio-pro-projekte.json', JSON.stringify(tree, null, 2));
 };

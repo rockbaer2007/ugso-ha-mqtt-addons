@@ -131,7 +131,9 @@ class ProjectStore(Store):
         if not isinstance(payload, dict) or type(payload.get('revision')) is not int:
             raise ValueError('Revision fehlt.')
         tree = payload.get('tree')
-        if not isinstance(tree, dict) or set(tree) != {'folders', 'projects'}:
+        if (not isinstance(tree, dict) or not {'folders', 'projects'} <= tree.keys() or
+                tree.keys() - {'folders', 'projects', 'expertMode'} or
+                type(tree.get('expertMode', False)) is not bool):
             raise ValueError('Ungültiger Projektbaum.')
         for key in ('folders', 'projects'):
             entries = tree[key]

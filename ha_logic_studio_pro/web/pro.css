@@ -56,6 +56,9 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
 #project-header button[data-sort][aria-pressed="true"] { color: #ff6666; }
 #project-menu { position: absolute; top: 100%; left: 0; z-index: 3; padding: .35rem; background: #162335; border: 1px solid #435571; border-radius: .4rem; }
 #project-menu button { white-space: nowrap; }
+.project-expert-toggle { display: flex; align-items: center; gap: .4rem; padding: .35rem; white-space: nowrap; }
+#studio-layout:not([data-expert-mode]) .editor-expert-tools { display: none; }
+.editor-expert-tools summary { cursor: pointer; white-space: nowrap; }
 #project-search { width: 100%; margin-bottom: .45rem; }
 #project-message { font-size: .78rem; color: #b6c9e0; }
 #projects button[draggable="true"] { cursor: grab; }
