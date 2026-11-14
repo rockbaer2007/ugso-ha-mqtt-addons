@@ -7,6 +7,7 @@ const identifier = /^[a-z0-9_]+\.[a-z0-9_]+$/;
 const modes = new Set(['single', 'restart', 'queued', 'parallel']);
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const provided = value => typeof value === 'string' && value.trim() !== '';
+export const ruleWeekdays = Object.freeze(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
 
 function duration(value) {
   const seconds = Number(value);
@@ -33,6 +34,26 @@ function numericLimits({above, below}, invalidMessage) {
 
 function ruleCondition(entry) {
   const {type, entity, state, attribute} = entry;
+  if (type === 'time') {
+    const result = {condition: 'time'};
+    for (const key of ['after', 'before']) {
+      const value = entry[key];
+      if (!provided(value)) continue;
+      if (!/^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/.test(value)) {
+        throw new Error('Eine gültige Uhrzeit für das Zeitfenster eingeben.');
+      }
+      result[key] = value.length === 5 ? value + ':00' : value;
+    }
+    if (provided(entry.weekday)) {
+      const days = entry.weekday.split(',');
+      if (days.some(day => !ruleWeekdays.includes(day))) throw new Error('Ungültiger Wochentag.');
+      result.weekday = ruleWeekdays.filter(day => days.includes(day));
+    }
+    if (!result.after && !result.before && !result.weekday) {
+      throw new Error('Mindestens eine Uhrzeit oder einen Wochentag auswählen.');
+    }
+    return result;
+  }
   if (!identifier.test(entity || '')) throw new Error('Gültige Bedingungsentität eingeben.');
   const target = {entity_id: entity, ...(provided(attribute) ? {attribute} : {})};
   if (type === 'numeric') {
@@ -62,9 +83,9 @@ export function readRuleFields(fields) {
   if (Object.hasOwn(fields, 'triggers')) {
     const actionFields = ['type', 'action', 'entity', 'data', 'seconds'];
     const lists = {triggers: ['type', 'entity', 'state', 'from', 'attribute', 'seconds', 'time', 'event', 'above', 'below', 'offsetMinutes', 'topic', 'payload'],
-      conditions: ['type', 'entity', 'state', 'attribute', 'above', 'below'],
+      conditions: ['type', 'entity', 'state', 'attribute', 'above', 'below', 'after', 'before', 'weekday'],
       actions: actionFields, elseActions: actionFields};
-    const types = {triggers: ['state', 'time', 'helper_time', 'event', 'numeric', 'sun', 'mqtt', 'ha_start'], conditions: ['state', 'numeric'],
+    const types = {triggers: ['state', 'time', 'helper_time', 'event', 'numeric', 'sun', 'mqtt', 'ha_start'], conditions: ['state', 'numeric', 'time'],
       actions: ['action', 'delay'], elseActions: ['action', 'delay']};
     const rule = {conditionMode: fields.conditionMode};
     if (!['and', 'or', 'not'].includes(rule.conditionMode)) throw new Error('Ungültige Rules-Datei.');
@@ -113,6 +134,9 @@ export function makeRulesJavaScript(name, rule) {
   if (rule.triggers.some(t => provided(t.from) || provided(t.attribute) || provided(t.seconds) ||
       ((!t.type || t.type === 'state') && !provided(t.state)))) {
     throw new Error('Rules → JS: Der erweiterte Zustandsauslöser benötigt HA-YAML.');
+  }
+  if (rule.conditions.some(c => c.type === 'time')) {
+    throw new Error('Rules → JS: Zeitbedingungen benötigen HA-YAML.');
   }
   if (rule.conditions.some(c => c.type === 'numeric' || provided(c.attribute))) {
     throw new Error('Rules → JS: Zahlen- und Attributbedingungen benötigen HA-YAML.');

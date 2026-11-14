@@ -1,4 +1,4 @@
-import {makeYaml, validateYaml, readRuleFields, makeRulesJavaScript} from './pro-yaml-model.js';
+import {makeYaml, validateYaml, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js';
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
 import {mountCodeEditor} from './vendor/pro-code.js';
@@ -1458,6 +1458,12 @@ function renderRules(panel, project) {
     status, schedule, event, entity, target, time, eventType, service, when, and, then, otherwise, empty, choose] =
     wording[locale] ?? wording.en;
   const ruleLabels = {triggers: when, conditions: and, actions: then, elseActions: otherwise};
+  const [timeWindow, after, before, weekdays] = ({
+    de: ['Zeitfenster und Wochentage', 'Ab', 'Bis', 'Wochentage'],
+    en: ['Time window and weekdays', 'From', 'Until', 'Weekdays'],
+    fr: ['Plage horaire et jours de la semaine', 'À partir de', 'Jusqu’à', 'Jours de la semaine'],
+  })[locale] ?? ['Time window and weekdays', 'From', 'Until', 'Weekdays'];
+  const weekdayFormat = new Intl.DateTimeFormat(locale, {weekday: 'short', timeZone: 'UTC'});
   const threshold = ({de: 'Zahlenschwelle', en: 'Numeric threshold', fr: 'Seuil numérique'})[locale] ?? 'Numeric threshold';
   const [sun, sunrise, sunset, offsetMinutes] = ({
     de: ['Sonnenaufgang / Sonnenuntergang', 'Sonnenaufgang', 'Sonnenuntergang', 'Zeitversatz in Minuten (− vorher, + nachher)'],
@@ -1518,7 +1524,8 @@ function renderRules(panel, project) {
       if (key === 'conditions' || isAction) {
         const caption = element('label', isAction ? actionType : conditionStep);
         const select = element('select');
-        const options = isAction ? [['action', service], ['delay', delay]] : [['state', status], ['numeric', numeric]];
+        const options = isAction ? [['action', service], ['delay', delay]] :
+          [['state', status], ['numeric', numeric], ['time', timeWindow]];
         for (const [value, name] of options) {
           const option = element('option', name);
           option.value = value;
@@ -1542,8 +1549,9 @@ function renderRules(panel, project) {
         else if (entry.type === 'numeric') labels = [['entity', entity], ['attribute', attribute], ['above', above], ['below', below], ['seconds', hold]];
         else labels = [['entity', entity], ['attribute', attribute], ['from', from], ['state', to], ['seconds', hold]];
       } else if (key === 'conditions') {
-        labels = [['entity', entity], ['attribute', attribute],
-          ...(entry.type === 'numeric' ? [['above', above], ['below', below]] : [['state', status]])];
+        labels = entry.type === 'time' ? [['after', after], ['before', before]] :
+          [['entity', entity], ['attribute', attribute],
+            ...(entry.type === 'numeric' ? [['above', above], ['below', below]] : [['state', status]])];
       } else {
         labels = entry.type === 'delay' ? [['seconds', seconds]] : [['action', service], ['entity', target], ['data', parameters]];
       }
@@ -1564,7 +1572,8 @@ function renderRules(panel, project) {
         }
         const input = element(name === 'data' ? 'textarea' : 'input');
         input.value = entry[name] || '';
-        if (name === 'time') input.type = 'time';
+        if (['time', 'after', 'before'].includes(name)) input.type = 'time';
+        if (name === 'after' || name === 'before') input.step = '1';
         if (name === 'seconds') { input.type = 'number'; input.min = '1'; input.step = '1'; }
         if (name === 'offsetMinutes') { input.type = 'number'; input.step = '1'; input.placeholder = '0'; }
         if (name === 'above' || name === 'below') { input.type = 'number'; input.step = 'any'; }
@@ -1593,6 +1602,27 @@ function renderRules(panel, project) {
         }
         label.append(line);
         inputs.append(label);
+      }
+      if (key === 'conditions' && entry.type === 'time') {
+        const days = element('fieldset');
+        days.append(element('legend', weekdays));
+        const selected = new Set((entry.weekday || '').split(','));
+        for (const [index, day] of ruleWeekdays.entries()) {
+          const caption = weekdayFormat.format(new Date(Date.UTC(2024, 0, index + 1)));
+          const label = element('label', caption);
+          const checkbox = element('input');
+          checkbox.type = 'checkbox';
+          checkbox.checked = selected.has(day);
+          checkbox.onchange = () => {
+            if (checkbox.checked) selected.add(day);
+            else selected.delete(day);
+            entry.weekday = ruleWeekdays.filter(value => selected.has(value)).join(',');
+            changed();
+          };
+          label.prepend(checkbox);
+          days.append(label);
+        }
+        inputs.append(days);
       }
       const deleteItem = button('×', () => {
         data[key].splice(index, 1);
