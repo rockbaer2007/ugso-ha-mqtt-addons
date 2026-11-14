@@ -192,9 +192,11 @@ class ScriptRuntime:
             print('Runtime-Protokoll konnte nicht gelesen werden.', flush=True)
             return deque(maxlen=100)
 
-    def add_message(self, key, job, text, error):
-        job['messages'].append({'text': text[:1000], 'error': error,
-                                'time': datetime.now(timezone.utc).isoformat()})
+    def add_message(self, key, job, text, error, line=None):
+        entry = {'text': text[:1000], 'error': error, 'time': datetime.now(timezone.utc).isoformat()}
+        if error and type(line) is int and line > 0:
+            entry['line'] = line
+        job['messages'].append(entry)
         if self.log_root is not None:
             directory = self.log_directory(key[0])
             path = directory / (key[1] + '.json')
@@ -311,7 +313,7 @@ class ScriptRuntime:
                     if kind in ('running', 'error'):
                         job['state'] = kind
                     if message['text'] and job.get('record_log', True):
-                        self.add_message(key, job, message['text'], kind == 'error')
+                        self.add_message(key, job, message['text'], kind == 'error', message.get('line'))
         with self.lock:
             if process.wait() and job['state'] not in ('error', 'stopped'):
                 job['state'] = 'error'

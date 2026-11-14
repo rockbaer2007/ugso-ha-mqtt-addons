@@ -4,22 +4,15 @@ import {importedNamedScheduleMatcher, dateTimeSchedule, scheduleClock, scheduleM
 import {guestTimeApi, sunTimeAttributes, timeOperations} from './ha-time.mjs';
 import {importedSystem} from './imported-system.mjs';
 import {scriptRequests} from './script-requests.mjs';
+import {prepareSource} from './source-errors.mjs';
 
-function report(type, text = '') {
-  process.stdout.write(JSON.stringify({type, text: text.slice(0, 1000)}) + '\n');
+function report(type, text = '', line) {
+  process.stdout.write(JSON.stringify({type, text: text.slice(0, 1000), line}) + '\n');
 }
 
 try {
   const {source, language, homeAssistant} = JSON.parse(await readInput());
-  let code = source;
-  if (language === 'typescript') {
-    const {default: ts} = await import('typescript');
-    const result = ts.transpileModule(source, {fileName: 'project.ts', reportDiagnostics: true,
-      compilerOptions: {target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None}});
-    const error = result.diagnostics?.find(item => item.category === ts.DiagnosticCategory.Error);
-    if (error) throw new Error(ts.flattenDiagnosticMessageText(error.messageText, '\n'));
-    code = result.outputText;
-  }
+  const project = await prepareSource(source, language);
   const engine = await getQuickJS();
   const runtime = engine.newRuntime();
   runtime.setMemoryLimit(16 * 1024 * 1024);
@@ -34,7 +27,7 @@ try {
     if (failed) return;
     failed = true;
     clearInterval(ticker);
-    report('error', error.message);
+    report('error', error.message, error.line);
     process.exitCode = 1;
     setImmediate(() => process.exit(1));
   }
@@ -47,18 +40,17 @@ try {
     online => report('log', online ? 'HA-Verbindung wiederhergestellt.' : 'HA-Verbindung getrennt. Neuer Versuch folgt.')) : null;
   const localTime = scheduleClock(ha?.timezone);
   const time = timeOperations(ha?.timezone);
-  function evaluate(code) {
+  function evaluate(code, file = 'studio-runtime.js') {
     runtime.setInterruptHandler(shouldInterruptAfterDeadline(Date.now() + 500));
-    const result = vm.evalCode(code, 'project.js');
+    const result = vm.evalCode(code, file);
     if (result.error) {
-      const message = vm.getProp(result.error, 'message');
-      try { throw new Error(vm.getString(message).slice(0, 1000)); }
-      finally { message.dispose(); result.error.dispose(); }
+      try { const {message, stack} = vm.dump(result.error) ?? {}; throw project.error(message, stack); }
+      finally { result.error.dispose(); }
     }
     result.value.dispose();
     const jobs = runtime.executePendingJobs(2048);
     if (jobs.error) {
-      try { throw new Error(vm.dump(jobs.error)?.message || 'JavaScript job failed.'); }
+      try { const {message, stack} = vm.dump(jobs.error) ?? {}; throw project.error(message, stack); }
       finally { jobs.error.dispose(); }
     }
     if (runtime.hasPendingJob()) throw new Error('Zu viele ausstehende JavaScript-Jobs.');
@@ -77,7 +69,7 @@ try {
     const args = JSON.parse(text);
     const operation = vm.getString(command);
     if (operation === 'projectError') {
-      fail(new Error(String(args[0]).slice(0, 1000)));
+      fail(project.error(args[0], args[1]));
       return vm.undefined;
     }
     if (operation === 'astroTime') {
@@ -140,7 +132,7 @@ try {
   });
   vm.setProp(vm.global, 'runtimeBridge', bridge);
   bridge.dispose();
-  evaluate(`'use strict';
+  evaluate(project.wrap(`'use strict';
     const {tick, studioDispatch} = ((report, bridge, run) => {
       const timers = new Map();
       const handlers = [];
@@ -150,7 +142,8 @@ try {
       const call = (operation, ...args) => bridge(operation, JSON.stringify(args));
       const invoke = (callback, ...args) => {
         const result = callback(...args);
-        if (result && typeof result.then === 'function') result.catch(error => call('projectError', String(error?.message ?? error)));
+        if (result && typeof result.then === 'function') result.catch(error =>
+          call('projectError', String(error?.message ?? error).slice(0, 1000), String(error?.stack ?? '').slice(0, 8000)));
       };
       const state = entity => JSON.parse(call('state', entity));
       const register = (type, target, attribute, callback) => {
@@ -253,7 +246,7 @@ try {
         }
       };
       return {tick, studioDispatch};
-    })(runtimeLog, runtimeBridge, async (ha, log) => {\n${code}\n});`);
+    })(runtimeLog, runtimeBridge, async (ha, log) => {\n`, '\n});'), project.file);
   if (!failed) {
     ha?.start();
     report('running');
@@ -284,7 +277,7 @@ try {
     } catch (error) { fail(error); }
   }, 50);
 } catch (error) {
-  report('error', error.message);
+  report('error', error.message, error.line);
   process.exit(1);
 }
 

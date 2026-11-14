@@ -12,7 +12,7 @@ export const simulatedEvents = String.raw`
   const invoke = (callback, ...args) => {
     const result = callback(...args);
     if (result && typeof result.then === 'function') result.catch(error => {
-      globalThis.studioTestError = String(error?.message ?? error);
+      globalThis.studioTestError = [String(error?.message ?? error), String(error?.stack ?? '')];
     });
   };
   const register = (type, target, attribute, callback) => {

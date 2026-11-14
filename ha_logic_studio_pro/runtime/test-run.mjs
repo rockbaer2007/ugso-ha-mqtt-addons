@@ -3,6 +3,7 @@ import {simulatedEvents} from './simulated-events.mjs';
 import {importedNamedScheduleMatcher, scheduleMatcher} from './live-schedule.mjs';
 import {timeOperations} from './ha-time.mjs';
 import {historyRange, historyRows} from './history.mjs';
+import {prepareSource} from './source-errors.mjs';
 
 const maxSource = 64_000;
 const maxTrace = 100;
@@ -15,16 +16,8 @@ export async function testRun(source, language = 'javascript', timeZone, start =
   if (typeof source !== 'string' || !source.trim() || Buffer.byteLength(source) > maxSource) {
     throw new Error('JavaScript-Quelltext mit höchstens 64 KB eingeben.');
   }
-  if (language === 'typescript') {
-    const {default: ts} = await import('typescript');
-    const result = ts.transpileModule(source, {
-      fileName: 'projekt.ts', reportDiagnostics: true,
-      compilerOptions: {target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None},
-    });
-    const error = result.diagnostics?.find(item => item.category === ts.DiagnosticCategory.Error);
-    if (error) throw new Error(ts.flattenDiagnosticMessageText(error.messageText, '\n'));
-    source = result.outputText;
-  } else if (language !== 'javascript') throw new Error('Unbekannte Skriptsprache.');
+  if (!['javascript', 'typescript'].includes(language)) throw new Error('Unbekannte Skriptsprache.');
+  const project = await prepareSource(source, language);
   const engine = await getQuickJS();
   const runtime = engine.newRuntime();
   runtime.setMemoryLimit(16 * 1024 * 1024);
@@ -172,31 +165,24 @@ export async function testRun(source, language = 'javascript', timeZone, start =
       } finally {
         api.dispose();
       }
-      const result = vm.evalCode('"use strict";\n' + simulatedEvents +
-        '(ha, reportSimulatedEvent, async function () {\n' + source +
-        '\n}).catch(error => { globalThis.studioTestError = String(error?.message ?? error); });', 'projekt.js');
+      const result = vm.evalCode(project.wrap('"use strict";\n' + simulatedEvents +
+        '(ha, reportSimulatedEvent, async function () {\n',
+        '\n}).catch(error => { globalThis.studioTestError = [String(error?.message ?? error), String(error?.stack ?? "")]; });'), project.file);
       if (result.error) {
-        try {
-          const message = vm.getProp(result.error, 'message');
-          try {
-            throw new Error(vm.typeof(message) === 'string' ? vm.getString(message).slice(0, 1000) : 'JavaScript-Testlauf fehlgeschlagen.');
-          } finally {
-            message.dispose();
-          }
-        } finally {
-          result.error.dispose();
-        }
+        try { const {message, stack} = vm.dump(result.error) ?? {}; throw project.error(message, stack); }
+        finally { result.error.dispose(); }
       }
       result.value.dispose();
       const jobs = runtime.executePendingJobs(2048);
       if (jobs.error) {
-        try { throw new Error(vm.dump(jobs.error)?.message || 'JavaScript-Testlauf fehlgeschlagen.'); }
+        try { const {message, stack} = vm.dump(jobs.error) ?? {}; throw project.error(message, stack); }
         finally { jobs.error.dispose(); }
       }
       if (runtime.hasPendingJob()) throw new Error('JavaScript-Testlauf hat zu viele ausstehende Jobs.');
       const error = vm.getProp(vm.global, 'studioTestError');
       try {
-        if (vm.typeof(error) === 'string') throw new Error(vm.getString(error).slice(0, 1000));
+        const details = vm.dump(error);
+        if (Array.isArray(details)) throw project.error(...details);
       } finally { error.dispose(); }
       return {ok: true, trace};
     } finally {
@@ -219,6 +205,6 @@ if (process.argv.includes('--stdin')) {
     const {source, language, timeZone} = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     process.stdout.write(JSON.stringify(await testRun(source, language, timeZone)));
   } catch (error) {
-    process.stdout.write(JSON.stringify({ok: false, error: error.message}));
+    process.stdout.write(JSON.stringify({ok: false, error: error.message, line: error.line}));
   }
 }

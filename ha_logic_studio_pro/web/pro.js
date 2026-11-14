@@ -296,13 +296,13 @@ function button(text, action) {
   return node;
 }
 
-function recordProtocol(project, text, error = false) {
+function recordProtocol(project, text, error = false, line) {
   if (!text) return;
   if (error) setProjectProblem(project, true);
   const entries = project.protocol;
   const last = entries.at(-1);
-  if (last?.text === text && last.error === error) return;
-  entries.push({time: new Date().toLocaleTimeString(), text, error});
+  if (last?.text === text && last.error === error && last.line === line) return;
+  entries.push({time: new Date().toLocaleTimeString(), text, error, line});
   if (entries.length > 200) entries.shift();
   if (projects.get(active) === project) renderProtocol();
 }
@@ -335,6 +335,11 @@ function renderProtocol() {
   lines.replaceChildren(...entries.map(entry => {
     const line = element('p', `[${entry.time}] ${entry.text}`);
     line.dataset.error = String(entry.error);
+    if (codeEditor && entry.error && Number.isInteger(entry.line) && entry.line > 0 &&
+        ['javascript', 'typescript'].includes(project?.type)) {
+      const label = {de: 'Zeile', en: 'Line', fr: 'Ligne'}[document.documentElement.lang] ?? 'Zeile';
+      line.append(' ', button(label + ' ' + entry.line, () => codeEditor?.goToLine(entry.line)));
+    }
     return line;
   }));
   if (project && !entries.length) lines.append(element('p', 'Noch keine Protokolleinträge.'));
@@ -1760,7 +1765,7 @@ async function runBlocks(project) {
 
 function renderJavaScript(panel, project) {
   const row = toolbar(panel, project);
-  const report = (text, error) => recordProtocol(project, text, error);
+  const report = (text, error, line) => recordProtocol(project, text, error, line);
   const run = button('Testlauf starten', async () => {
     run.disabled = true;
     project.running = true;
@@ -1774,8 +1779,8 @@ function renderJavaScript(panel, project) {
         body: JSON.stringify({source: project.source, language: project.type}),
       });
       const result = await response.json();
-      if (!response.ok || !result.ok) throw new Error(result.error);
-      report(JSON.stringify(result.trace, null, 2));
+      if (!response.ok || !result.ok) report(result.error, true, result.line);
+      else report(JSON.stringify(result.trace, null, 2));
     } catch (error) {
       report(error.message, true);
     } finally {
