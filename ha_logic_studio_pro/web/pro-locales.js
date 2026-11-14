@@ -145,7 +145,6 @@ const messages = {
   'Code schreiben und testen': ['Write and test code', 'Écrire et tester du code'],
   'Typisierten Code schreiben und testen': ['Write and test typed code', 'Écrire et tester du code typé'],
   'Skripte und Automationen': ['Scripts and automations', 'Scripts et automatisations'],
-  'Interner Test': ['Internal test', 'Test interne'],
   'Projektbaum herunterladen': ['Download project tree', 'Télécharger l’arborescence des projets'],
   'Projektbaum konnte nicht gespeichert werden.': ['Could not save the project tree.', 'Impossible d’enregistrer l’arborescence des projets.'],
   'Projektbaum konnte nicht vom Server geladen werden.': ['Could not load the project tree from the server.', 'Impossible de charger l’arborescence des projets depuis le serveur.'],

@@ -2023,7 +2023,7 @@ syncExpertMode();
 renderProjectList();
 syncLanguage();
 fetch('./api/info').then(response => response.ok ? response.json() : null).then(info => {
-  if (info?.version) $('pro-version').textContent = info.version + ' · ';
+  if (info?.version) $('pro-version').textContent = info.version;
 }).catch(() => {});
 $('download-project-draft').onclick = () => {
   let saved;
