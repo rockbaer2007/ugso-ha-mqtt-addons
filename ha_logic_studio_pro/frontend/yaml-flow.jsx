@@ -4,17 +4,19 @@ import {Background, Handle, MarkerType, MiniMap, Position, ReactFlow, useReactFl
 import '@xyflow/react/dist/style.css';
 
 function Step({data}) {
-  return <details className="yaml-flow-card nodrag nopan" data-role={data.role}>
+  return <div className="yaml-flow-card nodrag nopan" data-role={data.role}>
     {data.incoming && <Handle type="target" position={Position.Left} isConnectable={false}/>}
-    <summary title={[data.kind, data.name, data.detail].filter(Boolean).join(' · ')}>
-      <span className="yaml-flow-icon" aria-hidden="true">{{trigger: 'ϟ', choice: '⑂', branch: '⑂', condition: '?', action: '▶'}[data.role]}</span>
-      <span className="yaml-flow-copy">
-        <small>{data.kind}</small>
-        {data.name && <strong>{data.name}</strong>}
-        {data.detail && <span>{data.detail}</span>}
-      </span>
-    </summary>
-    <pre className="nowheel">{data.yaml}</pre>
+    <details className="yaml-flow-details">
+      <summary title={[data.kind, data.name, data.detail].filter(Boolean).join(' · ')}>
+        <span className="yaml-flow-icon" aria-hidden="true">{{trigger: 'ϟ', choice: '⑂', branch: '⑂', condition: '?', action: '▶'}[data.role]}</span>
+        <span className="yaml-flow-copy">
+          <small>{data.kind}</small>
+          {data.name && <strong>{data.name}</strong>}
+          {data.detail && <span>{data.detail}</span>}
+        </span>
+      </summary>
+      <pre className="nowheel">{data.yaml}</pre>
+    </details>
     {data.ports && <div className="yaml-flow-ports">
       {data.ports.map(({title, detail}, index) => <div key={index} title={[title, detail].filter(Boolean).join(' · ')}>
         <span>{title}</span>
@@ -22,7 +24,7 @@ function Step({data}) {
       </div>)}
     </div>}
     {!data.ports && data.outgoing && <Handle type="source" position={Position.Right} isConnectable={false}/>}
-  </details>;
+  </div>;
 }
 
 const nodeTypes = {step: Step};

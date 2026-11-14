@@ -1,4 +1,4 @@
-import {renderYamlPreview} from './yaml-preview.js?v=0.1.87-1';
+import {renderYamlPreview} from './yaml-preview.js?v=0.1.88';
 import {parseDocument} from './vendor/pro-yaml.js';
 import {makeYaml, validateYaml, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js';
 import {connectLanguage, locales, translate} from './i18n.js';
@@ -1479,11 +1479,13 @@ function renderYaml(panel, project) {
     disposeFlow = undefined;
   }
   panel.addEventListener('editor-close', closeFlow, {once: true});
-  const [zoomIn, zoomOut, fit] = ({
-    de: ['Vergrößern', 'Verkleinern', 'Alles einpassen'],
-    en: ['Zoom in', 'Zoom out', 'Fit all'],
-    fr: ['Agrandir', 'Réduire', 'Tout afficher'],
-  })[locale] ?? ['Zoom in', 'Zoom out', 'Fit all'];
+  const viewLabels = {
+    de: ['Vergrößern', 'Verkleinern', 'Alles einpassen', 'Auswählen', 'Option', 'Optionen'],
+    en: ['Zoom in', 'Zoom out', 'Fit all', 'Choose', 'option', 'options'],
+    fr: ['Agrandir', 'Réduire', 'Tout afficher', 'Choisir', 'option', 'options'],
+  };
+  const [zoomIn, zoomOut, fit, choose, singularOption, pluralOptions] = viewLabels[locale] ?? viewLabels.en;
+  const options = count => count + ' ' + (count === 1 ? singularOption : pluralOptions);
   function selectView(index) {
     if (index !== 0) closeFlow();
     screens.forEach(([, screen], position) => {
@@ -1492,7 +1494,7 @@ function renderYaml(panel, project) {
     });
     yamlExport.hidden = index === 2;
     if (index === 0 && !disposeFlow) disposeFlow = renderYamlPreview(flow, project.source, project.kind,
-      {title, option, default: fallback, unavailable, zoomIn, zoomOut, fit});
+      {title, option, default: fallback, unavailable, zoomIn, zoomOut, fit, choose, options});
     if (index === 2) {
       try {
         validateYaml(project.source, project.kind);

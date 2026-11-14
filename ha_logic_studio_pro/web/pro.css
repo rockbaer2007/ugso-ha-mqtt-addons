@@ -156,17 +156,19 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
 .yaml-flow-controls { position: absolute; left: .6rem; bottom: .6rem; display: flex; gap: .25rem; z-index: 5; }
 .yaml-flow-card { position: relative; box-sizing: border-box; width: 13rem; background: #1a283b; color: #e4edf9; border: 1px solid #435571; border-inline-start: .25rem solid var(--flow-accent); border-radius: .6rem; }
 .yaml-flow-card summary { box-sizing: border-box; display: flex; align-items: center; gap: .55rem; height: 76px; padding: .5rem; cursor: pointer; line-height: 1.25; font-size: .75rem; }
+.yaml-flow-card:has(.yaml-flow-ports) { display: grid; grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 45%); align-items: center; }
+.yaml-flow-card .react-flow__handle { visibility: visible; width: 8px; height: 8px; background: #131d2b; border: 1.5px solid #a9b6c8; }
 .yaml-flow-icon { flex: none; display: grid; place-items: center; width: 1.65rem; height: 1.65rem; border-radius: .45rem; color: var(--flow-accent); background: color-mix(in srgb, var(--flow-accent) 16%, transparent); }
 .yaml-flow-copy { min-width: 0; display: grid; gap: .15rem; }
 .yaml-flow-copy > * { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .yaml-flow-copy small { text-transform: uppercase; letter-spacing: .04em; opacity: .8; }
 .yaml-flow-copy > span { opacity: .8; font-size: .68rem; }
-.yaml-flow-ports { display: grid; gap: .25rem; padding: 0 .6rem .55rem; text-align: right; }
-.yaml-flow-ports > div { position: relative; font-size: .66rem; line-height: 1; }
+.yaml-flow-ports { display: grid; gap: .25rem; padding: .65rem 0; text-align: right; }
+.yaml-flow-ports > div { position: relative; padding-right: .6rem; font-size: .66rem; line-height: 1.25; }
 .yaml-flow-ports span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.yaml-flow-ports .react-flow__handle { right: -.65rem; background: var(--flow-accent); }
+.yaml-flow-ports .react-flow__handle { right: 0; border-color: var(--flow-accent); }
 .yaml-flow-canvas .react-flow__minimap { width: 130px; height: 85px; border: 1px solid #435571; border-radius: .45rem; background: #131d2b; }
-.yaml-flow-canvas .react-flow__node:has(.yaml-flow-card[open]) { z-index: 10 !important; }
+.yaml-flow-canvas .react-flow__node:has(.yaml-flow-details[open]) { z-index: 10 !important; }
 .yaml-flow-card pre { position: absolute; inset: 100% 0 auto; box-sizing: border-box; margin: 0; padding: .6rem; background: inherit; border: 1px solid #435571; border-radius: .4rem; overflow: auto; max-height: 18rem; }
 .yaml-flow-card[data-role="trigger"] { --flow-accent: #c89018; }
 .yaml-flow-card[data-role="condition"], .yaml-flow-card[data-role="choice"], .yaml-flow-card[data-role="branch"] { --flow-accent: #818cf8; }

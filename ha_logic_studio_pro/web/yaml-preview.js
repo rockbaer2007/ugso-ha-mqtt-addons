@@ -1,5 +1,5 @@
 import {parseDocument, stringify} from './vendor/pro-yaml.js';
-import {mountYamlFlow} from './vendor/yaml-flow.js?v=0.1.87-1';
+import {mountYamlFlow} from './vendor/yaml-flow.js?v=0.1.88';
 
 export function renderYamlPreview(container, source, kind, labels) {
   const node = (tag, text, css) => {
@@ -45,7 +45,10 @@ export function renderYamlPreview(container, source, kind, labels) {
         const branches = step.choose.map((branch, index) =>
           [branch?.alias || labels.option + ' ' + (index + 1), branch]);
         branches.push([labels.default, {sequence: step.default}]);
-        lanes[Number(item)].data.ports = branches.map(([title, branch]) => ({
+        const card = lanes[Number(item)].data;
+        card.kind = labels.choose;
+        card.name = step.alias || labels.options(step.choose.length);
+        card.ports = branches.map(([title, branch]) => ({
           title, detail: list(branch?.conditions).map(check => {
             const info = summary(check, 'condition');
             return [info.kind, info.name].filter(Boolean).join(' · ');
@@ -60,6 +63,7 @@ export function renderYamlPreview(container, source, kind, labels) {
           branchRow = actions.nextRow;
           output.push(...actions.output);
         }
+        card.lastBranchRow = branchRow - 2;
         nextRow = Math.max(nextRow, branchRow);
       }
       return {output, column, nextRow};
@@ -80,7 +84,11 @@ export function renderYamlPreview(container, source, kind, labels) {
       offsets[row] = offset;
       offset += rows[row] ?? 124;
     }
-    for (const {position} of lanes) position.y = offsets[position.y];
+    for (const {position, data} of lanes) {
+      const first = offsets[position.y];
+      const last = offsets[data.lastBranchRow] ?? first;
+      position.y = first + (last - first) / 2;
+    }
     unmount.push(mountYamlFlow(canvas, lanes, edges, labels));
     return canvas;
   }
