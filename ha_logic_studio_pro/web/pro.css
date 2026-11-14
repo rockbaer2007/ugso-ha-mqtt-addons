@@ -147,6 +147,19 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
 .editor-tool-dialog textarea { width: 100%; min-height: 15rem; font-family: monospace; }
 .editor-tool-dialog li { margin: .25rem 0; }
 .yaml-source { width: 100%; min-height: 55vh; margin-top: .75rem; resize: vertical; font-family: Consolas, monospace; }
+.yaml-flow { margin-block: .75rem; }
+.yaml-flow-columns { display: flex; flex-wrap: wrap; gap: 1rem; }
+.yaml-flow-column { flex: 1 1 12rem; min-width: 0; }
+.yaml-flow-column:last-child { flex-grow: 3; }
+.yaml-flow-sequence { display: grid; gap: .65rem; }
+.yaml-flow-card { border: 1px solid currentColor; border-inline-start-width: .25rem; border-radius: .45rem; padding: .45rem .6rem; overflow-wrap: anywhere; }
+.yaml-flow-card summary { cursor: pointer; }
+.yaml-flow-card pre { overflow: auto; max-height: 18rem; }
+.yaml-flow-card[data-role="trigger"] { border-inline-start-color: #c89018; }
+.yaml-flow-card[data-role="condition"], .yaml-flow-card[data-role="choice"] { border-inline-start-color: #818cf8; }
+.yaml-flow-card[data-role="action"] { border-inline-start-color: #28a36a; }
+.yaml-flow-branches { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .75rem; margin-block-start: .65rem; }
+.yaml-flow-branch { display: grid; align-content: start; gap: .55rem; border-inline-start: 2px solid #818cf8; padding-inline-start: .55rem; min-width: 0; }
 .script-code {
   --code-comment: #91ba79;
   --code-keyword: #75baff;

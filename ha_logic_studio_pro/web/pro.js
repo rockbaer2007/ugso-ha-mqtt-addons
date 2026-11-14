@@ -1,3 +1,4 @@
+import {renderYamlPreview} from './yaml-preview.js';
 import {makeYaml, validateYaml, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js';
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
@@ -1420,7 +1421,22 @@ function renderYaml(panel, project) {
       download(name + '.' + project.kind + '.yaml', project.source);
     }
   }));
-  sourceArea(panel, project, label + ' YAML', () => report('Bearbeitet. Vor dem Export prüfen.'));
+  const [title, trigger, condition, action, option, fallback, unavailable] = ({
+    de: ['Grafische Vorschau', 'Auslöser', 'Bedingungen', 'Aktionen', 'Option', 'Standard', 'Keine Vorschau verfügbar'],
+    en: ['Visual preview', 'Triggers', 'Conditions', 'Actions', 'Option', 'Default', 'Preview unavailable'],
+    fr: ['Aperçu graphique', 'Déclencheurs', 'Conditions', 'Actions', 'Option', 'Par défaut', 'Aperçu indisponible'],
+  })[locale] ?? ['Visual preview', 'Triggers', 'Conditions', 'Actions', 'Option', 'Default', 'Preview unavailable'];
+  const preview = element('details');
+  const flow = element('div');
+  const refreshPreview = () => renderYamlPreview(flow, project.source, project.kind,
+    {title, trigger, condition, action, option, default: fallback, unavailable});
+  preview.append(element('summary', title), flow);
+  preview.ontoggle = () => { if (preview.open) refreshPreview(); };
+  panel.append(preview);
+  sourceArea(panel, project, label + ' YAML', () => {
+    report('Bearbeitet. Vor dem Export prüfen.');
+    if (preview.open) refreshPreview();
+  });
 }
 
 function chooseYaml(title, callback) {
