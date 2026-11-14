@@ -1766,35 +1766,55 @@ async function runBlocks(project) {
 function renderJavaScript(panel, project) {
   const row = toolbar(panel, project);
   const report = (text, error, line) => recordProtocol(project, text, error, line);
-  const run = button('Testlauf starten', async () => {
+  const checkLabels = {de: ['Typen prüfen', 'Typprüfung erfolgreich.'],
+    en: ['Check types', 'Type check passed.'], fr: ['Vérifier les types', 'Vérification des types réussie.']};
+  const [checkLabel, checkPassed] = checkLabels[document.documentElement.lang] ?? checkLabels.de;
+  const execute = async checkOnly => {
+    const source = project.source;
     run.disabled = true;
+    if (check) check.disabled = true;
     project.running = true;
     project.problem = false;
     renderProjectList();
-    report('Testlauf wird ausgeführt …');
+    if (!checkOnly) report('Testlauf wird ausgeführt …');
     try {
       const response = await fetch('./api/pro-test-run', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({source: project.source, language: project.type}),
+        body: JSON.stringify({source, language: project.type, checkOnly}),
       });
       const result = await response.json();
-      if (!response.ok || !result.ok) report(result.error, true, result.line);
-      else report(JSON.stringify(result.trace, null, 2));
+      if (projects.get(active) === project && project.source === source) {
+        codeEditor?.showProblems(result.diagnostics ?? []);
+      }
+      if (result.diagnostics?.length) {
+        for (const {message, line} of result.diagnostics) report(message, true, line);
+      } else if (!response.ok || !result.ok) report(result.error, true, result.line);
+      else report(checkOnly ? checkPassed : JSON.stringify(result.trace, null, 2));
     } catch (error) {
       report(error.message, true);
     } finally {
       run.disabled = false;
+      if (check) check.disabled = false;
       project.running = false;
       const currentRun = projects.get(active) === project && editor.querySelector('[data-run-javascript]');
       if (currentRun) currentRun.disabled = false;
+      const currentCheck = projects.get(active) === project && editor.querySelector('[data-check-types]');
+      if (currentCheck) currentCheck.disabled = false;
       renderProjectList();
     }
-  });
+  };
+  const run = button('Testlauf starten', () => execute(false));
+  const check = project.type === 'typescript' ? button(checkLabel, () => execute(true)) : null;
   run.dataset.runJavascript = '';
   run.disabled = Boolean(project.running);
   const right = editorTools(row, project, {undo: () => codeEditor?.undo(), redo: () => codeEditor?.redo()});
   right.append(run);
+  if (check) {
+    check.dataset.checkTypes = '';
+    check.disabled = Boolean(project.running);
+    right.append(check);
+  }
   const expert = expertTools(right);
   toolIcon(expert, 'code', 'Quelltext anzeigen', () => showSource(project.source));
   toolIcon(expert, 'time', 'Zeitplan einfügen', () => {

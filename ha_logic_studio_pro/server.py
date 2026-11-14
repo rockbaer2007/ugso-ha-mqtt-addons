@@ -629,6 +629,7 @@ class Handler(SimpleHTTPRequestHandler):
             language = payload.get('language', 'javascript')
             if language not in ('javascript', 'typescript'):
                 raise ValueError()
+            check_only = payload.get('checkOnly') is True and language == 'typescript'
         except (ValueError, UnicodeError):
             self.reply(400, {'error': 'JavaScript-Quelltext mit höchstens 64 KB eingeben.'})
             return
@@ -639,7 +640,7 @@ class Handler(SimpleHTTPRequestHandler):
             env = {key: value for key, value in os.environ.items()
                    if key.upper() in {'PATH', 'SYSTEMROOT', 'WINDIR', 'TEMP', 'TMP', 'TMPDIR'}}
             time_zone = None
-            if self.server.supervisor and not self.server.demo:
+            if not check_only and self.server.supervisor and not self.server.demo:
                 try:
                     req = Request('http://supervisor/core/api/config', headers={
                         'Authorization': 'Bearer ' + os.environ['SUPERVISOR_TOKEN'],
@@ -653,7 +654,8 @@ class Handler(SimpleHTTPRequestHandler):
                     return
             result = subprocess.run(
                 ['node', str(ROOT / 'runtime' / 'test-run.mjs'), '--stdin'],
-                input=json.dumps({'source': source, 'language': language, 'timeZone': time_zone}), encoding='utf-8',
+                input=json.dumps({'source': source, 'language': language, 'timeZone': time_zone,
+                                  'checkOnly': check_only}), encoding='utf-8',
                 capture_output=True, timeout=5, env=env, check=True,
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
             )

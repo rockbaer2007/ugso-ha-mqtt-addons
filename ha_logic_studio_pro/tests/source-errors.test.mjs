@@ -28,4 +28,12 @@ for (const runner of ['test-run', 'live-run']) {
       assert.equal(run(language, '// header\nconst = 1;').line, 2);
     }
   });
+
+  test(runner + ' checks types and the HA API before running TypeScript', () => {
+    const source = 'interface Removed { value: number }\nconst value: number = "wrong";\nawait ha.pause("wrong");';
+    const result = run('typescript', source);
+    if (runner === 'test-run') assert.deepEqual(result.diagnostics.map(item => item.line), [2, 3]);
+    else assert.equal(result.line, 3);
+    assert.match(result.error ?? result.text, /not assignable/);
+  });
 }

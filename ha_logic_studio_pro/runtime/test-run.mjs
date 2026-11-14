@@ -202,9 +202,12 @@ if (process.argv.includes('--stdin')) {
       if (size > 400_000) throw new Error('Anfrage zu groß.');
       chunks.push(chunk);
     }
-    const {source, language, timeZone} = JSON.parse(Buffer.concat(chunks).toString('utf8'));
-    process.stdout.write(JSON.stringify(await testRun(source, language, timeZone)));
+    const {source, language, timeZone, checkOnly} = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    if (checkOnly) {
+      await prepareSource(source, language);
+      process.stdout.write(JSON.stringify({ok: true}));
+    } else process.stdout.write(JSON.stringify(await testRun(source, language, timeZone)));
   } catch (error) {
-    process.stdout.write(JSON.stringify({ok: false, error: error.message, line: error.line}));
+    process.stdout.write(JSON.stringify({ok: false, error: error.message, line: error.line, diagnostics: error.diagnostics}));
   }
 }

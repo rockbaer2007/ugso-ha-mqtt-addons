@@ -7,6 +7,14 @@ export async function prepareSource(source, language) {
   const file = 'studio-source.js';
   const originalLines = source.split(/\r\n|[\n\r\u2028\u2029]/).length;
   if (language === 'typescript') {
+    const {checkTypeScript} = await import('./typescript-check.mjs');
+    const diagnostics = checkTypeScript(source);
+    if (diagnostics.length) {
+      const error = new Error(diagnostics[0].message);
+      error.line = diagnostics[0].line;
+      error.diagnostics = diagnostics;
+      throw error;
+    }
     const {default: ts} = await import('typescript');
     const result = ts.transpileModule(source, {
       fileName: 'project.ts', reportDiagnostics: true,

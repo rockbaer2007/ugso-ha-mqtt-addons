@@ -277,7 +277,7 @@ try {
     } catch (error) { fail(error); }
   }, 50);
 } catch (error) {
-  report('error', error.message, error.line);
+  for (const item of error.diagnostics ?? [error]) report('error', item.message, item.line);
   process.exit(1);
 }
 
