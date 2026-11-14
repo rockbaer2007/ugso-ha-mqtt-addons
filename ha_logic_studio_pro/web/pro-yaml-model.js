@@ -64,7 +64,7 @@ export function readRuleFields(fields) {
     const lists = {triggers: ['type', 'entity', 'state', 'from', 'attribute', 'seconds', 'time', 'event', 'above', 'below', 'offsetMinutes', 'topic', 'payload'],
       conditions: ['type', 'entity', 'state', 'attribute', 'above', 'below'],
       actions: actionFields, elseActions: actionFields};
-    const types = {triggers: ['state', 'time', 'helper_time', 'event', 'numeric', 'sun', 'mqtt'], conditions: ['state', 'numeric'],
+    const types = {triggers: ['state', 'time', 'helper_time', 'event', 'numeric', 'sun', 'mqtt', 'ha_start'], conditions: ['state', 'numeric'],
       actions: ['action', 'delay'], elseActions: ['action', 'delay']};
     const rule = {conditionMode: fields.conditionMode};
     if (!['and', 'or', 'not'].includes(rule.conditionMode)) throw new Error('Ungültige Rules-Datei.');
@@ -98,6 +98,9 @@ export function readRuleFields(fields) {
 
 export function makeRulesJavaScript(name, rule) {
   makeYaml({name, kind: 'automation', ...rule});
+  if (rule.triggers.some(t => t.type === 'ha_start')) {
+    throw new Error('Rules → JS: Der Home-Assistant-Startauslöser benötigt HA-YAML.');
+  }
   if (rule.triggers.some(t => t.type === 'mqtt')) {
     throw new Error('Rules → JS: Der MQTT-Auslöser benötigt HA-YAML.');
   }
@@ -208,6 +211,7 @@ export function makeYaml({name, kind, triggers = [], condition, conditions = con
     ...config,
     triggers: triggers.map(entry => {
       const {entity, state, from, attribute, seconds, type, time, event} = entry;
+      if (type === 'ha_start') return {trigger: 'homeassistant', event: 'start'};
       if (type === 'mqtt') {
         const {topic, payload} = entry;
         if (!provided(topic) || topic.includes('\0') || new TextEncoder().encode(topic).length > 65535 ||

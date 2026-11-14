@@ -1470,8 +1470,11 @@ function renderRules(panel, project) {
     en: ['MQTT message', 'MQTT topic', 'Payload filter (optional)'],
     fr: ['Message MQTT', 'Topic MQTT', 'Filtre de contenu (facultatif)'],
   })[locale] ?? ['MQTT message', 'MQTT topic', 'Payload filter (optional)']);
+  const haStart = ({de: 'Home Assistant gestartet', en: 'Home Assistant started',
+    fr: 'Démarrage de Home Assistant'})[locale] ?? 'Home Assistant started';
   const triggerKinds = [['state', status, 'ϟ'], ['numeric', threshold, '↗'], ['time', schedule, '◷'],
-    ['helper_time', helperTime, '◷'], ['sun', sun, '☀'], ['mqtt', mqtt, '✉'], ['event', event, '✉']];
+    ['helper_time', helperTime, '◷'], ['sun', sun, '☀'], ['mqtt', mqtt, '✉'], ['event', event, '✉'],
+    ['ha_start', haStart, '▶']];
   const [from, to, attribute, hold, numeric, above, below, delay, seconds, parameters, actionType] = ({
     de: ['Von', 'Nach', 'Attribut (optional)', 'Mindestdauer (Sekunden)', 'Zahlenwert', 'Über', 'Unter', 'Verzögerung', 'Sekunden', 'Parameter (JSON)', 'Schritttyp'],
     en: ['From', 'To', 'Attribute (optional)', 'Minimum duration (seconds)', 'Numeric state', 'Above', 'Below', 'Delay', 'Seconds', 'Parameters (JSON)', 'Step type'],
@@ -1528,7 +1531,10 @@ function renderRules(panel, project) {
       }
       let labels;
       if (key === 'triggers') {
-        if (entry.type === 'time') labels = [['time', time]];
+        if (entry.type === 'ha_start') {
+          inputs.append(element('span', haStart));
+          labels = [];
+        } else if (entry.type === 'time') labels = [['time', time]];
         else if (entry.type === 'helper_time') labels = [['entity', helperTime]];
         else if (entry.type === 'mqtt') labels = [['topic', topic], ['payload', payload]];
         else if (entry.type === 'sun') labels = [['event', sun], ['offsetMinutes', offsetMinutes]];
