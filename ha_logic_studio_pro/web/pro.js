@@ -310,7 +310,7 @@ function recordProtocol(project, text, error = false) {
 function protocolEntries(project) {
   const runtime = runtimeJobs[active]?.messages ?? [];
   return [...(project?.protocol ?? []), ...runtime.map(entry => ({...entry,
-    time: new Date(entry.time).toLocaleTimeString(), text: 'Runtime · ' + entry.text}))];
+    time: new Date(entry.time).toLocaleString(), text: 'Runtime · ' + entry.text}))];
 }
 
 function setProjectProblem(project, problem) {

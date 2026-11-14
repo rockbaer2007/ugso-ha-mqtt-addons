@@ -174,28 +174,84 @@ def runtime_source(project, blocks_source=None):
 
 
 class ScriptRuntime:
-    def __init__(self):
+    def __init__(self, log_root=None):
         self.lock = threading.Lock()
         self.jobs = {}
         self.memory_root = None
+        self.log_root = Path(log_root) if log_root is not None else None
+
+    def log_directory(self, user):
+        return self.log_root / hashlib.sha256(user.encode()).hexdigest()
+
+    def read_log(self, path):
+        try:
+            return deque(json.loads(path.read_text(encoding='utf-8')), maxlen=100)
+        except FileNotFoundError:
+            return deque(maxlen=100)
+        except (OSError, ValueError, TypeError):
+            print('Runtime-Protokoll konnte nicht gelesen werden.', flush=True)
+            return deque(maxlen=100)
+
+    def add_message(self, key, job, text, error):
+        job['messages'].append({'text': text[:1000], 'error': error,
+                                'time': datetime.now(timezone.utc).isoformat()})
+        if self.log_root is not None:
+            directory = self.log_directory(key[0])
+            path = directory / (key[1] + '.json')
+            temp = path.with_suffix('.tmp')
+            try:
+                directory.mkdir(parents=True, exist_ok=True)
+                temp.write_text(json.dumps(list(job['messages']), ensure_ascii=False), encoding='utf-8')
+                temp.replace(path)
+            except OSError:
+                print('Runtime-Protokoll konnte nicht gespeichert werden.', flush=True)
+
+    def saved_messages(self, key):
+        if self.log_root is None:
+            return deque(maxlen=100)
+        return self.read_log(self.log_directory(key[0]) / (key[1] + '.json'))
+
+    def save_projects(self, store, user, payload):
+        with self.lock:
+            result = store.write(user, payload)
+            if result is None:
+                return None
+            project_ids = dict(result['tree']['projects'])
+            if self.log_root is not None:
+                for path in self.log_directory(user).glob('*.json'):
+                    if path.stem not in project_ids:
+                        try:
+                            path.unlink(missing_ok=True)
+                        except OSError:
+                            print('Runtime-Protokoll konnte nicht gelöscht werden.', flush=True)
+            for key, job in self.jobs.items():
+                if key[0] == user and key[1] not in project_ids:
+                    job['record_log'] = False
+                    job['messages'].clear()
+            return result
 
     def startup_error(self, user, project_id, error):
         with self.lock:
             if len(self.jobs) >= 64:
                 print('Weitere Autostart-Fehler: ' + str(error), flush=True)
                 return
-            self.jobs[(user, project_id)] = {'process': None, 'state': 'error', 'messages': deque([{
-                'text': str(error), 'error': True, 'time': datetime.now(timezone.utc).isoformat(),
-            }], maxlen=100)}
+            key = (user, project_id)
+            job = {'process': None, 'state': 'error', 'messages': self.saved_messages(key)}
+            self.jobs[key] = job
+            self.add_message(key, job, str(error), True)
 
     def status(self, user, read_projects):
         with self.lock:
-            result = {key[1]: {'state': job['state'], 'messages': list(job['messages'])}
-                      for key, job in self.jobs.items() if key[0] == user}
-            live = [(key[1], job['flow_source'], job['diagnosis']) for key, job in self.jobs.items()
-                    if key[0] == user and job['state'] == 'running' and 'diagnosis' in job]
-        if live:
             projects = dict((read_projects()['tree'] or {}).get('projects', []))
+            result = {key[1]: {'state': job['state'], 'messages': list(job['messages'])}
+                      for key, job in self.jobs.items() if key[0] == user and key[1] in projects}
+            if self.log_root is not None:
+                for path in self.log_directory(user).glob('*.json'):
+                    if path.stem in projects and path.stem not in result:
+                        result[path.stem] = {'state': 'stopped', 'messages': list(self.read_log(path))}
+            live = [(key[1], job['flow_source'], job['diagnosis']) for key, job in self.jobs.items()
+                    if key[0] == user and key[1] in result and job['state'] == 'running' and 'diagnosis' in job]
+        if live:
             for project_id, source, diagnosis in live:
                 if json.loads(source) == projects.get(project_id, {}).get('graph'):
                     result[project_id]['diagnosis'] = diagnosis
@@ -232,13 +288,14 @@ class ScriptRuntime:
                 process = subprocess.Popen(['node', str(ROOT / 'runtime' / runner)], stdin=input_file,
                                            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, encoding='utf-8', env=env,
                                            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
-            job = {'process': process, 'state': 'starting', 'messages': deque(maxlen=100)}
+            messages = previous['messages'] if previous else self.saved_messages(key)
+            job = {'process': process, 'state': 'starting', 'messages': messages}
             if language == 'flow':
                 job['flow_source'] = source
             self.jobs[key] = job
-            threading.Thread(target=self.collect, args=(job,), daemon=True).start()
+            threading.Thread(target=self.collect, args=(key, job), daemon=True).start()
 
-    def collect(self, job):
+    def collect(self, key, job):
         process = job['process']
         with process.stdout as stream:
             for line in stream:
@@ -253,9 +310,8 @@ class ScriptRuntime:
                         continue
                     if kind in ('running', 'error'):
                         job['state'] = kind
-                    if message['text']:
-                        job['messages'].append({'text': message['text'], 'error': kind == 'error',
-                                                'time': datetime.now(timezone.utc).isoformat()})
+                    if message['text'] and job.get('record_log', True):
+                        self.add_message(key, job, message['text'], kind == 'error')
         with self.lock:
             if process.wait() and job['state'] not in ('error', 'stopped'):
                 job['state'] = 'error'
@@ -276,7 +332,7 @@ class LogicServer(ThreadingHTTPServer):
         super().__init__(address, Handler)
         self.store = Store(data_dir)
         self.projects = ProjectStore(data_dir)
-        self.runtime = ScriptRuntime()
+        self.runtime = ScriptRuntime(Path(data_dir) / 'runtime-logs')
         self.runtime.memory_root = Path(data_dir).resolve() / 'fbd-memory'
         self.supervisor, self.demo = supervisor, demo
         self.sources=SourceReader(config_root,Path(data_dir)/'ha-source-backups') if config_root else None
@@ -467,7 +523,10 @@ class Handler(SimpleHTTPRequestHandler):
             if length <= 0 or length > MAX_BODY:
                 self.reply(413, {'error': 'Maximal 1 MB.'})
                 return
-            result = store.write(self.user(), json.loads(self.rfile.read(length)))
+            user = self.user()
+            payload = json.loads(self.rfile.read(length))
+            result = (self.server.runtime.save_projects(store, user, payload)
+                      if store is self.server.projects else store.write(user, payload))
             self.reply(409 if result is None else 200, {'error': 'Projekt wurde in einem anderen Fenster geändert.'} if result is None else {'revision': result['revision'], 'saved_at': result['saved_at']})
         except (ValueError, TypeError):
             self.reply(400, {'error': 'Ungültiges Projekt.'})
