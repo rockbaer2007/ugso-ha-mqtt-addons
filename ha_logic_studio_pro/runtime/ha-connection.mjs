@@ -183,7 +183,9 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
             Buffer.byteLength(JSON.stringify(responseHeaders)) > 65536) {
           throw new Error('Ungültige oder zu große HTTP-Antwort.');
         }
-        return {status, data, headers: responseHeaders,
+        const contentType = responseHeaders['content-type']?.split(';', 1)[0].trim().toLowerCase();
+        const jsonString = typeof content === 'string' && contentType === 'application/json';
+        return {status, data, headers: responseHeaders, ...(jsonString ? {jsonString} : {}),
           error: status >= 200 && status < 300 ? null : 'HTTP ' + status};
       },
       subscribe(type) {

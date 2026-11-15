@@ -851,7 +851,13 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'Configure a fixed host and URL prefix in the approved HA REST command. Insert the variable part into its URL as {{ url_suffix | urlencode }}.',
       fr: 'Configurez un hôte et un préfixe fixes dans la commande REST HA autorisée. Insérez la partie variable dans son URL avec {{ url_suffix | urlencode }}.',
     };
-    const hint = translatePro(instruction, locale) + (dynamicHttp ? ' ' + (suffixHint[locale] ?? suffixHint.en) : '');
+    const jsonHint = {
+      de: 'Antworttyp JSON: Antwortdaten sind bereits als JSON-Wert verfügbar. Felder können direkt gelesen werden.',
+      en: 'JSON response type: response data is already available as a JSON value. Read fields directly.',
+      fr: 'Type de réponse JSON : les données sont disponibles sous forme de valeur JSON. Les champs peuvent être lus directement.',
+    };
+    const hint = [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
+      fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
     if ((placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }

@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.108
+
+- Blocks JS übernimmt den ioBroker-HTTP-Antworttyp `json`. Der Antwortzweig kann Felder direkt aus den JSON-Daten lesen.
+- Beim Play-Test auf dem Testsystem PC (64) lieferten der originale Blockly-Export mit „JSON nach Objekt“ und die XML-Testvariante mit `TYPE=json` für `result.value` jeweils `42`.
+
 ## 0.1.107
 
 - Blocks JS übernimmt berechnete HTTP-URLs aus ioBroker, wenn ein fester HTTP(S)-Anfang mit einem variablen Teil verbunden ist. Der freigegebene HA-REST-Befehl erhält den variablen Teil als `url_suffix`.
