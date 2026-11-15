@@ -32,6 +32,11 @@ export function renderYamlPreview(container, source, kind, labels) {
       for (const source of inputs) edges.push([source, item]);
       return item;
     }
+    if (entry.use_blueprint) {
+      add({kind: 'use_blueprint', name: entry.use_blueprint.path}, entry.use_blueprint, 'action', 1, 1, []);
+      unmount.push(mountYamlFlow(canvas, lanes, edges, labels));
+      return canvas;
+    }
     function steps(values, role, inputs, column, row, depth = 0) {
       let nextRow = row + 1;
       let output = inputs;
@@ -98,7 +103,8 @@ export function renderYamlPreview(container, source, kind, labels) {
     const doc = parseDocument(source, {uniqueKeys: true});
     if (doc.errors.length) throw doc.errors[0];
     const value = doc.toJS({maxAliasCount: 30});
-    const entries = kind === 'script' && value && !Array.isArray(value) && !Object.hasOwn(value, 'sequence')
+    const entries = kind === 'script' && value && !Array.isArray(value) &&
+      !Object.hasOwn(value, 'sequence') && !Object.hasOwn(value, 'use_blueprint')
       ? Object.entries(value) : list(value).map(entry => ['', entry]);
     if (!entries.length) throw new Error(labels.unavailable);
     for (const [name, entry] of entries) {

@@ -209,17 +209,20 @@ export function validateYaml(source, kind) {
     throw new Error('Eine YAML-Konfiguration mit höchstens 1 MB eingeben.');
   }
   const doc = parseDocument(source, {uniqueKeys: true});
-  const problem = doc.errors[0] || doc.warnings[0];
+  // These tags are resolved by Home Assistant. YAML export retains the original source.
+  const problem = doc.errors[0] || doc.warnings.find(warning =>
+    warning.code !== 'TAG_RESOLVE_FAILED' ||
+    !/^Unresolved tag: !(?:input|secret|include(?:_dir_(?:list|named|merge_list|merge_named))?)(?:\s|$)/.test(warning.message));
   if (problem) throw problem;
   const data = doc.toJS({maxAliasCount: 30});
   const at = (message, path) => {
-    const range = doc.getIn(path, true)?.range;
+    const range = (path.length ? doc.getIn(path, true) : doc.contents)?.range;
     throw Object.assign(new Error(message), {pos: range?.slice(0, 2)});
   };
   let entries;
   if (kind === 'script') {
     if (!object(data)) throw new Error('Ein Skript oder eine Zuordnung benannter Skripte wird erwartet.');
-    entries = Object.hasOwn(data, 'sequence') ? [data] : Object.entries(data).map(([key, entry]) => {
+    entries = Object.hasOwn(data, 'sequence') || Object.hasOwn(data, 'use_blueprint') ? [data] : Object.entries(data).map(([key, entry]) => {
       if (!/^[a-z0-9_]+$/.test(key) || ['reload', 'turn_on', 'turn_off', 'toggle'].includes(key)) {
         throw new Error('Ungültiger Skriptschlüssel: ' + key);
       }
@@ -231,9 +234,21 @@ export function validateYaml(source, kind) {
   if (!entries.length) throw new Error('Mindestens einen HA-Eintrag eingeben.');
   for (const [index, entry] of entries.entries()) {
     const path = Array.isArray(data) ? [index] :
-      kind === 'script' && !Object.hasOwn(data, 'sequence') ? [Object.keys(data)[index]] : [];
+      kind === 'script' && !Object.hasOwn(data, 'sequence') && !Object.hasOwn(data, 'use_blueprint') ?
+        [Object.keys(data)[index]] : [];
     if (!object(entry)) at('Jeder HA-Eintrag muss ein YAML-Objekt sein.', path);
     if (entry.mode !== undefined && !modes.has(entry.mode)) at('Ungültiger HA-Ausführungsmodus.', [...path, 'mode']);
+    if (Object.hasOwn(entry, 'use_blueprint')) {
+      const reference = entry.use_blueprint;
+      const location = [...path, 'use_blueprint'];
+      if (!object(reference) || !provided(reference.path)) {
+        at('Eine Blueprint-Instanz benötigt einen Pfad unter use_blueprint.path.', location);
+      }
+      if (Object.hasOwn(reference, 'input') && !object(reference.input)) {
+        at('Blueprint-Eingaben müssen eine YAML-Zuordnung sein.', [...location, 'input']);
+      }
+      continue;
+    }
     const actions = kind === 'script' ? entry.sequence : entry.actions ?? entry.action;
     if (!Array.isArray(actions) || !actions.length || !actions.every(object)) {
       at(kind === 'script' ? 'Ein Skript benötigt eine nicht leere sequence mit Aktionen.' :

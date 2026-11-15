@@ -1,6 +1,6 @@
-import {renderYamlPreview} from './yaml-preview.js?v=0.1.88';
+import {renderYamlPreview} from './yaml-preview.js?v=0.1.93';
 import {parseDocument} from './vendor/pro-yaml.js';
-import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js?v=0.1.90';
+import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js?v=0.1.93';
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
 import {mountCodeEditor} from './vendor/pro-code.js';
@@ -1609,8 +1609,15 @@ function renderYaml(panel, project) {
     if (index === 2) {
       try {
         validateYaml(project.source, project.kind);
-        jsonSource.value = JSON.stringify(parseDocument(project.source, {uniqueKeys: true})
-          .toJS({maxAliasCount: 30}), null, 2) + '\n';
+        const doc = parseDocument(project.source, {uniqueKeys: true});
+        if (doc.warnings.length) {
+          throw new Error(({
+            de: 'HA-YAML-Tags bleiben beim YAML-Export erhalten. JSON kann diese Tags nicht darstellen.',
+            en: 'YAML export preserves Home Assistant tags. JSON cannot represent these tags.',
+            fr: 'L’export YAML conserve les balises Home Assistant. JSON ne peut pas les représenter.',
+          })[locale] ?? 'Use YAML export to preserve Home Assistant tags.');
+        }
+        jsonSource.value = JSON.stringify(doc.toJS({maxAliasCount: 30}), null, 2) + '\n';
         jsonError.textContent = '';
         jsonDownload.disabled = false;
       } catch (error) {
@@ -2395,7 +2402,7 @@ $('yaml-file').onchange = async event => {
   message.setAttribute('role', 'alert');
   try {
     if (file.size > 1_000_000) throw new Error('Die YAML-Datei darf höchstens 1 MB groß sein.');
-    const source = await file.text();
+    const source = new TextDecoder('utf-8', {ignoreBOM: true, fatal: true}).decode(await file.arrayBuffer());
     chooseYaml('YAML-Datei öffnen', kind => add({type: 'yaml', name: file.name.replace(/\.ya?ml$/i, ''), kind, source}));
   } catch (error) {
     message.textContent = error.message;
