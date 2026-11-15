@@ -1,5 +1,9 @@
 # HA Logic Studio Pro
 
+## 0.1.103
+
+- Blocks JS importiert ioBroker-HTTP-POST mit JSON-Payload, Statusprüfung und Antwortauswertung über einen freigegebenen HA-REST-Befehl.
+
 ## 0.1.102
 
 - Blocks JS übernimmt ioBroker-HTTP-GET mit Status und Antworttext. Ein zugeordneter HA-REST-Befehl liefert die Antwort für die importierte JSON-Auswertung.

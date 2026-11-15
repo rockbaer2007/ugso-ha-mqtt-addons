@@ -48,7 +48,7 @@ test('reconnect refreshes states and restores event subscriptions', async () => 
   assert.equal(received[1].data.ok, true);
 });
 
-test('HTTP GET only invokes an allowed REST command and exposes status and JSON text', async () => {
+test('HTTP requests only invoke allowed REST commands and expose status and JSON text', async () => {
   const commands = [];
   class Socket extends EventTarget {
     constructor() {
@@ -74,6 +74,9 @@ test('HTTP GET only invokes an allowed REST command and exposes status and JSON 
   await assert.rejects(ha.httpGet('rest_command.other'), /nicht freigegeben/);
   await assert.rejects(ha.httpGet('rest_command.reload'), /nicht freigegeben/);
   assert.deepEqual(await ha.httpGet('rest_command.probe'), {status: 200, data: '{"value":42}'});
+  assert.deepEqual(await ha.httpGet('rest_command.probe', '{"probe":42}'), {status: 200, data: '{"value":42}'});
   assert.deepEqual(commands.filter(command => command.type === 'call_service').map(({id, ...command}) => command),
-    [{type: 'call_service', domain: 'rest_command', service: 'probe', return_response: true}]);
+    [{type: 'call_service', domain: 'rest_command', service: 'probe', return_response: true},
+      {type: 'call_service', domain: 'rest_command', service: 'probe', return_response: true,
+        service_data: {payload: '{"probe":42}'}}]);
 });

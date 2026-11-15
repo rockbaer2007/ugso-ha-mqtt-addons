@@ -37,6 +37,11 @@ export const simulatedEvents = String.raw`
   };
   ${importedSystem}
   ${scriptRequests}
+  const checkRestAction = action => {
+    if (!/^rest_command\.[a-z0-9_]+$/.test(action) || action === 'rest_command.reload') {
+      throw new Error('Invalid REST command.');
+    }
+  };
   const ha = Object.freeze({
     ...api,
     requestScriptMessage, importedControl, importedStateValue, importedEventValue, importedTarget, importedAttribute,
@@ -59,10 +64,13 @@ export const simulatedEvents = String.raw`
     onAttribute: (entity, attribute, callback) => register('attribute', entity, attribute, callback),
     onEvent: (event, callback) => register('event', event, null, callback),
     httpGet(action, callback) {
-      if (!/^rest_command\.[a-z0-9_]+$/.test(action) || action === 'rest_command.reload') {
-        throw new Error('Invalid REST command.');
-      }
+      checkRestAction(action);
       invoke(callback, {status: 200, data: '{"value":42}'});
+    },
+    httpPost(action, payload, callback) {
+      checkRestAction(action);
+      const json = typeof payload === 'string' ? JSON.parse(payload) : payload;
+      invoke(callback, {status: 200, data: JSON.stringify({value: json?.probe ?? 42})});
     },
     history(entity, start, end, mode, step, count, callback) {
       const rows = api.sampleHistory(entity, JSON.stringify([Number(start), Number(end), mode, step, count]));

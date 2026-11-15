@@ -148,13 +148,14 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
           include_start_time_state: false, significant_changes_only: false, no_attributes: true});
         return historyRows(result?.[entity] ?? [], range);
       },
-      async httpGet(action) {
+      async httpGet(action, payload) {
         if (typeof action !== 'string' || !/^rest_command\.[a-z0-9_]+$/.test(action) ||
             action === 'rest_command.reload' || !writeTargets.has(action)) {
           throw new Error('REST-Befehl nicht freigegeben: ' + action);
         }
         const result = await send({type: 'call_service', domain: 'rest_command',
-          service: action.slice('rest_command.'.length), return_response: true});
+          service: action.slice('rest_command.'.length), return_response: true,
+          ...(payload === undefined ? {} : {service_data: {payload}})});
         const {status, content} = result?.response ?? {};
         const data = typeof content === 'string' ? content : JSON.stringify(content ?? null);
         if (!Number.isInteger(status) || Buffer.byteLength(data) > 262144) {
@@ -246,9 +247,9 @@ export async function connectHomeAssistant(config, dispatch, fail, Socket = WebS
     },
     call(...args) { current?.call(...args); },
     sendto(...args) { current?.sendto(...args); },
-    async httpGet(action) {
+    async httpGet(action, payload) {
       if (!current) throw new Error('HA-Verbindung getrennt.');
-      return current.httpGet(action);
+      return current.httpGet(action, payload);
     },
     async history(...args) {
       const connection = current;

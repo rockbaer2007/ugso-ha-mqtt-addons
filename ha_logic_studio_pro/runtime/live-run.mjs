@@ -125,11 +125,13 @@ try {
       historyRequests++;
       ha.history(...query).then(rows => dispatch({type: 'history', id, rows}), fail)
         .finally(() => { historyRequests--; });
-    } else if (operation === 'httpGet') {
+    } else if (operation === 'httpGet' || operation === 'httpPost') {
       if (httpRequests >= 4) throw new Error('Maximal vier gleichzeitige HTTP-Abfragen.');
-      const [id, action] = args;
+      const [id, action, payload] = args;
+      if (operation === 'httpPost' && typeof payload !== 'string') throw new Error('HTTP POST benötigt einen JSON-Text.');
       httpRequests++;
-      ha.httpGet(action).then(response => dispatch({type: 'httpGet', id, response}), fail)
+      ha.httpGet(action, operation === 'httpPost' ? payload : undefined)
+        .then(response => dispatch({type: 'httpGet', id, response}), fail)
         .finally(() => { httpRequests--; });
     } else if (operation === 'event') ha.subscribe(args[0]);
     else if (operation === 'action') ha.call(args[0], args[1], args[2]);
@@ -146,6 +148,12 @@ try {
       const namedSchedules = new Map();
       const historyCallbacks = new Map();
       const httpCallbacks = new Map();
+      const requestHttp = (operation, action, callback, ...data) => {
+        if (typeof callback !== 'function') throw new Error('HTTP callback required.');
+        const id = ++historyId;
+        call(operation, id, action, ...data);
+        httpCallbacks.set(id, callback);
+      };
       let historyId = 0;
       const call = (operation, ...args) => bridge(operation, JSON.stringify(args));
       const invoke = (callback, ...args) => {
@@ -207,12 +215,9 @@ try {
           call('history', id, entity, Number(start), Number(end), mode, step, count);
           historyCallbacks.set(id, callback);
         },
-        httpGet(action, callback) {
-          if (typeof callback !== 'function') throw new Error('HTTP callback required.');
-          const id = ++historyId;
-          call('httpGet', id, action);
-          httpCallbacks.set(id, callback);
-        },
+        httpGet: (action, callback) => requestHttp('httpGet', action, callback),
+        httpPost: (action, payload, callback) => requestHttp('httpPost', action, callback,
+          JSON.stringify(typeof payload === 'string' ? JSON.parse(payload) : payload)),
         schedule: (pattern, callback) => register('schedule', pattern, null, callback),
         namedSchedule(name, cron, callback) {
           if (typeof name !== 'string' || !name.trim() || name.length > 128 || typeof callback !== 'function') throw new Error('Ungültiger benannter Zeitplan.');
