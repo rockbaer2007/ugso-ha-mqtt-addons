@@ -1,6 +1,6 @@
 import {renderYamlPreview} from './yaml-preview.js?v=0.1.93';
 import {parseDocument} from './vendor/pro-yaml.js';
-import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js?v=0.1.95';
+import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.96';
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
 import {mountCodeEditor} from './vendor/pro-code.js';
@@ -638,7 +638,8 @@ function openBlockEntity(spec, current, apply, validate) {
   const list = element('ul');
   list.style.maxHeight = '45vh';
   list.style.overflowY = 'auto';
-  const input = element('input');
+  const input = element(spec.multiline ? 'textarea' : 'input');
+  if (spec.multiline) input.rows = 3;
   input.value = current;
   input.setAttribute('aria-label', spec.kind ? title : 'entity_id');
   input.oninput = () => input.setCustomValidity('');
@@ -672,8 +673,9 @@ function openBlockEntity(spec, current, apply, validate) {
       };
       const choices = spec.kind === 'attribute' ? await attributeChoices() :
         spec.loadChoices ? await spec.loadChoices(controller.signal) : spec.choices;
-      const pages = choices ? [choices.filter(id => id.toLowerCase().includes(search.value.trim().toLowerCase()))
-        .map(id => ({entity_id: id, name: id}))] : await Promise.all(domains.map(async domain => {
+      const pages = choices ? [choices.map(item => typeof item === 'string' ? {entity_id: item, name: item} : item)
+        .filter(({entity_id, name}) => (name + ' ' + entity_id).toLowerCase().includes(search.value.trim().toLowerCase()))] :
+        await Promise.all(domains.map(async domain => {
         const query = new URLSearchParams({q: search.value.trim(), domain});
         const response = await fetch('./api/entities?' + query, {signal: controller.signal});
         if (!response.ok) throw new Error(unavailable);
@@ -708,24 +710,31 @@ function openBlockEntity(spec, current, apply, validate) {
     request?.abort();
     timer = setTimeout(refresh, 150);
   };
-  input.onkeydown = event => { if (event.key === 'Enter') submit(); };
+  input.onkeydown = event => { if (!spec.multiline && event.key === 'Enter') submit(); };
   dialog.addEventListener('close', () => { clearTimeout(timer); request?.abort(); });
   search.focus();
   void refresh();
 }
 
-function openRuleAction(current, apply) {
+function openRuleAction(current, apply, validate = value => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value), multiline = false) {
   const common = ['homeassistant.turn_on', 'homeassistant.turn_off', 'homeassistant.toggle',
     'input_number.set_value', 'input_text.set_value', 'light.turn_on', 'notify.send_message'];
   let catalog;
-  openBlockEntity({kind: 'action', loadChoices: async signal => {
+  openBlockEntity({kind: 'action', multiline, loadChoices: async signal => {
     if (catalog) return catalog;
     const response = await fetch('./api/rules-actions', {signal});
     if (!response.ok) return common;
     const {items} = await response.json();
     catalog = items.length ? items : common;
     return catalog;
-  }}, current, apply, value => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value));
+  }}, current, apply, validate);
+}
+
+async function loadRuleTargets(kind, signal) {
+  const response = await fetch('./api/rules-targets?' + new URLSearchParams({kind}), {signal});
+  if (!response.ok) throw new Error('HA targets unavailable');
+  const {items} = await response.json();
+  return items.map(({id, name, entities}) => ({entity_id: id, name: name || id, entities}));
 }
 
 async function showSun(project) {
@@ -1499,6 +1508,10 @@ function renderYaml(panel, project) {
   const row = toolbar(panel, project);
   const label = project.kind === 'script' ? 'HA-Skript' : 'HA-Automation';
   row.append(element('strong', label));
+  if (project.blocksSourceName) {
+    const caption = {de: 'YAML aus Blocks A', en: 'YAML from Blocks A', fr: 'YAML issu de Blocks A'}[locale];
+    row.append(element('span', caption + ' · ' + project.blocksSourceName));
+  }
   const report = (text, error) => recordProtocol(project, text, error);
   const messages = {
     de: [id => `Unbekannte HA-Entität: ${id}`, field => `Ungültiges Zielfeld: ${field}`,
@@ -1735,7 +1748,8 @@ function openGenerated(project, read, report) {
       const source = makeYaml({name: project.name, kind, ...read()});
       validateYaml(source, kind);
       setProjectProblem(project, false);
-      add({type: 'yaml', name: project.name + ' · YAML', kind, source});
+      add({type: 'yaml', name: project.name + ' · YAML', kind, source,
+        ...(project.type === 'blocks' ? {blocksSourceName: project.name} : {})});
     } catch (error) {
       report(error.message, true);
     }
@@ -1757,6 +1771,16 @@ function renderRules(panel, project) {
     status, schedule, event, entity, target, time, eventType, service, when, and, then, otherwise, empty, choose] =
     wording[locale] ?? wording.en;
   const ruleLabels = {triggers: when, conditions: and, actions: then, elseActions: otherwise};
+  const [conditionGroup, waitState, timeout] = {
+    de: ['Bedingungsgruppe', 'Auf Zustand warten', 'Zeitlimit in Sekunden (optional)'],
+    en: ['Condition group', 'Wait for state', 'Timeout in seconds (optional)'],
+    fr: ['Groupe de conditions', 'Attendre un état', 'Délai maximal en secondes (facultatif)'],
+  }[locale];
+  const [callScript, notification, fireEvent, searchPalette, paletteLabel] = {
+    de: ['HA-Skript aufrufen', 'HA-Benachrichtigung', 'HA-Ereignis senden', 'Palette durchsuchen', 'Palette'],
+    en: ['Call HA script', 'HA notification', 'Fire HA event', 'Search palette', 'Palette'],
+    fr: ['Appeler un script HA', 'Notification HA', 'Émettre un événement HA', 'Rechercher dans la palette', 'Palette'],
+  }[locale];
   const [triggeredBy, triggerId, optionalId, missingId] = {
     de: ['Ausgelöst durch', 'Trigger-ID auswählen', 'Trigger-ID (optional)', 'Trigger-ID fehlt'],
     en: ['Triggered by', 'Choose trigger ID', 'Trigger ID (optional)', 'Missing trigger ID'],
@@ -1782,7 +1806,13 @@ function renderRules(panel, project) {
   })[locale] ?? ['MQTT message', 'MQTT topic', 'Payload filter (optional)']);
   const haStart = ({de: 'Home Assistant gestartet', en: 'Home Assistant started',
     fr: 'Démarrage de Home Assistant'})[locale] ?? 'Home Assistant started';
-  const triggerKinds = [['state', status, 'ϟ'], ['numeric', threshold, '↗'], ['time', schedule, '◷'],
+  const [area, labelTrigger, scopeHint] = {
+    de: ['Zustand im Bereich', 'Zustand nach Label', 'Die Auswahl speichert die aktuellen Entitäten. Nach Änderungen erneut auswählen.'],
+    en: ['State in area', 'State by label', 'The selection stores the current entities. Select it again after membership changes.'],
+    fr: ['État dans une zone', 'État par étiquette', 'La sélection enregistre les entités actuelles. Sélectionnez-la à nouveau si la liste change.'],
+  }[locale];
+  const triggerKinds = [['state', status, 'ϟ'], ['area', area, 'ϟ'], ['label', labelTrigger, 'ϟ'],
+    ['numeric', threshold, '↗'], ['time', schedule, '◷'],
     ['helper_time', helperTime, '◷'], ['sun', sun, '☀'], ['mqtt', mqtt, '✉'], ['event', event, '✉'],
     ['ha_start', haStart, '▶']];
   const [from, to, attribute, hold, numeric, above, below, delay, seconds, parameters, actionType] = ({
@@ -1801,16 +1831,18 @@ function renderRules(panel, project) {
     project.fields = rules;
     refreshRuntimeControls();
   };
-  function append(data, key, kind = 'state') {
-    const entry = key === 'triggers' || (key === 'conditions' && kind === 'trigger') ? {type: kind} : {};
+  function append(data, key, kind) {
+    if (key === 'triggers') kind ||= 'state';
+    const entry = kind ? {type: kind} : {};
+    if (kind === 'group') Object.assign(entry, {conditionMode: 'and', conditions: []});
     if (kind === 'sun') entry.event = 'sunrise';
     data[key].push(entry);
     return entry;
   }
-  function group(key, data, refresh, changed, allowAdd) {
+  function group(key, data, refresh, changed, allowAdd, depth = 0, triggers = data.triggers) {
     const fieldset = element('fieldset');
     fieldset.dataset.ruleGroup = {triggers: 'trigger', conditions: 'condition', actions: 'then', elseActions: 'else'}[key];
-    fieldset.append(element('legend', ruleLabels[key]));
+    fieldset.append(element('legend', depth ? conditionGroup : ruleLabels[key]));
     if (key === 'conditions' && !data[key].length) fieldset.append(element('small', empty));
     if (key === 'conditions' && data[key].length) {
       const select = element('select');
@@ -1831,15 +1863,26 @@ function renderRules(panel, project) {
       if (key === 'conditions' || isAction) {
         const caption = element('label', isAction ? actionType : conditionStep);
         const select = element('select');
-        const options = isAction ? [['action', service], ['delay', delay]] :
-          [['state', status], ['numeric', numeric], ['time', timeWindow], ['trigger', triggeredBy]];
+        const options = isAction ? [['action', service], ['delay', delay], ['wait_state', waitState],
+          ['script', callScript], ['notification', notification], ['event', fireEvent]] :
+          [['state', status], ['numeric', numeric], ['time', timeWindow], ['trigger', triggeredBy],
+            ...(depth < maxRuleGroupDepth ? [['group', conditionGroup]] : [])];
         for (const [value, name] of options) {
           const option = element('option', name);
           option.value = value;
           select.append(option);
         }
         select.value = entry.type || options[0][0];
-        select.onchange = () => { entry.type = select.value; changed(); refresh(); };
+        select.onchange = () => {
+          if (select.value === 'group') Object.assign(entry, {conditionMode: 'and', conditions: []});
+          else if (entry.type === 'group') {
+            delete entry.conditionMode;
+            delete entry.conditions;
+          }
+          entry.type = select.value;
+          changed();
+          refresh();
+        };
         caption.append(select);
         inputs.append(caption);
       }
@@ -1848,6 +1891,24 @@ function renderRules(panel, project) {
         if (entry.type === 'ha_start') {
           inputs.append(element('span', haStart));
           labels = [];
+        } else if (['area', 'label'].includes(entry.type)) {
+          const scope = entry.type === 'area' ? area : labelTrigger;
+          const caption = element('span', entry.scopeId ? scope + ' · ' + entry.scopeId : scope);
+          const pickScope = button(choose, () => {
+            let members = new Map();
+            openBlockEntity({kind: 'target', loadChoices: async signal => {
+              const scopes = await loadRuleTargets(entry.type, signal);
+              members = new Map(scopes.map(item => [item.entity_id, item.entities]));
+              return scopes;
+            }}, entry.scopeId || '', value => {
+              entry.scopeId = value;
+              entry.scopeEntities = JSON.stringify(members.get(value));
+              changed();
+              refresh();
+            }, value => Boolean(members.get(value)?.length));
+          });
+          inputs.append(caption, pickScope, element('small', scopeHint));
+          labels = [['from', from], ['state', to], ['seconds', hold]];
         } else if (entry.type === 'time') labels = [['time', time]];
         else if (entry.type === 'helper_time') labels = [['entity', helperTime]];
         else if (entry.type === 'mqtt') labels = [['topic', topic], ['payload', payload]];
@@ -1857,11 +1918,16 @@ function renderRules(panel, project) {
         else labels = [['entity', entity], ['attribute', attribute], ['from', from], ['state', to], ['seconds', hold]];
         labels.push(['id', optionalId]);
       } else if (key === 'conditions') {
-        labels = entry.type === 'trigger' ? [] : entry.type === 'time' ? [['after', after], ['before', before]] :
+        labels = ['trigger', 'group'].includes(entry.type) ? [] : entry.type === 'time' ? [['after', after], ['before', before]] :
           [['entity', entity], ['attribute', attribute],
             ...(entry.type === 'numeric' ? [['above', above], ['below', below]] : [['state', status]])];
       } else {
-        labels = entry.type === 'delay' ? [['seconds', seconds]] : [['action', service], ['entity', target], ['data', parameters]];
+        labels = entry.type === 'delay' ? [['seconds', seconds]] :
+          entry.type === 'wait_state' ? [['entity', entity], ['state', to], ['seconds', timeout]] :
+            entry.type === 'script' ? [['entity', callScript], ['data', parameters]] :
+              entry.type === 'notification' ? [['data', parameters]] :
+                entry.type === 'event' ? [['event', eventType], ['data', parameters]] :
+                  [['action', service], ['entity', target], ['data', parameters]];
       }
       for (const [name, caption] of labels) {
         const label = element('label', caption);
@@ -1885,7 +1951,10 @@ function renderRules(panel, project) {
         if (name === 'seconds') { input.type = 'number'; input.min = '1'; input.step = '1'; }
         if (name === 'offsetMinutes') { input.type = 'number'; input.step = '1'; input.placeholder = '0'; }
         if (name === 'above' || name === 'below') { input.type = 'number'; input.step = 'any'; }
-        if (name === 'data') { input.rows = 2; input.placeholder = '{}'; }
+        if (name === 'data') {
+          input.rows = 2;
+          input.placeholder = entry.type === 'notification' ? '{"title": "", "message": ""}' : '{}';
+        }
         input.oninput = () => {
           entry[name] = name === 'topic' || name === 'payload' ? input.value : input.value.trim();
           changed();
@@ -1900,13 +1969,14 @@ function renderRules(panel, project) {
         }
         if (name === 'entity' || name === 'attribute') {
           const helper = key === 'triggers' && entry.type === 'helper_time';
+          const script = isAction && entry.type === 'script';
           line.append(button(choose, () => openBlockEntity(
             name === 'attribute' ? {kind: 'attribute', entity: entry.entity} :
-              helper ? {kind: 'entity_id', domains: ['input_datetime']} : {}, input.value, value => {
+              helper || script ? {kind: 'entity_id', domains: [helper ? 'input_datetime' : 'script']} : {}, input.value, value => {
             input.value = value;
             input.oninput();
           }, value => name === 'attribute' ? Boolean(value) :
-            (helper ? /^input_datetime\.[a-z0-9_]+$/ : /^[a-z0-9_]+\.[a-z0-9_]+$/).test(value))));
+            (helper ? /^input_datetime\.[a-z0-9_]+$/ : script ? /^script\.[a-z0-9_]+$/ : /^[a-z0-9_]+\.[a-z0-9_]+$/).test(value))));
         }
         label.append(line);
         inputs.append(label);
@@ -1915,7 +1985,7 @@ function renderRules(panel, project) {
         const label = element('label', triggerId);
         const select = element('select');
         const fillIds = () => {
-          const ids = [...new Set(data.triggers.map(trigger => trigger.id).filter(Boolean))];
+          const ids = [...new Set(triggers.map(trigger => trigger.id).filter(Boolean))];
           const options = [new Option(choose, ''), ...ids.map(id => new Option(id, id))];
           if (entry.triggerId && !ids.includes(entry.triggerId)) {
             options.push(new Option(entry.triggerId + ' · ' + missingId, entry.triggerId));
@@ -1928,6 +1998,11 @@ function renderRules(panel, project) {
         select.onchange = () => { entry.triggerId = select.value; changed(); };
         label.append(select);
         inputs.append(label);
+      }
+      if (key === 'conditions' && entry.type === 'group') {
+        const nested = group(key, entry, refresh, changed, true, depth + 1, triggers);
+        nested.classList.add('rule-nested');
+        inputs.append(nested);
       }
       if (key === 'conditions' && entry.type === 'time') {
         const days = element('fieldset');
@@ -1961,7 +2036,8 @@ function renderRules(panel, project) {
       fieldset.append(inputs);
     }
     if (allowAdd) {
-      const choices = key === 'triggers' ? triggerKinds : [[null, addItem, '+']];
+      const choices = key === 'triggers' ? triggerKinds : [[null, addItem, '+'],
+        ...(key === 'conditions' && depth < maxRuleGroupDepth ? [['group', conditionGroup, '+']] : [])];
       const controls = element('div');
       controls.className = 'rule-inline';
       for (const [kind, label, icon] of choices) {
@@ -1975,6 +2051,9 @@ function renderRules(panel, project) {
     }
     return fieldset;
   }
+  let paletteQuery = '';
+  let paletteOpen = true;
+  let draggedRule;
   const renderForm = (focusGroup) => {
     const palette = element('nav');
     palette.className = 'rule-palette';
@@ -1989,23 +2068,66 @@ function renderRules(panel, project) {
       tab.title = label;
       tabs.append(tab);
     }
-    palette.append(tabs);
+    const tools = element('details');
+    tools.open = paletteOpen;
+    tools.ontoggle = () => { if (tools.isConnected) paletteOpen = tools.open; };
+    tools.append(element('summary', paletteLabel), tabs);
+    const search = element('input');
+    search.type = 'search';
+    search.placeholder = searchPalette;
+    search.setAttribute('aria-label', searchPalette);
+    search.value = paletteQuery;
+    tools.append(search);
     const choices = category === 'triggers' ? triggerKinds.map(([kind, label, icon]) => [category, label, icon, kind]) :
-      category === 'conditions' ? [[category, status, '?'], [category, triggeredBy, '?', 'trigger']] :
+      category === 'conditions' ? [[category, status, '?'], [category, triggeredBy, '?', 'trigger'],
+        [category, conditionGroup, '?', 'group']] :
         [['actions', then, '↳'], ['elseActions', otherwise, '↳']];
-    for (const [key, label, icon, kind] of choices) {
+    function addRule(key, kind) {
+      append(rules, key, kind);
+      update();
+      renderForm(key);
+    }
+    const items = choices.map(([key, label, icon, kind]) => {
       const item = button(icon + ' ' + label, () => {
-        append(rules, key, kind);
-        update();
-        renderForm(key);
+        addRule(key, kind);
       });
       item.className = 'rule-palette-item';
-      palette.append(item);
-    }
+      item.draggable = true;
+      item.ondragstart = event => {
+        draggedRule = {key, kind};
+        event.dataTransfer.setData('text/plain', label);
+        event.dataTransfer.effectAllowed = 'copy';
+      };
+      item.ondragend = () => { draggedRule = undefined; };
+      tools.append(item);
+      return item;
+    });
+    const filterPalette = () => {
+      paletteQuery = search.value;
+      for (const item of items) item.hidden = !item.textContent.toLocaleLowerCase(locale)
+        .includes(paletteQuery.trim().toLocaleLowerCase(locale));
+    };
+    search.oninput = filterPalette;
+    filterPalette();
+    palette.append(tools);
     const bands = element('div');
     bands.className = 'rule-form';
     for (const key of Object.keys(ruleLabels)) {
-      if (key !== 'elseActions' || rules[key].length) bands.append(group(key, rules, renderForm, update, false));
+      if (key === 'elseActions' && !rules[key].length && category !== 'actions') continue;
+      const band = group(key, rules, renderForm, update, false);
+      band.ondragover = event => {
+        if (draggedRule?.key !== key) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+      };
+      band.ondrop = event => {
+        if (draggedRule?.key !== key) return;
+        event.preventDefault();
+        const {kind} = draggedRule;
+        draggedRule = undefined;
+        addRule(key, kind);
+      };
+      bands.append(band);
     }
     form.replaceChildren(palette, bands);
     if (focusGroup) {
@@ -2076,12 +2198,60 @@ function renderRules(panel, project) {
   const expert = expertTools(right);
   toolIcon(expert, 'code', 'Quelltext anzeigen', () => convert(false));
   toolIcon(expert, 'sun', 'Astronomische Ereignisse', () => showSun(project));
-  toolIcon(right, 'export', 'Regel exportieren', () => exportEditorData(project.name, {type: 'rules', fields: rules}));
-  toolIcon(right, 'import', 'Regel importieren', () => importEditorData(project, (text, name) => {
-    const data = JSON.parse(text);
-    if (data?.type !== 'rules') throw new Error('Ungültige Rules-Datei.');
-    return {type: 'rules', name: name.replace(/\.json$/i, ''), fields: readRuleFields(data.fields)};
-  }));
+  const ruleTextLabels = {
+    de: ['Rules-JSON', 'JSON herunterladen', 'JSON-Datei auswählen', 'JSON importieren', 'Ungültige Rules-Datei oder mehr als 1 MB.'],
+    en: ['Rules JSON', 'Download JSON', 'Choose a JSON file', 'Import JSON', 'Invalid Rules file or more than 1 MB.'],
+    fr: ['JSON des règles', 'Télécharger le JSON', 'Choisir un fichier JSON', 'Importer le JSON', 'Fichier de règles invalide ou supérieur à 1 Mo.'],
+  }[locale];
+  const [jsonCaption, downloadRule, chooseFile, importRule, invalidFile] = ruleTextLabels;
+  const ruleDraft = () => ({type: 'rules', fields: rules});
+  toolIcon(right, 'export', 'Regel exportieren', () => {
+    const content = element('div');
+    const input = element('textarea');
+    input.className = 'yaml-source';
+    input.setAttribute('aria-label', jsonCaption);
+    input.readOnly = true;
+    const data = ruleDraft();
+    input.value = JSON.stringify(data, null, 2);
+    content.append(input, button(downloadRule, () => exportEditorData(project.name, data)));
+    editorDialog('Regel exportieren', content);
+  });
+  toolIcon(right, 'import', 'Regel importieren', () => {
+    const content = element('div');
+    const input = element('textarea');
+    input.className = 'yaml-source';
+    input.setAttribute('aria-label', jsonCaption);
+    const file = element('input');
+    file.type = 'file';
+    file.accept = '.json,application/json';
+    file.setAttribute('aria-label', chooseFile);
+    const status = element('p');
+    status.setAttribute('role', 'alert');
+    const submit = button(importRule, () => {
+      try {
+        if (new TextEncoder().encode(input.value).length > 1_000_000) throw new Error();
+        const data = JSON.parse(input.value);
+        if (data?.type !== 'rules') throw new Error();
+        const fields = readRuleFields(data.fields);
+        const name = file.files[0]?.name.replace(/\.json$/i, '') || project.name + ' · JSON';
+        dialog.close();
+        add({type: 'rules', name, fields});
+      } catch { status.textContent = invalidFile; }
+    });
+    file.onchange = async () => {
+      const selected = file.files[0];
+      if (!selected) return;
+      submit.disabled = true;
+      try {
+        if (selected.size > 1_000_000) throw new Error();
+        input.value = await selected.text();
+        status.textContent = '';
+      } catch { status.textContent = invalidFile; }
+      finally { submit.disabled = false; }
+    };
+    content.append(file, input, status, submit);
+    const dialog = editorDialog('Regel importieren', content);
+  });
   right.append(button('Rules → JS', () => convert(true)),
     button('Als HA-YAML öffnen', () => openGenerated(project, () => rules, report)));
   toolIcon(expert, 'tools', 'Debug-Einstellungen', () => debugTools(project));
@@ -2098,7 +2268,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js'),
+      import('./vendor/pro-blocks.js?v=0.1.96'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);
@@ -2108,7 +2278,16 @@ async function renderBlocks(panel, project, id) {
     blocks = mountBlocks(workspace, project.workspace, saved => {
       project.workspace = saved;
       refreshRuntimeControls(id);
-    }, locale, project.type === 'blocks-js' ? 'js' : 'yaml', openBlockEntity, callmebotCatalogs);
+    }, locale, project.type === 'blocks-js' ? 'js' : 'yaml', (spec, current, apply, validate) => {
+      if (project.type === 'blocks') {
+        if (spec.kind === 'action') return openRuleAction(current, apply, validate, true);
+        if (['area_id', 'label_id', 'floor_id', 'device_id'].includes(spec.kind)) {
+          const kind = spec.kind.slice(0, -3);
+          spec = {...spec, loadChoices: signal => loadRuleTargets(kind, signal)};
+        }
+      }
+      return openBlockEntity(spec, current, apply, validate);
+    }, callmebotCatalogs);
     project.workspace = blocks.snapshot();
     if (!workspaceWasDirty) savedProject.workspace = structuredClone(project.workspace);
     refreshRuntimeControls(id);
@@ -2120,7 +2299,8 @@ async function renderBlocks(panel, project, id) {
       try {
         const source = blocks.automationYaml(project.name);
         validateYaml(source, 'automation');
-        add({type: 'yaml', name: project.name + ' · YAML', kind: 'automation', source});
+        add({type: 'yaml', name: project.name + ' · YAML', kind: 'automation', source,
+          ...(project.type === 'blocks' ? {blocksSourceName: project.name} : {})});
       } catch (error) { report(error.message, true); }
     };
     const isJavaScript = project.type === 'blocks-js';

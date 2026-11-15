@@ -465,6 +465,39 @@ class LogicServer(ThreadingHTTPServer):
     def action_names(self):
         return sorted(self.action_fields())
 
+    def rule_targets(self, kind):
+        if kind not in ('area', 'label', 'floor', 'device') or not self.supervisor or not os.environ.get('SUPERVISOR_TOKEN'):
+            raise ValueError('HA-Ziele nicht verfügbar.')
+        if kind == 'area':
+            template = '{% set r = namespace(items=[]) %}{% for id in areas() %}' \
+                       '{% set r.items = r.items + [{"id": id, "name": area_name(id), "entities": area_entities(id)}] %}' \
+                       '{% endfor %}{{ r.items | to_json }}'
+        elif kind == 'label':
+            template = '{% set r = namespace(items=[]) %}{% for id in labels() %}' \
+                       '{% set m = namespace(entities=label_entities(id)) %}' \
+                       '{% for device in label_devices(id) %}{% set m.entities = m.entities + device_entities(device) %}{% endfor %}' \
+                       '{% for area in label_areas(id) %}{% set m.entities = m.entities + area_entities(area) %}{% endfor %}' \
+                       '{% set r.items = r.items + [{"id": id, "name": label_name(id), "entities": m.entities | unique | list}] %}' \
+                       '{% endfor %}{{ r.items | to_json }}'
+        elif kind == 'floor':
+            template = '{% set r = namespace(items=[]) %}{% for id in floors() %}' \
+                       '{% set r.items = r.items + [{"id": id, "name": floor_name(id)}] %}' \
+                       '{% endfor %}{{ r.items | to_json }}'
+        else:
+            template = '{% set r = namespace(items=[], ids=[]) %}' \
+                       '{% for state in states %}{% set id = device_id(state.entity_id) %}' \
+                       '{% if id and id not in r.ids %}{% set name = device_attr(id, "name_by_user") or device_attr(id, "name") or id %}' \
+                       '{% set r.ids = r.ids + [id] %}{% set r.items = r.items + [{"id": id, "name": name}] %}{% endif %}' \
+                       '{% endfor %}{{ r.items | to_json }}'
+        request = Request('http://supervisor/core/api/template', data=json.dumps({'template': template}).encode(),
+                          headers={'Authorization': 'Bearer ' + os.environ['SUPERVISOR_TOKEN'],
+                                   'Content-Type': 'application/json'})
+        with build_opener(NoRedirect).open(request, timeout=12) as response:
+            body = response.read(MAX_BODY + 1)
+        if len(body) > MAX_BODY:
+            raise ValueError('HA-Zielliste zu groß.')
+        return json.loads(body)
+
     def action_fields(self):
         if not self.supervisor or not os.environ.get('SUPERVISOR_TOKEN'):
             return {}
@@ -557,6 +590,9 @@ class Handler(SimpleHTTPRequestHandler):
                 self.reply(200, self.server.callmebot_catalogs() if self.server.supervisor or self.server.demo else {})
             elif route.path == '/api/rules-actions':
                 self.reply(200, {'items': self.server.action_names()})
+            elif route.path == '/api/rules-targets' and self.runtime_user():
+                kind = parse_qs(route.query).get('kind', [''])[0]
+                self.reply(200, {'items': self.server.rule_targets(kind)})
             elif route.path == '/api/yaml-catalog':
                 self.reply(200, {'entities': [item['entity_id'] for item in self.server.entities()],
                                  'actions': self.server.action_fields()})

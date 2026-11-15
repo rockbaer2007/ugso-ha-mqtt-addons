@@ -8,6 +8,8 @@ const modes = new Set(['single', 'restart', 'queued', 'parallel']);
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const provided = value => typeof value === 'string' && value.trim() !== '';
 export const ruleWeekdays = Object.freeze(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
+const conditionModes = ['and', 'or', 'not'];
+export const maxRuleGroupDepth = 8;
 
 function duration(value) {
   const seconds = Number(value);
@@ -32,8 +34,15 @@ function numericLimits({above, below}, invalidMessage) {
   return limits;
 }
 
-function ruleCondition(entry, triggerIds, kind) {
+function ruleCondition(entry, triggerIds, kind, depth = 0) {
   const {type, entity, state, attribute} = entry;
+  if (type === 'group') {
+    if (depth >= maxRuleGroupDepth || !conditionModes.includes(entry.conditionMode) || !entry.conditions?.length) {
+      throw new Error('Bedingungsgruppe braucht mindestens eine Bedingung und eine gültige Verknüpfung.');
+    }
+    return {condition: entry.conditionMode,
+      conditions: entry.conditions.map(child => ruleCondition(child, triggerIds, kind, depth + 1))};
+  }
   if (type === 'trigger') {
     if (kind !== 'automation' || !provided(entry.triggerId) || !triggerIds.has(entry.triggerId)) {
       throw new Error('Für „Ausgelöst durch“ eine vorhandene Trigger-ID auswählen.');
@@ -69,17 +78,36 @@ function ruleCondition(entry, triggerIds, kind) {
   return {condition: 'state', ...target, state};
 }
 
-function ruleAction({type, action, entity, data, seconds}) {
+function ruleAction({type, action, entity, data, seconds, state, event}) {
   if (type === 'delay') return {delay: duration(seconds)};
-  if (!identifier.test(action || '') || (provided(entity) && !identifier.test(entity))) {
+  if (type === 'wait_state') {
+    if (!identifier.test(entity || '') || !provided(state)) throw new Error('Entität und Zielzustand zum Warten eingeben.');
+    return {wait_template: '{{ is_state(' + JSON.stringify(entity) + ', ' + JSON.stringify(state) + ') }}',
+      ...(provided(seconds) ? {timeout: duration(seconds), continue_on_timeout: false} : {})};
+  }
+  if (type === 'script') {
+    if (!/^script\.[a-z0-9_]+$/.test(entity || '')) throw new Error('Ein HA-Skript auswählen.');
+    action = entity;
+    entity = '';
+  } else if (type === 'notification') {
+    action = 'persistent_notification.create';
+    entity = '';
+  } else if (type === 'event') {
+    if (!/^[a-zA-Z0-9_]+$/.test(event || '')) throw new Error('Gültigen HA-Ereignistyp eingeben.');
+  }
+  if (type !== 'event' && (!identifier.test(action || '') || (provided(entity) && !identifier.test(entity)))) {
     throw new Error('Gültige HA-Aktion und gegebenenfalls Ziel-Entität eingeben.');
   }
-  const result = {action};
-  if (provided(entity)) result.target = {entity_id: entity};
+  const result = type === 'event' ? {event} : {action};
+  if (type !== 'event' && provided(entity)) result.target = {entity_id: entity};
   if (provided(data)) {
-    try { result.data = JSON.parse(data); }
+    const field = type === 'event' ? 'event_data' : 'data';
+    try { result[field] = JSON.parse(data); }
     catch { throw new Error('Aktionsparameter als gültiges JSON-Objekt eingeben.'); }
-    if (!object(result.data)) throw new Error('Aktionsparameter als gültiges JSON-Objekt eingeben.');
+    if (!object(result[field])) throw new Error('Aktionsparameter als gültiges JSON-Objekt eingeben.');
+  }
+  if (type === 'notification' && !provided(result.data?.message)) {
+    throw new Error('Für die Benachrichtigung eine Nachricht im Feld „message“ eingeben.');
   }
   return result;
 }
@@ -87,24 +115,29 @@ function ruleAction({type, action, entity, data, seconds}) {
 export function readRuleFields(fields) {
   if (!object(fields)) throw new Error('Ungültige Rules-Datei.');
   if (Object.hasOwn(fields, 'triggers')) {
-    const actionFields = ['type', 'action', 'entity', 'data', 'seconds'];
-    const lists = {triggers: ['type', 'id', 'entity', 'state', 'from', 'attribute', 'seconds', 'time', 'event', 'above', 'below', 'offsetMinutes', 'topic', 'payload'],
+    const actionFields = ['type', 'action', 'entity', 'data', 'seconds', 'state', 'event'];
+    const lists = {triggers: ['type', 'id', 'entity', 'state', 'from', 'attribute', 'seconds', 'time', 'event', 'above', 'below', 'offsetMinutes', 'topic', 'payload', 'scopeId', 'scopeEntities'],
       conditions: ['type', 'triggerId', 'entity', 'state', 'attribute', 'above', 'below', 'after', 'before', 'weekday'],
       actions: actionFields, elseActions: actionFields};
-    const types = {triggers: ['state', 'time', 'helper_time', 'event', 'numeric', 'sun', 'mqtt', 'ha_start'], conditions: ['state', 'numeric', 'time', 'trigger'],
-      actions: ['action', 'delay'], elseActions: ['action', 'delay']};
+    const types = {triggers: ['state', 'area', 'label', 'time', 'helper_time', 'event', 'numeric', 'sun', 'mqtt', 'ha_start'], conditions: ['state', 'numeric', 'time', 'trigger'],
+      actions: ['action', 'delay', 'wait_state', 'script', 'notification', 'event']};
+    types.elseActions = types.actions;
     const rule = {conditionMode: fields.conditionMode};
-    if (!['and', 'or', 'not'].includes(rule.conditionMode)) throw new Error('Ungültige Rules-Datei.');
-    for (const [key, names] of Object.entries(lists)) {
-      if (!Array.isArray(fields[key])) throw new Error('Ungültige Rules-Datei.');
-      rule[key] = fields[key].map(entry => {
-        if (!object(entry) || Object.values(entry).some(value => typeof value !== 'string') ||
-            (entry.type !== undefined && !types[key].includes(entry.type))) {
-          throw new Error('Ungültige Rules-Datei.');
+    if (!conditionModes.includes(rule.conditionMode)) throw new Error('Ungültige Rules-Datei.');
+    function readEntries(key, entries, depth = 0) {
+      if (!Array.isArray(entries)) throw new Error('Ungültige Rules-Datei.');
+      return entries.map(entry => {
+        if (key === 'conditions' && entry?.type === 'group') {
+          if (depth >= maxRuleGroupDepth || !conditionModes.includes(entry.conditionMode)) throw new Error('Ungültige Rules-Bedingungsgruppe.');
+          return {type: 'group', conditionMode: entry.conditionMode,
+            conditions: readEntries(key, entry.conditions, depth + 1)};
         }
-        return Object.fromEntries(names.filter(name => Object.hasOwn(entry, name)).map(name => [name, entry[name]]));
+        if (!object(entry) || Object.values(entry).some(value => typeof value !== 'string') ||
+            (entry.type !== undefined && !types[key].includes(entry.type))) throw new Error('Ungültige Rules-Datei.');
+        return Object.fromEntries(lists[key].filter(name => Object.hasOwn(entry, name)).map(name => [name, entry[name]]));
       });
     }
+    for (const key of Object.keys(lists)) rule[key] = readEntries(key, fields[key]);
     return rule;
   }
   if (Object.values(fields).some(value => typeof value !== 'string')) throw new Error('Ungültige Rules-Datei.');
@@ -125,6 +158,9 @@ export function readRuleFields(fields) {
 
 export function makeRulesJavaScript(name, rule) {
   makeYaml({name, kind: 'automation', ...rule});
+  if (rule.triggers.some(t => ['area', 'label'].includes(t.type))) {
+    throw new Error('Rules → JS: Bereichs- und Label-Auslöser benötigen HA-YAML.');
+  }
   if (rule.triggers.some(t => t.type === 'ha_start')) {
     throw new Error('Rules → JS: Der Home-Assistant-Startauslöser benötigt HA-YAML.');
   }
@@ -141,26 +177,32 @@ export function makeRulesJavaScript(name, rule) {
       ((!t.type || t.type === 'state') && !provided(t.state)))) {
     throw new Error('Rules → JS: Der erweiterte Zustandsauslöser benötigt HA-YAML.');
   }
-  if (rule.conditions.some(c => c.type === 'time')) {
+  const leaves = list => list.flatMap(entry => entry.type === 'group' ? leaves(entry.conditions) : [entry]);
+  const conditions = leaves(rule.conditions);
+  if (conditions.some(c => c.type === 'time')) {
     throw new Error('Rules → JS: Zeitbedingungen benötigen HA-YAML.');
   }
-  if (rule.conditions.some(c => c.type === 'numeric' || provided(c.attribute))) {
+  if (conditions.some(c => c.type === 'numeric' || provided(c.attribute))) {
     throw new Error('Rules → JS: Zahlen- und Attributbedingungen benötigen HA-YAML.');
   }
-  if ([...rule.actions, ...rule.elseActions].some(a => a.type === 'delay' || provided(a.data) || !provided(a.entity))) {
+  if ([...rule.actions, ...rule.elseActions].some(a => (a.type && a.type !== 'action') || provided(a.data) || !provided(a.entity))) {
     throw new Error('Rules → JS: Verzögerungen und Aktionen mit Parametern oder ohne Ziel benötigen HA-YAML.');
   }
   const literal = JSON.stringify;
   const matches = ({entity, state}) => 'ha.readState(' + literal(entity) + ') === ' + literal(state);
   const calls = (actions, indent) => actions.map(({action, entity}) =>
     indent + 'ha.callAction(' + literal(action) + ', ' + literal(entity) + ');');
-  const usesTrigger = rule.conditions.some(c => c.type === 'trigger');
+  const usesTrigger = conditions.some(c => c.type === 'trigger');
+  const expression = (list, mode) => {
+    const check = list.map(condition => condition.type === 'group' ?
+      '(' + expression(condition.conditions, condition.conditionMode) + ')' :
+      condition.type === 'trigger' ? 'triggerId === ' + literal(condition.triggerId) : matches(condition))
+      .join(mode === 'and' ? ' && ' : ' || ');
+    return mode === 'not' ? '!(' + check + ')' : check;
+  };
   const lines = [usesTrigger ? 'function runRule(triggerId) {' : 'function runRule() {'];
   if (rule.conditions.length) {
-    let check = rule.conditions.map(condition => condition.type === 'trigger' ?
-      'triggerId === ' + literal(condition.triggerId) : matches(condition))
-      .join(rule.conditionMode === 'and' ? ' && ' : ' || ');
-    if (rule.conditionMode === 'not') check = '!(' + check + ')';
+    const check = expression(rule.conditions, rule.conditionMode);
     lines.push('  if (' + check + ') {', ...calls(rule.actions, '    '));
     if (rule.elseActions.length) lines.push('  } else {', ...calls(rule.elseActions, '    '));
     lines.push('  }');
@@ -168,8 +210,8 @@ export function makeRulesJavaScript(name, rule) {
     lines.push(...calls(rule.actions, '  '));
   }
   lines.push('}', '');
-  for (const trigger of rule.triggers) {
-    const argument = usesTrigger ? literal(provided(trigger.id) ? trigger.id : null) : '';
+  for (const [index, trigger] of rule.triggers.entries()) {
+    const argument = usesTrigger ? literal(provided(trigger.id) ? trigger.id : String(index)) : '';
     const callback = usesTrigger ? '() => runRule(' + argument + ')' : 'runRule';
     if (trigger.type === 'time') {
       lines.push('ha.schedule(' + literal({trigger: 'time', at: trigger.time + ':00'}) + ', ' + callback + ');');
@@ -341,7 +383,16 @@ function ruleTrigger(entry) {
     if (!/^[a-zA-Z0-9_]+$/.test(event || '')) throw new Error('Gültigen HA-Ereignistyp eingeben.');
     return {trigger: 'event', event_type: event};
   }
-  if (!identifier.test(entity || '')) throw new Error('Gültige Auslöserentität eingeben.');
+  let target = entity;
+  if (['area', 'label'].includes(type)) {
+    let members;
+    try { members = JSON.parse(entry.scopeEntities); } catch {}
+    if (!provided(entry.scopeId) || !Array.isArray(members) || !members.length ||
+        !members.every(id => typeof id === 'string' && identifier.test(id))) {
+      throw new Error('Einen Bereich oder ein Label mit HA-Entitäten auswählen.');
+    }
+    target = [...new Set(members)];
+  } else if (!identifier.test(entity || '')) throw new Error('Gültige Auslöserentität eingeben.');
   if (type === 'numeric') {
     const limits = numericLimits(entry, 'Eine gültige Zahl für den Auslöser eingeben.');
     const trigger = {trigger: 'numeric_state', entity_id: entity, ...limits};
@@ -349,7 +400,7 @@ function ruleTrigger(entry) {
     if (provided(seconds)) trigger.for = duration(seconds);
     return trigger;
   }
-  const trigger = {trigger: 'state', entity_id: entity};
+  const trigger = {trigger: 'state', entity_id: target};
   if (provided(attribute)) trigger.attribute = attribute;
   if (provided(from)) trigger.from = from;
   if (provided(state)) trigger.to = state;

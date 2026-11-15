@@ -38,3 +38,45 @@ test('Rules to JavaScript dispatches using the ID of the callback that fired', (
   events.get('test_second')();
   assert.deepEqual(targets, ['input_boolean.first', 'input_boolean.second']);
 });
+
+test('Nested Rules groups preserve trigger conditions and native HA steps', () => {
+  const draft = {...rule, conditions: [{type: 'group', conditionMode: 'or', conditions: [
+    {type: 'group', conditionMode: 'and', conditions: [
+      {type: 'trigger', triggerId: 'first'},
+      {type: 'group', conditionMode: 'not', conditions: [{entity: 'input_boolean.blocked', state: 'on'}]},
+    ]},
+    {type: 'trigger', triggerId: 'second'},
+  ]}], actions: [
+    {type: 'wait_state', entity: 'input_boolean.ready', state: 'on', seconds: '15'},
+    {type: 'event', event: 'test_result', data: '{"ok":true}'},
+    {type: 'script', entity: 'script.test', data: '{"value":42}'},
+    {type: 'notification', data: '{"message":"Test"}'},
+  ]};
+  const imported = readRuleFields(JSON.parse(JSON.stringify(draft)));
+  assert.deepEqual(imported, draft);
+  const yaml = parseDocument(makeYaml({name, kind: 'automation', ...imported})).toJS();
+  const branch = yaml.actions[0];
+  assert.equal(branch.if[0].condition, 'or');
+  assert.equal(branch.if[0].conditions[0].conditions[1].condition, 'not');
+  assert.deepEqual(branch.then, [
+    {wait_template: '{{ is_state("input_boolean.ready", "on") }}', timeout: {seconds: 15}, continue_on_timeout: false},
+    {event: 'test_result', event_data: {ok: true}},
+    {action: 'script.test', data: {value: 42}},
+    {action: 'persistent_notification.create', data: {message: 'Test'}},
+  ]);
+  assert.throws(() => makeYaml({name, kind: 'automation', ...draft, conditions: [
+    {type: 'group', conditionMode: 'and', conditions: []},
+  ]}), /Bedingungsgruppe/);
+});
+
+test('Area and label trigger snapshots export deduplicated HA entity lists', () => {
+  const triggers = ['area', 'label'].map(type => ({
+    type, scopeId: 'garden', scopeEntities: '["sensor.first","sensor.second","sensor.first"]',
+    id: 'first', state: 'on',
+  }));
+  const imported = readRuleFields({...rule, triggers});
+  const yaml = parseDocument(makeYaml({name, kind: 'automation', ...imported})).toJS();
+  assert.deepEqual(yaml.triggers, triggers.map(() => ({
+    trigger: 'state', entity_id: ['sensor.first', 'sensor.second'], to: 'on', id: 'first',
+  })));
+});

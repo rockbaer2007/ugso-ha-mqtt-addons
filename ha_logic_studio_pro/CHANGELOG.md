@@ -1,5 +1,14 @@
 # HA Logic Studio Pro
 
+## 0.1.96
+
+- Rules unterstützt verschachtelte UND-, ODER- und NICHT-Gruppen, das Warten auf einen Zustand sowie Schritte für HA-Skripte, Benachrichtigungen und Ereignisse.
+- Bereichs- und Label-Auslöser speichern die beim Auswählen in Home Assistant zugeordneten Entitäten. Nach Änderungen an der Zuordnung lässt sich die Auswahl erneut übernehmen.
+- Die Rules-Palette lässt sich durchsuchen und einklappen. Einträge lassen sich in den zugehörigen Abschnitt ziehen.
+- Rules-JSON lässt sich als Text anzeigen, einfügen und als Datei austauschen.
+- Blocks A nutzt die gemeinsame Auswahl für Entitäten, HA-Aktionen, Attribute, Geräte, Bereiche, Etagen und Labels. Erzeugte HA-YAML-Entwürfe zeigen die Herkunft im Editor.
+- Live-Tests auf dem Testsystem PC (64) bestätigten die verschachtelten Rules-Zweige und die Aktionskette. Bereich und Label übernahmen dieselbe Testentität. Der Blocks-A-Export enthielt die IDs aller vier Kataloge als `area_id`, `label_id`, `device_id` und `floor_id`.
+
 ## 0.1.95
 
 - Rules: Auslöser können eine Trigger-ID erhalten. Die Bedingung „Ausgelöst durch“ verwendet diese ID im HA-YAML-Export und bei der Umwandlung nach JavaScript.

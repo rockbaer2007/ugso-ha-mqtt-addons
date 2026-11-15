@@ -249,6 +249,9 @@ dialog::backdrop { background: #080d16b8; }
 .rules-editor { grid-template-columns: 10rem minmax(0, 1fr); align-items: start; }
 .rule-palette { display: grid; gap: .2rem; padding-inline-end: .4rem; border-inline-end: 1px solid #435571; }
 .rule-palette button { text-align: start; }
+.rule-palette input[type="search"] { box-sizing: border-box; margin-block: .25rem; width: 100%; }
+.rule-palette [draggable="true"] { cursor: grab; }
+.rule-nested { grid-column: 1 / -1; min-width: 0; }
 .rule-palette-tabs { display: grid; grid-template-columns: repeat(3, 1fr); }
 .rule-palette .rule-palette-item, .rule-palette-tabs button, .rule-inline button {
   border: 0; border-radius: 0; background: transparent; min-height: 1.85rem; padding: .25rem .4rem;
