@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.109
+
+- Blocks JS leitet ungültige JSON-Antworten an den Fehlerzweig weiter. Meldet Home Assistant einen Dekodierfehler, ist der HTTP-Status `null`. Erkennt Blocks JS den Fehler beim Lesen des Antworttexts, bleibt der empfangene HTTP-Status erhalten.
+- Im Play-Test auf dem Testsystem PC (64) erreichten beide Fehlerfälle den Fehlerzweig. Der zweite Fall behielt HTTP 200. Die gültige Folgeanfrage lieferte `42` und das Skript lief weiter.
+
 ## 0.1.108
 
 - Blocks JS übernimmt den ioBroker-HTTP-Antworttyp `json`. Der Antwortzweig kann Felder direkt aus den JSON-Daten lesen.

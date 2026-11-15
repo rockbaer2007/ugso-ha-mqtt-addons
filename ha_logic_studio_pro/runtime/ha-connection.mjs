@@ -169,10 +169,14 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
             service: action.slice('rest_command.'.length), return_response: true,
             ...(Object.keys(serviceData).length ? {service_data: serviceData} : {})});
         } catch (error) {
-          if (error.translationDomain !== 'rest_command' ||
-              !['client_error', 'timeout'].includes(error.translationKey)) throw error;
-          return {status: null, data: null, headers: {}, error: error.translationKey === 'timeout'
-            ? 'HTTP-Zeitlimit überschritten.' : 'HTTP-Verbindungsfehler.'};
+          if (error.translationDomain !== 'rest_command') throw error;
+          const messages = {
+            client_error: 'HTTP-Verbindungsfehler.',
+            timeout: 'HTTP-Zeitlimit überschritten.',
+            decoding_error: 'Ungültige JSON-Antwort. Home Assistant konnte die Antwort nicht als JSON lesen.',
+          };
+          if (!Object.hasOwn(messages, error.translationKey)) throw error;
+          return {status: null, data: null, headers: {}, error: messages[error.translationKey]};
         }
         const {status, content, headers = {}} = result?.response ?? {};
         const data = typeof content === 'string' ? content : JSON.stringify(content ?? null);
