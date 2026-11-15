@@ -292,3 +292,15 @@ dialog.rules-wizard { width: min(54rem, calc(100% - 2rem)); max-height: calc(100
 .block-workspace { height: 56vh; min-height: 20rem; margin-top: .75rem; }
 @media (max-width: 640px) { main { grid-template-columns: minmax(0, 1fr); } aside { position: static; height: auto; max-height: 40dvh; } #project-splitter { display: none; } #project-header, #project-filters { flex-wrap: wrap; } }
 @media (max-width: 640px) { .work-area:has(.empty-editor) #editor { min-height: 60dvh; } }
+.yaml-ha-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+
+.yaml-ha-link [role="status"] {
+  overflow-wrap: anywhere;
+  font-size: .875rem;
+}

@@ -57,7 +57,7 @@ function projectMessage(text) {
   $('project-message').hidden = !text;
 }
 
-const editable = ['name', 'source', 'workspace', 'fields', 'graph', 'autostart', 'sharedScripts'];
+const editable = ['name', 'source', 'workspace', 'fields', 'graph', 'autostart', 'sharedScripts', 'haLink'];
 function snapshot(project) {
   return structuredClone(Object.fromEntries(editable.map(key => [key, project[key]])));
 }
@@ -75,6 +75,7 @@ function refreshRuntimeControls(id = active) {
     for (const control of editor.querySelectorAll('.editor-commit, .editor-discard')) {
       control.disabled = !dirty;
     }
+    editor.querySelector('.yaml-ha-link')?.dispatchEvent(new Event('project-changed'));
   }
   for (const control of document.querySelectorAll('[data-runtime-project]')) {
     if (control.dataset.runtimeProject !== id) continue;
@@ -1406,6 +1407,94 @@ function download(filename, content) {
   setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
+function renderYamlLink(panel, project, signal) {
+  const [choose, remove, refresh, enable, disable, run, stop, saveFirst, unavailable, activeLabel, inactiveLabel] = {
+    de: ['HA-Eintrag verknüpfen', 'Verknüpfung lösen', 'Status aktualisieren', 'Aktivieren', 'Deaktivieren',
+      'Auslösen', 'Stoppen', 'Verknüpfung zuerst speichern.', 'HA-Eintrag nicht erreichbar.', 'Aktiv', 'Inaktiv'],
+    en: ['Link HA entry', 'Unlink', 'Refresh status', 'Enable', 'Disable',
+      'Run', 'Stop', 'Save the link first.', 'HA entry unavailable.', 'Active', 'Inactive'],
+    fr: ['Associer une entrée HA', 'Dissocier', 'Actualiser le statut', 'Activer', 'Désactiver',
+      'Exécuter', 'Arrêter', 'Enregistrez d’abord le lien.', 'Entrée HA indisponible.', 'Actif', 'Inactif'],
+  }[locale];
+  const id = active;
+  const automation = project.kind === 'automation';
+  const [start, running, idle, lastRun] = {
+    de: ['Starten', 'Läuft', 'Gestoppt', 'Zuletzt ausgelöst'],
+    en: ['Start', 'Running', 'Stopped', 'Last triggered'],
+    fr: ['Démarrer', 'En cours', 'Arrêté', 'Dernier déclenchement'],
+  }[locale];
+  const row = element('div');
+  row.className = 'yaml-ha-link';
+  const status = element('span');
+  status.setAttribute('role', 'status');
+  status.dataset.userText = '';
+  let current, busy = false, error = '';
+  const setLink = value => {
+    if (signal.aborted) return;
+    project.haLink = value;
+    current = undefined;
+    error = '';
+    refreshRuntimeControls(id);
+    if (value) void request();
+  };
+  const chooser = button(choose, () => openBlockEntity({kind: 'entity_id', domains: [project.kind]},
+    project.haLink ?? '', setLink, value => /^(automation|script)\.[a-z0-9_]{1,255}$/.test(value) &&
+      value.startsWith(project.kind + '.')));
+  const unlink = button(remove, () => setLink(undefined));
+  const reload = button(refresh, () => request());
+  const operations = automation ? [['enable', enable], ['disable', disable], ['run', run]] :
+    [['run', start], ['stop', stop]];
+  const actions = operations.map(([command, label]) => [command, button(label, () => request(command))]);
+  const update = () => {
+    const saved = checkpoints.get(id)?.haLink === project.haLink && !unsavedProjects.has(id);
+    const available = current?.state === 'on' || current?.state === 'off';
+    const on = current?.state === 'on';
+    chooser.disabled = busy;
+    unlink.hidden = reload.hidden = status.hidden = !project.haLink;
+    unlink.disabled = reload.disabled = busy;
+    const label = current?.name && current.name !== project.haLink ?
+      `${current.name} · ${project.haLink}` : project.haLink;
+    const state = automation ? (on ? activeLabel : inactiveLabel) : (on ? running : idle);
+    const last = current?.last_triggered ? new Date(current.last_triggered) : null;
+    status.textContent = [label, available ? state : current ? unavailable : '',
+      last && !Number.isNaN(last.getTime()) ? lastRun + ' ' + last.toLocaleString(locale) : '',
+      !saved && project.haLink ? saveFirst : '', error].filter(Boolean).join(' · ');
+    for (const [command, control] of actions) {
+      control.hidden = !project.haLink;
+      control.disabled = busy || !saved || !available ||
+        (command === 'enable' && on) || (['disable', 'stop'].includes(command) && !on);
+    }
+  };
+  async function request(command = 'status') {
+    if (busy || !project.haLink || signal.aborted) return;
+    busy = true;
+    error = '';
+    update();
+    try {
+      if (command !== 'status') await flushProjects();
+      if (signal.aborted) return;
+      const response = await fetch('./api/pro-yaml-link', {
+        method: 'POST', signal, headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id, entity_id: project.haLink, command}),
+      });
+      if (!response.ok) {
+        error = response.status === 409 ? saveFirst : unavailable;
+        if (command === 'status') current = undefined;
+      } else current = await response.json();
+    } catch {
+      if (!signal.aborted) error = unavailable;
+    } finally {
+      busy = false;
+      if (!signal.aborted) update();
+    }
+  }
+  row.append(chooser, unlink, status, reload, ...actions.map(([, control]) => control));
+  row.addEventListener('project-changed', update);
+  panel.append(row);
+  update();
+  if (project.haLink) void request();
+}
+
 function renderYaml(panel, project) {
   const row = toolbar(panel, project);
   const label = project.kind === 'script' ? 'HA-Skript' : 'HA-Automation';
@@ -1479,6 +1568,7 @@ function renderYaml(panel, project) {
     await catalogRequest;
     if (!controller.signal.aborted) check(true);
   }), yamlExport);
+  renderYamlLink(panel, project, controller.signal);
   const flow = element('div');
   panel.append(flow);
   const yaml = element('div');

@@ -1,4 +1,4 @@
-"""Local preview or HA ingress app; HA entity access is read-only."""
+"""Local preview or Home Assistant ingress app."""
 import argparse
 from datetime import datetime, timezone
 import hashlib
@@ -13,6 +13,7 @@ import tempfile
 import threading
 from collections import deque
 from urllib.parse import parse_qs, quote, urlsplit
+from urllib.error import HTTPError
 from urllib.request import Request, build_opener, HTTPRedirectHandler
 import webbrowser
 from ha_import import SourceReader,parse_documents
@@ -430,6 +431,37 @@ class LogicServer(ThreadingHTTPServer):
     def entities(self):
         return sorted(filter(None, (public_entity(item) for item in self.entity_states())), key=lambda x: (x['name'].casefold(), x['entity_id']))
 
+    def linked_yaml_entity(self, entity_id, command):
+        domain = entity_id.split('.')[0]
+        commands = {
+            'automation': {'enable': ('turn_on', {}), 'disable': ('turn_off', {'stop_actions': True}),
+                           'run': ('trigger', {'skip_condition': False})},
+            'script': {'run': ('turn_on', {}), 'stop': ('turn_off', {})},
+        }
+        headers = {'Authorization': 'Bearer ' + os.environ['SUPERVISOR_TOKEN'],
+                   'Content-Type': 'application/json'}
+        base = 'http://supervisor/core/api/'
+        opener = build_opener(NoRedirect)
+
+        def read_status():
+            with opener.open(Request(base + 'states/' + entity_id, headers=headers), timeout=12) as response:
+                state = json.load(response)
+            attributes = state.get('attributes', {})
+            return {'entity_id': entity_id, 'state': state['state'],
+                    'name': attributes.get('friendly_name', entity_id),
+                    'last_triggered': attributes.get('last_triggered')}
+
+        status = read_status()
+        if command == 'status':
+            return status
+        if command not in commands[domain] or status['state'] not in ('on', 'off'):
+            raise ValueError('Aktion für diesen HA-Eintrag nicht verfügbar.')
+        service, fields = commands[domain][command]
+        data = json.dumps({'entity_id': entity_id, **fields}).encode()
+        with opener.open(Request(base + f'services/{domain}/{service}', data=data, headers=headers), timeout=12):
+            pass
+        return read_status()
+
     def action_names(self):
         return sorted(self.action_fields())
 
@@ -601,6 +633,9 @@ class Handler(SimpleHTTPRequestHandler):
         if path == '/api/pro-runtime':
             self.control_runtime()
             return
+        if path == '/api/pro-yaml-link':
+            self.control_yaml_link()
+            return
         if path!='/api/parse-ha':
             self.reply(404,{'error':'Nur lesender YAML-Import erlaubt.'});return
         try:
@@ -614,6 +649,34 @@ class Handler(SimpleHTTPRequestHandler):
 
     def runtime_user(self):
         return not self.server.supervisor or bool(self.headers.get('X-Remote-User-Id'))
+
+    def control_yaml_link(self):
+        if not self.server.supervisor or not self.runtime_user() or not os.environ.get('SUPERVISOR_TOKEN'):
+            self.reply(403, {'error': 'Home Assistant ist nicht verbunden.'})
+            return
+        try:
+            length = int(self.headers.get('Content-Length', '0'))
+            if not 1 <= length <= 4096:
+                raise ValueError()
+            payload = json.loads(self.rfile.read(length))
+            project_id, entity_id, command = (payload.get(key) for key in ('id', 'entity_id', 'command'))
+            if (not isinstance(entity_id, str) or not re.fullmatch(r'(automation|script)\.[a-z0-9_]{1,255}', entity_id)
+                    or not isinstance(command, str)):
+                raise ValueError()
+            if command != 'status':
+                saved = self.server.projects.read(self.user())
+                project = dict((saved['tree'] or {}).get('projects', [])).get(project_id, {})
+                if (project.get('type') != 'yaml' or project.get('haLink') != entity_id
+                        or project.get('kind') != entity_id.split('.')[0]):
+                    self.reply(409, {'error': 'Verknüpfung zuerst speichern.'})
+                    return
+            self.reply(200, self.server.linked_yaml_entity(entity_id, command))
+        except HTTPError as error:
+            self.reply(404 if error.code == 404 else 502, {'error': 'HA-Eintrag nicht erreichbar.'})
+        except (AttributeError, TypeError, ValueError):
+            self.reply(400, {'error': 'Ungültige HA-Verknüpfung oder Aktion.'})
+        except OSError:
+            self.reply(503, {'error': 'HA-Eintrag nicht erreichbar.'})
 
     def control_runtime(self):
         if not self.runtime_user():
