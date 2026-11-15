@@ -210,8 +210,12 @@ export function validateYaml(source, kind) {
   }
   const doc = parseDocument(source, {uniqueKeys: true});
   const problem = doc.errors[0] || doc.warnings[0];
-  if (problem) throw new Error(problem.message);
+  if (problem) throw problem;
   const data = doc.toJS({maxAliasCount: 30});
+  const at = (message, path) => {
+    const range = doc.getIn(path, true)?.range;
+    throw Object.assign(new Error(message), {pos: range?.slice(0, 2)});
+  };
   let entries;
   if (kind === 'script') {
     if (!object(data)) throw new Error('Ein Skript oder eine Zuordnung benannter Skripte wird erwartet.');
@@ -225,21 +229,25 @@ export function validateYaml(source, kind) {
     entries = Array.isArray(data) ? data : [data];
   }
   if (!entries.length) throw new Error('Mindestens einen HA-Eintrag eingeben.');
-  for (const entry of entries) {
-    if (!object(entry)) throw new Error('Jeder HA-Eintrag muss ein YAML-Objekt sein.');
-    if (entry.mode !== undefined && !modes.has(entry.mode)) throw new Error('Ungültiger HA-Ausführungsmodus.');
+  for (const [index, entry] of entries.entries()) {
+    const path = Array.isArray(data) ? [index] :
+      kind === 'script' && !Object.hasOwn(data, 'sequence') ? [Object.keys(data)[index]] : [];
+    if (!object(entry)) at('Jeder HA-Eintrag muss ein YAML-Objekt sein.', path);
+    if (entry.mode !== undefined && !modes.has(entry.mode)) at('Ungültiger HA-Ausführungsmodus.', [...path, 'mode']);
     const actions = kind === 'script' ? entry.sequence : entry.actions ?? entry.action;
     if (!Array.isArray(actions) || !actions.length || !actions.every(object)) {
-      throw new Error(kind === 'script' ? 'Ein Skript benötigt eine nicht leere sequence mit Aktionen.' :
-        'Eine Automation benötigt eine nicht leere actions-Liste.');
+      at(kind === 'script' ? 'Ein Skript benötigt eine nicht leere sequence mit Aktionen.' :
+        'Eine Automation benötigt eine nicht leere actions-Liste.',
+      actions === undefined ? path : [...path, kind === 'script' ? 'sequence' : entry.actions != null ? 'actions' : 'action']);
     }
     if (kind === 'automation') {
       const triggers = entry.triggers ?? entry.trigger;
       if (!Array.isArray(triggers) || !triggers.length || !triggers.every(object)) {
-        throw new Error('Eine Automation benötigt mindestens einen Auslöser in triggers.');
+        at('Eine Automation benötigt mindestens einen Auslöser in triggers.',
+          triggers === undefined ? path : [...path, entry.triggers != null ? 'triggers' : 'trigger']);
       }
       if (entry.conditions !== undefined && !Array.isArray(entry.conditions)) {
-        throw new Error('conditions muss eine Liste sein.');
+        at('conditions muss eine Liste sein.', [...path, 'conditions']);
       }
     }
   }

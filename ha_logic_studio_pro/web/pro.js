@@ -1,9 +1,10 @@
 import {renderYamlPreview} from './yaml-preview.js?v=0.1.88';
 import {parseDocument} from './vendor/pro-yaml.js';
-import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js?v=0.1.89';
+import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js?v=0.1.90';
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
 import {mountCodeEditor} from './vendor/pro-code.js';
+import {mountYamlEditor} from './vendor/yaml-editor.js?v=0.1.90-1';
 
 const $ = id => document.getElementById(id);
 const editor = $('editor');
@@ -1391,21 +1392,6 @@ function toolbar(panel, project) {
   return row;
 }
 
-function sourceArea(panel, project, label, onEdit) {
-  const area = element('textarea');
-  area.className = 'yaml-source';
-  area.spellcheck = false;
-  area.setAttribute('aria-label', label);
-  area.value = project.source;
-  area.oninput = () => {
-    project.source = area.value;
-    refreshRuntimeControls();
-    onEdit?.();
-  };
-  panel.append(area);
-  return area;
-}
-
 function download(filename, content) {
   const type = filename.endsWith('.json') ? 'application/json' : 'application/yaml';
   const url = URL.createObjectURL(new Blob([content], {type: type + ';charset=utf-8'}));
@@ -1425,6 +1411,7 @@ function renderYaml(panel, project) {
   row.append(element('strong', label));
   const report = (text, error) => recordProtocol(project, text, error);
   const check = () => {
+    yamlEditor.check();
     try {
       const count = validateYaml(project.source, project.kind);
       setProjectProblem(project, false);
@@ -1458,7 +1445,19 @@ function renderYaml(panel, project) {
   row.append(views, button('Prüfen', check), yamlExport);
   const flow = element('div');
   panel.append(flow);
-  const yaml = sourceArea(panel, project, label + ' YAML', () => report('Bearbeitet. Vor dem Export prüfen.'));
+  const yaml = element('div');
+  yaml.className = 'script-code';
+  panel.append(yaml);
+  const yamlEditor = mountYamlEditor(yaml, {
+    source: project.source,
+    label: label + ' YAML',
+    validate: source => validateYaml(source, project.kind),
+    onChange(source) {
+      project.source = source;
+      refreshRuntimeControls();
+    },
+  });
+  panel.addEventListener('editor-close', yamlEditor.destroy, {once: true});
   const json = element('section');
   const jsonSource = element('textarea');
   jsonSource.className = 'yaml-source';
@@ -1490,8 +1489,7 @@ function renderYaml(panel, project) {
   const applyImport = button(importAction, () => {
     try {
       const nextSource = importHaJson(input.value, project.kind, {size, graph});
-      yaml.value = nextSource;
-      yaml.oninput();
+      yamlEditor.replace(nextSource);
       selectView(1);
       importDialog.close();
       report(imported);
