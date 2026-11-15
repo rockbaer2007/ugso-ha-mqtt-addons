@@ -1,5 +1,12 @@
 # HA Logic Studio Pro
 
+## 0.1.97
+
+- Blocks JS kann ausgewählte Blöcke als JSON-Text austauschen und als separaten Entwurf öffnen.
+- Die Entitäts-ID-Ansicht zeigt zum ausgewählten importierten Block auch die ursprüngliche ioBroker-ID.
+- Der Funktionsplan speichert Zähler und Merker atomar in einer eindeutigen temporären Datei. Regressionstests prüfen Neustart, Planänderungen und das Unterdrücken künstlicher Flanken.
+- Auf dem Testsystem PC (64) wurden die ioBroker-Exporte test33.xml und test33.js, der ausgewählte Einzelblock per JSON-Text und Datei sowie Zähler 1 und Merker true nach einem App-Neustart geprüft.
+
 ## 0.1.96
 
 - Rules unterstützt verschachtelte UND-, ODER- und NICHT-Gruppen, das Warten auf einen Zustand sowie Schritte für HA-Skripte, Benachrichtigungen und Ereignisse.

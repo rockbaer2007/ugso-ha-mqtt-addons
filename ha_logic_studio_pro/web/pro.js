@@ -2268,7 +2268,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.96'),
+      import('./vendor/pro-blocks.js?v=0.1.97'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);
@@ -2316,12 +2316,44 @@ async function renderBlocks(panel, project, id) {
     };
     if (isJavaScript) right.append(button('Entitäts-ID', () => {
       const id = blocks.selectedEntity();
-      editorDialog('Entitäts-ID', element('p', id || 'Einen Block mit einer HA-Entität auswählen.'));
+      const original = blocks.selectedIoBrokerIds();
+      const content = element('div');
+      if (original.length) content.append(element('p', 'ioBroker · ' + original.join(', ')));
+      if (id) content.append(element('p', 'HA · ' + id));
+      if (!original.length && !id) content.append(element('p', 'Einen Block mit einer HA-Entität auswählen.'));
+      editorDialog('Entitäts-ID', content);
     }));
     const expert = expertTools(right);
     toolIcon(expert, 'code', 'Quelltext anzeigen', safely(showSource));
     toolIcon(right, 'export', 'Blöcke exportieren', () => exportEditorData(project.name,
       {type: project.type, workspace: blocks.exportSelection()}));
+    if (isJavaScript) {
+      const [exchange, textLabel, openDraft, draftSuffix, invalid] = {
+        de: ['Blöcke als JSON austauschen', 'Blocks-JS-JSON', 'Als Entwurf öffnen', 'JSON-Entwurf', 'Ungültiges Blocks-JS-JSON oder größer als 1 MB.'],
+        en: ['Exchange blocks as JSON', 'Blocks JS JSON', 'Open as draft', 'JSON draft', 'Invalid Blocks JS JSON or larger than 1 MB.'],
+        fr: ['Échanger des blocs en JSON', 'JSON Blocks JS', 'Ouvrir comme brouillon', 'Brouillon JSON', 'JSON Blocks JS invalide ou supérieur à 1 Mo.'],
+      }[locale];
+      expert.append(button(exchange, () => {
+        const content = element('div');
+        const input = element('textarea');
+        input.className = 'yaml-source';
+        input.setAttribute('aria-label', textLabel);
+        input.value = JSON.stringify({type: project.type, workspace: blocks.exportSelection()}, null, 2);
+        const status = element('p');
+        status.setAttribute('role', 'alert');
+        content.append(input, status, button(openDraft, () => {
+          try {
+            if (new TextEncoder().encode(input.value).length > 1_000_000) throw new Error();
+            const data = JSON.parse(input.value);
+            if (data?.type !== 'blocks-js') throw new Error();
+            validateBlockSnapshot(data.workspace);
+            dialog.close();
+            add({type: 'blocks-js', name: project.name + ' · ' + draftSuffix, workspace: data.workspace});
+          } catch { status.textContent = invalid; }
+        }));
+        const dialog = editorDialog(exchange, content);
+      }));
+    }
     if (isJavaScript) expert.append(button('ioBroker-Export einfügen', () => {
       const content = element('div');
       const input = element('textarea');
