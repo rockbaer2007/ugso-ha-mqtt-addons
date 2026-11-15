@@ -65,12 +65,13 @@ export const simulatedEvents = String.raw`
     onEvent: (event, callback) => register('event', event, null, callback),
     httpGet(action, callback) {
       checkRestAction(action);
-      invoke(callback, {status: 200, data: '{"value":42}'});
+      invoke(callback, {status: 200, data: '{"value":42}', headers: {'content-type': 'application/json'}});
     },
     httpPost(action, payload, callback) {
       checkRestAction(action);
       const json = typeof payload === 'string' ? JSON.parse(payload) : payload;
-      invoke(callback, {status: 200, data: JSON.stringify({value: json?.probe ?? 42})});
+      invoke(callback, {status: 200, data: JSON.stringify({value: json?.probe ?? 42}),
+        headers: {'content-type': 'application/json'}});
     },
     history(entity, start, end, mode, step, count, callback) {
       const rows = api.sampleHistory(entity, JSON.stringify([Number(start), Number(end), mode, step, count]));

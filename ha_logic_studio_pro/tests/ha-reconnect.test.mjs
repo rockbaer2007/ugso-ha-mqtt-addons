@@ -62,7 +62,8 @@ test('HTTP requests only invoke allowed REST commands and expose status and JSON
       const command = JSON.parse(raw);
       commands.push(command);
       const result = {get_config: {time_zone: 'UTC'}, get_states: [],
-        call_service: {response: {status: 200, content: {value: 42}}}}[command.type];
+        call_service: {response: {status: 200, content: {value: 42},
+          headers: {'Content-Type': 'application/json', 'X-Test': 'probe'}}}}[command.type];
       queueMicrotask(() => this.receive(command.type === 'auth' ? {type: 'auth_ok'} :
         {type: 'result', id: command.id, success: true, result}));
     }
@@ -73,8 +74,10 @@ test('HTTP requests only invoke allowed REST commands and expose status and JSON
   () => {}, error => assert.fail(error.message), Socket);
   await assert.rejects(ha.httpGet('rest_command.other'), /nicht freigegeben/);
   await assert.rejects(ha.httpGet('rest_command.reload'), /nicht freigegeben/);
-  assert.deepEqual(await ha.httpGet('rest_command.probe'), {status: 200, data: '{"value":42}'});
-  assert.deepEqual(await ha.httpGet('rest_command.probe', '{"probe":42}'), {status: 200, data: '{"value":42}'});
+  const response = {status: 200, data: '{"value":42}',
+    headers: {'content-type': 'application/json', 'x-test': 'probe'}};
+  assert.deepEqual(await ha.httpGet('rest_command.probe'), response);
+  assert.deepEqual(await ha.httpGet('rest_command.probe', '{"probe":42}'), response);
   assert.deepEqual(commands.filter(command => command.type === 'call_service').map(({id, ...command}) => command),
     [{type: 'call_service', domain: 'rest_command', service: 'probe', return_response: true},
       {type: 'call_service', domain: 'rest_command', service: 'probe', return_response: true,

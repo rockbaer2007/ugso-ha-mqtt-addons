@@ -156,12 +156,16 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
         const result = await send({type: 'call_service', domain: 'rest_command',
           service: action.slice('rest_command.'.length), return_response: true,
           ...(payload === undefined ? {} : {service_data: {payload}})});
-        const {status, content} = result?.response ?? {};
+        const {status, content, headers = {}} = result?.response ?? {};
         const data = typeof content === 'string' ? content : JSON.stringify(content ?? null);
-        if (!Number.isInteger(status) || Buffer.byteLength(data) > 262144) {
+        const responseHeaders = Object.fromEntries(Object.entries(headers ?? {})
+          .filter(([, value]) => typeof value === 'string')
+          .map(([name, value]) => [name.toLowerCase(), value]));
+        if (!Number.isInteger(status) || Buffer.byteLength(data) > 262144 ||
+            Buffer.byteLength(JSON.stringify(responseHeaders)) > 65536) {
           throw new Error('Ungültige oder zu große HTTP-Antwort.');
         }
-        return {status, data};
+        return {status, data, headers: responseHeaders};
       },
       subscribe(type) {
         if (!eventPattern.test(type) || type === 'state_changed' || !permittedEvents.has(type)) {

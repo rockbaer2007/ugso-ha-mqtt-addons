@@ -1,5 +1,9 @@
 # HA Logic Studio Pro
 
+## 0.1.104
+
+- Blocks JS übernimmt ioBroker-HTTP-Antwortheader mit kleingeschriebenen Namen, etwa `content-type`.
+
 ## 0.1.103
 
 - Blocks JS importiert ioBroker-HTTP-POST mit JSON-Payload, Statusprüfung und Antwortauswertung über einen freigegebenen HA-REST-Befehl.
