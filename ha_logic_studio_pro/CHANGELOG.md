@@ -1,5 +1,9 @@
 # HA Logic Studio Pro
 
+## 0.1.100
+
+- Rules bietet im Expertenmodus HA-Template-Bedingungen. Der YAML-Export übernimmt das Jinja-Template als native Home-Assistant-Bedingung.
+
 ## 0.1.99
 
 - HA-YAML prüft verschachtelte Verzweigungen und markiert Strukturfehler an der betroffenen Zeile.

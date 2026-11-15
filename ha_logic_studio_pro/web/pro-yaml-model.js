@@ -36,6 +36,10 @@ function numericLimits({above, below}, invalidMessage) {
 
 function ruleCondition(entry, triggerIds, kind, depth = 0) {
   const {type, entity, state, attribute} = entry;
+  if (type === 'template') {
+    if (!provided(entry.template)) throw new Error('Eine HA-Template-Bedingung eingeben.');
+    return {condition: 'template', value_template: entry.template};
+  }
   if (type === 'group') {
     if (depth >= maxRuleGroupDepth || !conditionModes.includes(entry.conditionMode) || !entry.conditions?.length) {
       throw new Error('Bedingungsgruppe braucht mindestens eine Bedingung und eine gültige Verknüpfung.');
@@ -117,9 +121,9 @@ export function readRuleFields(fields) {
   if (Object.hasOwn(fields, 'triggers')) {
     const actionFields = ['type', 'action', 'entity', 'data', 'seconds', 'state', 'event'];
     const lists = {triggers: ['type', 'id', 'entity', 'state', 'from', 'attribute', 'seconds', 'time', 'event', 'above', 'below', 'offsetMinutes', 'topic', 'payload', 'scopeId', 'scopeEntities'],
-      conditions: ['type', 'triggerId', 'entity', 'state', 'attribute', 'above', 'below', 'after', 'before', 'weekday'],
+      conditions: ['type', 'triggerId', 'entity', 'state', 'attribute', 'above', 'below', 'after', 'before', 'weekday', 'template'],
       actions: actionFields, elseActions: actionFields};
-    const types = {triggers: ['state', 'area', 'label', 'time', 'helper_time', 'event', 'numeric', 'sun', 'mqtt', 'ha_start'], conditions: ['state', 'numeric', 'time', 'trigger'],
+    const types = {triggers: ['state', 'area', 'label', 'time', 'helper_time', 'event', 'numeric', 'sun', 'mqtt', 'ha_start'], conditions: ['state', 'numeric', 'time', 'trigger', 'template'],
       actions: ['action', 'delay', 'wait_state', 'script', 'notification', 'event']};
     types.elseActions = types.actions;
     const rule = {conditionMode: fields.conditionMode};
@@ -179,6 +183,9 @@ export function makeRulesJavaScript(name, rule) {
   }
   const leaves = list => list.flatMap(entry => entry.type === 'group' ? leaves(entry.conditions) : [entry]);
   const conditions = leaves(rule.conditions);
+  if (conditions.some(c => c.type === 'template')) {
+    throw new Error('Rules → JS: HA-Template-Bedingungen benötigen HA-YAML.');
+  }
   if (conditions.some(c => c.type === 'time')) {
     throw new Error('Rules → JS: Zeitbedingungen benötigen HA-YAML.');
   }

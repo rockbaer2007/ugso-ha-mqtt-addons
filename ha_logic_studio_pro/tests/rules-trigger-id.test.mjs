@@ -27,6 +27,20 @@ test('Rules round-trip preserves trigger IDs and exports a native HA branch', ()
     /vorhandene Trigger-ID/);
 });
 
+test('Rules round-trips multiline Jinja into a native HA template with then and else', () => {
+  const template = "{% set ready = is_state('input_boolean.ready', 'on') %}\n{{ ready }}\n";
+  const draft = {...rule, conditions: [{type: 'template', template}]};
+  const imported = readRuleFields(JSON.parse(JSON.stringify(draft)));
+  assert.deepEqual(imported, draft);
+  const [branch] = parseDocument(makeYaml({name, kind: 'automation', ...imported})).toJS().actions;
+  assert.deepEqual(branch.if, [{condition: 'template', value_template: template}]);
+  assert.equal(branch.then[0].target.entity_id, 'input_boolean.first');
+  assert.equal(branch.else[0].target.entity_id, 'input_boolean.second');
+  assert.throws(() => makeRulesJavaScript(name, imported), /Template-Bedingungen benötigen HA-YAML/);
+  assert.throws(() => makeYaml({name, kind: 'automation', ...draft, conditions: [{type: 'template', template: ' '}]}),
+    /Template-Bedingung eingeben/);
+});
+
 test('Rules to JavaScript dispatches using the ID of the callback that fired', () => {
   const events = new Map();
   const targets = [];

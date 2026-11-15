@@ -1,6 +1,6 @@
 import {renderYamlPreview} from './yaml-preview.js?v=0.1.93';
 import {parseDocument} from './vendor/pro-yaml.js';
-import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.99';
+import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.100';
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
 import {mountCodeEditor} from './vendor/pro-code.js';
@@ -1776,6 +1776,11 @@ function renderRules(panel, project) {
     en: ['Condition group', 'Wait for state', 'Timeout in seconds (optional)'],
     fr: ['Groupe de conditions', 'Attendre un état', 'Délai maximal en secondes (facultatif)'],
   }[locale];
+  const [templateCondition, templateSource] = {
+    de: ['HA-Template-Bedingung', 'Bedingung (Jinja-Template)'],
+    en: ['HA template condition', 'Condition (Jinja template)'],
+    fr: ['Condition de modèle HA', 'Condition (modèle Jinja)'],
+  }[locale];
   const [callScript, notification, fireEvent, searchPalette, paletteLabel] = {
     de: ['HA-Skript aufrufen', 'HA-Benachrichtigung', 'HA-Ereignis senden', 'Palette durchsuchen', 'Palette'],
     en: ['Call HA script', 'HA notification', 'Fire HA event', 'Search palette', 'Palette'],
@@ -1865,11 +1870,12 @@ function renderRules(panel, project) {
         const select = element('select');
         const options = isAction ? [['action', service], ['delay', delay], ['wait_state', waitState],
           ['script', callScript], ['notification', notification], ['event', fireEvent]] :
-          [['state', status], ['numeric', numeric], ['time', timeWindow], ['trigger', triggeredBy],
+          [['state', status], ['numeric', numeric], ['time', timeWindow], ['trigger', triggeredBy], ['template', templateCondition],
             ...(depth < maxRuleGroupDepth ? [['group', conditionGroup]] : [])];
         for (const [value, name] of options) {
           const option = element('option', name);
           option.value = value;
+          if (value === 'template' && entry.type !== 'template') option.className = 'editor-expert-tools';
           select.append(option);
         }
         select.value = entry.type || options[0][0];
@@ -1918,7 +1924,8 @@ function renderRules(panel, project) {
         else labels = [['entity', entity], ['attribute', attribute], ['from', from], ['state', to], ['seconds', hold]];
         labels.push(['id', optionalId]);
       } else if (key === 'conditions') {
-        labels = ['trigger', 'group'].includes(entry.type) ? [] : entry.type === 'time' ? [['after', after], ['before', before]] :
+        labels = entry.type === 'template' ? [['template', templateSource]] :
+          ['trigger', 'group'].includes(entry.type) ? [] : entry.type === 'time' ? [['after', after], ['before', before]] :
           [['entity', entity], ['attribute', attribute],
             ...(entry.type === 'numeric' ? [['above', above], ['below', below]] : [['state', status]])];
       } else {
@@ -1944,7 +1951,7 @@ function renderRules(panel, project) {
           inputs.append(label);
           continue;
         }
-        const input = element(name === 'data' ? 'textarea' : 'input');
+        const input = element(['data', 'template'].includes(name) ? 'textarea' : 'input');
         input.value = entry[name] || '';
         if (['time', 'after', 'before'].includes(name)) input.type = 'time';
         if (name === 'after' || name === 'before') input.step = '1';
@@ -1956,7 +1963,7 @@ function renderRules(panel, project) {
           input.placeholder = entry.type === 'notification' ? '{"title": "", "message": ""}' : '{}';
         }
         input.oninput = () => {
-          entry[name] = name === 'topic' || name === 'payload' ? input.value : input.value.trim();
+          entry[name] = ['topic', 'payload', 'template'].includes(name) ? input.value : input.value.trim();
           changed();
         };
         const line = element('span');
@@ -2080,7 +2087,7 @@ function renderRules(panel, project) {
     tools.append(search);
     const choices = category === 'triggers' ? triggerKinds.map(([kind, label, icon]) => [category, label, icon, kind]) :
       category === 'conditions' ? [[category, status, '?'], [category, triggeredBy, '?', 'trigger'],
-        [category, conditionGroup, '?', 'group']] :
+        [category, conditionGroup, '?', 'group'], [category, templateCondition, '?', 'template']] :
         [['actions', then, '↳'], ['elseActions', otherwise, '↳']];
     function addRule(key, kind) {
       append(rules, key, kind);
@@ -2092,6 +2099,7 @@ function renderRules(panel, project) {
         addRule(key, kind);
       });
       item.className = 'rule-palette-item';
+      if (kind === 'template') item.classList.add('editor-expert-tools');
       item.draggable = true;
       item.ondragstart = event => {
         draggedRule = {key, kind};
