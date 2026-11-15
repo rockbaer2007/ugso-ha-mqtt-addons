@@ -801,7 +801,7 @@ function reviewIoBrokerImport(name, workspace) {
   const mappings = new Map();
   const notes = {
     iob_http_get: ['http_get', 'Einen freigegebenen HA-REST-Befehl für GET eintragen. URL und Timeout aus dem Import in Home Assistant konfigurieren.'],
-    iob_http_post: ['http_post', 'Einen freigegebenen HA-REST-Befehl mit Methode POST und Content-Type application/json eintragen. In HA payload: "{{ payload }}" konfigurieren.'],
+    iob_http_post: ['http_post', 'Einen freigegebenen HA-REST-Befehl mit Methode POST eintragen. Den importierten Content-Type im REST-Befehl als content_type konfigurieren, zusätzliche Request-Header unter headers. In HA payload: "{{ payload }}" konfigurieren.'],
     iob_http_response: ['http_response', 'Status, Antworttext, kleingeschriebene Antwortheader oder Fehler werden im Antwortzweig ausgewertet. Ohne HTTP-Antwort ist der Status leer.'],
     iob_trigger: ['on / on_ext', 'HA-Entität als Auslöser zuordnen und die Triggerbedingung prüfen.'],
     iob_update: ['update', 'Beschreibbaren HA-Helfer passend zum Wert wählen. Für einen numerischen Sensorwert eignet sich input_number.'],

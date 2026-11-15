@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.106
+
+- Blocks JS übernimmt beim ioBroker-POST-Import auch frei eingegebene Content-Type-Werte. Der Block zeigt den importierten Wert und verweist für zusätzliche Request-Header auf den HA-REST-Befehl.
+- Im Live-Test per Play auf dem Testsystem PC (64) bestätigte der Testendpunkt `Content-Type: application/vnd.ugso+json` und `Accept: application/json`. Der POST lieferte HTTP 200 und übertrug den JSON-Wert `42`.
+
 ## 0.1.105
 
 - Blocks JS importiert den ioBroker-HTTP-Fehlerblock. HTTP-Fehlerstatus bleiben verfügbar. Verbindungsfehler und Zeitüberschreitungen erreichen den Antwortzweig ohne Statuscode.
