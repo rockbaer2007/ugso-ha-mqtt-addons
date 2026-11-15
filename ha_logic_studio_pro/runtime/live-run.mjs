@@ -21,6 +21,7 @@ try {
   // HA event data is passed as JSON, separate from the project source.
   const scheduled = new Map();
   let historyRequests = 0;
+  let httpRequests = 0;
   let ticker;
   let failed = false;
   function fail(error) {
@@ -124,6 +125,12 @@ try {
       historyRequests++;
       ha.history(...query).then(rows => dispatch({type: 'history', id, rows}), fail)
         .finally(() => { historyRequests--; });
+    } else if (operation === 'httpGet') {
+      if (httpRequests >= 4) throw new Error('Maximal vier gleichzeitige HTTP-Abfragen.');
+      const [id, action] = args;
+      httpRequests++;
+      ha.httpGet(action).then(response => dispatch({type: 'httpGet', id, response}), fail)
+        .finally(() => { httpRequests--; });
     } else if (operation === 'event') ha.subscribe(args[0]);
     else if (operation === 'action') ha.call(args[0], args[1], args[2]);
     else if (['publishMqtt', 'notify', 'fireEvent'].includes(operation)) ha.sendto(operation, args);
@@ -138,6 +145,7 @@ try {
       const handlers = [];
       const namedSchedules = new Map();
       const historyCallbacks = new Map();
+      const httpCallbacks = new Map();
       let historyId = 0;
       const call = (operation, ...args) => bridge(operation, JSON.stringify(args));
       const invoke = (callback, ...args) => {
@@ -199,6 +207,12 @@ try {
           call('history', id, entity, Number(start), Number(end), mode, step, count);
           historyCallbacks.set(id, callback);
         },
+        httpGet(action, callback) {
+          if (typeof callback !== 'function') throw new Error('HTTP callback required.');
+          const id = ++historyId;
+          call('httpGet', id, action);
+          httpCallbacks.set(id, callback);
+        },
         schedule: (pattern, callback) => register('schedule', pattern, null, callback),
         namedSchedule(name, cron, callback) {
           if (typeof name !== 'string' || !name.trim() || name.length > 128 || typeof callback !== 'function') throw new Error('Ungültiger benannter Zeitplan.');
@@ -225,6 +239,12 @@ try {
         }
       };
       const studioDispatch = event => {
+        if (event.type === 'httpGet') {
+          const callback = httpCallbacks.get(event.id);
+          httpCallbacks.delete(event.id);
+          if (callback) invoke(callback, event.response);
+          return;
+        }
         if (event.type === 'history') {
           const callback = historyCallbacks.get(event.id);
           historyCallbacks.delete(event.id);

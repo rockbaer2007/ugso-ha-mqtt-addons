@@ -47,3 +47,33 @@ test('reconnect refreshes states and restores event subscriptions', async () => 
   sockets[1].receive({type: 'event', event: {event_type: 'logic_studio_test', data: {ok: true}}});
   assert.equal(received[1].data.ok, true);
 });
+
+test('HTTP GET only invokes an allowed REST command and exposes status and JSON text', async () => {
+  const commands = [];
+  class Socket extends EventTarget {
+    constructor() {
+      super();
+      queueMicrotask(() => this.receive({type: 'auth_required'}));
+    }
+    receive(message) {
+      this.dispatchEvent(new MessageEvent('message', {data: JSON.stringify(message)}));
+    }
+    send(raw) {
+      const command = JSON.parse(raw);
+      commands.push(command);
+      const result = {get_config: {time_zone: 'UTC'}, get_states: [],
+        call_service: {response: {status: 200, content: {value: 42}}}}[command.type];
+      queueMicrotask(() => this.receive(command.type === 'auth' ? {type: 'auth_ok'} :
+        {type: 'result', id: command.id, success: true, result}));
+    }
+    close() {}
+  }
+  const ha = await connectHomeAssistant({token: 'mock', readable: [],
+    writable: ['rest_command.probe', 'rest_command.reload'], events: []},
+  () => {}, error => assert.fail(error.message), Socket);
+  await assert.rejects(ha.httpGet('rest_command.other'), /nicht freigegeben/);
+  await assert.rejects(ha.httpGet('rest_command.reload'), /nicht freigegeben/);
+  assert.deepEqual(await ha.httpGet('rest_command.probe'), {status: 200, data: '{"value":42}'});
+  assert.deepEqual(commands.filter(command => command.type === 'call_service').map(({id, ...command}) => command),
+    [{type: 'call_service', domain: 'rest_command', service: 'probe', return_response: true}]);
+});
