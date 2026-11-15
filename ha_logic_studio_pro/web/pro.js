@@ -2,7 +2,7 @@ import {renderYamlPreview} from './yaml-preview.js?v=0.1.93';
 import {parseDocument} from './vendor/pro-yaml.js';
 import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.100';
 import {connectLanguage, locales, translate} from './i18n.js';
-import {translatePro} from './pro-locales.js';
+import {translatePro} from './pro-locales.js?v=0.1.101';
 import {mountCodeEditor} from './vendor/pro-code.js';
 import {mountYamlEditor} from './vendor/yaml-editor.js?v=0.1.92';
 import {checkHaYaml} from './yaml-ha-check.js?v=0.1.91';
@@ -834,11 +834,20 @@ function reviewIoBrokerImport(name, workspace) {
       (metadata?.sources ?? []).map((source, index) => [source, 'TARGET' + index]);
     const placeholder = block.type === 'iob_placeholder';
     const type = placeholder ? metadata?.type ?? '?' : notes[block.type]?.[0] ?? block.type;
-    const instruction = placeholder && Object.hasOwn(replacements, type) ? replacements[type] :
+    const command = block.inputs?.COMMAND;
+    const timeComparison = placeholder && type === 'exec' &&
+      (command?.block ?? command?.shadow)?.type === 'ha_js_time';
+    const instruction = timeComparison ?
+      'Der Zeitvergleich liefert wahr oder falsch. Verbinde ihn mit „falls“ und füge unter „mache“ die gewünschte HA-Aktion ein.' :
+      placeholder && Object.hasOwn(replacements, type) ? replacements[type] :
       placeholder ? 'Platzhalter durch einen passenden Blocks-JS-Block ersetzen und Anschlüsse prüfen.' :
       notes[block.type]?.[1] ?? (targets.length ? 'Passende HA-Entität zuordnen.' : 'Block übernommen.');
+    const hint = translatePro(instruction, locale);
+    if (placeholder && type === 'exec') {
+      (block.icons ??= {}).comment ??= {text: hint, pinned: false};
+    }
     const row = element('li');
-    row.append(element('strong', path + ' · ' + type), element('p', translatePro(instruction, locale)));
+    row.append(element('strong', path + ' · ' + type), element('p', hint));
     if (block.type === 'ha_js_trigger_value') row.append(element('code', fields.PART ?? ''));
     for (const [source, field] of targets) {
       if (typeof source !== 'string' || !source) continue;

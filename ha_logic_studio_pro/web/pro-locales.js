@@ -1,6 +1,10 @@
 import {messages as flowMessages} from './locales.js';
 
 const messages = {
+  'Der Zeitvergleich liefert wahr oder falsch. Verbinde ihn mit „falls“ und füge unter „mache“ die gewünschte HA-Aktion ein.': [
+    'The time comparison returns true or false. Connect it to “if” and place the HA action you want in “do”.',
+    'La comparaison horaire renvoie vrai ou faux. Branchez-la sur « si » et placez l’action HA souhaitée dans « faire ».',
+  ],
   'Nötige Codeanpassungen': ['Required code changes', 'Adaptations du code requises'],
   'Shell-Befehl durch eine konfigurierte HA-Aktion ersetzen.': [
     'Replace the shell command with a configured HA action.', 'Remplacez la commande shell par une action HA configurée.',

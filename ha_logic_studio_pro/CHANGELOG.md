@@ -1,5 +1,9 @@
 # HA Logic Studio Pro
 
+## 0.1.101
+
+- Blocks JS zeigt beim ioBroker-Import einen Hinweis direkt am `exec`-Platzhalter. Ein angeschlossener Zeitvergleich wird als Bedingung für „falls“ erklärt.
+
 ## 0.1.100
 
 - Rules bietet im Expertenmodus HA-Template-Bedingungen. Der YAML-Export übernimmt das Jinja-Template als native Home-Assistant-Bedingung.
