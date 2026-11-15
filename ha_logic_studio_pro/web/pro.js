@@ -1,6 +1,6 @@
 import {renderYamlPreview} from './yaml-preview.js?v=0.1.93';
 import {parseDocument} from './vendor/pro-yaml.js';
-import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js?v=0.1.93';
+import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays} from './pro-yaml-model.js?v=0.1.95';
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
 import {mountCodeEditor} from './vendor/pro-code.js';
@@ -1757,6 +1757,11 @@ function renderRules(panel, project) {
     status, schedule, event, entity, target, time, eventType, service, when, and, then, otherwise, empty, choose] =
     wording[locale] ?? wording.en;
   const ruleLabels = {triggers: when, conditions: and, actions: then, elseActions: otherwise};
+  const [triggeredBy, triggerId, optionalId, missingId] = {
+    de: ['Ausgelöst durch', 'Trigger-ID auswählen', 'Trigger-ID (optional)', 'Trigger-ID fehlt'],
+    en: ['Triggered by', 'Choose trigger ID', 'Trigger ID (optional)', 'Missing trigger ID'],
+    fr: ['Déclenché par', 'Choisir un identifiant de déclencheur', 'Identifiant du déclencheur (facultatif)', 'Identifiant de déclencheur manquant'],
+  }[locale];
   const [timeWindow, after, before, weekdays] = ({
     de: ['Zeitfenster und Wochentage', 'Ab', 'Bis', 'Wochentage'],
     en: ['Time window and weekdays', 'From', 'Until', 'Weekdays'],
@@ -1797,7 +1802,7 @@ function renderRules(panel, project) {
     refreshRuntimeControls();
   };
   function append(data, key, kind = 'state') {
-    const entry = key === 'triggers' ? {type: kind} : {};
+    const entry = key === 'triggers' || (key === 'conditions' && kind === 'trigger') ? {type: kind} : {};
     if (kind === 'sun') entry.event = 'sunrise';
     data[key].push(entry);
     return entry;
@@ -1827,7 +1832,7 @@ function renderRules(panel, project) {
         const caption = element('label', isAction ? actionType : conditionStep);
         const select = element('select');
         const options = isAction ? [['action', service], ['delay', delay]] :
-          [['state', status], ['numeric', numeric], ['time', timeWindow]];
+          [['state', status], ['numeric', numeric], ['time', timeWindow], ['trigger', triggeredBy]];
         for (const [value, name] of options) {
           const option = element('option', name);
           option.value = value;
@@ -1850,8 +1855,9 @@ function renderRules(panel, project) {
         else if (entry.type === 'event') labels = [['event', eventType]];
         else if (entry.type === 'numeric') labels = [['entity', entity], ['attribute', attribute], ['above', above], ['below', below], ['seconds', hold]];
         else labels = [['entity', entity], ['attribute', attribute], ['from', from], ['state', to], ['seconds', hold]];
+        labels.push(['id', optionalId]);
       } else if (key === 'conditions') {
-        labels = entry.type === 'time' ? [['after', after], ['before', before]] :
+        labels = entry.type === 'trigger' ? [] : entry.type === 'time' ? [['after', after], ['before', before]] :
           [['entity', entity], ['attribute', attribute],
             ...(entry.type === 'numeric' ? [['above', above], ['below', below]] : [['state', status]])];
       } else {
@@ -1903,6 +1909,24 @@ function renderRules(panel, project) {
             (helper ? /^input_datetime\.[a-z0-9_]+$/ : /^[a-z0-9_]+\.[a-z0-9_]+$/).test(value))));
         }
         label.append(line);
+        inputs.append(label);
+      }
+      if (key === 'conditions' && entry.type === 'trigger') {
+        const label = element('label', triggerId);
+        const select = element('select');
+        const fillIds = () => {
+          const ids = [...new Set(data.triggers.map(trigger => trigger.id).filter(Boolean))];
+          const options = [new Option(choose, ''), ...ids.map(id => new Option(id, id))];
+          if (entry.triggerId && !ids.includes(entry.triggerId)) {
+            options.push(new Option(entry.triggerId + ' · ' + missingId, entry.triggerId));
+          }
+          select.replaceChildren(...options);
+          select.value = entry.triggerId || '';
+        };
+        fillIds();
+        select.onfocus = fillIds;
+        select.onchange = () => { entry.triggerId = select.value; changed(); };
+        label.append(select);
         inputs.append(label);
       }
       if (key === 'conditions' && entry.type === 'time') {
@@ -1967,7 +1991,7 @@ function renderRules(panel, project) {
     }
     palette.append(tabs);
     const choices = category === 'triggers' ? triggerKinds.map(([kind, label, icon]) => [category, label, icon, kind]) :
-      category === 'conditions' ? [[category, status, '?']] :
+      category === 'conditions' ? [[category, status, '?'], [category, triggeredBy, '?', 'trigger']] :
         [['actions', then, '↳'], ['elseActions', otherwise, '↳']];
     for (const [key, label, icon, kind] of choices) {
       const item = button(icon + ' ' + label, () => {

@@ -32,8 +32,14 @@ function numericLimits({above, below}, invalidMessage) {
   return limits;
 }
 
-function ruleCondition(entry) {
+function ruleCondition(entry, triggerIds, kind) {
   const {type, entity, state, attribute} = entry;
+  if (type === 'trigger') {
+    if (kind !== 'automation' || !provided(entry.triggerId) || !triggerIds.has(entry.triggerId)) {
+      throw new Error('Für „Ausgelöst durch“ eine vorhandene Trigger-ID auswählen.');
+    }
+    return {condition: 'trigger', id: entry.triggerId};
+  }
   if (type === 'time') {
     const result = {condition: 'time'};
     for (const key of ['after', 'before']) {
@@ -82,10 +88,10 @@ export function readRuleFields(fields) {
   if (!object(fields)) throw new Error('Ungültige Rules-Datei.');
   if (Object.hasOwn(fields, 'triggers')) {
     const actionFields = ['type', 'action', 'entity', 'data', 'seconds'];
-    const lists = {triggers: ['type', 'entity', 'state', 'from', 'attribute', 'seconds', 'time', 'event', 'above', 'below', 'offsetMinutes', 'topic', 'payload'],
-      conditions: ['type', 'entity', 'state', 'attribute', 'above', 'below', 'after', 'before', 'weekday'],
+    const lists = {triggers: ['type', 'id', 'entity', 'state', 'from', 'attribute', 'seconds', 'time', 'event', 'above', 'below', 'offsetMinutes', 'topic', 'payload'],
+      conditions: ['type', 'triggerId', 'entity', 'state', 'attribute', 'above', 'below', 'after', 'before', 'weekday'],
       actions: actionFields, elseActions: actionFields};
-    const types = {triggers: ['state', 'time', 'helper_time', 'event', 'numeric', 'sun', 'mqtt', 'ha_start'], conditions: ['state', 'numeric', 'time'],
+    const types = {triggers: ['state', 'time', 'helper_time', 'event', 'numeric', 'sun', 'mqtt', 'ha_start'], conditions: ['state', 'numeric', 'time', 'trigger'],
       actions: ['action', 'delay'], elseActions: ['action', 'delay']};
     const rule = {conditionMode: fields.conditionMode};
     if (!['and', 'or', 'not'].includes(rule.conditionMode)) throw new Error('Ungültige Rules-Datei.');
@@ -148,9 +154,12 @@ export function makeRulesJavaScript(name, rule) {
   const matches = ({entity, state}) => 'ha.readState(' + literal(entity) + ') === ' + literal(state);
   const calls = (actions, indent) => actions.map(({action, entity}) =>
     indent + 'ha.callAction(' + literal(action) + ', ' + literal(entity) + ');');
-  const lines = ['function runRule() {'];
+  const usesTrigger = rule.conditions.some(c => c.type === 'trigger');
+  const lines = [usesTrigger ? 'function runRule(triggerId) {' : 'function runRule() {'];
   if (rule.conditions.length) {
-    let check = rule.conditions.map(matches).join(rule.conditionMode === 'and' ? ' && ' : ' || ');
+    let check = rule.conditions.map(condition => condition.type === 'trigger' ?
+      'triggerId === ' + literal(condition.triggerId) : matches(condition))
+      .join(rule.conditionMode === 'and' ? ' && ' : ' || ');
     if (rule.conditionMode === 'not') check = '!(' + check + ')';
     lines.push('  if (' + check + ') {', ...calls(rule.actions, '    '));
     if (rule.elseActions.length) lines.push('  } else {', ...calls(rule.elseActions, '    '));
@@ -160,15 +169,17 @@ export function makeRulesJavaScript(name, rule) {
   }
   lines.push('}', '');
   for (const trigger of rule.triggers) {
+    const argument = usesTrigger ? literal(provided(trigger.id) ? trigger.id : null) : '';
+    const callback = usesTrigger ? '() => runRule(' + argument + ')' : 'runRule';
     if (trigger.type === 'time') {
-      lines.push('ha.schedule(' + literal({trigger: 'time', at: trigger.time + ':00'}) + ', runRule);');
+      lines.push('ha.schedule(' + literal({trigger: 'time', at: trigger.time + ':00'}) + ', ' + callback + ');');
     } else if (trigger.type === 'helper_time') {
-      lines.push('ha.scheduleFromDateTime(' + literal(trigger.entity) + ', runRule);');
+      lines.push('ha.scheduleFromDateTime(' + literal(trigger.entity) + ', ' + callback + ');');
     } else if (trigger.type === 'event') {
-      lines.push('ha.onEvent(' + literal(trigger.event) + ', runRule);');
+      lines.push('ha.onEvent(' + literal(trigger.event) + ', ' + callback + ');');
     } else {
       lines.push('ha.onState(' + literal(trigger.entity) + ', () => {',
-        '  if (' + matches(trigger) + ') runRule();', '});');
+        '  if (' + matches(trigger) + ') runRule(' + argument + ');', '});');
     }
   }
   return lines.join('\n') + '\n';
@@ -275,7 +286,8 @@ export function makeYaml({name, kind, triggers = [], condition, conditions = con
   const actionList = list => list.map(ruleAction);
   if (elseActions.length && !conditions.length) throw new Error('Der SONST-Zweig benötigt eine Bedingung.');
   if (!['and', 'or', 'not'].includes(conditionMode)) throw new Error('Ungültige Bedingungsverknüpfung.');
-  const states = conditions.map(ruleCondition);
+  const triggerIds = new Set(triggers.map(entry => entry.id).filter(provided));
+  const states = conditions.map(entry => ruleCondition(entry, triggerIds, kind));
   const checks = conditionMode === 'and' || !states.length ? states : [{condition: conditionMode, conditions: states}];
   let sequence = actionList(actions);
   if (elseActions.length) sequence = [{if: checks, then: sequence, else: actionList(elseActions)}];
@@ -285,58 +297,63 @@ export function makeYaml({name, kind, triggers = [], condition, conditions = con
   if (!triggers.length) throw new Error('Für eine HA-Automation einen Auslöser hinzufügen.');
   return stringifyForHa({
     ...config,
-    triggers: triggers.map(entry => {
-      const {entity, state, from, attribute, seconds, type, time, event} = entry;
-      if (type === 'ha_start') return {trigger: 'homeassistant', event: 'start'};
-      if (type === 'mqtt') {
-        const {topic, payload} = entry;
-        if (!provided(topic) || topic.includes('\0') || new TextEncoder().encode(topic).length > 65535 ||
-            !topic.split('/').every((level, index, levels) =>
-              level === '+' || (level === '#' && index === levels.length - 1) || !/[+#]/.test(level))) {
-          throw new Error('Ein gültiges MQTT-Topic eingeben.');
-        }
-        return {trigger: 'mqtt', topic, ...(payload ? {payload} : {})};
-      }
-      if (type === 'helper_time') {
-        if (!/^input_datetime\.[a-z0-9_]+$/.test(entity || '')) {
-          throw new Error('Einen Datum- und Uhrzeithelfer (input_datetime) auswählen.');
-        }
-        return {trigger: 'time', at: entity};
-      }
-      if (type === 'sun') {
-        if (!['sunrise', 'sunset'].includes(event)) throw new Error('Sonnenaufgang oder Sonnenuntergang auswählen.');
-        const offsetMinutes = entry.offsetMinutes ?? '';
-        const offset = Number(offsetMinutes) * 60;
-        if (offsetMinutes !== '' && (!/^[+-]?\d+$/.test(offsetMinutes) || !Number.isSafeInteger(offset))) {
-          throw new Error('Zeitversatz in ganzen Minuten eingeben.');
-        }
-        return {trigger: 'sun', event, ...(offset ? {offset} : {})};
-      }
-      if (type === 'time') {
-        if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error('Uhrzeit im Format HH:MM eingeben.');
-        return {trigger: 'time', at: time + ':00'};
-      }
-      if (type === 'event') {
-        if (!/^[a-zA-Z0-9_]+$/.test(event || '')) throw new Error('Gültigen HA-Ereignistyp eingeben.');
-        return {trigger: 'event', event_type: event};
-      }
-      if (!identifier.test(entity || '')) throw new Error('Gültige Auslöserentität eingeben.');
-      if (type === 'numeric') {
-        const limits = numericLimits(entry, 'Eine gültige Zahl für den Auslöser eingeben.');
-        const trigger = {trigger: 'numeric_state', entity_id: entity, ...limits};
-        if (provided(attribute)) trigger.attribute = attribute;
-        if (provided(seconds)) trigger.for = duration(seconds);
-        return trigger;
-      }
-      const trigger = {trigger: 'state', entity_id: entity};
-      if (provided(attribute)) trigger.attribute = attribute;
-      if (provided(from)) trigger.from = from;
-      if (provided(state)) trigger.to = state;
-      if (!provided(from) && !provided(state)) trigger.to = null;
-      if (provided(seconds)) trigger.for = duration(seconds);
-      return trigger;
-    }),
+    triggers: triggers.map(entry => ({
+      ...ruleTrigger(entry),
+      ...(provided(entry.id) ? {id: entry.id} : {}),
+    })),
     conditions: elseActions.length ? [] : checks,
     actions: sequence,
   });
+}
+
+function ruleTrigger(entry) {
+  const {entity, state, from, attribute, seconds, type, time, event} = entry;
+  if (type === 'ha_start') return {trigger: 'homeassistant', event: 'start'};
+  if (type === 'mqtt') {
+    const {topic, payload} = entry;
+    if (!provided(topic) || topic.includes('\0') || new TextEncoder().encode(topic).length > 65535 ||
+        !topic.split('/').every((level, index, levels) =>
+          level === '+' || (level === '#' && index === levels.length - 1) || !/[+#]/.test(level))) {
+      throw new Error('Ein gültiges MQTT-Topic eingeben.');
+    }
+    return {trigger: 'mqtt', topic, ...(payload ? {payload} : {})};
+  }
+  if (type === 'helper_time') {
+    if (!/^input_datetime\.[a-z0-9_]+$/.test(entity || '')) {
+      throw new Error('Einen Datum- und Uhrzeithelfer (input_datetime) auswählen.');
+    }
+    return {trigger: 'time', at: entity};
+  }
+  if (type === 'sun') {
+    if (!['sunrise', 'sunset'].includes(event)) throw new Error('Sonnenaufgang oder Sonnenuntergang auswählen.');
+    const offsetMinutes = entry.offsetMinutes ?? '';
+    const offset = Number(offsetMinutes) * 60;
+    if (offsetMinutes !== '' && (!/^[+-]?\d+$/.test(offsetMinutes) || !Number.isSafeInteger(offset))) {
+      throw new Error('Zeitversatz in ganzen Minuten eingeben.');
+    }
+    return {trigger: 'sun', event, ...(offset ? {offset} : {})};
+  }
+  if (type === 'time') {
+    if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error('Uhrzeit im Format HH:MM eingeben.');
+    return {trigger: 'time', at: time + ':00'};
+  }
+  if (type === 'event') {
+    if (!/^[a-zA-Z0-9_]+$/.test(event || '')) throw new Error('Gültigen HA-Ereignistyp eingeben.');
+    return {trigger: 'event', event_type: event};
+  }
+  if (!identifier.test(entity || '')) throw new Error('Gültige Auslöserentität eingeben.');
+  if (type === 'numeric') {
+    const limits = numericLimits(entry, 'Eine gültige Zahl für den Auslöser eingeben.');
+    const trigger = {trigger: 'numeric_state', entity_id: entity, ...limits};
+    if (provided(attribute)) trigger.attribute = attribute;
+    if (provided(seconds)) trigger.for = duration(seconds);
+    return trigger;
+  }
+  const trigger = {trigger: 'state', entity_id: entity};
+  if (provided(attribute)) trigger.attribute = attribute;
+  if (provided(from)) trigger.from = from;
+  if (provided(state)) trigger.to = state;
+  if (!provided(from) && !provided(state)) trigger.to = null;
+  if (provided(seconds)) trigger.for = duration(seconds);
+  return trigger;
 }
