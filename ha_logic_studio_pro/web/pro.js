@@ -802,7 +802,7 @@ function reviewIoBrokerImport(name, workspace) {
   const notes = {
     iob_http_get: ['http_get', 'Einen freigegebenen HA-REST-Befehl für GET eintragen. URL und Timeout aus dem Import in Home Assistant konfigurieren.'],
     iob_http_post: ['http_post', 'Einen freigegebenen HA-REST-Befehl mit Methode POST und Content-Type application/json eintragen. In HA payload: "{{ payload }}" konfigurieren.'],
-    iob_http_response: ['http_response', 'Status, Antworttext oder Antwortheader werden im Antwortzweig ausgewertet. Headernamen sind kleingeschrieben, zum Beispiel content-type.'],
+    iob_http_response: ['http_response', 'Status, Antworttext, kleingeschriebene Antwortheader oder Fehler werden im Antwortzweig ausgewertet. Ohne HTTP-Antwort ist der Status leer.'],
     iob_trigger: ['on / on_ext', 'HA-Entität als Auslöser zuordnen und die Triggerbedingung prüfen.'],
     iob_update: ['update', 'Beschreibbaren HA-Helfer passend zum Wert wählen. Für einen numerischen Sensorwert eignet sich input_number.'],
     iob_control: ['control', 'Steuerbare HA-Entität zuordnen und den verbundenen Wert prüfen.'],
@@ -2288,7 +2288,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.104'),
+      import('./vendor/pro-blocks.js?v=0.1.105'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

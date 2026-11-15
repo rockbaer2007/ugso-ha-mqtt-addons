@@ -103,7 +103,9 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
         pending.delete(reply.id);
         clearTimeout(request.timeout);
         if (reply.success) request.resolve(reply.result);
-        else request.reject(new Error(reply.error?.message || 'HA-Anfrage fehlgeschlagen.'));
+        else request.reject(Object.assign(new Error(reply.error?.message || 'HA-Anfrage fehlgeschlagen.'), {
+          translationDomain: reply.error?.translation_domain, translationKey: reply.error?.translation_key,
+        }));
       }
       if (reply.type !== 'event') return;
       const {event_type: type, data} = reply.event;
@@ -153,9 +155,17 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
             action === 'rest_command.reload' || !writeTargets.has(action)) {
           throw new Error('REST-Befehl nicht freigegeben: ' + action);
         }
-        const result = await send({type: 'call_service', domain: 'rest_command',
-          service: action.slice('rest_command.'.length), return_response: true,
-          ...(payload === undefined ? {} : {service_data: {payload}})});
+        let result;
+        try {
+          result = await send({type: 'call_service', domain: 'rest_command',
+            service: action.slice('rest_command.'.length), return_response: true,
+            ...(payload === undefined ? {} : {service_data: {payload}})});
+        } catch (error) {
+          if (error.translationDomain !== 'rest_command' ||
+              !['client_error', 'timeout'].includes(error.translationKey)) throw error;
+          return {status: null, data: null, headers: {}, error: error.translationKey === 'timeout'
+            ? 'HTTP-Zeitlimit überschritten.' : 'HTTP-Verbindungsfehler.'};
+        }
         const {status, content, headers = {}} = result?.response ?? {};
         const data = typeof content === 'string' ? content : JSON.stringify(content ?? null);
         const responseHeaders = Object.fromEntries(Object.entries(headers ?? {})
@@ -165,7 +175,8 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
             Buffer.byteLength(JSON.stringify(responseHeaders)) > 65536) {
           throw new Error('Ungültige oder zu große HTTP-Antwort.');
         }
-        return {status, data, headers: responseHeaders};
+        return {status, data, headers: responseHeaders,
+          error: status >= 200 && status < 300 ? null : 'HTTP ' + status};
       },
       subscribe(type) {
         if (!eventPattern.test(type) || type === 'state_changed' || !permittedEvents.has(type)) {

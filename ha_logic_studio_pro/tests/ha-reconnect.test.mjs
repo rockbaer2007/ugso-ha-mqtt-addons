@@ -64,22 +64,33 @@ test('HTTP requests only invoke allowed REST commands and expose status and JSON
       const result = {get_config: {time_zone: 'UTC'}, get_states: [],
         call_service: {response: {status: 200, content: {value: 42},
           headers: {'Content-Type': 'application/json', 'X-Test': 'probe'}}}}[command.type];
+      if (command.service === 'missing') Object.assign(result.response, {status: 404, content: 'Not found'});
+      if (command.service === 'offline') {
+        queueMicrotask(() => this.receive({type: 'result', id: command.id, success: false,
+          error: {translation_domain: 'rest_command', translation_key: 'client_error'}}));
+        return;
+      }
       queueMicrotask(() => this.receive(command.type === 'auth' ? {type: 'auth_ok'} :
         {type: 'result', id: command.id, success: true, result}));
     }
     close() {}
   }
   const ha = await connectHomeAssistant({token: 'mock', readable: [],
-    writable: ['rest_command.probe', 'rest_command.reload'], events: []},
+    writable: ['rest_command.probe', 'rest_command.reload', 'rest_command.missing', 'rest_command.offline'], events: []},
   () => {}, error => assert.fail(error.message), Socket);
   await assert.rejects(ha.httpGet('rest_command.other'), /nicht freigegeben/);
   await assert.rejects(ha.httpGet('rest_command.reload'), /nicht freigegeben/);
   const response = {status: 200, data: '{"value":42}',
-    headers: {'content-type': 'application/json', 'x-test': 'probe'}};
+    headers: {'content-type': 'application/json', 'x-test': 'probe'}, error: null};
   assert.deepEqual(await ha.httpGet('rest_command.probe'), response);
   assert.deepEqual(await ha.httpGet('rest_command.probe', '{"probe":42}'), response);
   assert.deepEqual(commands.filter(command => command.type === 'call_service').map(({id, ...command}) => command),
     [{type: 'call_service', domain: 'rest_command', service: 'probe', return_response: true},
       {type: 'call_service', domain: 'rest_command', service: 'probe', return_response: true,
         service_data: {payload: '{"probe":42}'}}]);
+  assert.deepEqual(await ha.httpGet('rest_command.missing'), {...response,
+    status: 404, data: 'Not found', error: 'HTTP 404'});
+  assert.deepEqual(await ha.httpGet('rest_command.offline'), {
+    status: null, data: null, headers: {}, error: 'HTTP-Verbindungsfehler.',
+  });
 });

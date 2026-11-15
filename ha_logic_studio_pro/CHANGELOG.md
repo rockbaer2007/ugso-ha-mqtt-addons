@@ -1,5 +1,9 @@
 # HA Logic Studio Pro
 
+## 0.1.105
+
+- Blocks JS importiert den ioBroker-HTTP-Fehlerblock. HTTP-Fehlerstatus bleiben verfügbar. Verbindungsfehler und Zeitüberschreitungen erreichen den Antwortzweig ohne Statuscode.
+
 ## 0.1.104
 
 - Blocks JS übernimmt ioBroker-HTTP-Antwortheader mit kleingeschriebenen Namen, etwa `content-type`.
