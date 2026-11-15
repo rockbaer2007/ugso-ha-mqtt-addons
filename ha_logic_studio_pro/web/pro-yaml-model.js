@@ -269,9 +269,72 @@ export function validateYaml(source, kind) {
   if (problem) throw problem;
   const data = doc.toJS({maxAliasCount: 30});
   const at = (message, path) => {
-    const range = (path.length ? doc.getIn(path, true) : doc.contents)?.range;
+    let location = path;
+    let node = doc.getIn(location, true);
+    while (!node?.range && location.length) {
+      location = location.slice(0, -1);
+      node = location.length ? doc.getIn(location, true) : doc.contents;
+    }
+    const range = node?.range ?? doc.contents?.range;
     throw Object.assign(new Error(message), {pos: range?.slice(0, 2)});
   };
+  const deferred = path => {
+    const node = doc.getIn(path, true);
+    return node?.constructor.name === 'Alias' || /^!(?:input|include(?:_dir_[a-z_]+)?)$/.test(node?.tag ?? '');
+  };
+  function validateItems(value, path, validateItem) {
+    if (value === null || deferred(path)) return;
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => validateItem(item, [...path, index]));
+    } else {
+      validateItem(value, path);
+    }
+  }
+  function validateCondition(value, path) {
+    if (deferred(path) || (typeof value === 'string' && /\{[{%]/.test(value))) return;
+    if (!object(value)) {
+      at('Eine Bedingung benötigt condition oder ein Template.', path);
+    }
+    const shorthand = conditionModes.find(mode => Object.hasOwn(value, mode));
+    if (shorthand) {
+      validateItems(value[shorthand], [...path, shorthand], validateCondition);
+    } else if (!provided(value.condition) && !deferred([...path, 'condition'])) {
+      at('Eine Bedingung benötigt condition oder ein Template.', path);
+    } else if (conditionModes.includes(value.condition)) {
+      validateItems(value.conditions, [...path, 'conditions'], validateCondition);
+    }
+  }
+  function validateAction(action, path) {
+    if (deferred(path)) return;
+    if (!object(action)) at('Eine Aktion muss eine YAML-Zuordnung sein.', path);
+    if (Object.hasOwn(action, 'choose')) {
+      validateItems(action.choose, [...path, 'choose'], (branch, branchPath) => {
+        if (deferred(branchPath)) return;
+        if (!object(branch) || !Object.hasOwn(branch, 'conditions') || !Object.hasOwn(branch, 'sequence')) {
+          at('Ein choose-Zweig benötigt conditions und sequence.', branchPath);
+        }
+        validateItems(branch.conditions, [...branchPath, 'conditions'], validateCondition);
+        validateItems(branch.sequence, [...branchPath, 'sequence'], validateAction);
+      });
+    }
+    for (const field of ['default', 'then', 'else', 'sequence']) {
+      if (Object.hasOwn(action, field)) validateItems(action[field], [...path, field], validateAction);
+    }
+    if (Object.hasOwn(action, 'parallel')) {
+      validateItems(action.parallel, [...path, 'parallel'], (branch, branchPath) =>
+        validateItems(branch, branchPath, validateAction));
+    }
+    if (Object.hasOwn(action, 'if')) {
+      if (!Object.hasOwn(action, 'then')) at('Eine if-Aktion benötigt then.', [...path, 'if']);
+      validateItems(action.if, [...path, 'if'], validateCondition);
+    }
+    if (Object.hasOwn(action, 'repeat') && !deferred([...path, 'repeat'])) {
+      if (!object(action.repeat) || !Object.hasOwn(action.repeat, 'sequence')) {
+        at('Eine repeat-Aktion benötigt sequence.', [...path, 'repeat']);
+      }
+      validateItems(action.repeat.sequence, [...path, 'repeat', 'sequence'], validateAction);
+    }
+  }
   let entries;
   if (kind === 'script') {
     if (!object(data)) throw new Error('Ein Skript oder eine Zuordnung benannter Skripte wird erwartet.');
@@ -303,11 +366,13 @@ export function validateYaml(source, kind) {
       continue;
     }
     const actions = kind === 'script' ? entry.sequence : entry.actions ?? entry.action;
-    if (!Array.isArray(actions) || !actions.length || !actions.every(object)) {
+    const actionPath = [...path, kind === 'script' ? 'sequence' : Object.hasOwn(entry, 'actions') ? 'actions' : 'action'];
+    if (!deferred(actionPath) && (!Array.isArray(actions) || !actions.length)) {
       at(kind === 'script' ? 'Ein Skript benötigt eine nicht leere sequence mit Aktionen.' :
         'Eine Automation benötigt eine nicht leere actions-Liste.',
-      actions === undefined ? path : [...path, kind === 'script' ? 'sequence' : entry.actions != null ? 'actions' : 'action']);
+      actions === undefined ? path : actionPath);
     }
+    validateItems(actions, actionPath, validateAction);
     if (kind === 'automation') {
       const triggers = entry.triggers ?? entry.trigger;
       if (!Array.isArray(triggers) || !triggers.length || !triggers.every(object)) {

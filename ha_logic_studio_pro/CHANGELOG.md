@@ -1,5 +1,9 @@
 # HA Logic Studio Pro
 
+## 0.1.99
+
+- HA-YAML prüft verschachtelte Verzweigungen und markiert Strukturfehler an der betroffenen Zeile.
+
 ## 0.1.98
 
 - Dauerhafte Runtime-Protokolle behalten pro Projekt höchstens 30 Tage, 100 Einträge und 64 KiB. Ältere Einträge werden auch bei gestoppten Projekten bereinigt.

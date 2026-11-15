@@ -1,6 +1,6 @@
 import {renderYamlPreview} from './yaml-preview.js?v=0.1.93';
 import {parseDocument} from './vendor/pro-yaml.js';
-import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.96';
+import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.99';
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
 import {mountCodeEditor} from './vendor/pro-code.js';
@@ -1512,7 +1512,7 @@ function renderYaml(panel, project) {
     const caption = {de: 'YAML aus Blocks A', en: 'YAML from Blocks A', fr: 'YAML issu de Blocks A'}[locale];
     row.append(element('span', caption + ' · ' + project.blocksSourceName));
   }
-  const report = (text, error) => recordProtocol(project, text, error);
+  const report = (text, error, line) => recordProtocol(project, text, error, line);
   const messages = {
     de: [id => `Unbekannte HA-Entität: ${id}`, field => `Ungültiges Zielfeld: ${field}`,
       (field, action) => `HA meldet „${field}“ nicht als Feld für ${action}.`, 'HA-Katalog nicht verfügbar. Nur YAML geprüft.'],
@@ -1553,7 +1553,7 @@ function renderYaml(panel, project) {
       if (includeCatalog && !catalog) report(unavailableCatalog);
       return true;
     } catch (error) {
-      report(error.message, true);
+      report(error.message, true, error.pos ? project.source.slice(0, error.pos[0]).split('\n').length : undefined);
       return false;
     }
   };
