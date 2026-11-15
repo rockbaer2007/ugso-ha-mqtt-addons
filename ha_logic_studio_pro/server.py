@@ -1,6 +1,6 @@
 """Local preview or Home Assistant ingress app."""
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -11,6 +11,7 @@ import re
 import subprocess
 import tempfile
 import threading
+from time import monotonic
 from collections import deque
 from urllib.parse import parse_qs, quote, urlsplit
 from urllib.error import HTTPError
@@ -22,6 +23,9 @@ ROOT = Path(__file__).resolve().parent
 VERSION = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))['version']
 MAX_BODY = 1_000_000
 TEST_RUN_SLOTS = threading.BoundedSemaphore(2)
+RUNTIME_LOG_MAX_AGE = timedelta(days=30)
+RUNTIME_LOG_MAX_BYTES = 64 * 1024
+RUNTIME_LOG_MAX_ENTRIES = 100
 OUTPUT_DOMAINS = {'switch', 'light', 'input_boolean', 'input_number', 'input_text'}
 BOOL_DOMAINS = {'switch', 'light', 'input_boolean', 'binary_sensor'}
 SAFE_ATTRIBUTES = {'brightness', 'temperature', 'current_temperature', 'target_temperature',
@@ -214,34 +218,84 @@ class ScriptRuntime:
     def log_directory(self, user):
         return self.log_root / hashlib.sha256(user.encode()).hexdigest()
 
+    @staticmethod
+    def retained_log(entries):
+        cutoff = datetime.now(timezone.utc) - RUNTIME_LOG_MAX_AGE
+        retained = deque(maxlen=RUNTIME_LOG_MAX_ENTRIES)
+        size = 2  # JSON array brackets
+        for entry in reversed(entries):
+            try:
+                timestamp = datetime.fromisoformat(entry['time'])
+                if timestamp.tzinfo is None or timestamp <= cutoff:
+                    continue
+                entry_size = len(json.dumps(entry, ensure_ascii=False).encode('utf-8'))
+            except (KeyError, TypeError, ValueError):
+                continue
+            size += entry_size + (2 if retained else 0)
+            if size > RUNTIME_LOG_MAX_BYTES or len(retained) >= RUNTIME_LOG_MAX_ENTRIES:
+                break
+            retained.appendleft(entry)
+        return retained
+
+    @staticmethod
+    def write_log(path, entries):
+        try:
+            if not entries:
+                path.unlink(missing_ok=True)
+                return
+            path.parent.mkdir(parents=True, exist_ok=True)
+            temp = path.with_suffix('.tmp')
+            temp.write_bytes(json.dumps(list(entries), ensure_ascii=False).encode('utf-8'))
+            temp.replace(path)
+        except OSError:
+            print('Runtime-Protokoll konnte nicht gespeichert werden.', flush=True)
+
     def read_log(self, path):
         try:
-            return deque(json.loads(path.read_text(encoding='utf-8')), maxlen=100)
+            entries = json.loads(path.read_text(encoding='utf-8'))
+            if not isinstance(entries, list):
+                raise ValueError('Runtime-Protokoll ist keine Liste.')
+            retained = self.retained_log(entries)
+            if list(retained) != entries:
+                self.write_log(path, retained)
+            return retained
         except FileNotFoundError:
-            return deque(maxlen=100)
+            return deque(maxlen=RUNTIME_LOG_MAX_ENTRIES)
         except (OSError, ValueError, TypeError):
             print('Runtime-Protokoll konnte nicht gelesen werden.', flush=True)
-            return deque(maxlen=100)
+            return deque(maxlen=RUNTIME_LOG_MAX_ENTRIES)
+
+    def prune_job(self, key, job):
+        retained = self.retained_log(job['messages'])
+        if retained != job['messages']:
+            job['messages'] = retained
+            if self.log_root is not None:
+                self.write_log(self.log_directory(key[0]) / (key[1] + '.json'), retained)
+        return list(retained)
+
+    def prune_logs(self):
+        with self.lock:
+            for key, job in self.jobs.items():
+                if job.get('record_log', True):
+                    self.prune_job(key, job)
+            if self.log_root is not None:
+                active = {self.log_directory(user) / (project + '.json') for user, project in self.jobs}
+                for path in self.log_root.glob('*/*.json'):
+                    if path not in active:
+                        self.read_log(path)
 
     def add_message(self, key, job, text, error, line=None):
         entry = {'text': text[:1000], 'error': error, 'time': datetime.now(timezone.utc).isoformat()}
         if error and type(line) is int and line > 0:
             entry['line'] = line
         job['messages'].append(entry)
+        job['messages'] = self.retained_log(job['messages'])
         if self.log_root is not None:
-            directory = self.log_directory(key[0])
-            path = directory / (key[1] + '.json')
-            temp = path.with_suffix('.tmp')
-            try:
-                directory.mkdir(parents=True, exist_ok=True)
-                temp.write_text(json.dumps(list(job['messages']), ensure_ascii=False), encoding='utf-8')
-                temp.replace(path)
-            except OSError:
-                print('Runtime-Protokoll konnte nicht gespeichert werden.', flush=True)
+            self.write_log(self.log_directory(key[0]) / (key[1] + '.json'), job['messages'])
 
     def saved_messages(self, key):
         if self.log_root is None:
-            return deque(maxlen=100)
+            return deque(maxlen=RUNTIME_LOG_MAX_ENTRIES)
         return self.read_log(self.log_directory(key[0]) / (key[1] + '.json'))
 
     def save_projects(self, store, user, payload):
@@ -276,7 +330,7 @@ class ScriptRuntime:
     def status(self, user, read_projects):
         with self.lock:
             projects = dict((read_projects()['tree'] or {}).get('projects', []))
-            result = {key[1]: {'state': job['state'], 'messages': list(job['messages'])}
+            result = {key[1]: {'state': job['state'], 'messages': self.prune_job(key, job)}
                       for key, job in self.jobs.items() if key[0] == user and key[1] in projects}
             if self.log_root is not None:
                 for path in self.log_directory(user).glob('*.json'):
@@ -367,10 +421,17 @@ class LogicServer(ThreadingHTTPServer):
         self.store = Store(data_dir)
         self.projects = ProjectStore(data_dir)
         self.runtime = ScriptRuntime(Path(data_dir) / 'runtime-logs')
+        self.next_log_prune = 0
         self.runtime.memory_root = Path(data_dir).resolve() / 'fbd-memory'
         self.supervisor, self.demo = supervisor, demo
         self.sources=SourceReader(config_root,Path(data_dir)/'ha-source-backups') if config_root else None
         self.runtime_options = Path(data_dir) / 'options.json'
+
+    def service_actions(self):
+        now = monotonic()
+        if now >= self.next_log_prune:
+            self.next_log_prune = now + 3600
+            self.runtime.prune_logs()
 
     def live_runtime_config(self):
         if not self.supervisor:

@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.98
+
+- Dauerhafte Runtime-Protokolle behalten pro Projekt höchstens 30 Tage, 100 Einträge und 64 KiB. Ältere Einträge werden auch bei gestoppten Projekten bereinigt.
+- Auf dem Testsystem PC (64) wurde ein 31 Tage alter Eintrag entfernt und die Testdatei von 84.240 auf 65.430 Byte gekürzt. Der neue Eintrag war nach dem App-Neustart weiterhin abrufbar.
+
 ## 0.1.97
 
 - Blocks JS kann ausgewählte Blöcke als JSON-Text austauschen und als separaten Entwurf öffnen.
