@@ -4,7 +4,7 @@ import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScrip
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
 import {mountCodeEditor} from './vendor/pro-code.js';
-import {mountYamlEditor} from './vendor/yaml-editor.js?v=0.1.91';
+import {mountYamlEditor} from './vendor/yaml-editor.js?v=0.1.92';
 import {checkHaYaml} from './yaml-ha-check.js?v=0.1.91';
 
 const $ = id => document.getElementById(id);
@@ -1493,6 +1493,23 @@ function renderYaml(panel, project) {
       refreshRuntimeControls();
     },
   });
+  const pickerLabels = {
+    de: ['Entität einfügen', 'HA-Aktion einfügen'],
+    en: ['Insert entity', 'Insert HA action'],
+    fr: ['Insérer une entité', 'Insérer une action HA'],
+  };
+  const [entityCaption, actionCaption] = pickerLabels[locale] ?? pickerLabels.en;
+  const validId = value => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value);
+  const insertId = openPicker => {
+    const {selected, insert} = yamlEditor.captureInsertion();
+    openPicker(validId(selected) ? selected : '', value => {
+      if (!controller.signal.aborted) insert(value);
+    });
+  };
+  const insertEntity = button(entityCaption, () => insertId((current, apply) =>
+    openBlockEntity({kind: 'entity_id'}, current, apply, validId)));
+  const insertAction = button(actionCaption, () => insertId(openRuleAction));
+  row.append(insertEntity, insertAction);
   panel.addEventListener('editor-close', () => {
     controller.abort();
     yamlEditor.destroy();
@@ -1586,6 +1603,7 @@ function renderYaml(panel, project) {
       controls[position].setAttribute('aria-pressed', String(position === index));
     });
     yamlExport.hidden = index === 2;
+    insertEntity.hidden = insertAction.hidden = index !== 1;
     if (index === 0 && !disposeFlow) disposeFlow = renderYamlPreview(flow, project.source, project.kind,
       {title, option, default: fallback, unavailable, zoomIn, zoomOut, fit, choose, options});
     if (index === 2) {

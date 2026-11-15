@@ -41,6 +41,23 @@ export function mountYamlEditor(parent, {source, label, onChange, validate}) {
   return {
     check: () => forceLinting(view),
     destroy: () => view.destroy(),
+    captureInsertion() {
+      const {doc, selection} = view.state;
+      const {from, to} = selection.main;
+      return {
+        selected: doc.sliceString(from, to),
+        insert(value) {
+          if (view.state.doc !== doc) return;
+          view.dispatch({
+            changes: {from, to, insert: value},
+            selection: {anchor: from + value.length},
+            scrollIntoView: true,
+          });
+          // The modal closes after applying the selection.
+          queueMicrotask(() => view.focus());
+        },
+      };
+    },
     replace(source) {
       view.dispatch({changes: {from: 0, to: view.state.doc.length, insert: source}});
     },
