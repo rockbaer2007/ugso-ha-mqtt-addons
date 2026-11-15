@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.110
+
+- Blocks JS kennzeichnet ioBroker-HTTP-Blöcke mit Antworttyp `arraybuffer` und zeigt am Platzhalter sowie in der Importübersicht einen Hinweis. Für unveränderte Bytes kann ein Endpunkt Base64 in JSON liefern. Die Antwortverarbeitung muss daran angepasst werden.
+- Der Play-Kontrolltest auf dem Testsystem PC (64) prüfte zwei Vier-Byte-Antworten. Home Assistant lieferte beim gültigen UTF-8-Fall drei Textzeichen ohne `byteLength`. Der zweite Fall löste beim Dekodieren einen Fehler aus.
+
 ## 0.1.109
 
 - Blocks JS leitet ungültige JSON-Antworten an den Fehlerzweig weiter. Meldet Home Assistant einen Dekodierfehler, ist der HTTP-Status `null`. Erkennt Blocks JS den Fehler beim Lesen des Antworttexts, bleibt der empfangene HTTP-Status erhalten.

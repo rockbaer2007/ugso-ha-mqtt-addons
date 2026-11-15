@@ -856,8 +856,15 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'JSON response type: response data is already available as a JSON value. Read fields directly.',
       fr: 'Type de réponse JSON : les données sont disponibles sous forme de valeur JSON. Les champs peuvent être lus directement.',
     };
-    const hint = [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
-      fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
+    const binaryHttp = placeholder && metadata?.responseType === 'arraybuffer';
+    const binaryHint = {
+      de: 'Antworttyp arraybuffer: HA-REST-Befehle liefern Text oder JSON. Originalbytes und byteLength stehen hier nicht zur Verfügung. Verwende einen Endpunkt, der die Bytes als Base64 in JSON liefert, und passe die Antwortverarbeitung an.',
+      en: 'Response type arraybuffer: HA REST commands return text or JSON. The original bytes and byteLength are unavailable here. Use an endpoint that returns the bytes as Base64 in JSON and adapt the response handling.',
+      fr: 'Type de réponse arraybuffer : les commandes REST HA renvoient du texte ou du JSON. Les octets d’origine et byteLength sont indisponibles ici. Utilisez un point de terminaison qui renvoie les octets en Base64 dans du JSON et adaptez le traitement de la réponse.',
+    };
+    const hint = binaryHttp ? binaryHint[locale] ?? binaryHint.en :
+      [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
+        fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
     if ((placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
