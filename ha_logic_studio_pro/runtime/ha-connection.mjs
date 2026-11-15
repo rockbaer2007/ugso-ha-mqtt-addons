@@ -150,16 +150,24 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
           include_start_time_state: false, significant_changes_only: false, no_attributes: true});
         return historyRows(result?.[entity] ?? [], range);
       },
-      async httpGet(action, payload) {
+      async httpGet(action, payload, urlSuffix) {
         if (typeof action !== 'string' || !/^rest_command\.[a-z0-9_]+$/.test(action) ||
             action === 'rest_command.reload' || !writeTargets.has(action)) {
           throw new Error('REST-Befehl nicht freigegeben: ' + action);
         }
+        if (urlSuffix !== undefined && (typeof urlSuffix !== 'string' || Buffer.byteLength(urlSuffix) > 2048 ||
+            /[\u0000-\u001f\u007f]/.test(urlSuffix))) {
+          throw new Error('Ungültiger variabler HTTP-URL-Teil.');
+        }
+        const serviceData = {
+          ...(payload === undefined ? {} : {payload}),
+          ...(urlSuffix === undefined ? {} : {url_suffix: urlSuffix}),
+        };
         let result;
         try {
           result = await send({type: 'call_service', domain: 'rest_command',
             service: action.slice('rest_command.'.length), return_response: true,
-            ...(payload === undefined ? {} : {service_data: {payload}})});
+            ...(Object.keys(serviceData).length ? {service_data: serviceData} : {})});
         } catch (error) {
           if (error.translationDomain !== 'rest_command' ||
               !['client_error', 'timeout'].includes(error.translationKey)) throw error;
@@ -262,9 +270,9 @@ export async function connectHomeAssistant(config, dispatch, fail, Socket = WebS
     },
     call(...args) { current?.call(...args); },
     sendto(...args) { current?.sendto(...args); },
-    async httpGet(action, payload) {
+    async httpGet(action, payload, urlSuffix) {
       if (!current) throw new Error('HA-Verbindung getrennt.');
-      return current.httpGet(action, payload);
+      return current.httpGet(action, payload, urlSuffix);
     },
     async history(...args) {
       const connection = current;

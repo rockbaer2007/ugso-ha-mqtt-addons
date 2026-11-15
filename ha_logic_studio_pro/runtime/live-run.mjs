@@ -127,10 +127,10 @@ try {
         .finally(() => { historyRequests--; });
     } else if (operation === 'httpGet' || operation === 'httpPost') {
       if (httpRequests >= 4) throw new Error('Maximal vier gleichzeitige HTTP-Abfragen.');
-      const [id, action, payload] = args;
+      const [id, action, payload, urlSuffix] = args;
       if (operation === 'httpPost' && typeof payload !== 'string') throw new Error('HTTP POST benötigt einen JSON-Text.');
       httpRequests++;
-      ha.httpGet(action, operation === 'httpPost' ? payload : undefined)
+      ha.httpGet(action, operation === 'httpPost' ? payload : undefined, urlSuffix ?? undefined)
         .then(response => dispatch({type: 'httpGet', id, response}), fail)
         .finally(() => { httpRequests--; });
     } else if (operation === 'event') ha.subscribe(args[0]);
@@ -215,9 +215,9 @@ try {
           call('history', id, entity, Number(start), Number(end), mode, step, count);
           historyCallbacks.set(id, callback);
         },
-        httpGet: (action, callback) => requestHttp('httpGet', action, callback),
-        httpPost: (action, payload, callback) => requestHttp('httpPost', action, callback,
-          JSON.stringify(typeof payload === 'string' ? JSON.parse(payload) : payload)),
+        httpGet: (action, callback, urlSuffix) => requestHttp('httpGet', action, callback, null, urlSuffix),
+        httpPost: (action, payload, callback, urlSuffix) => requestHttp('httpPost', action, callback,
+          JSON.stringify(typeof payload === 'string' ? JSON.parse(payload) : payload), urlSuffix),
         schedule: (pattern, callback) => register('schedule', pattern, null, callback),
         namedSchedule(name, cron, callback) {
           if (typeof name !== 'string' || !name.trim() || name.length > 128 || typeof callback !== 'function') throw new Error('Ungültiger benannter Zeitplan.');

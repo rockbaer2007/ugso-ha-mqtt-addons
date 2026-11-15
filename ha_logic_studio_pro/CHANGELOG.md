@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.107
+
+- Blocks JS übernimmt berechnete HTTP-URLs aus ioBroker, wenn ein fester HTTP(S)-Anfang mit einem variablen Teil verbunden ist. Der freigegebene HA-REST-Befehl erhält den variablen Teil als `url_suffix`.
+- Im GET-Live-Test per Play auf dem Testsystem PC (64) empfing der Endpunkt `garten & 42` als einzelnen Query-Wert und antwortete mit HTTP 200.
+
 ## 0.1.106
 
 - Blocks JS übernimmt beim ioBroker-POST-Import auch frei eingegebene Content-Type-Werte. Der Block zeigt den importierten Wert und verweist für zusätzliche Request-Header auf den HA-REST-Befehl.

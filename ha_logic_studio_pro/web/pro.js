@@ -819,8 +819,8 @@ function reviewIoBrokerImport(name, workspace) {
   };
   const replacements = {
     exec: 'Shell-Befehl durch eine konfigurierte HA-Aktion ersetzen.',
-    http_get: 'HTTP-Aufruf als HA-REST-Befehl konfigurieren und Antwortverarbeitung prüfen.',
-    http_post: 'HTTP-Aufruf als HA-REST-Befehl konfigurieren und Antwortverarbeitung prüfen.',
+    http_get: 'Für eine berechnete HTTP-URL zuerst einen festen HTTP(S)-Anfang mit Host und Pfad an „Text erstellen“ anschließen. Dann den HA-REST-Befehl konfigurieren.',
+    http_post: 'Für eine berechnete HTTP-URL zuerst einen festen HTTP(S)-Anfang mit Host und Pfad an „Text erstellen“ anschließen. Dann den HA-REST-Befehl konfigurieren.',
     get_value_async: 'HA-Zustand im Block „Zustand lesen“ abfragen und den bisherigen Callback als Folgeblöcke einfügen.',
   };
   const allowedDomains = {
@@ -845,8 +845,14 @@ function reviewIoBrokerImport(name, workspace) {
       placeholder && Object.hasOwn(replacements, type) ? replacements[type] :
       placeholder ? 'Platzhalter durch einen passenden Blocks-JS-Block ersetzen und Anschlüsse prüfen.' :
       notes[block.type]?.[1] ?? (targets.length ? 'Passende HA-Entität zuordnen.' : 'Block übernommen.');
-    const hint = translatePro(instruction, locale);
-    if (placeholder && type === 'exec') {
+    const dynamicHttp = metadata?.dynamicUrl && ['iob_http_get', 'iob_http_post'].includes(block.type);
+    const suffixHint = {
+      de: 'Im freigegebenen HA-REST-Befehl den Host und den festen URL-Teil fest konfigurieren. Den variablen Teil in der URL als {{ url_suffix | urlencode }} einfügen.',
+      en: 'Configure a fixed host and URL prefix in the approved HA REST command. Insert the variable part into its URL as {{ url_suffix | urlencode }}.',
+      fr: 'Configurez un hôte et un préfixe fixes dans la commande REST HA autorisée. Insérez la partie variable dans son URL avec {{ url_suffix | urlencode }}.',
+    };
+    const hint = translatePro(instruction, locale) + (dynamicHttp ? ' ' + (suffixHint[locale] ?? suffixHint.en) : '');
+    if ((placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');
