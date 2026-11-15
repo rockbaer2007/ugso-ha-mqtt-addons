@@ -4,7 +4,8 @@ import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScrip
 import {connectLanguage, locales, translate} from './i18n.js';
 import {translatePro} from './pro-locales.js';
 import {mountCodeEditor} from './vendor/pro-code.js';
-import {mountYamlEditor} from './vendor/yaml-editor.js?v=0.1.90-1';
+import {mountYamlEditor} from './vendor/yaml-editor.js?v=0.1.91';
+import {checkHaYaml} from './yaml-ha-check.js?v=0.1.91';
 
 const $ = id => document.getElementById(id);
 const editor = $('editor');
@@ -1410,12 +1411,44 @@ function renderYaml(panel, project) {
   const label = project.kind === 'script' ? 'HA-Skript' : 'HA-Automation';
   row.append(element('strong', label));
   const report = (text, error) => recordProtocol(project, text, error);
-  const check = () => {
+  const messages = {
+    de: [id => `Unbekannte HA-Entität: ${id}`, field => `Ungültiges Zielfeld: ${field}`,
+      (field, action) => `HA meldet „${field}“ nicht als Feld für ${action}.`, 'HA-Katalog nicht verfügbar. Nur YAML geprüft.'],
+    en: [id => `Unknown HA entity: ${id}`, field => `Invalid target field: ${field}`,
+      (field, action) => `HA does not list “${field}” as a field for ${action}.`, 'HA catalog unavailable. Only YAML was checked.'],
+    fr: [id => `Entité HA inconnue : ${id}`, field => `Champ cible invalide : ${field}`,
+      (field, action) => `HA ne répertorie pas « ${field} » pour ${action}.`, 'Catalogue HA indisponible. Seul le YAML a été vérifié.'],
+  };
+  const [entity, target, field, unavailableCatalog] = messages[locale] ?? messages.en;
+  const controller = new AbortController();
+  let catalog;
+  const catalogRequest = fetch('./api/yaml-catalog', {signal: controller.signal})
+    .then(response => response.ok ? response.json() : null)
+    .then(result => {
+      if (!controller.signal.aborted && Array.isArray(result?.entities) && result.actions) {
+        catalog = result;
+        yamlEditor.check();
+      }
+    })
+    .catch(() => {});
+  const diagnose = source => {
+    validateYaml(source, project.kind);
+    return catalog ? checkHaYaml(source, project.kind, catalog, {entity, target, field}) : [];
+  };
+  const check = (includeCatalog = false) => {
     yamlEditor.check();
     try {
       const count = validateYaml(project.source, project.kind);
+      const issues = includeCatalog ? diagnose(project.source) : [];
+      if (issues.length) {
+        for (const {pos, message} of issues) {
+          report(message, true, project.source.slice(0, pos[0]).split('\n').length);
+        }
+        return false;
+      }
       setProjectProblem(project, false);
       report(`YAML-Syntax und Grundstruktur gültig (${count} Eintrag/Einträge).`);
+      if (includeCatalog && !catalog) report(unavailableCatalog);
       return true;
     } catch (error) {
       report(error.message, true);
@@ -1442,7 +1475,10 @@ function renderYaml(panel, project) {
   views.className = 'yaml-view-switch';
   views.setAttribute('role', 'group');
   views.setAttribute('aria-label', title);
-  row.append(views, button('Prüfen', check), yamlExport);
+  row.append(views, button('Prüfen', async () => {
+    await catalogRequest;
+    if (!controller.signal.aborted) check(true);
+  }), yamlExport);
   const flow = element('div');
   panel.append(flow);
   const yaml = element('div');
@@ -1451,13 +1487,16 @@ function renderYaml(panel, project) {
   const yamlEditor = mountYamlEditor(yaml, {
     source: project.source,
     label: label + ' YAML',
-    validate: source => validateYaml(source, project.kind),
+    validate: diagnose,
     onChange(source) {
       project.source = source;
       refreshRuntimeControls();
     },
   });
-  panel.addEventListener('editor-close', yamlEditor.destroy, {once: true});
+  panel.addEventListener('editor-close', () => {
+    controller.abort();
+    yamlEditor.destroy();
+  }, {once: true});
   const json = element('section');
   const jsonSource = element('textarea');
   jsonSource.className = 'yaml-source';

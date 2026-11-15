@@ -24,8 +24,9 @@ export function mountYamlEditor(parent, {source, label, onChange, validate}) {
       lintGutter(),
       linter(({state}) => {
         try {
-          validate(state.doc.toString());
-          return [];
+          return (validate(state.doc.toString()) ?? []).map(({pos, message}) => ({
+            from: pos[0], to: pos[1], severity: 'error', message,
+          }));
         } catch (error) {
           const from = Math.max(0, Math.min(error.pos?.[0] ?? 0, state.doc.length));
           const to = Math.max(from, Math.min(error.pos?.[1] ?? from, state.doc.length));

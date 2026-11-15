@@ -431,17 +431,34 @@ class LogicServer(ThreadingHTTPServer):
         return sorted(filter(None, (public_entity(item) for item in self.entity_states())), key=lambda x: (x['name'].casefold(), x['entity_id']))
 
     def action_names(self):
+        return sorted(self.action_fields())
+
+    def action_fields(self):
         if not self.supervisor or not os.environ.get('SUPERVISOR_TOKEN'):
-            return []
+            return {}
         request = Request('http://supervisor/core/api/services', headers={
             'Authorization': 'Bearer ' + os.environ['SUPERVISOR_TOKEN'], 'Accept': 'application/json'})
         with build_opener(NoRedirect).open(request, timeout=12) as response:
             body = response.read(10_000_001)
         if len(body) > 10_000_000:
             raise ValueError('Aktionsliste zu groß.')
-        return sorted({f'{item["domain"]}.{service}'
-                       for item in json.loads(body) for service in item['services']
-                       if re.fullmatch(r'[a-z0-9_]+', item['domain']) and re.fullmatch(r'[a-z0-9_]+', service)})
+        result = {}
+        for item in json.loads(body):
+            if not re.fullmatch(r'[a-z0-9_]+', item['domain']):
+                continue
+            for service, description in item['services'].items():
+                if not re.fullmatch(r'[a-z0-9_]+', service):
+                    continue
+                fields = set()
+                pending = [description.get('fields', {})]
+                while pending:
+                    for name, field in pending.pop().items():
+                        if isinstance(field, dict) and isinstance(field.get('fields'), dict):
+                            pending.append(field['fields'])
+                        else:
+                            fields.add(name)
+                result[f'{item["domain"]}.{service}'] = sorted(fields) if fields else None
+        return result
 
     def callmebot_catalogs(self):
         sources = {'ugso_callmebot': 'whatsapp', 'ugso_callmebot_signal': 'signal'}
@@ -508,6 +525,9 @@ class Handler(SimpleHTTPRequestHandler):
                 self.reply(200, self.server.callmebot_catalogs() if self.server.supervisor or self.server.demo else {})
             elif route.path == '/api/rules-actions':
                 self.reply(200, {'items': self.server.action_names()})
+            elif route.path == '/api/yaml-catalog':
+                self.reply(200, {'entities': [item['entity_id'] for item in self.server.entities()],
+                                 'actions': self.server.action_fields()})
             elif route.path == '/api/entities':
                 query = parse_qs(route.query)
                 search = query.get('q', [''])[0].casefold()[:200]
