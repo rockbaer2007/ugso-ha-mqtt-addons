@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## HA Logic Studio Pro
+
+- Hauptroadmap und Unterroadmaps führen nur offene Aufgaben. Erledigte Einträge entfernen und veröffentlichte Änderungen im Changelog dokumentieren.
+
 ## Blocks for HA
 
 - Match ioBroker's Blockly appearance, block layout, labels and native gear builders as closely as possible so switching users recognize the controls.

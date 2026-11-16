@@ -1,4 +1,5 @@
 import {renderYamlPreview} from './yaml-preview.js?v=0.1.93';
+import {categoryEntities} from './iobroker-category.js';
 import {parseDocument} from './vendor/pro-yaml.js';
 import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.100';
 import {connectLanguage, locales, translate} from './i18n.js';
@@ -894,6 +895,12 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'For files on the HA filesystem, configure Folder Watcher for an allowed folder with the matching file pattern. In a Home Assistant automation, use a state trigger for the event entity, check the event_type attribute as needed, and read the filename from trigger.to_state.attributes.file. The ioBroker storage object and file contents in the event require a separate integration.',
       fr: 'Pour les fichiers du système HA, configurez Folder Watcher sur un dossier autorisé avec le motif de fichiers voulu. Dans une automatisation Home Assistant, utilisez un déclencheur d’état sur l’entité event, vérifiez l’attribut event_type si nécessaire et lisez le nom dans trigger.to_state.attributes.file. L’objet de stockage ioBroker et le contenu du fichier dans l’événement nécessitent une intégration dédiée.',
     };
+    const categoryTrigger = block.type === 'iob_category_trigger';
+    const categoryLabels = {
+      de: ['HA-Bereich oder Label zuordnen', 'Bereich', 'Label', 'HA-Katalog nicht verfügbar.', 'Die aktuellen Entitäten werden gespeichert. Bei Änderungen in HA die Kategorie erneut zuordnen. Die Runtime benötigt Lesefreigaben für die Entitäten.', 'Für diese ioBroker-Auslösebedingung gibt es keine direkte HA-Zuordnung. Prüfe insbesondere den ACK-Filter.'],
+      en: ['Map to an HA area or label', 'Area', 'Label', 'HA catalog unavailable.', 'The current entities are saved. Remap the category after membership changes in HA. The runtime requires read permissions for the entities.', 'This ioBroker trigger condition has no direct HA mapping. Check the ACK filter.'],
+      fr: ['Associer une zone ou une étiquette HA', 'Zone', 'Étiquette', 'Catalogue HA indisponible.', 'Les entités actuelles sont enregistrées. Refaites l’association si elles changent dans HA. La runtime a besoin des autorisations de lecture.', 'Cette condition de déclenchement ioBroker n’a pas de correspondance directe dans HA. Vérifiez le filtre ACK.'],
+    }[locale];
     const logTrigger = block.type === 'ha_js_system_log' || (placeholder && type === 'onLog');
     const logData = block.type === 'ha_js_system_log_data' || (placeholder && type === 'onLog_data');
     const logHint = logTrigger ? {
@@ -905,7 +912,8 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'The HA event provides the message text and the mapped ioBroker log level.',
       fr: 'L’événement HA fournit le texte du message et le niveau de journalisation mappé au format ioBroker.',
     };
-    const hint = logTrigger || logData ? logHint[locale] ?? logHint.en :
+    const hint = categoryTrigger ? categoryLabels[4] : placeholder && type === 'onEnumMembers' ? categoryLabels[5] :
+      logTrigger || logData ? logHint[locale] ?? logHint.en :
       fileEvent ? fileEventHint[locale] ?? fileEventHint.en :
       legacyRequest ? legacyRequestHint[locale] ?? legacyRequestHint.en :
       fileRead ? fileReadHint[locale] ?? fileReadHint.en :
@@ -918,7 +926,33 @@ function reviewIoBrokerImport(name, workspace) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');
-    row.append(element('strong', path + ' · ' + type), element('p', hint));
+    row.append(element('strong', path + ' · ' + (categoryTrigger ? 'onEnumMembers' : type)), element('p', hint));
+    if (categoryTrigger) {
+      const select = element('select');
+      select.setAttribute('aria-label', categoryLabels[0]);
+      select.add(new Option(categoryLabels[0], ''));
+      const members = element('p');
+      const catalog = new Map();
+      select.onchange = () => {
+        metadata.target = catalog.get(select.value);
+        members.textContent = metadata.target?.entities.join(', ') ?? '';
+      };
+      for (const [kind, caption] of [['area', categoryLabels[1]], ['label', categoryLabels[2]]]) {
+        loadRuleTargets(kind, AbortSignal.timeout(5000)).then(items => {
+          const group = element('optgroup');
+          group.label = caption;
+          for (const item of items) {
+            const entities = categoryEntities(item.entities);
+            if (!entities.length) continue;
+            const key = kind + ':' + item.entity_id;
+            catalog.set(key, {kind, id: item.entity_id, name: item.name, entities});
+            group.append(new Option(item.name + ' (' + entities.length + ')', key));
+          }
+          if (group.children.length) select.append(group);
+        }).catch(() => row.append(element('p', caption + ' · ' + categoryLabels[3])));
+      }
+      row.append(element('code', metadata.category), ' → ', select, members);
+    }
     if (block.type === 'ha_js_trigger_value') row.append(element('code', fields.PART ?? ''));
     for (const [source, field] of targets) {
       if (typeof source !== 'string' || !source) continue;
@@ -2356,7 +2390,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.116'),
+      import('./vendor/pro-blocks.js?v=0.1.117'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

@@ -1,0 +1,28 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+<block type="onEnumMembers" id="enum" x="10" y="10">
+<field name="OID">enum.rooms.ugso_117_probe</field>
+<field name="CONDITION">ne</field>
+<field name="ACK_CONDITION">
+</field>
+<statement name="STATEMENT">
+<block type="debug" id="id_log">
+<field name="Severity">debug</field>
+<value name="TEXT">
+<block type="on_source" id="entity">
+<field name="ATTR">id</field>
+</block>
+</value>
+<next>
+<block type="debug" id="value_log">
+<field name="Severity">debug</field>
+<value name="TEXT">
+<block type="on_source" id="current">
+<field name="ATTR">state.val</field>
+</block>
+</value>
+</block>
+</next>
+</block>
+</statement>
+</block>
+</xml>
