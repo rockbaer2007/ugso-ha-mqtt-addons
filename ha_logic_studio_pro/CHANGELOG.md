@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.116
+
+- Blocks JS übernimmt den ioBroker-Logauslöser `onLog` für Warnungen und Fehler sowie `onLog_data` für Meldungstext und Logstufe. Der Importhinweis nennt die HA-Einstellung `system_log.fire_event` und die App-Freigabe unter `runtime_events`.
+- Auf dem Testsystem PC (64) mit einem echten ioBroker-Blockly-Export geprüft. Beim manuell ausgelösten `system_log_event` mit `WARNING` protokollierte das laufende Skript die Meldung und `warn`. Das Kontrollereignis mit `ERROR` erzeugte keine Ausgabe.
+
 ## 0.1.115
 
 - Blocks JS zeigt beim importierten ioBroker-Dateiauslöser `onFile` und beim Ereignisdatenblock `onFile_data` einen Hinweis zur Migration auf Home Assistant Folder Watcher.

@@ -810,6 +810,8 @@ function reviewIoBrokerImport(name, workspace) {
     iob_schedule_entity: ['schedule_by_id', 'Einen HA-Datums- und Uhrzeithelfer (input_datetime) zuordnen.'],
     iob_get_dynamic_value: ['get_value_var', 'Alle berechneten ioBroker-IDs im Feld ID-Zuordnung (JSON) mit HA-Entitäten verknüpfen.'],
     ha_js_trigger_value: ['on_source', 'Der Wert kommt aus dem umgebenden Trigger. Einheit und Datentyp des HA-Zustands prüfen.'],
+    ha_js_system_log: ['onLog', ''],
+    ha_js_system_log_data: ['onLog_data', ''],
     ha_js_script_message_request: ['sendto_otherscript', 'Empfangsadresse und Antwortverarbeitung prüfen. Ohne Antwort meldet der Block einen Timeout.'],
     ha_js_script_message_dynamic: ['sendto_otherscript', 'Der Zielausdruck muss die Empfangsadresse des Studio-Skripts liefern.'],
     ha_js_script_message_receive: ['onMessage', 'Empfangsadresse eintragen, die der Sender verwendet.'],
@@ -892,7 +894,19 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'For files on the HA filesystem, configure Folder Watcher for an allowed folder with the matching file pattern. In a Home Assistant automation, use a state trigger for the event entity, check the event_type attribute as needed, and read the filename from trigger.to_state.attributes.file. The ioBroker storage object and file contents in the event require a separate integration.',
       fr: 'Pour les fichiers du système HA, configurez Folder Watcher sur un dossier autorisé avec le motif de fichiers voulu. Dans une automatisation Home Assistant, utilisez un déclencheur d’état sur l’entité event, vérifiez l’attribut event_type si nécessaire et lisez le nom dans trigger.to_state.attributes.file. L’objet de stockage ioBroker et le contenu du fichier dans l’événement nécessitent une intégration dédiée.',
     };
-    const hint = fileEvent ? fileEventHint[locale] ?? fileEventHint.en :
+    const logTrigger = block.type === 'ha_js_system_log' || (placeholder && type === 'onLog');
+    const logData = block.type === 'ha_js_system_log_data' || (placeholder && type === 'onLog_data');
+    const logHint = logTrigger ? {
+      de: 'In Home Assistant system_log.fire_event aktivieren und system_log_event in der App unter runtime_events freigeben. Der Import unterstützt die Filter Warnung und Fehler.',
+      en: 'Enable system_log.fire_event in Home Assistant and allow system_log_event under runtime_events in the app. The import supports the warning and error filters.',
+      fr: 'Activez system_log.fire_event dans Home Assistant et autorisez system_log_event dans runtime_events dans l’application. L’importation prend en charge les filtres avertissement et erreur.',
+    } : {
+      de: 'Aus dem HA-Ereignis können der Meldungstext und die ioBroker-Logstufe gelesen werden.',
+      en: 'The HA event provides the message text and the mapped ioBroker log level.',
+      fr: 'L’événement HA fournit le texte du message et le niveau de journalisation mappé au format ioBroker.',
+    };
+    const hint = logTrigger || logData ? logHint[locale] ?? logHint.en :
+      fileEvent ? fileEventHint[locale] ?? fileEventHint.en :
       legacyRequest ? legacyRequestHint[locale] ?? legacyRequestHint.en :
       fileRead ? fileReadHint[locale] ?? fileReadHint.en :
       fileWrite ? fileWriteHint[locale] ?? fileWriteHint.en :
@@ -900,7 +914,7 @@ function reviewIoBrokerImport(name, workspace) {
       binaryHttp ? binaryHint[locale] ?? binaryHint.en :
       [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
         fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
-    if (fileEvent || legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
+    if (logTrigger || (logData && placeholder) || fileEvent || legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');
@@ -2342,7 +2356,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.105'),
+      import('./vendor/pro-blocks.js?v=0.1.116'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

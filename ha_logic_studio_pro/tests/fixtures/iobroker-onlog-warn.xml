@@ -1,0 +1,25 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+  <block type="onLog" id="trigger" x="10" y="10">
+    <field name="Severity">warn</field>
+    <statement name="STATEMENT">
+      <block type="debug" id="log1">
+        <field name="Severity">debug</field>
+        <value name="TEXT">
+          <block type="onLog_data" id="msg">
+            <field name="ATTR">data.message</field>
+          </block>
+        </value>
+        <next>
+          <block type="debug" id="log2">
+            <field name="Severity">debug</field>
+            <value name="TEXT">
+              <block type="onLog_data" id="severity">
+                <field name="ATTR">data.severity</field>
+              </block>
+            </value>
+          </block>
+        </next>
+      </block>
+    </statement>
+  </block>
+</xml>

@@ -9,6 +9,7 @@
 ## Blocks JS
 
 - [ ] Neue Importfälle aufnehmen, sobald ein echter Export mit einem noch fehlenden oder unvollständig übernommenen Block vorliegt.
+- [x] In 0.1.116 wurden `onLog` und die Datenblöcke für Meldung und Logstufe mit einem echten Export auf dem Testsystem PC (64) geprüft. Beim HA-Kontrolltest gab `WARNING` die Meldung und `warn` aus. `ERROR` erzeugte keine Ausgabe.
 - [x] In 0.1.115 wurde der Hinweis am Dateiänderungs-Trigger `onFile` mit einem echten Export auf dem Testsystem PC (64) geprüft. Dateimuster und Dateinamenblock blieben erhalten.
 - [x] In 0.1.114 wurde der Hinweis am alten GET-Block `request` auf dem Testsystem PC (64) mit einem echten Export geprüft. Der Antwortzweig mit `result` blieb erhalten.
 - [x] In 0.1.113 wurde der Hinweis für „Datei lesen“ mit einem echten ioBroker-Blockly-Export auf dem Testsystem PC (64) geprüft. Die native HA-Aktion lieferte `data.probe = 42`.
