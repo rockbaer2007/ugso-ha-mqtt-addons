@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.112
+
+- Blocks JS erhält beim ioBroker-Import von „Datei schreiben“ (`file_write`) die Anschlüsse für Speicherobjekt, Dateiname und Inhalt. Der Hinweis beschreibt das Anhängen von Text über `notify.send_message` an eine fest konfigurierte Datei und den Einsatz eines eigenen Dienstes für dynamische Dateinamen, Binärdaten oder das Ersetzen einer Datei.
+- Auf dem Testsystem PC (64) mit einem echten ioBroker-Blockly-Export geprüft. Der Dateiname `ugso-112-probe.txt` und der Inhalt `UGSO-Dateitest 42` blieben erhalten. Der Hinweis erschien in der Importübersicht und direkt am Block.
+
 ## 0.1.111
 
 - Blocks JS erklärt am importierten ioBroker-Block für temporäre HTTP-Antwortdateien, wie sich ein eigener HA-Download vom Speichern einer bereits empfangenen Antwort unterscheidet.

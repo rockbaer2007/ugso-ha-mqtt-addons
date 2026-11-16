@@ -868,11 +868,18 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'This ioBroker block saves the response body already received and returns a temporary file path. For a standalone GET download, use downloader.download_file in Home Assistant with a URL and filename. To save this exact response, pass its body to a configured service and adapt the blocks that use the file path.',
       fr: 'Ce bloc ioBroker enregistre le contenu de la réponse déjà reçue et renvoie un chemin de fichier temporaire. Pour un téléchargement GET indépendant, utilisez downloader.download_file dans Home Assistant avec une URL et un nom de fichier. Pour enregistrer cette réponse précise, transmettez son contenu à un service configuré à cette fin et adaptez les blocs qui utilisent le chemin du fichier.',
     };
-    const hint = responseFile ? responseFileHint[locale] ?? responseFileHint.en :
+    const fileWrite = placeholder && type === 'file_write';
+    const fileWriteHint = {
+      de: 'Für ein Textprotokoll richte in Home Assistant die Datei-Integration mit einem festen Zielpfad ein. Verwende notify.send_message mit der Datei-Benachrichtigungsentität als Ziel und DATA als Nachricht. Die Aktion hängt Zeilen an. Wenn das Skript Dateien ersetzen, Binärdaten schreiben oder den Dateinamen zur Laufzeit wählen muss, verwende einen dafür eingerichteten Dienst.',
+      en: 'For a text log, configure the Home Assistant File integration with a fixed destination path. Use notify.send_message with the file notification entity as the target and DATA as the message. The action appends lines. If the script needs to replace files, write binary data, or select the filename at runtime, use a service configured for that purpose.',
+      fr: 'Pour un journal texte, configurez l’intégration Fichier de Home Assistant avec un chemin de destination fixe. Utilisez notify.send_message avec l’entité de notification de fichier comme cible et DATA comme message. L’action ajoute des lignes. Pour remplacer des fichiers, écrire des données binaires ou choisir le nom de fichier à l’exécution, utilisez un service configuré à cette fin.',
+    };
+    const hint = fileWrite ? fileWriteHint[locale] ?? fileWriteHint.en :
+      responseFile ? responseFileHint[locale] ?? responseFileHint.en :
       binaryHttp ? binaryHint[locale] ?? binaryHint.en :
       [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
         fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
-    if (responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
+    if (fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');
