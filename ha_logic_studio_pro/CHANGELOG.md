@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.114
+
+- Blocks JS zeigt beim importierten ioBroker-Block `request` einen Hinweis zum Wechsel auf „HTTP GET · HA REST“ und zu den Entsprechungen für `result`, `response.statusCode` und `error`.
+- Auf dem Testsystem PC (64) mit einem echten Blockly-Export geprüft. Die GET-URL und der Antwortzweig mit `result` blieben erhalten. Der Hinweis erschien in der Importübersicht und direkt am Block.
+
 ## 0.1.113
 
 - Blocks JS erklärt am importierten ioBroker-Block „Datei lesen“ (`file_read`) und am Antwortblock `file_data`, wie ein HA-Skript die Antwort von `file.read_file` über `response_variable` und `.data` verarbeitet.

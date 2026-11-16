@@ -880,13 +880,20 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'For JSON or YAML, use file.read_file in a Home Assistant script with file_name, file_encoding, and response_variable. Use a path allowed in Home Assistant, then process <response_variable>.data. The generic Blocks JS action does not pass that response to the ioBroker callback. For raw text, binary data, or the MIME type, use a service configured for that purpose.',
       fr: 'Pour du JSON ou du YAML, utilisez file.read_file dans un script Home Assistant avec file_name, file_encoding et response_variable. Le chemin doit être autorisé dans Home Assistant. Traitez ensuite <variable_de_réponse>.data. L’action générique de Blocks JS ne transmet pas cette réponse au rappel ioBroker. Pour le texte brut, les données binaires ou le type MIME, utilisez un service configuré à cette fin.',
     };
-    const hint = fileRead ? fileReadHint[locale] ?? fileReadHint.en :
+    const legacyRequest = placeholder && type === 'request';
+    const legacyRequestHint = {
+      de: 'Ersetze request durch „HTTP GET · HA REST“ und trage einen freigegebenen HA-REST-Befehl für die ursprüngliche URL ein. Verschiebe den bisherigen Antwortzweig nach „bei Antwort“. Ersetze result durch „Antwortdaten“ im Textmodus, response.statusCode durch „Statuscode“ und error durch „Fehler“. Falls der alte Block die URL protokolliert, ergänze dafür einen Protokollblock.',
+      en: 'Replace request with “HTTP GET · HA REST” and select an approved HA REST command for the original URL. Move the existing callback into the response branch. Replace result with response data in text mode, response.statusCode with the status code, and error with the error value. If the old block logs the URL, add a log block for it.',
+      fr: 'Remplacez request par « HTTP GET · HA REST » et sélectionnez une commande REST HA autorisée pour l’URL d’origine. Déplacez le rappel existant dans la branche de réponse. Remplacez result par les données de réponse en mode texte, response.statusCode par le code d’état et error par la valeur d’erreur. Si l’ancien bloc journalise l’URL, ajoutez un bloc de journalisation.',
+    };
+    const hint = legacyRequest ? legacyRequestHint[locale] ?? legacyRequestHint.en :
+      fileRead ? fileReadHint[locale] ?? fileReadHint.en :
       fileWrite ? fileWriteHint[locale] ?? fileWriteHint.en :
       responseFile ? responseFileHint[locale] ?? responseFileHint.en :
       binaryHttp ? binaryHint[locale] ?? binaryHint.en :
       [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
         fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
-    if (fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
+    if (legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');
