@@ -836,6 +836,7 @@ function reviewIoBrokerImport(name, workspace) {
     iob_get_value_async: ['get_value_async', 'HA-Entität zuordnen und für die Runtime zum Lesen freigeben. Der Antwortzweig erhält den Wert oder das ausgewählte Feld.'],
     iob_get_value_async_data: ['value', 'Der gelesene Wert gehört zum umgebenden asynchronen Leseblock.'],
     iob_direct: ['direct', 'Quell-ID zum Lesen und Ziel-ID als eigenen HA-Helfer zum Schreiben zuordnen. Die Option „nur bei Änderung“ wird übernommen.'],
+    iob_sendto_custom: ['sendto_custom', ''],
     ha_js_system_log: ['onLog', ''],
     ha_js_system_log_data: ['onLog_data', ''],
     ha_js_script_message_request: ['sendto_otherscript', 'Empfangsadresse und Antwortverarbeitung prüfen. Ohne Antwort meldet der Block einen Timeout.'],
@@ -956,7 +957,20 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'The HA event provides the message text and the mapped ioBroker log level.',
       fr: 'L’événement HA fournit le texte du message et le niveau de journalisation mappé au format ioBroker.',
     };
-    const hint = selector ? selectorLabels[0] :
+    const customMessage = block.type === 'iob_sendto_custom';
+    const customPlaceholder = placeholder && type === 'sendto_custom';
+    const customHint = {
+      de: 'Ordne eine HA-Skriptaktion mit Rückgabedaten zu. Gib genau diese Aktion unter runtime_write_entities frei. Die benannten Parameter und der Antwortzweig werden übernommen.',
+      en: 'Map an HA script action that returns data. Allow that exact action under runtime_write_entities. Named parameters and the response branch are imported.',
+      fr: 'Associez une action de script HA qui renvoie des données. Autorisez cette action précise dans runtime_write_entities. Les paramètres nommés et la branche de réponse sont importés.',
+    };
+    const customPlaceholderHint = {
+      de: 'Aktiviere in ioBroker den Antwortzweig und vergib eindeutige Parameternamen. Namen für HA-Zielfelder wie entity_id oder target sind reserviert. Exportiere den Block anschließend erneut.',
+      en: 'Enable the response branch in ioBroker and give each parameter a unique name. HA target fields such as entity_id and target are reserved. Export the block again.',
+      fr: 'Activez la branche de réponse dans ioBroker et attribuez un nom unique à chaque paramètre. Les champs cibles HA comme entity_id et target sont réservés. Exportez à nouveau le bloc.',
+    };
+    const hint = customMessage ? customHint[locale] ?? customHint.en :
+      customPlaceholder ? customPlaceholderHint[locale] ?? customPlaceholderHint.en : selector ? selectorLabels[0] :
       categoryMembers ? categoryMembersHint[locale] ?? categoryMembersHint.en :
       placeholder && type === 'get_enum_members' ? categoryMembersUnsupported[locale] ?? categoryMembersUnsupported.en :
       categoryTrigger ? categoryLabels[4] : placeholder && type === 'onEnumMembers' ? categoryLabels[5] :
@@ -969,11 +983,21 @@ function reviewIoBrokerImport(name, workspace) {
       binaryHttp ? binaryHint[locale] ?? binaryHint.en :
       [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
         fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
-    if (logTrigger || (logData && placeholder) || fileEvent || legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
+    if (customPlaceholder || logTrigger || (logData && placeholder) || fileEvent || legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');
     row.append(element('strong', path + ' · ' + (categoryTrigger ? 'onEnumMembers' : categoryMembers ? 'get_enum_members' : selector ? 'selector' : type)), element('p', hint));
+    if (customMessage) {
+      const label = element('label', {de: 'HA-Skriptaktion', en: 'HA script action', fr: 'Action du script HA'}[locale] ?? 'HA script action');
+      const input = element('input');
+      input.placeholder = 'script.example';
+      input.value = fields.ACTION ?? '';
+      input.oninput = () => { (block.fields ??= {}).ACTION = input.value.trim(); };
+      label.append(' ', input);
+      row.append(label);
+      (block.icons ??= {}).comment ??= {text: hint, pinned: false};
+    }
     if (selector) {
       const selected = element('ul');
       const refresh = () => selected.replaceChildren(...metadata.entities.map(entity => {
@@ -2546,7 +2570,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.124'),
+      import('./vendor/pro-blocks.js?v=0.1.125'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

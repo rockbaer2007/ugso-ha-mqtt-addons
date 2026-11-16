@@ -13,6 +13,19 @@ const actions = new Map([
 ]);
 export const supportedActions = [...actions].flatMap(([domain, services]) => services.map(service => domain + '.' + service));
 
+export function scriptResponseCommand(action, data, writable) {
+  if (typeof action !== 'string' || !/^script\.[a-z0-9_]+$/.test(action) ||
+      ['script.turn_on', 'script.turn_off', 'script.toggle', 'script.reload'].includes(action) || !writable.has(action)) {
+    throw new Error('HA-Skriptaktion für Rückgabedaten nicht freigegeben: ' + action);
+  }
+  const forbidden = new Set(['entity_id', 'device_id', 'area_id', 'floor_id', 'label_id', 'target', '__proto__', 'constructor', 'prototype']);
+  if (!data || typeof data !== 'object' || Array.isArray(data) ||
+      Object.keys(data).some(key => forbidden.has(key)) || Buffer.byteLength(JSON.stringify(data)) > 65536) {
+    throw new Error('Ungültige Parameter für HA-Skriptaktion.');
+  }
+  return {type: 'call_service', domain: 'script', service: action.slice(7), return_response: true, service_data: data};
+}
+
 export function actionCommand(action, entity, data, writable) {
   if (!entityPattern.test(entity) || !writable.has(entity)) throw new Error('HA-Ziel nicht für Aktionen freigegeben: ' + entity);
   const [domain, service, extra] = action.split('.');
@@ -150,6 +163,12 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
           include_start_time_state: false, significant_changes_only: false, no_attributes: true});
         return historyRows(result?.[entity] ?? [], range);
       },
+      async scriptResponse(action, data) {
+        const result = await send(scriptResponseCommand(action, data, writeTargets));
+        const response = result?.response ?? null;
+        if (Buffer.byteLength(JSON.stringify(response)) > 262144) throw new Error('HA-Skriptantwort zu groß.');
+        return response;
+      },
       async httpGet(action, payload, urlSuffix) {
         if (typeof action !== 'string' || !/^rest_command\.[a-z0-9_]+$/.test(action) ||
             action === 'rest_command.reload' || !writeTargets.has(action)) {
@@ -276,6 +295,10 @@ export async function connectHomeAssistant(config, dispatch, fail, Socket = WebS
     },
     call(...args) { current?.call(...args); },
     sendto(...args) { current?.sendto(...args); },
+    async scriptResponse(action, data) {
+      if (!current) throw new Error('HA-Verbindung getrennt.');
+      return current.scriptResponse(action, data);
+    },
     async httpGet(action, payload, urlSuffix) {
       if (!current) throw new Error('HA-Verbindung getrennt.');
       return current.httpGet(action, payload, urlSuffix);

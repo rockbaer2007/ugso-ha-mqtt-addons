@@ -67,6 +67,11 @@ export const simulatedEvents = String.raw`
       checkRestAction(action);
       invoke(callback, {status: 200, data: '{"value":42}', headers: {'content-type': 'application/json'}, error: null});
     },
+    importedScriptResponse(action, data, callback) {
+      if (!/^script\.[a-z0-9_]+$/.test(action)) throw new Error('HA-Skriptaktion erwartet.');
+      report(JSON.stringify({type: 'scriptResponse', action, data}));
+      invoke(callback, {});
+    },
     httpPost(action, payload, callback) {
       checkRestAction(action);
       const json = typeof payload === 'string' ? JSON.parse(payload) : payload;

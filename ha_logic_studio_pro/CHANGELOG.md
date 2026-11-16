@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.125
+
+- Blocks JS importiert `sendto_custom` mit benannten Parametern und Antwortzweig. In der Importprüfung wird eine HA-Skriptaktion mit Rückgabedaten zugeordnet und für die Runtime gezielt freigegeben.
+- Auf dem Testsystem PC (64) mit einem echten ioBroker-Blockly-Export per Play geprüft. Das HA-Testskript berechnete aus `left: 17` und `right: 25` den Rückgabewert `42`. Der importierte Antwortzweig las `result.total` und protokollierte `42`.
+
 ## 0.1.124
 
 - Blocks JS importiert `direct` mit getrennten HA-Zuordnungen für Quelle und Ziel und übernimmt „nur bei Änderung“. Das Ziel ist ein separater beschreibbarer HA-Helfer. Bei berechneten ioBroker-IDs zeigt ein Platzhalter die nötige Anpassung.

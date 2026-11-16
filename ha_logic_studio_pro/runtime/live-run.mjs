@@ -125,12 +125,14 @@ try {
       historyRequests++;
       ha.history(...query).then(rows => dispatch({type: 'history', id, rows}), fail)
         .finally(() => { historyRequests--; });
-    } else if (operation === 'httpGet' || operation === 'httpPost') {
-      if (httpRequests >= 4) throw new Error('Maximal vier gleichzeitige HTTP-Abfragen.');
+    } else if (operation === 'httpGet' || operation === 'httpPost' || operation === 'scriptResponse') {
+      if (httpRequests >= 4) throw new Error('Maximal vier gleichzeitige Anfragen mit Rückgabedaten.');
       const [id, action, payload, urlSuffix] = args;
       if (operation === 'httpPost' && typeof payload !== 'string') throw new Error('HTTP POST benötigt einen JSON-Text.');
       httpRequests++;
-      ha.httpGet(action, operation === 'httpPost' ? payload : undefined, urlSuffix ?? undefined)
+      const request = operation === 'scriptResponse' ? ha.scriptResponse(action, payload) :
+        ha.httpGet(action, operation === 'httpPost' ? payload : undefined, urlSuffix ?? undefined);
+      request
         .then(response => dispatch({type: 'httpGet', id, response}), fail)
         .finally(() => { httpRequests--; });
     } else if (operation === 'event') ha.subscribe(args[0]);
@@ -186,6 +188,7 @@ try {
       ${importedSystem}
       ${scriptRequests}
       const ha = Object.freeze({${guestTimeApi} requestScriptMessage, importedControl, importedStateValue, importedEventValue, importedTarget, importedAttribute, log, timeout: (n,d,fn) => timer(n,d,fn,false),
+        importedScriptResponse: (action, data, callback) => requestHttp('scriptResponse', action, callback, data),
         pause: delay => new Promise(resolve => timer(Symbol(), delay, resolve, false)),
         publishMqtt: (topic, message, retain = false) => call('publishMqtt', topic, message, retain),
         notify: (entity, message, title = '') => call('notify', entity, message, title),

@@ -1,0 +1,41 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+<variables>
+<variable id="ugso125-result">result</variable>
+</variables>
+<block type="sendto_custom" id="ugso125-send" x="30" y="30">
+<mutation xmlns="http://www.w3.org/1999/xhtml" items="left,right"></mutation>
+<field name="INSTANCE">admin.0</field>
+<field name="COMMAND">ugso125</field>
+<field name="LOG"></field>
+<field name="WITH_STATEMENT">TRUE</field>
+<value name="ARG0">
+<shadow type="math_number" id="opB}^rgPKShSt$TMS)3`">
+<field name="NUM">17</field>
+</shadow>
+</value>
+<value name="ARG1">
+<shadow type="math_number" id="_i|ap/k3{hHppE$j3d?t">
+<field name="NUM">25</field>
+</shadow>
+</value>
+<statement name="STATEMENT">
+<block type="debug" id="[F[[pZ6F@*u]*EM-zoTu">
+<field name="Severity">info</field>
+<value name="TEXT">
+<block type="get_attr" id="$@h!JUDI]xhC?ykr.{}d">
+<value name="PATH">
+<shadow type="text" id="!ifuUO5XAgTah62=rl2z">
+<field name="TEXT">total</field>
+</shadow>
+</value>
+<value name="OBJECT">
+<block type="variables_get" id="8]pmb|Gotx1rW|(/xQ[x">
+<field name="VAR" id="ugso125-result">result</field>
+</block>
+</value>
+</block>
+</value>
+</block>
+</statement>
+</block>
+</xml>
