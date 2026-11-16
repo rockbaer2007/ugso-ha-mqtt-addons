@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.128
+
+- Blocks JS erklärt bei importiertem `control_ex` mit Ablaufzeit, dass ioBroker den gespeicherten Zustand nach Ablauf entfernt. Der Platzhalter erhält ID, Wert, Verzögerung und Ablaufzeit und blockiert Play bis zur Anpassung. Für gewünschtes Ausschalten nennt der Hinweis eine separate verzögerte HA-Aktion.
+- Auf dem Testsystem PC (64) mit echtem ioBroker-Blockly-Export geprüft. Der Block enthielt `wahr`, die berechnete Verzögerung `7000 + 8000` ms und `expire: 5` Sekunden. Der Hinweis war direkt am Block sichtbar. Play meldete den nicht unterstützten Block, das Skript blieb gestoppt und der HA-Testhelfer blieb aus.
+
 ## 0.1.127
 
 - Blocks JS übernimmt bei `control_ex` auch „steuere“ mit berechneter ID, booleschem Wert und berechneter Verzögerung. Die ID wird ausdrücklich einer schaltbaren HA-Entität zugeordnet. Für Ablaufzeiten bleibt der Importhinweis am Block.

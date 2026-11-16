@@ -974,9 +974,9 @@ function reviewIoBrokerImport(name, workspace) {
     const extendedUpdate = ['iob_control_ex_update', 'iob_control_ex_control'].includes(block.type);
     const extendedPlaceholder = placeholder && type === 'control_ex';
     const extendedUpdateHints = {
-      de: ['Ordne die berechnete ioBroker-ID ausdrücklich einer passenden HA-Entität zu. Gib die Entität unter runtime_write_entities frei. Verzögerung und Abbruch vorheriger Schreibvorgänge werden übernommen.', 'Für eine Ablaufzeit muss die Logik an Home Assistant angepasst werden. Setze die Ablaufzeit auf 0, um den Block ohne Ablaufzeit zu importieren.'],
-      en: ['Map the computed ioBroker ID explicitly to a compatible HA entity. Allow that entity under runtime_write_entities. The delay and cancellation setting are preserved.', 'Expiration requires adapting the logic for Home Assistant. Set expiration to 0 to import without expiration.'],
-      fr: ['Associez explicitement l’ID ioBroker calculé à une entité HA compatible. Autorisez cette entité dans runtime_write_entities. Le délai et l’annulation sont conservés.', 'Une expiration nécessite une adaptation pour Home Assistant. Réglez-la sur 0 pour importer le bloc sans expiration.'],
+      de: ['Ordne die berechnete ioBroker-ID ausdrücklich einer passenden HA-Entität zu. Gib die Entität unter runtime_write_entities frei. Verzögerung und Abbruch vorheriger Schreibvorgänge werden übernommen.', 'ioBroker entfernt mit expire den gespeicherten Zustand nach der angegebenen Zeit in Sekunden. Ein HA-Schalterhelfer behält seinen Ein/Aus-Zustand. Der Platzhalter erhält die Eingaben und blockiert Play, bis die Logik angepasst ist. Falls du nach der Wartezeit ausschalten willst, ergänze in HA eine eigene verzögerte Ausschaltaktion.'],
+      en: ['Map the computed ioBroker ID explicitly to a compatible HA entity. Allow that entity under runtime_write_entities. The delay and cancellation setting are preserved.', 'With expire, ioBroker removes the stored state after the specified number of seconds. An HA toggle helper retains its on/off state. The placeholder preserves its inputs and blocks Play until the logic is adapted. To turn the helper off after a delay, add a separate delayed turn-off action in HA.'],
+      fr: ['Associez explicitement l’ID ioBroker calculé à une entité HA compatible. Autorisez cette entité dans runtime_write_entities. Le délai et l’annulation sont conservés.', 'Avec expire, ioBroker supprime l’état stocké après le nombre de secondes indiqué. Un assistant booléen HA conserve son état activé ou désactivé. Le bloc de substitution conserve ses entrées et bloque Play tant que la logique reste à adapter. Pour désactiver l’assistant après un délai, ajoutez une action de désactivation différée dans HA.'],
     };
     const hint = extendedUpdate || extendedPlaceholder ? (extendedUpdateHints[locale] ?? extendedUpdateHints.en)[Number(extendedPlaceholder)] :
       customMessage ? customHint[locale] ?? customHint.en :
@@ -2588,7 +2588,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.127'),
+      import('./vendor/pro-blocks.js?v=0.1.128'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);
