@@ -830,6 +830,7 @@ function reviewIoBrokerImport(name, workspace) {
     iob_toggle: ['toggle', 'Schaltbare HA-Entität zuordnen.'],
     iob_schedule_entity: ['schedule_by_id', 'Einen HA-Datums- und Uhrzeithelfer (input_datetime) zuordnen.'],
     iob_get_dynamic_value: ['get_value_var', 'Alle berechneten ioBroker-IDs im Feld ID-Zuordnung (JSON) mit HA-Entitäten verknüpfen.'],
+    iob_exists_dynamic: ['state_exists_var', ''],
     ha_js_trigger_value: ['on_source', 'Der Wert kommt aus dem umgebenden Trigger. Einheit und Datentyp des HA-Zustands prüfen.'],
     iob_get_object_async: ['get_object_async', 'HA-Entität zuordnen und für die Runtime freigeben. Im Antwortzweig liefert common.name den Anzeigenamen und common.unit die Einheit.'],
     iob_get_object_async_data: ['obj', 'Das Antwortobjekt gehört zum umgebenden asynchronen Leseblock.'],
@@ -978,7 +979,14 @@ function reviewIoBrokerImport(name, workspace) {
       en: ['Map the computed ioBroker ID explicitly to a compatible HA entity. Allow that entity under runtime_write_entities. The delay and cancellation setting are preserved.', 'With expire, ioBroker removes the stored state after the specified number of seconds. An HA toggle helper retains its on/off state. The placeholder preserves its inputs and blocks Play until the logic is adapted. To turn the helper off after a delay, add a separate delayed turn-off action in HA.'],
       fr: ['Associez explicitement l’ID ioBroker calculé à une entité HA compatible. Autorisez cette entité dans runtime_write_entities. Le délai et l’annulation sont conservés.', 'Avec expire, ioBroker supprime l’état stocké après le nombre de secondes indiqué. Un assistant booléen HA conserve son état activé ou désactivé. Le bloc de substitution conserve ses entrées et bloque Play tant que la logique reste à adapter. Pour désactiver l’assistant après un délai, ajoutez une action de désactivation différée dans HA.'],
     };
-    const hint = extendedUpdate || extendedPlaceholder ? (extendedUpdateHints[locale] ?? extendedUpdateHints.en)[Number(extendedPlaceholder)] :
+    const dynamicExists = block.type === 'iob_exists_dynamic';
+    const dynamicExistsHints = {
+      de: 'Ordne jede berechnete ioBroker-ID im JSON-Feld ausdrücklich einer HA-Entität zu und gib diese für die Runtime frei. Eine fehlende HA-Entität liefert falsch. Fehlt die Zuordnung, meldet Play die berechnete ID.',
+      en: 'Map each computed ioBroker ID to an HA entity in the JSON field and allow it in the runtime. A missing HA entity returns false. Play reports the computed ID when its mapping is missing.',
+      fr: 'Associez chaque ID ioBroker calculé à une entité HA dans le champ JSON et autorisez-la dans la runtime. Une entité HA absente renvoie faux. Play indique l’ID calculé si son association manque.',
+    };
+    const hint = dynamicExists ? dynamicExistsHints[locale] ?? dynamicExistsHints.en :
+      extendedUpdate || extendedPlaceholder ? (extendedUpdateHints[locale] ?? extendedUpdateHints.en)[Number(extendedPlaceholder)] :
       customMessage ? customHint[locale] ?? customHint.en :
       customPlaceholder ? customPlaceholderHint[locale] ?? customPlaceholderHint.en : selector ? selectorLabels[0] :
       categoryMembers ? categoryMembersHint[locale] ?? categoryMembersHint.en :
@@ -993,12 +1001,12 @@ function reviewIoBrokerImport(name, workspace) {
       binaryHttp ? binaryHint[locale] ?? binaryHint.en :
       [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
         fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
-    if (extendedPlaceholder || extendedUpdate || customPlaceholder || logTrigger || (logData && placeholder) || fileEvent || legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
+    if (dynamicExists || extendedPlaceholder || extendedUpdate || customPlaceholder || logTrigger || (logData && placeholder) || fileEvent || legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');
     row.append(element('strong', path + ' · ' + (categoryTrigger ? 'onEnumMembers' : categoryMembers ? 'get_enum_members' : selector ? 'selector' : type)), element('p', hint));
-    if (extendedUpdate) {
+    if (extendedUpdate || dynamicExists) {
       const label = element('label', {de: 'ID-Zuordnung (JSON)', en: 'ID mapping (JSON)', fr: 'Correspondance des ID (JSON)'}[locale] ?? 'ID mapping (JSON)');
       const input = element('input');
       input.value = fields.MAPPING;
@@ -2588,7 +2596,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.128'),
+      import('./vendor/pro-blocks.js?v=0.1.129'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.129
+
+- Blocks JS importiert `state_exists_var` mit berechneter ioBroker-ID. Die ausdrückliche HA-Zuordnung ist in der Importprüfung und direkt am Block verfügbar. Der Block unterscheidet eine fehlende Entität von einer fehlenden Zuordnung und nennt die berechnete ID im Protokoll.
+- Auf dem Testsystem PC (64) mit echtem ioBroker-Blockly-Export per Play geprüft. Der vorhandene Helfer lieferte `true`, die zugeordnete, absichtlich fehlende Entität `false`. Für die dritte Prüfung meldete das Runtime-Protokoll die berechnete ID `0_userdata.0.ugso129.unmapped` ohne HA-Zuordnung. Der Hinweis war direkt am Block sichtbar.
+
 ## 0.1.128
 
 - Blocks JS erklärt bei importiertem `control_ex` mit Ablaufzeit, dass ioBroker den gespeicherten Zustand nach Ablauf entfernt. Der Platzhalter erhält ID, Wert, Verzögerung und Ablaufzeit und blockiert Play bis zur Anpassung. Für gewünschtes Ausschalten nennt der Hinweis eine separate verzögerte HA-Aktion.

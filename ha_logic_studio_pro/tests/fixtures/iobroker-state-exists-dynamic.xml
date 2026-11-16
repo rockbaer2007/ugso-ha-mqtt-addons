@@ -1,0 +1,72 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+<block type="debug" id="FDkp,KRJHn+?AfXvBLk!" x="10" y="10">
+<field name="Severity">info</field>
+<value name="TEXT">
+<block type="state_exists_var" id="w$NJR:bJw4:_cnMjd:w0">
+<value name="OID">
+<block type="text_join" id="]S~G?u#+d-YW1LVmA6L:">
+<mutation items="2"></mutation>
+<value name="ADD0">
+<shadow type="text" id="?fj-cv)RKbhmSmgi+rI!">
+<field name="TEXT">0_userdata.0.ugso129.</field>
+</shadow>
+</value>
+<value name="ADD1">
+<shadow type="text" id="B4^?J$}4iVNpMVo?Hagb">
+<field name="TEXT">present</field>
+</shadow>
+</value>
+</block>
+</value>
+</block>
+</value>
+<next>
+<block type="debug" id="iM|Y#~!l]XDFIB)!xmrg">
+<field name="Severity">info</field>
+<value name="TEXT">
+<block type="state_exists_var" id="n`+Khtt.PaEPUxb8+7?p">
+<value name="OID">
+<block type="text_join" id="xvzH=Z~sy/bS{IdH^Czk">
+<mutation items="2"></mutation>
+<value name="ADD0">
+<shadow type="text" id=":xB2!E4e[=s1#085f)u+">
+<field name="TEXT">0_userdata.0.ugso129.</field>
+</shadow>
+</value>
+<value name="ADD1">
+<shadow type="text" id="Tg7cn?tm.PMT3suRtWF0">
+<field name="TEXT">missing</field>
+</shadow>
+</value>
+</block>
+</value>
+</block>
+</value>
+<next>
+<block type="debug" id="}w@f6clJdCXx@4q-1BlC">
+<field name="Severity">info</field>
+<value name="TEXT">
+<block type="state_exists_var" id="1l}(x)I|y~v38{!MtmHD">
+<value name="OID">
+<block type="text_join" id="mLggFx?,o]*D]7D.Id{p">
+<mutation items="2"></mutation>
+<value name="ADD0">
+<shadow type="text" id="F*A)#QBZ#hzV8))%31Sl">
+<field name="TEXT">0_userdata.0.ugso129.</field>
+</shadow>
+</value>
+<value name="ADD1">
+<shadow type="text" id="T.#WRwfgw._tT,ZN1_|g">
+<field name="TEXT">unmapped</field>
+</shadow>
+</value>
+</block>
+</value>
+</block>
+</value>
+</block>
+</next>
+</block>
+</next>
+</block>
+</xml>
