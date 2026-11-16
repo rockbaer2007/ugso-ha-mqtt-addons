@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.123
+
+- Blocks JS importiert `get_value_async` mit HA-Entitätszuordnung, Antwortzweig und dem Block „Gelesener Wert“. Unterstützt werden Wert, Aktualisierungs- und Änderungszeit, Anzeigename und Einheit. Für ioBroker-spezifische Felder bleibt ein Hinweis am Platzhalter erhalten.
+- Auf dem Testsystem PC (64) mit einem echten ioBroker-Blockly-Export per Play geprüft. Der Antwortzweig protokollierte den gelesenen Wert `52.0` und schrieb `52` in den separat zugeordneten HA-Zahlenhelfer.
+
 ## 0.1.122
 
 - Blocks JS importiert die ioBroker-Blöcke `create` und `create_ex` mit ihrer Blockfolge. Pro Datenpunkt lässt sich ein HA-Helfer zuordnen, anlegen oder später auswählen. Lesen und Aktualisieren übernehmen dieselbe Zuordnung.

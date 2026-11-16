@@ -833,6 +833,8 @@ function reviewIoBrokerImport(name, workspace) {
     ha_js_trigger_value: ['on_source', 'Der Wert kommt aus dem umgebenden Trigger. Einheit und Datentyp des HA-Zustands prüfen.'],
     iob_get_object_async: ['get_object_async', 'HA-Entität zuordnen und für die Runtime freigeben. Im Antwortzweig liefert common.name den Anzeigenamen und common.unit die Einheit.'],
     iob_get_object_async_data: ['obj', 'Das Antwortobjekt gehört zum umgebenden asynchronen Leseblock.'],
+    iob_get_value_async: ['get_value_async', 'HA-Entität zuordnen und für die Runtime zum Lesen freigeben. Der Antwortzweig erhält den Wert oder das ausgewählte Feld.'],
+    iob_get_value_async_data: ['value', 'Der gelesene Wert gehört zum umgebenden asynchronen Leseblock.'],
     ha_js_system_log: ['onLog', ''],
     ha_js_system_log_data: ['onLog_data', ''],
     ha_js_script_message_request: ['sendto_otherscript', 'Empfangsadresse und Antwortverarbeitung prüfen. Ohne Antwort meldet der Block einen Timeout.'],
@@ -846,7 +848,7 @@ function reviewIoBrokerImport(name, workspace) {
     exec: 'Shell-Befehl durch eine konfigurierte HA-Aktion ersetzen.',
     http_get: 'Für eine berechnete HTTP-URL zuerst einen festen HTTP(S)-Anfang mit Host und Pfad an „Text erstellen“ anschließen. Dann den HA-REST-Befehl konfigurieren.',
     http_post: 'Für eine berechnete HTTP-URL zuerst einen festen HTTP(S)-Anfang mit Host und Pfad an „Text erstellen“ anschließen. Dann den HA-REST-Befehl konfigurieren.',
-    get_value_async: 'HA-Zustand im Block „Zustand lesen“ abfragen und den bisherigen Callback als Folgeblöcke einfügen.',
+    get_value_async: 'Für dieses ioBroker-Feld gibt es keine direkte HA-Zuordnung. Wähle in ioBroker Wert, Zeitstempel, Anzeigename oder Einheit und exportiere den Block erneut.',
   };
   const allowedDomains = {
     iob_create_state: helperDomains,
@@ -2541,7 +2543,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.122'),
+      import('./vendor/pro-blocks.js?v=0.1.123'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

@@ -1,0 +1,31 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+<variables>
+<variable id="async-value-probe">value</variable>
+</variables>
+<block type="get_value_async" id="#xN96#C#Ej8h?yry#Ur@" x="35" y="35">
+<field name="ATTR">val</field>
+<field name="OID">0_userdata.0.ugso_async_read_source</field>
+<statement name="STATEMENT">
+<block type="debug" id="wtffwv99+98YCH9/UkCG">
+<field name="Severity">info</field>
+<value name="TEXT">
+<block type="variables_get" id="oyZ`z`AlkM[|aDjNzq}?">
+<field name="VAR" id="async-value-probe">value</field>
+</block>
+</value>
+<next>
+<block type="update" id="q-BnN6A2?RKS#?yBGyf.">
+<mutation xmlns="http://www.w3.org/1999/xhtml" delay_input="false"></mutation>
+<field name="OID">0_userdata.0.ugso_async_read_target</field>
+<field name="WITH_DELAY">FALSE</field>
+<value name="VALUE">
+<block type="variables_get" id="Unch@DLvntqrNDOJ:v4Q">
+<field name="VAR" id="async-value-probe">value</field>
+</block>
+</value>
+</block>
+</next>
+</block>
+</statement>
+</block>
+</xml>
