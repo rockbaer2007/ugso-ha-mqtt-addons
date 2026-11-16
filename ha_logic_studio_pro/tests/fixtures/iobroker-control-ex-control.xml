@@ -1,0 +1,46 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+<block type="control_ex" id="ugso127-update" x="30" y="30">
+<field name="TYPE">false</field>
+<field name="CLEAR_RUNNING">TRUE</field>
+<value name="OID">
+<block type="text_join" id="YhU%D4G*96I28B1k-K?I">
+<mutation items="2"></mutation>
+<value name="ADD0">
+<shadow type="text" id="sc!4nP2z=Ca`L8nX3{v(">
+<field name="TEXT">0_userdata.0.ugso127.</field>
+</shadow>
+</value>
+<value name="ADD1">
+<shadow type="text" id="!L?I:UWtuW^v!},!hbAT">
+<field name="TEXT">target</field>
+</shadow>
+</value>
+</block>
+</value>
+<value name="VALUE">
+<shadow type="logic_boolean" id="p;6!I3r?j-dadETl%t($">
+<field name="BOOL">TRUE</field>
+</shadow>
+</value>
+<value name="DELAY_MS">
+<block type="math_arithmetic" id="T%+[iv.kUf#/bMC5eA2A">
+<field name="OP">ADD</field>
+<value name="A">
+<shadow type="math_number" id="N;ns?n(Lr;SqO0,`,gE4">
+<field name="NUM">7000</field>
+</shadow>
+</value>
+<value name="B">
+<shadow type="math_number" id="Af[$G@ybsS9imZ(jSXq.">
+<field name="NUM">8000</field>
+</shadow>
+</value>
+</block>
+</value>
+<value name="EXPIRE">
+<shadow type="math_number" id="ZB`{:~8pYnN+uUL=OGIS">
+<field name="NUM">0</field>
+</shadow>
+</value>
+</block>
+</xml>

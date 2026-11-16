@@ -838,6 +838,7 @@ function reviewIoBrokerImport(name, workspace) {
     iob_direct: ['direct', 'Quell-ID zum Lesen und Ziel-ID als eigenen HA-Helfer zum Schreiben zuordnen. Die Option „nur bei Änderung“ wird übernommen.'],
     iob_sendto_custom: ['sendto_custom', ''],
     iob_control_ex_update: ['control_ex', ''],
+    iob_control_ex_control: ['control_ex', ''],
     ha_js_system_log: ['onLog', ''],
     ha_js_system_log_data: ['onLog_data', ''],
     ha_js_script_message_request: ['sendto_otherscript', 'Empfangsadresse und Antwortverarbeitung prüfen. Ohne Antwort meldet der Block einen Timeout.'],
@@ -970,12 +971,12 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'Enable the response branch in ioBroker and give each parameter a unique name. HA target fields such as entity_id and target are reserved. Export the block again.',
       fr: 'Activez la branche de réponse dans ioBroker et attribuez un nom unique à chaque paramètre. Les champs cibles HA comme entity_id et target sont réservés. Exportez à nouveau le bloc.',
     };
-    const extendedUpdate = block.type === 'iob_control_ex_update';
+    const extendedUpdate = ['iob_control_ex_update', 'iob_control_ex_control'].includes(block.type);
     const extendedPlaceholder = placeholder && type === 'control_ex';
     const extendedUpdateHints = {
-      de: ['Ordne die berechnete ioBroker-ID ausdrücklich einem HA-Helfer zu. Gib den Helfer unter runtime_write_entities frei. Verzögerung und Abbruch vorheriger Schreibvorgänge werden übernommen.', 'Unterstützt wird „aktualisiere“ ohne Ablaufzeit. Für „steuere“ oder eine Ablaufzeit muss die Logik an Home Assistant angepasst werden.'],
-      en: ['Map the computed ioBroker ID explicitly to an HA helper. Allow that helper under runtime_write_entities. The delay and cancellation setting are preserved.', 'Update without an expiration is supported. Control mode or expiration requires adapting the logic for Home Assistant.'],
-      fr: ['Associez explicitement l’ID ioBroker calculé à un assistant HA. Autorisez cet assistant dans runtime_write_entities. Le délai et l’annulation sont conservés.', 'La mise à jour sans expiration est prise en charge. Le mode commande ou l’expiration nécessite une adaptation pour Home Assistant.'],
+      de: ['Ordne die berechnete ioBroker-ID ausdrücklich einer passenden HA-Entität zu. Gib die Entität unter runtime_write_entities frei. Verzögerung und Abbruch vorheriger Schreibvorgänge werden übernommen.', 'Für eine Ablaufzeit muss die Logik an Home Assistant angepasst werden. Setze die Ablaufzeit auf 0, um den Block ohne Ablaufzeit zu importieren.'],
+      en: ['Map the computed ioBroker ID explicitly to a compatible HA entity. Allow that entity under runtime_write_entities. The delay and cancellation setting are preserved.', 'Expiration requires adapting the logic for Home Assistant. Set expiration to 0 to import without expiration.'],
+      fr: ['Associez explicitement l’ID ioBroker calculé à une entité HA compatible. Autorisez cette entité dans runtime_write_entities. Le délai et l’annulation sont conservés.', 'Une expiration nécessite une adaptation pour Home Assistant. Réglez-la sur 0 pour importer le bloc sans expiration.'],
     };
     const hint = extendedUpdate || extendedPlaceholder ? (extendedUpdateHints[locale] ?? extendedUpdateHints.en)[Number(extendedPlaceholder)] :
       customMessage ? customHint[locale] ?? customHint.en :
@@ -2587,7 +2588,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.126'),
+      import('./vendor/pro-blocks.js?v=0.1.127'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

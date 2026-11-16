@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.127
+
+- Blocks JS übernimmt bei `control_ex` auch „steuere“ mit berechneter ID, booleschem Wert und berechneter Verzögerung. Die ID wird ausdrücklich einer schaltbaren HA-Entität zugeordnet. Für Ablaufzeiten bleibt der Importhinweis am Block.
+- Mit einem echten ioBroker-Blockly-Export per Play auf dem Testsystem PC (64) geprüft. Die berechnete Verzögerung betrug `7000 + 8000` ms. Der zugeordnete HA-Schalterhelfer war nach rund vier Sekunden noch aus und nach rund 19 Sekunden an. Danach wurde der Helfer auf seinen ursprünglichen Aus-Zustand zurückgesetzt.
+
 ## 0.1.126
 
 - Blocks JS importiert „aktualisiere“ aus `control_ex` mit berechneter ioBroker-ID, berechneter Verzögerung und der Option zum Abbrechen vorheriger Schreibvorgänge. Die ID wird ausdrücklich einem HA-Helfer zugeordnet. Andere Schreibmodi und Ablaufzeiten bleiben mit einem Hinweis am Block erhalten.
