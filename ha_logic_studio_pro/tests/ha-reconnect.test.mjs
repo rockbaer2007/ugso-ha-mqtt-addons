@@ -89,7 +89,7 @@ test('HTTP requests only invoke allowed REST commands and expose status and JSON
       {type: 'call_service', domain: 'rest_command', service: 'probe', return_response: true,
         service_data: {payload: '{"probe":42}'}}]);
   assert.deepEqual(await ha.httpGet('rest_command.missing'), {...response,
-    status: 404, data: 'Not found', error: 'HTTP 404'});
+    status: 404, data: 'Not found', jsonString: true, error: 'HTTP 404'});
   assert.deepEqual(await ha.httpGet('rest_command.offline'), {
     status: null, data: null, headers: {}, error: 'HTTP-Verbindungsfehler.',
   });

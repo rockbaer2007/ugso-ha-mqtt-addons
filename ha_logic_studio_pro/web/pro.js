@@ -862,10 +862,17 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'Response type arraybuffer: HA REST commands return text or JSON. The original bytes and byteLength are unavailable here. Use an endpoint that returns the bytes as Base64 in JSON and adapt the response handling.',
       fr: 'Type de réponse arraybuffer : les commandes REST HA renvoient du texte ou du JSON. Les octets d’origine et byteLength sont indisponibles ici. Utilisez un point de terminaison qui renvoie les octets en Base64 dans du JSON et adaptez le traitement de la réponse.',
     };
-    const hint = binaryHttp ? binaryHint[locale] ?? binaryHint.en :
+    const responseFile = placeholder && type === 'http_response_tofile';
+    const responseFileHint = {
+      de: 'Dieser ioBroker-Block speichert den bereits empfangenen Antwortinhalt und gibt einen temporären Dateipfad zurück. Für einen eigenständigen GET-Download kannst du in Home Assistant downloader.download_file mit URL und Dateiname verwenden. Soll genau diese Antwort gespeichert werden, übergib die Antwortdaten an einen dafür eingerichteten Dienst und passe die Blöcke an, die den Dateipfad verwenden.',
+      en: 'This ioBroker block saves the response body already received and returns a temporary file path. For a standalone GET download, use downloader.download_file in Home Assistant with a URL and filename. To save this exact response, pass its body to a configured service and adapt the blocks that use the file path.',
+      fr: 'Ce bloc ioBroker enregistre le contenu de la réponse déjà reçue et renvoie un chemin de fichier temporaire. Pour un téléchargement GET indépendant, utilisez downloader.download_file dans Home Assistant avec une URL et un nom de fichier. Pour enregistrer cette réponse précise, transmettez son contenu à un service configuré à cette fin et adaptez les blocs qui utilisent le chemin du fichier.',
+    };
+    const hint = responseFile ? responseFileHint[locale] ?? responseFileHint.en :
+      binaryHttp ? binaryHint[locale] ?? binaryHint.en :
       [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
         fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
-    if ((placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
+    if (responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');

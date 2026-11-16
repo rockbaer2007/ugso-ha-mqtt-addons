@@ -9,6 +9,7 @@
 ## Blocks JS
 
 - [ ] Neue Importfälle aufnehmen, sobald ein echter Export mit einem noch fehlenden oder unvollständig übernommenen Block vorliegt.
+- [x] In 0.1.111 wurde der Hinweis für temporäre HTTP-Antwortdateien mit einem echten ioBroker-Blockly-Export auf dem Testsystem PC (64) geprüft.
 - Der erneute Importtest zu 0.1.100 bestätigte Zustandsauslöser, Aktualisieren, Steuern und Zustandsabfrage anhand vorhandener XML- und JS-Exporte.
 - [x] In 0.1.101 blieb der Vergleich „aktuelle Zeit vor 12:00“ beim Import des `exec`-Testexports erhalten. Auf dem Testsystem PC (64) erschien der Hinweis in der Importübersicht und direkt am Platzhalter. Er erklärt, wie der Zeitvergleich mit „falls“ verbunden und die gewünschte HA-Aktion unter „mache“ eingefügt wird.
 - [x] Importübersicht mit Originalblöcken, HA-Zuordnungen und Codehinweisen ist vorhanden. Skriptnachrichten mit berechnetem Ziel und Antwort wurden in 0.1.72 live getestet. 0.1.97 prüfte die Importübersicht erneut mit `test33.xml` und `test33.js`.
