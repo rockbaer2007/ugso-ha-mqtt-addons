@@ -837,6 +837,7 @@ function reviewIoBrokerImport(name, workspace) {
     iob_get_value_async_data: ['value', 'Der gelesene Wert gehört zum umgebenden asynchronen Leseblock.'],
     iob_direct: ['direct', 'Quell-ID zum Lesen und Ziel-ID als eigenen HA-Helfer zum Schreiben zuordnen. Die Option „nur bei Änderung“ wird übernommen.'],
     iob_sendto_custom: ['sendto_custom', ''],
+    iob_control_ex_update: ['control_ex', ''],
     ha_js_system_log: ['onLog', ''],
     ha_js_system_log_data: ['onLog_data', ''],
     ha_js_script_message_request: ['sendto_otherscript', 'Empfangsadresse und Antwortverarbeitung prüfen. Ohne Antwort meldet der Block einen Timeout.'],
@@ -969,7 +970,15 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'Enable the response branch in ioBroker and give each parameter a unique name. HA target fields such as entity_id and target are reserved. Export the block again.',
       fr: 'Activez la branche de réponse dans ioBroker et attribuez un nom unique à chaque paramètre. Les champs cibles HA comme entity_id et target sont réservés. Exportez à nouveau le bloc.',
     };
-    const hint = customMessage ? customHint[locale] ?? customHint.en :
+    const extendedUpdate = block.type === 'iob_control_ex_update';
+    const extendedPlaceholder = placeholder && type === 'control_ex';
+    const extendedUpdateHints = {
+      de: ['Ordne die berechnete ioBroker-ID ausdrücklich einem HA-Helfer zu. Gib den Helfer unter runtime_write_entities frei. Verzögerung und Abbruch vorheriger Schreibvorgänge werden übernommen.', 'Unterstützt wird „aktualisiere“ ohne Ablaufzeit. Für „steuere“ oder eine Ablaufzeit muss die Logik an Home Assistant angepasst werden.'],
+      en: ['Map the computed ioBroker ID explicitly to an HA helper. Allow that helper under runtime_write_entities. The delay and cancellation setting are preserved.', 'Update without an expiration is supported. Control mode or expiration requires adapting the logic for Home Assistant.'],
+      fr: ['Associez explicitement l’ID ioBroker calculé à un assistant HA. Autorisez cet assistant dans runtime_write_entities. Le délai et l’annulation sont conservés.', 'La mise à jour sans expiration est prise en charge. Le mode commande ou l’expiration nécessite une adaptation pour Home Assistant.'],
+    };
+    const hint = extendedUpdate || extendedPlaceholder ? (extendedUpdateHints[locale] ?? extendedUpdateHints.en)[Number(extendedPlaceholder)] :
+      customMessage ? customHint[locale] ?? customHint.en :
       customPlaceholder ? customPlaceholderHint[locale] ?? customPlaceholderHint.en : selector ? selectorLabels[0] :
       categoryMembers ? categoryMembersHint[locale] ?? categoryMembersHint.en :
       placeholder && type === 'get_enum_members' ? categoryMembersUnsupported[locale] ?? categoryMembersUnsupported.en :
@@ -983,11 +992,19 @@ function reviewIoBrokerImport(name, workspace) {
       binaryHttp ? binaryHint[locale] ?? binaryHint.en :
       [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
         fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
-    if (customPlaceholder || logTrigger || (logData && placeholder) || fileEvent || legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
+    if (extendedPlaceholder || extendedUpdate || customPlaceholder || logTrigger || (logData && placeholder) || fileEvent || legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');
     row.append(element('strong', path + ' · ' + (categoryTrigger ? 'onEnumMembers' : categoryMembers ? 'get_enum_members' : selector ? 'selector' : type)), element('p', hint));
+    if (extendedUpdate) {
+      const label = element('label', {de: 'ID-Zuordnung (JSON)', en: 'ID mapping (JSON)', fr: 'Correspondance des ID (JSON)'}[locale] ?? 'ID mapping (JSON)');
+      const input = element('input');
+      input.value = fields.MAPPING;
+      input.oninput = () => { fields.MAPPING = input.value; };
+      label.append(' ', input);
+      row.append(label);
+    }
     if (customMessage) {
       const label = element('label', {de: 'HA-Skriptaktion', en: 'HA script action', fr: 'Action du script HA'}[locale] ?? 'HA script action');
       const input = element('input');
@@ -2570,7 +2587,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.125'),
+      import('./vendor/pro-blocks.js?v=0.1.126'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

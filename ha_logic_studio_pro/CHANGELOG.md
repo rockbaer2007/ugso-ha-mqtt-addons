@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.126
+
+- Blocks JS importiert „aktualisiere“ aus `control_ex` mit berechneter ioBroker-ID, berechneter Verzögerung und der Option zum Abbrechen vorheriger Schreibvorgänge. Die ID wird ausdrücklich einem HA-Helfer zugeordnet. Andere Schreibmodi und Ablaufzeiten bleiben mit einem Hinweis am Block erhalten.
+- Mit einem echten ioBroker-Blockly-Export per Play auf dem Testsystem PC (64) geprüft. Der zugeordnete HA-Zahlenhelfer stand rund vier Sekunden nach Play noch auf `0` und nach Ablauf der berechneten Verzögerung von `7000 + 8000` ms auf `42`.
+
 ## 0.1.125
 
 - Blocks JS importiert `sendto_custom` mit benannten Parametern und Antwortzweig. In der Importprüfung wird eine HA-Skriptaktion mit Rückgabedaten zugeordnet und für die Runtime gezielt freigegeben.
