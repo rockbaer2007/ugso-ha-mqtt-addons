@@ -9,6 +9,7 @@
 ## Blocks JS
 
 - [ ] Neue Importfälle aufnehmen, sobald ein echter Export mit einem noch fehlenden oder unvollständig übernommenen Block vorliegt.
+- [x] In 0.1.113 wurde der Hinweis für „Datei lesen“ mit einem echten ioBroker-Blockly-Export auf dem Testsystem PC (64) geprüft. Die native HA-Aktion lieferte `data.probe = 42`.
 - [x] In 0.1.112 wurde der Hinweis für „Datei schreiben“ mit einem echten ioBroker-Blockly-Export auf dem Testsystem PC (64) geprüft.
 - [x] In 0.1.111 wurde der Hinweis für temporäre HTTP-Antwortdateien mit einem echten ioBroker-Blockly-Export auf dem Testsystem PC (64) geprüft.
 - Der erneute Importtest zu 0.1.100 bestätigte Zustandsauslöser, Aktualisieren, Steuern und Zustandsabfrage anhand vorhandener XML- und JS-Exporte.

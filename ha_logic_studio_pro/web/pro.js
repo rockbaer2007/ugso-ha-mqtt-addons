@@ -874,12 +874,19 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'For a text log, configure the Home Assistant File integration with a fixed destination path. Use notify.send_message with the file notification entity as the target and DATA as the message. The action appends lines. If the script needs to replace files, write binary data, or select the filename at runtime, use a service configured for that purpose.',
       fr: 'Pour un journal texte, configurez l’intégration Fichier de Home Assistant avec un chemin de destination fixe. Utilisez notify.send_message avec l’entité de notification de fichier comme cible et DATA comme message. L’action ajoute des lignes. Pour remplacer des fichiers, écrire des données binaires ou choisir le nom de fichier à l’exécution, utilisez un service configuré à cette fin.',
     };
-    const hint = fileWrite ? fileWriteHint[locale] ?? fileWriteHint.en :
+    const fileRead = placeholder && ['file_read', 'file_data'].includes(type);
+    const fileReadHint = {
+      de: 'Für JSON oder YAML verwende in einem HA-Skript file.read_file mit file_name, file_encoding und response_variable. Der Pfad muss in Home Assistant freigegeben sein. Verarbeite danach <Antwortvariable>.data. Die allgemeine Blocks-JS-Aktion gibt diese Antwort nicht an den ioBroker-Antwortzweig weiter. Für Rohtext, Binärdaten oder den MIME-Typ brauchst du einen dafür eingerichteten Dienst.',
+      en: 'For JSON or YAML, use file.read_file in a Home Assistant script with file_name, file_encoding, and response_variable. Use a path allowed in Home Assistant, then process <response_variable>.data. The generic Blocks JS action does not pass that response to the ioBroker callback. For raw text, binary data, or the MIME type, use a service configured for that purpose.',
+      fr: 'Pour du JSON ou du YAML, utilisez file.read_file dans un script Home Assistant avec file_name, file_encoding et response_variable. Le chemin doit être autorisé dans Home Assistant. Traitez ensuite <variable_de_réponse>.data. L’action générique de Blocks JS ne transmet pas cette réponse au rappel ioBroker. Pour le texte brut, les données binaires ou le type MIME, utilisez un service configuré à cette fin.',
+    };
+    const hint = fileRead ? fileReadHint[locale] ?? fileReadHint.en :
+      fileWrite ? fileWriteHint[locale] ?? fileWriteHint.en :
       responseFile ? responseFileHint[locale] ?? responseFileHint.en :
       binaryHttp ? binaryHint[locale] ?? binaryHint.en :
       [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
         fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
-    if (fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
+    if (fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');

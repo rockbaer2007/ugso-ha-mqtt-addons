@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.113
+
+- Blocks JS erklärt am importierten ioBroker-Block „Datei lesen“ (`file_read`) und am Antwortblock `file_data`, wie ein HA-Skript die Antwort von `file.read_file` über `response_variable` und `.data` verarbeitet.
+- Auf dem Testsystem PC (64) lieferte die native HA-Aktion für die JSON-Testdatei `data.probe = 42`. Beim Import eines echten Blockly-Exports blieben der Dateiname und der Antwortblock erhalten. Der Hinweis erschien in der Importübersicht und direkt am Block.
+
 ## 0.1.112
 
 - Blocks JS erhält beim ioBroker-Import von „Datei schreiben“ (`file_write`) die Anschlüsse für Speicherobjekt, Dateiname und Inhalt. Der Hinweis beschreibt das Anhängen von Text über `notify.send_message` an eine fest konfigurierte Datei und den Einsatz eines eigenen Dienstes für dynamische Dateinamen, Binärdaten oder das Ersetzen einer Datei.
