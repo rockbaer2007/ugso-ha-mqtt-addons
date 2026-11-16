@@ -1,5 +1,11 @@
 # HA Logic Studio Pro
 
+## 0.1.121
+
+- Die kompakte Tab-Leiste fasst Projektname, rotes Quadrat für ungespeicherte Änderungen und Schließen-Kreuz zusammen. Eine blaue Linie markiert den aktiven Tab.
+- „Alles speichern“ erscheint zwischen „Speichern“ und „Abbrechen“, sobald mindestens zwei offene Tabs ungespeicherte Änderungen haben.
+- Im Chrome-Test auf dem Testsystem PC (64) blieb die Schaltfläche bei einem geänderten Tab verborgen. Bei zwei geänderten Tabs speicherte ein Klick beide Änderungen. Beide blieben nach dem Neuladen erhalten. Anschließend wurden die ursprünglichen Namen der Testprojekte wiederhergestellt.
+
 ## 0.1.120
 
 - Bei mehreren offenen Tabs erscheint „Alles speichern“. Die Schaltfläche speichert die Änderungen aller offenen Projekte gemeinsam. Ein rotes Quadrat kennzeichnet jeden Tab mit ungespeicherten Änderungen.

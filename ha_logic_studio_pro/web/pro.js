@@ -1287,10 +1287,10 @@ function renderProjectList() {
 }
 
 function refreshTabSaveState() {
-  let anyDirty = false;
+  let dirtyTabs = 0;
   for (const tab of $('tabs').children) {
     const dirty = hasUnsavedChanges(tab.dataset.projectTab);
-    anyDirty ||= dirty;
+    if (dirty) dirtyTabs += 1;
     tab.querySelector('.project-tab-dirty').hidden = !dirty;
     const tabButton = tab.firstElementChild;
     const name = projects.get(tab.dataset.projectTab)?.name;
@@ -1298,13 +1298,10 @@ function refreshTabSaveState() {
     else tabButton.removeAttribute('aria-label');
   }
   const saveAll = $('save-all-projects');
-  saveAll.hidden = openTabs.size < 2;
-  saveAll.disabled = !anyDirty;
+  if (saveAll) {
+    saveAll.hidden = saveAll.disabled = dirtyTabs < 2;
+  }
 }
-
-$('save-all-projects').onclick = () => {
-  if (openTabs.size > 1) commitEditors([...openTabs]);
-};
 
 function renderNavigation() {
   renderProjectList();
@@ -1567,6 +1564,10 @@ function toolbar(panel, project) {
     row.append(label);
   }
   const save = button('Speichern', () => commitEditor(id));
+  const saveAll = button('Alles speichern', () => {
+    if (openTabs.size > 1) commitEditors([...openTabs]);
+  });
+  saveAll.id = 'save-all-projects';
   const cancel = button('Abbrechen', () => {
     if (unsavedProjects.has(id)) {
       closeTab(id);
@@ -1593,8 +1594,12 @@ function toolbar(panel, project) {
   save.className = 'editor-commit';
   cancel.className = 'editor-discard';
   save.disabled = cancel.disabled = !hasUnsavedChanges(id);
-  row.append(save, cancel);
+  const saveActions = element('div');
+  saveActions.className = 'editor-save-actions';
+  saveActions.append(save, saveAll, cancel);
+  row.append(saveActions);
   panel.append(row);
+  refreshTabSaveState();
   return row;
 }
 
