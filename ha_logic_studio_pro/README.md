@@ -2,7 +2,7 @@
 
 HA Logic Studio Pro ist eine Home-Assistant-App zum Erstellen, Prüfen und Ausführen von Automationen und Logik. Projekte und Ordner werden pro Home-Assistant-Benutzer gespeichert. Die Oberfläche gibt es auf Deutsch, Englisch und Französisch.
 
-**Stand 0.1.129** · [GitHub-Release und ZIP](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.129)
+**Stand 0.1.130** · [GitHub-Release und ZIP](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.130)
 
 ## Installation und Update
 
@@ -27,6 +27,8 @@ Für eine bestehende Installation aus dem Sammelrepo in der App-Übersicht **Nac
 ## ioBroker-Import in Blocks JS
 
 Blockly-XML lässt sich in den Expertenwerkzeugen importieren. Die Importprüfung zeigt, welche Entitäten du zuordnen und welche Blöcke du anpassen musst. Seit 0.1.129 kann `state_exists_var` auch berechnete ioBroker-IDs prüfen. Eine vorhandene zugeordnete HA-Entität liefert `true`, eine fehlende `false`. Ohne Zuordnung nennt das Protokoll die berechnete ID. [Anleitung für Blocks JS](https://opensource.ugso-software.de/projects/logic-studio/user-guide/blocks-js#berechnete-iobroker-id-auf-existenz-prufen)
+
+Beim Import von `control_instance` bleiben Adapterinstanz und Aktion sichtbar. Im Blockly-Importtest auf dem Testsystem PC (64) zeigte der Block `admin.0 · Neustart` und nannte die passenden HA-Aktionen für Apps und Integrationen. Play blockierte den Platzhalter. Der Test löste keinen Neustart aus.
 
 ## Testlauf und Live-Ausführung
 

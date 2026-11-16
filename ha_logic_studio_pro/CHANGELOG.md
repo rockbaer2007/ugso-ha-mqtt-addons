@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.130
+
+- Blocks JS erhält bei `control_instance` die ioBroker-Adapterinstanz und die gewählte Aktion am importierten Block. Für „Neustart“ nennt der Hinweis passende HA-Aktionen für eine HA-App oder einen Integrationseintrag. Play bleibt bis zur manuellen Anpassung blockiert.
+- Auf dem Testsystem PC (64) mit einem echten Blockly-Export geprüft. Der importierte Block zeigte `admin.0 · Neustart` und den Hinweis direkt am Block. Play meldete `control_instance` als nicht unterstützt. Der Test löste keinen Neustart aus.
+
 ## 0.1.129
 
 - Blocks JS importiert `state_exists_var` mit berechneter ioBroker-ID. Die ausdrückliche HA-Zuordnung ist in der Importprüfung und direkt am Block verfügbar. Der Block unterscheidet eine fehlende Entität von einer fehlenden Zuordnung und nennt die berechnete ID im Protokoll.

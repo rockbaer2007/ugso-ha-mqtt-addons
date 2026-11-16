@@ -980,12 +980,25 @@ function reviewIoBrokerImport(name, workspace) {
       fr: ['Associez explicitement l’ID ioBroker calculé à une entité HA compatible. Autorisez cette entité dans runtime_write_entities. Le délai et l’annulation sont conservés.', 'Avec expire, ioBroker supprime l’état stocké après le nombre de secondes indiqué. Un assistant booléen HA conserve son état activé ou désactivé. Le bloc de substitution conserve ses entrées et bloque Play tant que la logique reste à adapter. Pour désactiver l’assistant après un délai, ajoutez une action de désactivation différée dans HA.'],
     };
     const dynamicExists = block.type === 'iob_exists_dynamic';
+    const instanceControl = placeholder && type === 'control_instance';
+    const instanceRestartHints = {
+      de: 'Wähle das tatsächliche Ziel in Home Assistant. Für eine HA-App verwende hassio.app_restart mit ihrem App-Kürzel. Für eine Integration verwende homeassistant.reload_config_entry mit dem passenden Konfigurationseintrag. Beide Aktionen benötigen Adminrechte. Der importierte Block bleibt ein Platzhalter und blockiert Play bis zur Anpassung.',
+      en: 'Choose the actual target in Home Assistant. For an HA app, use hassio.app_restart with its app slug. For an integration, use homeassistant.reload_config_entry with the matching configuration entry. Both actions require administrator rights. The imported block remains a placeholder and blocks Play until adapted.',
+      fr: 'Choisissez la cible réelle dans Home Assistant. Pour une application HA, utilisez hassio.app_restart avec son identifiant. Pour une intégration, utilisez homeassistant.reload_config_entry avec l’entrée de configuration correspondante. Les deux actions exigent des droits administrateur. Le bloc importé reste un bloc de substitution et bloque Play tant qu’il n’a pas été adapté.',
+    };
+    const instanceControlHints = {
+      de: 'Ordne die ioBroker-Adapterinstanz ausdrücklich dem tatsächlichen Ziel zu und führe Start oder Stopp dort aus. Der Platzhalter blockiert Play bis zur Anpassung.',
+      en: 'Map the ioBroker adapter instance to the actual target explicitly and start or stop it there. The placeholder blocks Play until adapted.',
+      fr: 'Associez explicitement l’instance de l’adaptateur ioBroker à la cible réelle et démarrez-la ou arrêtez-la sur ce système. Le bloc de substitution bloque Play tant qu’il n’a pas été adapté.',
+    };
     const dynamicExistsHints = {
       de: 'Ordne jede berechnete ioBroker-ID im JSON-Feld ausdrücklich einer HA-Entität zu und gib diese für die Runtime frei. Eine fehlende HA-Entität liefert falsch. Fehlt die Zuordnung, meldet Play die berechnete ID.',
       en: 'Map each computed ioBroker ID to an HA entity in the JSON field and allow it in the runtime. A missing HA entity returns false. Play reports the computed ID when its mapping is missing.',
       fr: 'Associez chaque ID ioBroker calculé à une entité HA dans le champ JSON et autorisez-la dans la runtime. Une entité HA absente renvoie faux. Play indique l’ID calculé si son association manque.',
     };
-    const hint = dynamicExists ? dynamicExistsHints[locale] ?? dynamicExistsHints.en :
+    const instanceHints = metadata?.instanceAction === 'restartInstanceAsync' ? instanceRestartHints : instanceControlHints;
+    const hint = instanceControl ? instanceHints[locale] ?? instanceHints.en :
+      dynamicExists ? dynamicExistsHints[locale] ?? dynamicExistsHints.en :
       extendedUpdate || extendedPlaceholder ? (extendedUpdateHints[locale] ?? extendedUpdateHints.en)[Number(extendedPlaceholder)] :
       customMessage ? customHint[locale] ?? customHint.en :
       customPlaceholder ? customPlaceholderHint[locale] ?? customPlaceholderHint.en : selector ? selectorLabels[0] :
@@ -1001,7 +1014,7 @@ function reviewIoBrokerImport(name, workspace) {
       binaryHttp ? binaryHint[locale] ?? binaryHint.en :
       [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
         fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
-    if (dynamicExists || extendedPlaceholder || extendedUpdate || customPlaceholder || logTrigger || (logData && placeholder) || fileEvent || legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
+    if (instanceControl || dynamicExists || extendedPlaceholder || extendedUpdate || customPlaceholder || logTrigger || (logData && placeholder) || fileEvent || legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');
@@ -2596,7 +2609,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.129'),
+      import('./vendor/pro-blocks.js?v=0.1.130'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

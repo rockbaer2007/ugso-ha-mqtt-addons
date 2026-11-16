@@ -1,0 +1,6 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+<block type="control_instance" id="ugso130-restart" x="30" y="30">
+<field name="INSTANCE">admin.0</field>
+<field name="ACTION">restartInstanceAsync</field>
+</block>
+</xml>
