@@ -1,174 +1,35 @@
 # HA Logic Studio Pro
 
-Im Runtime-Test zu 0.1.73 auf dem Testsystem PC (64) startete der zweite Auslöser, während der erste noch lief. Beide wurden abgeschlossen. Ein gezielter Fehler beendete das fehlerhafte Skript. Das andere Skript verarbeitete anschließend einen weiteren Auslöser.
+HA Logic Studio Pro ist eine Home-Assistant-App zum Erstellen, Prüfen und Ausführen von Automationen und Logik. Projekte und Ordner werden pro Home-Assistant-Benutzer gespeichert. Die Oberfläche gibt es auf Deutsch, Englisch und Französisch.
 
-JavaScript, TypeScript und Funktionspläne können nach dem Speichern beim Start der HA-App automatisch ausgeführt werden. Ein manueller Stopp beendet die aktuelle Ausführung. Die gespeicherte Auswahl gilt für den nächsten App-Start. Die Werkzeugleiste zeigt den aktuellen Laufstatus separat an.
+**Stand 0.1.115** · [GitHub-Release und ZIP](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.115)
 
-Der laufende Funktionsplan zeigt Ein- und Ausgangswerte direkt an den Anschlüssen und den Zeitpunkt der letzten Auswertung pro Baustein.
+## Installation und Update
 
-Rules unterstützt Von/Nach, Attribute, Mindestdauer, numerische Bedingungen sowie HA-Aktionen mit JSON-Parametern und Verzögerungen. Die erzeugte YAML wurde auf .193 mit Testhelfern live geprüft. Erweiterte Regeln werden als HA-YAML exportiert.
+1. In Home Assistant **Einstellungen → Apps → App-Store → ⋮ → Repositorys** öffnen und `https://github.com/rockbaer2007/ugso-ha-mqtt-addons` hinzufügen.
+2. **HA Logic Studio Pro** auswählen, **Installieren** und anschließend **Starten** wählen. Die App unterstützt `amd64` und `aarch64`.
+3. **Benutzeroberfläche öffnen** wählen. Über **+** ein Projekt und den gewünschten Editor auswählen.
 
-Der YAML-Export schützt Zustandswerte wie `on` und `off` davor, beim Einlesen als Wahrheitswerte interpretiert zu werden. Auf dem HA-Testsystem .193 wurden Zustandswechsel, HA-Ereignis und Uhrzeit sowie UND, ODER und NICHT mit je zwei Aktionen in DANN und SONST live geprüft.
+Für eine bestehende Installation aus dem Sammelrepo in der App-Übersicht **Nach Updates suchen** und bei HA Logic Studio Pro **Aktualisieren** wählen.
 
-Der Rules-Editor hat eine kompakte Seitenleiste. Eine Regel kann mehrere Auslöser haben. Zustandsbedingungen lassen sich mit UND, ODER oder NICHT kombinieren. DANN und SONST unterstützen mehrere Aktionen in Eingabereihenfolge.
+## Welcher Editor passt?
 
-**Rules:** Der Assistent führt durch Auslöser, Bedingungen, Aktionen und YAML-Vorschau. Unterstützt werden Zustandswechsel, tägliche Uhrzeiten und HA-Ereignisse. Änderungen am Projekt werden erst mit „Speichern“ dauerhaft übernommen.
+| Editor | Wofür er gedacht ist |
+| --- | --- |
+| **Funktionsplan** | Logik mit verbundenen Bausteinen wie Timern, Zählern und Merkern aufbauen, simulieren und im Betrieb Ein- und Ausgänge beobachten. |
+| **Rules** | Automationen aus Auslösern, Bedingungen und Aktionen mit DANN- und SONST-Zweigen erstellen und als HA-YAML exportieren. |
+| **Blocks A** | Native Home-Assistant-Automationen mit visuellen Blöcken aufbauen und als YAML ausgeben. |
+| **Blocks JS** | JavaScript-Logik mit Blöcken erstellen, testen und auf dem HA-Server ausführen. Beim ioBroker-Blockly-Import lassen sich Entitäten zuordnen und nötige Anpassungen am Block nachlesen. |
+| **JavaScript** | Skripte mit Autovervollständigung und Funktionssignaturen für die HA-Skript-API schreiben und testen. |
+| **TypeScript** | Skripte mit Typprüfung schreiben. Fehler werden an der betroffenen Codezeile angezeigt. |
+| **HA-YAML** | Automationen und Skripte als YAML bearbeiten, prüfen und exportieren. Die grafische Vorschau zeigt den Ablauf der Automation. |
 
-Blocks JS: Skripte starten und stoppen, Automationen aktivieren, deaktivieren oder mit optionaler Bedingungspruefung ausloesen.
+## Testlauf und Live-Ausführung
 
-**Funktionen:** Blocks JS bietet unter „Funktionen“ zwei JavaScript-Definitionen mit und ohne Ergebnis. Parameter werden über das Zahnrad, der Code über „…“ bearbeitet. Aufrufblöcke erscheinen nach der Definition in der Palette. Beim ioBroker-Import bleiben Code und Parameter erhalten. ioBroker-spezifische APIs im importierten Code müssen für die HA-Runtime angepasst werden.
+**Testlauf** verwendet simulierte Werte und Ereignisse. **Play** startet gespeicherte Projekte aus Funktionsplan, Blocks JS, JavaScript und TypeScript in der App auf dem HA-Server. Für die Live-Ausführung werden die benötigten Entitäten, Ereignisse und MQTT-Themen in der App-Konfiguration freigegeben. YAML-Exporte aus Rules, Blocks A und HA-YAML lassen sich in Home Assistant übernehmen.
 
-**Verlauf:** Blocks JS → Sendto → „Verlauf abfragen“ liest Recorder-Daten einer freigegebenen HA-Entität. Ohne Zeitangaben gilt der aktuelle Tag in der HA-Zeitzone. Die Eingänge erwarten Millisekunden oder Datum-Objekte. Der Ergebnisblock liefert im nachgelagerten Abschnitt eine Liste aus `{ts, val}`. Min, Max und Mittelwert berücksichtigen numerische Zustände. „Anzahl“ zählt aufgezeichnete Zustände pro Intervall. Der Testlauf verwendet Demodaten.
+## Bedienungsanleitung und Entwicklung
 
-Beim ioBroker-Import bleiben Zeitraum, Aggregation, Schritt, Anzahl und angeschlossene Blöcke erhalten. Ordne der importierten Objekt-ID eine HA-Entität zu. Die Daten stammen aus dem HA-Recorder, dessen Aufzeichnung und Aggregation von der ioBroker-Historie abweichen können. Dynamisch berechnete Objekt-IDs bleiben als nicht unterstützte Originalblöcke erhalten.
-
-**CallMeBot:** In Blocks JS → Sendto erscheint WhatsApp beziehungsweise Signal, sobald der zugehörige MQTT-Profilsensor verfügbar ist. Nach einer Änderung der Verfügbarkeit den Editor erneut öffnen. Vorhandene Blöcke und Profil-IDs bleiben erhalten. Für die Live-Runtime das jeweilige Topic `ugso/callmebot/send` oder `ugso/callmebot_signal/send` unter `runtime_mqtt_topics` freigeben. Testläufe protokollieren die MQTT-Nachricht lokal.
-
-**Sendto:** „Nachricht an anderes Skript“ und „Skriptnachricht empfangen“ verwenden dieselbe Empfangsadresse und denselben Nachrichtennamen. Im Empfangsblock liefert „Daten der Skriptnachricht“ die Nutzdaten. Für die Live-Runtime `logic_studio_script_message` unter `runtime_events` freigeben und das Empfängerskript zuerst starten. Im Testlauf können Sender und Empfänger zusammen in einem Projekt geprüft werden.
-
-**ioBroker-Import:** Der Import übernimmt statisch adressierte Einweg-Nachrichten und ihre Daten. Die ioBroker-Skript-ID wird als Empfangsadresse übernommen und muss beim Empfänger eingetragen werden. Varianten mit Antwort und dynamischem Ziel bleiben als nicht unterstützte Originalblöcke erhalten.
-
-- Blocks JS unterstützt direkte Funktionsrückgaben und freie Zeitdifferenzformate mit ioBroker-Import.
-
-- Blocks JS übernimmt zusätzliche ioBroker-Zustandsbedingungen und JSON-Zeitpläne mit Uhrzeiten, Intervallen und Kalendertagen. ioBroker-IDs werden ausdrücklich HA-Entitäten zugeordnet.
-
-- **DE:** Der ioBroker-Systemimport erhält verbundene Schaltwerte, Verzögerungen und die Felder Wert, letzte Aktualisierung, letzte Änderung, Anzeigename und Einheit. Die ioBroker-ID bleibt sichtbar. Über das Feld HA-Entität wird das Ziel ausdrücklich ausgewählt.
-- **EN:** The ioBroker system import preserves connected control values, delays, and state value, last update, last change, display name and unit. The ioBroker ID stays visible. Select the target explicitly in the HA entity field.
-- **FR :** L’import système ioBroker conserve les valeurs de commande connectées, les délais, la valeur, la dernière actualisation, la dernière modification, le nom affiché et l’unité. L’identifiant ioBroker reste visible. Sélectionnez explicitement la cible dans le champ Entité HA.
-
-- **DE:** Blocks JS wartet auch in eigenen Funktionen auf den Pause-Block, einschließlich verschachtelter Aufrufe und Rückgabewerte. Freie ioBroker-Datumsformate bleiben beim Import editierbar. Die Ausgabe nutzt die HA-Zeitzone.
-- **EN:** Blocks JS now awaits Pause inside custom procedures, including nested calls and return values. Custom ioBroker date formats remain editable after import. Formatting uses the HA time zone.
-- **FR :** Blocks JS attend la fin d’une pause dans les fonctions personnalisées, y compris pour les appels imbriqués et les valeurs de retour. Les formats de date libres d’ioBroker restent modifiables après importation. Le fuseau horaire de HA est utilisé.
-
-- **DE** Blocks JS ergänzt Pause, Tages-, Wochen- und Monatsgrenzen, Sonnenzeiten als Wert und weitere Zeitformate. Sonnenzeiten verwenden in der Runtime die nächsten Ereignisse aus der freigegebenen Entität `sun.sun`.
-- **EN** Blocks JS adds Pause, calendar boundaries, sun-time values and more time formats. Live sun-time values use the next events from the allowed `sun.sun` entity.
-- **FR** Blocks JS ajoute Pause, les limites calendaires, les heures solaires et de nouveaux formats. En exécution réelle, les prochaines heures solaires proviennent de l’entité autorisée `sun.sun`.
-
-- **DE** Blocks JS ergänzt Listenoperationen und vier Farbblöcke. Der ioBroker-Import übernimmt die Listen- und Farbblöcke samt Eingängen.
-- **EN** Blocks JS adds list operations and four colour blocks. The ioBroker importer preserves these list and colour blocks and their inputs.
-- **FR** Blocks JS ajoute des opérations sur les listes et quatre blocs de couleur. L’import ioBroker conserve ces blocs et leurs entrées.
-
-- **DE** Blocks JS übernimmt weitere ioBroker-Blöcke für System, Datum und Zeit, Trigger, Timer, Objekte, Fallunterscheidungen, Funktionen sowie ausgewählte MQTT- und AWTRIX-Nachrichten. Bei AWTRIX nach dem Import das MQTT-Präfix eintragen.
-- **EN** Blocks JS imports more ioBroker system, date, trigger, timer, object, switch, procedure, MQTT and AWTRIX blocks. Set the MQTT prefix for imported AWTRIX blocks.
-- **FR** Blocks JS importe davantage de blocs ioBroker pour le système, les dates, les déclencheurs, les minuteries, les objets, les fonctions et certains messages MQTT et AWTRIX. Renseignez le préfixe MQTT des blocs AWTRIX importés.
-
-- **DE** Der ioBroker-Import in Blocks JS übernimmt Textblöcke, Schleifen, Mehrfach-UND/ODER sowie benannte Zeitpläne, Stopp und CRON-Werte.
-- **EN** The ioBroker import into Blocks JS preserves text blocks, loops, multi-input AND/OR, named schedules, stop and CRON values.
-- **FR** L’import ioBroker dans Blocks JS reprend les blocs de texte, les boucles, les ET/OU à plusieurs entrées, les horaires nommés, leur arrêt et les valeurs CRON.
-
-Blocks JS bietet benannte Zeitpläne mit Stoppblock und zwei CRON-Wertblöcke. Benannte Pläne akzeptieren fünf oder sechs numerische CRON-Felder und verwenden die Home-Assistant-Zeitzone.
-
-Blocks JS adds named schedules, a stop block, and two CRON value blocks. Named schedules accept five or six numeric CRON fields and use the Home Assistant time zone.
-
-Blocks JS ajoute des horaires nommés, un bloc d’arrêt et deux blocs de valeur CRON. Les horaires nommés acceptent cinq ou six champs CRON numériques et utilisent le fuseau horaire de Home Assistant.
-
-Die Textpalette in Blocks JS folgt der ioBroker-Vorlage. Zwei HA-Blöcke liefern den Anzeigenamen einer Entität und den Messwert mit Einheit. Zahlenformat „System“ verwendet die Sprache des Editors.
-
-The Blocks JS text palette follows the ioBroker layout. Two HA blocks provide the entity display name and the measurement with its unit. The System number format uses the editor language.
-
-La palette Texte de Blocks JS suit la présentation d’ioBroker. Deux blocs HA fournissent le nom affiché de l’entité et la mesure avec son unité. Le format numérique Système utilise la langue de l’éditeur.
-
-Die Mathematikpalette in Blocks JS folgt der ioBroker-Vorlage und enthält Rundung auf Nachkommastellen. Zwei HA-Blöcke lesen Zahlen aus Zuständen und Attributen. Ungültige Werte ergeben `null`.
-
-The Blocks JS math palette follows the ioBroker layout and includes rounding to decimal places. Two HA blocks read numbers from states and attributes. Invalid values return `null`.
-
-La palette Mathématiques de Blocks JS suit la présentation d’ioBroker et permet d’arrondir à un nombre de décimales. Deux blocs HA lisent les nombres depuis les états et les attributs. Une valeur invalide renvoie `null`.
-
-Die Schleifenpalette in Blocks JS folgt der ioBroker-Vorlage. „Zustand von Entität“ liest eine angeschlossene Entitäts-ID, etwa aus der Schleifenvariable einer Liste.
-
-The Blocks JS loop palette follows the ioBroker layout. The State of entity block reads a connected entity ID, for example from a list loop variable.
-
-La palette Boucles de Blocks JS suit la présentation d’ioBroker. Le bloc État de l’entité lit un identifiant connecté, par exemple celui fourni par une boucle sur une liste.
-
-Die Kategorie „Logik“ in Blocks JS folgt der Reihenfolge und Farbgebung von ioBroker. Dazu kommen drei HA-Prüfungen für Verfügbarkeit, Zustand und vorhandene Attribute.
-
-The Logic category in Blocks JS follows the ioBroker order and colour scheme. Three HA checks cover availability, state, and attribute presence.
-
-La catégorie Logique de Blocks JS reprend l’ordre et les couleurs d’ioBroker. Trois vérifications HA couvrent la disponibilité, l’état et la présence d’un attribut.
-
-**DE:** Die dynamischen Timeout- und Intervallblöcke übernehmen Millisekunden aus einem Zahlenblock oder einer Berechnung. „Verzögerung“ und „Intervall“ geben den Namen des gewählten aktiven Timers zurück, sonst `null`.
-
-**EN:** Dynamic timeout and interval blocks take milliseconds from a number block or a calculation. The Timeout and Interval reference blocks return the selected active timer’s name, or `null`.
-
-**FR :** Les blocs dynamiques acceptent une durée en millisecondes fournie par un bloc numérique ou un calcul. Les blocs Délai et Intervalle renvoient le nom du minuteur actif sélectionné, ou `null`.
-
-**DE:** Blocks JS bietet unter „Timeouts“ feste Dauerfelder in ms, s und min und getrennte Stoppblöcke mit Namensauswahl. Unter „Objekt“ lassen sich Eigenschaften über das Zahnrad ergänzen, setzen, entfernen, prüfen und auflisten.
-
-**EN:** Blocks JS Timeouts offers fixed durations in ms, s and min and separate stop blocks with a name selector. Object blocks build objects with the gear menu and set, remove, check and list properties.
-
-**FR :** Blocks JS propose des durées fixes en ms, s et min et des blocs d’arrêt distincts avec sélection du nom. Les blocs Objet créent des objets via la roue dentée et permettent de définir, supprimer, vérifier et lister leurs propriétés.
-
-**DE:** „Astro“ führt Aktionen bei Sonnenaufgang oder Sonnenuntergang mit bis zu ±1440 Minuten Versatz aus. Dazu `sun.sun` zum Lesen freigeben. „Zeitplan aus Zeit-Zustand“ liest einen freigegebenen `input_datetime`-Helfer in der HA-Zeitzone. Nur Uhrzeit bedeutet täglich, nur Datum bedeutet Mitternacht, Datum plus Uhrzeit bedeutet einmalig. Änderungen am Helfer wirken sofort auf den nächsten Termin. Ein positiver Astro-Versatz benötigt eine laufende Runtime, die den ursprünglichen Sonnenzeitpunkt bereits kennt.
-
-**EN:** Astro runs at sunrise or sunset with an offset of up to ±1440 minutes. Allow read access to `sun.sun`. Schedule from time state uses a permitted `input_datetime` helper in the HA time zone. Time-only runs daily, date-only at midnight, and date plus time once. Edits update the next occurrence. A positive Astro offset requires a running runtime that has already seen the original sun event time.
-
-**FR :** Astro se déclenche au lever ou au coucher du soleil, avec un décalage maximal de ±1440 minutes. Autorisez la lecture de `sun.sun`. Le bloc Horaire depuis un état horaire utilise un auxiliaire `input_datetime` autorisé dans le fuseau HA. Une heure seule se répète chaque jour, une date seule se déclenche à minuit, et la date avec l’heure une seule fois. Les changements actualisent la prochaine échéance. Un décalage Astro positif nécessite une exécution qui connaît déjà l’heure initiale de l’événement solaire.
-
-**DE:** Blocks JS → Trigger nutzt das ioBroker-Layout. „Falls Entität“ und „Falls Entitäten“ reagieren auf Zustandswechsel und können den Zielzustand filtern. Mehrere IDs werden durch Kommas getrennt. „Wert“ liefert im Entitätstrigger den alten oder neuen Zustand bzw. Attributwert oder die Entitäts-ID. „Zeitplan“ öffnet den CRON-Dialog. Testläufe simulieren Zustandswechsel von off zu on und Attributwechsel von 0 zu 1.
-
-**EN:** Blocks JS → Triggers follows the ioBroker layout. Single-entity and multi-entity triggers react to state changes and can filter by target state. Separate IDs with commas. The Value block returns the old or new state or attribute value, or the entity ID. Schedule opens the CRON editor. Test runs simulate off to on and attribute changes from 0 to 1.
-
-**FR :** Blocks JS → Déclencheurs reprend la présentation d’ioBroker. Les déclencheurs d’une ou plusieurs entités réagissent aux changements d’état et peuvent filtrer l’état cible. Séparez les identifiants par des virgules. Le bloc Valeur renvoie l’état ou l’attribut ancien ou nouveau, ou l’identifiant de l’entité. Horaire ouvre l’éditeur CRON. Les tests simulent un changement de off à on et des changements d’attribut de 0 à 1.
-
-**DE:** „Konvertierung“ in Blocks JS folgt der Anordnung und Beschriftung von ioBroker. „nach Datum/Zeit“ gibt Millisekunden aus und kann HA-Zeitstempel in Sekunden als Quelle verwenden. „Datum/Zeit … nach …“ liefert ein Datum-Objekt, lokales Datum oder Uhrzeit in der HA-Zeitzone oder ISO-Text in UTC. „Zeitdifferenz formatieren“ erwartet Millisekunden. „nach Logikwert“ erkennt unter anderem `on`/`off` und `1`/`0`. „HA-Zustand verfügbar?“ prüft den gelesenen Wert vor einer Konvertierung.
-
-**EN:** Blocks JS Conversion follows the ioBroker layout. “to date/time” outputs milliseconds and accepts HA timestamps in seconds as a source. “date/time … to …” outputs a Date object, local date or time in the HA time zone, or UTC ISO text. “format time difference” takes milliseconds. “to boolean” recognises values including `on`/`off` and `1`/`0`. “HA state available?” checks the value before conversion.
-
-**FR :** La catégorie Conversion reprend la disposition d’ioBroker. « en date/heure » produit des millisecondes et accepte les horodatages HA en secondes. « date/heure … vers … » produit un objet Date, une date ou une heure dans le fuseau HA, ou un texte ISO en UTC. « formater la durée » attend des millisecondes. « en booléen » reconnaît notamment `on`/`off` et `1`/`0`. « État HA disponible ? » vérifie la valeur avant la conversion.
-
-**DE:** Blocks JS bietet unter „Datum und Zeit“ zwei Zeitvergleiche, den aktuellen Datumswert und Zeitberechnungen. Testlauf und Play verwenden die HA-Zeitzone. Zeitfenster schließen den Beginn ein und das Ende aus und können über Mitternacht laufen. Ganze Tage behalten die lokale Uhrzeit bei, soweit sie am Zieltag existiert; Stunden und kleinere Einheiten sind verstrichene Zeit.
-
-**EN:** Blocks JS offers two time comparisons, the current date value and time arithmetic under “Date and time”. Test runs and Play use the HA time zone. Time ranges include the start, exclude the end and can span midnight. Whole days preserve local wall time where it exists on the target day; hours and smaller units are elapsed time.
-
-**FR :** La catégorie « Date et heure » de Blocks JS propose deux comparaisons horaires, la date actuelle et des calculs de date et d’heure. Le test et l’exécution utilisent le fuseau horaire de HA. Les plages incluent le début, excluent la fin et peuvent traverser minuit. Les jours entiers conservent l’heure locale lorsqu’elle existe le jour cible ; les heures et unités inférieures mesurent le temps écoulé.
-
-**Blocks JS → Sendto** enthält zwei neue violette AWTRIX-NG-Blöcke. **Benachrichtigung** bietet Nachricht, Farbe, Ton, Icon, Wiederholungen, Dauer, Stapeln, Aufwecken und Halten. **Sound abspielen** akzeptiert einen gespeicherten Tonnamen oder RTTTL.
-
-Das MQTT-Präfix aus AWTRIX-NG in den Block eintragen und die verwendeten Topics unter `runtime_mqtt_topics` freigeben, etwa `awtrixNG/cmd/notify` und `awtrixNG/cmd/audio/play`. Die HA-MQTT-Integration und AWTRIX-NG müssen denselben Broker verwenden. Die Blöcke senden ohne Retain. [AWTRIX-NG-MQTT-Dokumentation](https://ang.blueforcer.de/esp32/reference/mqtt/)
-
-**Blocks JS → Sendto** enthält MQTT-Nachricht senden, HA-Benachrichtigung senden und HA-Ereignis senden. Der Testlauf zeigt die Aufrufe im Protokoll. Für **Play** gelten die Freigaben in der App-Konfiguration.
-
-- **MQTT:** MQTT-Integration in HA einrichten und das genaue Topic unter `runtime_mqtt_topics` eintragen. **Retain** ist standardmäßig aus.
-- **Benachrichtigung:** Die gewünschte `notify.*`-Entität unter `runtime_write_entities` eintragen. Der Block verwendet `notify.send_message` mit Nachricht und optionalem Titel.
-- **Ereignis:** Einen eigenen Namen mit Präfix `logic_studio_` unter `runtime_events` eintragen. Ein Datenobjekt ist optional. Derselbe Ereignisname kann im Trigger „Bei Ereignis“ oder in einer HA-Automation verwendet werden.
-
-**Blocks JS → Aktionen** bietet HA-Aktion, HA-Aktion mit Daten, Taster drücken und Option auswählen. Die rosafarbenen Blöcke orientieren sich bei Form und Feldanordnung an ioBroker.
-
-**Blocks JS → System** enthält die Lese- und Steuerblöcke in der vertrauten ioBroker-Anordnung. Schalten und Umschalten unterstützen eine optionale Verzögerung. Aktionen für HA-Skripte unterliegen der Liste freigegebener Schreibziele.
-
-Alle Editoren übernehmen Entwürfe erst mit **Speichern**. **Abbrechen** verwirft die Änderungen seit dem letzten Speichern. Bei einem neuen Projekt verwirft es den ganzen Entwurf. **Play** und **Neustart** sind bei ungespeicherten Änderungen gesperrt. Laufende Skripte lassen sich weiterhin stoppen. Testläufe können den aktuellen Entwurf verwenden.
-
-Die Werkzeugleisten und Dialoge der Editoren wurden in Deutsch, Englisch und Französisch ergänzt. Der Funktionsplan startet über **Play** auf dem HA-Server. **Automatisch** reagiert auf freigegebene Eingänge. **Fester Zyklus** wertet den Plan alle 100 bis 60.000 ms aus. **Speichern** übernimmt den Entwurf. **Abbrechen** lädt den zuletzt gespeicherten Stand.
-
-Der Projektbaum liegt pro Home-Assistant-Benutzer im App-Datenspeicher.
-Zur Übernahme vorhandener Browserprojekte beim ersten Start den bisherigen
-Browser mit demselben Home-Assistant-Benutzer öffnen. Das Projektmenü bietet
-einen JSON-Download für lokale Entwürfe.
-
-Blocks JS ergänzt HA-Auslöser, Attribute, parametrisierte Aktionen, Helferwerte,
-Timer und Programmstruktur. Der JS-/TS-Testlauf simuliert Ereignisse und Timer.
-
-Blocks A verwendet den Katalog von Blocks for HA 0.1.66 und exportiert native Home-Assistant-Automationen. Entitäten lassen sich direkt im jeweiligen Blockfeld auswählen. Blocks JS bietet eine eigene Palette für JavaScript mit HA-Entitäten, Aktionen und Auslösern.
-
-**Play** startet JavaScript, TypeScript und den von Blocks JS erzeugten Code in einem serverseitigen QuickJS-Prozess. **Stopp** beendet ihn. Browserwechsel und geschlossene Tabs beenden ihn nicht. Nach einem App-Neustart müssen Skripte erneut gestartet werden. TypeScript wird transpiliert.
-
-Die Live-Runtime verwendet die HA-WebSocket-API. In der App-Konfiguration stehen `runtime_read_entities`, `runtime_write_entities` und `runtime_events` anfangs leer. Entitäten für Aktionen sind zugleich lesbar. Änderungen an den Freigaben gelten nach einem Neustart der App.
-
-- `ha.readState` und `ha.readAttribute` lesen die zuletzt bestätigten Werte. `ha.onState` und `ha.onAttribute` reagieren auf Änderungen. `ha.onEvent` verarbeitet freigegebene Ereignistypen.
-- `ha.callAction` sendet Aktionen an einzeln freigegebene Ziele. Unterstützt werden Schaltaktionen für Licht, Lüfter, Schalter und Umschalt-Helfer, Wertänderungen für Zahlen-, Text- und Auswahlhelfer sowie Taster. HA bestätigt die Aktion asynchron. Bei einer Ablehnung oder einem Verbindungsverlust stoppt das Skript mit einer Meldung im Protokoll.
-- `ha.schedule` verarbeitet die von Blocks JS erzeugten Zeitmuster und festen Uhrzeiten samt Wochentagen in der HA-Zeitzone. `ha.onSun` und `ha.scheduleFromDateTime` ergänzen dynamische Termine aus HA-Entitäten. Termine vor dem Runtime-Start werden nicht nachgeholt.
-- Der **Testlauf** verwendet weiterhin Demo-Zustände und simulierte Ereignisse. **Play** verwendet die Live-Verbindung in Home Assistant.
-
-- **Blocks A** exportiert HA-Automationen als YAML. Vorhandene Blockly-Projekte öffnen sich weiterhin in diesem Modus. HA-Skripte und HA-Automationen haben in der Projektliste kein Play-Symbol.
-- **Blocks JS** erzeugt JavaScript und testet es mit Demo-Zuständen. HA-Aktionen erscheinen im Protokoll und werden nicht ausgeführt.
-- Der ioBroker-Import liest den gespeicherten Blockly-Plan aus dem Export. Unbekannte Bausteine bleiben als rote Platzhalter sichtbar und blockieren die Ausgabe, bis sie ersetzt sind. Entitäten müssen auf HA-IDs angepasst werden.
-
-Interner Entwicklungsstand mit eigenem App-Slug ha_logic_studio_pro. Die App startet manuell und verwendet ihren eigenen Datenspeicher.
-
-Nach dem Start **Weboberfläche öffnen**. Über **＋ → HA-YAML** ein Skript oder eine Automation erstellen. Vorhandene YAML-Dateien können geöffnet, bearbeitet, auf Syntax und Grundstruktur geprüft und exportiert werden. Die Ausführung einer exportierten Konfiguration übernimmt Home Assistant nach dem manuellen Übernehmen.
-
-Rules und Blocks erzeugen über **Als HA-YAML öffnen** einen separaten bearbeitbaren Tab. Der Funktionsplan bringt den bisherigen Editor mit Import, Export, Simulation und Entitätsauswahl mit.
-
-JavaScript-Testläufe verwenden Demo-Zustände und protokollieren simulierte HA-Aktionen im Editor. Projekte und Ordner werden serverseitig gespeichert. Zum Verschieben die Sortierpfeile anklicken, Skripte in einen Ordner oder vor einen anderen Eintrag ziehen und mit den roten Pfeilen speichern.
-
-Der HA-Konfigurationsordner ist für den Funktionsplan lesend eingebunden. Die Importfunktion sichert gelesene Quelldateien vor dem Parsen unter /data/ha-source-backups/.
+- **Bedienungsanleitung mit Beispielen und Screenshots** · [Deutsch](https://opensource.ugso-software.de/projects/logic-studio/user-guide) · [English](https://opensource.ugso-software.de/en/projects/logic-studio/user-guide) · [Français](https://opensource.ugso-software.de/fr/projects/logic-studio/user-guide)
+- [Changelog](CHANGELOG.md)
+- [Roadmap](ROADMAP.md)
