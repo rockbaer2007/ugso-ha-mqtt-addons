@@ -1,6 +1,6 @@
 # Roadmap für HA Logic Studio Pro
 
-Offene Aufgaben nach 0.1.118. Die veröffentlichten Änderungen stehen im [Changelog](CHANGELOG.md).
+Offene Aufgaben nach 0.1.119. Die veröffentlichten Änderungen stehen im [Changelog](CHANGELOG.md).
 
 ## Prioritäten
 

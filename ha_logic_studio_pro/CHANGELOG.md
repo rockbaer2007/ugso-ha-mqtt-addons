@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.119
+
+- Blocks JS übernimmt den ioBroker-Selektor `$()` als Listenblock. Der ursprüngliche Ausdruck bleibt sichtbar. Beim Import werden die HA-Entitäten ausdrücklich zugeordnet und als feste Liste gespeichert.
+- Auf dem Testsystem PC (64) mit einem ioBroker-Blockly-Export geprüft. Per Play protokollierte die importierte Schleife `input_boolean.logic_studio_runtime_test` und `input_number.ugso_rules_080_level` jeweils einmal.
+
 ## 0.1.118
 
 - Blocks JS übernimmt `get_enum_members` mit aktivierter Option „nur Zustände“. Die ioBroker-Kategorie wird beim Import einem HA-Bereich oder Label zugeordnet. Der Block liefert die gespeicherten HA-Entitäts-IDs als Liste.

@@ -897,6 +897,12 @@ function reviewIoBrokerImport(name, workspace) {
     };
     const categoryTrigger = block.type === 'iob_category_trigger';
     const categoryMembers = block.type === 'iob_category_members';
+    const selector = block.type === 'iob_selector';
+    const selectorLabels = ({
+      de: ['Ordne die Treffer des ioBroker-Selektors ausdrücklich HA-Entitäten zu. Die Liste bleibt fest gespeichert. Bei geänderten Treffern erneut importieren.', 'HA-Entität hinzufügen', 'Entfernen'],
+      en: ['Explicitly map the ioBroker selector results to HA entities. The list is saved as a fixed selection. Import again if the results change.', 'Add HA entity', 'Remove'],
+      fr: ['Associez explicitement les résultats du sélecteur ioBroker à des entités HA. La liste est enregistrée. Réimportez si les résultats changent.', 'Ajouter une entité HA', 'Retirer'],
+    })[locale];
     const categoryMembersHint = {
       de: 'Gibt die beim Import zugeordneten HA-Entitäts-IDs als Liste zurück. Bei geänderter Mitgliedschaft erneut importieren.',
       en: 'Returns the HA entity IDs mapped during import as a list. Import again if membership changes.',
@@ -923,7 +929,8 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'The HA event provides the message text and the mapped ioBroker log level.',
       fr: 'L’événement HA fournit le texte du message et le niveau de journalisation mappé au format ioBroker.',
     };
-    const hint = categoryMembers ? categoryMembersHint[locale] ?? categoryMembersHint.en :
+    const hint = selector ? selectorLabels[0] :
+      categoryMembers ? categoryMembersHint[locale] ?? categoryMembersHint.en :
       placeholder && type === 'get_enum_members' ? categoryMembersUnsupported[locale] ?? categoryMembersUnsupported.en :
       categoryTrigger ? categoryLabels[4] : placeholder && type === 'onEnumMembers' ? categoryLabels[5] :
       logTrigger || logData ? logHint[locale] ?? logHint.en :
@@ -939,7 +946,28 @@ function reviewIoBrokerImport(name, workspace) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');
-    row.append(element('strong', path + ' · ' + (categoryTrigger ? 'onEnumMembers' : categoryMembers ? 'get_enum_members' : type)), element('p', hint));
+    row.append(element('strong', path + ' · ' + (categoryTrigger ? 'onEnumMembers' : categoryMembers ? 'get_enum_members' : selector ? 'selector' : type)), element('p', hint));
+    if (selector) {
+      const selected = element('ul');
+      const refresh = () => selected.replaceChildren(...metadata.entities.map(entity => {
+        const item = element('li');
+        const remove = button(selectorLabels[2], () => {
+          metadata.entities = metadata.entities.filter(id => id !== entity);
+          refresh();
+        });
+        remove.setAttribute('aria-label', selectorLabels[2] + ' · ' + entity);
+        item.append(element('code', entity), ' ', remove);
+        return item;
+      }));
+      const addEntity = button(selectorLabels[1], () => {
+        openBlockEntity({kind: 'entity_id'}, '', value => {
+          metadata.entities = categoryEntities([...metadata.entities, value]);
+          refresh();
+        }, value => categoryEntities([value]).length === 1 && !metadata.entities.includes(value));
+      });
+      refresh();
+      row.append(element('code', '$(' + metadata.selector + ')'), selected, addEntity);
+    }
     if (categoryTrigger || categoryMembers) {
       const select = element('select');
       select.setAttribute('aria-label', categoryLabels[0]);
@@ -2403,7 +2431,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.118'),
+      import('./vendor/pro-blocks.js?v=0.1.119'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

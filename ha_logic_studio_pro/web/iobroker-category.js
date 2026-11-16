@@ -13,6 +13,11 @@ export function importCategoryMembers(fields) {
   return {type: 'iob_category_members', extraState: {category: source}};
 }
 
+export function importSelector(fields) {
+  const selector = fields.TEXT?.trim();
+  return selector ? {type: 'iob_selector', extraState: {selector, entities: []}} : null;
+}
+
 export function categoryEntities(values) {
   return Array.isArray(values)
     ? [...new Set(values.filter(value => typeof value === 'string' && /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/.test(value)))]
@@ -72,6 +77,34 @@ export function registerCategoryTrigger(Blockly, generator, language) {
     ...mappingFields,
   };
   generator.forBlock.iob_category_members = block => [mappedMembers(block), 0];
+  const selectorLabels = {
+    de: ['HA-Entitäten zuordnen', 'Dem ioBroker-Selektor HA-Entitäten zuordnen.'],
+    en: ['Map HA entities', 'Map HA entities to the ioBroker selector.'],
+    fr: ['Associer des entités HA', 'Associez des entités HA au sélecteur ioBroker.'],
+  };
+  const selectorCaptions = () => selectorLabels[language()] ?? selectorLabels.en;
+  Blockly.Blocks.iob_selector = {
+    init() {
+      this.appendDummyInput().appendField(new Blockly.FieldLabelSerializable(''), 'SELECTOR');
+      this.appendDummyInput().appendField(new Blockly.FieldLabelSerializable(''), 'ENTITIES');
+      this.setOutput(true, 'Array');
+      this.setColour('#5b80a5');
+    },
+    saveExtraState() {
+      return {selector: this.selector, entities: this.mappedEntities};
+    },
+    loadExtraState(state) {
+      this.selector = state.selector;
+      this.mappedEntities = categoryEntities(state.entities);
+      this.setFieldValue(`$(${state.selector})`, 'SELECTOR');
+      this.setFieldValue(this.mappedEntities.join(', ') || selectorCaptions()[0], 'ENTITIES');
+    },
+  };
+  generator.forBlock.iob_selector = block => {
+    const entities = categoryEntities(block.mappedEntities);
+    if (!entities.length) throw new Error(selectorCaptions()[1]);
+    return [JSON.stringify(entities), 0];
+  };
   generator.forBlock.iob_category_trigger = (block, code) => {
     const members = mappedMembers(block);
     const condition = JSON.stringify(block.getFieldValue('CONDITION'));

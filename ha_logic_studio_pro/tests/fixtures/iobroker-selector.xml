@@ -1,0 +1,23 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+<variables>
+<variable id="ugso-member-var">mitglied</variable>
+</variables>
+<block type="controls_forEach" id="ugso119-loop" x="10" y="10">
+<field name="VAR" id="ugso-member-var">mitglied</field>
+<value name="LIST">
+<block type="selector" id="ugso119-category">
+<field name="TEXT">state[id=0_userdata.0.ugso_mqtt.gesamtleistung.*]</field>
+</block>
+</value>
+<statement name="DO">
+<block type="debug" id="ugso119-log">
+<field name="Severity">debug</field>
+<value name="TEXT">
+<block type="variables_get" id="ugso119-var">
+<field name="VAR" id="ugso-member-var">mitglied</field>
+</block>
+</value>
+</block>
+</statement>
+</block>
+</xml>
