@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.124
+
+- Blocks JS importiert `direct` mit getrennten HA-Zuordnungen für Quelle und Ziel und übernimmt „nur bei Änderung“. Das Ziel ist ein separater beschreibbarer HA-Helfer. Bei berechneten ioBroker-IDs zeigt ein Platzhalter die nötige Anpassung.
+- Auf dem Testsystem PC (64) mit einem echten ioBroker-Blockly-Export und zwei HA-Zahlenhelfern per Play geprüft. Der Quellwechsel von `0` auf `53` schrieb `53` ins Ziel. Nach manuellem Setzen des Zielhelfers auf `7` änderte ein reines Quellattribut-Ereignis bei weiter `53` den Zielwert nicht.
+
 ## 0.1.123
 
 - Blocks JS importiert `get_value_async` mit HA-Entitätszuordnung, Antwortzweig und dem Block „Gelesener Wert“. Unterstützt werden Wert, Aktualisierungs- und Änderungszeit, Anzeigename und Einheit. Für ioBroker-spezifische Felder bleibt ein Hinweis am Platzhalter erhalten.

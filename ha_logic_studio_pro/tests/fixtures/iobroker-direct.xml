@@ -1,0 +1,15 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+<block type="direct" id="CI(o|ymBdufRjmS1)|q]" x="35" y="35">
+<field name="ONLY_CHANGES">TRUE</field>
+<value name="OID_SRC">
+<shadow type="field_oid" id="cF158EW3uj*l}v]wPEg?">
+<field name="oid">0_userdata.0.ugso_direct_source</field>
+</shadow>
+</value>
+<value name="OID_DST">
+<shadow type="field_oid" id="*Lj6|@}a{T2)WEt_nt!$">
+<field name="oid">0_userdata.0.ugso_direct_target</field>
+</shadow>
+</value>
+</block>
+</xml>

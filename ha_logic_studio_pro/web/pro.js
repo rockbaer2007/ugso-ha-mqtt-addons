@@ -835,6 +835,7 @@ function reviewIoBrokerImport(name, workspace) {
     iob_get_object_async_data: ['obj', 'Das Antwortobjekt gehört zum umgebenden asynchronen Leseblock.'],
     iob_get_value_async: ['get_value_async', 'HA-Entität zuordnen und für die Runtime zum Lesen freigeben. Der Antwortzweig erhält den Wert oder das ausgewählte Feld.'],
     iob_get_value_async_data: ['value', 'Der gelesene Wert gehört zum umgebenden asynchronen Leseblock.'],
+    iob_direct: ['direct', 'Quell-ID zum Lesen und Ziel-ID als eigenen HA-Helfer zum Schreiben zuordnen. Die Option „nur bei Änderung“ wird übernommen.'],
     ha_js_system_log: ['onLog', ''],
     ha_js_system_log_data: ['onLog_data', ''],
     ha_js_script_message_request: ['sendto_otherscript', 'Empfangsadresse und Antwortverarbeitung prüfen. Ohne Antwort meldet der Block einen Timeout.'],
@@ -849,6 +850,7 @@ function reviewIoBrokerImport(name, workspace) {
     http_get: 'Für eine berechnete HTTP-URL zuerst einen festen HTTP(S)-Anfang mit Host und Pfad an „Text erstellen“ anschließen. Dann den HA-REST-Befehl konfigurieren.',
     http_post: 'Für eine berechnete HTTP-URL zuerst einen festen HTTP(S)-Anfang mit Host und Pfad an „Text erstellen“ anschließen. Dann den HA-REST-Befehl konfigurieren.',
     get_value_async: 'Für dieses ioBroker-Feld gibt es keine direkte HA-Zuordnung. Wähle in ioBroker Wert, Zeitstempel, Anzeigename oder Einheit und exportiere den Block erneut.',
+    direct: 'Für direkte Verknüpfungen mit berechneten IDs zuerst feste Quell- und Ziel-IDs im ioBroker-Block eintragen und erneut exportieren.',
   };
   const allowedDomains = {
     iob_create_state: helperDomains,
@@ -1043,7 +1045,8 @@ function reviewIoBrokerImport(name, workspace) {
       });
       target.dataset.userText = '';
       target.setAttribute('aria-label', 'HA-Entität zuordnen · ' + path + ' · ' + source);
-      linked.push({block, field, target, label: mappingLabel, domains: allowedDomains[block.type]});
+      const domains = block.type === 'iob_direct' && field === 'TARGET1' ? helperDomains : allowedDomains[block.type];
+      linked.push({block, field, target, label: mappingLabel, domains});
       line.append(element('code', source), ' → ', target);
       row.append(line);
       if (createsHelper) {
@@ -2543,7 +2546,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.123'),
+      import('./vendor/pro-blocks.js?v=0.1.124'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);
