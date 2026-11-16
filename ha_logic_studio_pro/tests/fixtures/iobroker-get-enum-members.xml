@@ -1,0 +1,24 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+<variables>
+<variable id="ugso-member-var">mitglied</variable>
+</variables>
+<block type="controls_forEach" id="ugso118-loop" x="10" y="10">
+<field name="VAR" id="ugso-member-var">mitglied</field>
+<value name="LIST">
+<block type="get_enum_members" id="ugso118-category">
+<field name="OID">enum.rooms.ugso_117_probe</field>
+<field name="STATES_ONLY">TRUE</field>
+</block>
+</value>
+<statement name="DO">
+<block type="debug" id="ugso118-log">
+<field name="Severity">debug</field>
+<value name="TEXT">
+<block type="variables_get" id="ugso118-var">
+<field name="VAR" id="ugso-member-var">mitglied</field>
+</block>
+</value>
+</block>
+</statement>
+</block>
+</xml>

@@ -896,6 +896,17 @@ function reviewIoBrokerImport(name, workspace) {
       fr: 'Pour les fichiers du système HA, configurez Folder Watcher sur un dossier autorisé avec le motif de fichiers voulu. Dans une automatisation Home Assistant, utilisez un déclencheur d’état sur l’entité event, vérifiez l’attribut event_type si nécessaire et lisez le nom dans trigger.to_state.attributes.file. L’objet de stockage ioBroker et le contenu du fichier dans l’événement nécessitent une intégration dédiée.',
     };
     const categoryTrigger = block.type === 'iob_category_trigger';
+    const categoryMembers = block.type === 'iob_category_members';
+    const categoryMembersHint = {
+      de: 'Gibt die beim Import zugeordneten HA-Entitäts-IDs als Liste zurück. Bei geänderter Mitgliedschaft erneut importieren.',
+      en: 'Returns the HA entity IDs mapped during import as a list. Import again if membership changes.',
+      fr: 'Renvoie la liste des identifiants d’entités HA associés lors de l’import. Réimportez si les membres changent.',
+    };
+    const categoryMembersUnsupported = {
+      de: 'Aktiviere „nur Zustände“ in ioBroker, um die Kategorie einer Liste von HA-Entitäten zuzuordnen.',
+      en: 'Enable “states only” in ioBroker to map the category to a list of HA entities.',
+      fr: 'Activez « états uniquement » dans ioBroker pour associer la catégorie à une liste d’entités HA.',
+    };
     const categoryLabels = {
       de: ['HA-Bereich oder Label zuordnen', 'Bereich', 'Label', 'HA-Katalog nicht verfügbar.', 'Die aktuellen Entitäten werden gespeichert. Bei Änderungen in HA die Kategorie erneut zuordnen. Die Runtime benötigt Lesefreigaben für die Entitäten.', 'Für diese ioBroker-Auslösebedingung gibt es keine direkte HA-Zuordnung. Prüfe insbesondere den ACK-Filter.'],
       en: ['Map to an HA area or label', 'Area', 'Label', 'HA catalog unavailable.', 'The current entities are saved. Remap the category after membership changes in HA. The runtime requires read permissions for the entities.', 'This ioBroker trigger condition has no direct HA mapping. Check the ACK filter.'],
@@ -912,7 +923,9 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'The HA event provides the message text and the mapped ioBroker log level.',
       fr: 'L’événement HA fournit le texte du message et le niveau de journalisation mappé au format ioBroker.',
     };
-    const hint = categoryTrigger ? categoryLabels[4] : placeholder && type === 'onEnumMembers' ? categoryLabels[5] :
+    const hint = categoryMembers ? categoryMembersHint[locale] ?? categoryMembersHint.en :
+      placeholder && type === 'get_enum_members' ? categoryMembersUnsupported[locale] ?? categoryMembersUnsupported.en :
+      categoryTrigger ? categoryLabels[4] : placeholder && type === 'onEnumMembers' ? categoryLabels[5] :
       logTrigger || logData ? logHint[locale] ?? logHint.en :
       fileEvent ? fileEventHint[locale] ?? fileEventHint.en :
       legacyRequest ? legacyRequestHint[locale] ?? legacyRequestHint.en :
@@ -926,8 +939,8 @@ function reviewIoBrokerImport(name, workspace) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');
-    row.append(element('strong', path + ' · ' + (categoryTrigger ? 'onEnumMembers' : type)), element('p', hint));
-    if (categoryTrigger) {
+    row.append(element('strong', path + ' · ' + (categoryTrigger ? 'onEnumMembers' : categoryMembers ? 'get_enum_members' : type)), element('p', hint));
+    if (categoryTrigger || categoryMembers) {
       const select = element('select');
       select.setAttribute('aria-label', categoryLabels[0]);
       select.add(new Option(categoryLabels[0], ''));
@@ -2390,7 +2403,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.117'),
+      import('./vendor/pro-blocks.js?v=0.1.118'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

@@ -1,5 +1,10 @@
 # HA Logic Studio Pro
 
+## 0.1.118
+
+- Blocks JS übernimmt `get_enum_members` mit aktivierter Option „nur Zustände“. Die ioBroker-Kategorie wird beim Import einem HA-Bereich oder Label zugeordnet. Der Block liefert die gespeicherten HA-Entitäts-IDs als Liste.
+- Auf dem Testsystem PC (64) mit einem ioBroker-Blockly-Export und einem HA-Label mit zwei Testhelfern geprüft. Per Play protokollierte die importierte Schleife `input_boolean.logic_studio_runtime_test` und `input_number.ugso_rules_080_level` jeweils einmal.
+
 ## 0.1.117
 
 - Blocks JS übernimmt `onEnumMembers` und ordnet die ioBroker-Kategorie beim Import einem HA-Bereich oder Label zu. Der Import speichert die aktuell aufgelösten Entitäten und erhält die Wert- und ID-Blöcke.
