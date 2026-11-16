@@ -1,5 +1,11 @@
 # HA Logic Studio Pro
 
+## 0.1.122
+
+- Blocks JS importiert die ioBroker-Blöcke `create` und `create_ex` mit ihrer Blockfolge. Pro Datenpunkt lässt sich ein HA-Helfer zuordnen, anlegen oder später auswählen. Lesen und Aktualisieren übernehmen dieselbe Zuordnung.
+- Ein neuer Helfer erhält den unterstützten festen Startwert einmalig bei der Anlage. Die Zuordnung eines vorhandenen Helfers und der Skriptstart erhalten seinen aktuellen Wert.
+- Auf dem Testsystem PC (64) las der Live-Lauf zuerst `17`, aktualisierte den HA-Zahlenhelfer auf `42` und las nach dem Skriptneustart `42`. Der echte ioBroker-Export ergab denselben Blockly-Arbeitsbereich und wurde in Chrome mit dem vorhandenen Helfer verknüpft.
+
 ## 0.1.121
 
 - Die kompakte Tab-Leiste fasst Projektname, rotes Quadrat für ungespeicherte Änderungen und Schließen-Kreuz zusammen. Eine blaue Linie markiert den aktiven Tab.

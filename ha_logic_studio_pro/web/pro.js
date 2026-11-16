@@ -1,5 +1,6 @@
 import {renderYamlPreview} from './yaml-preview.js?v=0.1.93';
 import {categoryEntities} from './iobroker-category.js';
+import {helperDomains, helperSpec, provisionHelper} from './iobroker-create-state.js';
 import {parseDocument} from './vendor/pro-yaml.js';
 import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.100';
 import {connectLanguage, locales, translate} from './i18n.js';
@@ -812,6 +813,13 @@ function reviewIoBrokerImport(name, workspace) {
   const content = element('div');
   const rows = element('ol');
   const mappings = new Map();
+  const createSources = new Set();
+  let pendingCreation = false;
+  const helperLabels = ({
+    de: ['Helfer zuordnen', 'Helfer anlegen', 'Später zuordnen', 'Noch kein HA-Helfer zugeordnet.', 'HA-Administratorkonto erforderlich.', 'Kein unterstützter fester Startwert oder Helfertyp erkannt.', 'Helfername', 'Helfer konnte nicht angelegt werden.', 'Der Helfer wurde angelegt. Setze den Startwert in Home Assistant.'],
+    en: ['Map helper', 'Create helper', 'Map later', 'No HA helper mapped yet.', 'An HA administrator account is required.', 'No supported fixed initial value or helper type detected.', 'Helper name', 'Could not create the helper.', 'The helper was created. Set the initial value in Home Assistant.'],
+    fr: ['Associer un assistant', 'Créer un assistant', 'Associer plus tard', 'Aucun assistant HA associé.', 'Un compte administrateur HA est requis.', 'Aucune valeur initiale fixe ou aucun type compatible détecté.', 'Nom de l’assistant', 'Impossible de créer l’assistant.', 'L’assistant a été créé. Définissez sa valeur initiale dans Home Assistant.'],
+  })[locale];
   const notes = {
     iob_http_get: ['http_get', 'Einen freigegebenen HA-REST-Befehl für GET eintragen. URL und Timeout aus dem Import in Home Assistant konfigurieren.'],
     iob_http_post: ['http_post', 'Einen freigegebenen HA-REST-Befehl mit Methode POST eintragen. Den importierten Content-Type im REST-Befehl als content_type konfigurieren, zusätzliche Request-Header unter headers. In HA payload: "{{ payload }}" konfigurieren.'],
@@ -841,6 +849,7 @@ function reviewIoBrokerImport(name, workspace) {
     get_value_async: 'HA-Zustand im Block „Zustand lesen“ abfragen und den bisherigen Callback als Folgeblöcke einfügen.',
   };
   const allowedDomains = {
+    iob_create_state: helperDomains,
     iob_update: ['input_boolean', 'input_number', 'input_text'],
     iob_control: ['light', 'switch', 'input_boolean', 'fan', 'input_number', 'input_text'],
     iob_toggle: ['light', 'switch', 'input_boolean', 'fan'],
@@ -1014,22 +1023,77 @@ function reviewIoBrokerImport(name, workspace) {
       if (!mappings.has(source)) mappings.set(source, []);
       const linked = mappings.get(source);
       const line = element('p');
-      const target = button(fields[field] && fields[field] !== '—' ? fields[field] : 'HA-Entität zuordnen', () => {
+      const createsHelper = block.type === 'iob_create_state' && !createSources.has(source);
+      const setMapping = value => {
+        for (const item of linked) {
+          (item.block.fields ??= {})[item.field] = value || '—';
+          item.target.textContent = value || item.label;
+        }
+      };
+      const mappingLabel = createsHelper ? helperLabels[0] : 'HA-Entität zuordnen';
+      const target = button(fields[field] && fields[field] !== '—' ? fields[field] : mappingLabel, () => {
         const restrictions = linked.map(item => item.domains).filter(Boolean);
         const domains = restrictions[0]?.filter(domain => restrictions.every(allowed => allowed.includes(domain)));
         if (domains?.length === 0) return;
         openBlockEntity({kind: 'entity_id', domains}, block.fields?.[field] === '—' ? '' : block.fields?.[field] ?? '', value => {
-          for (const item of linked) {
-            (item.block.fields ??= {})[item.field] = value;
-            item.target.textContent = value;
-          }
+          setMapping(value);
         }, value => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value) && (!domains || domains.includes(value.split('.')[0])));
       });
       target.dataset.userText = '';
       target.setAttribute('aria-label', 'HA-Entität zuordnen · ' + path + ' · ' + source);
-      linked.push({block, field, target, domains: allowedDomains[block.type]});
+      linked.push({block, field, target, label: mappingLabel, domains: allowedDomains[block.type]});
       line.append(element('code', source), ' → ', target);
       row.append(line);
+      if (createsHelper) {
+        createSources.add(source);
+        const status = element('p');
+        status.setAttribute('role', 'status');
+        status.dataset.userText = '';
+        const spec = helperSpec(block, source.replace(/^0_userdata\.0\./, '').replaceAll('.', ' ').slice(0, 100));
+        let hass;
+        try { hass = window.parent.document.querySelector('home-assistant')?.hass; } catch { /* isolated preview */ }
+        const form = element('div');
+        form.hidden = true;
+        const helperName = element('input');
+        helperName.value = spec?.name ?? '';
+        helperName.maxLength = 100;
+        helperName.setAttribute('aria-label', helperLabels[6]);
+        const later = button(helperLabels[2], () => {
+          if (pendingCreation || form.dataset.created) return;
+          form.hidden = true;
+          setMapping('');
+          status.textContent = helperLabels[3];
+        });
+        const create = button(helperLabels[1], () => {
+          if (!spec) { status.textContent = helperLabels[5]; return; }
+          if (!hass?.user?.is_admin || !hass.callWS) { status.textContent = helperLabels[4]; return; }
+          form.hidden = false;
+          helperName.focus();
+        });
+        const confirm = button(helperLabels[1], async () => {
+          if (pendingCreation || form.dataset.created || !helperName.value.trim()) return;
+          if (linked.some(item => item.domains && !item.domains.includes(spec.domain))) {
+            status.textContent = helperLabels[5];
+            return;
+          }
+          pendingCreation = confirm.disabled = true;
+          try {
+            const result = await provisionHelper(message => hass.callWS(message), {...spec, name: helperName.value.trim()});
+            form.dataset.created = result.entity;
+            setMapping(result.entity);
+            create.disabled = later.disabled = true;
+            form.hidden = true;
+            status.textContent = result.initialized ? result.entity : result.entity + ' · ' + helperLabels[8];
+          } catch (error) {
+            status.textContent = helperLabels[7] + ' ' + (error?.message ?? '');
+          } finally {
+            pendingCreation = confirm.disabled = false;
+          }
+        });
+        form.append(element('code', spec?.domain ?? ''), helperName, confirm);
+        line.append(' ', create, ' ', later);
+        row.append(form, status);
+      }
     }
     rows.append(row);
     for (const [slot, input] of Object.entries(block.inputs ?? {})) inspect(input.block ?? input.shadow, path + '/' + slot);
@@ -1049,6 +1113,7 @@ function reviewIoBrokerImport(name, workspace) {
   rows.style.overflowY = 'auto';
   content.append(element('p', 'Prüfe die Zuordnung und Hinweise für jeden importierten Block.'), rows);
   content.append(button('Als Projekt öffnen', () => {
+    if (pendingCreation) return;
     dialog.close();
     add({type: 'blocks-js', name, workspace});
   }));
@@ -2476,7 +2541,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.120'),
+      import('./vendor/pro-blocks.js?v=0.1.122'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

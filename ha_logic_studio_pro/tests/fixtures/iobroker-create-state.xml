@@ -1,0 +1,33 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+<block type="create" id="{83ZC;=?!]|vl4i%f`-E" x="40" y="40">
+<field name="NAME">0_userdata.0.ugso_create_state_probe</field>
+<value name="VALUE">
+<shadow type="math_number" id="h49Z5G|J40nL4Yz?b2Av">
+<field name="NUM">17</field>
+</shadow>
+</value>
+<statement name="STATEMENT">
+<block type="debug" id=",3tdrMC~?336;[Mc%Z?1">
+<field name="Severity">info</field>
+<value name="TEXT">
+<block type="get_value" id="3:IAFv7Z.*TWUf2!e9JR">
+<field name="ATTR">val</field>
+<field name="OID">0_userdata.0.ugso_create_state_probe</field>
+</block>
+</value>
+<next>
+<block type="update" id=".$nwqxXyp5]=!Y3@+]`n">
+<mutation xmlns="http://www.w3.org/1999/xhtml" delay_input="false"></mutation>
+<field name="OID">0_userdata.0.ugso_create_state_probe</field>
+<field name="WITH_DELAY">FALSE</field>
+<value name="VALUE">
+<shadow type="math_number" id="HUFCeD4RN=g.-V88Kt^6">
+<field name="NUM">42</field>
+</shadow>
+</value>
+</block>
+</next>
+</block>
+</statement>
+</block>
+</xml>
