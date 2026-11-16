@@ -886,14 +886,21 @@ function reviewIoBrokerImport(name, workspace) {
       en: 'Replace request with “HTTP GET · HA REST” and select an approved HA REST command for the original URL. Move the existing callback into the response branch. Replace result with response data in text mode, response.statusCode with the status code, and error with the error value. If the old block logs the URL, add a log block for it.',
       fr: 'Remplacez request par « HTTP GET · HA REST » et sélectionnez une commande REST HA autorisée pour l’URL d’origine. Déplacez le rappel existant dans la branche de réponse. Remplacez result par les données de réponse en mode texte, response.statusCode par le code d’état et error par la valeur d’erreur. Si l’ancien bloc journalise l’URL, ajoutez un bloc de journalisation.',
     };
-    const hint = legacyRequest ? legacyRequestHint[locale] ?? legacyRequestHint.en :
+    const fileEvent = placeholder && ['onFile', 'onFile_data'].includes(type);
+    const fileEventHint = {
+      de: 'Für Dateien auf dem HA-Dateisystem richte Folder Watcher für einen freigegebenen Ordner mit dem passenden Dateimuster ein. Verwende in einer HA-Automation einen Zustandsauslöser für die event-Entität, prüfe bei Bedarf das Attribut event_type und lies den Dateinamen aus trigger.to_state.attributes.file. ioBroker-Speicherobjekt und Dateiinhalte im Ereignis brauchen eine eigene Anbindung.',
+      en: 'For files on the HA filesystem, configure Folder Watcher for an allowed folder with the matching file pattern. In a Home Assistant automation, use a state trigger for the event entity, check the event_type attribute as needed, and read the filename from trigger.to_state.attributes.file. The ioBroker storage object and file contents in the event require a separate integration.',
+      fr: 'Pour les fichiers du système HA, configurez Folder Watcher sur un dossier autorisé avec le motif de fichiers voulu. Dans une automatisation Home Assistant, utilisez un déclencheur d’état sur l’entité event, vérifiez l’attribut event_type si nécessaire et lisez le nom dans trigger.to_state.attributes.file. L’objet de stockage ioBroker et le contenu du fichier dans l’événement nécessitent une intégration dédiée.',
+    };
+    const hint = fileEvent ? fileEventHint[locale] ?? fileEventHint.en :
+      legacyRequest ? legacyRequestHint[locale] ?? legacyRequestHint.en :
       fileRead ? fileReadHint[locale] ?? fileReadHint.en :
       fileWrite ? fileWriteHint[locale] ?? fileWriteHint.en :
       responseFile ? responseFileHint[locale] ?? responseFileHint.en :
       binaryHttp ? binaryHint[locale] ?? binaryHint.en :
       [translatePro(instruction, locale), dynamicHttp && (suffixHint[locale] ?? suffixHint.en),
         fields.RESPONSE_TYPE === 'json' && (jsonHint[locale] ?? jsonHint.en)].filter(Boolean).join(' ');
-    if (legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
+    if (fileEvent || legacyRequest || fileRead || fileWrite || responseFile || (placeholder && ['exec', 'http_get', 'http_post'].includes(type)) || dynamicHttp) {
       (block.icons ??= {}).comment ??= {text: hint, pinned: false};
     }
     const row = element('li');

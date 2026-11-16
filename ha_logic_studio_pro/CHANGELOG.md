@@ -1,5 +1,11 @@
 # HA Logic Studio Pro
 
+## 0.1.115
+
+- Blocks JS zeigt beim importierten ioBroker-Dateiauslöser `onFile` und beim Ereignisdatenblock `onFile_data` einen Hinweis zur Migration auf Home Assistant Folder Watcher.
+- Auf dem Testsystem PC (64) mit einem echten Blockly-Export geprüft. Das Dateimuster `ugso-115-*.txt` und der Dateinamenblock blieben erhalten. Der Hinweis erschien in der Importübersicht und direkt am Block.
+- Die App-Beschreibung verwendet einen versionsneutralen Titel. Die installierte Version steht in der Home-Assistant-App-Verwaltung.
+
 ## 0.1.114
 
 - Blocks JS zeigt beim importierten ioBroker-Block `request` einen Hinweis zum Wechsel auf „HTTP GET · HA REST“ und zu den Entsprechungen für `result`, `response.statusCode` und `error`.

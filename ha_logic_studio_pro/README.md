@@ -1,6 +1,6 @@
-# HA Logic Studio Pro 0.1.73
+# HA Logic Studio Pro
 
-Auf `.193` startete der zweite Auslöser, während der erste noch lief. Beide wurden abgeschlossen. Ein gezielter Fehler beendete das fehlerhafte Skript. Das andere Skript verarbeitete anschließend einen weiteren Auslöser.
+Im Runtime-Test zu 0.1.73 auf dem Testsystem PC (64) startete der zweite Auslöser, während der erste noch lief. Beide wurden abgeschlossen. Ein gezielter Fehler beendete das fehlerhafte Skript. Das andere Skript verarbeitete anschließend einen weiteren Auslöser.
 
 JavaScript, TypeScript und Funktionspläne können nach dem Speichern beim Start der HA-App automatisch ausgeführt werden. Ein manueller Stopp beendet die aktuelle Ausführung. Die gespeicherte Auswahl gilt für den nächsten App-Start. Die Werkzeugleiste zeigt den aktuellen Laufstatus separat an.
 
