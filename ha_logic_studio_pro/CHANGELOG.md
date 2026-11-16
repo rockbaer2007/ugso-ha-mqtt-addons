@@ -1,5 +1,12 @@
 # HA Logic Studio Pro
 
+## 0.1.120
+
+- Bei mehreren offenen Tabs erscheint „Alles speichern“. Die Schaltfläche speichert die Änderungen aller offenen Projekte gemeinsam. Ein rotes Quadrat kennzeichnet jeden Tab mit ungespeicherten Änderungen.
+
+- Blocks JS übernimmt `get_object_async` mit ausdrücklicher Zuordnung der ioBroker-ID zu einer HA-Entität. Im Antwortzweig liefert `common.name` den HA-Anzeigenamen und `common.unit` die Einheit.
+- Auf dem Testsystem PC (64) mit einem ioBroker-Blockly-Export geprüft. Der Antwortzweig protokollierte per Play über `common.name` den Namen `Logic Studio Runtime Test` der zugeordneten Entität `input_boolean.logic_studio_runtime_test`.
+
 ## 0.1.119
 
 - Blocks JS übernimmt den ioBroker-Selektor `$()` als Listenblock. Der ursprüngliche Ausdruck bleibt sichtbar. Beim Import werden die HA-Entitäten ausdrücklich zugeordnet und als feste Liste gespeichert.

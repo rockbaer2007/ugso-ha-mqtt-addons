@@ -1,6 +1,8 @@
 import {messages as flowMessages} from './locales.js';
 
 const messages = {
+  'Alles speichern': ['Save all', 'Tout enregistrer'],
+  'Ungespeicherte Änderungen': ['Unsaved changes', 'Modifications non enregistrées'],
   'Der Zeitvergleich liefert wahr oder falsch. Verbinde ihn mit „falls“ und füge unter „mache“ die gewünschte HA-Aktion ein.': [
     'The time comparison returns true or false. Connect it to “if” and place the HA action you want in “do”.',
     'La comparaison horaire renvoie vrai ou faux. Branchez-la sur « si » et placez l’action HA souhaitée dans « faire ».',

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>HA Logic Studio Pro</title>
-  <link rel="stylesheet" href="./pro.css?v=0.1.96">
+  <link rel="stylesheet" href="./pro.css?v=0.1.120">
   <link rel="stylesheet" href="./vendor/yaml-flow.css?v=0.1.88">
 </head>
 <body>
@@ -32,6 +32,7 @@
       <header class="top">
         <strong>HA Logic Studio Pro</strong>
         <span class="badge"><span id="pro-version"></span></span>
+        <button type="button" id="save-all-projects" class="editor-commit" hidden disabled>Alles speichern</button>
       </header>
       <nav id="tabs" aria-label="Geöffnete Projekte"></nav>
       <div id="editor-layout">
@@ -112,6 +113,6 @@
       <button value="confirm">Öffnen</button>
     </form>
   </dialog>
-  <script type="module" src="./pro.js?v=0.1.119"></script>
+  <script type="module" src="./pro.js?v=0.1.120"></script>
 </body>
 </html>

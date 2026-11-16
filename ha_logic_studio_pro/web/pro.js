@@ -3,7 +3,7 @@ import {categoryEntities} from './iobroker-category.js';
 import {parseDocument} from './vendor/pro-yaml.js';
 import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.100';
 import {connectLanguage, locales, translate} from './i18n.js';
-import {translatePro} from './pro-locales.js?v=0.1.101';
+import {translatePro} from './pro-locales.js?v=0.1.120';
 import {mountCodeEditor} from './vendor/pro-code.js';
 import {mountYamlEditor} from './vendor/yaml-editor.js?v=0.1.92';
 import {checkHaYaml} from './yaml-ha-check.js?v=0.1.91';
@@ -72,6 +72,7 @@ function hasUnsavedChanges(id) {
 
 function refreshRuntimeControls(id = active) {
   const dirty = hasUnsavedChanges(id);
+  refreshTabSaveState();
   if (id === active) {
     for (const control of editor.querySelectorAll('.editor-commit, .editor-discard')) {
       control.disabled = !dirty;
@@ -105,19 +106,30 @@ function captureFlow() {
 }
 
 function commitEditor(id) {
-  const project = projects.get(id);
-  if (active === id && project.type === 'flow') captureFlow();
-  if (active === id && blocks) project.workspace = blocks.snapshot();
-  const previous = checkpoints.get(id);
-  const wasNew = unsavedProjects.has(id);
-  checkpoints.set(id, snapshot(project));
-  unsavedProjects.delete(id);
+  return commitEditors([id]);
+}
+
+function commitEditors(ids) {
+  if (ids.includes(active)) {
+    if (projects.get(active).type === 'flow') captureFlow();
+    if (blocks) projects.get(active).workspace = blocks.snapshot();
+  }
+  const changes = ids.filter(hasUnsavedChanges).map(id => ({
+    id, previous: checkpoints.get(id), wasNew: unsavedProjects.has(id), saved: snapshot(projects.get(id)),
+  }));
+  if (!changes.length) return true;
+  for (const {id, saved} of changes) {
+    checkpoints.set(id, saved);
+    unsavedProjects.delete(id);
+  }
   const accepted = saveProjects();
   if (!accepted) {
-    checkpoints.set(id, previous);
-    if (wasNew) unsavedProjects.add(id);
+    for (const {id, previous, wasNew} of changes) {
+      checkpoints.set(id, previous);
+      if (wasNew) unsavedProjects.add(id);
+    }
   }
-  refreshRuntimeControls(id);
+  for (const {id} of changes) refreshRuntimeControls(id);
   return accepted;
 }
 
@@ -811,6 +823,8 @@ function reviewIoBrokerImport(name, workspace) {
     iob_schedule_entity: ['schedule_by_id', 'Einen HA-Datums- und Uhrzeithelfer (input_datetime) zuordnen.'],
     iob_get_dynamic_value: ['get_value_var', 'Alle berechneten ioBroker-IDs im Feld ID-Zuordnung (JSON) mit HA-Entitäten verknüpfen.'],
     ha_js_trigger_value: ['on_source', 'Der Wert kommt aus dem umgebenden Trigger. Einheit und Datentyp des HA-Zustands prüfen.'],
+    iob_get_object_async: ['get_object_async', 'HA-Entität zuordnen und für die Runtime freigeben. Im Antwortzweig liefert common.name den Anzeigenamen und common.unit die Einheit.'],
+    iob_get_object_async_data: ['obj', 'Das Antwortobjekt gehört zum umgebenden asynchronen Leseblock.'],
     ha_js_system_log: ['onLog', ''],
     ha_js_system_log_data: ['onLog_data', ''],
     ha_js_script_message_request: ['sendto_otherscript', 'Empfangsadresse und Antwortverarbeitung prüfen. Ohne Antwort meldet der Block einen Timeout.'],
@@ -1272,19 +1286,45 @@ function renderProjectList() {
   }
 }
 
+function refreshTabSaveState() {
+  let anyDirty = false;
+  for (const tab of $('tabs').children) {
+    const dirty = hasUnsavedChanges(tab.dataset.projectTab);
+    anyDirty ||= dirty;
+    tab.querySelector('.project-tab-dirty').hidden = !dirty;
+    const tabButton = tab.firstElementChild;
+    const name = projects.get(tab.dataset.projectTab)?.name;
+    if (dirty) tabButton.setAttribute('aria-label', name + ' · ' + translatePro('Ungespeicherte Änderungen', locale));
+    else tabButton.removeAttribute('aria-label');
+  }
+  const saveAll = $('save-all-projects');
+  saveAll.hidden = openTabs.size < 2;
+  saveAll.disabled = !anyDirty;
+}
+
+$('save-all-projects').onclick = () => {
+  if (openTabs.size > 1) commitEditors([...openTabs]);
+};
+
 function renderNavigation() {
   renderProjectList();
   $('tabs').replaceChildren(...Array.from(openTabs, id => {
     const project = projects.get(id);
     const tab = element('div');
     tab.className = 'project-tab';
+    tab.dataset.projectTab = id;
     const close = button('×', () => closeTab(id));
     close.setAttribute('aria-label', project.name + ' schließen');
     const tabButton = projectButton(id, project);
     tabButton.dataset.userText = '';
-    tab.append(tabButton, close);
+    const dirty = element('span');
+    dirty.className = 'project-tab-dirty';
+    dirty.hidden = true;
+    dirty.setAttribute('aria-hidden', 'true');
+    tab.append(tabButton, dirty, close);
     return tab;
   }));
+  refreshTabSaveState();
   const current = $('tabs').querySelector('[aria-current="true"]');
   current?.scrollIntoView({block: 'nearest', inline: 'nearest'});
 }
@@ -2431,7 +2471,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.119'),
+      import('./vendor/pro-blocks.js?v=0.1.120'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);
@@ -2923,6 +2963,7 @@ const language = connectLanguage({
     locale = value;
     try { localStorage.setItem(languageKey, value); } catch {}
     syncLanguage();
+    refreshTabSaveState();
     const project = projects.get(active);
     if (['blocks', 'blocks-js', 'rules'].includes(project?.type)) show(active, true);
   },

@@ -38,6 +38,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 .project-tab { display: flex; flex: none; gap: .15rem; white-space: nowrap; }
 .project-tab button:first-child { max-width: 16rem; overflow: hidden; text-overflow: ellipsis; }
+.project-tab-dirty { align-self: center; inline-size: .5rem; block-size: .5rem; margin-inline: .15rem; border: 2px solid #ff765f; }
+#save-all-projects { margin-inline-start: auto; }
 main { --sidebar-min: 233px; --splitter-width: .85rem; --editor-min: 45px; display: grid; grid-template-columns: min(max(var(--sidebar-min), var(--sidebar-width, var(--sidebar-min))), calc(100% - var(--splitter-width) - var(--editor-min))) var(--splitter-width) minmax(0, 1fr); min-height: 100vh; }
 aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .75rem; height: 100dvh; position: sticky; top: 0; }
 #project-splitter { position: relative; background: #101a28; border-inline: 1px solid #304258; cursor: col-resize; touch-action: none; }
@@ -131,8 +133,8 @@ aside { display: flex; flex-direction: column; min-width: 0; padding: 0 .75rem .
 .editor-toolbar input { max-width: 100%; }
 .editor-autostart { display: inline-flex; align-items: center; gap: .35rem; }
 .editor-autostart input { margin: 0; }
-.editor-toolbar .editor-commit { background: #ffab28; color: #161009; border-color: transparent; font-weight: 650; }
-.editor-toolbar .editor-commit:disabled { background: #646d79; color: #fff; opacity: .75; }
+.editor-commit { background: #ffab28; color: #161009; border-color: transparent; font-weight: 650; }
+.editor-commit:disabled { background: #646d79; color: #fff; opacity: .75; }
 .editor-toolbar .editor-discard { background: #e4e8ee; color: #182232; border-color: transparent; }
 .editor-toolbar input[type=number] { width: 7ch; }
 .editor-tool-group { display: flex; align-items: center; flex-wrap: wrap; gap: .25rem; }

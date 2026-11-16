@@ -1,0 +1,27 @@
+<xml xmlns="https://developers.google.com/blockly/xml">
+<variables>
+<variable id="ugso-object-variable">obj</variable>
+</variables>
+<block type="get_object_async" id="ugso120-read" x="10" y="10">
+<field name="OID">0_userdata.0.ugso_mqtt.gesamtleistung.Test1</field>
+<statement name="STATEMENT">
+<block type="debug" id="ugso120-log">
+<field name="Severity">info</field>
+<value name="TEXT">
+<block type="get_attr" id="ugso120-path">
+<value name="PATH">
+<shadow type="text" id="ugso120-common-name">
+<field name="TEXT">common.name</field>
+</shadow>
+</value>
+<value name="OBJECT">
+<block type="variables_get" id="ugso120-obj">
+<field name="VAR" id="ugso-object-variable">obj</field>
+</block>
+</value>
+</block>
+</value>
+</block>
+</statement>
+</block>
+</xml>
