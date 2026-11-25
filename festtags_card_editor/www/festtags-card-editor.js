@@ -1,4 +1,11 @@
-/* Festtags-Card-Editor 0.1.2. No bundled pictures or remote assets. */
+/* Festtags-Card-Editor 0.1.3. No bundled pictures or remote assets. */
+export function filterEntityTargets(targets,query){
+  const words=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  return targets.filter(target=>{
+    const text=`${target.name||""} ${target.entity_id}`.toLocaleLowerCase();
+    return words.every(word=>text.includes(word));
+  });
+}
 export function calendarEventKeys(model,country,tradition){
   const keys=model.country_events[country]||[];
   const julian=["nativity_fast","orthodox_eve","orthodox_christmas"];
@@ -141,11 +148,30 @@ class FesttagsCardEditor extends HTMLElement {
     details.ontoggle=()=>{if(details.open){this._openChannel=n;for(const other of this.shadowRoot.querySelectorAll("details.channel")) if(other!==details)other.open=false;}};
     this.node("summary",`${this.t("Steuerung","Control")} ${n+1} · ${channel.name || channel.entity_id || this.t("Nicht eingerichtet","Not configured")}`,details);
     const grid=this.node("div","",details,"grid");
-    const targets=[["",this.t("Nicht verwenden","Unused")],...(this.model.targets||[]).map(t=>[t.entity_id,`${t.name} (${t.entity_id})`])];
-    if(channel.entity_id&&!targets.some(t=>t[0]===channel.entity_id))targets.push([channel.entity_id,channel.entity_id]);
-    this.field(grid,this.t("Entität","Entity"),channel.entity_id||"",value=>{
+    const picker=this.node("div","",grid);
+    const allTargets=[...(this.model.targets||[])];
+    if(channel.entity_id&&!allTargets.some(t=>t.entity_id===channel.entity_id))allTargets.push({entity_id:channel.entity_id,name:channel.entity_id});
+    this._entityQueries ||= {};
+    const search=this.field(picker,this.t("Entität suchen","Search entities"),this._entityQueries[n]||"",value=>{
+      this._entityQueries[n]=value;updateTargets();
+    },{type:"search",transient:true});
+    search.placeholder=this.t("Name oder ID, z. B. weihnacht","Name or ID, e.g. christmas");
+    search.autocomplete="off";
+    const select=this.field(picker,this.t("Entität","Entity"),channel.entity_id||"",value=>{
       c.channels[n]=value?{mode:"period",on_time:"16:00:00",off_time:"23:00:00",holidays:[],...channel,entity_id:value}:{};this.render();
-    },{options:targets});
+    },{options:[]});
+    const hint=this.node("p","",picker,"muted");hint.setAttribute("aria-live","polite");
+    const updateTargets=()=>{
+      const query=this._entityQueries[n]||"",matches=filterEntityTargets(allTargets,query);
+      select.replaceChildren();
+      const unused=this.node("option",this.t("Nicht verwenden","Unused"),select);unused.value="";
+      for(const target of matches){const option=this.node("option",`${target.name} (${target.entity_id})`,select);option.value=target.entity_id;}
+      select.value=matches.some(t=>t.entity_id===channel.entity_id)?channel.entity_id:"";
+      select.size=query.trim()?Math.min(6,matches.length+2):1;
+      hint.textContent=`${matches.length} ${this.t("Treffer","matches")}${channel.entity_id?` · ${this.t("Ausgewählt","Selected")}: ${channel.entity_id}`:""}`;
+      if(!matches.length)hint.textContent=this.t("Keine passenden Entitäten gefunden.","No matching entities found.")+(channel.entity_id?` ${this.t("Ausgewählt","Selected")}: ${channel.entity_id}`:"");
+    };
+    updateTargets();
     if(!channel.entity_id)return;
     this.field(grid,this.t("Name","Name"),channel.name||"",value=>{channel.name=value;});
     this.field(grid,this.t("Betriebsart","Mode"),channel.mode,value=>{channel.mode=value;this.render();},{options:[["period",this.t("Täglich im Zeitraum","Daily within date range")],["holidays",this.t("Nur ausgewählte Festtage","Selected observances only")]]});

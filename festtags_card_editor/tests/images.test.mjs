@@ -13,7 +13,17 @@ const definitions=new Map();
 globalThis.customElements={get:key=>definitions.get(key),define:(key,value)=>definitions.set(key,value)};
 globalThis.window={};
 const {imageSources}=await import("../www/weihnachtssteuerung-card.js");
-const {calendarEventKeys}=await import("../www/festtags-card-editor.js");
+const {calendarEventKeys,filterEntityTargets}=await import("../www/festtags-card-editor.js");
+
+test("entity search finds partial names and IDs without changing target objects",()=>{
+  const targets=[{name:"Weihnachtsbaum",entity_id:"switch.baum"},{name:"Garten",entity_id:"light.weihnacht_garten"},{name:"Küche",entity_id:"light.kueche"}];
+  const snapshot=structuredClone(targets);
+  assert.deepEqual(filterEntityTargets(targets," WEIHNACHT "),targets.slice(0,2));
+  assert.deepEqual(filterEntityTargets(targets,"weihnacht garten"),[targets[1]]);
+  assert.deepEqual(filterEntityTargets(targets,"unbekannt"),[]);
+  assert.deepEqual(filterEntityTargets(targets,""),targets);
+  assert.deepEqual(targets,snapshot);
+});
 
 test("country observance choices respect the selected calendar tradition",()=>{
   const model={country_events:{DE:["advent_1","christmas","new_year","orthodox_christmas","nativity_fast"]}};
