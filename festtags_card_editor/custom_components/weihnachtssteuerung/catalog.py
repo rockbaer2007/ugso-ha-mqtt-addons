@@ -70,28 +70,32 @@ EVENTS = {
     "advent_3": ("3. Advent", "Third Advent Sunday", "religious", 0, 3),
     "advent_4": ("4. Advent", "Fourth Advent Sunday", "religious", 0, 4),
     "barbara": ("Barbaratag", "Saint Barbara's Day", "tradition", 12, 4),
-    "sinterklaas": ("Sinterklaas / Pakjesavond", "Sinterklaas / Pakjesavond", "tradition", 12, 5),
+    "sinterklaas": ("Sinterklaas", "Sinterklaas", "tradition", 12, 5),
+    "pakjesavond": ("Pakjesavond", "Pakjesavond", "tradition", 12, 5),
     "krampus": ("Krampusnacht", "Krampus Night", "tradition", 12, 5),
     "nicholas": ("Nikolaus", "Saint Nicholas' Day", "religious", 12, 6),
     "immaculate": ("Mariä Empfängnis", "Immaculate Conception", "religious", 12, 8),
     "lucia": ("Luciafest", "Saint Lucia's Day", "tradition", 12, 13),
     "lottery": ("Weihnachtslotterie El Gordo", "El Gordo Christmas lottery", "tradition", 12, 22),
     "christmas_eve": ("Heiligabend", "Christmas Eve", "religious", 12, 24),
-    "christmas": ("Weihnachten", "Christmas Day", "religious", 12, 25),
-    "christmas_2": ("Zweiter Weihnachtstag / Stephanstag", "Second Christmas Day / Saint Stephen", "religious", 12, 26),
+    "christmas": ("1. Weihnachtstag", "First Christmas Day", "religious", 12, 25),
+    "christmas_2": ("2. Weihnachtstag", "Second Christmas Day", "religious", 12, 26),
+    "stephen": ("Stephanstag", "Saint Stephen's Day", "religious", 12, 26),
     "boxing": ("Boxing Day", "Boxing Day", "tradition", 12, 26),
     "new_years_eve": ("Silvester", "New Year's Eve", "tradition", 12, 31),
     "new_year": ("Neujahr", "New Year's Day", "tradition", 1, 1),
     "kings_eve": ("Dreikönigsumzüge", "Three Kings' parades", "tradition", 1, 5),
-    "epiphany": ("Heilige Drei Könige / Epiphanias", "Epiphany / Three Kings", "religious", 1, 6),
+    "epiphany": ("Heilige Drei Könige", "Three Kings", "religious", 1, 6),
+    "epiphanias": ("Epiphanias", "Epiphany", "religious", 1, 6),
     "befana": ("Befana", "Befana", "tradition", 1, 6),
     "orthodox_eve": ("Heiligabend (julianischer Kalender)", "Christmas Eve (Julian calendar)", "religious", 1, 6),
-    "orthodox_christmas": ("Weihnachten (julianischer Kalender)", "Christmas (Julian calendar)", "religious", 1, 7),
+    "orthodox_christmas": ("1. Weihnachtstag (julianischer Kalender)", "First Christmas Day (Julian calendar)", "religious", 1, 7),
     "nativity_fast": ("Beginn der Weihnachtsfastenzeit (julianisch)", "Nativity Fast begins (Julian)", "religious", 11, 28),
     "thanksgiving": ("Thanksgiving", "Thanksgiving", "tradition", 0, 0),
     "black_friday": ("Black Friday", "Black Friday", "commercial", 0, 0),
     "advent_calendar": ("Beginn Adventskalender", "Advent calendar begins", "tradition", 12, 1),
 }
+
 WESTERN = ("advent_1", "advent_2", "advent_3", "advent_4", "christmas_eve", "christmas")
 ORTHODOX = ("nativity_fast", "orthodox_eve", "orthodox_christmas")
 EXTRAS = {
@@ -105,6 +109,13 @@ EXTRAS = {
     "christmas_2": {"DE", "AT", "CH", "LI", "PL", "CZ", "SK", "HU", "DK", "SE", "NO", "FI", "IS", "EE", "LV", "LT", "IT", "HR", "RO", "BG", "IE"},
     "epiphany": {"DE", "AT", "CH", "LI", "PL", "ES", "IT", "GR", "CY", "HR", "FI", "SE", "SM", "VA", "RO", "BG"},
 }
+
+
+# Separate selectable names for the same date. Existing IDs keep their meaning,
+# schedules and picture mappings; new entries start without assigned pictures.
+EXTRAS["pakjesavond"] = EXTRAS["sinterklaas"].copy()
+EXTRAS["stephen"] = EXTRAS["christmas_2"].copy()
+EXTRAS["epiphanias"] = EXTRAS["epiphany"].copy()
 
 
 def label(event, language="de"):

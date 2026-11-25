@@ -22,6 +22,15 @@ class ValidationTests(unittest.TestCase):
         self.assertNotIn("FR", editor_config(DEFAULTS)["country_images"])
         self.assertFalse(editor_config(DEFAULTS)["show_images"])
 
+    def test_split_observances_preserve_existing_settings_and_images(self):
+        channel={"entity_id":"light.baum","mode":"holidays","on_time":"16:00","off_time":"23:00","holidays":["christmas","christmas_2","epiphany"]}
+        images={"DE":{"christmas":"baum.png","christmas_2":"kerzen.png","epiphany":"sterne.png"}}
+        config=editor_config(DEFAULTS | {"channels":[channel],"country_images":images})
+        self.assertEqual(config["channels"][0],channel)
+        self.assertEqual(config["country_images"],images)
+        channel["holidays"]=["stephen","epiphanias"]
+        self.assertEqual(editor_config(DEFAULTS | {"channels":[channel]})["channels"][0]["holidays"],["stephen","epiphanias"])
+
     def test_invalid_paths_and_filenames(self):
         for path in ("http://example.org", "/local/../secret", "/local/%2e%2e/secret", "/local/a\\b", "/local/a?x", "/config/a", "/local//bad"):
             with self.subTest(path=path), self.assertRaises(ValueError):

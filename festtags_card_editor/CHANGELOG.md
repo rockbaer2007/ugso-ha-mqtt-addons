@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6
+
+- Weihnachten heißt jetzt 1. Weihnachtstag; der 26. Dezember heißt 2. Weihnachtstag.
+- Stephanstag, Pakjesavond und Epiphanias sind eigenständige Einträge statt
+  zusammengefasster Namen. Sinterklaas und Heilige Drei Könige bleiben separat.
+- Bestehende Festtags-IDs, Termine, Steuerungen und Bildzuordnungen erhalten.
+  Neue Einträge können unabhängig ausgewählt und mit Bildern versehen werden.
+
 ## 0.1.5
 
 - Speicher- und Fehlermeldungen bleiben in der oberen Buttonleiste sichtbar.

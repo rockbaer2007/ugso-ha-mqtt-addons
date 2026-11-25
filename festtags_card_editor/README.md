@@ -1,10 +1,17 @@
-# Festtags-Card-Editor 0.1.5
+# Festtags-Card-Editor 0.1.6
 
 Home-Assistant-App mit eigenem Editor, lokaler Weihnachtssteuerung und kompakter
 Dashboard-Card. Keine Cloud und keine eigenen Zugangsdaten. Bilder werden nicht
 mitgeliefert. [English documentation](docs/README.en.md).
 
 ## HA-App
+
+**1. Weihnachtstag** (25. Dezember) und **2. Weihnachtstag** (26. Dezember)
+sind eindeutig benannt. Auch **Stephanstag**, **Sinterklaas**, **Pakjesavond**,
+**Heilige Drei Könige** und **Epiphanias** haben jeweils eigene Einträge.
+Mehrere Bezeichnungen können denselben Kalendertag betreffen und lassen sich
+getrennt auswählen oder bebildern. Bisherige Auswahlen und Bilder bleiben an
+ihren bisherigen Einträgen; neue Einträge erhalten kein automatisch kopiertes Bild.
 
 Die App erscheint im Sammelrepo **UGSo HA Apps** als **Festtags-Card-Editor**.
 Nach Installation starten und vor Änderungen ein vollständiges HA-Backup anlegen.
@@ -93,7 +100,7 @@ Vor Änderungen ein vollständiges HA-Backup erstellen.
 4. Über **Konfigurieren** zuerst den Saisonzeitraum und dann Steuerung 1–5
    einrichten. Die Entitätsauswahl leer lassen, wenn ein Platz unbenutzt bleibt.
 5. Unter **Dashboards → Ressourcen** als JavaScript-Modul hinzufügen:
-   `/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.5`.
+   `/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.6`.
 6. Die Card hinzufügen; der passende Sensor wird automatisch gefunden:
 
 ```yaml
@@ -134,7 +141,7 @@ python tools/build.py
 ```
 
 Der Build erzeugt vollständige DE-/EN-Formulare und
-`dist/Weihnachtssteuerung-0.1.5.zip` (Integration/Card) und
-`dist/Festtags-Card-Editor-0.1.5.zip` (HA-App). Details zum Test auf .193 stehen in
+`dist/Weihnachtssteuerung-0.1.6.zip` (Integration/Card) und
+`dist/Festtags-Card-Editor-0.1.6.zip` (HA-App). Details zum Test auf .193 stehen in
 `docs/TEST-193.md`. Die Entwicklungsquelle bleibt in einem eigenen lokalen Repo;
 die HA-App wird über das gemeinsame App-Repository verteilt.

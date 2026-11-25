@@ -1,4 +1,4 @@
-# Festtags-Card-Editor 0.1.5
+# Festtags-Card-Editor 0.1.6
 
 Home Assistant app, local scheduling integration and dashboard card. No cloud
 or user-supplied credentials. Set up a region first, then a country: 47 countries
@@ -7,6 +7,12 @@ Country presets suggest religious observances and customs, not a complete
 statutory public-holiday calendar. Regional and family traditions can differ.
 
 ## Controls
+
+First Christmas Day (December 25) and Second Christmas Day (December 26) are
+named explicitly. Saint Stephen's Day, Sinterklaas, Pakjesavond, Three Kings
+and Epiphany each have separate entries. Different names may share a date;
+each can be selected and assigned a picture independently. Existing IDs,
+schedules and picture mappings stay intact; new entries start without pictures.
 
 Open the **Entity** field and type under **Search**. Results show an icon, name,
 area/device (when available) and entity ID. Matching includes these names and
@@ -86,7 +92,7 @@ Back up HA first. Copy `custom_components/weihnachtssteuerung` to
 for the season and five channels. Empty entity slots remain unused.
 
 Add a dashboard JavaScript module resource:
-`/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.5`.
+`/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.6`.
 
 ```yaml
 type: custom:weihnachtssteuerung-card

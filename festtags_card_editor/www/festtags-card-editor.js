@@ -1,4 +1,4 @@
-/* Festtags-Card-Editor 0.1.5. No bundled pictures or remote assets. */
+/* Festtags-Card-Editor 0.1.6. No bundled pictures or remote assets. */
 export function filterEntityTargets(targets,query){
   const words=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   return targets.filter(target=>{

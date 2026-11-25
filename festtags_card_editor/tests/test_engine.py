@@ -30,6 +30,16 @@ class CalendarTests(unittest.TestCase):
         self.assertEqual(event_dates(2026)["advent_1"], date(2026, 11, 29))
         self.assertEqual(event_dates(2027)["advent_1"], date(2027, 11, 28))
 
+    def test_separate_names_keep_dates_and_country_availability(self):
+        self.assertEqual(EVENTS["christmas"][0], "1. Weihnachtstag")
+        self.assertEqual(EVENTS["christmas_2"][0], "2. Weihnachtstag")
+        self.assertFalse(any(" / " in names[0] or " / " in names[1] for names in EVENTS.values()))
+        for original, new, country in (("sinterklaas", "pakjesavond", "NL"), ("christmas_2", "stephen", "DE"), ("epiphany", "epiphanias", "DE")):
+            self.assertIn(original, country_events(country))
+            self.assertIn(new, country_events(country))
+            self.assertEqual(event_dates(2026)[original], event_dates(2026)[new])
+        self.assertNotIn("pakjesavond", country_events("DE"))
+
     def test_thanksgiving_is_fourth_thursday(self):
         for year in range(2000, 2051):
             day = event_dates(year)["thanksgiving"]
