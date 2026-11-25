@@ -9,6 +9,32 @@ from .engine import DEFAULTS, bounds, custom_date, validate_channel
 DEFAULT_IMAGE_FOLDER = "/local/weihnachtssteuerung/bilder"
 
 
+def card_effects(value, image_folder=DEFAULT_IMAGE_FOLDER):
+    if not isinstance(value, dict):
+        raise ValueError("Ungültige Hintergrundeinstellungen / invalid background settings")
+    result = {"mode": value.get("mode", "off"),
+              "folder": value.get("folder", image_folder.rsplit("/", 1)[0] + "/background")}
+    if result["mode"] not in {"off", "image", "snow", "image_snow"}:
+        raise ValueError("Ungültiger Hintergrundmodus / invalid background mode")
+    result["folder"] = "/local/" + "/".join(folder_parts(result["folder"]))
+    for key in ("background_file", "decoration_file"):
+        result[key] = image_filename(value[key]) if value.get(key) else ""
+    enabled = value.get("decoration_enabled", False)
+    if not isinstance(enabled, bool):
+        raise ValueError("Ungültige Dekorationsoption / invalid decoration option")
+    result["decoration_enabled"] = enabled
+    for key, default, low, high in (("background_transparency",40,0,100),("background_size",100,50,200),
+                                   ("background_x",50,0,100),("background_y",50,0,100),
+                                   ("decoration_transparency",30,0,100),("decoration_size",30,5,100),
+                                   ("decoration_x",80,0,100),("decoration_y",100,0,100),
+                                   ("darkness",25,0,90),("snow_count",12,6,40)):
+        number = value.get(key, default)
+        if isinstance(number, bool) or not isinstance(number, (int, float)) or not low <= number <= high:
+            raise ValueError(f"Ungültiger Wert für {key} / invalid effect value")
+        result[key] = round(number)
+    return result
+
+
 def folder_parts(folder):
     if not isinstance(folder, str) or len(folder) > 240:
         raise ValueError("Ungültiger Bilderordner / invalid image folder")
@@ -84,6 +110,7 @@ def editor_config(payload):
         result["channels"].append(clean)
     folder = payload.get("image_folder", DEFAULT_IMAGE_FOLDER)
     result["image_folder"] = "/local/" + "/".join(folder_parts(folder))
+    result["effects"] = card_effects(payload.get("effects", {}), result["image_folder"])
     images = payload.get("country_images", {})
     if not isinstance(images, dict) or len(images) > len(COUNTRIES):
         raise ValueError("Ungültige Bildzuordnungen / invalid image mappings")

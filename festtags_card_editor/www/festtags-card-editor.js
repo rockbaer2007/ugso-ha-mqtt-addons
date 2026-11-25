@@ -1,4 +1,4 @@
-/* Festtags-Card-Editor 0.1.7. No bundled pictures or remote assets. */
+/* Festtags-Card-Editor 0.1.8. No bundled pictures or remote assets. */
 export function filterEntityTargets(targets,query){
   const words=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   return targets.filter(target=>{
@@ -204,6 +204,7 @@ class FesttagsCardEditor extends HTMLElement {
     const season=this.node("section","",main,"box");this.node("h2",this.t("Standardzeitraum der Saison","Default season range"),season);this.periodFields(season,c);
     for(let n=0;n<5;n++) this.channel(main,n);
     this.images(main);
+    this.effects(main);
     const card=this.node("section","",main,"box"); this.node("h2",this.t("Anzeige-Card","Display card"),card);
     this.field(card,this.t("Eigene Festtagsbilder anzeigen","Show own observance pictures"),c.show_images||false,value=>{c.show_images=value;},{type:"checkbox"});
     const yaml=this.node("textarea","",card);yaml.readOnly=true;
@@ -286,6 +287,38 @@ class FesttagsCardEditor extends HTMLElement {
     const preview=assigned[this._imageEvent];if(preview){const img=this.node("img","",box);img.alt=this.model.events[this._imageEvent][this.de?0:1];img.src=this.imageURL(preview);img.onerror=()=>{img.hidden=true;};}
     this.node("p",this.t("Zuordnung lösen entfernt nur die Verknüpfung, keine Bilddatei. GIF-Animationen bleiben erhalten. Region/Land der Zuordnung kann von der gerade aktiven Konfiguration abweichen.","Unassign only removes the mapping, never the file. GIF animations are preserved. Mapping region/country can differ from the active configuration."),box,"muted");
   }
+  effects(parent){
+    const e=this.config.effects||={};
+    e.folder||=(this.config.image_folder||"/local/weihnachtssteuerung/bilder").replace(/\/[^/]+\/?$/,"")+"/background";
+    const box=this.node("section","",parent,"box");this.node("h2",this.t("Hintergrund und Dekoration","Background and decoration"),box);
+    this.node("p",this.t("Eigene Dateien im separaten Ordner background neben bilder. Alle Effekte sind optional; 100 % Transparenz bedeutet unsichtbar. Texte und Buttons bleiben darüber bedienbar.","Own files in the separate background folder beside bilder. All effects are optional; 100% transparency means invisible. Text and controls remain above the effects."),box,"muted");
+    const grid=this.node("div","",box,"grid");
+    this.field(grid,this.t("Hintergrundmodus","Background mode"),e.mode||"off",v=>{e.mode=v;},{options:[["off",this.t("Aus","Off")],["image",this.t("Bild / GIF","Image / GIF")],["snow",this.t("Schneefall","Snowfall")],["image_snow",this.t("Bild + Schneefall","Image + snowfall")]]});
+    this.field(grid,this.t("Hintergrundordner","Background folder"),e.folder,v=>{e.folder=v;this._effectFiles=[];});
+    const upload=this.node("input","",grid);upload.type="file";upload.multiple=true;upload.accept="image/png,image/jpeg,image/webp,image/gif";upload.setAttribute("aria-label",this.t("Hintergründe hochladen","Upload backgrounds"));
+    upload.onchange=async()=>{try{for(const file of upload.files){const body=new FormData();body.append("folder",e.folder);body.append("file",file);await this.request("images",{method:"POST",body});}await this.readEffectFiles();this.status(this.t("Dateien hochgeladen. Hintergrund/Dekoration wählen und speichern.","Files uploaded. Select background/decoration and save."));}catch(error){this.status(error.message,true);}};
+    this.button(grid,this.t("Hintergrundordner einlesen","Read background folder"),()=>this.readEffectFiles());
+    const list=this.node("datalist","",box);list.id="festtags-background-files";
+    for(const file of this._effectFiles||[]){const option=this.node("option",file,list);option.value=file;}
+    for(const [key,de,en]of [["background_file","Hintergrunddatei","Background file"],["decoration_file","Dekorationsdatei (GIF möglich)","Decoration file (GIF supported)"]]){
+      const input=this.field(grid,this.t(de,en),e[key]||"",v=>{e[key]=v;});input.setAttribute("list",list.id);
+    }
+    this.field(grid,this.t("Dekoration anzeigen","Show decoration"),e.decoration_enabled||false,v=>{e.decoration_enabled=v;},{type:"checkbox"});
+    for(const [key,de,en,defaultValue,min,max]of [
+      ["background_transparency","Hintergrund: Transparenz (%)","Background: transparency (%)",40,0,100],
+      ["background_size","Hintergrund: Größe (%)","Background: size (%)",100,50,200],
+      ["background_x","Hintergrund: Position X (%)","Background: X position (%)",50,0,100],
+      ["background_y","Hintergrund: Position Y (%)","Background: Y position (%)",50,0,100],
+      ["decoration_transparency","Dekoration: Transparenz (%)","Decoration: transparency (%)",30,0,100],
+      ["decoration_size","Dekoration: Breite (% der Card)","Decoration: width (% of card)",30,5,100],
+      ["decoration_x","Dekoration: Position X (%)","Decoration: X position (%)",80,0,100],
+      ["decoration_y","Dekoration: Position Y (%)","Decoration: Y position (%)",100,0,100],
+      ["darkness","Abdunklung (%)","Darkening (%)",25,0,90],["snow_count","Anzahl Schneeflocken","Snowflake count",12,6,40]]){
+      const input=this.field(grid,this.t(de,en),e[key]??defaultValue,v=>{e[key]=v===""?null:Number(v);},{type:"number"});input.min=min;input.max=max;input.step=1;input.style.maxWidth="145px";
+    }
+    this.node("p",this.t("Position 0/0 = links oben, 100/100 = rechts unten. Hintergrund wird flächig zugeschnitten; Dekoration proportional eingepasst. Schneefall pausiert außerhalb des sichtbaren Bereichs und berücksichtigt reduzierte Bewegung.","Position 0/0 = top left, 100/100 = bottom right. Background fills/crops; decoration preserves its aspect ratio. Snowfall pauses offscreen and respects reduced motion."),box,"muted");
+  }
+  async readEffectFiles(){const result=await this.request(`images?folder=${encodeURIComponent(this.config.effects.folder)}`);this._effectFiles=result.files;this.render();}
   imageURL(file){return (this.config.image_folder||"/local/weihnachtssteuerung/bilder").replace(/\/$/,"")+"/"+encodeURIComponent(file);}
   async readFiles(){const result=await this.request(`images?folder=${encodeURIComponent(this.config.image_folder||"/local/weihnachtssteuerung/bilder")}`);this._files=result.files;this.render();}
   async save(){

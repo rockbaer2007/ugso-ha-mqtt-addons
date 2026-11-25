@@ -3,6 +3,8 @@ import test from "node:test";
 class NodeStub {
   constructor(tag=""){this.tagName=tag;this.children=[];this.dataset={};this.attributes={};this.style={};}
   append(...nodes){for(const node of nodes)node.parent=this;this.children.push(...nodes);}
+  prepend(node){node.parent=this;this.children.unshift(node);}
+  remove(){if(this.parent)this.parent.children=this.parent.children.filter(node=>node!==this);this.parent=null;}
   replaceChildren(...nodes){this.children=nodes;}
   setAttribute(key,value){this.attributes[key]=value;}
   addEventListener(){}
@@ -18,8 +20,30 @@ globalThis.document={createElement:tag=>new NodeStub(tag)};
 const definitions=new Map();
 globalThis.customElements={get:key=>definitions.get(key),define:(key,value)=>definitions.set(key,value)};
 globalThis.window={};
-const {imageSources}=await import("../www/weihnachtssteuerung-card.js");
+const {imageSources,effectSettings}=await import("../www/weihnachtssteuerung-card.js");
 const {calendarEventKeys,filterEntityTargets}=await import("../www/festtags-card-editor.js");
+
+test("effects default off and accept only safe local image sources",()=>{
+  assert.equal(effectSettings().snow,false);assert.equal(effectSettings().background,null);
+  const options={mode:'image_snow',folder:'/local/weihnachtssteuerung/background',background_file:'Winter.gif',decoration_enabled:true,decoration_file:'Baum.png',decoration_transparency:70,decoration_size:25};
+  const effects=effectSettings(options);assert.equal(effects.snow,true);assert.ok(Math.abs(effects.decorationOpacity-0.3)<1e-9);
+  assert.equal(effects.decorationSize,25);assert.match(effects.background,/background\/Winter.gif$/);
+  assert.equal(effectSettings({...options,folder:'https://external.example'}).background,undefined);
+  assert.equal(effectSettings({...options,decoration_file:'../secret.png'}).decoration,undefined);
+});
+
+test("live status changes retain GIF layers and snow remains bounded",()=>{
+  const Card=definitions.get('weihnachtssteuerung-card'),card=new Card();card.setConfig({});
+  const channel={configured:true,number:1,name:'Baum',entity_id:'light.baum',show_status_icon:true,mode:'period',on_time:'16:00',off_time:'23:00',enabled:true};
+  const overview={state:'Kein Festtag',attributes:{christmas_control:true,effects:{mode:'image_snow',background_file:'winter.gif',decoration_enabled:true,decoration_file:'baum.gif',snow_count:500},channels:[channel]}};
+  const hass={locale:{language:'de'},config:{time_zone:'Europe/Berlin'},states:{'sensor.festtag':overview,'light.baum':{state:'on'}}};
+  card.hass=hass;const layer=card._effectsNode,images=layer.querySelectorAll('img');
+  const cardRoot=card._cardRoot;
+  assert.equal(layer.querySelectorAll('.snowflake').length,40);assert.equal(images.length,2);
+  card.hass={...hass,states:{...hass.states,'light.baum':{state:'off'}}};
+  assert.equal(card._effectsNode,layer);assert.equal(card._effectsNode.querySelectorAll('img')[0],images[0]);
+  assert.equal(card._cardRoot,cardRoot);assert.equal(layer.parent,cardRoot);
+});
 
 test("optional status icon follows the live target without sending services",()=>{
   const Card=definitions.get('weihnachtssteuerung-card'),card=new Card();card.setConfig({});

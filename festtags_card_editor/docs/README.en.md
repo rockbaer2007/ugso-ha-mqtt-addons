@@ -1,10 +1,29 @@
-# Festtags-Card-Editor 0.1.7
+# Festtags-Card-Editor 0.1.8
 
 Home Assistant app, local scheduling integration and dashboard card. No cloud
 or user-supplied credentials. Set up a region first, then a country: 47 countries
 and a custom option. Choose western, Julian or both Christmas traditions.
 Country presets suggest religious observances and customs, not a complete
 statutory public-holiday calendar. Regional and family traditions can differ.
+
+## Optional backgrounds and decoration
+
+The editor offers Off, Image/GIF, Snowfall and Image with snowfall. Upload your
+own files to `/local/weihnachtssteuerung/background`, corresponding to
+`/config/www/weihnachtssteuerung/background` beside `bilder`. For a custom image
+folder its sibling `background` is suggested. Created on first upload; no art is bundled.
+
+Read the folder and choose a background file. Optionally enable a separate GIF
+decoration. Both have transparency (0% visible, 100% invisible), size and X/Y
+position controls. Background size: 50–200%; decoration width: 5–100% of the card.
+Position 0/0 is top left; 100/100 is bottom right. Backgrounds fill/crop while
+decoration preserves its aspect ratio. Adjustable darkening improves readability.
+Text and buttons remain above the effects, which do not intercept clicks.
+
+Snowfall uses 6–40 CSS particles, default 12, pauses offscreen or in hidden tabs,
+and becomes static with reduced motion. GIF bytes are preserved and their image
+nodes are reused across normal HA state updates. Effects default to off and
+remain separate from the existing observance-picture mappings.
 
 ## Controls
 
@@ -98,7 +117,7 @@ Back up HA first. Copy `custom_components/weihnachtssteuerung` to
 for the season and five channels. Empty entity slots remain unused.
 
 Add a dashboard JavaScript module resource:
-`/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.7`.
+`/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.8`.
 
 ```yaml
 type: custom:weihnachtssteuerung-card

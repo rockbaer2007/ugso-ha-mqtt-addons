@@ -31,6 +31,17 @@ PNG, JPG, WebP und GIF werden nach Inhaltsprüfung angenommen; maximal 5 MiB und
 16 Megapixel. Doppelte Dateinamen erhalten einen Zähler. Lösen entfernt nur eine
 Zuordnung. Vorhandene, selbst abgelegte SVG-Dateien können zugeordnet werden.
 
+## Hintergrund, Schneefall und Dekoration
+
+Im gleichnamigen Editorbereich einen Modus wählen. Eigene Dateien nach
+`/local/weihnachtssteuerung/background` hochladen oder dort ablegen; der Ordner
+liegt neben `bilder` und wird beim ersten Upload angelegt. Hintergrund und
+Dekoration getrennt auswählen. Transparenz (100 % = unsichtbar), Größe und
+X-/Y-Position einstellen und speichern. **Dekoration anzeigen** ist unabhängig
+vom Hintergrundmodus. Die Abdunklung liegt unter den Texten und Buttons.
+Alle Effekte sind zunächst aus. GIFs werden nicht verändert; Schneefall pausiert
+bei unsichtbarer Card/Seite. Es werden keine Bilder mitgeliefert.
+
 ## Was bleibt bei Stoppen oder Deinstallation?
 
 Die Editor-App und die Steuerung sind getrennt. Die HA-Integration führt die

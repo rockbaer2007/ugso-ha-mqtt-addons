@@ -77,3 +77,13 @@ für den Test war die in HA gerenderte Systemzeit; keine Uhr wurde verändert.
 - Eine visuelle Prüfung der lokalen HTML-Vorschau war nicht möglich, weil die
   Browsersteuerung Datei-URLs blockierte. Die DOM-Tests ersetzen keinen echten
   Browser-/Tablet-Test; die Darstellung auf dem Zielsystem ist noch zu prüfen.
+
+## Lokales Folgeupdate 0.1.8
+
+- Stand 0.1.7 vorher als separates Quellarchiv gesichert.
+- 42 Python- und 13 JavaScript-Tests: Effektvorgaben, lokaler Dateipfad,
+  Grenzen/Typen, Erhalt vorhandener Festtagsbilder und GIF-Layer bei Statuswechsel.
+- Syntaxprüfung und ZIP-Build erfolgreich. Keine mitgelieferten Bilder und
+  keine Änderung an installierten HA-Systemen, Bildern oder Kopplungen.
+- Visuelle Animation und Darstellung auf einem echten Tablet sind noch
+  nicht live geprüft. Keine Aussage über die Bildrate eines bestimmten Geräts.

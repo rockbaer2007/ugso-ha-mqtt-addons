@@ -158,4 +158,5 @@ class ChristmasRuntime(DataUpdateCoordinator):
                 "image_mapping": self.config.get("country_images", {}).get(self.config["country"], {}),
                 "image_labels": {key: label(key, self.language) for key in self.config.get("country_images", {}).get(self.config["country"], {})},
                 "images_enabled": self.config.get("show_images", False),
+                "effects": self.config.get("effects", {}),
                 "note": "Fest- und Brauchtumskalender; kein gesetzlicher Feiertagskalender."}

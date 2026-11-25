@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.8
+
+- Optionale Hintergründe: Aus, Bild/GIF, Schneefall oder Bild mit Schneefall.
+- Separate GIF-/Bilddekoration mit Transparenz, Breite und X-/Y-Position.
+- Hintergrund ebenfalls mit Transparenz, Größe, Position und Abdunklung einstellbar.
+- Eigener Upload-/Dateiordner `background` neben `bilder`; keine Motive im Paket.
+- Begrenzter CSS-Schneefall, Pausieren außerhalb des sichtbaren Bereichs,
+  Rücksicht auf reduzierte Bewegung. Effekte blockieren keine Bedienelemente.
+- GIF-Layer bleiben bei Statusänderungen erhalten; vorhandene Einstellungen
+  und Bildzuordnungen unverändert. Effekte standardmäßig aus.
+
 ## 0.1.7
 
 - Je Steuerung Statussymbol optional im App-Editor und in den HA-Optionen aktivieren.
