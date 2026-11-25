@@ -1,4 +1,4 @@
-/* Weihnachtssteuerung 0.1.8 - no libraries, trackers or bundled pictures. */
+/* Weihnachtssteuerung 0.1.10 - no libraries, trackers or bundled pictures. */
 export function statusIcon(state){
   return state==="on"?"mdi:lightbulb":state==="off"?"mdi:lightbulb-outline":"mdi:alert-circle-outline";
 }
@@ -8,7 +8,7 @@ export function effectSettings(value={}){
   const source=file=>imageSources({images_enabled:true,image_folder:folder,event_ids:["effect"],image_mapping:{effect:file}})[0]?.src;
   const mode=["off","image","snow","image_snow"].includes(value.mode)?value.mode:"off";
   return {background:["image","image_snow"].includes(mode)?source(value.background_file):null,
-    decoration:value.decoration_enabled===true?source(value.decoration_file):null,snow:["snow","image_snow"].includes(mode),
+    decoration:value.decoration_enabled===true?source(value.decoration_file):null,snow:["snow","image_snow"].includes(mode),forceSnow:value.force_snow===true,
     backgroundOpacity:1-number("background_transparency",40,0,100)/100,backgroundSize:number("background_size",100,50,200),
     backgroundX:number("background_x",50,0,100),backgroundY:number("background_y",50,0,100),
     decorationOpacity:1-number("decoration_transparency",30,0,100)/100,decorationSize:number("decoration_size",30,5,100),
@@ -42,7 +42,7 @@ class WeihnachtssteuerungCard extends HTMLElement {
   _effects(settings){
     const key=JSON.stringify(settings);
     if(key===this._effectsKey)return this._effectsNode;
-    this._effectsKey=key;const layer=document.createElement("div");layer.className="effects";layer.setAttribute("aria-hidden","true");
+    this._effectsKey=key;const layer=document.createElement("div");layer.className=settings.forceSnow?"effects force-snow":"effects";layer.setAttribute("aria-hidden","true");
     const image=(src,cls,css)=>{if(!src)return;const img=document.createElement("img");img.className=cls;img.alt="";img.src=src;img.style.cssText=css;img.onerror=()=>{img.hidden=true;};layer.append(img);};
     image(settings.background,"effect-background",`opacity:${settings.backgroundOpacity};object-position:${settings.backgroundX}% ${settings.backgroundY}%;transform:scale(${settings.backgroundSize/100});transform-origin:${settings.backgroundX}% ${settings.backgroundY}%`);
     image(settings.decoration,"effect-decoration",`opacity:${settings.decorationOpacity};width:${settings.decorationSize}%;left:${settings.decorationX}%;top:${settings.decorationY}%;transform:translate(-${settings.decorationX}%,-${settings.decorationY}%)`);
@@ -76,7 +76,7 @@ class WeihnachtssteuerungCard extends HTMLElement {
     this._renderSignature=signature;
     const style = document.createElement("style");
     style.textContent = `:host{display:block}ha-card{padding:16px;overflow:hidden}.head{display:flex;gap:10px;align-items:center}h2{font-size:20px;margin:0;overflow-wrap:anywhere}.meta{color:var(--secondary-text-color);font-size:13px;margin:6px 0 12px}.fest{padding:10px;border-radius:10px;background:var(--secondary-background-color);margin-bottom:12px}.row{padding:10px 0;border-top:1px solid var(--divider-color);display:grid;grid-template-columns:minmax(0,1fr) 84px;gap:8px}.name{font-weight:600;overflow-wrap:anywhere}.detail{font-size:12px;color:var(--secondary-text-color);overflow-wrap:anywhere;margin-top:4px}button{width:84px;min-height:36px;border:1px solid var(--divider-color);border-radius:9px;color:var(--primary-text-color);background:var(--secondary-background-color);cursor:pointer;align-self:center}button.active{background:var(--primary-color);color:var(--text-primary-color,#fff)}.error{color:var(--error-color)}a{color:var(--primary-color)}.state{font-weight:normal;font-size:12px}.pictures{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:10px 0}.pictures img{max-width:100%;height:110px;object-fit:contain;border-radius:10px}`;
-    style.textContent+=`ha-card{position:relative;isolation:isolate}.content{position:relative;z-index:1}.effects{position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:inherit;pointer-events:none}.effect-background{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.effect-decoration{position:absolute;height:auto;max-height:100%;object-fit:contain}.effect-dim{position:absolute;inset:0;background:#000}.snowflake{position:absolute;top:-10%;color:white;text-shadow:0 0 3px #fff;animation:snow-fall linear infinite}.paused .snowflake{animation-play-state:paused}@keyframes snow-fall{from{transform:translateY(0)}to{transform:translateY(120cqh)}}.effects{container-type:size}@supports not (height:1cqh){@keyframes snow-fall{from{top:-10%}to{top:110%}}}@media(prefers-reduced-motion:reduce){.snowflake{animation:none;top:35%}}`;
+    style.textContent+=`ha-card{position:relative;isolation:isolate}.content{position:relative;z-index:1}.effects{position:absolute;inset:0;z-index:0;overflow:hidden;border-radius:inherit;pointer-events:none}.effect-background{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}.effect-decoration{position:absolute;height:auto;max-height:100%;object-fit:contain}.effect-dim{position:absolute;inset:0;background:#000}.snowflake{position:absolute;top:-10%;color:white;text-shadow:0 0 3px #fff;animation:snow-fall linear infinite}.paused .snowflake{animation-play-state:paused}@keyframes snow-fall{from{transform:translateY(0)}to{transform:translateY(120cqh)}}.effects{container-type:size}@supports not (height:1cqh){@keyframes snow-fall{from{top:-10%}to{top:110%}}}@media(prefers-reduced-motion:reduce){.effects:not(.force-snow) .snowflake{animation:none;top:35%}}`;
     const card = this._cardRoot || document.createElement("ha-card");
     const previousEffects=this._effectsNode;
     const effects=this._effects(effectSettings(entity?.attributes?.effects));

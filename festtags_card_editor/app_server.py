@@ -12,7 +12,7 @@ from aiohttp import ClientError, ClientSession, ClientTimeout, web
 
 from installer import install_payload
 
-VERSION = "0.1.9"
+VERSION = "0.1.10"
 ROOT = Path(__file__).resolve().parent
 CARD_PATH = "/local/weihnachtssteuerung/weihnachtssteuerung-card.js"
 

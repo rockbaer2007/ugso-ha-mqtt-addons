@@ -4,6 +4,14 @@ from custom_components.weihnachtssteuerung.validation import editor_config, fold
 
 
 class ValidationTests(unittest.TestCase):
+    def test_force_snow_is_explicit_boolean_and_does_not_enable_effects(self):
+        self.assertFalse(editor_config(DEFAULTS)["effects"]["force_snow"])
+        settings=editor_config(DEFAULTS | {"effects":{"force_snow":True}})["effects"]
+        self.assertTrue(settings["force_snow"])
+        self.assertEqual(settings["mode"],"off")
+        with self.assertRaises(ValueError):
+            editor_config(DEFAULTS | {"effects":{"force_snow":"true"}})
+
     def test_effect_settings_preserve_existing_images_and_validate_limits(self):
         images={"DE":{"advent_1":"kerze.png"}}
         effects={"mode":"image_snow","background_file":"winter.gif","decoration_enabled":True,"decoration_file":"baum.gif","decoration_transparency":60,"decoration_size":25}

@@ -23,6 +23,18 @@ globalThis.window={};
 const {imageSources,effectSettings}=await import("../www/weihnachtssteuerung-card.js");
 const {calendarEventKeys,filterEntityTargets,effectFileOptions}=await import("../www/festtags-card-editor.js");
 
+test("snow motion override requires explicit opt-in and preserves offscreen pausing",()=>{
+  const Card=definitions.get('weihnachtssteuerung-card'),card=new Card();card.attachShadow();
+  assert.equal(effectSettings().forceSnow,false);
+  assert.equal(effectSettings({force_snow:'true'}).forceSnow,false);
+  const effects=effectSettings({mode:'snow',force_snow:true});
+  const layer=card._effects(effects);assert.equal(layer.className,'effects force-snow');
+  const changes=[];layer.classList={toggle:(name,value)=>changes.push([name,!!value])};
+  card._onscreen=false;card._pauseSnow();assert.deepEqual(changes.at(-1),['paused',true]);
+  card._onscreen=true;card._pauseSnow();assert.deepEqual(changes.at(-1),['paused',false]);
+  assert.equal(effectSettings({force_snow:true}).snow,false);
+});
+
 test("effect file choices retain the entire folder after selecting a file",()=>{
   const files=['ww1.gif','baum.gif','schnee.gif'];
   assert.deepEqual(effectFileOptions(files,['ww1.gif']),['baum.gif','schnee.gif','ww1.gif']);

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.10
+
+- Editoroption Schneefall trotzdem animieren als ausdrückliche Ausnahme von
+  der Browser-/Systemvorgabe Bewegung reduzieren, ausschließlich für diese Card.
+- Standard aus; unsichtbare Card und versteckte Seite pausieren weiterhin.
+- Vorhandene Hintergründe, Dekorationen, Flockenzahl und Abdunklung erhalten.
+
 ## 0.1.9
 
 - Hintergrund- und Dekorationsdateien als feste Auswahllisten statt gefilterter

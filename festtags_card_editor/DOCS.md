@@ -42,6 +42,10 @@ vom Hintergrundmodus. Die Abdunklung liegt unter den Texten und Buttons.
 Alle Effekte sind zunächst aus. GIFs werden nicht verändert; Schneefall pausiert
 bei unsichtbarer Card/Seite. Es werden keine Bilder mitgeliefert.
 
+Bei aktivem **Bewegung reduzieren** bleiben die Flocken statisch. Optional
+**Schneefall trotzdem animieren** aktivieren und speichern. Diese bewusste
+Ausnahme gilt nur für die Card; Pause bei unsichtbarer Card/Seite bleibt aktiv.
+
 ## Was bleibt bei Stoppen oder Deinstallation?
 
 Die Editor-App und die Steuerung sind getrennt. Die HA-Integration führt die

@@ -23,6 +23,10 @@ def card_effects(value, image_folder=DEFAULT_IMAGE_FOLDER):
     if not isinstance(enabled, bool):
         raise ValueError("Ungültige Dekorationsoption / invalid decoration option")
     result["decoration_enabled"] = enabled
+    force_snow = value.get("force_snow", False)
+    if not isinstance(force_snow, bool):
+        raise ValueError("Ungültige Schneefalloption / invalid snowfall option")
+    result["force_snow"] = force_snow
     for key, default, low, high in (("background_transparency",40,0,100),("background_size",100,50,200),
                                    ("background_x",50,0,100),("background_y",50,0,100),
                                    ("decoration_transparency",30,0,100),("decoration_size",30,5,100),
