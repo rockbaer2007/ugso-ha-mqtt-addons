@@ -1,4 +1,4 @@
-/* Weihnachtssteuerung 0.1.11 - no libraries, trackers or bundled pictures. */
+/* Weihnachtssteuerung 0.1.12 - no libraries, trackers or bundled pictures. */
 export function statusIcon(state){
   return state==="on"?"mdi:lightbulb":state==="off"?"mdi:lightbulb-outline":"mdi:alert-circle-outline";
 }
@@ -13,7 +13,7 @@ export function effectSettings(value={}){
     backgroundX:number("background_x",50,0,100),backgroundY:number("background_y",50,0,100),
     decorationOpacity:1-number("decoration_transparency",30,0,100)/100,decorationSize:number("decoration_size",30,5,100),
     decorationX:number("decoration_x",80,0,100),decorationY:number("decoration_y",100,0,100),
-    snowSize:["small","medium","large"].includes(value.snow_size)?value.snow_size:"medium",
+    diameter:number("snow_diameter",{small:2,medium:4,large:8}[value.snow_size]||4,1,20),
     darkness:number("darkness",25,0,90)/100,count:Math.round(number("snow_count",12,6,40))};
 }
 export function imageSources(attributes, config = {}) {
@@ -48,9 +48,8 @@ class WeihnachtssteuerungCard extends HTMLElement {
     image(settings.background,"effect-background",`opacity:${settings.backgroundOpacity};object-position:${settings.backgroundX}% ${settings.backgroundY}%;transform:scale(${settings.backgroundSize/100});transform-origin:${settings.backgroundX}% ${settings.backgroundY}%`);
     image(settings.decoration,"effect-decoration",`opacity:${settings.decorationOpacity};width:${settings.decorationSize}%;left:${settings.decorationX}%;top:${settings.decorationY}%;transform:translate(-${settings.decorationX}%,-${settings.decorationY}%)`);
     if(settings.snow)for(let i=0;i<settings.count;i++){
-      const flake=document.createElement("span");flake.className="snowflake";flake.textContent="•";
-      const [base,step]={small:[4,2],medium:[8,3],large:[12,4]}[settings.snowSize];
-      flake.style.cssText=`left:${(i*61)%100}%;font-size:${base+i%5*step}px;animation-duration:${10+i%9}s;animation-delay:-${i%17}s`;layer.append(flake);
+      const flake=document.createElement("span");flake.className="snowflake";
+      flake.style.cssText=`left:${(i*61)%100}%;width:${settings.diameter}px;height:${settings.diameter}px;border-radius:50%;background:white;animation-duration:${10+i%9}s;animation-delay:-${i%17}s`;layer.append(flake);
     }
     if(settings.background||settings.decoration||settings.snow){const dim=document.createElement("div");dim.className="effect-dim";dim.style.opacity=settings.darkness;layer.append(dim);}
     this._effectsNode=layer;this._pauseSnow();return layer;

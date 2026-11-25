@@ -46,8 +46,8 @@ Bei aktivem **Bewegung reduzieren** bleiben die Flocken statisch. Optional
 **Schneefall trotzdem animieren** aktivieren und speichern. Diese bewusste
 Ausnahme gilt nur für die Card; Pause bei unsichtbarer Card/Seite bleibt aktiv.
 
-Unter **Schneeflockengröße** Klein, Mittel oder Groß wählen. Mittel entspricht
-der bisherigen Darstellung; Flockenzahl und Abdunklung bleiben unabhängig davon.
+Unter **Schneeflocken-Durchmesser (px)** 1 bis 20 CSS-Pixel einstellen,
+Standard 4 px. Flockenzahl und Abdunklung bleiben unabhängig davon.
 
 ## Was bleibt bei Stoppen oder Deinstallation?
 

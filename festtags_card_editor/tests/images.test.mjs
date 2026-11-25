@@ -23,12 +23,14 @@ globalThis.window={};
 const {imageSources,effectSettings}=await import("../www/weihnachtssteuerung-card.js");
 const {calendarEventKeys,filterEntityTargets,effectFileOptions}=await import("../www/festtags-card-editor.js");
 
-test("snowflake size presets retain the existing medium default",()=>{
+test("snowflakes use the selected actual CSS diameter rather than font size",()=>{
   const Card=definitions.get('weihnachtssteuerung-card'),card=new Card();card.attachShadow();
-  assert.equal(effectSettings().snowSize,'medium');
-  for(const [size,pixels]of [['small',4],['medium',8],['large',12]]){
-    const layer=card._effects(effectSettings({mode:'snow',snow_size:size}));
-    assert.match(layer.querySelector('.snowflake').style.cssText,new RegExp(`font-size:${pixels}px`));
+  assert.equal(effectSettings().diameter,4);
+  for(const pixels of [1,7,20]){
+    const layer=card._effects(effectSettings({mode:'snow',snow_diameter:pixels}));
+    const flake=layer.querySelector('.snowflake');
+    assert.match(flake.style.cssText,new RegExp(`width:${pixels}px;height:${pixels}px`));
+    assert.equal(flake.textContent,undefined);
   }
 });
 

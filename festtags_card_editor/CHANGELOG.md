@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.12
+
+- Tatsächlichen Schneeflocken-Durchmesser von 1 bis 20 CSS-Pixeln einstellen,
+  Standard 4 px. Kreisförmige Elemente statt eines schriftabhängigen Punktzeichens.
+- Enthält Schneefall trotzdem animieren; vorhandene Flockenzahl, Abdunklung,
+  Bilder und sonstige Einstellungen bleiben erhalten.
+
 ## 0.1.11
 
 - Schneeflockengröße im Editor als Klein, Mittel oder Groß wählbar.

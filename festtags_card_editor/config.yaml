@@ -1,5 +1,5 @@
 name: Festtags-Card-Editor
-version: "0.1.11"
+version: "0.1.12"
 slug: festtags_card_editor
 description: Weihnachtssteuerung mit fünf Zeitplänen und eigenen Festtagsbildern je Land
 url: https://github.com/rockbaer2007/ugso-ha-mqtt-addons/tree/master/festtags_card_editor

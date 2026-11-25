@@ -34,7 +34,8 @@ def card_effects(value, image_folder=DEFAULT_IMAGE_FOLDER):
                                    ("background_x",50,0,100),("background_y",50,0,100),
                                    ("decoration_transparency",30,0,100),("decoration_size",30,5,100),
                                    ("decoration_x",80,0,100),("decoration_y",100,0,100),
-                                   ("darkness",25,0,90),("snow_count",12,6,40)):
+                                   ("darkness",25,0,90),("snow_count",12,6,40),
+                                   ("snow_diameter",{"small":2,"medium":4,"large":8}[result["snow_size"]],1,20)):
         number = value.get(key, default)
         if isinstance(number, bool) or not isinstance(number, (int, float)) or not low <= number <= high:
             raise ValueError(f"Ungültiger Wert für {key} / invalid effect value")

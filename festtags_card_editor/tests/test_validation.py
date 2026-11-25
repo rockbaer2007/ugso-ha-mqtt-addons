@@ -10,6 +10,10 @@ class ValidationTests(unittest.TestCase):
         self.assertTrue(settings["force_snow"])
         self.assertEqual(settings["mode"],"off")
         self.assertEqual(settings["snow_size"],"medium")
+        self.assertEqual(settings["snow_diameter"],4)
+        self.assertEqual(editor_config(DEFAULTS | {"effects":{"snow_diameter":12}})["effects"]["snow_diameter"],12)
+        with self.assertRaises(ValueError):
+            editor_config(DEFAULTS | {"effects":{"snow_diameter":21}})
         self.assertEqual(editor_config(DEFAULTS | {"effects":{"snow_size":"large"}})["effects"]["snow_size"],"large")
         with self.assertRaises(ValueError):
             editor_config(DEFAULTS | {"effects":{"snow_size":"invalid"}})
