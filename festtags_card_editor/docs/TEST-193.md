@@ -66,3 +66,14 @@ für den Test war die in HA gerenderte Systemzeit; keine Uhr wurde verändert.
   live durchgeführt; dafür ist der isolierte Protokolltest vorhanden.
 - Lokal war kein Docker-Daemon verfügbar. Der reale Docker-Build auf HA .193
   funktionierte; der Repository-Workflow prüft zusätzlich den Docker-Build.
+
+## Lokales Folgeupdate 0.1.4
+
+- Quellstand 0.1.3 vor Änderung separat als ZIP gesichert.
+- 38 Python- und 8 JavaScript-Tests erfolgreich, einschließlich Bereich-/Geräte-
+  Metadaten sowie Öffnen, Filtern, Auswählen, Entfernen und Tastaturbedienung
+  des neuen Dropdowns in einer isolierten DOM-Testumgebung.
+- Keine HA-Installation oder Änderung an vorhandenen Einstellungen für dieses Update.
+- Eine visuelle Prüfung der lokalen HTML-Vorschau war nicht möglich, weil die
+  Browsersteuerung Datei-URLs blockierte. Die DOM-Tests ersetzen keinen echten
+  Browser-/Tablet-Test; die Darstellung auf dem Zielsystem ist noch zu prüfen.

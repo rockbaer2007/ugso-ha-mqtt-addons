@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4
+
+- Entitätsauswahl im HA-Stil: aufklappbares Suchfeld, Treffer mit Symbol,
+  Anzeigename, Bereich/Gerät und Entitäts-ID sowie markierter aktueller Auswahl.
+- Auswahl über × entfernen; Escape, Pfeiltasten und Tab unterstützen die Bedienung.
+- Suche berücksichtigt jetzt auch Bereich und Gerätename.
+
 ## 0.1.3
 
 - Entitätsauswahl mit sofortiger Suche nach Anzeigename und Entitäts-ID.

@@ -1,4 +1,4 @@
-# Festtags-Card-Editor 0.1.3
+# Festtags-Card-Editor 0.1.4
 
 Home Assistant app, local scheduling integration and dashboard card. No cloud
 or user-supplied credentials. Set up a region first, then a country: 47 countries
@@ -8,10 +8,11 @@ statutory public-holiday calendar. Regional and family traditions can differ.
 
 ## Controls
 
-Each control offers **Search entities**. Type any part of its display name or
-entity ID, for example `christmas`, then select a result and save. Matching is
-case-insensitive. Searching alone preserves the selected target; clearing the
-search shows all available targets.
+Open the **Entity** field and type under **Search**. Results show an icon, name,
+area/device (when available) and entity ID. Matching includes these names and
+is case-insensitive. The current target is marked; × clears it. Escape closes
+the popup and arrow keys move focus. Select a result and save. Searching alone
+preserves the selected target; clearing the search shows all available targets.
 
 Configure up to five independent light, switch or input_boolean entities through
 the integration options. Each gets its own on/off times and one of two modes:
@@ -81,7 +82,7 @@ Back up HA first. Copy `custom_components/weihnachtssteuerung` to
 for the season and five channels. Empty entity slots remain unused.
 
 Add a dashboard JavaScript module resource:
-`/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.3`.
+`/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.4`.
 
 ```yaml
 type: custom:weihnachtssteuerung-card

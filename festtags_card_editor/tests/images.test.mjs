@@ -1,14 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 class NodeStub {
-  constructor(){this.children=[];}
-  append(...nodes){this.children.push(...nodes);}
+  constructor(tag=""){this.tagName=tag;this.children=[];this.dataset={};this.attributes={};}
+  append(...nodes){for(const node of nodes)node.parent=this;this.children.push(...nodes);}
   replaceChildren(...nodes){this.children=nodes;}
-  setAttribute(){}
+  setAttribute(key,value){this.attributes[key]=value;}
+  addEventListener(){}
+  get activeElement(){return NodeStub.focused;}
+  focus(){NodeStub.focused=this;}
+  contains(node){return node===this||this.children.some(child=>child.contains(node));}
+  querySelectorAll(selector){return this.children.flatMap(child=>[...(selector.startsWith('.')?(child.className||'').split(' ').includes(selector.slice(1)):child.tagName===selector)?[child]:[],...child.querySelectorAll(selector)]);}
+  querySelector(selector){return this.querySelectorAll(selector)[0]||null;}
   attachShadow(){this.shadowRoot=new NodeStub();}
 }
 globalThis.HTMLElement=NodeStub;
-globalThis.document={createElement:()=>new NodeStub()};
+globalThis.document={createElement:tag=>new NodeStub(tag)};
 const definitions=new Map();
 globalThis.customElements={get:key=>definitions.get(key),define:(key,value)=>definitions.set(key,value)};
 globalThis.window={};
@@ -16,13 +22,35 @@ const {imageSources}=await import("../www/weihnachtssteuerung-card.js");
 const {calendarEventKeys,filterEntityTargets}=await import("../www/festtags-card-editor.js");
 
 test("entity search finds partial names and IDs without changing target objects",()=>{
-  const targets=[{name:"Weihnachtsbaum",entity_id:"switch.baum"},{name:"Garten",entity_id:"light.weihnacht_garten"},{name:"Küche",entity_id:"light.kueche"}];
+  const targets=[{name:"Weihnachtsbaum",entity_id:"switch.baum",device:"Lichterkette"},{name:"Garten",entity_id:"light.weihnacht_garten",area:"Terrasse"},{name:"Küche",entity_id:"light.kueche"}];
   const snapshot=structuredClone(targets);
   assert.deepEqual(filterEntityTargets(targets," WEIHNACHT "),targets.slice(0,2));
   assert.deepEqual(filterEntityTargets(targets,"weihnacht garten"),[targets[1]]);
+  assert.deepEqual(filterEntityTargets(targets,"terrasse"),[targets[1]]);
+  assert.deepEqual(filterEntityTargets(targets,"lichterkette"),[targets[0]]);
   assert.deepEqual(filterEntityTargets(targets,"unbekannt"),[]);
   assert.deepEqual(filterEntityTargets(targets,""),targets);
   assert.deepEqual(targets,snapshot);
+});
+
+test("HA-style picker searches, selects, clears and supports keyboard dismissal",async()=>{
+  const Editor=definitions.get('festtags-card-editor'),editor=new Editor();
+  editor._hass={locale:{language:'de'}};
+  const targets=[{entity_id:'light.baum',name:'Weihnachtsbaum',area:'Wohnzimmer',device:'Lichterkette'},{entity_id:'switch.weihnacht_garten',name:'Gartenlicht',area:'Garten'}];
+  let selected='light.baum';
+  const picker=editor.entityPicker(editor.shadowRoot,targets,selected,value=>{selected=value;},0);
+  const trigger=picker.querySelector('.entity-trigger'),popup=picker.querySelector('.entity-popup'),search=picker.querySelector('input');
+  assert.equal(popup.hidden,true);
+  trigger.onclick();assert.equal(popup.hidden,false);assert.equal(NodeStub.focused,search);
+  assert.equal(picker.querySelectorAll('.entity-result').length,2);
+  search.value='garten';search.oninput();
+  assert.equal(selected,'light.baum');assert.equal(editor._dirty,false);
+  const rows=picker.querySelectorAll('.entity-result');assert.equal(rows.length,1);
+  picker.onkeydown({key:'ArrowDown',preventDefault(){}});assert.equal(NodeStub.focused,rows[0]);
+  await rows[0].onclick();assert.equal(selected,'switch.weihnacht_garten');
+  picker.onkeydown({key:'Escape',preventDefault(){}});assert.equal(popup.hidden,true);assert.equal(NodeStub.focused,trigger);
+  trigger.onclick();search.value='unbekannt';search.oninput();assert.equal(picker.querySelectorAll('.entity-result').length,0);
+  await picker.querySelector('.entity-clear').onclick();assert.equal(selected,'');
 });
 
 test("country observance choices respect the selected calendar tradition",()=>{

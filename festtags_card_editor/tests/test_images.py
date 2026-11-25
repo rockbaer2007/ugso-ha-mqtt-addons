@@ -1,5 +1,6 @@
 from importlib import import_module
 from io import BytesIO
+import asyncio
 from pathlib import Path
 import sys
 import tempfile
@@ -48,6 +49,26 @@ class ImageTests(unittest.TestCase):
         again = self.editor.save_image(self.hass, "/local/own", "sample.png", self.png)
         self.assertEqual(again, "sample-2.png")
         self.assertEqual((self.root / "www/own/sample.png").read_bytes(), self.png)
+
+    def test_entity_context_uses_entity_area_and_device_name(self):
+        entry = SimpleNamespace(platform="light", device_id="device", area_id="entity_area")
+        device = SimpleNamespace(area_id="device_area", name="Default device", name_by_user="Lichterkette")
+        registry = SimpleNamespace(async_get=lambda entity_id: entry)
+        devices = SimpleNamespace(async_get=lambda device_id: device)
+        areas = SimpleNamespace(async_get_area=lambda area_id: SimpleNamespace(name=area_id))
+        self.hass.states = SimpleNamespace(async_all=lambda domains: [SimpleNamespace(entity_id="light.baum", name="Weihnachtsbaum")])
+        self.hass.config_entries = SimpleNamespace(async_entries=lambda domain: [])
+        view = self.editor.EditorView(self.hass)
+        view.json = lambda data: data
+        with patch.object(self.editor.er, "async_get", return_value=registry, create=True), patch.dict(sys.modules, {
+            "homeassistant.helpers.device_registry": stub("homeassistant.helpers.device_registry", async_get=lambda hass: devices),
+            "homeassistant.helpers.area_registry": stub("homeassistant.helpers.area_registry", async_get=lambda hass: areas),
+        }):
+            result = asyncio.run(view.get({"hass_user": SimpleNamespace(is_admin=True)}))
+            self.assertEqual(result["targets"], [{"entity_id": "light.baum", "name": "Weihnachtsbaum", "area": "entity_area", "device": "Lichterkette"}])
+            entry.area_id = None
+            result = asyncio.run(view.get({"hass_user": SimpleNamespace(is_admin=True)}))
+            self.assertEqual(result["targets"][0]["area"], "device_area")
 
     def test_bad_content_and_path_are_rejected(self):
         with self.assertRaises(OSError):

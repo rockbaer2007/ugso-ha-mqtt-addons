@@ -1,8 +1,8 @@
-/* Festtags-Card-Editor 0.1.3. No bundled pictures or remote assets. */
+/* Festtags-Card-Editor 0.1.4. No bundled pictures or remote assets. */
 export function filterEntityTargets(targets,query){
   const words=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   return targets.filter(target=>{
-    const text=`${target.name||""} ${target.entity_id}`.toLocaleLowerCase();
+    const text=`${target.name||""} ${target.area||""} ${target.device||""} ${target.entity_id}`.toLocaleLowerCase();
     return words.every(word=>text.includes(word));
   });
 }
@@ -17,12 +17,72 @@ class FesttagsCardEditor extends HTMLElement {
   constructor() {
     super(); this.attachShadow({mode:"open"}); this._openChannel = 0; this._dirty = false;
     this._beforeUnload = event => { if (this._dirty) { event.preventDefault(); event.returnValue = ""; } };
+    this._outsidePicker = event => {
+      const path=event.composedPath();
+      const keep=[...this.shadowRoot.querySelectorAll(".entity-picker")].find(picker=>path.includes(picker));
+      this.closeEntityPickers(keep);
+    };
   }
   connectedCallback() {
     window.addEventListener("beforeunload", this._beforeUnload);
+    document.addEventListener("pointerdown",this._outsidePicker);
     if (this.hasAttribute("standalone")) this.load();
   }
-  disconnectedCallback() { window.removeEventListener("beforeunload", this._beforeUnload); }
+  disconnectedCallback() { window.removeEventListener("beforeunload", this._beforeUnload);document.removeEventListener("pointerdown",this._outsidePicker); }
+  closeEntityPickers(keep){
+    for(const picker of this.shadowRoot.querySelectorAll(".entity-picker")){
+      if(picker===keep)continue;
+      picker.querySelector(".entity-popup").hidden=true;
+      picker.querySelector(".entity-trigger").setAttribute("aria-expanded","false");
+    }
+  }
+  entityPicker(parent,targets,value,change,n){
+    const picker=this.node("div","",parent,"entity-picker");
+    this.node("div",this.t("Entität","Entity"),picker,"entity-label");
+    const selected=targets.find(t=>t.entity_id===value);
+    const head=this.node("div","",picker,"entity-head");
+    const trigger=this.node("button","",head,"entity-trigger");trigger.type="button";
+    trigger.setAttribute("aria-label",this.t("Entität auswählen","Select entity"));
+    trigger.setAttribute("aria-expanded","false");trigger.setAttribute("aria-controls",`entity-popup-${n}`);
+    const icon=target=>target?.entity_id?.startsWith("light.")?"☀":target?.entity_id?.startsWith("input_boolean.")?"☑":"⏻";
+    this.node("span",icon(selected),trigger,"entity-icon").setAttribute("aria-hidden","true");
+    const current=this.node("span","",trigger,"entity-text");
+    this.node("strong",selected?.name||value||this.t("Entität auswählen","Select entity"),current);
+    this.node("small",[selected?.area,selected?.device].filter(Boolean).join(" › ")||value||this.t("Nicht verwenden","Unused"),current);
+    this.node("span","▾",trigger,"entity-arrow").setAttribute("aria-hidden","true");
+    if(value){const clear=this.button(head,"×",()=>change(""),"entity-clear");clear.setAttribute("aria-label",this.t("Entität entfernen","Clear entity"));}
+    const popup=this.node("div","",picker,"entity-popup");popup.id=`entity-popup-${n}`;popup.hidden=true;
+    const search=this.node("input","",popup);search.type="search";search.placeholder=this.t("Durchsuchen","Search");search.autocomplete="off";
+    search.setAttribute("aria-label",this.t("Entitäten durchsuchen","Search entities"));
+    const list=this.node("div","",popup,"entity-results");list.setAttribute("role","group");list.setAttribute("aria-label",this.t("Passende Entitäten","Matching entities"));
+    const count=this.node("div","",popup,"muted entity-count");count.setAttribute("aria-live","polite");
+    const update=()=>{
+      list.replaceChildren();const matches=filterEntityTargets(targets,search.value);
+      for(const target of matches){
+        const row=this.button(list,"",()=>change(target.entity_id),"entity-result");
+        row.setAttribute("aria-pressed",String(target.entity_id===value));
+        this.node("span",target.entity_id===value?"✓":icon(target),row,"entity-icon").setAttribute("aria-hidden","true");
+        const text=this.node("span","",row,"entity-text");this.node("strong",target.name||target.entity_id,text);
+        const context=[target.area,target.device].filter(Boolean).join(" › ");if(context)this.node("small",context,text);
+        this.node("small",target.entity_id,text,"entity-id");
+      }
+      count.textContent=matches.length?`${matches.length} ${this.t("Treffer","matches")}`:this.t("Keine passenden Entitäten gefunden.","No matching entities found.");
+    };
+    const open=()=>{this.closeEntityPickers();popup.hidden=false;trigger.setAttribute("aria-expanded","true");search.value="";update();search.focus();};
+    trigger.onclick=()=>{if(popup.hidden)open();else{this.closeEntityPickers();trigger.focus();}};
+    trigger.onkeydown=event=>{if(event.key==="ArrowDown"){event.preventDefault();open();}};
+    search.oninput=update;
+    picker.onkeydown=event=>{
+      if(event.key==="Escape"){event.preventDefault();this.closeEntityPickers();trigger.focus();}
+      if(event.key==="ArrowDown"||event.key==="ArrowUp"){
+        if(popup.hidden)return;const rows=[...list.querySelectorAll("button")];if(!rows.length)return;
+        const index=rows.indexOf(this.shadowRoot.activeElement);event.preventDefault();
+        rows[index<0?(event.key==="ArrowDown"?0:rows.length-1):(index+(event.key==="ArrowDown"?1:-1)+rows.length)%rows.length].focus();
+      }
+    };
+    picker.onfocusout=event=>{if(!picker.contains(event.relatedTarget)){popup.hidden=true;trigger.setAttribute("aria-expanded","false");}};
+    return picker;
+  }
   set hass(value) { this._hass = value; if (!this.model && !this._loading) this.load(); }
   set panel(value) { this._panel = value; }
   async request(path, options = {}) {
@@ -107,6 +167,7 @@ class FesttagsCardEditor extends HTMLElement {
     this.shadowRoot.replaceChildren();
     const style=this.node("style","",this.shadowRoot);
     style.textContent=`:host{display:block;font:14px system-ui;color:var(--primary-text-color,#eee);background:var(--primary-background-color,#111820);min-height:100vh}*{box-sizing:border-box}main{max-width:1100px;margin:auto;padding:18px}.bar{position:sticky;top:0;background:var(--card-background-color,#1b2530);padding:12px;border-radius:12px;z-index:2;display:flex;align-items:center;gap:10px;flex-wrap:wrap}h1{font-size:22px;margin:0;flex:1}h2{font-size:17px;margin:0 0 12px}.box,details.channel{background:var(--card-background-color,#1b2530);border:1px solid var(--divider-color,#394652);border-radius:12px;padding:14px;margin-top:14px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}label{display:flex;flex-direction:column;gap:5px;font-size:13px;min-width:0}input,select,textarea{min-width:0;width:100%;border:1px solid var(--divider-color,#465263);border-radius:7px;background:var(--secondary-background-color,#101923);color:inherit;font:inherit;padding:8px;min-height:36px}input[type=time]{max-width:160px}input[type=checkbox]{width:19px;min-height:19px;align-self:flex-start}button{min-height:36px;min-width:115px;padding:7px 13px;background:var(--primary-color,#177c9a);color:var(--text-primary-color,#fff);border:0;border-radius:8px;cursor:pointer}button.dirty{background:#b64531}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.actions button{flex:1}.muted{color:var(--secondary-text-color,#a9b7c7);font-size:12px;overflow-wrap:anywhere}.error{color:var(--error-color,#ff9292)}summary{cursor:pointer;font-weight:600}details.channel[open] summary{margin-bottom:14px}.checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:10px}.checks label{flex-direction:row;align-items:center}.files{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}img{width:90px;height:90px;object-fit:contain;background:#202830;border-radius:9px}.mapping{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 70px;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--divider-color,#394652);overflow-wrap:anywhere}.mapping button{min-width:60px;background:#7d3f3f}textarea{height:95px;resize:vertical}@media(max-width:600px){main{padding:10px}.grid,.checks{grid-template-columns:1fr}.bar{position:static}h1{flex-basis:100%;font-size:20px}.mapping{grid-template-columns:minmax(0,1fr) 70px}.mapping span:nth-child(2){grid-column:1}.mapping button{grid-column:2;grid-row:1/3}}`;
+    style.textContent+=`.entity-picker{position:relative;min-width:0}.entity-label{font-size:13px;margin-bottom:6px}.entity-head{display:flex;align-items:stretch;background:var(--secondary-background-color,#303030);border-radius:5px;border-bottom:1px solid #888}.entity-head button{background:transparent;color:inherit;border-radius:4px;min-width:0}.entity-trigger{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:10px 12px;min-height:56px}.entity-icon{font-size:23px;width:28px;flex:0 0 28px;text-align:center;color:var(--secondary-text-color,#b8b8b8)}.entity-text{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}.entity-text strong{font-size:14px;font-weight:500;overflow-wrap:anywhere}.entity-text small{font-size:12px;color:var(--secondary-text-color,#aaa);overflow-wrap:anywhere}.entity-arrow{font-size:18px;color:var(--secondary-text-color,#aaa)}button.entity-clear{font-size:25px;width:38px;padding:4px}.entity-popup{position:absolute;top:100%;left:0;right:0;z-index:6;background:var(--card-background-color,#202020);border:1px solid var(--divider-color,#555);border-radius:6px;box-shadow:0 8px 20px #0008;padding:12px 0 0}.entity-popup[hidden]{display:none}.entity-popup input{width:calc(100% - 24px);margin:0 12px 10px;border-color:var(--primary-color,#03a9f4);background:transparent}.entity-results{max-height:310px;overflow-y:auto;overscroll-behavior:contain}.entity-results button.entity-result{display:flex;align-items:center;gap:12px;min-width:0;width:100%;padding:12px 14px;text-align:left;border-radius:0;background:transparent;color:inherit;border-bottom:1px solid var(--divider-color,#383838)}.entity-result[aria-pressed=true]{background:var(--primary-background-color,#001d28)!important}.entity-result:hover,.entity-result:focus-visible{background:var(--secondary-background-color,#343434)!important}.entity-id{font-family:monospace;font-size:10px!important}.entity-count{padding:7px 12px}button:focus-visible{outline:2px solid var(--primary-color,#03a9f4);outline-offset:-2px}`;
     const main=this.node("main","",this.shadowRoot);
     const bar=this.node("div","",main,"bar"); this.node("h1","Festtags-Card-Editor",bar);
     const save=this.button(bar,this.t("Speichern","Save"),()=>this.save()); save.dataset.save="";
@@ -148,30 +209,13 @@ class FesttagsCardEditor extends HTMLElement {
     details.ontoggle=()=>{if(details.open){this._openChannel=n;for(const other of this.shadowRoot.querySelectorAll("details.channel")) if(other!==details)other.open=false;}};
     this.node("summary",`${this.t("Steuerung","Control")} ${n+1} · ${channel.name || channel.entity_id || this.t("Nicht eingerichtet","Not configured")}`,details);
     const grid=this.node("div","",details,"grid");
-    const picker=this.node("div","",grid);
     const allTargets=[...(this.model.targets||[])];
     if(channel.entity_id&&!allTargets.some(t=>t.entity_id===channel.entity_id))allTargets.push({entity_id:channel.entity_id,name:channel.entity_id});
-    this._entityQueries ||= {};
-    const search=this.field(picker,this.t("Entität suchen","Search entities"),this._entityQueries[n]||"",value=>{
-      this._entityQueries[n]=value;updateTargets();
-    },{type:"search",transient:true});
-    search.placeholder=this.t("Name oder ID, z. B. weihnacht","Name or ID, e.g. christmas");
-    search.autocomplete="off";
-    const select=this.field(picker,this.t("Entität","Entity"),channel.entity_id||"",value=>{
-      c.channels[n]=value?{mode:"period",on_time:"16:00:00",off_time:"23:00:00",holidays:[],...channel,entity_id:value}:{};this.render();
-    },{options:[]});
-    const hint=this.node("p","",picker,"muted");hint.setAttribute("aria-live","polite");
-    const updateTargets=()=>{
-      const query=this._entityQueries[n]||"",matches=filterEntityTargets(allTargets,query);
-      select.replaceChildren();
-      const unused=this.node("option",this.t("Nicht verwenden","Unused"),select);unused.value="";
-      for(const target of matches){const option=this.node("option",`${target.name} (${target.entity_id})`,select);option.value=target.entity_id;}
-      select.value=matches.some(t=>t.entity_id===channel.entity_id)?channel.entity_id:"";
-      select.size=query.trim()?Math.min(6,matches.length+2):1;
-      hint.textContent=`${matches.length} ${this.t("Treffer","matches")}${channel.entity_id?` · ${this.t("Ausgewählt","Selected")}: ${channel.entity_id}`:""}`;
-      if(!matches.length)hint.textContent=this.t("Keine passenden Entitäten gefunden.","No matching entities found.")+(channel.entity_id?` ${this.t("Ausgewählt","Selected")}: ${channel.entity_id}`:"");
-    };
-    updateTargets();
+    this.entityPicker(grid,allTargets,channel.entity_id||"",value=>{
+      c.channels[n]=value?{mode:"period",on_time:"16:00:00",off_time:"23:00:00",holidays:[],...channel,entity_id:value}:{};
+      this.markDirty();this.render();
+      this.shadowRoot.querySelector(`[data-channel="${n}"] .entity-trigger`)?.focus();
+    },n);
     if(!channel.entity_id)return;
     this.field(grid,this.t("Name","Name"),channel.name||"",value=>{channel.name=value;});
     this.field(grid,this.t("Betriebsart","Mode"),channel.mode,value=>{channel.mode=value;this.render();},{options:[["period",this.t("Täglich im Zeitraum","Daily within date range")],["holidays",this.t("Nur ausgewählte Festtage","Selected observances only")]]});

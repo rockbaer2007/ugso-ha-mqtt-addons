@@ -17,7 +17,7 @@ from .engine import DEFAULTS
 from .validation import DEFAULT_IMAGE_FOLDER, editor_config, folder_parts, image_filename
 
 DOMAIN = "weihnachtssteuerung"
-VERSION = "0.1.3"
+VERSION = "0.1.4"
 MAX_IMAGE = 5 * 1024 * 1024
 
 
@@ -86,14 +86,26 @@ class EditorView(HomeAssistantView):
 
     async def get(self, request):
         admin(request)
+        from homeassistant.helpers import area_registry as ar, device_registry as dr
+        entities, devices, areas = er.async_get(self.hass), dr.async_get(self.hass), ar.async_get(self.hass)
+        targets = []
+        for state in self.hass.states.async_all(["light", "switch", "input_boolean"]):
+            entry = entities.async_get(state.entity_id)
+            if entry and entry.platform == DOMAIN:
+                continue
+            device = devices.async_get(entry.device_id) if entry and entry.device_id else None
+            area_id = (entry.area_id if entry else None) or (device.area_id if device else None)
+            area = areas.async_get_area(area_id) if area_id else None
+            targets.append({"entity_id": state.entity_id, "name": state.name,
+                            "area": area.name if area else "",
+                            "device": (device.name_by_user or device.name or "") if device else ""})
         return self.json({"version": VERSION, "entries": [
             {"entry_id": entry.entry_id, "title": entry.title,
              "config": DEFAULTS | {"image_folder": DEFAULT_IMAGE_FOLDER, "country_images": {}} | entry.data | entry.options}
             for entry in self.hass.config_entries.async_entries(DOMAIN)],
             "regions": REGIONS, "countries": COUNTRIES, "events": EVENTS,
             "defaults": DEFAULTS | {"image_folder": DEFAULT_IMAGE_FOLDER, "country_images": {}, "show_images": False},
-            "targets": [{"entity_id": state.entity_id, "name": state.name} for state in self.hass.states.async_all(["light", "switch", "input_boolean"])
-                        if not (er.async_get(self.hass).async_get(state.entity_id) and er.async_get(self.hass).async_get(state.entity_id).platform == DOMAIN)],
+            "targets": targets,
             "country_events": {c: list(country_events(c, "both")) for c in COUNTRIES}})
 
     async def post(self, request):
