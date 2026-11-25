@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.11
+
+- Schneeflockengröße im Editor als Klein, Mittel oder Groß wählbar.
+- Mittel entspricht den bisherigen Größen; bestehende Einstellungen erhalten.
+- Enthält die Option Schneefall trotzdem animieren aus 0.1.10.
+
 ## 0.1.10
 
 - Editoroption Schneefall trotzdem animieren als ausdrückliche Ausnahme von

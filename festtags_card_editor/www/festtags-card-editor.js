@@ -1,4 +1,4 @@
-/* Festtags-Card-Editor 0.1.10. No bundled pictures or remote assets. */
+/* Festtags-Card-Editor 0.1.11. No bundled pictures or remote assets. */
 export function filterEntityTargets(targets,query){
   const words=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   return targets.filter(target=>{
@@ -307,6 +307,7 @@ class FesttagsCardEditor extends HTMLElement {
     }
     this.field(grid,this.t("Dekoration anzeigen","Show decoration"),e.decoration_enabled||false,v=>{e.decoration_enabled=v;},{type:"checkbox"});
     this.field(grid,this.t("Schneefall trotzdem animieren","Animate snowfall anyway"),e.force_snow||false,v=>{e.force_snow=v;},{type:"checkbox"});
+    this.field(grid,this.t("Schneeflockengröße","Snowflake size"),e.snow_size||"medium",v=>{e.snow_size=v;},{options:[["small",this.t("Klein","Small")],["medium",this.t("Mittel","Medium")],["large",this.t("Groß","Large")]]});
     this.node("p",this.t("Bewusste Ausnahme von Bewegung reduzieren, nur für diese Card. Ein Schneefallmodus muss ausgewählt sein; Pause bei unsichtbarer Card/Seite bleibt aktiv.","Explicit override of reduced motion for this card only. Select a snowfall mode; offscreen/hidden-page pausing stays enabled."),box,"muted");
     for(const [key,de,en,defaultValue,min,max]of [
       ["background_transparency","Hintergrund: Transparenz (%)","Background: transparency (%)",40,0,100],

@@ -1,4 +1,4 @@
-# Festtags-Card-Editor 0.1.10
+# Festtags-Card-Editor 0.1.11
 
 Home Assistant app, local scheduling integration and dashboard card. No cloud
 or user-supplied credentials. Set up a region first, then a country: 47 countries
@@ -31,6 +31,10 @@ With reduced motion enabled in the browser/system, snow is normally static.
 **Animate snowfall anyway** explicitly overrides that preference for this card
 only. It defaults to off, requires a snowfall mode and does not change global
 browser preferences. Offscreen/hidden-page pausing remains active.
+
+**Snowflake size** offers Small (4–12 px), Medium (8–20 px) and Large
+(12–28 px). Medium preserves the previous appearance. Sizes vary slightly
+within each preset; the configured particle count stays unchanged.
 
 
 ## Controls
@@ -125,7 +129,7 @@ Back up HA first. Copy `custom_components/weihnachtssteuerung` to
 for the season and five channels. Empty entity slots remain unused.
 
 Add a dashboard JavaScript module resource:
-`/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.10`.
+`/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.11`.
 
 ```yaml
 type: custom:weihnachtssteuerung-card

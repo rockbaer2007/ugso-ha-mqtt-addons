@@ -9,6 +9,10 @@ class ValidationTests(unittest.TestCase):
         settings=editor_config(DEFAULTS | {"effects":{"force_snow":True}})["effects"]
         self.assertTrue(settings["force_snow"])
         self.assertEqual(settings["mode"],"off")
+        self.assertEqual(settings["snow_size"],"medium")
+        self.assertEqual(editor_config(DEFAULTS | {"effects":{"snow_size":"large"}})["effects"]["snow_size"],"large")
+        with self.assertRaises(ValueError):
+            editor_config(DEFAULTS | {"effects":{"snow_size":"invalid"}})
         with self.assertRaises(ValueError):
             editor_config(DEFAULTS | {"effects":{"force_snow":"true"}})
 

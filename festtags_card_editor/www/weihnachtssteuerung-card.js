@@ -1,4 +1,4 @@
-/* Weihnachtssteuerung 0.1.10 - no libraries, trackers or bundled pictures. */
+/* Weihnachtssteuerung 0.1.11 - no libraries, trackers or bundled pictures. */
 export function statusIcon(state){
   return state==="on"?"mdi:lightbulb":state==="off"?"mdi:lightbulb-outline":"mdi:alert-circle-outline";
 }
@@ -13,6 +13,7 @@ export function effectSettings(value={}){
     backgroundX:number("background_x",50,0,100),backgroundY:number("background_y",50,0,100),
     decorationOpacity:1-number("decoration_transparency",30,0,100)/100,decorationSize:number("decoration_size",30,5,100),
     decorationX:number("decoration_x",80,0,100),decorationY:number("decoration_y",100,0,100),
+    snowSize:["small","medium","large"].includes(value.snow_size)?value.snow_size:"medium",
     darkness:number("darkness",25,0,90)/100,count:Math.round(number("snow_count",12,6,40))};
 }
 export function imageSources(attributes, config = {}) {
@@ -48,7 +49,8 @@ class WeihnachtssteuerungCard extends HTMLElement {
     image(settings.decoration,"effect-decoration",`opacity:${settings.decorationOpacity};width:${settings.decorationSize}%;left:${settings.decorationX}%;top:${settings.decorationY}%;transform:translate(-${settings.decorationX}%,-${settings.decorationY}%)`);
     if(settings.snow)for(let i=0;i<settings.count;i++){
       const flake=document.createElement("span");flake.className="snowflake";flake.textContent="•";
-      flake.style.cssText=`left:${(i*61)%100}%;font-size:${8+i%5*3}px;animation-duration:${10+i%9}s;animation-delay:-${i%17}s`;layer.append(flake);
+      const [base,step]={small:[4,2],medium:[8,3],large:[12,4]}[settings.snowSize];
+      flake.style.cssText=`left:${(i*61)%100}%;font-size:${base+i%5*step}px;animation-duration:${10+i%9}s;animation-delay:-${i%17}s`;layer.append(flake);
     }
     if(settings.background||settings.decoration||settings.snow){const dim=document.createElement("div");dim.className="effect-dim";dim.style.opacity=settings.darkness;layer.append(dim);}
     this._effectsNode=layer;this._pauseSnow();return layer;

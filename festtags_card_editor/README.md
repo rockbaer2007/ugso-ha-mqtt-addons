@@ -1,4 +1,4 @@
-# Festtags-Card-Editor 0.1.10
+# Festtags-Card-Editor 0.1.11
 
 Home-Assistant-App mit eigenem Editor, lokaler Weihnachtssteuerung und kompakter
 Dashboard-Card. Keine Cloud und keine eigenen Zugangsdaten. Bilder werden nicht
@@ -33,6 +33,10 @@ Schneeflocken normalerweise statisch. **Schneefall trotzdem animieren** erlaubt
 die Animation ausdrücklich für diese Card. Die Option ist standardmäßig aus,
 setzt einen Schneefallmodus voraus und ändert keine globale Browser-Einstellung.
 Unsichtbare Card oder ausgeblendete Seite pausieren den Schneefall weiterhin.
+
+**Schneeflockengröße** bietet Klein (4–12 px), Mittel (8–20 px) und Groß
+(12–28 px). Mittel entspricht der bisherigen Darstellung. Innerhalb jeder
+Stufe werden Größen leicht gemischt; die eingestellte Flockenzahl bleibt gleich.
 
 
 ## HA-App
@@ -137,7 +141,7 @@ Vor Änderungen ein vollständiges HA-Backup erstellen.
 4. Über **Konfigurieren** zuerst den Saisonzeitraum und dann Steuerung 1–5
    einrichten. Die Entitätsauswahl leer lassen, wenn ein Platz unbenutzt bleibt.
 5. Unter **Dashboards → Ressourcen** als JavaScript-Modul hinzufügen:
-   `/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.10`.
+   `/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.11`.
 6. Die Card hinzufügen; der passende Sensor wird automatisch gefunden:
 
 ```yaml
@@ -178,7 +182,7 @@ python tools/build.py
 ```
 
 Der Build erzeugt vollständige DE-/EN-Formulare und
-`dist/Weihnachtssteuerung-0.1.10.zip` (Integration/Card) und
-`dist/Festtags-Card-Editor-0.1.10.zip` (HA-App). Details zum Test auf .193 stehen in
+`dist/Weihnachtssteuerung-0.1.11.zip` (Integration/Card) und
+`dist/Festtags-Card-Editor-0.1.11.zip` (HA-App). Details zum Test auf .193 stehen in
 `docs/TEST-193.md`. Die Entwicklungsquelle bleibt in einem eigenen lokalen Repo;
 die HA-App wird über das gemeinsame App-Repository verteilt.

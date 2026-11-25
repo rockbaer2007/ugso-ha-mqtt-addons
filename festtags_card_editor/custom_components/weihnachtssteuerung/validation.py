@@ -27,6 +27,9 @@ def card_effects(value, image_folder=DEFAULT_IMAGE_FOLDER):
     if not isinstance(force_snow, bool):
         raise ValueError("Ungültige Schneefalloption / invalid snowfall option")
     result["force_snow"] = force_snow
+    result["snow_size"] = value.get("snow_size", "medium")
+    if result["snow_size"] not in {"small", "medium", "large"}:
+        raise ValueError("Ungültige Flockengröße / invalid snowflake size")
     for key, default, low, high in (("background_transparency",40,0,100),("background_size",100,50,200),
                                    ("background_x",50,0,100),("background_y",50,0,100),
                                    ("decoration_transparency",30,0,100),("decoration_size",30,5,100),

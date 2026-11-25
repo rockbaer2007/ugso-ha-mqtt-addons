@@ -46,6 +46,9 @@ Bei aktivem **Bewegung reduzieren** bleiben die Flocken statisch. Optional
 **Schneefall trotzdem animieren** aktivieren und speichern. Diese bewusste
 Ausnahme gilt nur für die Card; Pause bei unsichtbarer Card/Seite bleibt aktiv.
 
+Unter **Schneeflockengröße** Klein, Mittel oder Groß wählen. Mittel entspricht
+der bisherigen Darstellung; Flockenzahl und Abdunklung bleiben unabhängig davon.
+
 ## Was bleibt bei Stoppen oder Deinstallation?
 
 Die Editor-App und die Steuerung sind getrennt. Die HA-Integration führt die
