@@ -1,4 +1,4 @@
-/* Festtags-Card-Editor 0.1.6. No bundled pictures or remote assets. */
+/* Festtags-Card-Editor 0.1.7. No bundled pictures or remote assets. */
 export function filterEntityTargets(targets,query){
   const words=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   return targets.filter(target=>{
@@ -233,6 +233,7 @@ class FesttagsCardEditor extends HTMLElement {
       this.shadowRoot.querySelector(`[data-channel="${n}"] .entity-trigger`)?.focus();
     },n);
     if(!channel.entity_id)return;
+    this.field(grid,this.t("Statussymbol anzeigen","Show status icon"),channel.show_status_icon||false,value=>{channel.show_status_icon=value;},{type:"checkbox"});
     this.field(grid,this.t("Name","Name"),channel.name||"",value=>{channel.name=value;});
     this.field(grid,this.t("Betriebsart","Mode"),channel.mode,value=>{channel.mode=value;this.render();},{options:[["period",this.t("Täglich im Zeitraum","Daily within date range")],["holidays",this.t("Nur ausgewählte Festtage","Selected observances only")]]});
     this.field(grid,this.t("Einschalten um","Turn on at"),channel.on_time.slice(0,5),value=>{channel.on_time=value+":00";},{type:"time"});

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.7
+
+- Je Steuerung Statussymbol optional im App-Editor und in den HA-Optionen aktivieren.
+- Card zeigt neben dem Namen `mdi:lightbulb` für Ein und
+  `mdi:lightbulb-outline` für Aus; unbekannte/nicht verfügbare Zustände mit Warnsymbol.
+- Anzeige folgt dem tatsächlichen HA-Zustand, auch bei pausierter Steuerung.
+  Statussymbole sind reine Anzeige und lösen keine Schaltbefehle aus.
+- Bestehende Einstellungen erhalten; Statussymbol zunächst ausgeschaltet.
+
 ## 0.1.6
 
 - Weihnachten heißt jetzt 1. Weihnachtstag; der 26. Dezember heißt 2. Weihnachtstag.

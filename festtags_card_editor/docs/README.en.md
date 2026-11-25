@@ -1,4 +1,4 @@
-# Festtags-Card-Editor 0.1.6
+# Festtags-Card-Editor 0.1.7
 
 Home Assistant app, local scheduling integration and dashboard card. No cloud
 or user-supplied credentials. Set up a region first, then a country: 47 countries
@@ -19,6 +19,12 @@ area/device (when available) and entity ID. Matching includes these names and
 is case-insensitive. The current target is marked; × clears it. Escape closes
 the popup and arrow keys move focus. Select a result and save. Searching alone
 preserves the selected target; clearing the search shows all available targets.
+
+Enable **Show status icon** per control and save. The card shows a yellow
+`mdi:lightbulb` for the actual on state and grey `mdi:lightbulb-outline` for off.
+Unknown, unavailable or missing targets show a warning icon. It follows the
+target even while scheduling is paused. Icons are display-only and do not switch
+anything. This option defaults to off for existing and new controls.
 
 Save errors appear in the top toolbar and retain the current draft. Do not
 reload after a failed save; check the message first. Stale CSRF credentials
@@ -92,7 +98,7 @@ Back up HA first. Copy `custom_components/weihnachtssteuerung` to
 for the season and five channels. Empty entity slots remain unused.
 
 Add a dashboard JavaScript module resource:
-`/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.6`.
+`/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.7`.
 
 ```yaml
 type: custom:weihnachtssteuerung-card

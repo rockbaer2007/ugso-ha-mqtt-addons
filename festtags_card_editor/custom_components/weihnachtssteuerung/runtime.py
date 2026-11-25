@@ -129,6 +129,7 @@ class ChristmasRuntime(DataUpdateCoordinator):
         switch_id = registry.async_get_entity_id("switch", DOMAIN, f"{self.entry.entry_id}_channel_{n}")
         return {"number": n + 1, "configured": True, "name": channel.get("name") or (entity.name if entity else channel["entity_id"]),
                 "entity_id": channel["entity_id"], "switch_entity": switch_id,
+                "show_status_icon": channel.get("show_status_icon", False),
                 "enabled": self.is_enabled(n), "mode": channel["mode"],
                 "on_time": channel["on_time"], "off_time": channel["off_time"],
                 "start": start.isoformat(), "end": end.isoformat(), "season_active": active,

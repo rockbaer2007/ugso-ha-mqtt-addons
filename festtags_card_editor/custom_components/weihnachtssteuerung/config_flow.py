@@ -148,6 +148,7 @@ class ChristmasOptionsFlow(config_entries.OptionsFlow):
                 domain=["light", "switch", "input_boolean"],
                 exclude_entities=[entry.entity_id for entry in er.async_get(self.hass).entities.values() if entry.platform == DOMAIN])),
             vol.Optional("name", default=channel.get("name", "")): str,
+            vol.Optional("show_status_icon", default=channel.get("show_status_icon", False)): bool,
             vol.Required("mode", default=channel.get("mode", "period")): select([
                 {"value": "period", "label": "Täglich von Anfang bis Ende" if language(self) == 0 else "Every day in the date range"},
                 {"value": "holidays", "label": "Nur an ausgewählten Festtagen" if language(self) == 0 else "Selected observances only"}]),

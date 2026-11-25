@@ -12,4 +12,4 @@ class ChristmasEntity(CoordinatorEntity):
         self._attr_icon = icon
         self._attr_device_info = {"identifiers": {("weihnachtssteuerung", runtime.entry.entry_id)},
                                   "name": runtime.entry.title, "manufacturer": "UGSo", "model": "Weihnachtssteuerung",
-                                  "sw_version": "0.1.6"}
+                                  "sw_version": "0.1.7"}

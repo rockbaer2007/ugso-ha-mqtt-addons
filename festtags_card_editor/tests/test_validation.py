@@ -4,6 +4,15 @@ from custom_components.weihnachtssteuerung.validation import editor_config, fold
 
 
 class ValidationTests(unittest.TestCase):
+    def test_status_icon_option_is_boolean_and_preserved(self):
+        channel={"entity_id":"light.baum","mode":"period","on_time":"16:00","off_time":"23:00","show_status_icon":True}
+        self.assertTrue(editor_config(DEFAULTS | {"channels":[channel]})["channels"][0]["show_status_icon"])
+        channel["show_status_icon"]=False
+        self.assertFalse(editor_config(DEFAULTS | {"channels":[channel]})["channels"][0]["show_status_icon"])
+        channel["show_status_icon"]="on"
+        with self.assertRaises(ValueError):
+            editor_config(DEFAULTS | {"channels":[channel]})
+
     def test_region_and_country_must_match(self):
         with self.assertRaises(ValueError):
             editor_config(DEFAULTS | {"region": "north", "country": "DE"})

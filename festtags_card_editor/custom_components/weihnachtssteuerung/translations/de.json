@@ -68,6 +68,7 @@
         "data": {
           "entity_id": "Gesteuerte Entität",
           "name": "Name",
+          "show_status_icon": "Statussymbol anzeigen",
           "mode": "Betriebsart",
           "on_time": "Einschalten um",
           "off_time": "Ausschalten um",
@@ -85,6 +86,7 @@
         "data": {
           "entity_id": "Gesteuerte Entität",
           "name": "Name",
+          "show_status_icon": "Statussymbol anzeigen",
           "mode": "Betriebsart",
           "on_time": "Einschalten um",
           "off_time": "Ausschalten um",
@@ -102,6 +104,7 @@
         "data": {
           "entity_id": "Gesteuerte Entität",
           "name": "Name",
+          "show_status_icon": "Statussymbol anzeigen",
           "mode": "Betriebsart",
           "on_time": "Einschalten um",
           "off_time": "Ausschalten um",
@@ -119,6 +122,7 @@
         "data": {
           "entity_id": "Gesteuerte Entität",
           "name": "Name",
+          "show_status_icon": "Statussymbol anzeigen",
           "mode": "Betriebsart",
           "on_time": "Einschalten um",
           "off_time": "Ausschalten um",
@@ -136,6 +140,7 @@
         "data": {
           "entity_id": "Gesteuerte Entität",
           "name": "Name",
+          "show_status_icon": "Statussymbol anzeigen",
           "mode": "Betriebsart",
           "on_time": "Einschalten um",
           "off_time": "Ausschalten um",

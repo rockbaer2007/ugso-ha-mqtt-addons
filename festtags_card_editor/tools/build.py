@@ -18,6 +18,7 @@ def forms(de):
         "end_rule": text("Ende am (einschließlich)", "End on (inclusive)"), "end_date": text("Eigenes Enddatum (TT.MM.)", "Custom end date (DD.MM.)"),
         "entity_id": text("Gesteuerte Entität", "Controlled entity"), "mode": text("Betriebsart", "Mode"),
         "on_time": text("Einschalten um", "Turn on at"), "off_time": text("Ausschalten um", "Turn off at"),
+        "show_status_icon": text("Statussymbol anzeigen", "Show status icon"),
         "holidays": text("Ausgewählte Festtage (nur im Festtagsmodus)", "Selected observances (observance mode only)"),
         "use_default_period": text("Standardzeitraum der Saison übernehmen", "Use the default season date range"),
     }
@@ -34,7 +35,7 @@ def forms(de):
     channels = {}
     for n in range(1, 6):
         channels[f"channel_{n}"] = step(text(f"Steuerung {n}", f"Control {n}"),
-            ["entity_id", "name", "mode", "on_time", "off_time", "holidays", "use_default_period", *period],
+            ["entity_id", "name", "show_status_icon", "mode", "on_time", "off_time", "holidays", "use_default_period", *period],
             text("Entität leer lassen, um diesen Platz nicht zu verwenden. Datumsfelder gelten nur für Täglich im Zeitraum. Bei Standardzeitraum werden die Datumsfelder darunter ignoriert. Ein eigenes Datum gilt nur bei Auswahl 'Eigenes Datum'. Ausschaltzeit vor Einschaltzeit bedeutet die folgende Nacht. Pausieren lässt die Entität unverändert; Aktivieren stellt den Zeitplan wieder her.",
                  "Leave the entity empty to leave this slot unused. Date fields apply only to daily-in-range mode. With default season enabled, the date fields below are ignored. Custom dates apply only when 'Custom date' is selected. An earlier off time means the next night. Pause leaves the target untouched; enabling resumes its schedule."))
     return {"title": "Weihnachtssteuerung",

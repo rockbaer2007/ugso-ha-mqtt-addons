@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 class NodeStub {
-  constructor(tag=""){this.tagName=tag;this.children=[];this.dataset={};this.attributes={};}
+  constructor(tag=""){this.tagName=tag;this.children=[];this.dataset={};this.attributes={};this.style={};}
   append(...nodes){for(const node of nodes)node.parent=this;this.children.push(...nodes);}
   replaceChildren(...nodes){this.children=nodes;}
   setAttribute(key,value){this.attributes[key]=value;}
@@ -20,6 +20,22 @@ globalThis.customElements={get:key=>definitions.get(key),define:(key,value)=>def
 globalThis.window={};
 const {imageSources}=await import("../www/weihnachtssteuerung-card.js");
 const {calendarEventKeys,filterEntityTargets}=await import("../www/festtags-card-editor.js");
+
+test("optional status icon follows the live target without sending services",()=>{
+  const Card=definitions.get('weihnachtssteuerung-card'),card=new Card();card.setConfig({});
+  const channel={configured:true,number:1,name:'Baum',entity_id:'light.baum',show_status_icon:true,mode:'period',on_time:'16:00',off_time:'23:00',enabled:true};
+  const overview={state:'Kein Festtag',attributes:{christmas_control:true,channels:[channel]}};
+  const states={'sensor.festtag':overview,'light.baum':{state:'on'}};
+  const hass={locale:{language:'de'},config:{time_zone:'Europe/Berlin'},states,callService(){throw new Error('display must not switch');}};
+  card.hass=hass;
+  assert.equal(card.shadowRoot.querySelector('ha-icon').attributes.icon,'mdi:lightbulb');
+  card.hass={...hass,states:{...states,'light.baum':{state:'off'}}};
+  assert.equal(card.shadowRoot.querySelector('ha-icon').attributes.icon,'mdi:lightbulb-outline');
+  card.hass={...hass,states:{...states,'light.baum':{state:'unavailable'}}};
+  assert.equal(card.shadowRoot.querySelector('ha-icon').attributes.icon,'mdi:alert-circle-outline');
+  overview.attributes.channels=[{...channel,show_status_icon:false}];card.hass=hass;
+  assert.equal(card.shadowRoot.querySelector('ha-icon'),null);
+});
 
 test("save after app restart refreshes CSRF once without losing edited mappings",async()=>{
   const Editor=definitions.get('festtags-card-editor'),editor=new Editor();editor._csrf='old';

@@ -1,4 +1,7 @@
-/* Weihnachtssteuerung 0.1.2 - no libraries, trackers or bundled pictures. */
+/* Weihnachtssteuerung 0.1.7 - no libraries, trackers or bundled pictures. */
+export function statusIcon(state){
+  return state==="on"?"mdi:lightbulb":state==="off"?"mdi:lightbulb-outline":"mdi:alert-circle-outline";
+}
 export function imageSources(attributes, config = {}) {
   if (!(config.show_images ?? attributes.images_enabled ?? false)) return [];
   const folder=attributes.image_folder || "/local/weihnachtssteuerung/bilder";
@@ -76,9 +79,17 @@ class WeihnachtssteuerungCard extends HTMLElement {
       for (const channel of channels) {
         const row = add("div", "", "row");
         const info = add("div", "", "", row);
-        const raw = hass.states[channel.entity_id]?.state || channel.state;
+        const raw = hass.states[channel.entity_id]?.state || "unavailable";
         const targetState = ({on:tr("Ein", "On"),off:tr("Aus", "Off"),unknown:tr("Unbekannt", "Unknown"),unavailable:tr("Nicht verfügbar", "Unavailable")})[raw] || raw;
-        add("div", `${channel.number}. ${channel.name}`, "name", info);
+        const name=add("div", "", "name", info);
+        if(channel.show_status_icon){
+          const icon=add("ha-icon","","status-icon",name);icon.setAttribute("icon",statusIcon(raw));
+          icon.setAttribute("role","img");icon.setAttribute("aria-label",targetState||tr("Unbekannt","Unknown"));
+          icon.title=targetState||tr("Unbekannt","Unknown");
+          icon.style.cssText=`--mdc-icon-size:24px;color:${raw==="on"?"var(--state-light-active-color, #ffc107)":"var(--secondary-text-color)"};flex:0 0 24px`;
+          name.style.cssText="display:flex;align-items:center;gap:8px";
+        }
+        add("span",`${channel.number}. ${channel.name}`,"",name);
         add("div", `${channel.mode === "holidays" ? tr("Nur Festtage", "Observances only") : tr("Täglich im Zeitraum", "Daily in range")} · ${channel.on_time.slice(0,5)}–${channel.off_time.slice(0,5)} · ${targetState}`, "detail", info);
         if (channel.mode === "period") add("div", `${format(channel.start)} – ${format(channel.end)}`, "detail", info);
         if (channel.mode === "holidays") add("div", channel.holidays.join(", "), "detail", info);

@@ -1,4 +1,4 @@
-# Festtags-Card-Editor 0.1.6
+# Festtags-Card-Editor 0.1.7
 
 Home-Assistant-App mit eigenem Editor, lokaler Weihnachtssteuerung und kompakter
 Dashboard-Card. Keine Cloud und keine eigenen Zugangsdaten. Bilder werden nicht
@@ -33,6 +33,12 @@ zeigen Symbol, Name, Bereich/Gerät (sofern vorhanden) und Entitäts-ID.
 Die aktuelle Auswahl ist markiert; × entfernt sie. Escape schließt die Liste,
 Pfeiltasten bewegen den Fokus. Einen Treffer auswählen und anschließend speichern.
 Die Suche allein ändert die bisherige Auswahl nicht; ein leeres Suchfeld zeigt alle Ziele.
+
+Je Steuerung **Statussymbol anzeigen** einschalten und speichern. Die Card zeigt
+neben dem Namen bei tatsächlichem HA-Zustand Ein eine gelbe `mdi:lightbulb`, bei
+Aus eine graue `mdi:lightbulb-outline`. Unbekannte, nicht verfügbare oder fehlende
+Entitäten erhalten ein Warnsymbol. Die Anzeige folgt dem Ziel auch bei pausierter
+Steuerung und ist nicht anklickbar. Standardmäßig bleibt diese Option aus.
 
 Speicherfehler erscheinen direkt in der oberen Buttonleiste. Bei einem Fehler
 bleiben die Eingaben im offenen Editor erhalten; nicht neu laden, sondern die
@@ -100,7 +106,7 @@ Vor Änderungen ein vollständiges HA-Backup erstellen.
 4. Über **Konfigurieren** zuerst den Saisonzeitraum und dann Steuerung 1–5
    einrichten. Die Entitätsauswahl leer lassen, wenn ein Platz unbenutzt bleibt.
 5. Unter **Dashboards → Ressourcen** als JavaScript-Modul hinzufügen:
-   `/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.6`.
+   `/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.7`.
 6. Die Card hinzufügen; der passende Sensor wird automatisch gefunden:
 
 ```yaml
@@ -141,7 +147,7 @@ python tools/build.py
 ```
 
 Der Build erzeugt vollständige DE-/EN-Formulare und
-`dist/Weihnachtssteuerung-0.1.6.zip` (Integration/Card) und
-`dist/Festtags-Card-Editor-0.1.6.zip` (HA-App). Details zum Test auf .193 stehen in
+`dist/Weihnachtssteuerung-0.1.7.zip` (Integration/Card) und
+`dist/Festtags-Card-Editor-0.1.7.zip` (HA-App). Details zum Test auf .193 stehen in
 `docs/TEST-193.md`. Die Entwicklungsquelle bleibt in einem eigenen lokalen Repo;
 die HA-App wird über das gemeinsame App-Repository verteilt.

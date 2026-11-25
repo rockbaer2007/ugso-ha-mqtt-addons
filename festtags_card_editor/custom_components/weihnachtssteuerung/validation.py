@@ -64,10 +64,12 @@ def editor_config(payload):
         if not channel.get("entity_id"):
             result["channels"].append({})
             continue
-        allowed = {"entity_id", "name", "mode", "on_time", "off_time", "holidays", "start_rule", "start_date", "end_rule", "end_date"}
+        allowed = {"entity_id", "name", "mode", "on_time", "off_time", "holidays", "start_rule", "start_date", "end_rule", "end_date", "show_status_icon"}
         clean = {k: v for k, v in channel.items() if k in allowed}
-        if not all(isinstance(clean.get(k, ""), str) for k in allowed - {"holidays"}):
+        if not all(isinstance(clean.get(k, ""), str) for k in allowed - {"holidays", "show_status_icon"}):
             raise ValueError("Ungültiges Feld / invalid field")
+        if not isinstance(clean.get("show_status_icon", False), bool):
+            raise ValueError("Ungültige Statussymbol-Option / invalid status icon option")
         if not isinstance(clean.get("holidays", []), list) or not all(isinstance(k, str) for k in clean.get("holidays", [])):
             raise ValueError("Ungültige Festtage / invalid observances")
         if len(clean.get("name", "")) > 100 or len(clean["entity_id"]) > 255:
