@@ -1,4 +1,4 @@
-/* Festtags-Card-Editor 0.1.4. No bundled pictures or remote assets. */
+/* Festtags-Card-Editor 0.1.5. No bundled pictures or remote assets. */
 export function filterEntityTargets(targets,query){
   const words=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   return targets.filter(target=>{
@@ -94,7 +94,20 @@ class FesttagsCardEditor extends HTMLElement {
       if (options.method === "POST") headers["X-Festtags-CSRF"] = this._csrf;
       response = await fetch(`api/${path}`, {...options, headers});
     }
-    const result = await response.json();
+    if(!this._hass && options.method==="POST" && response.status===403 && !options._retried){
+      const fresh=await fetch("api/bootstrap");
+      if(fresh.ok){
+        const bootstrap=await fresh.json();
+        if(bootstrap.csrf && bootstrap.csrf!==this._csrf){
+          this._csrf=bootstrap.csrf;
+          return this.request(path,{...options,_retried:true});
+        }
+      }
+    }
+    const text=await response.text();let result;
+    try{result=JSON.parse(text);}catch{
+      throw new Error(this.t(`Speichern/Anfrage fehlgeschlagen (HTTP ${response.status}). Änderungen bleiben im Editor.`,`Request failed (HTTP ${response.status}). Changes remain in the editor.`));
+    }
     if (!response.ok) throw new Error(result.error || result.error_en || `HTTP ${response.status}`);
     return result;
   }
@@ -147,6 +160,7 @@ class FesttagsCardEditor extends HTMLElement {
     button.onclick=async()=>{try {await action();} catch(error){this.status(error.message,true);}}; return button;
   }
   status(message, error=false) {
+    this._statusMessage={message,error};
     const node=this.shadowRoot.querySelector("[data-message]");
     if (node) {node.textContent=message;node.classList.toggle("error",error);}
   }
@@ -174,7 +188,9 @@ class FesttagsCardEditor extends HTMLElement {
     this.button(bar,this.t("Neu laden","Reload"),()=>this.load());
     const status=this.node("span",this.t("Gespeichert","Saved"),bar,"muted"); status.dataset.saveStatus="";
     if(!this._hass)this.button(bar,this.t("Card-Ressource einrichten","Register card resource"),async()=>{await this.request("resource",{method:"POST",body:"{}"});this.status(this.t("Card-Ressource eingerichtet. Dashboard bei Bedarf neu laden.","Card resource registered. Reload the dashboard if needed."));});
-    const message=this.node("p","",main);message.dataset.message="";
+    const message=this.node("p","",bar);message.dataset.message="";message.style.cssText="flex-basis:100%;margin:0;overflow-wrap:anywhere";
+    message.setAttribute("role","status");message.setAttribute("aria-live","polite");
+    if(this._statusMessage)this.status(this._statusMessage.message,this._statusMessage.error);
     if(this.model.entries.length>1) this.field(main,this.t("Konfiguration","Configuration"),this._entry.entry_id,value=>{this._entry=this.model.entries.find(e=>e.entry_id===value);this.config=structuredClone(this._entry.config);this.render();},{options:this.model.entries.map(e=>[e.entry_id,e.title])});
     const c=this.config, lang=this.de?0:1;
     const location=this.node("section","",main,"box");this.node("h2",this.t("Region und Land","Region and country"),location);
@@ -272,10 +288,22 @@ class FesttagsCardEditor extends HTMLElement {
   imageURL(file){return (this.config.image_folder||"/local/weihnachtssteuerung/bilder").replace(/\/$/,"")+"/"+encodeURIComponent(file);}
   async readFiles(){const result=await this.request(`images?folder=${encodeURIComponent(this.config.image_folder||"/local/weihnachtssteuerung/bilder")}`);this._files=result.files;this.render();}
   async save(){
+    if(this._saving)return;
+    this._saving=true;
+    const button=this.shadowRoot.querySelector("[data-save]");if(button)button.disabled=true;
+    try{
     this.status(this.t("Wird gespeichert …","Saving …"));
     const result=await this.request("editor",{method:"POST",body:JSON.stringify({entry_id:this._entry.entry_id,config:this.config})});
     if(result.entry_id)this._entry.entry_id=result.entry_id;
     this._dirty=false;await this.load();this.status(this.t("Gespeichert. Zeitpläne und Card werden aktualisiert.","Saved. Schedules and card are updating."));
+    }catch(error){
+      this.status(this.t("Nicht gespeichert: ","Not saved: ")+error.message,true);
+      return false;
+    }finally{
+      this._saving=false;
+      const current=this.shadowRoot.querySelector("[data-save]");if(current)current.disabled=false;
+    }
+    return true;
   }
 }
 if(!customElements.get("festtags-card-editor"))customElements.define("festtags-card-editor",FesttagsCardEditor);

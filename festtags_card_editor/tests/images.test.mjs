@@ -21,6 +21,32 @@ globalThis.window={};
 const {imageSources}=await import("../www/weihnachtssteuerung-card.js");
 const {calendarEventKeys,filterEntityTargets}=await import("../www/festtags-card-editor.js");
 
+test("save after app restart refreshes CSRF once without losing edited mappings",async()=>{
+  const Editor=definitions.get('festtags-card-editor'),editor=new Editor();editor._csrf='old';
+  const draft={country_images:{DE:{advent_1:'kerze1.png',nicholas:'nikolaus.png'}},show_images:true};
+  const calls=[],original=globalThis.fetch;
+  globalThis.fetch=async(path,options)=>{
+    calls.push({path,options});
+    if(path==='api/bootstrap')return new Response(JSON.stringify({csrf:'new'}));
+    return options.headers['X-Festtags-CSRF']==='old'?new Response('App neu laden und erneut versuchen.',{status:403}):new Response(JSON.stringify({saved:true}));
+  };
+  try{
+    const result=await editor.request('editor',{method:'POST',body:JSON.stringify({config:draft})});
+    assert.equal(result.saved,true);assert.equal(calls.length,3);
+    assert.equal(calls[2].options.body,calls[0].options.body);assert.equal(editor._csrf,'new');
+  }finally{globalThis.fetch=original;}
+});
+
+test("rejected saves retain the draft and do not reload",async()=>{
+  const Editor=definitions.get('festtags-card-editor'),editor=new Editor();
+  editor._hass={locale:{language:'de'}};editor._entry={entry_id:'existing'};
+  const draft={country_images:{DE:{nicholas:'nikolaus.png'}}};editor.config=draft;editor._dirty=true;
+  editor.status=message=>{editor.message=message;};editor.request=async()=>{throw new Error('Entität mehrfach verwendet');};
+  editor.load=async()=>{throw new Error('should not reload');};
+  assert.equal(await editor.save(),false);assert.equal(editor.config,draft);assert.equal(editor._dirty,true);
+  assert.match(editor.message,/Nicht gespeichert: Entität mehrfach/);assert.equal(editor._saving,false);
+});
+
 test("entity search finds partial names and IDs without changing target objects",()=>{
   const targets=[{name:"Weihnachtsbaum",entity_id:"switch.baum",device:"Lichterkette"},{name:"Garten",entity_id:"light.weihnacht_garten",area:"Terrasse"},{name:"Küche",entity_id:"light.kueche"}];
   const snapshot=structuredClone(targets);

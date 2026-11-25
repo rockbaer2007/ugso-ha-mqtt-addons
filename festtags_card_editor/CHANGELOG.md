@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.5
+
+- Speicher- und Fehlermeldungen bleiben in der oberen Buttonleiste sichtbar.
+- Ein durch App-Neustart veralteter CSRF-Nachweis wird nach erneuter
+  Administratorprüfung einmalig erneuert; der Entwurf bleibt dabei unverändert.
+- Fehlgeschlagene Speicherversuche behalten alle Eingaben im Editor.
+- Gleichzeitige doppelte Speicherversuche werden verhindert.
+
 ## 0.1.4
 
 - Entitätsauswahl im HA-Stil: aufklappbares Suchfeld, Treffer mit Symbol,
