@@ -1,10 +1,13 @@
-/* Festtags-Card-Editor 0.1.8. No bundled pictures or remote assets. */
+/* Festtags-Card-Editor 0.1.9. No bundled pictures or remote assets. */
 export function filterEntityTargets(targets,query){
   const words=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   return targets.filter(target=>{
     const text=`${target.name||""} ${target.area||""} ${target.device||""} ${target.entity_id}`.toLocaleLowerCase();
     return words.every(word=>text.includes(word));
   });
+}
+export function effectFileOptions(files,selected=[]){
+  return [...new Set([...files,...selected].filter(file=>typeof file==="string"&&file))].sort((a,b)=>a.localeCompare(b));
 }
 export function calendarEventKeys(model,country,tradition){
   const keys=model.country_events[country]||[];
@@ -298,10 +301,9 @@ class FesttagsCardEditor extends HTMLElement {
     const upload=this.node("input","",grid);upload.type="file";upload.multiple=true;upload.accept="image/png,image/jpeg,image/webp,image/gif";upload.setAttribute("aria-label",this.t("Hintergründe hochladen","Upload backgrounds"));
     upload.onchange=async()=>{try{for(const file of upload.files){const body=new FormData();body.append("folder",e.folder);body.append("file",file);await this.request("images",{method:"POST",body});}await this.readEffectFiles();this.status(this.t("Dateien hochgeladen. Hintergrund/Dekoration wählen und speichern.","Files uploaded. Select background/decoration and save."));}catch(error){this.status(error.message,true);}};
     this.button(grid,this.t("Hintergrundordner einlesen","Read background folder"),()=>this.readEffectFiles());
-    const list=this.node("datalist","",box);list.id="festtags-background-files";
-    for(const file of this._effectFiles||[]){const option=this.node("option",file,list);option.value=file;}
+    const fileOptions=[["",this.t("Keine Datei","No file")],...effectFileOptions(this._effectFiles||[],[e.background_file,e.decoration_file]).map(file=>[file,file])];
     for(const [key,de,en]of [["background_file","Hintergrunddatei","Background file"],["decoration_file","Dekorationsdatei (GIF möglich)","Decoration file (GIF supported)"]]){
-      const input=this.field(grid,this.t(de,en),e[key]||"",v=>{e[key]=v;});input.setAttribute("list",list.id);
+      this.field(grid,this.t(de,en),e[key]||"",v=>{e[key]=v;},{options:fileOptions});
     }
     this.field(grid,this.t("Dekoration anzeigen","Show decoration"),e.decoration_enabled||false,v=>{e.decoration_enabled=v;},{type:"checkbox"});
     for(const [key,de,en,defaultValue,min,max]of [

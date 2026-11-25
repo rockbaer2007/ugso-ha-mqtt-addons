@@ -1,4 +1,4 @@
-# Festtags-Card-Editor 0.1.8
+# Festtags-Card-Editor 0.1.9
 
 Home Assistant app, local scheduling integration and dashboard card. No cloud
 or user-supplied credentials. Set up a region first, then a country: 47 countries
@@ -14,7 +14,9 @@ own files to `/local/weihnachtssteuerung/background`, corresponding to
 folder its sibling `background` is suggested. Created on first upload; no art is bundled.
 
 Read the folder and choose a background file. Optionally enable a separate GIF
-decoration. Both have transparency (0% visible, 100% invisible), size and X/Y
+decoration. Both dropdowns keep showing all loaded files after selection.
+**No file** clears a mapping without deleting a file.
+Both have transparency (0% visible, 100% invisible), size and X/Y
 position controls. Background size: 50–200%; decoration width: 5–100% of the card.
 Position 0/0 is top left; 100/100 is bottom right. Backgrounds fill/crop while
 decoration preserves its aspect ratio. Adjustable darkening improves readability.
@@ -117,7 +119,7 @@ Back up HA first. Copy `custom_components/weihnachtssteuerung` to
 for the season and five channels. Empty entity slots remain unused.
 
 Add a dashboard JavaScript module resource:
-`/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.8`.
+`/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.9`.
 
 ```yaml
 type: custom:weihnachtssteuerung-card

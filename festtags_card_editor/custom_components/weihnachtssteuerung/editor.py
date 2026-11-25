@@ -17,7 +17,7 @@ from .engine import DEFAULTS
 from .validation import DEFAULT_IMAGE_FOLDER, editor_config, folder_parts, image_filename
 
 DOMAIN = "weihnachtssteuerung"
-VERSION = "0.1.8"
+VERSION = "0.1.9"
 MAX_IMAGE = 5 * 1024 * 1024
 
 

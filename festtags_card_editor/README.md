@@ -1,4 +1,4 @@
-# Festtags-Card-Editor 0.1.8
+# Festtags-Card-Editor 0.1.9
 
 Home-Assistant-App mit eigenem Editor, lokaler Weihnachtssteuerung und kompakter
 Dashboard-Card. Keine Cloud und keine eigenen Zugangsdaten. Bilder werden nicht
@@ -13,7 +13,9 @@ unter `/local/weihnachtssteuerung/background` gespeichert, also in
 Bei einem eigenen Bilderordner wird dessen Nachbarordner `background` vorgeschlagen.
 Der Ordner wird beim ersten Upload erstellt. Keine Bilder werden mitgeliefert.
 
-**Hintergrundordner einlesen**, Datei auswählen oder Namen eingeben und speichern.
+**Hintergrundordner einlesen**, Datei auswählen und speichern. Die Auswahllisten
+für Hintergrund und Dekoration zeigen auch nach einer Auswahl alle eingelesenen
+Dateien. **Keine Datei** leert die Zuordnung, ohne eine Datei zu löschen.
 Für eine zusätzliche GIF-Dekoration **Dekoration anzeigen** aktivieren und eine
 separate Datei wählen. Transparenz 0 % = sichtbar, 100 % = unsichtbar.
 Hintergrundgröße 50–200 %, Dekorationsbreite 5–100 % der Card. X/Y reichen von
@@ -128,7 +130,7 @@ Vor Änderungen ein vollständiges HA-Backup erstellen.
 4. Über **Konfigurieren** zuerst den Saisonzeitraum und dann Steuerung 1–5
    einrichten. Die Entitätsauswahl leer lassen, wenn ein Platz unbenutzt bleibt.
 5. Unter **Dashboards → Ressourcen** als JavaScript-Modul hinzufügen:
-   `/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.8`.
+   `/local/weihnachtssteuerung/weihnachtssteuerung-card.js?v=0.1.9`.
 6. Die Card hinzufügen; der passende Sensor wird automatisch gefunden:
 
 ```yaml
@@ -169,7 +171,7 @@ python tools/build.py
 ```
 
 Der Build erzeugt vollständige DE-/EN-Formulare und
-`dist/Weihnachtssteuerung-0.1.8.zip` (Integration/Card) und
-`dist/Festtags-Card-Editor-0.1.8.zip` (HA-App). Details zum Test auf .193 stehen in
+`dist/Weihnachtssteuerung-0.1.9.zip` (Integration/Card) und
+`dist/Festtags-Card-Editor-0.1.9.zip` (HA-App). Details zum Test auf .193 stehen in
 `docs/TEST-193.md`. Die Entwicklungsquelle bleibt in einem eigenen lokalen Repo;
 die HA-App wird über das gemeinsame App-Repository verteilt.

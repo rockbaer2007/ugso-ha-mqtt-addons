@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.9
+
+- Hintergrund- und Dekorationsdateien als feste Auswahllisten statt gefilterter
+  Dateivorschläge. Nach Auswahl bleiben alle eingelesenen Dateien verfügbar.
+- Bestehende Dateizuordnungen bleiben auch vor erneutem Ordnereinlesen erhalten.
+- Auswahl Keine Datei zum Leeren; vorhandene Einstellungen und Dateien unverändert.
+
 ## 0.1.8
 
 - Optionale Hintergründe: Aus, Bild/GIF, Schneefall oder Bild mit Schneefall.

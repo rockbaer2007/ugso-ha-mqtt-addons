@@ -21,7 +21,15 @@ const definitions=new Map();
 globalThis.customElements={get:key=>definitions.get(key),define:(key,value)=>definitions.set(key,value)};
 globalThis.window={};
 const {imageSources,effectSettings}=await import("../www/weihnachtssteuerung-card.js");
-const {calendarEventKeys,filterEntityTargets}=await import("../www/festtags-card-editor.js");
+const {calendarEventKeys,filterEntityTargets,effectFileOptions}=await import("../www/festtags-card-editor.js");
+
+test("effect file choices retain the entire folder after selecting a file",()=>{
+  const files=['ww1.gif','baum.gif','schnee.gif'];
+  assert.deepEqual(effectFileOptions(files,['ww1.gif']),['baum.gif','schnee.gif','ww1.gif']);
+  assert.deepEqual(effectFileOptions(files,['baum.gif','schnee.gif']),['baum.gif','schnee.gif','ww1.gif']);
+  assert.deepEqual(files,['ww1.gif','baum.gif','schnee.gif']);
+  assert.deepEqual(effectFileOptions([],['saved.gif','saved.gif']),['saved.gif']);
+});
 
 test("effects default off and accept only safe local image sources",()=>{
   assert.equal(effectSettings().snow,false);assert.equal(effectSettings().background,null);
