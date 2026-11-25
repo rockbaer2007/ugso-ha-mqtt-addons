@@ -1,5 +1,13 @@
 # Festtags-Card-Editor 0.1.12
 
+[Deutsch](../README.md) · [Français](README.fr.md)
+
+**Chrome test confirmed on November 25, 2026:** Card 0.1.12 displayed a loaded
+GIF and 30 moving snowflakes together. Chrome had still loaded resource 0.1.8;
+**Register card resource** followed by a full dashboard reload resolved the stale
+reference. With reduced motion active, also save **Animate snowfall anyway**.
+[DE/EN/FR test record](TEST-197.md) · [Online guide](https://opensource.ugso-software.de/en/projects/festtags-card-editor/).
+
 Home Assistant app, local scheduling integration and dashboard card. No cloud
 or user-supplied credentials. Set up a region first, then a country: 47 countries
 and a custom option. Choose western, Julian or both Christmas traditions.

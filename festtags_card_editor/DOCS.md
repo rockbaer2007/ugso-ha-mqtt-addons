@@ -65,3 +65,13 @@ Die Card zeigt nur konfigurationsbezogene Daten und kann die fünf Pause-Schalte
 bedienen. Keine Bilder und keine Zugangsdaten werden nach außen übertragen.
 
 [English documentation](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/blob/master/festtags_card_editor/docs/README.en.md)
+
+[Documentation française](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/blob/master/festtags_card_editor/docs/README.fr.md)
+
+## Bestätigter Kombinationstest
+
+Am 25.11.2026 wurden GIF und 30 bewegte Schneeflocken gemeinsam in Chrome mit
+Card 0.1.12 bestätigt. Bei stehendem Schnee trotz aktivierter Ausnahme zuerst
+**Card-Ressource einrichten** und das Dashboard vollständig neu laden: Im
+beobachteten Fall war dort noch die alte Ressource 0.1.8 registriert.
+[Prüfbericht DE/EN/FR](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/blob/master/festtags_card_editor/docs/TEST-197.md).

@@ -2,7 +2,14 @@
 
 Home-Assistant-App mit eigenem Editor, lokaler Weihnachtssteuerung und kompakter
 Dashboard-Card. Keine Cloud und keine eigenen Zugangsdaten. Bilder werden nicht
-mitgeliefert. [English documentation](docs/README.en.md).
+mitgeliefert. [English documentation](docs/README.en.md) · [Documentation française](docs/README.fr.md).
+
+**Chrome-Test am 25.11.2026 bestätigt:** Card 0.1.12 zeigt ein geladenes GIF und
+30 gleichzeitig bewegte Schneeflocken. Zuvor war in Chrome noch die Ressource
+0.1.8 geladen. **Card-Ressource einrichten** und anschließendes vollständiges
+Neuladen des Dashboards behoben den alten Dateiverweis. Bei Bewegung reduzieren
+muss zusätzlich **Schneefall trotzdem animieren** gespeichert sein.
+[Prüfbericht DE/EN/FR](docs/TEST-197.md) · [Web-Doku DE/EN/FR](https://opensource.ugso-software.de/projects/festtags-card-editor/).
 
 ## Optionale Hintergründe und Dekoration
 
