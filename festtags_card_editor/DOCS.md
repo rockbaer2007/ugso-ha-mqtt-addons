@@ -1,0 +1,49 @@
+# Festtags-Card-Editor einrichten
+
+1. Ein vollständiges HA-Backup erstellen.
+2. App installieren und starten. Die App installiert ausschließlich ihre eigene
+   Integration `weihnachtssteuerung` sowie Editor und Card im eigenen `www`-Ordner.
+3. Home Assistant nach Erstinstallation oder Update neu starten. Vorhandene
+   Einstellungen bleiben erhalten; die App führt keinen unangekündigten Neustart aus.
+4. **Weboberfläche öffnen**. Auf einem frischen System einmal **Integration einrichten**
+   wählen; eine vorhandene Einrichtung bleibt unverändert. Danach Region und Land auswählen, Saison sowie Steuerungen
+   einrichten und speichern. Bei einer neuen Einrichtung wird die HA-Integration
+   durch ihren normalen Konfigurationsablauf angelegt.
+5. **Card-Ressource einrichten** ausführen. Danach diese Card zum Dashboard hinzufügen:
+
+```yaml
+type: custom:weihnachtssteuerung-card
+title: Weihnachtssteuerung
+```
+
+Die Vorgabe läuft jährlich vom ersten Advent bis einschließlich 10. Januar.
+Pro Entität lassen sich eigene Schaltzeiten und ein eigener Zeitraum einstellen.
+Im Modus **Nur ausgewählte Festtage** zählt die Festtagsauswahl, nicht der
+tägliche Saisonzeitraum. Ein Ausschaltzeitpunkt vor dem Einschaltzeitpunkt liegt
+in der folgenden Nacht. Es werden `light`, `switch` und `input_boolean` unterstützt.
+
+## Bilder
+
+Es sind keine Bilder enthalten. Eigene Dateien im Editor hochladen und pro
+Region/Land/Festtag zuordnen. Bilder müssen unter einem lokalen `/local/`-Ordner
+liegen. **Eigene Festtagsbilder anzeigen** aktivieren und speichern.
+PNG, JPG, WebP und GIF werden nach Inhaltsprüfung angenommen; maximal 5 MiB und
+16 Megapixel. Doppelte Dateinamen erhalten einen Zähler. Lösen entfernt nur eine
+Zuordnung. Vorhandene, selbst abgelegte SVG-Dateien können zugeordnet werden.
+
+## Was bleibt bei Stoppen oder Deinstallation?
+
+Die Editor-App und die Steuerung sind getrennt. Die HA-Integration führt die
+Zeitpläne weiter aus, auch wenn die App gestoppt wird. Eine App-Deinstallation
+entfernt weder HA-Konfigurationseinträge noch Bilder unter `/config/www`.
+Die HA-Integration kann bei Bedarf separat in HA deaktiviert werden.
+
+## Sicherheit und Daten
+
+Nur aktive HA-Administratoren dürfen den Editor öffnen. Ingress prüft den
+tatsächlichen HA-Nutzer; Änderungen benötigen einen CSRF-Nachweis. Der
+Supervisor-Zugang bleibt auf dem Server. Es gibt keine allgemeine HA-API-Weiterleitung.
+Die Card zeigt nur konfigurationsbezogene Daten und kann die fünf Pause-Schalter
+bedienen. Keine Bilder und keine Zugangsdaten werden nach außen übertragen.
+
+[English documentation](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/blob/master/festtags_card_editor/docs/README.en.md)

@@ -1,0 +1,10 @@
+{
+  "name": "ugso-festtags-card-editor",
+  "version": "0.1.2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/images.test.mjs",
+    "check": "node --check www/weihnachtssteuerung-card.js && node --check www/festtags-card-editor.js"
+  }
+}

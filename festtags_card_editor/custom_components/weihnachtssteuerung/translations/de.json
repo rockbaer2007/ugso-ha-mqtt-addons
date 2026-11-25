@@ -1,0 +1,161 @@
+{
+  "title": "Weihnachtssteuerung",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Region auswählen",
+        "description": "",
+        "data": {
+          "region": "Region"
+        }
+      },
+      "country": {
+        "title": "Land und Tradition",
+        "description": "Ländervorgaben sind Fest- und Brauchtumstermine, keine vollständige Liste gesetzlicher Feiertage. Danach unter Konfigurieren die Saison und bis zu fünf Steuerungen einrichten.",
+        "data": {
+          "country": "Land",
+          "tradition": "Weihnachtstradition",
+          "name": "Name"
+        }
+      }
+    },
+    "abort": {
+      "invalid_country": "Land passt nicht zur ausgewählten Region."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Weihnachtssteuerung konfigurieren",
+        "menu_options": {
+          "location": "Region / Land / Tradition",
+          "season": "Standardzeitraum der Saison",
+          "channel_1": "Steuerung 1",
+          "channel_2": "Steuerung 2",
+          "channel_3": "Steuerung 3",
+          "channel_4": "Steuerung 4",
+          "channel_5": "Steuerung 5"
+        }
+      },
+      "location": {
+        "title": "Region auswählen",
+        "description": "",
+        "data": {
+          "region": "Region"
+        }
+      },
+      "country": {
+        "title": "Land und Tradition",
+        "description": "Ländervorgaben sind Fest- und Brauchtumstermine, keine vollständige Liste gesetzlicher Feiertage. Danach unter Konfigurieren die Saison und bis zu fünf Steuerungen einrichten.",
+        "data": {
+          "country": "Land",
+          "tradition": "Weihnachtstradition"
+        }
+      },
+      "season": {
+        "title": "Standardzeitraum der Saison",
+        "description": "Beispiel: Beginn 1. Advent, Ende Eigenes Datum 10.01. Termine werden jährlich neu berechnet, auch über den Jahreswechsel.",
+        "data": {
+          "start_rule": "Beginn am",
+          "start_date": "Eigenes Anfangsdatum (TT.MM.)",
+          "end_rule": "Ende am (einschließlich)",
+          "end_date": "Eigenes Enddatum (TT.MM.)"
+        }
+      },
+      "channel_1": {
+        "title": "Steuerung 1",
+        "description": "Entität leer lassen, um diesen Platz nicht zu verwenden. Datumsfelder gelten nur für Täglich im Zeitraum. Bei Standardzeitraum werden die Datumsfelder darunter ignoriert. Ein eigenes Datum gilt nur bei Auswahl 'Eigenes Datum'. Ausschaltzeit vor Einschaltzeit bedeutet die folgende Nacht. Pausieren lässt die Entität unverändert; Aktivieren stellt den Zeitplan wieder her.",
+        "data": {
+          "entity_id": "Gesteuerte Entität",
+          "name": "Name",
+          "mode": "Betriebsart",
+          "on_time": "Einschalten um",
+          "off_time": "Ausschalten um",
+          "holidays": "Ausgewählte Festtage (nur im Festtagsmodus)",
+          "use_default_period": "Standardzeitraum der Saison übernehmen",
+          "start_rule": "Beginn am",
+          "start_date": "Eigenes Anfangsdatum (TT.MM.)",
+          "end_rule": "Ende am (einschließlich)",
+          "end_date": "Eigenes Enddatum (TT.MM.)"
+        }
+      },
+      "channel_2": {
+        "title": "Steuerung 2",
+        "description": "Entität leer lassen, um diesen Platz nicht zu verwenden. Datumsfelder gelten nur für Täglich im Zeitraum. Bei Standardzeitraum werden die Datumsfelder darunter ignoriert. Ein eigenes Datum gilt nur bei Auswahl 'Eigenes Datum'. Ausschaltzeit vor Einschaltzeit bedeutet die folgende Nacht. Pausieren lässt die Entität unverändert; Aktivieren stellt den Zeitplan wieder her.",
+        "data": {
+          "entity_id": "Gesteuerte Entität",
+          "name": "Name",
+          "mode": "Betriebsart",
+          "on_time": "Einschalten um",
+          "off_time": "Ausschalten um",
+          "holidays": "Ausgewählte Festtage (nur im Festtagsmodus)",
+          "use_default_period": "Standardzeitraum der Saison übernehmen",
+          "start_rule": "Beginn am",
+          "start_date": "Eigenes Anfangsdatum (TT.MM.)",
+          "end_rule": "Ende am (einschließlich)",
+          "end_date": "Eigenes Enddatum (TT.MM.)"
+        }
+      },
+      "channel_3": {
+        "title": "Steuerung 3",
+        "description": "Entität leer lassen, um diesen Platz nicht zu verwenden. Datumsfelder gelten nur für Täglich im Zeitraum. Bei Standardzeitraum werden die Datumsfelder darunter ignoriert. Ein eigenes Datum gilt nur bei Auswahl 'Eigenes Datum'. Ausschaltzeit vor Einschaltzeit bedeutet die folgende Nacht. Pausieren lässt die Entität unverändert; Aktivieren stellt den Zeitplan wieder her.",
+        "data": {
+          "entity_id": "Gesteuerte Entität",
+          "name": "Name",
+          "mode": "Betriebsart",
+          "on_time": "Einschalten um",
+          "off_time": "Ausschalten um",
+          "holidays": "Ausgewählte Festtage (nur im Festtagsmodus)",
+          "use_default_period": "Standardzeitraum der Saison übernehmen",
+          "start_rule": "Beginn am",
+          "start_date": "Eigenes Anfangsdatum (TT.MM.)",
+          "end_rule": "Ende am (einschließlich)",
+          "end_date": "Eigenes Enddatum (TT.MM.)"
+        }
+      },
+      "channel_4": {
+        "title": "Steuerung 4",
+        "description": "Entität leer lassen, um diesen Platz nicht zu verwenden. Datumsfelder gelten nur für Täglich im Zeitraum. Bei Standardzeitraum werden die Datumsfelder darunter ignoriert. Ein eigenes Datum gilt nur bei Auswahl 'Eigenes Datum'. Ausschaltzeit vor Einschaltzeit bedeutet die folgende Nacht. Pausieren lässt die Entität unverändert; Aktivieren stellt den Zeitplan wieder her.",
+        "data": {
+          "entity_id": "Gesteuerte Entität",
+          "name": "Name",
+          "mode": "Betriebsart",
+          "on_time": "Einschalten um",
+          "off_time": "Ausschalten um",
+          "holidays": "Ausgewählte Festtage (nur im Festtagsmodus)",
+          "use_default_period": "Standardzeitraum der Saison übernehmen",
+          "start_rule": "Beginn am",
+          "start_date": "Eigenes Anfangsdatum (TT.MM.)",
+          "end_rule": "Ende am (einschließlich)",
+          "end_date": "Eigenes Enddatum (TT.MM.)"
+        }
+      },
+      "channel_5": {
+        "title": "Steuerung 5",
+        "description": "Entität leer lassen, um diesen Platz nicht zu verwenden. Datumsfelder gelten nur für Täglich im Zeitraum. Bei Standardzeitraum werden die Datumsfelder darunter ignoriert. Ein eigenes Datum gilt nur bei Auswahl 'Eigenes Datum'. Ausschaltzeit vor Einschaltzeit bedeutet die folgende Nacht. Pausieren lässt die Entität unverändert; Aktivieren stellt den Zeitplan wieder her.",
+        "data": {
+          "entity_id": "Gesteuerte Entität",
+          "name": "Name",
+          "mode": "Betriebsart",
+          "on_time": "Einschalten um",
+          "off_time": "Ausschalten um",
+          "holidays": "Ausgewählte Festtage (nur im Festtagsmodus)",
+          "use_default_period": "Standardzeitraum der Saison übernehmen",
+          "start_rule": "Beginn am",
+          "start_date": "Eigenes Anfangsdatum (TT.MM.)",
+          "end_rule": "Ende am (einschließlich)",
+          "end_date": "Eigenes Enddatum (TT.MM.)"
+        }
+      }
+    },
+    "error": {
+      "invalid_date": "Ungültiges Datum. Bitte TT.MM. verwenden; der 29. Februar wird nicht unterstützt.",
+      "invalid_channel": "Bitte gültige, unterschiedliche Uhrzeiten ohne Sekunden und im Festtagsmodus mindestens einen Festtag auswählen.",
+      "duplicate_target": "Diese Entität wird bereits von einer anderen Steuerung verwendet.",
+      "recursive_target": "Die eigenen Aktiv-/Pause-Schalter dürfen nicht als Ziel verwendet werden."
+    },
+    "abort": {
+      "invalid_country": "Ungültiges Land für diese Region."
+    }
+  }
+}

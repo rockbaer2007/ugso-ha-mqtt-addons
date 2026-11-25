@@ -1,0 +1,161 @@
+{
+  "title": "Weihnachtssteuerung",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Select region",
+        "description": "",
+        "data": {
+          "region": "Region"
+        }
+      },
+      "country": {
+        "title": "Country and tradition",
+        "description": "Country presets are observances and traditions, not a complete statutory holiday calendar. Next, configure the season and up to five controls in the integration options.",
+        "data": {
+          "country": "Country",
+          "tradition": "Christmas tradition",
+          "name": "Name"
+        }
+      }
+    },
+    "abort": {
+      "invalid_country": "Country does not belong to this region."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure Christmas controls",
+        "menu_options": {
+          "location": "Region / country / tradition",
+          "season": "Default season date range",
+          "channel_1": "Control 1",
+          "channel_2": "Control 2",
+          "channel_3": "Control 3",
+          "channel_4": "Control 4",
+          "channel_5": "Control 5"
+        }
+      },
+      "location": {
+        "title": "Select region",
+        "description": "",
+        "data": {
+          "region": "Region"
+        }
+      },
+      "country": {
+        "title": "Country and tradition",
+        "description": "Country presets are observances and traditions, not a complete statutory holiday calendar. Next, configure the season and up to five controls in the integration options.",
+        "data": {
+          "country": "Country",
+          "tradition": "Christmas tradition"
+        }
+      },
+      "season": {
+        "title": "Default season date range",
+        "description": "Example: first Advent Sunday through custom date 10.01. Dates recur annually, including across New Year.",
+        "data": {
+          "start_rule": "Start on",
+          "start_date": "Custom start date (DD.MM.)",
+          "end_rule": "End on (inclusive)",
+          "end_date": "Custom end date (DD.MM.)"
+        }
+      },
+      "channel_1": {
+        "title": "Control 1",
+        "description": "Leave the entity empty to leave this slot unused. Date fields apply only to daily-in-range mode. With default season enabled, the date fields below are ignored. Custom dates apply only when 'Custom date' is selected. An earlier off time means the next night. Pause leaves the target untouched; enabling resumes its schedule.",
+        "data": {
+          "entity_id": "Controlled entity",
+          "name": "Name",
+          "mode": "Mode",
+          "on_time": "Turn on at",
+          "off_time": "Turn off at",
+          "holidays": "Selected observances (observance mode only)",
+          "use_default_period": "Use the default season date range",
+          "start_rule": "Start on",
+          "start_date": "Custom start date (DD.MM.)",
+          "end_rule": "End on (inclusive)",
+          "end_date": "Custom end date (DD.MM.)"
+        }
+      },
+      "channel_2": {
+        "title": "Control 2",
+        "description": "Leave the entity empty to leave this slot unused. Date fields apply only to daily-in-range mode. With default season enabled, the date fields below are ignored. Custom dates apply only when 'Custom date' is selected. An earlier off time means the next night. Pause leaves the target untouched; enabling resumes its schedule.",
+        "data": {
+          "entity_id": "Controlled entity",
+          "name": "Name",
+          "mode": "Mode",
+          "on_time": "Turn on at",
+          "off_time": "Turn off at",
+          "holidays": "Selected observances (observance mode only)",
+          "use_default_period": "Use the default season date range",
+          "start_rule": "Start on",
+          "start_date": "Custom start date (DD.MM.)",
+          "end_rule": "End on (inclusive)",
+          "end_date": "Custom end date (DD.MM.)"
+        }
+      },
+      "channel_3": {
+        "title": "Control 3",
+        "description": "Leave the entity empty to leave this slot unused. Date fields apply only to daily-in-range mode. With default season enabled, the date fields below are ignored. Custom dates apply only when 'Custom date' is selected. An earlier off time means the next night. Pause leaves the target untouched; enabling resumes its schedule.",
+        "data": {
+          "entity_id": "Controlled entity",
+          "name": "Name",
+          "mode": "Mode",
+          "on_time": "Turn on at",
+          "off_time": "Turn off at",
+          "holidays": "Selected observances (observance mode only)",
+          "use_default_period": "Use the default season date range",
+          "start_rule": "Start on",
+          "start_date": "Custom start date (DD.MM.)",
+          "end_rule": "End on (inclusive)",
+          "end_date": "Custom end date (DD.MM.)"
+        }
+      },
+      "channel_4": {
+        "title": "Control 4",
+        "description": "Leave the entity empty to leave this slot unused. Date fields apply only to daily-in-range mode. With default season enabled, the date fields below are ignored. Custom dates apply only when 'Custom date' is selected. An earlier off time means the next night. Pause leaves the target untouched; enabling resumes its schedule.",
+        "data": {
+          "entity_id": "Controlled entity",
+          "name": "Name",
+          "mode": "Mode",
+          "on_time": "Turn on at",
+          "off_time": "Turn off at",
+          "holidays": "Selected observances (observance mode only)",
+          "use_default_period": "Use the default season date range",
+          "start_rule": "Start on",
+          "start_date": "Custom start date (DD.MM.)",
+          "end_rule": "End on (inclusive)",
+          "end_date": "Custom end date (DD.MM.)"
+        }
+      },
+      "channel_5": {
+        "title": "Control 5",
+        "description": "Leave the entity empty to leave this slot unused. Date fields apply only to daily-in-range mode. With default season enabled, the date fields below are ignored. Custom dates apply only when 'Custom date' is selected. An earlier off time means the next night. Pause leaves the target untouched; enabling resumes its schedule.",
+        "data": {
+          "entity_id": "Controlled entity",
+          "name": "Name",
+          "mode": "Mode",
+          "on_time": "Turn on at",
+          "off_time": "Turn off at",
+          "holidays": "Selected observances (observance mode only)",
+          "use_default_period": "Use the default season date range",
+          "start_rule": "Start on",
+          "start_date": "Custom start date (DD.MM.)",
+          "end_rule": "End on (inclusive)",
+          "end_date": "Custom end date (DD.MM.)"
+        }
+      }
+    },
+    "error": {
+      "invalid_date": "Invalid date. Use DD.MM.; February 29 is not supported.",
+      "invalid_channel": "Use valid, different times with zero seconds and select at least one observance in observance mode.",
+      "duplicate_target": "Another control already uses this entity.",
+      "recursive_target": "This integration's own enable/pause switches cannot be targets."
+    },
+    "abort": {
+      "invalid_country": "Invalid country for this region."
+    }
+  }
+}

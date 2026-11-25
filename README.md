@@ -6,6 +6,7 @@ Dieses Repository kann in Home Assistant einmal als Add-on-Repository eingetrage
 
 ## Enthaltene Add-ons
 
+- [Festtags-Card-Editor](festtags_card_editor/README.md): Weihnachtssteuerung mit Region-/Länderauswahl, fünf Zeitplänen, Festtagssensoren und einer Anzeige-Card. Eigene Bilder je Land und Festtag zuordnen; keine Bilder im Paket. [English](festtags_card_editor/docs/README.en.md).
 - [HA Logic Studio Pro](ha_logic_studio_pro/README.md) verbindet Funktionsplan, Rules, Blocks A, Blocks JS, JavaScript, TypeScript und HA-YAML mit einer serverseitigen Runtime für Home Assistant.
 
 - [Dashboard-Benutzerverwaltung](dashboard_user_manager/README.md): **0.1.4**, Benutzer als Checkbox-Spalten für alle Ansichten oder einzeln zuordnen. Automatische DE/EN/FR-Oberfläche, Vorschau-freies Speichern mit Dashboard-Backup und Konflikterkennung. [DE](https://opensource.ugso-software.de/projects/dashboard-user-manager/) / [EN](https://opensource.ugso-software.de/en/projects/dashboard-user-manager/) / [FR](https://opensource.ugso-software.de/fr/projects/dashboard-user-manager/). Bestehende lokale Apps bleiben separate Installationen.
