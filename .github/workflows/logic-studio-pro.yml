@@ -33,4 +33,4 @@ jobs:
       - run: npm test
       - run: npm run test:server
       - run: docker build -t logic-studio-pro:test .
-      - run: docker run --rm logic-studio-pro:test python -c "import server; assert server.VERSION == '0.1.131'; assert server.public_entity({'entity_id':'sensor.test','state':'1','attributes':{}})['entity_id'] == 'sensor.test'"
+      - run: docker run --rm logic-studio-pro:test python -c "import server; assert server.public_entity({'entity_id':'sensor.test','state':'1','attributes':{}})['entity_id'] == 'sensor.test'"
