@@ -1,6 +1,6 @@
 import {adapt,categories,pins,resolved,createBlock,description,supported} from './catalog.js?v=0.1.12';
 import {emptyPlan,loadPlan,analyze,compile,simulate,scan,simulationSteps,VERSION} from './core.js?v=0.1.65';
-import {connectHA} from './ha-client.js?v=0.1.12';
+import {connectHA} from './ha-client.js?v=0.1.131';
 import {entityParameters} from './entity-values.js?v=0.1.12';
 import {connectImport} from './import-ui.js?v=0.1.12';
 import {flowTypes,flowPins} from './flow-catalog.js?v=0.1.12';

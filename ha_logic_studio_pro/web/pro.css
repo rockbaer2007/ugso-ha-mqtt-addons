@@ -1,3 +1,4 @@
+@import url('./entity-picker.css?v=0.1.131');
 * { box-sizing: border-box; }
 :root { color-scheme: dark; font: 15px system-ui, sans-serif; background: #0e1726; color: #e4edf9; }
 body { margin: 0; }

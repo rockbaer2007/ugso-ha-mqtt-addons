@@ -1,8 +1,9 @@
+@import url('./entity-picker.css?v=0.1.131');
 #ha-connection{font-size:11px;color:#8de3be;max-width:240px;white-space:normal}
 .export-settings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px}
 .export-settings[hidden]{display:none}.export-settings label{display:flex;flex-direction:column;gap:5px;min-width:0}.export-settings .wide{grid-column:1/-1}.export-settings input,.export-settings select{width:100%;min-width:0}.export-settings label:has([type=checkbox]){flex-direction:row;align-items:center}.export-settings [type=checkbox]{width:auto}#output textarea{height:36vh}
 @media(max-width:600px){.export-settings{grid-template-columns:1fr}}
-#entity-dialog{width:min(1000px,95vw)}
+#entity-dialog{width:min(620px,95vw)}
 .entity-search{display:flex;gap:8px;padding:10px;flex-wrap:wrap}
 .entity-search input{flex:1;min-width:180px}.entity-search select{max-width:160px}
 .entity-results{max-height:52vh;overflow:auto;padding:8px}

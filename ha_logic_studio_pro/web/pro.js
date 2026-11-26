@@ -1,5 +1,6 @@
 import {renderYamlPreview} from './yaml-preview.js?v=0.1.93';
 import {categoryEntities} from './iobroker-category.js';
+import {createEntityPicker, loadEntityPage} from './entity-picker.js?v=0.1.131';
 import {helperDomains, helperSpec, provisionHelper} from './iobroker-create-state.js';
 import {parseDocument} from './vendor/pro-yaml.js';
 import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.100';
@@ -645,13 +646,6 @@ function openBlockEntity(spec, current, apply, validate) {
   const [entityTitle, placeholder, accept, empty, unavailable, invalid] = pickerLabels[locale] ?? pickerLabels.en;
   const title = entityTitle;
   const content = element('div');
-  const search = element('input');
-  search.type = 'search';
-  search.placeholder = placeholder;
-  search.setAttribute('aria-label', placeholder);
-  const list = element('ul');
-  list.style.maxHeight = '45vh';
-  list.style.overflowY = 'auto';
   const input = element(spec.multiline ? 'textarea' : 'input');
   if (spec.multiline) input.rows = 3;
   input.value = current;
@@ -669,65 +663,60 @@ function openBlockEntity(spec, current, apply, validate) {
   };
   const applyButton = button(accept, submit);
   applyButton.dataset.userText = '';
-  content.append(search, list, input, applyButton);
-  const dialog = editorDialog(title, content);
-  let request, timer;
-  const refresh = async () => {
-    request?.abort();
-    const controller = new AbortController();
-    request = controller;
-    try {
+  const picker = createEntityPicker({locale, current, placeholder,
+    selected: item => {
+      if (spec.listOnly || (spec.structured && input.value.trim().startsWith('['))) {
+        try { return JSON.parse(input.value).includes(item.entity_id); } catch { return false; }
+      }
+      return input.value === item.entity_id;
+    },
+    onClear: () => { input.value = ''; input.setCustomValidity(''); },
+    onSelect: ({entity_id}) => {
+      if (spec.listOnly || (spec.structured && input.value.trim().startsWith('['))) {
+        let existing;
+        try { existing = JSON.parse(input.value); } catch {}
+        const ids = new Set(Array.isArray(existing) ? existing : []);
+        if (ids.has(entity_id)) ids.delete(entity_id); else ids.add(entity_id);
+        input.value = JSON.stringify([...ids]);
+        picker.setCurrent(input.value);
+      } else {
+        input.value = entity_id;
+        submit();
+      }
+      input.setCustomValidity('');
+    },
+    load: async (search, {signal, offset}) => {
       const domains = spec.domains?.length ? spec.domains : spec.numeric ? ['sensor', 'input_number', 'number'] : [''];
       const attributeChoices = async () => {
         if (!spec.entity) return [];
-        const response = await fetch('./api/entities?' + new URLSearchParams({q: spec.entity}), {signal: controller.signal});
+        const response = await fetch('./api/entities?' + new URLSearchParams({q: spec.entity}), {signal});
         if (!response.ok) throw new Error(unavailable);
         const entity = (await response.json()).items.find(item => item.entity_id === spec.entity);
         return Object.keys(entity?.attributes ?? {});
       };
       const choices = spec.kind === 'attribute' ? await attributeChoices() :
-        spec.loadChoices ? await spec.loadChoices(controller.signal) : spec.choices;
-      const pages = choices ? [choices.map(item => typeof item === 'string' ? {entity_id: item, name: item} : item)
-        .filter(({entity_id, name}) => (name + ' ' + entity_id).toLowerCase().includes(search.value.trim().toLowerCase()))] :
-        await Promise.all(domains.map(async domain => {
-        const query = new URLSearchParams({q: search.value.trim(), domain});
-        const response = await fetch('./api/entities?' + query, {signal: controller.signal});
-        if (!response.ok) throw new Error(unavailable);
-        return (await response.json()).items;
-      }));
-      if (controller.signal.aborted || !dialog.open) return;
-      const entities = pages.flat();
-      list.replaceChildren(...entities.map(({entity_id, name}) => {
-        const item = element('li');
-        const choose = button(name === entity_id ? name : name + ' · ' + entity_id, () => {
-          if (spec.listOnly || (spec.structured && input.value.trim().startsWith('['))) {
-            let existing;
-            try { existing = JSON.parse(input.value); } catch {}
-            const ids = new Set(Array.isArray(existing) ? existing : []);
-            if (ids.has(entity_id)) ids.delete(entity_id);
-            else ids.add(entity_id);
-            input.value = JSON.stringify([...ids]);
-          } else input.value = entity_id;
-          input.setCustomValidity('');
-        });
-        choose.dataset.userText = '';
-        item.append(choose);
-        return item;
-      }));
-      if (!entities.length) list.append(element('li', empty));
-    } catch {
-      if (!controller.signal.aborted && dialog.open) list.replaceChildren(element('li', unavailable));
-    }
-  };
-  search.oninput = () => {
-    clearTimeout(timer);
-    request?.abort();
-    timer = setTimeout(refresh, 150);
-  };
+        spec.loadChoices ? await spec.loadChoices(signal) : spec.choices;
+      if (choices) return choices.map(item => typeof item === 'string' ? {entity_id: item, name: item} : item)
+        .filter(({entity_id, name}) => (name + ' ' + entity_id).toLocaleLowerCase().includes(search.toLocaleLowerCase()));
+      return loadEntityPage(search, {signal, offset, domains: domains.filter(Boolean)});
+    },
+  });
+  const manual = element('details');
+  manual.className = 'entity-manual';
+  const manualTitle = {de: 'Manuelle Eingabe', en: 'Manual entry', fr: 'Saisie manuelle'};
+  manual.append(element('summary', manualTitle[locale] ?? manualTitle.en));
+  const manualFields = element('div');
+  manualFields.className = 'entity-manual-input';
+  manualFields.append(input, applyButton);
+  manual.append(manualFields);
+  manual.open = Boolean(spec.listOnly || spec.multiline || (spec.structured && current.trim().startsWith('[')));
+  content.append(picker.root, manual);
+  const dialog = editorDialog(title, content);
+  input.addEventListener('input', () => picker.setCurrent(input.value));
   input.onkeydown = event => { if (!spec.multiline && event.key === 'Enter') submit(); };
-  dialog.addEventListener('close', () => { clearTimeout(timer); request?.abort(); });
-  search.focus();
-  void refresh();
+  dialog.addEventListener('close', () => picker.destroy(), {once: true});
+  picker.focus();
+  void picker.refresh();
 }
 
 function openRuleAction(current, apply, validate = value => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value), multiline = false) {
@@ -1618,7 +1607,7 @@ function show(id, refresh = false) {
       flowFrame = element('iframe');
       flowProjectId = id;
       flowFrame.title = 'Funktionsplan';
-      flowFrame.src = './funktionsplan.html?v=0.1.63&pro=' + locale;
+      flowFrame.src = './funktionsplan.html?v=0.1.131&pro=' + locale;
       flowFrame.addEventListener('pro-fbd-ready', () => { loadFlow(); syncOutput(); syncLanguage(); });
       flowFrame.addEventListener('load', () => {
         const doc = flowFrame.contentDocument;
@@ -2883,30 +2872,9 @@ function renderJavaScript(panel, project) {
   });
   toolIcon(expert, 'sun', 'Astronomische Ereignisse', () => showSun(project));
   toolIcon(right, 'entity', 'HA-Entität einfügen', () => {
-    const content = element('div'), query = element('input'), results = element('ul');
-    query.type = 'search';
-    query.setAttribute('aria-label', 'HA-Entität suchen');
-    const search = async () => {
-      try {
-        const items = await editorEntities(query.value);
-        if (!dialog.open) return;
-        results.replaceChildren(...items.map(item => {
-          const row = element('li');
-          const pick = button(item.entity_id, () => {
-            dialog.close();
-            codeEditor?.insert(JSON.stringify(item.entity_id));
-          });
-          pick.dataset.userText = '';
-          row.append(pick);
-          return row;
-        }));
-        if (!items.length) results.append(element('li', 'Keine passenden Entitäten.'));
-      } catch (error) { results.replaceChildren(element('li', error.message)); }
-    };
-    content.append(query, button('Suchen', search), results);
-    const dialog = editorDialog('HA-Entität einfügen', content);
-    query.onkeydown = event => { if (event.key === 'Enter') void search(); };
-    void search();
+    const target = codeEditor;
+    openBlockEntity({kind: 'entity_id'}, '', value => target?.insert(JSON.stringify(value)),
+      value => /^[a-z0-9_]+\.[a-z0-9_]+$/.test(value));
   });
   toolIcon(expert, 'tools', 'Debug-Einstellungen', () => debugTools(project));
   toolIcon(expert, 'help', 'Skript-API anzeigen', () => editorDialog('Skript-API', element('pre',

@@ -59,6 +59,14 @@ def public_entity(item):
                            (not isinstance(value, float) or math.isfinite(value)) and len(str(value)) <= 500}}
 
 
+def search_entities(items, search='', domains='', output=False):
+    domains = set(filter(None, domains.split(',')))
+    search = search.casefold()[:200]
+    return [item for item in items if (not output or item['output_supported']) and
+            (not domains or item['domain'] in domains) and
+            search in ' '.join(str(item.get(key, '')) for key in ('entity_id', 'name', 'area', 'device')).casefold()]
+
+
 class NoRedirect(HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
@@ -426,6 +434,11 @@ class LogicServer(ThreadingHTTPServer):
         self.supervisor, self.demo = supervisor, demo
         self.sources=SourceReader(config_root,Path(data_dir)/'ha-source-backups') if config_root else None
         self.runtime_options = Path(data_dir) / 'options.json'
+        self.entity_lock = threading.Lock()
+        self.entity_cache = []
+        self.entity_cache_until = 0
+        self.entity_context_cache = {}
+        self.entity_context_until = 0
 
     def service_actions(self):
         now = monotonic()
@@ -490,7 +503,54 @@ class LogicServer(ThreadingHTTPServer):
         return data
 
     def entities(self):
-        return sorted(filter(None, (public_entity(item) for item in self.entity_states())), key=lambda x: (x['name'].casefold(), x['entity_id']))
+        # Search keystrokes and pagination reuse a short read-only snapshot.
+        # Runtime access remains governed exclusively by live_runtime_config.
+        with self.entity_lock:
+            if monotonic() < self.entity_cache_until:
+                return self.entity_cache
+            items = list(filter(None, (public_entity(item) for item in self.entity_states())))
+            context = self.entity_context()
+            for item in items:
+                item.update(context.get(item['entity_id'], {}))
+            self.entity_cache = sorted(items, key=lambda item: (item['name'].casefold(), item['entity_id']))
+            self.entity_cache_until = monotonic() + 3
+            return self.entity_cache
+
+    def entity_context(self):
+        if not self.supervisor or not os.environ.get('SUPERVISOR_TOKEN'):
+            return {}
+        if monotonic() < self.entity_context_until:
+            return self.entity_context_cache
+        self.entity_context_until = monotonic() + 15
+        template = '{% set r = namespace(items=[]) %}{% for s in states %}' \
+                   '{% set r.items = r.items + [[s.entity_id, area_name(s.entity_id) or "", ' \
+                   'device_attr(s.entity_id, "name_by_user") or device_attr(s.entity_id, "name") or ""]] %}' \
+                   '{% endfor %}{{ r.items | to_json }}'
+        request = Request('http://supervisor/core/api/template',
+                          data=json.dumps({'template': template}).encode(),
+                          headers={'Authorization': 'Bearer ' + os.environ['SUPERVISOR_TOKEN'],
+                                   'Content-Type': 'application/json'})
+        try:
+            with build_opener(NoRedirect).open(request, timeout=4) as response:
+                body = response.read(MAX_BODY + 1)
+            if len(body) > MAX_BODY:
+                return self.entity_context_cache
+            rows = json.loads(body)
+            if not isinstance(rows, list):
+                return self.entity_context_cache
+            context = {}
+            for row in rows:
+                if not isinstance(row, list) or len(row) != 3 or not all(isinstance(value, str) for value in row):
+                    continue
+                entity_id, area, device = row
+                if re.fullmatch(r'[a-z_]+\.[a-z0-9_]+', entity_id):
+                    context[entity_id] = {'area': area[:200], 'device': device[:200]}
+            self.entity_context_cache = context
+            self.entity_context_until = monotonic() + 60
+        except (OSError, ValueError, TypeError):
+            # A missing template permission must not hide otherwise readable entities.
+            pass
+        return self.entity_context_cache
 
     def linked_yaml_entity(self, entity_id, command):
         domain = entity_id.split('.')[0]
@@ -660,11 +720,10 @@ class Handler(SimpleHTTPRequestHandler):
             elif route.path == '/api/entities':
                 query = parse_qs(route.query)
                 search = query.get('q', [''])[0].casefold()[:200]
-                domain = query.get('domain', [''])[0]
+                domains = query.get('domain', [''])[0]
                 output = query.get('output', ['0'])[0] == '1'
                 offset = max(0, int(query.get('offset', ['0'])[0]))
-                items = [e for e in self.server.entities() if (not output or e['output_supported']) and
-                         (not domain or e['domain'] == domain) and search in (e['entity_id'] + ' ' + e['name']).casefold()]
+                items = search_entities(self.server.entities(), search, domains, output)
                 self.reply(200, {'items': items[offset:offset+100], 'total': len(items), 'offset': offset, 'demo': self.server.demo})
             elif route.path == '/api/workspace':
                 self.reply(200, self.server.store.read(self.user()))

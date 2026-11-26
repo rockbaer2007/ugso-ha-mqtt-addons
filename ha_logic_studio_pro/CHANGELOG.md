@@ -1,5 +1,12 @@
 # HA Logic Studio Pro
 
+## 0.1.131 – lokal vorbereitet
+
+- Einheitliche HA-typische Entitätenauswahl in Funktionsplan, Rules, Blocks A/JS, HA-YAML, JavaScript/TypeScript und Importzuordnungen: Suche beim Tippen, Symbol, Name, Bereich/Gerät, ID, Zustand, Tastatursteuerung und weitere Treffer.
+- Attributauswahl, Ausgangsmodi, Mehrfachlisten und manuelle IDs bleiben erhalten. Veraltete Suchantworten werden verworfen; geschlossene Auswahlen brechen laufende Anfragen ab.
+- Der lesende Entitätenkatalog verwendet kurzzeitig zwischengespeicherte Zustände und Bereichs-/Gerätenamen. Sind Kontextdaten nicht abrufbar, bleiben die Entitäten auswählbar. Projekte, Einstellungen und Runtime-Freigaben bleiben unverändert.
+- Lokal mit DOM-, Katalog-, Runtime- und Serverprüfungen getestet. Noch kein Test auf einer HA-Installation und keine Veröffentlichung.
+
 ## 0.1.130
 
 - Blocks JS erhält bei `control_instance` die ioBroker-Adapterinstanz und die gewählte Aktion am importierten Block. Für „Neustart“ nennt der Hinweis passende HA-Aktionen für eine HA-App oder einen Integrationseintrag. Play bleibt bis zur manuellen Anpassung blockiert.

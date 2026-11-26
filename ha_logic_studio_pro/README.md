@@ -4,6 +4,8 @@ HA Logic Studio Pro ist eine Home-Assistant-App zum Erstellen, Prüfen und Ausf�
 
 **Stand 0.1.130** · [GitHub-Release und ZIP](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.130)
 
+**Lokal vorbereitet: 0.1.131** – einheitliche HA-typische Entitätenauswahl in allen Editoren. Noch nicht veröffentlicht.
+
 ## Installation und Update
 
 1. In Home Assistant **Einstellungen → Apps → App-Store → ⋮ → Repositorys** öffnen und `https://github.com/rockbaer2007/ugso-ha-mqtt-addons` hinzufügen.
@@ -31,6 +33,12 @@ Blockly-XML lässt sich in den Expertenwerkzeugen importieren. Die Importprüfun
 Beim Import von `control_instance` bleiben Adapterinstanz und Aktion sichtbar. Im Blockly-Importtest auf dem Testsystem PC (64) zeigte der Block `admin.0 · Neustart` und nannte die passenden HA-Aktionen für Apps und Integrationen. Play blockierte den Platzhalter. Der Test löste keinen Neustart aus.
 
 ## Testlauf und Live-Ausführung
+
+### Entitäten auswählen
+
+Funktionsplan, Rules, Blocks A, Blocks JS, HA-YAML, JavaScript und TypeScript verwenden dieselbe durchsuchbare Entitätenauswahl. Auch die Zuordnung beim ioBroker-Import nutzt sie. Tippe einen Namen oder eine Entitäts-ID ein; verfügbare Bereiche und Gerätenamen lassen sich ebenfalls suchen. Treffer zeigen Symbol, Anzeigename, Bereich/Gerät, Entitäts-ID und Zustand. Weitere Treffer können nachgeladen werden. Pfeiltasten und Eingabe wählen einen Treffer, Escape klappt die Liste ein. Gespeicherte IDs bleiben auch dann erhalten, wenn eine Entität gerade nicht verfügbar ist.
+
+Attribut-, Ausgangsmodus-, Mehrfachauswahl- und manuelle ID-Eingaben bleiben erhalten. Die Auswahl liest nur den Katalog: Sie erteilt **keine** Runtime-Berechtigungen. Für einen HA-Eingang die genaue ID unter `runtime_read_entities` freigeben; schreibende Ziele gehören nach gesonderter Prüfung unter `runtime_write_entities`. Vorhandene Freigaben nicht ersetzen.
 
 **Testlauf** verwendet simulierte Werte und Ereignisse. **Play** startet gespeicherte Projekte aus Funktionsplan, Blocks JS, JavaScript und TypeScript in der App auf dem HA-Server. Für die Live-Ausführung werden die benötigten Entitäten, Ereignisse und MQTT-Themen in der App-Konfiguration freigegeben. YAML-Exporte aus Rules, Blocks A und HA-YAML lassen sich in Home Assistant übernehmen.
 
