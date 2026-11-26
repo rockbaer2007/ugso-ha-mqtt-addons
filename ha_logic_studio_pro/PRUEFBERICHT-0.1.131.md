@@ -1,6 +1,6 @@
 # Logic Studio Pro 0.1.131 – HA-typische Entitätenauswahl
 
-Stand: 26. November 2026. Lokal geprüft, noch nicht veröffentlicht oder auf HA installiert.
+Stand: 26. November 2026. Lokal geprüfter Release-Stand. Noch nicht auf HA installiert oder dort getestet.
 
 ## Geprüfter Codeumfang
 

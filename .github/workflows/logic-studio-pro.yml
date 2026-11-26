@@ -1,0 +1,36 @@
+name: Logic Studio Pro checks
+on:
+  push:
+    paths:
+      - ha_logic_studio_pro/**
+      - .github/workflows/logic-studio-pro.yml
+  pull_request:
+    paths:
+      - ha_logic_studio_pro/**
+      - .github/workflows/logic-studio-pro.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: ha_logic_studio_pro
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ha_logic_studio_pro/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: python -m pip install -r requirements.txt
+      - run: npm test
+      - run: npm run test:server
+      - run: docker build -t logic-studio-pro:test .
+      - run: docker run --rm logic-studio-pro:test python -c "import server; assert server.VERSION == '0.1.131'; assert server.public_entity({'entity_id':'sensor.test','state':'1','attributes':{}})['entity_id'] == 'sensor.test'"

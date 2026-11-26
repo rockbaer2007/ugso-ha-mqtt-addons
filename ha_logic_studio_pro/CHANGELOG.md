@@ -1,11 +1,11 @@
 # HA Logic Studio Pro
 
-## 0.1.131 – lokal vorbereitet
+## 0.1.131
 
 - Einheitliche HA-typische Entitätenauswahl in Funktionsplan, Rules, Blocks A/JS, HA-YAML, JavaScript/TypeScript und Importzuordnungen: Suche beim Tippen, Symbol, Name, Bereich/Gerät, ID, Zustand, Tastatursteuerung und weitere Treffer.
 - Attributauswahl, Ausgangsmodi, Mehrfachlisten und manuelle IDs bleiben erhalten. Veraltete Suchantworten werden verworfen; geschlossene Auswahlen brechen laufende Anfragen ab.
 - Der lesende Entitätenkatalog verwendet kurzzeitig zwischengespeicherte Zustände und Bereichs-/Gerätenamen. Sind Kontextdaten nicht abrufbar, bleiben die Entitäten auswählbar. Projekte, Einstellungen und Runtime-Freigaben bleiben unverändert.
-- Lokal mit DOM-, Katalog-, Runtime- und Serverprüfungen getestet. Noch kein Test auf einer HA-Installation und keine Veröffentlichung.
+- Lokal mit DOM-, Katalog-, Runtime- und Serverprüfungen sowie im isolierten Browser in allen sieben Editoren getestet. Ein Test auf einer HA-Installation steht noch aus.
 
 ## 0.1.130
 
