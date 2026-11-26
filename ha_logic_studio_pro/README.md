@@ -2,7 +2,7 @@
 
 HA Logic Studio Pro ist eine Home-Assistant-App zum Erstellen, Prüfen und Ausführen von Automationen und Logik. Projekte und Ordner werden pro Home-Assistant-Benutzer gespeichert. Die Oberfläche gibt es auf Deutsch, Englisch und Französisch.
 
-**Stand 0.1.131** · [GitHub-Release und ZIP](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.131)
+**Stand 0.1.132** · [GitHub-Release und ZIP](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.132)
 
 ## Installation und Update
 
@@ -39,6 +39,21 @@ Funktionsplan, Rules, Blocks A, Blocks JS, HA-YAML, JavaScript und TypeScript ve
 Attribut-, Ausgangsmodus-, Mehrfachauswahl- und manuelle ID-Eingaben bleiben erhalten. Die Auswahl liest nur den Katalog: Sie erteilt **keine** Runtime-Berechtigungen. Für einen HA-Eingang die genaue ID unter `runtime_read_entities` freigeben; schreibende Ziele gehören nach gesonderter Prüfung unter `runtime_write_entities`. Vorhandene Freigaben nicht ersetzen.
 
 **Testlauf** verwendet simulierte Werte und Ereignisse. **Play** startet gespeicherte Projekte aus Funktionsplan, Blocks JS, JavaScript und TypeScript in der App auf dem HA-Server. Für die Live-Ausführung werden die benötigten Entitäten, Ereignisse und MQTT-Themen in der App-Konfiguration freigegeben. YAML-Exporte aus Rules, Blocks A und HA-YAML lassen sich in Home Assistant übernehmen.
+
+### Vier getrennte „Alle“-Freigaben
+
+Unter **App → Konfiguration** stehen ab 0.1.132 vier separate Schalter:
+
+| Schalter | Zugehörige Liste | Wirkung bei Ein |
+| --- | --- | --- |
+| READ – alle Entitäten lesen (`runtime_read_all`) | `runtime_read_entities` | Alle gültigen HA-Entitäts-IDs lesbar, einschließlich neuer Entitäten. |
+| WRITE – alle Ziele freigeben (`runtime_write_all`) | `runtime_write_entities` | Alle Ziel-IDs für die bereits unterstützten Runtime-Aktionen erlaubt. |
+| EVENT – alle Ereignistypen freigeben (`runtime_events_all`) | `runtime_events` | Alle unterstützten Ereignistypen erlaubt; abonnierte Ereignisse werden empfangen. |
+| TOPICS – alle MQTT-Topics freigeben (`runtime_mqtt_all`) | `runtime_mqtt_topics` | Publizieren auf allen konkreten MQTT-Topics erlaubt. |
+
+Alle Schalter sind standardmäßig **aus**. Bei **Ein** wird nur die zugehörige Liste ignoriert, nicht gelöscht. Bei **Aus** gelten ihre gespeicherten Einträge wieder. Die HA-Standardmaske lässt die Liste weiterhin bearbeiten; sie wird dort nicht automatisch grau geschaltet. Die Namen und Beschreibungen sind in DE/EN/FR verfügbar.
+
+Für den Solarleistungssensor genügt **READ**. WRITE, EVENT und TOPICS müssen dafür nicht aktiviert werden. Laufende Projekte nach einer Änderung neu starten; bei Bedarf die App neu starten. ID-/Aktionsprüfung, konkrete MQTT-Topics ohne `+`/`#` und die bestehende Begrenzung gesendeter Ereignisse auf `logic_studio_*` bleiben bestehen. Es werden keine Rechte an HA-Benutzern oder anderen Apps geändert.
 
 ## Bedienungsanleitung und Entwicklung
 

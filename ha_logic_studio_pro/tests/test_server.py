@@ -6,8 +6,70 @@ import unittest
 from unittest.mock import Mock, patch
 import io
 import threading
+import yaml
 
 from server import RUNTIME_LOG_MAX_BYTES, ScriptRuntime, LogicServer, public_entity, search_entities
+
+
+class RuntimeAllPermissionTests(unittest.TestCase):
+    def read_config(self, root, options):
+        path = Path(root) / 'options.json'
+        path.write_text(json.dumps(options), encoding='utf-8')
+        before = path.read_bytes()
+        server = object.__new__(LogicServer)
+        server.supervisor = True
+        server.runtime_options = path
+        with patch.dict('os.environ', {'SUPERVISOR_TOKEN': 'unit-test-only'}):
+            result = server.live_runtime_config()
+        self.assertEqual(path.read_bytes(), before, 'Reading permissions must never erase stored lists')
+        return result
+
+    def test_missing_flags_keep_legacy_behavior(self):
+        with TemporaryDirectory() as root:
+            result = self.read_config(root, {'runtime_read_entities': ['sensor.pv']})
+        self.assertEqual(result['readable'], ['sensor.pv'])
+        for flag in ('readAll', 'writeAll', 'eventsAll', 'mqttAll'):
+            self.assertIs(result[flag], False)
+
+    def test_each_all_flag_ignores_only_its_list_and_preserves_original_file(self):
+        pairs = [('runtime_read_all', 'runtime_read_entities', 'readable', 'readAll', 'sensor.pv'),
+                 ('runtime_write_all', 'runtime_write_entities', 'writable', 'writeAll', 'light.flur'),
+                 ('runtime_events_all', 'runtime_events', 'events', 'eventsAll', 'sample_event'),
+                 ('runtime_mqtt_all', 'runtime_mqtt_topics', 'mqttTopics', 'mqttAll', 'house/topic')]
+        options = {key: [value] for _, key, _, _, value in pairs}
+        for flag, key, result_key, all_key, value in pairs:
+            with self.subTest(flag=flag), TemporaryDirectory() as root:
+                result = self.read_config(root, {**options, flag: True})
+                self.assertEqual(result[result_key], [])
+                self.assertIs(result[all_key], True)
+                restored = self.read_config(root, {**options, flag: False})
+                self.assertEqual(restored[result_key], [value])
+                for other_flag, _, other_key, other_all, other_value in pairs:
+                    if other_flag != flag:
+                        self.assertEqual(result[other_key], [other_value])
+                        self.assertIs(result[other_all], False)
+
+    def test_flags_are_strict_booleans_and_inactive_lists_are_not_validated(self):
+        for invalid in ('true', 1, None):
+            with TemporaryDirectory() as root, self.assertRaises(ValueError):
+                self.read_config(root, {'runtime_read_all': invalid})
+        with TemporaryDirectory() as root:
+            self.assertEqual(self.read_config(root, {'runtime_read_all': True,
+                                                   'runtime_read_entities': ['old invalid entry']})['readable'], [])
+        with TemporaryDirectory() as root, self.assertRaises(ValueError):
+            self.read_config(root, {'runtime_read_all': False, 'runtime_read_entities': ['old invalid entry']})
+
+    def test_four_boolean_options_default_off_and_all_locale_labels_exist(self):
+        root = Path(__file__).resolve().parents[1]
+        config = yaml.safe_load((root / 'config.yaml').read_text(encoding='utf-8'))
+        flags = ('runtime_read_all', 'runtime_write_all', 'runtime_events_all', 'runtime_mqtt_all')
+        for flag in flags:
+            self.assertIs(config['options'][flag], False)
+            self.assertEqual(config['schema'][flag], 'bool')
+        for locale in ('de', 'en', 'fr'):
+            messages = yaml.safe_load((root / 'translations' / (locale + '.yaml')).read_text(encoding='utf-8'))['configuration']
+            self.assertEqual(set(messages), set(config['options']))
+            self.assertTrue(all(item['name'] and item['description'] for item in messages.values()))
 
 
 class EntityPickerCatalogTests(unittest.TestCase):

@@ -6,6 +6,7 @@ import {outputAction, outputMode, validateOutput} from '../web/output.js';
 import {timedTypes} from '../web/stateful.js';
 import {isFlow} from '../web/flow.js';
 import {connectHomeAssistant} from './ha-connection.mjs';
+import {runtimePermissions} from './permissions.mjs';
 
 const report = (type, text) => process.stdout.write(JSON.stringify({type, text}) + '\n');
 const fail = error => {
@@ -30,8 +31,7 @@ try {
   if (issues.length) throw Error(issues.join('\n'));
   const inputs = plan.blocks.filter(b => b.type === 'STATE_IN');
   const outputs = plan.blocks.filter(b => b.type === 'STATE_OUT');
-  const readable = new Set([...config.readable, ...config.writable]);
-  const writable = new Set(config.writable);
+  const {readable, writable} = runtimePermissions(config);
   for (const b of inputs) if (!readable.has(b.params.oid)) throw Error('HA-Eingang nicht freigegeben: ' + b.params.oid);
   const targets = new Set();
   for (const b of outputs) {

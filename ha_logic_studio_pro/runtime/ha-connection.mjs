@@ -1,4 +1,5 @@
 import {historyRange, historyRows} from './history.mjs';
+import {runtimePermissions} from './permissions.mjs';
 
 const endpoint = 'ws://supervisor/core/websocket';
 const entityPattern = /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/;
@@ -58,12 +59,11 @@ export function sendtoCommand(operation, args, {mqttTopics, writeTargets, permit
   return {type: 'fire_event', event_type: target, event_data: message};
 }
 
-async function openHomeAssistant({token, readable, writable, events, mqttTopics = []}, dispatch, fail, disconnected, Socket) {
+async function openHomeAssistant(config, dispatch, fail, disconnected, Socket) {
+  const {token} = config;
   const socket = new Socket(endpoint);
-  const allowed = new Set([...readable, ...writable]);
-  const permittedEvents = new Set(events);
-  const writeTargets = new Set(writable);
-  const sendtoPermissions = {mqttTopics: new Set(mqttTopics), writeTargets, permittedEvents};
+  const {readable: allowed, events: permittedEvents, writable: writeTargets, mqttTopics} = runtimePermissions(config);
+  const sendtoPermissions = {mqttTopics, writeTargets, permittedEvents};
   const states = new Map();
   const pending = new Map();
   const subscriptions = new Map();
@@ -122,13 +122,15 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
       }
       if (reply.type !== 'event') return;
       const {event_type: type, data} = reply.event;
-      if (type === 'state_changed' && allowed.has(data?.entity_id)) {
-        const change = {entity: data.entity_id, previous: data.old_state ?? null, current: data.new_state ?? null};
-        if (change.current) states.set(change.entity, change.current);
-        else states.delete(change.entity);
-        if (!live) initialChanges.set(change.entity, change.current);
-        else dispatch({type: 'state', ...change});
-      } else if (live && permittedEvents.has(type)) dispatch({type: 'event', name: type, data});
+      if (type === 'state_changed') {
+        if (allowed.has(data?.entity_id)) {
+          const change = {entity: data.entity_id, previous: data.old_state ?? null, current: data.new_state ?? null};
+          if (change.current) states.set(change.entity, change.current);
+          else states.delete(change.entity);
+          if (!live) initialChanges.set(change.entity, change.current);
+          else dispatch({type: 'state', ...change});
+        }
+      } else if (live && subscriptions.has(type) && permittedEvents.has(type)) dispatch({type: 'event', name: type, data});
     } catch (error) { abort(error); }
   });
   let authTimeout;
@@ -137,7 +139,7 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
       authTimeout = setTimeout(() => reject(new Error('Zeitlimit für HA-WebSocket-Anmeldung.')), 8000);
     })]);
     const config = await send({type: 'get_config'});
-    if (allowed.size) {
+    if (allowed.all || allowed.size) {
       await send({type: 'subscribe_events', event_type: 'state_changed'});
       for (const state of await send({type: 'get_states'})) {
         if (allowed.has(state.entity_id) && !initialChanges.has(state.entity_id)) states.set(state.entity_id, state);
@@ -150,6 +152,7 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
       timezone: config.time_zone,
       connected: () => !closed,
       close: abort,
+      snapshot: () => new Map(states),
       start: () => { live = true; },
       state(entity) {
         if (!allowed.has(entity)) throw new Error('HA-Entität nicht freigegeben: ' + entity);
@@ -232,12 +235,11 @@ async function openHomeAssistant({token, readable, writable, events, mqttTopics 
 
 export async function connectHomeAssistant(config, dispatch, fail, Socket = WebSocket, connectionChanged = () => {}) {
   const subscriptions = new Set();
-  const entities = new Set([...config.readable, ...config.writable]);
-  const permittedEvents = new Set(config.events);
+  const {readable: entities, events: permittedEvents} = runtimePermissions(config);
   let current, previous, started = false, reconnecting = false;
   const open = () => openHomeAssistant(config, dispatch, fail, lost, Socket);
   async function lost(error) {
-    if (current) previous = new Map([...entities].map(entity => [entity, current.state(entity)]));
+    if (current) previous = current.snapshot();
     current = undefined;
     if (reconnecting) return;
     reconnecting = true;
@@ -259,7 +261,7 @@ export async function connectHomeAssistant(config, dispatch, fail, Socket = WebS
       const before = previous;
       previous = undefined;
       connectionChanged(true);
-      for (const entity of entities) {
+      for (const entity of new Set([...(before?.keys() ?? []), ...(current?.snapshot().keys() ?? [])])) {
         const oldState = before?.get(entity) ?? null;
         const newState = current?.state(entity) ?? null;
         if (started && current && JSON.stringify(oldState) !== JSON.stringify(newState)) {

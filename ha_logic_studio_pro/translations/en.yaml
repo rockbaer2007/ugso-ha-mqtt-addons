@@ -1,0 +1,25 @@
+configuration:
+  runtime_read_all:
+    name: READ – read all entities
+    description: Enables access to read all entities. The READ list is ignored and its entries are preserved. Off by default.
+  runtime_read_entities:
+    name: READ – individual entities
+    description: Applies only while “READ – read all entities” is off.
+  runtime_write_all:
+    name: WRITE – allow all targets
+    description: Allows all target IDs for supported runtime actions. The WRITE list is ignored and its entries are preserved. Off by default.
+  runtime_write_entities:
+    name: WRITE – individual targets
+    description: Applies only while “WRITE – allow all targets” is off.
+  runtime_events_all:
+    name: EVENT – allow all event types
+    description: Allows all supported event types. The EVENT list is ignored and its entries are preserved. Off by default.
+  runtime_events:
+    name: EVENT – individual event types
+    description: Applies only while “EVENT – allow all event types” is off.
+  runtime_mqtt_all:
+    name: TOPICS – allow all MQTT topics
+    description: "Allows publishing to all concrete MQTT topics. Wildcards + and # remain forbidden. The TOPICS list is ignored and its entries are preserved. Off by default."
+  runtime_mqtt_topics:
+    name: TOPICS – individual MQTT topics
+    description: Applies only while “TOPICS – allow all MQTT topics” is off.

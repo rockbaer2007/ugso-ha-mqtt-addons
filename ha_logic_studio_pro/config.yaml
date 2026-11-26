@@ -1,5 +1,5 @@
 name: HA Logic Studio Pro
-version: "0.1.131"
+version: "0.1.132"
 slug: ha_logic_studio_pro
 description: Logikeditor und Runtime für Home Assistant mit Funktionsplan, Rules, Blocks, HA-YAML, JavaScript und TypeScript
 stage: stable
@@ -16,17 +16,25 @@ panel_icon: mdi:graph
 panel_title: Logic Studio Pro
 panel_admin: true
 options:
+  runtime_read_all: false
   runtime_read_entities: []
+  runtime_write_all: false
   runtime_write_entities: []
+  runtime_events_all: false
   runtime_events: []
+  runtime_mqtt_all: false
   runtime_mqtt_topics: []
 schema:
+  runtime_read_all: bool
   runtime_read_entities:
     - str
+  runtime_write_all: bool
   runtime_write_entities:
     - str
+  runtime_events_all: bool
   runtime_events:
     - str
+  runtime_mqtt_all: bool
   runtime_mqtt_topics:
     - str
 map:

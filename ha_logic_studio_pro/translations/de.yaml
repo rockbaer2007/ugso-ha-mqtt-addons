@@ -1,0 +1,25 @@
+configuration:
+  runtime_read_all:
+    name: READ – alle Entitäten lesen
+    description: Aktiviert die allgemeine Lesefreigabe. Die READ-Liste wird ignoriert; ihre Einträge bleiben erhalten. Standardmäßig aus.
+  runtime_read_entities:
+    name: READ – einzelne Entitäten
+    description: Gilt nur, wenn „READ – alle Entitäten lesen“ ausgeschaltet ist.
+  runtime_write_all:
+    name: WRITE – alle Ziele freigeben
+    description: Erlaubt alle Ziel-IDs für die unterstützten Runtime-Aktionen. Die WRITE-Liste wird ignoriert; ihre Einträge bleiben erhalten. Standardmäßig aus.
+  runtime_write_entities:
+    name: WRITE – einzelne Ziele
+    description: Gilt nur, wenn „WRITE – alle Ziele freigeben“ ausgeschaltet ist.
+  runtime_events_all:
+    name: EVENT – alle Ereignistypen freigeben
+    description: Erlaubt alle unterstützten Ereignistypen. Die EVENT-Liste wird ignoriert; ihre Einträge bleiben erhalten. Standardmäßig aus.
+  runtime_events:
+    name: EVENT – einzelne Ereignistypen
+    description: Gilt nur, wenn „EVENT – alle Ereignistypen freigeben“ ausgeschaltet ist.
+  runtime_mqtt_all:
+    name: TOPICS – alle MQTT-Topics freigeben
+    description: "Erlaubt das Publizieren auf allen konkreten MQTT-Topics. Keine Platzhalter + oder #. Die TOPICS-Liste wird ignoriert; ihre Einträge bleiben erhalten. Standardmäßig aus."
+  runtime_mqtt_topics:
+    name: TOPICS – einzelne MQTT-Topics
+    description: Gilt nur, wenn „TOPICS – alle MQTT-Topics freigeben“ ausgeschaltet ist.

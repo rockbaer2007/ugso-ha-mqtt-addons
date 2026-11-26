@@ -1,5 +1,12 @@
 # HA Logic Studio Pro
 
+## 0.1.132
+
+- Vier getrennte „Alle“-Schalter für READ, WRITE, EVENT und TOPICS in der HA-App-Konfiguration, mit Namen und Beschreibungen in DE/EN/FR. Alle sind standardmäßig aus.
+- Bei eingeschaltetem Schalter ignoriert die Runtime nur die zugehörige Liste. Die gespeicherten Einträge bleiben erhalten und gelten nach dem Ausschalten wieder. Die HA-Standardmaske deaktiviert Listen optisch nicht.
+- Allgemeine Lesefreigabe für Funktionsplan, Blocks JS, JavaScript und TypeScript, einschließlich neu hinzugekommener Entitäten und Wiederverbindung. WRITE, EVENT und TOPICS bleiben getrennt steuerbar; vorhandene Aktions- und Formatgrenzen bleiben erhalten.
+- 41 Node- und zehn Serverprüfungen lokal erfolgreich, einschließlich unabhängiger Freigaben, Listenerhaltung, Wiederverbindung und Schutz der READ-Grenze bei EVENT-all. Keine echten Geräteaktionen ausgeführt.
+
 ## 0.1.131
 
 - Einheitliche HA-typische Entitätenauswahl in Funktionsplan, Rules, Blocks A/JS, HA-YAML, JavaScript/TypeScript und Importzuordnungen: Suche beim Tippen, Symbol, Name, Bereich/Gerät, ID, Zustand, Tastatursteuerung und weitere Treffer.

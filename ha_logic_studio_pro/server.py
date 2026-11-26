@@ -454,12 +454,20 @@ class LogicServer(ThreadingHTTPServer):
             raise ValueError('HA-Verbindung für die Runtime nicht verfügbar.')
         options = json.loads(self.runtime_options.read_text(encoding='utf-8')) if self.runtime_options.exists() else {}
         result = {'token': token}
-        for option, key, pattern in (
-            ('runtime_read_entities', 'readable', r'[a-z][a-z0-9_]*\.[a-z0-9_]+'),
-            ('runtime_write_entities', 'writable', r'[a-z][a-z0-9_]*\.[a-z0-9_]+'),
-            ('runtime_events', 'events', r'[a-z][a-z0-9_]*'),
-            ('runtime_mqtt_topics', 'mqttTopics', r'[^+#\x00-\x1f\x7f]+'),
+        for option, key, pattern, flag, all_key in (
+            ('runtime_read_entities', 'readable', r'[a-z][a-z0-9_]*\.[a-z0-9_]+', 'runtime_read_all', 'readAll'),
+            ('runtime_write_entities', 'writable', r'[a-z][a-z0-9_]*\.[a-z0-9_]+', 'runtime_write_all', 'writeAll'),
+            ('runtime_events', 'events', r'[a-z][a-z0-9_]*', 'runtime_events_all', 'eventsAll'),
+            ('runtime_mqtt_topics', 'mqttTopics', r'[^+#\x00-\x1f\x7f]+', 'runtime_mqtt_all', 'mqttAll'),
         ):
+            enabled = options.get(flag, False)
+            if type(enabled) is not bool:
+                raise ValueError('Ungültige Runtime-Freigabe: ' + flag)
+            result[all_key] = enabled
+            if enabled:
+                # Ignore the inactive list in this runtime snapshot; never rewrite options.json.
+                result[key] = []
+                continue
             values = options.get(option, [])
             if not isinstance(values, list) or len(values) > 128 or any(
                 not isinstance(value, str) or len(value) > 128 or not re.fullmatch(pattern, value) for value in values
