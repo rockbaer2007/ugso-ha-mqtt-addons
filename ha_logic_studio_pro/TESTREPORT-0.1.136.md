@@ -2,7 +2,7 @@
 
 ## Sicherung und Erhalt
 
-Vollständiger Quellstand 0.1.135 vor Änderungen als `before-0136.zip` lokal gesichert. Kein HA-System kontaktiert oder aktualisiert. Vorhandene Projekte, Optionen und Freigaben nicht geändert. Freigegebener Release-Prüfstand mit ZIP und SHA-256-Prüfsumme.
+Vollständiger Quellstand 0.1.135 vor Änderungen als `before-0136.zip` lokal gesichert. Die ursprüngliche Release-Prüfung erfolgte ohne HA-Zugriff. Anschließend wurde das veröffentlichte Paket auf ausdrücklichen Nutzerwunsch auf .193 live geprüft; der ergänzende Nachweis steht unten. ZIP und SHA-256-Prüfsumme des veröffentlichten Releases bleiben unverändert.
 
 ## Geprüfter Fehler und Reihenfolge
 
@@ -34,4 +34,17 @@ Leeren entfernt die gepufferten und gespeicherten Meldungen des aktuellen Projek
 
 ## Grenzen
 
-Dies sind lokale Unit-, DOM- und Offline-Integrationstests, kein HA-Livetest. Blocks-A-YAML behält die native Ereignisbrücke; die neue automatische Await-Reihenfolge betrifft Blocks JS und ausdrückliche `await`-Aufrufe in JS/TS. Startauslöser, Timer und Callback-Blöcke bleiben eigenständige Fortsetzungen.
+Die oben beschriebenen automatisierten Prüfungen sind lokale Unit-, DOM- und Offline-Integrationstests. Blocks-A-YAML behält die native Ereignisbrücke; die neue automatische Await-Reihenfolge betrifft Blocks JS und ausdrückliche `await`-Aufrufe in JS/TS. Startauslöser, Timer und Callback-Blöcke bleiben eigenständige Fortsetzungen.
+
+## Ergänzender HA-Livetest am 28.11.2026
+
+Auf Home Assistant 2026.11.3 unter .193 (Port 80) wurde die vorhandene App nach frischer Vollsicherung und separater PC-Quellsicherung von 0.1.134 auf das veröffentlichte 0.1.136-Paket aktualisiert. Die App startete erfolgreich. Die HA-Vollsicherung umfasst 303.04 MB, einschließlich aller Apps und des lokalen Apps-Ordners.
+
+- Neuer Blocks-JS-Zustandstrigger mit dem vorhandenen Testschalter: Anfangszustand löste beim Start keinen Zweig aus; `on` schrieb `1.5`, `off` schrieb `0`. Der direkt folgende Lese-/Debug-Block zeigte jeweils den neuen Wert.
+- Dezimalfeld ohne Enter auf `33.25` geändert und gespeichert. Der vorherige laufende Code wurde sichtbar gekennzeichnet. Nach Runtime-Neustart bestätigten HA-Entitätentabelle und Debug `33.25`; der Feldwert blieb nach vollständigem Neuladen erhalten.
+- Protokoll bei laufendem Skript geleert. Alte Meldungen blieben auch nach Neuladen entfernt; der nächste Wechsel erzeugte eine neue Meldung `0`.
+- Attributtrigger mit `current_position`: Zahl `50` nahm den Zahlenzweig, Text `halb` den Textzweig, `25` den Sonst-Zweig.
+- Beide eigenen Beispiele `UGSO-136-On-Off` und `UGSO-136-Attribute` bleiben gespeichert und gestoppt. Kein Autostart aktiviert.
+- Testsensor auf ursprüngliche `43` W und exakt seine ursprünglichen Attribute zurückgesetzt; temporäres Attribut entfernt. Testschalter wieder `off`. Bestehende Projekte, vier Freigabeschalter und gespeicherte Einzellisten unverändert.
+
+Es wurden ausschließlich vorhandene Testhelfer verwendet, keine realen Geräte geschaltet. Der ergänzende Live-Test ist kein neuer Blocks-A- oder physischer Gerätetest. Das ursprüngliche Release-ZIP enthält den zum Veröffentlichungszeitpunkt gültigen lokalen Prüfbericht; dieser nachträgliche Nachweis steht im Repository und in der veröffentlichten Dokumentation.
