@@ -2,9 +2,9 @@
 
 HA Logic Studio Pro ist eine Home-Assistant-App zum Erstellen, Prüfen und Ausführen von Automationen und Logik. Projekte und Ordner werden pro Home-Assistant-Benutzer gespeichert. Die Oberfläche gibt es auf Deutsch, Englisch und Französisch.
 
-**Lokaler Teststand 0.1.133** · Noch nicht veröffentlicht. [Bisheriges GitHub-Release 0.1.132](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.132)
+**Version 0.1.133** · [GitHub-Release und ZIP](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.133) · [English](README.en.md)
 
-## Neu im lokalen Teststand
+## Neu in 0.1.133
 
 **Sensorzustand setzen** steht unter System in Blocks A und Blocks JS bereit. Wähle einen vorhandenen `sensor.*` und verbinde einen Zahlen-, Text- oder Berechnungsbaustein. Einheit, Geräteklasse und andere Attribute bleiben erhalten. Der Sensor benötigt WRITE-Freigabe in den App-Einstellungen. Eine Integration kann den gesetzten Wert wieder überschreiben; es wird kein Gerät geschaltet und kein dauerhafter Sensor angelegt.
 
@@ -12,7 +12,9 @@ Blocks JS verwendet `ha.setSensorState("sensor.beispiel", 42)`. Blocks A erzeugt
 
 **Neuer Funktionsplan** öffnet jetzt immer die Namens- und Ordnerauswahl. Jeder Plan startet leer und wird unabhängig gespeichert. Vorhandene Funktionspläne und ihre Zuordnung bleiben erhalten. Angehaltene Pläne lassen sich wie andere Projekte löschen.
 
-English and French usage notes: [Sensor state and function plans](docs/sensor-state.md).
+**Geprüft:** 50 Node- und 12 Server-Tests sowie ein Live-Test nach Sicherung auf Home Assistant 2026.11.3: Blocks JS schrieb die Berechnung 40 + 2 als 42 W. Die aus Blocks A erzeugten Ereignisdaten setzten 43 W. Sensorattribute blieben erhalten. Nach Entziehen der WRITE-Freigabe wurde ein weiterer Schreibversuch abgelehnt. Zwei neue Funktionspläne blieben nach dem Neuladen getrennt erhalten.
+
+[Anleitung DE/EN/FR](docs/sensor-state.md) · [Prüfbericht](TESTREPORT-0.1.133.md)
 
 ## Installation und Update
 

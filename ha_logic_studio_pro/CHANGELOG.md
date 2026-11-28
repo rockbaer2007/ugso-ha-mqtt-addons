@@ -1,12 +1,12 @@
 # HA Logic Studio Pro
 
-## 0.1.133 – lokaler Teststand
+## 0.1.133 – 28.11.2026
 
 - „Sensorzustand setzen“ in Blocks A und Blocks JS, einschließlich HA-Sensorauswahl, Werteingang und Beschriftungen DE/EN/FR.
 - Sensorattribute bleiben erhalten. WRITE-Freigaben und Formatgrenzen werden geprüft; Testläufe simulieren den Zugriff. Blocks A benötigt die aktive Studio-Ereignisbrücke.
 - Neue Funktionspläne erhalten jedes Mal Name und Ordner und starten unabhängig leer. Bestehende Pläne und Runtime-Einstellungen bleiben erhalten.
-- Noch nicht veröffentlicht. Prüfbericht wird dem lokalen ZIP beigelegt.
-- Lokal: 50 Node- und 12 Server-Tests erfolgreich. Auf .193 (HTTP-Port 80) nach Sicherung installiert: Blocks-JS-Berechnung 42 W, Blocks-A-YAML und Ereignisbrücke 43 W, Attributerhaltung, Ablehnung ohne WRITE, DE/EN/FR und unabhängige Funktionspläne geprüft. Ursprüngliche Freigaben wiederhergestellt; Beispiele auf Nutzerwunsch behalten.
+- 50 Node- und 12 Server-Tests erfolgreich. Nach Sicherung auf Home Assistant 2026.11.3 geprüft: Blocks-JS-Berechnung 42 W, Blocks-A-YAML und dessen Ereignisdaten über die Brücke 43 W, Attributerhaltung, Ablehnung ohne WRITE, DE/EN/FR und unabhängige Funktionspläne. Ursprüngliche Freigaben wiederhergestellt.
+- README DE/EN, Anleitung DE/EN/FR und Prüfbericht ergänzt. ZIP und SHA-256-Prüfsumme gehören zum Release.
 
 ## 0.1.132
 
