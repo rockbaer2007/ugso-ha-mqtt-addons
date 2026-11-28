@@ -1,4 +1,4 @@
-# Logic Studio Pro 0.1.134 – lokaler Prüfstand 28.11.2026
+# Logic Studio Pro 0.1.134 – Prüfbericht 28.11.2026
 
 ## Sicherung
 
@@ -27,4 +27,4 @@ Quellstand 0.1.133 vor Änderungen als ZIP lokal gesichert. Vor dem HA-Update ei
 - Vorhandene READ-all-, WRITE-all-, EVENT-all- und TOPICS-all-Schalter bleiben wie vor dem Test eingeschaltet; bestehende Einzellisten unverändert. Keine Änderung an den Nutzerfreigaben.
 - Auf bestätigten Nutzerwunsch bleiben ausschließlich die beiden neuen gespeicherten Beispiele `UGSO-134-Decimal-JS` und `UGSO-134-Decimal-A` erhalten. JS-Lauf gestoppt, kein Autostart. Nicht gespeicherte Import-Hilfsprojekte und YAML-Entwürfe abgebrochen.
 
-Nicht veröffentlicht.
+Freigegebener Release-Prüfstand. ZIP und SHA-256-Prüfsumme werden gemeinsam mit diesem Prüfbericht veröffentlicht.

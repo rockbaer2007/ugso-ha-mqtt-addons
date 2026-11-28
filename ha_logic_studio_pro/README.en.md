@@ -2,13 +2,15 @@
 
 HA Logic Studio Pro is a Home Assistant app for creating, checking and running automations and logic. Projects and folders are stored per Home Assistant user. The interface supports German, English and French.
 
-**Local test build 0.1.134** · Not published. [Previous release 0.1.133](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.133) · [Deutsch](README.md)
+**Version 0.1.134** · [GitHub release with ZIP and changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.134) · [Deutsch](README.md)
 
 ## New in 0.1.134
 
 **System** in Blocks A and Blocks JS now also includes **Set sensor state · Decimal number**. A direct number field beside the sensor selector defaults to `0.5`. Enter values such as `33.25` using a decimal point. Fractions are retained through saving and reopening.
 
 The existing value-input block remains available. Both variants use the same WRITE permission and retain sensor attributes. Blocks A requires the running Studio app. [Test report 0.1.134](TESTREPORT-0.1.134.md).
+
+**Verified:** 60 Node tests and 12 server tests passed. After backup on Home Assistant 2026.11.3, Blocks JS wrote exactly `0.5` and `33.25` W. Blocks A generated both values as YAML numbers; its event data was executed through the Studio bridge and the HA states were confirmed. Both number fields retained `33.25` after saving and reloading. Sensor attributes, projects and user permissions were preserved; the original sensor value was restored. Both saved examples remain stopped. No startup automation was enabled.
 
 ## New in 0.1.133
 

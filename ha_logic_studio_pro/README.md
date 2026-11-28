@@ -2,13 +2,15 @@
 
 HA Logic Studio Pro ist eine Home-Assistant-App zum Erstellen, Prüfen und Ausführen von Automationen und Logik. Projekte und Ordner werden pro Home-Assistant-Benutzer gespeichert. Die Oberfläche gibt es auf Deutsch, Englisch und Französisch.
 
-**Lokaler Teststand 0.1.134** · Noch nicht veröffentlicht. [Bisheriges GitHub-Release 0.1.133](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.133) · [English](README.en.md)
+**Version 0.1.134** · [GitHub-Release mit ZIP und Changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.134) · [English](README.en.md)
 
 ## Neu in 0.1.134
 
 Zusätzlich gibt es unter **System** in Blocks A und Blocks JS den Baustein **Sensorzustand setzen · Dezimalzahl**. Neben der Sensorauswahl steht ein direktes Zahlenfeld, standardmäßig `0.5`. Gib dort beispielsweise `33.25` ein. Nachkommastellen bleiben erhalten, auch nach Speichern und erneutem Öffnen. Verwende einen Punkt als Dezimaltrennzeichen.
 
 Der bisherige Baustein mit Werteingang bleibt erhalten. Beide Varianten verwenden dieselbe WRITE-Freigabe und behalten die Sensorattribute. Blocks A benötigt die laufende Studio-App. [Prüfbericht 0.1.134](TESTREPORT-0.1.134.md).
+
+**Geprüft:** 60 Node- und 12 Server-Tests erfolgreich. Nach Sicherung auf Home Assistant 2026.11.3 schrieb Blocks JS exakt `0.5` und `33.25` W. Blocks A erzeugte beide Werte als Zahlen im YAML; dessen Ereignisdaten wurden über die Studio-Brücke ausgeführt und die HA-Zustände bestätigt. Beide Zahlenfelder behielten `33.25` nach Speichern und Neuladen. Sensorattribute, Projekte und Nutzerfreigaben blieben erhalten; der ursprüngliche Sensorwert wurde wiederhergestellt. Beide Beispiele bleiben gespeichert und gestoppt. Es wurde keine Start-Automation aktiviert.
 
 ## Neu in 0.1.133
 
