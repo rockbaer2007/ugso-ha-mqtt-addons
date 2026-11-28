@@ -7,7 +7,7 @@ import {helperDomains, helperSpec, provisionHelper} from './iobroker-create-stat
 import {parseDocument} from './vendor/pro-yaml.js';
 import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.100';
 import {connectLanguage, locales, translate} from './i18n.js';
-import {translatePro} from './pro-locales.js?v=0.1.137';
+import {translatePro} from './pro-locales.js?v=0.1.138';
 import {mountCodeEditor} from './vendor/pro-code.js';
 import {mountYamlEditor} from './vendor/yaml-editor.js?v=0.1.92';
 import {checkHaYaml} from './yaml-ha-check.js?v=0.1.91';
@@ -1708,7 +1708,7 @@ function toolbar(panel, project) {
   name.onchange = () => { name.value = project.name; };
   row.append(name);
   const id = active;
-  if (['javascript', 'typescript', 'flow'].includes(project.type)) {
+  if (['javascript', 'typescript', 'flow', 'blocks-js'].includes(project.type)) {
     const label = element('label');
     label.className = 'editor-autostart';
     const toggle = element('input');
@@ -2634,7 +2634,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.137'),
+      import('./vendor/pro-blocks.js?v=0.1.138'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

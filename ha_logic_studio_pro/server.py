@@ -167,7 +167,7 @@ class ProjectStore(Store):
                         'yaml', 'rules', 'blocks', 'blocks-js', 'flow', 'javascript', 'typescript'):
                     raise ValueError('Ungültiges Projekt.')
                 if key == 'projects' and (type(value.get('autostart', False)) is not bool or
-                        (value.get('autostart') and value['type'] not in ('javascript', 'typescript', 'flow'))):
+                        (value.get('autostart') and value['type'] not in ('javascript', 'typescript', 'flow', 'blocks-js'))):
                     raise ValueError('Ungültige Autostart-Einstellung.')
                 if key == 'projects':
                     shared_script_ids(value.get('sharedScripts', []))
@@ -211,6 +211,14 @@ def runtime_source(project, blocks_source=None):
         source = json.dumps(graph, ensure_ascii=False) if isinstance(graph, dict) else None
     else:
         source = blocks_source if kind == 'blocks-js' else project.get('source')
+        if kind == 'blocks-js' and blocks_source is None:
+            result = subprocess.run(
+                ['node', str(ROOT / 'runtime' / 'generate-blocks.mjs')],
+                input=json.dumps({'workspace': project.get('workspace'), 'name': project.get('name', '')}),
+                encoding='utf-8', capture_output=True, timeout=10, check=True,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0,
+            )
+            source = json.loads(result.stdout).get('source')
     if not isinstance(source, str) or not source.strip() or len(source.encode('utf-8')) > 64_000:
         raise ValueError('Quelltext fehlt oder überschreitet 64 KB.')
     return source, kind if kind in ('typescript', 'flow') else 'javascript'

@@ -1,5 +1,12 @@
 # HA Logic Studio Pro
 
+## 0.1.138 – 28.11.2026
+
+- Fehlenden Autostart für Blocks JS ergänzt: „Beim Start der App ausführen“ pro Projekt aktivieren und speichern. Play allein setzt diese Option nicht.
+- Der App-Start übersetzt den gespeicherten Blockly-Arbeitsbereich mit demselben ausgelieferten Generator erneut, ohne Browser. Bestehende Runtime-Freigaben, Benutzerzuordnung und Bibliotheken gelten unverändert.
+- Bestehende Projekte werden nicht automatisch aktiviert. Funktionsplan-, JS-/TS-Autostart und native Blocks-A-YAML bleiben unverändert. Fehlerhafte Blockly-Projekte erzeugen einen Startfehler, ohne die weiteren Projektstarts abzubrechen.
+- 88 Node- und 17 Server-Tests erfolgreich (105 insgesamt). Gespeicherte Option, neuer Serverstart mit abgefangener Runtime-Ausführung und Fehlerfall lokal geprüft. Kein HA-Livetest von 0.1.138.
+
 ## 0.1.137 – 28.11.2026
 
 - Punkteraster in Blocks A und Blocks JS ergänzt, ohne erzwungenes Einrasten oder Änderung gespeicherter Blockpositionen.

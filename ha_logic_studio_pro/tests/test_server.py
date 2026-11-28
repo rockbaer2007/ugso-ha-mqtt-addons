@@ -8,7 +8,62 @@ import io
 import threading
 import yaml
 
-from server import RUNTIME_LOG_MAX_BYTES, ScriptRuntime, LogicServer, public_entity, search_entities
+from server import RUNTIME_LOG_MAX_BYTES, ScriptRuntime, LogicServer, ProjectStore, runtime_source, public_entity, search_entities
+
+
+class BlocksAutostartTests(unittest.TestCase):
+    def project(self, enabled=True):
+        return {'name': 'Autostart test', 'type': 'blocks-js', 'autostart': enabled,
+                'workspace': {'blocks': {'languageVersion': 0, 'blocks': [
+                    {'type': 'ha_js_log', 'inputs': {'VALUE': {'block': {'type': 'text', 'fields': {'TEXT': 'started'}}}}}
+                ]}}}
+
+    def test_autostart_survives_store_reload_without_enabling_other_projects(self):
+        with TemporaryDirectory() as directory:
+            project = self.project()
+            tree = {'folders': [], 'projects': [['42', project], ['43', self.project(False)]]}
+            ProjectStore(directory).write('owner', {'revision': 0, 'tree': tree})
+            reloaded = ProjectStore(directory)
+            self.assertEqual(list(reloaded.autostart_projects()), [('owner', '42', project)])
+            self.assertEqual(reloaded.read('owner')['tree'], tree)
+            with self.assertRaises(ValueError):
+                reloaded.write('owner', {'revision': 1, 'tree': {'folders': [], 'projects': [
+                    ['44', {'name': 'Native YAML', 'type': 'blocks', 'autostart': True}]]}})
+
+    def test_app_restart_regenerates_saved_blocks_and_uses_existing_permissions(self):
+        with TemporaryDirectory() as directory:
+            project = self.project()
+            ProjectStore(directory).write('owner', {'revision': 0, 'tree': {'folders': [], 'projects': [
+                ['42', project], ['43', self.project(False)]]}})
+            server = LogicServer(('127.0.0.1', 0), directory, supervisor=True)
+            options = {'readable': ['sensor.test'], 'writable': [], 'writeAll': False}
+            try:
+                with patch.object(server, 'live_runtime_config', return_value=options), patch.object(server.runtime, 'control') as control:
+                    server.start_configured_projects()
+                control.assert_called_once()
+                args, kwargs = control.call_args
+                self.assertEqual(args[:3], ('owner', '42', 'start'))
+                self.assertIn('ha.log', args[3])
+                self.assertIn('started', args[3])
+                self.assertEqual(args[4], 'javascript')
+                self.assertEqual(args[5], {**options, 'startupRetry': True})
+                self.assertEqual(kwargs['project_snapshot'], project)
+            finally:
+                server.server_close()
+
+    def test_invalid_saved_blocks_report_startup_error_without_starting(self):
+        with TemporaryDirectory() as directory:
+            project = {**self.project(), 'workspace': {'blocks': {'blocks': [{'type': 'unknown_invalid_block'}]}}}
+            ProjectStore(directory).write('owner', {'revision': 0, 'tree': {'folders': [], 'projects': [['42', project]]}})
+            server = LogicServer(('127.0.0.1', 0), directory, supervisor=True)
+            try:
+                with patch.object(server.runtime, 'control') as control, patch.object(server.runtime, 'startup_error') as error:
+                    server.start_configured_projects()
+                control.assert_not_called()
+                error.assert_called_once()
+                self.assertEqual(error.call_args.args[:2], ('owner', '42'))
+            finally:
+                server.server_close()
 
 
 class SensorBridgeTests(unittest.TestCase):

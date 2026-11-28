@@ -2,7 +2,11 @@
 
 HA Logic Studio Pro is a Home Assistant app for creating, checking and running automations and logic. Projects and folders are stored per Home Assistant user. The interface supports German, English and French.
 
-**Version 0.1.137** · [GitHub release with ZIP and changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.137) · [Deutsch](README.md)
+**Version 0.1.138** · [GitHub release with ZIP and changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.138) · [Deutsch](README.md)
+
+## New in 0.1.138
+
+**Blocks JS** now also offers **Run when the app starts**. Enable it once in the desired project and **Save**: after an app restart or update, the saved Blockly workspace is regenerated without an open browser and started with the existing runtime permissions. Play alone does not enable autostart. Existing projects without the option remain disabled; function-plan, JS and TS autostart is preserved. Invalid blocks produce a visible startup error. 88 Node tests and 17 server tests passed, including persisted autostart, a new server instance and the error case. No HA update for this version. [Test report](TESTREPORT-0.1.138.md).
 
 ## New in 0.1.137
 
