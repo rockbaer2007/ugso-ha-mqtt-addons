@@ -4,6 +4,16 @@ HA Logic Studio Pro is a Home Assistant app for creating, checking and running a
 
 **Version 0.1.135** · [GitHub release with ZIP and changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.135) · [Deutsch](README.md)
 
+## Local test build 0.1.136
+
+Both JS sensor blocks wait for HA write confirmation before subsequent read/debug blocks run. Normal HA outputs wait for request acceptance. Timers and explicitly asynchronous callback blocks remain separate continuations. In handwritten JS/TS, use `await ha.setSensorState(...)` or `await ha.callAction(...)` for ordered execution. HA acceptance does not confirm a physical device movement.
+
+**Trigger → When entity value changes** selects one entity and its **State** or an **Attribute**. Edit the default on/off branches. Use the gear editor to add **another state** and an optional **else** branch. Choose **Text** (such as `half`) or **Number** (such as `50` for `current_position`) for each branch. A change runs the matching branch; duplicate values are rejected before starting. Initial startup does not itself trigger a branch.
+
+The comparison dropdown now includes on/off strings beside true/false booleans. Field edits commit on leaving without Enter. A warning marks running code that needs **Save → Restart runtime**. **Clear log** removes this project's messages without stopping the process; new messages are retained.
+
+Existing projects and options are preserved. [Test report 0.1.136](TESTREPORT-0.1.136.md). No live HA test or publication yet. [ioBroker source comparison](docs/iobroker-review-2026-11-28.md).
+
 ## New in 0.1.135
 
 **“If entities … changed”** now has an HA-style multi-entity selector: search by name or ID, select or deselect entities, then **Apply**. Existing comma/whitespace-separated lists remain readable and retain their saved IDs.

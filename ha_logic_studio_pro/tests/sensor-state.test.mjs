@@ -10,7 +10,7 @@ test('writer preserves HA attributes and uses the fixed authenticated Supervisor
   const attributes = {device_class: 'power', unit_of_measurement: 'W', state_class: 'measurement', friendly_name: 'Test'};
   const write = createSensorStateWriter({token: 'unit-test-only', writable: ['sensor.test']}, async (url, options) => {
     calls.push({url, options});
-    return {ok: true, json: async () => ({entity_id: 'sensor.test', state: '0', attributes})};
+    return {ok: true, json: async () => ({entity_id: 'sensor.test', state: options.method ? JSON.parse(options.body).state : '0', attributes})};
   });
   await write('sensor.test', 42.5);
   assert.equal(calls.length, 2);
@@ -37,8 +37,8 @@ test('permission, domain, missing sensor and invalid values fail before writing'
 test('writeAll works; failed writes release concurrency slots and never silently succeed', async () => {
   let fail = true;
   const write = createSensorStateWriter({writeAll: true, token: 'mock'}, async (_url, options) => {
-    if (options.method) return {ok: !fail, status: 403};
-    return {ok: true, json: async () => ({entity_id: 'sensor.test', attributes: {}})};
+    if (options.method) return {ok: !fail, status: 403, json: async () => ({entity_id: 'sensor.test', state: JSON.parse(options.body).state, attributes: {}})};
+    return {ok: true, json: async () => ({entity_id: 'sensor.test', state: options.method ? JSON.parse(options.body).state : '0', attributes: {}})};
   });
   await assert.rejects(write('sensor.test', 5), /403/);
   fail = false;
@@ -50,12 +50,21 @@ test('overlapping requests for the same sensor are rejected without duplicate PO
   const ready = new Promise(resolve => { release = resolve; });
   const write = createSensorStateWriter({writeAll: true}, async (_url, options) => {
     if (!options.method) await ready;
-    return {ok: true, json: async () => ({entity_id: 'sensor.test', attributes: {}})};
+    return {ok: true, json: async () => ({entity_id: 'sensor.test', state: options.method ? JSON.parse(options.body).state : '0', attributes: {}})};
   });
   const first = write('sensor.test', 1);
   await assert.rejects(write('sensor.test', 2), /läuft bereits/);
   release();
   await first;
+});
+
+test('missing or mismatched HA confirmation cannot continue as a successful sensor write', async () => {
+  for (const confirmation of [{entity_id: 'sensor.test', state: '0', attributes: {}},
+    {entity_id: 'sensor.other', state: '1', attributes: {}}, {entity_id: 'sensor.test', state: '1'}]) {
+    const write = createSensorStateWriter({writeAll: true}, async (_url, options) => ({ok: true,
+      json: async () => options.method ? confirmation : {entity_id: 'sensor.test', state: '0', attributes: {}}}));
+    await assert.rejects(write('sensor.test', 1), /Schreibbestätigung/);
+  }
 });
 
 test('the shipped Blocks JS bundle generates executable code; preview never sends requests', async () => {

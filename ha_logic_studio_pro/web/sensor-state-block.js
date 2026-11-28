@@ -51,10 +51,10 @@ export function registerSensorStateBlocks(Blockly, generator, language, entityFi
   generator.forBlock[jsSensorBlock] = (block, code) => {
     const value = code.valueToCode(block, 'VALUE', 99);
     if (!value) throw new Error('Sensorzustand fehlt / Missing sensor state / État du capteur manquant');
-    return 'ha.setSensorState(' + JSON.stringify(sensorId(block)) + ', ' + value + ');\n';
+    return 'await ha.setSensorState(' + JSON.stringify(sensorId(block)) + ', ' + value + ');\n';
   };
   generator.forBlock[jsDecimalSensorBlock] = block =>
-    'ha.setSensorState(' + JSON.stringify(sensorId(block)) + ', ' + decimalSensorValue(block) + ');\n';
+    'await ha.setSensorState(' + JSON.stringify(sensorId(block)) + ', ' + decimalSensorValue(block) + ');\n';
   jsTypes.push(jsSensorBlock, jsDecimalSensorBlock);
   for (const type of [yamlSensorBlock, yamlDecimalSensorBlock]) {
     catalogTypes.add(type);

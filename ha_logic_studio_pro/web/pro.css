@@ -25,6 +25,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 #protocol-tools a { background: #1a283b; border: 1px solid #435571; border-radius: .4rem; color: inherit; text-decoration: none; font-size: 1.15rem; }
 #protocol-tools a:focus-visible { outline: 2px solid #a2ccff; outline-offset: 2px; }
 #protocol-tools svg, #protocol-show svg { width: 1.2rem; height: 1.2rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.runtime-outdated { color: #ffc76e; font-weight: 600; }
 #protocol-body { flex: 1; min-width: 0; padding: .5rem .65rem; display: flex; flex-direction: column; }
 #protocol-title { margin: 0 0 .4rem; font-size: .9rem; }
 #protocol-lines { overflow: auto; max-height: 12rem; }

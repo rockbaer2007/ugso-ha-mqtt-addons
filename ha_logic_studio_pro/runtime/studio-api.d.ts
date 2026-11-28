@@ -19,18 +19,18 @@ declare const ha: {
   readAttribute(entity: string, name: string): unknown;
   stateSnapshot(entity: string): string;
   getState(entity: string): {val: string | boolean} | null;
-  setState(entity: string, value: boolean): void;
-  setNumber(entity: string, value: number): void;
+  setState(entity: string, value: boolean): Promise<void>;
+  setNumber(entity: string, value: number): Promise<void>;
   /** Sets an existing sensor state; retains attributes. Requires WRITE permission. */
-  setSensorState(entity: string, value: string | number): void;
-  setText(entity: string, value: string): void;
-  callAction(action: string, entity: string, data?: StudioData): void;
+  setSensorState(entity: string, value: string | number): Promise<string>;
+  setText(entity: string, value: string): Promise<void>;
+  callAction(action: string, entity: string, data?: StudioData): Promise<void>;
   onState(entity: string, callback: StudioCallback<StudioStateChange>): void;
   onAttribute(entity: string, name: string, callback: StudioCallback<StudioStateChange>): void;
   onEvent(name: string, callback: StudioCallback<unknown>): void;
-  fireEvent(name: string, data?: StudioData): void;
-  notify(entity: string, message: string, title?: string): void;
-  publishMqtt(topic: string, message: string, retain?: boolean): void;
+  fireEvent(name: string, data?: StudioData): Promise<void>;
+  notify(entity: string, message: string, title?: string): Promise<void>;
+  publishMqtt(topic: string, message: string, retain?: boolean): Promise<void>;
   history(entity: string, start: number | Date, end: number | Date, mode: string, step: number, count: number,
     callback: StudioCallback<StudioHistoryPoint[]>): void;
   schedule(pattern: StudioSchedule, callback: StudioCallback<StudioScheduleEvent>): void;

@@ -170,6 +170,32 @@ class EntityPickerCatalogTests(unittest.TestCase):
 
 
 class RuntimeRetentionTests(unittest.TestCase):
+    def test_clear_messages_keeps_process_and_state_and_does_not_restore_old_log(self):
+        with TemporaryDirectory() as directory:
+            runtime = ScriptRuntime(directory)
+            key = ('owner', '42')
+            now = datetime.now(timezone.utc).isoformat()
+            old = {'time': now, 'text': 'old', 'error': False}
+            process = object()
+            runtime.jobs[key] = {'process': process, 'state': 'running', 'messages': [old]}
+            runtime.write_log(runtime.log_directory('owner') / '42.json', [old])
+            runtime.clear_messages('owner', '42')
+            self.assertIs(runtime.jobs[key]['process'], process)
+            self.assertEqual(runtime.jobs[key]['state'], 'running')
+            self.assertEqual(runtime.jobs[key]['messages'], [])
+            self.assertEqual(list(ScriptRuntime(directory).saved_messages(key)), [])
+            runtime.add_message(key, runtime.jobs[key], 'new', False)
+            self.assertEqual([entry['text'] for entry in runtime.jobs[key]['messages']], ['new'])
+            self.assertEqual([entry['text'] for entry in ScriptRuntime(directory).saved_messages(key)], ['new'])
+
+    def test_runtime_status_reports_saved_changes_without_restarting(self):
+        runtime = ScriptRuntime()
+        original = {'type': 'blocks-js', 'name': 'Example', 'workspace': {'value': 0.5}}
+        runtime.jobs[('owner', '42')] = {'process': None, 'state': 'running', 'messages': [], 'project_snapshot': original}
+        changed = {**original, 'workspace': {'value': 1.5}}
+        self.assertFalse(runtime.status('owner', lambda: {'tree': {'projects': [['42', original]]}})['42']['outdated'])
+        self.assertTrue(runtime.status('owner', lambda: {'tree': {'projects': [['42', changed]]}})['42']['outdated'])
+
     def test_expired_and_oversized_logs_are_rewritten_and_survive_restart(self):
         with TemporaryDirectory() as directory:
             runtime = ScriptRuntime(directory)

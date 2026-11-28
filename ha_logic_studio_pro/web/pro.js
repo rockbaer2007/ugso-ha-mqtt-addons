@@ -7,7 +7,7 @@ import {helperDomains, helperSpec, provisionHelper} from './iobroker-create-stat
 import {parseDocument} from './vendor/pro-yaml.js';
 import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.100';
 import {connectLanguage, locales, translate} from './i18n.js';
-import {translatePro} from './pro-locales.js?v=0.1.120';
+import {translatePro} from './pro-locales.js?v=0.1.136';
 import {mountCodeEditor} from './vendor/pro-code.js';
 import {mountYamlEditor} from './vendor/yaml-editor.js?v=0.1.92';
 import {checkHaYaml} from './yaml-ha-check.js?v=0.1.91';
@@ -26,6 +26,7 @@ const unsavedProjects = new Set();
 let flowProjectId, legacyChecked = false;
 let runtimeJobs = {};
 let runtimeRequest = false;
+let protocolClearing = false;
 const runtimeState = id => runtimeJobs[id]?.state ?? 'stopped';
 const runtimeActive = id => ['starting', 'running'].includes(runtimeState(id));
 let active;
@@ -395,6 +396,24 @@ $('protocol-show').onclick = () => {
   $('protocol-hide').focus();
 };
 $('protocol-download').href = '#protocol';
+$('protocol-clear').onclick = async () => {
+  const id = active, project = projects.get(id);
+  if (!project || protocolClearing) return;
+  protocolClearing = true;
+  $('protocol-clear').disabled = true;
+  try {
+    // Discard in-flight polls so pre-clear messages cannot reappear.
+    runtimePollGeneration++;
+    const response = await fetch('./api/pro-runtime', {method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({id, command: 'clear-log'})});
+    const result = await response.json();
+    if (!response.ok) throw Error(result.error || 'Protokoll konnte nicht geleert werden.');
+    project.protocol = [];
+    syncRuntime(result);
+    renderProtocol();
+  } catch (error) { recordProtocol(project, error.message, true); }
+  finally { protocolClearing = false; $('protocol-clear').disabled = false; }
+};
 $('protocol-download').onclick = event => {
   const project = projects.get(active);
   if (!project) {
@@ -504,14 +523,19 @@ function updateEngineControl(control, id) {
   control.querySelector('path').setAttribute('d', isRunning ? 'M7 5h3v14H7zm7 0h3v14h-3z' : editorIcons.play);
   control.disabled = sortingProjects || runtimeRequest || blocked;
   const status = control.parentElement.querySelector('[data-runtime-status]');
-  if (status) status.textContent = {starting: 'Runtime startet …', running: 'Skript läuft',
-    stopped: 'Skript läuft nicht', error: 'Runtime-Fehler'}[state];
+  if (status) {
+    const outdated = isRunning && (hasUnsavedChanges(id) || runtimeJobs[id]?.outdated);
+    status.textContent = outdated ? translatePro('Vorheriger Stand läuft · Speichern → Runtime neu starten', locale) :
+      {starting: 'Runtime startet …', running: 'Skript läuft', stopped: 'Skript läuft nicht', error: 'Runtime-Fehler'}[state];
+    status.classList.toggle('runtime-outdated', Boolean(outdated));
+  }
 }
 
 function syncRuntime(next) {
   if (JSON.stringify(runtimeJobs) === JSON.stringify(next)) return;
   const old = runtimeJobs;
   runtimeJobs = next;
+  refreshRuntimeControls();
   if ([...new Set([...Object.keys(old), ...Object.keys(next)])].some(id => old[id]?.state !== next[id]?.state)) {
     renderProjectList();
     refreshRuntimeControls();
@@ -520,13 +544,17 @@ function syncRuntime(next) {
   sendFlowDiagnosis();
 }
 
+let runtimePollGeneration = 0;
 async function pollRuntime() {
-  if (runtimeRequest) return;
+  if (runtimeRequest || protocolClearing) return;
+  const generation = runtimePollGeneration;
   try {
     const response = await fetch('./api/pro-runtime');
-    if (response.ok && !runtimeRequest) { syncRuntime(await response.json()); return; }
+    const result = response.ok ? await response.json() : null;
+    if (generation !== runtimePollGeneration || protocolClearing) return;
+    if (result && !runtimeRequest) { syncRuntime(result); return; }
   } catch {}
-  if (!runtimeRequest) syncRuntime(Object.fromEntries(Object.entries(runtimeJobs)
+  if (!runtimeRequest && !protocolClearing && generation === runtimePollGeneration) syncRuntime(Object.fromEntries(Object.entries(runtimeJobs)
     .map(([id, {diagnosis, ...job}]) => [id, job])));
 }
 
@@ -2606,7 +2634,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.130'),
+      import('./vendor/pro-blocks.js?v=0.1.136'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

@@ -1,0 +1,212 @@
+{
+  "type": "blocks-js",
+  "workspace": {
+    "blocks": {
+      "languageVersion": 0,
+      "blocks": [
+        {
+          "type": "ha_js_on_state",
+          "id": "~mu{@!2xa-4IXtBe1p/z",
+          "x": 146,
+          "y": -448,
+          "extraState": {
+            "change": "changed"
+          },
+          "fields": {
+            "ENTITY": "switch.wecker_relay",
+            "CHANGE": "changed"
+          },
+          "inputs": {
+            "BODY": {
+              "block": {
+                "type": "controls_if",
+                "id": "GOGKn4b]}a9,K/(](DM`",
+                "extraState": {
+                  "elseIfCount": 1
+                },
+                "inputs": {
+                  "IF0": {
+                    "block": {
+                      "type": "logic_compare",
+                      "id": "yb2ytbm92T)IUm?Hv+9Z",
+                      "fields": {
+                        "OP": "EQ"
+                      },
+                      "inputs": {
+                        "A": {
+                          "block": {
+                            "type": "convert_toboolean",
+                            "id": "5pLZiC?@p~*h8P4F^e4;",
+                            "inputs": {
+                              "VALUE": {
+                                "block": {
+                                  "type": "ha_js_state",
+                                  "id": "fJ=I1D8)r!v1_+pbm-{K",
+                                  "fields": {
+                                    "ENTITY": "switch.wecker_relay"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "B": {
+                          "block": {
+                            "type": "logic_boolean",
+                            "id": "11*s;Wj8/d~X9YM[mt42",
+                            "fields": {
+                              "BOOL": "TRUE"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "DO0": {
+                    "block": {
+                      "type": "ha_js_sensor_state_decimal",
+                      "id": "?M`zMINDSfkYgz|*.h,r",
+                      "fields": {
+                        "ENTITY": "sensor.fake_wecker",
+                        "STATE": 1.5
+                      }
+                    }
+                  },
+                  "IF1": {
+                    "block": {
+                      "type": "logic_compare",
+                      "id": "2S-NF?hx@*JKmxnecGK4",
+                      "fields": {
+                        "OP": "EQ"
+                      },
+                      "inputs": {
+                        "A": {
+                          "block": {
+                            "type": "convert_toboolean",
+                            "id": "@D5*?#LIzSr|K/k8uzff",
+                            "inputs": {
+                              "VALUE": {
+                                "block": {
+                                  "type": "ha_js_state",
+                                  "id": "bI3%u,+z==kgds}%y~?J",
+                                  "fields": {
+                                    "ENTITY": "switch.wecker_relay"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "B": {
+                          "block": {
+                            "type": "logic_boolean",
+                            "id": "8`;0oj-f@xmgZ{,bag62",
+                            "fields": {
+                              "BOOL": "FALSE"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "DO1": {
+                    "block": {
+                      "type": "ha_js_sensor_state_decimal",
+                      "id": "!m;g@1}iH_{IE,Df-zeb",
+                      "fields": {
+                        "ENTITY": "sensor.fake_wecker",
+                        "STATE": 0
+                      }
+                    }
+                  }
+                },
+                "next": {
+                  "block": {
+                    "type": "ha_js_log",
+                    "id": "Vvg/=%GU6k-dd[;-*8BH",
+                    "inline": false,
+                    "fields": {
+                      "LEVEL": "info"
+                    },
+                    "inputs": {
+                      "VALUE": {
+                        "block": {
+                          "type": "text_join",
+                          "id": "Z*+x=Lyntvg$;Z%wsW)Z",
+                          "extraState": {
+                            "itemCount": 2
+                          },
+                          "inputs": {
+                            "ADD0": {
+                              "block": {
+                                "type": "ha_js_state",
+                                "id": "7GBzc2BA2_[6~EE2#t/I",
+                                "fields": {
+                                  "ENTITY": "switch.wecker_relay"
+                                }
+                              }
+                            },
+                            "ADD1": {
+                              "block": {
+                                "type": "text",
+                                "id": "~K{6)By5:l_iD]$D8pS{",
+                                "fields": {
+                                  "TEXT": "     switch"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "next": {
+                      "block": {
+                        "type": "ha_js_log",
+                        "id": "X0w_a473MQ!i][,OZ@PM",
+                        "inline": false,
+                        "fields": {
+                          "LEVEL": "info"
+                        },
+                        "inputs": {
+                          "VALUE": {
+                            "block": {
+                              "type": "text_join",
+                              "id": "*8kD1LSG^ym:?;{ai7/O",
+                              "extraState": {
+                                "itemCount": 2
+                              },
+                              "inputs": {
+                                "ADD0": {
+                                  "block": {
+                                    "type": "ha_js_state",
+                                    "id": "WiP;S%J]WVwH$.J?St)a",
+                                    "fields": {
+                                      "ENTITY": "sensor.fake_wecker"
+                                    }
+                                  }
+                                },
+                                "ADD1": {
+                                  "block": {
+                                    "type": "text",
+                                    "id": "N^4SLc+WFdo{?Y;]{-i,",
+                                    "fields": {
+                                      "TEXT": "     fake "
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

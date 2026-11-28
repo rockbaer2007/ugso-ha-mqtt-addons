@@ -44,11 +44,15 @@ export const simulatedEvents = String.raw`
   };
   const ha = Object.freeze({
     ...api,
+    setSensorState: async (entity, value) => { api.setSensorState(entity, value); return api.readState(entity); },
+    setState: async (...args) => api.setState(...args),
+    setNumber: async (...args) => api.setNumber(...args),
+    setText: async (...args) => api.setText(...args),
     requestScriptMessage, importedControl, importedStateValue, importedEventValue, importedTarget, importedAttribute,
     ${guestTimeApi}
-    publishMqtt: (topic, message, retain = false) => report(JSON.stringify({type: 'mqtt', topic, message, retain})),
-    notify: (entity, message, title = '') => report(JSON.stringify({type: 'notify', entity, message, title})),
-    fireEvent(event, data = {}) {
+    publishMqtt: async (topic, message, retain = false) => report(JSON.stringify({type: 'mqtt', topic, message, retain})),
+    notify: async (entity, message, title = '') => report(JSON.stringify({type: 'notify', entity, message, title})),
+    async fireEvent(event, data = {}) {
       const encoded = JSON.stringify({type: 'event', event, data});
       report(encoded);
       if (event === 'logic_studio_script_message') {
@@ -56,7 +60,7 @@ export const simulatedEvents = String.raw`
         scriptMessages.push(JSON.parse(encoded).data);
       }
     },
-    callAction(action, entity, data) {
+    async callAction(action, entity, data) {
       return data === undefined ? api.callAction(action, entity) : api.callAction(action, entity, JSON.stringify(data));
     },
     onState: (entity, callback) => register('state', entity, null, callback),

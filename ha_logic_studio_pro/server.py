@@ -338,7 +338,8 @@ class ScriptRuntime:
     def status(self, user, read_projects):
         with self.lock:
             projects = dict((read_projects()['tree'] or {}).get('projects', []))
-            result = {key[1]: {'state': job['state'], 'messages': self.prune_job(key, job)}
+            result = {key[1]: {'state': job['state'], 'messages': self.prune_job(key, job),
+                              'outdated': job.get('project_snapshot', projects.get(key[1])) != projects.get(key[1])}
                       for key, job in self.jobs.items() if key[0] == user and key[1] in projects}
             if self.log_root is not None:
                 for path in self.log_directory(user).glob('*.json'):
@@ -352,7 +353,15 @@ class ScriptRuntime:
                     result[project_id]['diagnosis'] = diagnosis
         return result
 
-    def control(self, user, project_id, command, source=None, language=None, home_assistant=None, libraries=None):
+    def clear_messages(self, user, project_id):
+        with self.lock:
+            job = self.jobs.get((user, project_id))
+            if self.log_root is not None:
+                (self.log_directory(user) / (project_id + '.json')).unlink(missing_ok=True)
+            if job is not None:
+                job['messages'].clear()
+
+    def control(self, user, project_id, command, source=None, language=None, home_assistant=None, libraries=None, project_snapshot=None):
         key = (user, project_id)
         with self.lock:
             previous = self.jobs.get(key)
@@ -386,6 +395,8 @@ class ScriptRuntime:
                                            creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             messages = previous['messages'] if previous else self.saved_messages(key)
             job = {'process': process, 'state': 'starting', 'messages': messages}
+            if project_snapshot is not None:
+                job['project_snapshot'] = project_snapshot
             if language == 'flow':
                 job['flow_source'] = source
             self.jobs[key] = job
@@ -528,7 +539,7 @@ class LogicServer(ThreadingHTTPServer):
                 options = self.live_runtime_config()
                 libraries = shared_scripts(self.projects.read(user), project.get('sharedScripts', []), project_id)
                 self.runtime.control(user, project_id, 'start', source, language,
-                                     {**options, 'startupRetry': True}, libraries)
+                                     {**options, 'startupRetry': True}, libraries, project_snapshot=project)
             except (ValueError, OSError, subprocess.SubprocessError) as error:
                 self.runtime.startup_error(user, project_id, error)
 
@@ -893,10 +904,15 @@ class Handler(SimpleHTTPRequestHandler):
             if not isinstance(payload, dict):
                 raise ValueError('Ungültige Runtime-Anfrage.')
             project_id, command = payload.get('id'), payload.get('command')
-            if not isinstance(project_id, str) or not re.fullmatch(r'[0-9]{1,15}', project_id) or command not in ('start', 'stop', 'restart'):
+            if not isinstance(project_id, str) or not re.fullmatch(r'[0-9]{1,15}', project_id) or command not in ('start', 'stop', 'restart', 'clear-log'):
                 raise ValueError('Ungültiger Runtime-Befehl.')
             user = self.user()
-            if command == 'stop':
+            if command == 'clear-log':
+                saved = self.server.projects.read(user)
+                if project_id not in dict((saved['tree'] or {}).get('projects', [])):
+                    raise ValueError('Projekt nicht gefunden.')
+                self.server.runtime.clear_messages(user, project_id)
+            elif command == 'stop':
                 self.server.runtime.control(user, project_id, command)
             else:
                 saved = self.server.projects.read(user)
@@ -906,7 +922,7 @@ class Handler(SimpleHTTPRequestHandler):
                 source, language = runtime_source(project, payload.get('source'))
                 libraries = shared_scripts(saved, project.get('sharedScripts', []), project_id)
                 self.server.runtime.control(user, project_id, command, source, language,
-                                            self.server.live_runtime_config(), libraries)
+                                            self.server.live_runtime_config(), libraries, project_snapshot=project)
             self.reply(200, self.server.runtime.status(user, lambda: self.server.projects.read(user)))
         except (ValueError, UnicodeError) as error:
             self.reply(400, {'error': str(error)})

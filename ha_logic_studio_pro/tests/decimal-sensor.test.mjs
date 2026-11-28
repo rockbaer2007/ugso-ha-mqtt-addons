@@ -77,7 +77,7 @@ test('HA writer sends exact decimal strings and retains attributes', async () =>
   const bodies = [];
   const write = createSensorStateWriter({token: 'mock', writable: ['sensor.decimal']}, async (_url, options) => {
     if (options.method === 'POST') bodies.push(JSON.parse(options.body));
-    return {ok: true, json: async () => ({entity_id: 'sensor.decimal', attributes: {unit_of_measurement: 'W', device_class: 'power'}})};
+    return {ok: true, json: async () => ({entity_id: 'sensor.decimal', state: options.method ? JSON.parse(options.body).state : '0', attributes: {unit_of_measurement: 'W', device_class: 'power'}})};
   });
   for (const value of [0.5, 33.25]) await write('sensor.decimal', value);
   assert.deepEqual(bodies.map(body => body.state), ['0.5', '33.25']);

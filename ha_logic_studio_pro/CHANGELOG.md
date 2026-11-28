@@ -1,5 +1,16 @@
 # HA Logic Studio Pro
 
+## 0.1.136 – lokaler Prüfstand
+
+- Sensorzustand-Bausteine warten in Blocks JS auf die HA-Schreibbestätigung. Nachfolgende Lese-/Debug-Ausgaben verwenden den bestätigten Sensorwert; neue HA-Ereignisse werden nicht mit älteren Antworten überschrieben. Fehler stoppen die betreffende Runtime sichtbar.
+- Normale HA-Ausgabebausteine laufen mit Annahmebestätigung nacheinander. Explizite Timer und Callback-Auslöser bleiben eigenständige Fortsetzungen. Eigene JS-/TS-Skripte können `await ha.setSensorState(...)` und die anderen schreibenden HA-APIs verwenden.
+- Floating-Eingaben werden beim Feldwechsel/Klick oder Tab ohne Enter übernommen. Geänderter Entwurf beziehungsweise gespeicherter, aber noch nicht gestarteter Code wird als vorheriger Runtime-Stand markiert.
+- „Protokoll leeren“ entfernt lokale und gespeicherte Runtime-Meldungen des aktuellen Projekts, ohne es zu stoppen. Alte Poll-Antworten werden verworfen; neue Meldungen bleiben sichtbar.
+- Neuer Blocks-JS-Zustandstrigger mit Entitäts-/Attributauswahl, on/off-Standardzweigen, freien Text-/Zahlenwerten, Zahnrad für weitere Zweige und optionalem Sonst-Zweig. Doppelte oder ungültige Vergleichswerte werden vor dem Start abgewiesen. Beschriftungen DE/EN/FR.
+- Vergleichswert-Auswahl um on/off-Texte ergänzt; bestehende wahr/falsch-Projekte bleiben Boolean-Vergleiche. Bestehendes Falls/Sonst unverändert.
+- Exportiertes Wecker-Beispiel mit verzögerter HA-Schreibantwort im echten QuickJS-Runner lokal geprüft. Quellenvergleich mit aktuellem ioBroker-JavaScript-master dokumentiert. Kein HA-System aktualisiert, nichts veröffentlicht.
+- 85 Node- und 14 Server-Tests erfolgreich; 289 registrierte aktuelle Bausteine und 52 direkte Entitätsfelder geprüft. Prüfbericht und ZIP für den lokalen Stand erstellt.
+
 ## 0.1.135 – 28.11.2026
 
 - Fehlende HA-typische Mehrfachauswahl bei „Falls Entitäten … wurde geändert“ ergänzt: Suche, mehrere Entitäten markieren/abwählen und gesammelt übernehmen. Bestehende kommagetrennte bzw. durch Leerraum getrennte Listen bleiben kompatibel.

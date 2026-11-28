@@ -136,9 +136,15 @@ try {
         .then(response => dispatch({type: 'httpGet', id, response}), fail)
         .finally(() => { httpRequests--; });
     } else if (operation === 'event') ha.subscribe(args[0]);
-    else if (operation === 'action') ha.call(args[0], args[1], args[2]);
-    else if (operation === 'sensorState') ha.setSensorState(args[0], args[1]).catch(fail);
-    else if (['publishMqtt', 'notify', 'fireEvent'].includes(operation)) ha.sendto(operation, args);
+    else if (['sensorState', 'action', 'publishMqtt', 'notify', 'fireEvent'].includes(operation)) {
+      const [id, ...data] = args;
+      const request = operation === 'sensorState' ? ha.setSensorState(...data) :
+        operation === 'action' ? ha.call(...data) : ha.sendto(operation, data);
+      request.then(state => dispatch({type: 'sensorWrite', id, state: operation === 'sensorState' ? state : undefined}), error => {
+        dispatch({type: 'sensorWrite', id, error: error.message});
+        fail(error);
+      });
+    }
     else throw new Error('Unbekannte HA-Anfrage.');
     return vm.undefined;
   });
@@ -151,6 +157,7 @@ try {
       const namedSchedules = new Map();
       const historyCallbacks = new Map();
       const httpCallbacks = new Map();
+      const sensorCallbacks = new Map();
       const requestHttp = (operation, action, callback, ...data) => {
         if (typeof callback !== 'function') throw new Error('HTTP callback required.');
         const id = ++historyId;
@@ -183,7 +190,14 @@ try {
         timers.set(name, {due: Date.now() + period, period, callback, repeat});
       }
       const log = value => report(String(value).slice(0, 1000));
-      const callAction = (action, entity, data = {}) => call('action', action, entity, data);
+      const requestWrite = (operation, ...args) => new Promise((resolve, reject) => {
+        if (sensorCallbacks.size >= 4) throw new Error('Maximal vier ausstehende HA-Schreibaufträge.');
+        const id = ++historyId;
+        sensorCallbacks.set(id, {resolve, reject});
+        try { call(operation, id, ...args); }
+        catch (error) { sensorCallbacks.delete(id); reject(error); }
+      });
+      const callAction = (action, entity, data = {}) => requestWrite('action', action, entity, data);
       const timeRequest = (op, args) => JSON.parse(call('time', op, args));
       const astroTimeRequest = (event, offset) => Number(call('astroTime', event, offset));
       ${importedSystem}
@@ -191,9 +205,9 @@ try {
       const ha = Object.freeze({${guestTimeApi} requestScriptMessage, importedControl, importedStateValue, importedEventValue, importedTarget, importedAttribute, log, timeout: (n,d,fn) => timer(n,d,fn,false),
         importedScriptResponse: (action, data, callback) => requestHttp('scriptResponse', action, callback, data),
         pause: delay => new Promise(resolve => timer(Symbol(), delay, resolve, false)),
-        publishMqtt: (topic, message, retain = false) => call('publishMqtt', topic, message, retain),
-        notify: (entity, message, title = '') => call('notify', entity, message, title),
-        fireEvent: (name, data = {}) => call('fireEvent', name, data),
+        publishMqtt: (topic, message, retain = false) => requestWrite('publishMqtt', topic, message, retain),
+        notify: (entity, message, title = '') => requestWrite('notify', entity, message, title),
+        fireEvent: (name, data = {}) => requestWrite('fireEvent', name, data),
         interval: (n,d,fn) => timer(n,d,fn,true),
         cancelTimer: (name, repeat) => (repeat === undefined || timers.get(name)?.repeat === repeat) && timers.delete(name),
         timerReference: (name, repeat) => timers.get(name)?.repeat === repeat ? name : null,
@@ -208,7 +222,7 @@ try {
           if (typeof value !== 'boolean') throw new Error('setState erwartet true oder false.');
           return callAction(entity.split('.')[0] + '.turn_' + (value ? 'on' : 'off'), entity);
         },
-        setSensorState: (entity, value) => call('sensorState', entity, value),
+        setSensorState: (entity, value) => requestWrite('sensorState', entity, value),
         setNumber: (entity, value) => callAction('input_number.set_value', entity, {value}),
         setText: (entity, value) => callAction('input_text.set_value', entity, {value}), callAction,
         onState: (entity, callback) => register('state', entity, null, callback),
@@ -249,6 +263,12 @@ try {
         }
       };
       const studioDispatch = event => {
+        if (event.type === 'sensorWrite') {
+          const pending = sensorCallbacks.get(event.id);
+          sensorCallbacks.delete(event.id);
+          if (pending) event.error ? pending.reject(new Error(event.error)) : pending.resolve(event.state);
+          return;
+        }
         if (event.type === 'httpGet') {
           const callback = httpCallbacks.get(event.id);
           httpCallbacks.delete(event.id);

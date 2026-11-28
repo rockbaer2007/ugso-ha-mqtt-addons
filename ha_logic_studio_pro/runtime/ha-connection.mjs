@@ -154,6 +154,10 @@ async function openHomeAssistant(config, dispatch, fail, disconnected, Socket) {
       connected: () => !closed,
       close: abort,
       snapshot: () => new Map(states),
+      confirmState(entity, before, confirmed) {
+        // Never replace a newer state_changed event with an older HTTP response.
+        if (allowed.has(entity) && states.get(entity) === before) states.set(entity, confirmed);
+      },
       start: () => { live = true; },
       state(entity) {
         if (!allowed.has(entity)) throw new Error('HA-Entität nicht freigegeben: ' + entity);
@@ -225,8 +229,16 @@ async function openHomeAssistant(config, dispatch, fail, disconnected, Socket) {
           return request.catch(error => { if (!closed) throw error; });
         }
       },
-      call(action, entity, data) { send(actionCommand(action, entity, data, writeTargets)).catch(error => { if (!closed) fail(error); }); },
-      sendto(operation, args) { send(sendtoCommand(operation, args, sendtoPermissions)).catch(error => { if (!closed) fail(error); }); },
+      call(action, entity, data) {
+        const request = send(actionCommand(action, entity, data, writeTargets));
+        request.catch(error => { if (!closed) fail(error); });
+        return request;
+      },
+      sendto(operation, args) {
+        const request = send(sendtoCommand(operation, args, sendtoPermissions));
+        request.catch(error => { if (!closed) fail(error); });
+        return request;
+      },
     };
   } catch (error) {
     abort(error);
@@ -297,12 +309,16 @@ export async function connectHomeAssistant(config, dispatch, fail, Socket = WebS
       subscriptions.add(type);
       current?.subscribe(type)?.catch(fail);
     },
-    call(...args) { current?.call(...args); },
-    setSensorState(entity, value) {
+    call(...args) { if (!current) throw new Error('HA-Verbindung getrennt.'); return current.call(...args); },
+    async setSensorState(entity, value) {
       if (!current) throw new Error('HA-Verbindung getrennt.');
-      return writeSensorState(entity, value);
+      const connection = current;
+      const before = connection.state(entity);
+      const confirmed = await writeSensorState(entity, value);
+      if (current === connection) connection.confirmState(entity, before, confirmed);
+      return confirmed.state;
     },
-    sendto(...args) { current?.sendto(...args); },
+    sendto(...args) { if (!current) throw new Error('HA-Verbindung getrennt.'); return current.sendto(...args); },
     async scriptResponse(action, data) {
       if (!current) throw new Error('HA-Verbindung getrennt.');
       return current.scriptResponse(action, data);

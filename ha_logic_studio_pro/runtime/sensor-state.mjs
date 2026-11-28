@@ -32,6 +32,12 @@ export function createSensorStateWriter(config, request = fetch) {
       const response = await request(url, {method: 'POST', headers, redirect: 'error', signal: AbortSignal.timeout(8000),
         body: JSON.stringify({state, attributes: current.attributes})});
       if (!response.ok) throw new Error('Sensorzustand: Schreiben fehlgeschlagen (HTTP ' + response.status + ').');
+      const confirmed = await response.json();
+      if (confirmed?.entity_id !== entity || confirmed.state !== state || !confirmed.attributes ||
+          typeof confirmed.attributes !== 'object' || Array.isArray(confirmed.attributes)) {
+        throw new Error('Sensorzustand: Ungültige Schreibbestätigung von HA.');
+      }
+      return confirmed;
     } finally { pending.delete(entity); }
   };
 }

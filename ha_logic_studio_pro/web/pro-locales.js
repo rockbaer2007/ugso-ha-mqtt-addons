@@ -1,6 +1,8 @@
 import {messages as flowMessages} from './locales.js';
 
 const messages = {
+  'Protokoll leeren': ['Clear log', 'Vider le journal'],
+  'Vorheriger Stand läuft · Speichern → Runtime neu starten': ['Previous version running · Save → Restart runtime', 'Version précédente active · Enregistrer → Redémarrer le runtime'],
   'Alles speichern': ['Save all', 'Tout enregistrer'],
   'Ungespeicherte Änderungen': ['Unsaved changes', 'Modifications non enregistrées'],
   'Der Zeitvergleich liefert wahr oder falsch. Verbinde ihn mit „falls“ und füge unter „mache“ die gewünschte HA-Aktion ein.': [
