@@ -4,6 +4,10 @@ HA Logic Studio Pro is a Home Assistant app for creating, checking and running a
 
 **Version 0.1.134** · [GitHub release with ZIP and changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.134) · [Deutsch](README.md)
 
+## Local follow-up 0.1.135
+
+**Local follow-up 0.1.135:** “If entities … changed” now has an HA-style multi-entity selector with search and Apply. The three entity/attribute change triggers use compact vertical rows inspired by ioBroker. Long captions are shortened without changing saved IDs. All direct entity fields in Blocks A/JS were checked. 68 Node tests and 12 server tests passed; not published or installed on HA yet.
+
 ## New in 0.1.134
 
 **System** in Blocks A and Blocks JS now also includes **Set sensor state · Decimal number**. A direct number field beside the sensor selector defaults to `0.5`. Enter values such as `33.25` using a decimal point. Fractions are retained through saving and reopening.

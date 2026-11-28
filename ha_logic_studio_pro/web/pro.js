@@ -2,6 +2,7 @@ import {renderYamlPreview} from './yaml-preview.js?v=0.1.93';
 import {emptyPlan} from './core.js?v=0.1.65';
 import {categoryEntities} from './iobroker-category.js';
 import {createEntityPicker, loadEntityPage} from './entity-picker.js?v=0.1.131';
+import {entityList, toggleEntityList} from './block-entity-list.js';
 import {helperDomains, helperSpec, provisionHelper} from './iobroker-create-state.js';
 import {parseDocument} from './vendor/pro-yaml.js';
 import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.100';
@@ -666,6 +667,7 @@ function openBlockEntity(spec, current, apply, validate) {
   applyButton.dataset.userText = '';
   const picker = createEntityPicker({locale, current, placeholder,
     selected: item => {
+      if (spec.commaList) return entityList(input.value).includes(item.entity_id);
       if (spec.listOnly || (spec.structured && input.value.trim().startsWith('['))) {
         try { return JSON.parse(input.value).includes(item.entity_id); } catch { return false; }
       }
@@ -673,7 +675,10 @@ function openBlockEntity(spec, current, apply, validate) {
     },
     onClear: () => { input.value = ''; input.setCustomValidity(''); },
     onSelect: ({entity_id}) => {
-      if (spec.listOnly || (spec.structured && input.value.trim().startsWith('['))) {
+      if (spec.commaList) {
+        input.value = toggleEntityList(input.value, entity_id);
+        picker.setCurrent(input.value);
+      } else if (spec.listOnly || (spec.structured && input.value.trim().startsWith('['))) {
         let existing;
         try { existing = JSON.parse(input.value); } catch {}
         const ids = new Set(Array.isArray(existing) ? existing : []);
@@ -708,10 +713,12 @@ function openBlockEntity(spec, current, apply, validate) {
   manual.append(element('summary', manualTitle[locale] ?? manualTitle.en));
   const manualFields = element('div');
   manualFields.className = 'entity-manual-input';
-  manualFields.append(input, applyButton);
+  manualFields.append(input);
+  if (!spec.commaList) manualFields.append(applyButton);
   manual.append(manualFields);
   manual.open = Boolean(spec.listOnly || spec.multiline || (spec.structured && current.trim().startsWith('[')));
   content.append(picker.root, manual);
+  if (spec.commaList) content.append(applyButton);
   const dialog = editorDialog(title, content);
   input.addEventListener('input', () => picker.setCurrent(input.value));
   input.onkeydown = event => { if (!spec.multiline && event.key === 'Enter') submit(); };

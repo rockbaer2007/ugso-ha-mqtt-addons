@@ -4,6 +4,10 @@ HA Logic Studio Pro ist eine Home-Assistant-App zum Erstellen, Prüfen und Ausf�
 
 **Version 0.1.134** · [GitHub-Release mit ZIP und Changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.134) · [English](README.en.md)
 
+## Lokaler Folgestand 0.1.135
+
+**Lokaler Folgestand 0.1.135:** „Falls Entitäten … wurde geändert“ erhält eine HA-typische Mehrfachauswahl mit Suche und Übernehmen. Die drei Entitäts-/Attribut-Änderungsauslöser sind wie im ioBroker-Vorbild kompakt mehrzeilig angeordnet. Lange Anzeigen werden gekürzt, gespeicherte IDs bleiben vollständig. Alle direkten Entitätsfelder in Blocks A/JS wurden geprüft. 68 Node- und 12 Server-Tests erfolgreich; noch nicht veröffentlicht oder auf HA installiert.
+
 ## Neu in 0.1.134
 
 Zusätzlich gibt es unter **System** in Blocks A und Blocks JS den Baustein **Sensorzustand setzen · Dezimalzahl**. Neben der Sensorauswahl steht ein direktes Zahlenfeld, standardmäßig `0.5`. Gib dort beispielsweise `33.25` ein. Nachkommastellen bleiben erhalten, auch nach Speichern und erneutem Öffnen. Verwende einen Punkt als Dezimaltrennzeichen.

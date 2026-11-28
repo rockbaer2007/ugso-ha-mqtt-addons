@@ -1,5 +1,12 @@
 # HA Logic Studio Pro
 
+## 0.1.135 – lokaler Prüfstand
+
+- Fehlende HA-typische Mehrfachauswahl bei „Falls Entitäten … wurde geändert“ ergänzt: Suche, mehrere Entitäten markieren/abwählen und gesammelt übernehmen. Bestehende kommagetrennte bzw. durch Leerraum getrennte Listen bleiben kompatibel.
+- Einzel-, Mehrfach- und Attribut-Änderungsauslöser kompakt wie im ioBroker-Vorbild untereinander angeordnet. Lange Entitätsanzeigen werden nur optisch gekürzt; gespeicherte IDs bleiben vollständig. Beschriftungen DE/EN/FR.
+- Direkte Entitätsfelder der registrierten Blocks-A-/Blocks-JS-Bausteine geprüft. Dynamische ID-Eingänge und reine Beschriftungen behalten ihren bisherigen Zweck.
+- Kein automatischer Neustart vorhandener Projekte, keine Änderung der Runtime-Freigaben. Lokaler Stand, noch nicht veröffentlicht.
+
 ## 0.1.134 – 28.11.2026
 
 - Zusätzlicher Baustein „Sensorzustand setzen · Dezimalzahl“ in Blocks A und Blocks JS mit HA-Sensorauswahl und direktem Zahlenfeld, Vorgabe 0.5.
