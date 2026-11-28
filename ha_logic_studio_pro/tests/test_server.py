@@ -11,6 +11,38 @@ import yaml
 from server import RUNTIME_LOG_MAX_BYTES, ScriptRuntime, LogicServer, public_entity, search_entities
 
 
+class SensorBridgeTests(unittest.TestCase):
+    def test_bridge_follows_permissions_and_is_stopped_on_close(self):
+        with TemporaryDirectory() as directory:
+            server = LogicServer(('127.0.0.1', 0), directory, supervisor=True)
+            config = {'token': 'unit-test-only', 'writeAll': False, 'writable': ['sensor.test']}
+            process = Mock()
+            process.poll.return_value = None
+            with patch.object(server, 'live_runtime_config', side_effect=lambda: config), patch('subprocess.Popen', return_value=process) as popen:
+                server.sync_sensor_bridge()
+                self.assertEqual(popen.call_count, 1)
+                self.assertEqual(json.loads(process.stdin.write.call_args.args[0]), config)
+                process.stdin.close.assert_called_once()
+                server.sync_sensor_bridge()
+                self.assertEqual(popen.call_count, 1)
+                config = {**config, 'writable': []}
+                server.sync_sensor_bridge()
+                process.terminate.assert_called_once()
+                self.assertIsNone(server.sensor_bridge)
+            server.server_close()
+
+    def test_invalid_options_stop_existing_bridge(self):
+        with TemporaryDirectory() as directory:
+            server = LogicServer(('127.0.0.1', 0), directory, supervisor=True)
+            process = Mock()
+            process.poll.return_value = None
+            server.sensor_bridge = process
+            with patch.object(server, 'live_runtime_config', side_effect=ValueError('invalid options')):
+                server.sync_sensor_bridge()
+            process.terminate.assert_called_once()
+            server.server_close()
+
+
 class RuntimeAllPermissionTests(unittest.TestCase):
     def read_config(self, root, options):
         path = Path(root) / 'options.json'

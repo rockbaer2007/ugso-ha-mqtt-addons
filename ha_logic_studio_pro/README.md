@@ -2,7 +2,17 @@
 
 HA Logic Studio Pro ist eine Home-Assistant-App zum Erstellen, Prüfen und Ausführen von Automationen und Logik. Projekte und Ordner werden pro Home-Assistant-Benutzer gespeichert. Die Oberfläche gibt es auf Deutsch, Englisch und Französisch.
 
-**Stand 0.1.132** · [GitHub-Release und ZIP](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.132)
+**Lokaler Teststand 0.1.133** · Noch nicht veröffentlicht. [Bisheriges GitHub-Release 0.1.132](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.132)
+
+## Neu im lokalen Teststand
+
+**Sensorzustand setzen** steht unter System in Blocks A und Blocks JS bereit. Wähle einen vorhandenen `sensor.*` und verbinde einen Zahlen-, Text- oder Berechnungsbaustein. Einheit, Geräteklasse und andere Attribute bleiben erhalten. Der Sensor benötigt WRITE-Freigabe in den App-Einstellungen. Eine Integration kann den gesetzten Wert wieder überschreiben; es wird kein Gerät geschaltet und kein dauerhafter Sensor angelegt.
+
+Blocks JS verwendet `ha.setSensorState("sensor.beispiel", 42)`. Blocks A erzeugt das native Ereignis `logic_studio_set_sensor_state`; die laufende Studio-App verarbeitet es mit denselben WRITE-Freigaben. Ohne laufende App wird dieses Ereignis nicht verarbeitet. YAML-Vorschau und JS-Testlauf führen keine echten Schreibzugriffe aus. Fehler der Blocks-A-Brücke stehen im App-Protokoll.
+
+**Neuer Funktionsplan** öffnet jetzt immer die Namens- und Ordnerauswahl. Jeder Plan startet leer und wird unabhängig gespeichert. Vorhandene Funktionspläne und ihre Zuordnung bleiben erhalten. Angehaltene Pläne lassen sich wie andere Projekte löschen.
+
+English and French usage notes: [Sensor state and function plans](docs/sensor-state.md).
 
 ## Installation und Update
 

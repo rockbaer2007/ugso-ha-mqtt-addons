@@ -21,6 +21,8 @@ declare const ha: {
   getState(entity: string): {val: string | boolean} | null;
   setState(entity: string, value: boolean): void;
   setNumber(entity: string, value: number): void;
+  /** Sets an existing sensor state; retains attributes. Requires WRITE permission. */
+  setSensorState(entity: string, value: string | number): void;
   setText(entity: string, value: string): void;
   callAction(action: string, entity: string, data?: StudioData): void;
   onState(entity: string, callback: StudioCallback<StudioStateChange>): void;

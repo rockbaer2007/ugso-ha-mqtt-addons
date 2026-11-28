@@ -1,5 +1,6 @@
 import {historyRange, historyRows} from './history.mjs';
 import {runtimePermissions} from './permissions.mjs';
+import {createSensorStateWriter} from './sensor-state.mjs';
 
 const endpoint = 'ws://supervisor/core/websocket';
 const entityPattern = /^[a-z][a-z0-9_]*\.[a-z0-9_]+$/;
@@ -234,6 +235,7 @@ async function openHomeAssistant(config, dispatch, fail, disconnected, Socket) {
 }
 
 export async function connectHomeAssistant(config, dispatch, fail, Socket = WebSocket, connectionChanged = () => {}) {
+  const writeSensorState = createSensorStateWriter(config);
   const subscriptions = new Set();
   const {readable: entities, events: permittedEvents} = runtimePermissions(config);
   let current, previous, started = false, reconnecting = false;
@@ -296,6 +298,10 @@ export async function connectHomeAssistant(config, dispatch, fail, Socket = WebS
       current?.subscribe(type)?.catch(fail);
     },
     call(...args) { current?.call(...args); },
+    setSensorState(entity, value) {
+      if (!current) throw new Error('HA-Verbindung getrennt.');
+      return writeSensorState(entity, value);
+    },
     sendto(...args) { current?.sendto(...args); },
     async scriptResponse(action, data) {
       if (!current) throw new Error('HA-Verbindung getrennt.');

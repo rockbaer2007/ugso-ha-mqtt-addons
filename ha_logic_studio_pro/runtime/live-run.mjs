@@ -137,6 +137,7 @@ try {
         .finally(() => { httpRequests--; });
     } else if (operation === 'event') ha.subscribe(args[0]);
     else if (operation === 'action') ha.call(args[0], args[1], args[2]);
+    else if (operation === 'sensorState') ha.setSensorState(args[0], args[1]).catch(fail);
     else if (['publishMqtt', 'notify', 'fireEvent'].includes(operation)) ha.sendto(operation, args);
     else throw new Error('Unbekannte HA-Anfrage.');
     return vm.undefined;
@@ -207,6 +208,7 @@ try {
           if (typeof value !== 'boolean') throw new Error('setState erwartet true oder false.');
           return callAction(entity.split('.')[0] + '.turn_' + (value ? 'on' : 'off'), entity);
         },
+        setSensorState: (entity, value) => call('sensorState', entity, value),
         setNumber: (entity, value) => callAction('input_number.set_value', entity, {value}),
         setText: (entity, value) => callAction('input_text.set_value', entity, {value}), callAction,
         onState: (entity, callback) => register('state', entity, null, callback),

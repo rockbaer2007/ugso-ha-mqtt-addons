@@ -4,6 +4,7 @@ import {importedNamedScheduleMatcher, scheduleMatcher} from './live-schedule.mjs
 import {timeOperations} from './ha-time.mjs';
 import {historyRange, historyRows} from './history.mjs';
 import {prepareSource} from './source-errors.mjs';
+import {sensorStateValue} from './sensor-state.mjs';
 
 const maxSource = 64_000;
 const maxTrace = 100;
@@ -93,6 +94,12 @@ export async function testRun(source, language = 'javascript', timeZone, start =
               entry.data = parsed;
             }
             record(entry);
+          },
+          setSensorState(entity, value) {
+            const target = identifier(entity);
+            const text = sensorStateValue(target, vm.dump(value));
+            states[target] = text;
+            record({type: 'sensor-state', entity: target, state: text, simulated: true});
           },
           setNumber(entity, value) {
             const target = identifier(entity);

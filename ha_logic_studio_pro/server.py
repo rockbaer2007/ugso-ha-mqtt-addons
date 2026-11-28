@@ -439,9 +439,15 @@ class LogicServer(ThreadingHTTPServer):
         self.entity_cache_until = 0
         self.entity_context_cache = {}
         self.entity_context_until = 0
+        self.sensor_bridge = None
+        self.sensor_bridge_config = None
+        self.next_bridge_check = 0
 
     def service_actions(self):
         now = monotonic()
+        if self.supervisor and now >= self.next_bridge_check:
+            self.next_bridge_check = now + 10
+            self.sync_sensor_bridge()
         if now >= self.next_log_prune:
             self.next_log_prune = now + 3600
             self.runtime.prune_logs()
@@ -476,7 +482,40 @@ class LogicServer(ThreadingHTTPServer):
             result[key] = list(dict.fromkeys(values))
         return result
 
+    def sync_sensor_bridge(self):
+        try:
+            config = self.live_runtime_config()
+            enabled = config['writeAll'] or bool(config['writable'])
+            if self.sensor_bridge and self.sensor_bridge.poll() is None and config == self.sensor_bridge_config:
+                return
+            self.stop_sensor_bridge()
+            if not enabled:
+                return
+            self.sensor_bridge = subprocess.Popen(
+                ['node', str(ROOT / 'runtime' / 'sensor-state-bridge.mjs')], stdin=subprocess.PIPE,
+                text=True, encoding='utf-8',
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+            self.sensor_bridge.stdin.write(json.dumps(config))
+            self.sensor_bridge.stdin.close()
+            self.sensor_bridge_config = config
+        except (OSError, ValueError, subprocess.SubprocessError) as error:
+            self.stop_sensor_bridge()
+            print('Sensorzustand-Brücke nicht verfügbar: ' + str(error), flush=True)
+
+    def stop_sensor_bridge(self):
+        if self.sensor_bridge is not None:
+            if self.sensor_bridge.poll() is None:
+                self.sensor_bridge.terminate()
+                try:
+                    self.sensor_bridge.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.sensor_bridge.kill()
+                    self.sensor_bridge.wait(timeout=5)
+            self.sensor_bridge = None
+            self.sensor_bridge_config = None
+
     def server_close(self):
+        self.stop_sensor_bridge()
         self.runtime.close()
         super().server_close()
 

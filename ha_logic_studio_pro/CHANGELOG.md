@@ -1,5 +1,13 @@
 # HA Logic Studio Pro
 
+## 0.1.133 – lokaler Teststand
+
+- „Sensorzustand setzen“ in Blocks A und Blocks JS, einschließlich HA-Sensorauswahl, Werteingang und Beschriftungen DE/EN/FR.
+- Sensorattribute bleiben erhalten. WRITE-Freigaben und Formatgrenzen werden geprüft; Testläufe simulieren den Zugriff. Blocks A benötigt die aktive Studio-Ereignisbrücke.
+- Neue Funktionspläne erhalten jedes Mal Name und Ordner und starten unabhängig leer. Bestehende Pläne und Runtime-Einstellungen bleiben erhalten.
+- Noch nicht veröffentlicht. Prüfbericht wird dem lokalen ZIP beigelegt.
+- Lokal: 50 Node- und 12 Server-Tests erfolgreich. Auf .193 (HTTP-Port 80) nach Sicherung installiert: Blocks-JS-Berechnung 42 W, Blocks-A-YAML und Ereignisbrücke 43 W, Attributerhaltung, Ablehnung ohne WRITE, DE/EN/FR und unabhängige Funktionspläne geprüft. Ursprüngliche Freigaben wiederhergestellt; Beispiele auf Nutzerwunsch behalten.
+
 ## 0.1.132
 
 - Vier getrennte „Alle“-Schalter für READ, WRITE, EVENT und TOPICS in der HA-App-Konfiguration, mit Namen und Beschreibungen in DE/EN/FR. Alle sind standardmäßig aus.

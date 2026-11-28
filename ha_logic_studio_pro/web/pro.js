@@ -1,4 +1,5 @@
 import {renderYamlPreview} from './yaml-preview.js?v=0.1.93';
+import {emptyPlan} from './core.js?v=0.1.65';
 import {categoryEntities} from './iobroker-category.js';
 import {createEntityPicker, loadEntityPage} from './entity-picker.js?v=0.1.131';
 import {helperDomains, helperSpec, provisionHelper} from './iobroker-create-state.js';
@@ -1330,7 +1331,7 @@ function projectRow(id, project) {
   });
   remove.dataset.projectDelete = '';
   // The embedded Funktionsplan has its own stored workspace.
-  remove.disabled = sortingProjects || project.type === 'flow' || Boolean(project.running) || runtimeActive(id);
+  remove.disabled = sortingProjects || Boolean(project.running) || runtimeActive(id);
   const open = projectIconButton('M6 4h15v16H6v-4m0-8V4M2 12h13m-4-4 4 4-4 4', 'Projekt öffnen: ' + project.name, () => show(id));
   open.disabled = sortingProjects;
   actions.append(remove, open);
@@ -2942,6 +2943,7 @@ detailsDialog.onclose = () => {
   projectDraft = undefined;
   if (draft && detailsDialog.returnValue === 'create') {
     const folder = projectFolder.value;
+    if (draft.type === 'flow' && draft.graph?.plan) draft.graph.plan.name = projectName.value.trim();
     collapsedProjectGroups.delete(folder);
     if (folder !== 'common' && folder !== 'global') collapsedProjectGroups.delete('');
     add({...draft, name: projectName.value.trim(), folder, scriptId: projectIdPreview.value});
@@ -3004,9 +3006,7 @@ $('project-dialog').onclose = () => {
       chooseProjectDetails({type: 'blocks-js', name: 'Neues Blockprojekt · JS'});
       break;
     case 'flow': {
-      const id = [...projects].find(([, project]) => project.type === 'flow')?.[0];
-      if (id) show(id);
-      else chooseProjectDetails({type: 'flow', name: 'Funktionsplan'});
+      chooseProjectDetails({type: 'flow', name: 'Funktionsplan', graph: {plan: emptyPlan()}});
       break;
     }
     case 'javascript':
