@@ -2,11 +2,17 @@
 
 HA Logic Studio Pro is a Home Assistant app for creating, checking and running automations and logic. Projects and folders are stored per Home Assistant user. The interface supports German, English and French.
 
-**Version 0.1.134** · [GitHub release with ZIP and changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.134) · [Deutsch](README.md)
+**Version 0.1.135** · [GitHub release with ZIP and changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.135) · [Deutsch](README.md)
 
-## Local follow-up 0.1.135
+## New in 0.1.135
 
-**Local follow-up 0.1.135:** “If entities … changed” now has an HA-style multi-entity selector with search and Apply. The three entity/attribute change triggers use compact vertical rows inspired by ioBroker. Long captions are shortened without changing saved IDs. All direct entity fields in Blocks A/JS were checked. 68 Node tests and 12 server tests passed; not published or installed on HA yet.
+**“If entities … changed”** now has an HA-style multi-entity selector: search by name or ID, select or deselect entities, then **Apply**. Existing comma/whitespace-separated lists remain readable and retain their saved IDs.
+
+Single-entity, multiple-entity and attribute change triggers use compact vertical rows inspired by ioBroker. Long captions are shortened only visually. Field names, conditions, connections and saved mappings are retained. The ioBroker acknowledgement filter is not offered because HA state events do not implement the ioBroker ack model.
+
+**Verified:** 285 registered blocks and all 51 direct entity fields in Blocks A/JS; 68 Node tests and 12 server tests passed. Selection, searching, deselection, applying, cancelling, save/load and trigger layout were checked locally in DE/EN/FR. No HA installation or live test for 0.1.135. [Test report](TESTREPORT-0.1.135.md).
+
+For automatic reactions, put the logic and debug output inside the change trigger, save and start **Play**. Standalone blocks run once at startup. Selecting entities grants no runtime permissions; existing READ/WRITE options are unchanged.
 
 ## New in 0.1.134
 

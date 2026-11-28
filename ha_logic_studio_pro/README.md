@@ -2,11 +2,17 @@
 
 HA Logic Studio Pro ist eine Home-Assistant-App zum Erstellen, Prüfen und Ausführen von Automationen und Logik. Projekte und Ordner werden pro Home-Assistant-Benutzer gespeichert. Die Oberfläche gibt es auf Deutsch, Englisch und Französisch.
 
-**Version 0.1.134** · [GitHub-Release mit ZIP und Changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.134) · [English](README.en.md)
+**Version 0.1.135** · [GitHub-Release mit ZIP und Changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.135) · [English](README.en.md)
 
-## Lokaler Folgestand 0.1.135
+## Neu in 0.1.135
 
-**Lokaler Folgestand 0.1.135:** „Falls Entitäten … wurde geändert“ erhält eine HA-typische Mehrfachauswahl mit Suche und Übernehmen. Die drei Entitäts-/Attribut-Änderungsauslöser sind wie im ioBroker-Vorbild kompakt mehrzeilig angeordnet. Lange Anzeigen werden gekürzt, gespeicherte IDs bleiben vollständig. Alle direkten Entitätsfelder in Blocks A/JS wurden geprüft. 68 Node- und 12 Server-Tests erfolgreich; noch nicht veröffentlicht oder auf HA installiert.
+**„Falls Entitäten … wurde geändert“** hat jetzt eine HA-typische Mehrfachauswahl: nach Name oder ID suchen, Entitäten markieren oder abwählen und **Übernehmen**. Vorhandene Komma-/Leerraumlisten bleiben lesbar und behalten ihre gespeicherten IDs.
+
+Einzel-, Mehrfach- und Attribut-Änderungsauslöser sind wie im ioBroker-Vorbild kompakt mehrzeilig angeordnet. Lange Anzeigen werden nur optisch gekürzt. Feldnamen, Bedingungen, Verbindungen und gespeicherte Zuordnungen bleiben erhalten. Die ioBroker-Option „Auslösung durch“ wird nicht angeboten, da HA-Zustandsereignisse nicht dem ioBroker-ack-Modell entsprechen.
+
+**Geprüft:** 285 registrierte Bausteine und alle 51 direkten Entitätsfelder in Blocks A/JS; 68 Node- und 12 Server-Tests erfolgreich. Auswahl, Suche, Abwahl, Übernehmen, Abbrechen, Speichern/Laden und die Trigger-Anordnung in DE/EN/FR lokal geprüft. Keine Installation oder Liveprüfung auf HA für 0.1.135. [Prüfbericht](TESTREPORT-0.1.135.md).
+
+Für eine automatische Reaktion die Logik und Debug-Ausgaben in den Änderungsauslöser setzen, speichern und **Play** starten. Frei stehende Blöcke laufen beim Start einmal. Die Auswahl erteilt keine Runtime-Freigaben; vorhandene READ-/WRITE-Optionen bleiben unverändert.
 
 ## Neu in 0.1.134
 
