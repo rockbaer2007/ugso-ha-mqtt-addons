@@ -2,7 +2,13 @@
 
 HA Logic Studio Pro ist eine Home-Assistant-App zum Erstellen, Prüfen und Ausführen von Automationen und Logik. Projekte und Ordner werden pro Home-Assistant-Benutzer gespeichert. Die Oberfläche gibt es auf Deutsch, Englisch und Französisch.
 
-**Version 0.1.133** · [GitHub-Release und ZIP](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.133) · [English](README.en.md)
+**Lokaler Teststand 0.1.134** · Noch nicht veröffentlicht. [Bisheriges GitHub-Release 0.1.133](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.133) · [English](README.en.md)
+
+## Neu in 0.1.134
+
+Zusätzlich gibt es unter **System** in Blocks A und Blocks JS den Baustein **Sensorzustand setzen · Dezimalzahl**. Neben der Sensorauswahl steht ein direktes Zahlenfeld, standardmäßig `0.5`. Gib dort beispielsweise `33.25` ein. Nachkommastellen bleiben erhalten, auch nach Speichern und erneutem Öffnen. Verwende einen Punkt als Dezimaltrennzeichen.
+
+Der bisherige Baustein mit Werteingang bleibt erhalten. Beide Varianten verwenden dieselbe WRITE-Freigabe und behalten die Sensorattribute. Blocks A benötigt die laufende Studio-App. [Prüfbericht 0.1.134](TESTREPORT-0.1.134.md).
 
 ## Neu in 0.1.133
 

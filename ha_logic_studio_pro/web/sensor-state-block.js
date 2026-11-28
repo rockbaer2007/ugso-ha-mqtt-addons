@@ -5,6 +5,21 @@ const text = {
 };
 export const yamlSensorBlock = 'ugso_sensor_state';
 export const jsSensorBlock = 'ha_js_sensor_state';
+export const yamlDecimalSensorBlock = 'ugso_sensor_state_decimal';
+export const jsDecimalSensorBlock = 'ha_js_sensor_state_decimal';
+const decimalText = {
+  de: 'Sensorzustand setzen · Dezimalzahl %1 auf %2',
+  en: 'Set sensor state · Decimal number %1 to %2',
+  fr: 'Définir l’état du capteur · Nombre décimal %1 à %2',
+};
+
+export function decimalSensorValue(block) {
+  const value = block.getFieldValue('STATE');
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error('Gültige Dezimalzahl erwartet / Expected a finite decimal number / Nombre décimal fini attendu');
+  }
+  return value;
+}
 
 function sensorId(block) {
   const entity = block.getFieldValue('ENTITY');
@@ -13,16 +28,22 @@ function sensorId(block) {
 }
 
 export function sensorStateYaml(block, readValue) {
+  if (block.type === yamlDecimalSensorBlock) {
+    return {event: 'logic_studio_set_sensor_state', event_data: {entity_id: sensorId(block), state: decimalSensorValue(block)}};
+  }
   if (!block.getInputTargetBlock('VALUE')) throw new Error('Sensorzustand fehlt / Missing sensor state / État du capteur manquant');
   return {event: 'logic_studio_set_sensor_state', event_data: {entity_id: sensorId(block), state: readValue(block, 'VALUE')}};
 }
 
 export function registerSensorStateBlocks(Blockly, generator, language, entityField, jsTypes, catalogTypes, knownTypes) {
-  for (const [type, js] of [[jsSensorBlock, true], [yamlSensorBlock, false]]) {
+  for (const [type, js, decimal] of [[jsSensorBlock, true, false], [yamlSensorBlock, false, false],
+    [jsDecimalSensorBlock, true, true], [yamlDecimalSensorBlock, false, true]]) {
     Blockly.Blocks[type] = {init() {
       const [message, tooltip] = text[language()] ?? text.en;
-      this.jsonInit({message0: message, tooltip, colour: '#5a80a4', inputsInline: true,
-        args0: [entityField('sensor.demo_temperature'), {type: 'input_value', name: 'VALUE'}],
+      this.jsonInit({message0: decimal ? decimalText[language()] ?? decimalText.en : message, tooltip, colour: '#5a80a4', inputsInline: true,
+        args0: [entityField('sensor.demo_temperature'), decimal
+          ? {type: 'field_number', name: 'STATE', value: 0.5, precision: 0}
+          : {type: 'input_value', name: 'VALUE'}],
         previousStatement: js ? null : 'Action', nextStatement: js ? null : 'Action'});
       this.getField('ENTITY').choiceSpec_ = {kind: 'entity_id', domains: ['sensor']};
     }};
@@ -32,9 +53,13 @@ export function registerSensorStateBlocks(Blockly, generator, language, entityFi
     if (!value) throw new Error('Sensorzustand fehlt / Missing sensor state / État du capteur manquant');
     return 'ha.setSensorState(' + JSON.stringify(sensorId(block)) + ', ' + value + ');\n';
   };
-  jsTypes.push(jsSensorBlock);
-  catalogTypes.add(yamlSensorBlock);
-  knownTypes.add(yamlSensorBlock);
+  generator.forBlock[jsDecimalSensorBlock] = block =>
+    'ha.setSensorState(' + JSON.stringify(sensorId(block)) + ', ' + decimalSensorValue(block) + ');\n';
+  jsTypes.push(jsSensorBlock, jsDecimalSensorBlock);
+  for (const type of [yamlSensorBlock, yamlDecimalSensorBlock]) {
+    catalogTypes.add(type);
+    knownTypes.add(type);
+  }
 }
 
 export function addSensorStateToolbox(categories, target) {
@@ -44,4 +69,5 @@ export function addSensorStateToolbox(categories, target) {
     categories.contents.find(item => item.kind === 'category' && Array.isArray(item.contents));
   category.contents.push({kind: 'block', type: js ? jsSensorBlock : yamlSensorBlock,
     inputs: {VALUE: {shadow: {type: js ? 'math_number' : 'ugso_number', fields: {NUM: 0}}}}});
+  category.contents.push({kind: 'block', type: js ? jsDecimalSensorBlock : yamlDecimalSensorBlock, fields: {STATE: 0.5}});
 }

@@ -1,5 +1,12 @@
 # HA Logic Studio Pro
 
+## 0.1.134 – lokaler Teststand
+
+- Zusätzlicher Baustein „Sensorzustand setzen · Dezimalzahl“ in Blocks A und Blocks JS mit HA-Sensorauswahl und direktem Zahlenfeld, Vorgabe 0.5.
+- Dezimalwerte wie 0.5 und 33.25 bleiben bei Codeausgabe, Testlauf, HA-Schreibzugriff sowie Blockly-Speichern/Laden erhalten. Beschriftungen DE/EN/FR.
+- Der bisherige Sensor-Baustein, bestehende Projekte, Attribute und Runtime-Freigaben bleiben erhalten.
+- 60 Node- und 12 Server-Tests erfolgreich. Nach Sicherung auf HA 2026.11.3 geprüft: beide Werte 0.5 und 33.25 über Blocks JS sowie die von Blocks A erzeugten Ereignisdaten; Zahlenfelder nach Neuladen unverändert. Sensor-Ausgangswert wiederhergestellt, Attribute und Nutzereinstellungen erhalten. Beispiele auf Nutzerwunsch behalten. Noch nicht veröffentlicht.
+
 ## 0.1.133 – 28.11.2026
 
 - „Sensorzustand setzen“ in Blocks A und Blocks JS, einschließlich HA-Sensorauswahl, Werteingang und Beschriftungen DE/EN/FR.

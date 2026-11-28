@@ -13,7 +13,8 @@ target.parent.mkdir(parents=True, exist_ok=True)
 tracked = subprocess.check_output(['git', 'ls-files', '-z', '--', '.'], cwd=root).decode().split('\0')
 extra = ['docs/sensor-state.md', 'runtime/sensor-state.mjs', 'runtime/sensor-state-bridge.mjs',
          'tests/new-flow.test.mjs', 'tests/sensor-state.test.mjs', 'web/sensor-state-block.js',
-         'tools/extend-sensor-blocks.mjs', 'tools/package-local.py', 'TESTREPORT-0.1.133.md']
+         'tools/extend-sensor-blocks.mjs', 'tools/extend-decimal-sensor-blocks.mjs', 'tests/decimal-sensor.test.mjs',
+         'tools/package-local.py', 'TESTREPORT-' + version + '.md']
 files = sorted({name for name in tracked + extra if name and (root / name).is_file()})
 for name in files:
     assert not set(Path(name).parts) & {'node_modules', 'userdata', '.git', '__pycache__', 'source-frontend'}

@@ -36,7 +36,7 @@ while (!ts.isVariableStatement(injectStatement)) injectStatement = injectStateme
 const exportStatement = unique(tree.statements.filter(ts.isExportDeclaration));
 const edits = [
   [0, 'import {registerSensorStateBlocks, sensorStateYaml, addSensorStateToolbox} from "../sensor-state-block.js";\n'],
-  [reader.body.getStart(tree) + 1, `if(${block}.type==="ugso_sensor_state")return sensorStateYaml(${block},${readValue});`],
+  [reader.body.getStart(tree) + 1, `if(${block}.type==="ugso_sensor_state"||${block}.type==="ugso_sensor_state_decimal")return sensorStateYaml(${block},${readValue});`],
   [injectStatement.getStart(tree), `addSensorStateToolbox(${categories},${mount.parameters[4].name.getText(tree)});`],
   [exportStatement.getStart(tree), `registerSensorStateBlocks(${Blockly},${generator},${language},${entityField},${jsTypes.name.getText(tree)},${catalog.name.getText(tree)},${known});`],
 ];
