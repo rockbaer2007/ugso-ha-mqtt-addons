@@ -2,7 +2,11 @@
 
 HA Logic Studio Pro is a Home Assistant app for creating, checking and running automations and logic. Projects and folders are stored per Home Assistant user. The interface supports German, English and French.
 
-**Version 0.1.136** · [GitHub release with ZIP and changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.136) · [Deutsch](README.md)
+**Version 0.1.137** · [GitHub release with ZIP and changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.137) · [Deutsch](README.md)
+
+## New in 0.1.137
+
+Blocks A and Blocks JS show a fine dotted grid. The mouse wheel pans the workspace; Shift + wheel pans horizontally. Ctrl + wheel zooms; zoom buttons and pinch zoom are also available. Free positioning remains possible without forced snapping. Saved block positions, projects and permissions are preserved. 87 Node tests and 14 server tests passed; both editor grids, wheel panning and zoom were checked locally in Chrome. No live HA test of 0.1.137; .193 was tested with 0.1.136. [Test report](TESTREPORT-0.1.137.md).
 
 ## New in 0.1.136
 

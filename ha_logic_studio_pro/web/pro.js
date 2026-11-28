@@ -7,7 +7,7 @@ import {helperDomains, helperSpec, provisionHelper} from './iobroker-create-stat
 import {parseDocument} from './vendor/pro-yaml.js';
 import {makeYaml, validateYaml, importHaJson, readRuleFields, makeRulesJavaScript, ruleWeekdays, maxRuleGroupDepth} from './pro-yaml-model.js?v=0.1.100';
 import {connectLanguage, locales, translate} from './i18n.js';
-import {translatePro} from './pro-locales.js?v=0.1.136';
+import {translatePro} from './pro-locales.js?v=0.1.137';
 import {mountCodeEditor} from './vendor/pro-code.js';
 import {mountYamlEditor} from './vendor/yaml-editor.js?v=0.1.92';
 import {checkHaYaml} from './yaml-ha-check.js?v=0.1.91';
@@ -2634,7 +2634,7 @@ async function renderBlocks(panel, project, id) {
   panel.append(workspace);
   try {
     const [{mountBlocks, importIoBroker, validateBlockSnapshot}, callmebotCatalogs] = await Promise.all([
-      import('./vendor/pro-blocks.js?v=0.1.136'),
+      import('./vendor/pro-blocks.js?v=0.1.137'),
       project.type === 'blocks-js' ? fetch('./api/callmebot', {signal: AbortSignal.timeout(3000)})
         .then(response => response.ok ? response.json() : {}).catch(() => ({})) : {},
     ]);

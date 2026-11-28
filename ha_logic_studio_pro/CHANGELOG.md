@@ -1,5 +1,12 @@
 # HA Logic Studio Pro
 
+## 0.1.137 – 28.11.2026
+
+- Punkteraster in Blocks A und Blocks JS ergänzt, ohne erzwungenes Einrasten oder Änderung gespeicherter Blockpositionen.
+- Mausrad verschiebt die Arbeitsfläche; Shift + Mausrad verschiebt horizontal. Strg + Mausrad, Pinch und Zoomtasten ändern den Maßstab.
+- 87 Node- und 14 Server-Tests erfolgreich. Raster beider Editoren, Mausradverschiebung und Zoom lokal in Chrome geprüft. Kein HA-Update für diese Version.
+- Erfolgreichen ergänzenden Live-Test von 0.1.136 auf .193 in README DE/EN und Doku DE/EN/FR dokumentiert. Originales 0.1.136-ZIP bleibt unverändert.
+
 ## 0.1.136 – 28.11.2026
 
 - Sensorzustand-Bausteine warten in Blocks JS auf die HA-Schreibbestätigung. Nachfolgende Lese-/Debug-Ausgaben verwenden den bestätigten Sensorwert; neue HA-Ereignisse werden nicht mit älteren Antworten überschrieben. Fehler stoppen die betreffende Runtime sichtbar.
