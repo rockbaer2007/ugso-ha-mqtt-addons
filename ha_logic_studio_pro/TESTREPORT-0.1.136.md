@@ -1,8 +1,8 @@
-# Logic Studio Pro 0.1.136 – lokaler Prüfstand
+# Logic Studio Pro 0.1.136 – Prüfbericht vom 28.11.2026
 
 ## Sicherung und Erhalt
 
-Vollständiger Quellstand 0.1.135 vor Änderungen als `before-0136.zip` lokal gesichert. Kein HA-System kontaktiert oder aktualisiert. Vorhandene Projekte, Optionen und Freigaben nicht geändert. Neue Eingriffe sind versionierte Paketdateien; keine Veröffentlichung.
+Vollständiger Quellstand 0.1.135 vor Änderungen als `before-0136.zip` lokal gesichert. Kein HA-System kontaktiert oder aktualisiert. Vorhandene Projekte, Optionen und Freigaben nicht geändert. Freigegebener Release-Prüfstand mit ZIP und SHA-256-Prüfsumme.
 
 ## Geprüfter Fehler und Reihenfolge
 

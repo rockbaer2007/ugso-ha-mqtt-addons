@@ -2,9 +2,9 @@
 
 HA Logic Studio Pro is a Home Assistant app for creating, checking and running automations and logic. Projects and folders are stored per Home Assistant user. The interface supports German, English and French.
 
-**Version 0.1.135** · [GitHub release with ZIP and changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.135) · [Deutsch](README.md)
+**Version 0.1.136** · [GitHub release with ZIP and changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.136) · [Deutsch](README.md)
 
-## Local test build 0.1.136
+## New in 0.1.136
 
 Both JS sensor blocks wait for HA write confirmation before subsequent read/debug blocks run. Normal HA outputs wait for request acceptance. Timers and explicitly asynchronous callback blocks remain separate continuations. In handwritten JS/TS, use `await ha.setSensorState(...)` or `await ha.callAction(...)` for ordered execution. HA acceptance does not confirm a physical device movement.
 
@@ -12,7 +12,7 @@ Both JS sensor blocks wait for HA write confirmation before subsequent read/debu
 
 The comparison dropdown now includes on/off strings beside true/false booleans. Field edits commit on leaving without Enter. A warning marks running code that needs **Save → Restart runtime**. **Clear log** removes this project's messages without stopping the process; new messages are retained.
 
-Existing projects and options are preserved. [Test report 0.1.136](TESTREPORT-0.1.136.md). No live HA test or publication yet. [ioBroker source comparison](docs/iobroker-review-2026-11-28.md).
+**Verified:** 85 Node tests and 14 server tests passed (99 total). The complete exported example runs in the real QuickJS runner with a locally mocked, delayed HA response: `on → 1.5`, `off → 0`, followed by correct debug values. 289 registered blocks and 52 direct entity fields checked. Existing projects, options and permissions retained. No live HA test for this version. [Test report](TESTREPORT-0.1.136.md) · [Guide DE/EN/FR](docs/state-branches.md) · [ioBroker source comparison](docs/iobroker-review-2026-11-28.md).
 
 ## New in 0.1.135
 

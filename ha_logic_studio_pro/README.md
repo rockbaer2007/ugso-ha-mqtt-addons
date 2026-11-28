@@ -2,9 +2,9 @@
 
 HA Logic Studio Pro ist eine Home-Assistant-App zum Erstellen, Prüfen und Ausführen von Automationen und Logik. Projekte und Ordner werden pro Home-Assistant-Benutzer gespeichert. Die Oberfläche gibt es auf Deutsch, Englisch und Französisch.
 
-**Version 0.1.135** · [GitHub-Release mit ZIP und Changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.135) · [English](README.en.md)
+**Version 0.1.136** · [GitHub-Release mit ZIP und Changelog](https://github.com/rockbaer2007/ugso-ha-mqtt-addons/releases/tag/ha-logic-studio-pro-v0.1.136) · [English](README.en.md)
 
-## Lokaler Prüfstand 0.1.136
+## Neu in 0.1.136
 
 Die beiden JS-Sensorbausteine warten auf die HA-Schreibbestätigung. Folgende Lese-/Debug-Blöcke erhalten den bestätigten Wert. Normale HA-Ausgaben warten auf die Annahme ihres Auftrags; Timer und ausdrücklich asynchrone Callback-Blöcke bleiben eigene Fortsetzungen. In handgeschriebenem JS/TS für diese Reihenfolge `await ha.setSensorState(...)` beziehungsweise `await ha.callAction(...)` verwenden. Eine HA-Annahme ist keine Bestätigung einer physischen Bewegung.
 
@@ -12,7 +12,7 @@ Unter **Trigger** steht **Wenn Entität ihren Wert ändert**: Entität wählen, 
 
 Die Vergleichsauswahl enthält neben wahr/falsch jetzt die Texte on/off. Eingabefelder übernehmen Werte beim Verlassen ohne Enter. Ein Hinweis markiert veralteten laufenden Code; zum Aktivieren **Speichern → Runtime neu starten**. **Protokoll leeren** entfernt Meldungen des aktuellen Projekts, ohne dessen Prozess zu stoppen; neue Meldungen bleiben erhalten.
 
-Bestehende Projekte und Optionen bleiben erhalten. Lokale Tests und Prüfbericht: [0.1.136](TESTREPORT-0.1.136.md). Kein HA-Livetest und noch keine Veröffentlichung. [ioBroker-Quellenvergleich](docs/iobroker-review-2026-11-28.md).
+**Geprüft:** 85 Node- und 14 Server-Tests erfolgreich (99 insgesamt). Der vollständige Wecker-Export läuft im echten QuickJS-Runner mit lokal nachgebildeter, verzögerter HA-Antwort: `on → 1.5`, `off → 0`, jeweils anschließend korrekte Debug-Werte. 289 registrierte Bausteine und 52 direkte Entitätsfelder geprüft. Bestehende Projekte, Optionen und Freigaben erhalten. Kein HA-Livetest für diese Version. [Prüfbericht](TESTREPORT-0.1.136.md) · [Anleitung DE/EN/FR](docs/state-branches.md) · [ioBroker-Quellenvergleich](docs/iobroker-review-2026-11-28.md).
 
 ## Neu in 0.1.135
 
